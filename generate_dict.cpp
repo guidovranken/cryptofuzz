@@ -1,0 +1,222 @@
+#include <cstdint>
+#include <cstddef>
+#include <stdio.h>
+#include <fuzzing/datasource/id.hpp>
+
+static void write(FILE* fp, uint64_t val) {
+
+    fprintf(fp, "\"");
+    for (size_t i = 0; i < 8; i++) {
+        fprintf(fp, "\\x%02X", (uint8_t)(val & 0xFF));
+        val >>= 8;
+    }
+    fprintf(fp, "\"\n");
+}
+
+int main(void)
+{
+    using fuzzing::datasource::ID;
+
+    FILE* fp = fopen("cryptofuzz-dict.txt", "wb");
+
+    write(fp, ID("Cryptofuzz/Module/OpenSSL") );
+    write(fp, ID("Cryptofuzz/Module/mbed TLS") );
+    write(fp, ID("Cryptofuzz/Module/Public Domain") );
+    write(fp, ID("Cryptofuzz/Module/CPPCrypto") );
+    write(fp, ID("Cryptofuzz/Module/Monero") );
+
+    write(fp, ID("Cryptofuzz/Operation/Digest") );
+    write(fp, ID("Cryptofuzz/Operation/HMAC") );
+    write(fp, ID("Cryptofuzz/Operation/SymmetricDecrypt") );
+    write(fp, ID("Cryptofuzz/Operation/SymmetricEncrypt") );
+    write(fp, ID("Cryptofuzz/Operation/KDF_SCRYPT") );
+    write(fp, ID("Cryptofuzz/Operation/KDF_HKDF") );
+    write(fp, ID("Cryptofuzz/Operation/KDF_TLS1_PRF") );
+    write(fp, ID("Cryptofuzz/Operation/KDF_PBKDF2") );
+    write(fp, ID("Cryptofuzz/Operation/CMAC") );
+    write(fp, ID("Cryptofuzz/Operation/Sign") );
+    write(fp, ID("Cryptofuzz/Operation/Verify") );
+
+    write(fp, ID("Cryptofuzz/Digest/SHA1") );
+    write(fp, ID("Cryptofuzz/Digest/SHA224") );
+    write(fp, ID("Cryptofuzz/Digest/SHA256") );
+    write(fp, ID("Cryptofuzz/Digest/SHA384") );
+    write(fp, ID("Cryptofuzz/Digest/SHA512") );
+    write(fp, ID("Cryptofuzz/Digest/MD2") );
+    write(fp, ID("Cryptofuzz/Digest/MD4") );
+    write(fp, ID("Cryptofuzz/Digest/MD5") );
+    write(fp, ID("Cryptofuzz/Digest/MD5_SHA1") );
+    write(fp, ID("Cryptofuzz/Digest/MDC2") );
+    write(fp, ID("Cryptofuzz/Digest/RIPEMD160") );
+    write(fp, ID("Cryptofuzz/Digest/WHIRLPOOL") );
+    write(fp, ID("Cryptofuzz/Digest/SM3") );
+    write(fp, ID("Cryptofuzz/Digest/BLAKE2B512") );
+    write(fp, ID("Cryptofuzz/Digest/BLAKE2S256") );
+    write(fp, ID("Cryptofuzz/Digest/SHAKE128") );
+    write(fp, ID("Cryptofuzz/Digest/SHAKE256") );
+    write(fp, ID("Cryptofuzz/Digest/SHA3-224") );
+    write(fp, ID("Cryptofuzz/Digest/SHA3-256") );
+    write(fp, ID("Cryptofuzz/Digest/SHA3-384") );
+    write(fp, ID("Cryptofuzz/Digest/SHA3-512") );
+    write(fp, ID("Cryptofuzz/Digest/SHA512-224") );
+    write(fp, ID("Cryptofuzz/Digest/SHA512-256") );
+    write(fp, ID("Cryptofuzz/Digest/GROESTL-256") );
+    write(fp, ID("Cryptofuzz/Digest/JH-224") );
+    write(fp, ID("Cryptofuzz/Digest/JH-256") );
+    write(fp, ID("Cryptofuzz/Digest/JH-384") );
+    write(fp, ID("Cryptofuzz/Digest/JH-512") );
+    write(fp, ID("Cryptofuzz/Digest/STREEBOG-256") );
+    write(fp, ID("Cryptofuzz/Digest/STREEBOG-512") );
+    write(fp, ID("Cryptofuzz/Digest/SKEIN-256") );
+    write(fp, ID("Cryptofuzz/Digest/SKEIN-512") );
+    write(fp, ID("Cryptofuzz/Digest/SKEIN-1024") );
+
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_CBC_HMAC_SHA1") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_CBC_HMAC_SHA256") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_CCM") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_CFB") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_CFB1") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_CFB8") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_CTR") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_ECB") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_GCM") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_OCB") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_WRAP") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_WRAP_PAD") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_XTS") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_192_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_192_CCM") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_192_CFB") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_192_CFB1") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_192_CFB8") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_192_CTR") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_192_ECB") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_192_GCM") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_192_OCB") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_192_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_192_WRAP") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_192_WRAP_PAD") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_CBC_HMAC_SHA1") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_CBC_HMAC_SHA256") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_CCM") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_CFB") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_CFB1") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_CFB8") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_CTR") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_ECB") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_GCM") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_OCB") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_WRAP") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_WRAP_PAD") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_XTS") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_128_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_128_CCM") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_128_CFB") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_128_CFB1") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_128_CFB8") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_128_CTR") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_128_ECB") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_128_GCM") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_128_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_192_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_192_CCM") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_192_CFB") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_192_CFB1") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_192_CFB8") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_192_CTR") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_192_ECB") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_192_GCM") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_192_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_256_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_256_CCM") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_256_CFB") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_256_CFB1") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_256_CFB8") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_256_CTR") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_256_ECB") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_256_GCM") );
+    write(fp, ID("Cryptofuzz/Cipher/ARIA_256_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/BF_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/BF_CFB") );
+    write(fp, ID("Cryptofuzz/Cipher/BF_ECB") );
+    write(fp, ID("Cryptofuzz/Cipher/BF_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_128_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_128_CFB") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_128_CFB1") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_128_CFB8") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_128_CTR") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_128_ECB") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_128_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_192_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_192_CFB") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_192_CFB1") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_192_CFB8") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_192_CTR") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_192_ECB") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_192_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_256_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_256_CFB") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_256_CFB1") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_256_CFB8") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_256_CTR") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_256_ECB") );
+    write(fp, ID("Cryptofuzz/Cipher/CAMELLIA_256_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/CAST5_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/CAST5_CFB") );
+    write(fp, ID("Cryptofuzz/Cipher/CAST5_ECB") );
+    write(fp, ID("Cryptofuzz/Cipher/CAST5_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/CHACHA20") );
+    write(fp, ID("Cryptofuzz/Cipher/CHACHA20_POLY1305") );
+    write(fp, ID("Cryptofuzz/Cipher/DESX_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/DES_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/DES_CFB") );
+    write(fp, ID("Cryptofuzz/Cipher/DES_CFB1") );
+    write(fp, ID("Cryptofuzz/Cipher/DES_CFB8") );
+    write(fp, ID("Cryptofuzz/Cipher/DES_ECB") );
+    write(fp, ID("Cryptofuzz/Cipher/DES_EDE") );
+    write(fp, ID("Cryptofuzz/Cipher/DES_EDE3") );
+    write(fp, ID("Cryptofuzz/Cipher/DES_EDE3_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/DES_EDE3_CFB") );
+    write(fp, ID("Cryptofuzz/Cipher/DES_EDE3_CFB1") );
+    write(fp, ID("Cryptofuzz/Cipher/DES_EDE3_CFB8") );
+    write(fp, ID("Cryptofuzz/Cipher/DES_EDE3_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/DES_EDE3_WRAP") );
+    write(fp, ID("Cryptofuzz/Cipher/DES_EDE_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/DES_EDE_CFB") );
+    write(fp, ID("Cryptofuzz/Cipher/DES_EDE_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/DES_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/IDEA_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/IDEA_CFB") );
+    write(fp, ID("Cryptofuzz/Cipher/IDEA_ECB") );
+    write(fp, ID("Cryptofuzz/Cipher/IDEA_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/RC2_40_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/RC2_64_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/RC2_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/RC2_CFB") );
+    write(fp, ID("Cryptofuzz/Cipher/RC2_ECB") );
+    write(fp, ID("Cryptofuzz/Cipher/RC2_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/RC4") );
+    write(fp, ID("Cryptofuzz/Cipher/RC4_40") );
+    write(fp, ID("Cryptofuzz/Cipher/RC4_HMAC_MD5") );
+    write(fp, ID("Cryptofuzz/Cipher/RC5_32_12_16_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/RC5_32_12_16_CFB") );
+    write(fp, ID("Cryptofuzz/Cipher/RC5_32_12_16_ECB") );
+    write(fp, ID("Cryptofuzz/Cipher/RC5_32_12_16_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/SEED_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/SEED_CFB") );
+    write(fp, ID("Cryptofuzz/Cipher/SEED_ECB") );
+    write(fp, ID("Cryptofuzz/Cipher/SEED_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/SM4_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/SM4_CFB") );
+    write(fp, ID("Cryptofuzz/Cipher/SM4_CTR") );
+    write(fp, ID("Cryptofuzz/Cipher/SM4_ECB") );
+    write(fp, ID("Cryptofuzz/Cipher/SM4_OFB") );
+
+    fclose(fp);
+
+    return 0;
+}
