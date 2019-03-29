@@ -4,11 +4,26 @@
 #include "driver.h"
 
 #include <modules/openssl/module.h>
-//#include <modules/publicdomain/module.h>
-//#include <modules/cppcrypto/module.h>
-//#include <modules/mbedtls/module.h>
-//#include <modules/boost/module.h>
-//#include <modules/monero/module.h>
+
+#ifdef CRYPTOFUZZ_PUBLICDOMAIN
+#include <modules/publicdomain/module.h>
+#endif
+
+#ifdef CRYPTOFUZZ_CPPCRYPTO
+#include <modules/cppcrypto/module.h>
+#endif
+
+#ifdef CRYPTOFUZZ_MBEDTLS
+#include <modules/mbedtls/module.h>
+#endif
+
+#ifdef CRYPTOFUZZ_BOOST
+#include <modules/boost/module.h>
+#endif
+
+#ifdef CRYPTOFUZZ_MONERO
+#include <modules/monero/module.h>
+#endif
 
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
@@ -19,11 +34,26 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
     driver = std::make_shared<cryptofuzz::Driver>();
 
     driver->LoadModule( std::make_shared<cryptofuzz::module::OpenSSL>() );
-    //driver->LoadModule( std::make_shared<cryptofuzz::module::mbedTLS>() );
-    //driver->LoadModule( std::make_shared<cryptofuzz::module::Boost>() );
-    //driver->LoadModule( std::make_shared<cryptofuzz::module::PublicDomain>() );
-    //driver->LoadModule( std::make_shared<cryptofuzz::module::CPPCrypto>() );
-    //driver->LoadModule( std::make_shared<cryptofuzz::module::Monero>() );
+
+#ifdef CRYPTOFUZZ_PUBLICDOMAIN
+    driver->LoadModule( std::make_shared<cryptofuzz::module::PublicDomain>() );
+#endif
+
+#ifdef CRYPTOFUZZ_CPPCRYPTO
+    driver->LoadModule( std::make_shared<cryptofuzz::module::CPPCrypto>() );
+#endif
+
+#ifdef CRYPTOFUZZ_MBEDTLS
+    driver->LoadModule( std::make_shared<cryptofuzz::module::mbedTLS>() );
+#endif
+
+#ifdef CRYPTOFUZZ_BOOST
+    driver->LoadModule( std::make_shared<cryptofuzz::module::Boost>() );
+#endif
+
+#ifdef CRYPTOFUZZ_MONERO
+    driver->LoadModule( std::make_shared<cryptofuzz::module::Monero>() );
+#endif
 
     return 0;
 }
