@@ -24,6 +24,7 @@ int main(void)
     write(fp, ID("Cryptofuzz/Module/Public Domain") );
     write(fp, ID("Cryptofuzz/Module/CPPCrypto") );
     write(fp, ID("Cryptofuzz/Module/Monero") );
+    write(fp, ID("Cryptofuzz/Module/Beast") );
 
     write(fp, ID("Cryptofuzz/Operation/Digest") );
     write(fp, ID("Cryptofuzz/Operation/HMAC") );
