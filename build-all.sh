@@ -8,6 +8,7 @@ export CFLAGS="-fsanitize=fuzzer-no-link,address,undefined -fno-common -g -O3 -I
 export CXXFLAGS="$CFLAGS"
 export LIBFUZZER_LINK="-fsanitize=fuzzer"
 
+rm -rf $CRYPTOFUZZ_PATH/external
 mkdir -p $CRYPTOFUZZ_PATH/external
 
 # OpenSSL
@@ -35,6 +36,10 @@ mkdir -p $CRYPTOFUZZ_PATH/external
     make -B
 
 # Public domain
+    cd $CRYPTOFUZZ_PATH/modules/publicdomain
+    make -B
+
+# cppcrypto
     rm -rf $CRYPTOFUZZ_PATH/external/cppcrypto
     mkdir $CRYPTOFUZZ_PATH/external/cppcrypto
     cd $CRYPTOFUZZ_PATH/external/cppcrypto
