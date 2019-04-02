@@ -74,7 +74,7 @@ template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>
 }
 
 template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>::postprocess(std::shared_ptr<Module> module, operation::SymmetricEncrypt& op, const ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>::ResultPair& result) const {
-    if ( op.cleartext.GetSize() > 0 && result.second->GetSize() > 0 && result.second != std::nullopt ) {
+    if ( op.cleartext.GetSize() > 0 && result.second != std::nullopt && result.second->GetSize() > 0 ) {
         using fuzzing::datasource::ID;
 
         bool tryDecrypt = true;
