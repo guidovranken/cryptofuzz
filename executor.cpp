@@ -1,6 +1,7 @@
 #include "executor.h"
 #include "tests.h"
 #include <cryptofuzz/util.h>
+#include <fuzzing/memory.hpp>
 
 extern "C" {
 //__attribute__((section("__libfuzzer_extra_counters")))
@@ -22,9 +23,10 @@ template<> void ExecutorBase<component::Digest, operation::Digest>::updateExtraC
 template<> void ExecutorBase<component::Digest, operation::Digest>::postprocess(std::shared_ptr<Module> module, operation::Digest& op, const ExecutorBase<component::Digest, operation::Digest>::ResultPair& result) const {
     (void)module;
     (void)op;
-    (void)result;
-    
-    /* No postprocessing */
+
+    if ( result.second != std::nullopt ) {
+        fuzzing::memory::memory_test_msan(result.second->GetPtr(), result.second->GetSize());
+    }
 }
 
 template<> std::optional<component::Digest> ExecutorBase<component::Digest, operation::Digest>::callModule(std::shared_ptr<Module> module, operation::Digest& op) const {
@@ -40,9 +42,10 @@ template<> void ExecutorBase<component::MAC, operation::HMAC>::updateExtraCounte
 template<> void ExecutorBase<component::MAC, operation::HMAC>::postprocess(std::shared_ptr<Module> module, operation::HMAC& op, const ExecutorBase<component::MAC, operation::HMAC>::ResultPair& result) const {
     (void)module;
     (void)op;
-    (void)result;
-    
-    /* No postprocessing */
+
+    if ( result.second != std::nullopt ) {
+        fuzzing::memory::memory_test_msan(result.second->GetPtr(), result.second->GetSize());
+    }
 }
 
 template<> std::optional<component::MAC> ExecutorBase<component::MAC, operation::HMAC>::callModule(std::shared_ptr<Module> module, operation::HMAC& op) const {
@@ -58,9 +61,10 @@ template<> void ExecutorBase<component::MAC, operation::CMAC>::updateExtraCounte
 template<> void ExecutorBase<component::MAC, operation::CMAC>::postprocess(std::shared_ptr<Module> module, operation::CMAC& op, const ExecutorBase<component::MAC, operation::CMAC>::ResultPair& result) const {
     (void)module;
     (void)op;
-    (void)result;
-    
-    /* No postprocessing */
+
+    if ( result.second != std::nullopt ) {
+        fuzzing::memory::memory_test_msan(result.second->GetPtr(), result.second->GetSize());
+    }
 }
 
 template<> std::optional<component::MAC> ExecutorBase<component::MAC, operation::CMAC>::callModule(std::shared_ptr<Module> module, operation::CMAC& op) const {
@@ -74,6 +78,10 @@ template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>
 }
 
 template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>::postprocess(std::shared_ptr<Module> module, operation::SymmetricEncrypt& op, const ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>::ResultPair& result) const {
+    if ( result.second != std::nullopt ) {
+        fuzzing::memory::memory_test_msan(result.second->GetPtr(), result.second->GetSize());
+    }
+
     if ( op.cleartext.GetSize() > 0 && result.second != std::nullopt && result.second->GetSize() > 0 ) {
         using fuzzing::datasource::ID;
 
@@ -153,9 +161,10 @@ template<> void ExecutorBase<component::MAC, operation::SymmetricDecrypt>::updat
 template<> void ExecutorBase<component::MAC, operation::SymmetricDecrypt>::postprocess(std::shared_ptr<Module> module, operation::SymmetricDecrypt& op, const ExecutorBase<component::MAC, operation::SymmetricDecrypt>::ResultPair& result) const {
     (void)module;
     (void)op;
-    (void)result;
     
-    /* No postprocessing */
+    if ( result.second != std::nullopt ) {
+        fuzzing::memory::memory_test_msan(result.second->GetPtr(), result.second->GetSize());
+    }
 }
 
 template<> std::optional<component::MAC> ExecutorBase<component::MAC, operation::SymmetricDecrypt>::callModule(std::shared_ptr<Module> module, operation::SymmetricDecrypt& op) const {
@@ -173,9 +182,10 @@ template<> void ExecutorBase<component::Key, operation::KDF_SCRYPT>::updateExtra
 template<> void ExecutorBase<component::Key, operation::KDF_SCRYPT>::postprocess(std::shared_ptr<Module> module, operation::KDF_SCRYPT& op, const ExecutorBase<component::Key, operation::KDF_SCRYPT>::ResultPair& result) const {
     (void)module;
     (void)op;
-    (void)result;
-    
-    /* No postprocessing */
+
+    if ( result.second != std::nullopt ) {
+        fuzzing::memory::memory_test_msan(result.second->GetPtr(), result.second->GetSize());
+    }
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_SCRYPT>::callModule(std::shared_ptr<Module> module, operation::KDF_SCRYPT& op) const {
@@ -193,9 +203,10 @@ template<> void ExecutorBase<component::Key, operation::KDF_HKDF>::updateExtraCo
 template<> void ExecutorBase<component::Key, operation::KDF_HKDF>::postprocess(std::shared_ptr<Module> module, operation::KDF_HKDF& op, const ExecutorBase<component::Key, operation::KDF_HKDF>::ResultPair& result) const {
     (void)module;
     (void)op;
-    (void)result;
     
-    /* No postprocessing */
+    if ( result.second != std::nullopt ) {
+        fuzzing::memory::memory_test_msan(result.second->GetPtr(), result.second->GetSize());
+    }
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_HKDF>::callModule(std::shared_ptr<Module> module, operation::KDF_HKDF& op) const {
@@ -213,9 +224,10 @@ template<> void ExecutorBase<component::Key, operation::KDF_PBKDF2>::updateExtra
 template<> void ExecutorBase<component::Key, operation::KDF_PBKDF2>::postprocess(std::shared_ptr<Module> module, operation::KDF_PBKDF2& op, const ExecutorBase<component::Key, operation::KDF_PBKDF2>::ResultPair& result) const {
     (void)module;
     (void)op;
-    (void)result;
     
-    /* No postprocessing */
+    if ( result.second != std::nullopt ) {
+        fuzzing::memory::memory_test_msan(result.second->GetPtr(), result.second->GetSize());
+    }
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_PBKDF2>::callModule(std::shared_ptr<Module> module, operation::KDF_PBKDF2& op) const {
@@ -233,9 +245,10 @@ template<> void ExecutorBase<component::Key, operation::KDF_TLS1_PRF>::updateExt
 template<> void ExecutorBase<component::Key, operation::KDF_TLS1_PRF>::postprocess(std::shared_ptr<Module> module, operation::KDF_TLS1_PRF& op, const ExecutorBase<component::Key, operation::KDF_TLS1_PRF>::ResultPair& result) const {
     (void)module;
     (void)op;
-    (void)result;
     
-    /* No postprocessing */
+    if ( result.second != std::nullopt ) {
+        fuzzing::memory::memory_test_msan(result.second->GetPtr(), result.second->GetSize());
+    }
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_TLS1_PRF>::callModule(std::shared_ptr<Module> module, operation::KDF_TLS1_PRF& op) const {
@@ -251,9 +264,11 @@ template<> void ExecutorBase<component::Signature, operation::Sign>::updateExtra
 template<> void ExecutorBase<component::Signature, operation::Sign>::postprocess(std::shared_ptr<Module> module, operation::Sign& op, const ExecutorBase<component::Signature, operation::Sign>::ResultPair& result) const {
     (void)module;
     (void)op;
-    (void)result;
+
+    if ( result.second != std::nullopt ) {
+        fuzzing::memory::memory_test_msan(result.second->GetPtr(), result.second->GetSize());
+    }
     
-    /* No postprocessing */
 #if 0
     if ( result.second != std::nullopt ) {
         printf("Result size %zu\n", result.second->GetSize());
