@@ -869,9 +869,12 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_BIO(operation::
     {
         int num;
         CF_CHECK_GTE(num = BIO_read(bio_cipher, out, op.ciphertextSize), 0);
+
+        /* BIO_read shouldn't report more written bytes than the buffer can hold */
         if ( num > (int)op.ciphertextSize ) {
-            goto end;
+            abort();
         }
+
         {
             /* Check if more data can be read. If yes, then the buffer is too small.
              * BIO_eof doesn't seem to work as expected here. */
@@ -1076,6 +1079,12 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricDecrypt_BIO(operation::
     {
         int num;
         CF_CHECK_GTE(num = BIO_read(bio_cipher, out, op.cleartextSize), 0);
+
+        /* BIO_read shouldn't report more written bytes than the buffer can hold */
+        if ( num > (int)op.cleartextSize ) {
+            abort();
+        }
+
         {
             /* Check if more data can be read. If yes, then the buffer is too small.
              * BIO_eof doesn't seem to work as expected here. */
