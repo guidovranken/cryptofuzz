@@ -612,7 +612,7 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
     }
 }
 
-#if defined(CRYPTOFUZZ_LIBRESSL)
+#if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
 const EVP_AEAD* OpenSSL::toEVPAEAD(const component::SymmetricCipherType cipherType) const {
     using fuzzing::datasource::ID;
 
@@ -961,7 +961,7 @@ end:
     return ret;
 }
 
-#if defined(CRYPTOFUZZ_LIBRESSL)
+#if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
 std::optional<component::Ciphertext> OpenSSL::AEAD_Encrypt(operation::SymmetricEncrypt& op, Datasource& ds) {
     (void)ds;
 
@@ -1023,7 +1023,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt(operation::Symm
     } catch ( fuzzing::datasource::Datasource::OutOfData ) {
     }
 
-#if defined(CRYPTOFUZZ_LIBRESSL)
+#if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
     if ( toEVPAEAD(op.cipher.cipherType) != nullptr ) {
         return AEAD_Encrypt(op, ds);
     }
@@ -1165,7 +1165,7 @@ end:
     return ret;
 }
 
-#if defined(CRYPTOFUZZ_LIBRESSL)
+#if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
 std::optional<component::Cleartext> OpenSSL::AEAD_Decrypt(operation::SymmetricDecrypt& op, Datasource& ds) {
     (void)ds;
 
@@ -1227,7 +1227,7 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt(operation::Symme
     } catch ( fuzzing::datasource::Datasource::OutOfData ) {
     }
 
-#if defined(CRYPTOFUZZ_LIBRESSL)
+#if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
     if ( toEVPAEAD(op.cipher.cipherType) != nullptr ) {
         return AEAD_Decrypt(op, ds);
     }

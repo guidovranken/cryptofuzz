@@ -18,7 +18,7 @@ class OpenSSL : public Module {
     private:
         const EVP_MD* toEVPMD(const component::DigestType& digestType) const;
         const EVP_CIPHER* toEVPCIPHER(const component::SymmetricCipherType cipherType) const;
-#if defined(CRYPTOFUZZ_LIBRESSL)
+#if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
         const EVP_AEAD* toEVPAEAD(const component::SymmetricCipherType cipherType) const;
 #endif
 
@@ -34,7 +34,7 @@ class OpenSSL : public Module {
         std::optional<component::Ciphertext> OpSymmetricEncrypt_BIO(operation::SymmetricEncrypt& op, Datasource& ds);
 #endif
         std::optional<component::Ciphertext> OpSymmetricEncrypt_EVP(operation::SymmetricEncrypt& op, Datasource& ds);
-#if defined(CRYPTOFUZZ_LIBRESSL)
+#if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
         std::optional<component::Ciphertext> AEAD_Encrypt(operation::SymmetricEncrypt& op, Datasource& ds);
         std::optional<component::Cleartext> AEAD_Decrypt(operation::SymmetricDecrypt& op, Datasource& ds);
 #endif
