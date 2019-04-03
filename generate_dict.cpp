@@ -71,6 +71,8 @@ int main(void)
     write(fp, ID("Cryptofuzz/Digest/SKEIN-256") );
     write(fp, ID("Cryptofuzz/Digest/SKEIN-512") );
     write(fp, ID("Cryptofuzz/Digest/SKEIN-1024") );
+    write(fp, ID("Cryptofuzz/Digest/GOST-R-34.11-94") );
+    write(fp, ID("Cryptofuzz/Digest/GOST-28147-89") );
 
     write(fp, ID("Cryptofuzz/Cipher/AES_128_CBC") );
     write(fp, ID("Cryptofuzz/Cipher/AES_128_CBC_HMAC_SHA1") );
