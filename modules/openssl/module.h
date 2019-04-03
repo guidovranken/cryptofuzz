@@ -5,7 +5,7 @@
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 #include <openssl/cmac.h>
-#ifndef CRYPTOFUZZ_BORINGSSL
+#if !defined(CRYPTOFUZZ_BORINGSSL)
 #include <openssl/kdf.h>
 #endif
 #include <openssl/pem.h>
@@ -18,20 +18,28 @@ class OpenSSL : public Module {
     private:
         const EVP_MD* toEVPMD(const component::DigestType& digestType) const;
         const EVP_CIPHER* toEVPCIPHER(const component::SymmetricCipherType cipherType) const;
+#if defined(CRYPTOFUZZ_LIBRESSL)
+        const EVP_AEAD* toEVPAEAD(const component::SymmetricCipherType cipherType) const;
+#endif
+
         bool checkSetIVLength(const uint64_t cipherType, const EVP_CIPHER* cipher, EVP_CIPHER_CTX* ctx, const size_t inputIvLength) const;
         bool checkSetKeyLength(const EVP_CIPHER* cipher, EVP_CIPHER_CTX* ctx, const size_t inputKeyLength) const;
 
-#ifndef CRYPTOFUZZ_BORINGSSL
+#if !defined(CRYPTOFUZZ_BORINGSSL)
         std::optional<component::MAC> OpHMAC_EVP(operation::HMAC& op, Datasource& ds);
 #endif
         std::optional<component::MAC> OpHMAC_HMAC(operation::HMAC& op, Datasource& ds);
 
-#ifndef CRYPTOFUZZ_BORINGSSL
+#if !defined(CRYPTOFUZZ_BORINGSSL)
         std::optional<component::Ciphertext> OpSymmetricEncrypt_BIO(operation::SymmetricEncrypt& op, Datasource& ds);
 #endif
         std::optional<component::Ciphertext> OpSymmetricEncrypt_EVP(operation::SymmetricEncrypt& op, Datasource& ds);
+#if defined(CRYPTOFUZZ_LIBRESSL)
+        std::optional<component::Ciphertext> AEAD_Encrypt(operation::SymmetricEncrypt& op, Datasource& ds);
+        std::optional<component::Cleartext> AEAD_Decrypt(operation::SymmetricDecrypt& op, Datasource& ds);
+#endif
 
-#ifndef CRYPTOFUZZ_BORINGSSL
+#if !defined(CRYPTOFUZZ_BORINGSSL)
         std::optional<component::Ciphertext> OpSymmetricDecrypt_BIO(operation::SymmetricDecrypt& op, Datasource& ds);
 #endif
         std::optional<component::Ciphertext> OpSymmetricDecrypt_EVP(operation::SymmetricDecrypt& op, Datasource& ds);
@@ -41,16 +49,16 @@ class OpenSSL : public Module {
         std::optional<component::MAC> OpHMAC(operation::HMAC& op) override;
         std::optional<component::Ciphertext> OpSymmetricEncrypt(operation::SymmetricEncrypt& op) override;
         std::optional<component::Cleartext> OpSymmetricDecrypt(operation::SymmetricDecrypt& op) override;
-#ifndef CRYPTOFUZZ_BORINGSSL
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL)
         std::optional<component::Key> OpKDF_SCRYPT(operation::KDF_SCRYPT& op) override;
 #endif
-#ifndef CRYPTOFUZZ_BORINGSSL
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL)
         std::optional<component::Key> OpKDF_HKDF(operation::KDF_HKDF& op) override;
 #endif
-#ifndef CRYPTOFUZZ_BORINGSSL
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL)
         std::optional<component::Key> OpKDF_TLS1_PRF(operation::KDF_TLS1_PRF& op) override;
 #endif
-#ifndef CRYPTOFUZZ_BORINGSSL
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL)
         std::optional<component::Key> OpKDF_PBKDF2(operation::KDF_PBKDF2& op) override;
 #endif
         std::optional<component::MAC> OpCMAC(operation::CMAC& op) override;
