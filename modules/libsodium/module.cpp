@@ -128,7 +128,7 @@ std::optional<component::Ciphertext> libsodium::OpSymmetricEncrypt(operation::Sy
 
             ret = component::Ciphertext(out, ciphertext_len);
         }
-    } else if ( op.cipher.cipherType.Get() == ID("Cryptofuzz/Cipher/CHACHA20_POLY1305") ) {
+    } else if ( op.cipher.cipherType.Get() == ID("Cryptofuzz/Cipher/CHACHA20_POLY1305_LIBSODIUM") ) {
         CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize() + crypto_aead_chacha20poly1305_ABYTES);
         CF_CHECK_EQ(op.cipher.iv.GetSize(), crypto_aead_chacha20poly1305_NPUBBYTES);
         CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_aead_chacha20poly1305_KEYBYTES);
@@ -147,7 +147,7 @@ std::optional<component::Ciphertext> libsodium::OpSymmetricEncrypt(operation::Sy
                 op.cipher.key.GetPtr()), 0);
 
         ret = component::Ciphertext(out, ciphertext_len);
-    } else if ( op.cipher.cipherType.Get() == ID("Cryptofuzz/Cipher/CHACHA20_POLY1305_IETF") ) {
+    } else if ( op.cipher.cipherType.Get() == ID("Cryptofuzz/Cipher/CHACHA20_POLY1305") ) {
         CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize() + crypto_aead_chacha20poly1305_IETF_ABYTES);
         CF_CHECK_EQ(op.cipher.iv.GetSize(), crypto_aead_chacha20poly1305_IETF_NPUBBYTES);
         CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_aead_chacha20poly1305_IETF_KEYBYTES);
@@ -250,7 +250,7 @@ std::optional<component::Cleartext> libsodium::OpSymmetricDecrypt(operation::Sym
 
             ret = component::Ciphertext(out, cleartext_len);
         }
-    } else if ( op.cipher.cipherType.Get() == ID("Cryptofuzz/Cipher/CHACHA20_POLY1305") ) {
+    } else if ( op.cipher.cipherType.Get() == ID("Cryptofuzz/Cipher/CHACHA20_POLY1305_LIBSODIUM") ) {
         CF_CHECK_GTE(op.ciphertext.GetSize(), crypto_aead_chacha20poly1305_ABYTES);
 
         CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
@@ -273,7 +273,7 @@ std::optional<component::Cleartext> libsodium::OpSymmetricDecrypt(operation::Sym
                 op.cipher.key.GetPtr()), 0);
 
         ret = component::Cleartext(out, cleartext_len);
-    } else if ( op.cipher.cipherType.Get() == ID("Cryptofuzz/Cipher/CHACHA20_POLY1305_IETF") ) {
+    } else if ( op.cipher.cipherType.Get() == ID("Cryptofuzz/Cipher/CHACHA20_POLY1305") ) {
         CF_CHECK_GTE(op.ciphertext.GetSize(), crypto_aead_chacha20poly1305_IETF_ABYTES);
 
         CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
