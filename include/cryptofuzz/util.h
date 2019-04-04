@@ -27,6 +27,9 @@ std::string HexDump(const void *_data, const size_t len, const std::string descr
 std::string HexDump(std::vector<uint8_t> data, const std::string description = "");
 std::string ToString(const Buffer& buffer);
 std::string ToString(const bool val);
+uint8_t* GetNullPtr(void);
+uint8_t* malloc(const size_t n);
+void free(void* ptr);
 
 } /* namespace util */
 } /* namespace cryptofuzz */

@@ -281,7 +281,7 @@ std::optional<component::Ciphertext> libsodium::OpSymmetricEncrypt(operation::Sy
 
     std::optional<component::Ciphertext> ret = std::nullopt;
 
-    uint8_t* out = (uint8_t*)malloc(op.ciphertextSize);
+    uint8_t* out = util::malloc(op.ciphertextSize);
 
     if ( op.cipher.cipherType.Get() == ID("Cryptofuzz/Cipher/AES_256_CBC") ) {
         CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize() + crypto_aead_aes256gcm_ABYTES);
@@ -389,7 +389,7 @@ std::optional<component::Ciphertext> libsodium::OpSymmetricEncrypt(operation::Sy
     }
 
 end:
-    free(out);
+    util::free(out);
 
     return ret;
 }
@@ -408,7 +408,7 @@ std::optional<component::Cleartext> libsodium::OpSymmetricDecrypt(operation::Sym
         CF_CHECK_EQ(op.cipher.iv.GetSize(), crypto_aead_aes256gcm_NPUBBYTES);
         CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_aead_aes256gcm_KEYBYTES);
 
-        out = (uint8_t*)malloc(op.cleartextSize);
+        out = util::malloc(op.cleartextSize);
 
         Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
         bool usePrecomputation = false;
@@ -458,7 +458,7 @@ std::optional<component::Cleartext> libsodium::OpSymmetricDecrypt(operation::Sym
         CF_CHECK_EQ(op.cipher.iv.GetSize(), crypto_aead_chacha20poly1305_NPUBBYTES);
         CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_aead_chacha20poly1305_KEYBYTES);
 
-        out = (uint8_t*)malloc(op.cleartextSize);
+        out = util::malloc(op.cleartextSize);
 
         unsigned long long cleartext_len;
 
@@ -481,7 +481,7 @@ std::optional<component::Cleartext> libsodium::OpSymmetricDecrypt(operation::Sym
         CF_CHECK_EQ(op.cipher.iv.GetSize(), crypto_aead_chacha20poly1305_IETF_NPUBBYTES);
         CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_aead_chacha20poly1305_IETF_KEYBYTES);
 
-        out = (uint8_t*)malloc(op.cleartextSize);
+        out = util::malloc(op.cleartextSize);
 
         unsigned long long cleartext_len;
 
@@ -504,7 +504,7 @@ std::optional<component::Cleartext> libsodium::OpSymmetricDecrypt(operation::Sym
         CF_CHECK_EQ(op.cipher.iv.GetSize(), crypto_aead_xchacha20poly1305_IETF_NPUBBYTES);
         CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_aead_xchacha20poly1305_IETF_KEYBYTES);
 
-        out = (uint8_t*)malloc(op.cleartextSize);
+        out = util::malloc(op.cleartextSize);
 
         unsigned long long cleartext_len;
 
@@ -523,7 +523,7 @@ std::optional<component::Cleartext> libsodium::OpSymmetricDecrypt(operation::Sym
     }
 
 end:
-    free(out);
+    util::free(out);
 
     return ret;
 }

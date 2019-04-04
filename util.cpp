@@ -4,6 +4,7 @@
 #include <map>
 #include <sstream>
 #include <vector>
+#include <cstdlib>
 
 namespace cryptofuzz {
 namespace util {
@@ -397,7 +398,7 @@ Multipart ToParts(fuzzing::datasource::Datasource& ds, const Buffer& buffer) {
             if ( len == 0 ) {
                 /* Intentionally invalid pointer to detect dereference
                  * of buffer of size 0 */
-                ret.push_back( {(const uint8_t*)0x12, 0} );
+                ret.push_back( {GetNullPtr(), 0} );
             } else {
                 ret.push_back( {buffer.GetPtr() + curPos, len} );
             }
@@ -412,7 +413,7 @@ Multipart ToParts(fuzzing::datasource::Datasource& ds, const Buffer& buffer) {
     if ( buffer.GetSize() - curPos == 0 ) {
         /* Intentionally invalid pointer to detect dereference
          * of buffer of size 0 */
-        ret.push_back( {(const uint8_t*)0x12, 0} );
+        ret.push_back( {GetNullPtr(), 0} );
     } else {
         ret.push_back( {buffer.GetPtr() + curPos, buffer.GetSize() - curPos} );
     }
@@ -469,6 +470,40 @@ std::string ToString(const Buffer& buffer) {
 
 std::string ToString(const bool val) {
     return val ? "true" : "false";
+}
+
+class HaveBadPointer {
+    private:
+        bool haveBadPointer = false;
+    public:
+        HaveBadPointer(void) {
+            const char* env = getenv("CRYPTOFUZZ_NULL_IS_BADPTR");
+            if ( env == nullptr ) {
+                haveBadPointer = false;
+            } else {
+                haveBadPointer = true;
+            }
+        }
+
+        bool Get(void) const {
+            return haveBadPointer;
+        }
+};
+
+static HaveBadPointer haveBadPointer;
+
+uint8_t* GetNullPtr(void) {
+    return haveBadPointer.Get() == true ? (uint8_t*)0x12 : nullptr;
+}
+
+uint8_t* malloc(const size_t n) {
+    return n == 0 ? GetNullPtr() : (uint8_t*)::malloc(n);
+}
+
+void free(void* ptr) {
+    if ( ptr != GetNullPtr() ) {
+        ::free(ptr);
+    }
 }
 
 } /* namespace util */

@@ -844,8 +844,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_BIO(operation::
     const EVP_CIPHER* cipher = nullptr;
     BIO* bio_cipher = nullptr;
 
-    /* TODO unique_ptr, make_unique */
-    uint8_t* out = (uint8_t*)malloc(op.ciphertextSize);
+    uint8_t* out = util::malloc(op.ciphertextSize);
 
     /* Initialization */
     {
@@ -872,6 +871,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_BIO(operation::
 
         /* BIO_read shouldn't report more written bytes than the buffer can hold */
         if ( num > (int)op.ciphertextSize ) {
+            goto end;
             abort();
         }
 
@@ -887,7 +887,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_BIO(operation::
 
 end:
     BIO_free_all(bio_cipher);
-    free(out);
+    util::free(out);
 
     return ret;
 }
@@ -903,8 +903,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
 
     size_t out_size = op.ciphertextSize;
     size_t outIdx = 0;
-    /* TODO unique_ptr, make_unique */
-    uint8_t* out = (uint8_t*)malloc(out_size);
+    uint8_t* out = util::malloc(out_size);
 
     /* Initialize */
     {
@@ -959,7 +958,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
 end:
     EVP_CIPHER_CTX_free(ctx);
 
-    free(out);
+    util::free(out);
 
     return ret;
 }
@@ -975,9 +974,8 @@ std::optional<component::Ciphertext> OpenSSL::AEAD_Encrypt(operation::SymmetricE
     bool ctxInitialized = false;
     size_t len;
 
-    /* TODO unique_ptr, make_unique */
     size_t out_size = op.ciphertextSize;
-    uint8_t* out = (uint8_t*)malloc(out_size);
+    uint8_t* out = util::malloc(out_size);
 
     /* Initialize */
     {
@@ -1011,7 +1009,7 @@ end:
         EVP_AEAD_CTX_cleanup(&ctx);
     }
 
-    free(out);
+    util::free(out);
 
     return ret;
 }
@@ -1054,8 +1052,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricDecrypt_BIO(operation::
     const EVP_CIPHER* cipher = nullptr;
     BIO* bio_cipher = nullptr;
 
-    /* TODO unique_ptr, make_unique */
-    uint8_t* out = (uint8_t*)malloc(op.cleartextSize);
+    uint8_t* out = util::malloc(op.cleartextSize);
 
     /* Initialization */
     {
@@ -1082,6 +1079,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricDecrypt_BIO(operation::
 
         /* BIO_read shouldn't report more written bytes than the buffer can hold */
         if ( num > (int)op.cleartextSize ) {
+            goto end;
             abort();
         }
 
@@ -1097,7 +1095,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricDecrypt_BIO(operation::
 
 end:
     BIO_free_all(bio_cipher);
-    free(out);
+    util::free(out);
 
     return ret;
 }
@@ -1113,8 +1111,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricDecrypt_EVP(operation::
 
     size_t out_size = op.cleartextSize;
     size_t outIdx = 0;
-    /* TODO unique_ptr, make_unique */
-    uint8_t* out = (uint8_t*)malloc(out_size);
+    uint8_t* out = util::malloc(out_size);
 
     /* Initialize */
     {
@@ -1169,7 +1166,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricDecrypt_EVP(operation::
 end:
     EVP_CIPHER_CTX_free(ctx);
 
-    free(out);
+    util::free(out);
 
     return ret;
 }
@@ -1185,9 +1182,8 @@ std::optional<component::Cleartext> OpenSSL::AEAD_Decrypt(operation::SymmetricDe
     bool ctxInitialized = false;
     size_t len;
 
-    /* TODO unique_ptr, make_unique */
     size_t out_size = op.cleartextSize;
-    uint8_t* out = (uint8_t*)malloc(out_size);
+    uint8_t* out = util::malloc(out_size);
 
     /* Initialize */
     {
@@ -1221,7 +1217,7 @@ end:
         EVP_AEAD_CTX_cleanup(&ctx);
     }
 
-    free(out);
+    util::free(out);
 
     return ret;
 }
@@ -1259,8 +1255,7 @@ std::optional<component::Key> OpenSSL::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
     EVP_PKEY_CTX* pctx = nullptr;
 
     size_t out_size = op.keySize;
-    /* TODO unique_ptr, make_unique */
-    uint8_t* out = (uint8_t*)malloc(out_size);
+    uint8_t* out = util::malloc(out_size);
 
     /* Initialize */
     {
@@ -1282,7 +1277,7 @@ std::optional<component::Key> OpenSSL::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
 
 end:
     EVP_PKEY_CTX_free(pctx);
-    free(out);
+    util::free(out);
 
     return ret;
 }
@@ -1295,8 +1290,7 @@ std::optional<component::Key> OpenSSL::OpKDF_HKDF(operation::KDF_HKDF& op) {
     const EVP_MD* md = nullptr;
 
     size_t out_size = op.keySize;
-    /* TODO unique_ptr, make_unique */
-    uint8_t* out = (uint8_t*)malloc(out_size);
+    uint8_t* out = util::malloc(out_size);
 
     /* Initialize */
     {
@@ -1319,7 +1313,7 @@ std::optional<component::Key> OpenSSL::OpKDF_HKDF(operation::KDF_HKDF& op) {
 end:
     EVP_PKEY_CTX_free(pctx);
 
-    free(out);
+    util::free(out);
 
     return ret;
 }
@@ -1332,8 +1326,7 @@ std::optional<component::Key> OpenSSL::OpKDF_TLS1_PRF(operation::KDF_TLS1_PRF& o
     const EVP_MD* md = nullptr;
 
     size_t out_size = op.keySize;
-    /* TODO unique_ptr, make_unique */
-    uint8_t* out = (uint8_t*)malloc(out_size);
+    uint8_t* out = util::malloc(out_size);
 
     /* Initialize */
     {
@@ -1355,7 +1348,7 @@ std::optional<component::Key> OpenSSL::OpKDF_TLS1_PRF(operation::KDF_TLS1_PRF& o
 end:
     EVP_PKEY_CTX_free(pctx);
 
-    free(out);
+    util::free(out);
 
     return ret;
 }
@@ -1368,8 +1361,7 @@ std::optional<component::Key> OpenSSL::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
     const EVP_MD* md = nullptr;
 
     size_t out_size = op.keySize;
-    /* TODO unique_ptr, make_unique */
-    uint8_t* out = (uint8_t*)malloc(out_size);
+    uint8_t* out = util::malloc(out_size);
 
     /* Initialize */
     {
@@ -1391,7 +1383,7 @@ std::optional<component::Key> OpenSSL::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
 end:
     EVP_KDF_CTX_free(kctx);
 
-    free(out);
+    util::free(out);
 
     return ret;
 }
@@ -1449,8 +1441,7 @@ std::optional<component::Signature> OpenSSL::OpSign(operation::Sign& op) {
     const EVP_MD* md = nullptr;
 
     size_t out_size = op.signatureSize;
-    /* TODO unique_ptr, make_unique */
-    uint8_t* out = (uint8_t*)malloc(out_size);
+    uint8_t* out = util::malloc(out_size);
 
     /* Initialize */
     {
@@ -1485,7 +1476,7 @@ end:
     EVP_PKEY_free(pkey);
     EVP_MD_CTX_destroy(ctx);
 
-    free(out);
+    util::free(out);
 
     return ret;
 }
