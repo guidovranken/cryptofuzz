@@ -13,26 +13,249 @@ libsodium::libsodium(void) :
     }
 }
 
+std::optional<component::Digest> libsodium::SHA256(operation::Digest& op) const {
+    std::optional<component::Digest> ret = std::nullopt;
+
+    uint8_t out[crypto_hash_sha256_BYTES];
+
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    bool doMulti = false;
+    try {
+        doMulti = ds.Get<bool>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    }
+
+    if ( doMulti == false ) {
+        crypto_hash_sha256(out, op.cleartext.GetPtr(), op.cleartext.GetSize());
+
+        ret = component::Digest(out, crypto_hash_sha256_BYTES);
+    } else {
+        crypto_hash_sha256_state state;
+
+        util::Multipart parts;
+
+        /* Initialize */
+        {
+            CF_CHECK_EQ(crypto_hash_sha256_init(&state), 0);
+            parts = util::ToParts(ds, op.cleartext);
+        }
+
+        /* Process */
+        for (const auto& part : parts) {
+            CF_CHECK_EQ(crypto_hash_sha256_update(&state, part.first, part.second), 0);
+        }
+
+        /* Finalize */
+        {
+            CF_CHECK_EQ(crypto_hash_sha256_final(&state, out), 0);
+        }
+
+        ret = component::Digest(out, crypto_hash_sha256_BYTES);
+    }
+
+end:
+
+    return ret;
+}
+
+std::optional<component::Digest> libsodium::SHA512(operation::Digest& op) const {
+    std::optional<component::Digest> ret = std::nullopt;
+
+    uint8_t out[crypto_hash_sha512_BYTES];
+
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    bool doMulti = false;
+    try {
+        doMulti = ds.Get<bool>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    }
+
+    if ( doMulti == false ) {
+        crypto_hash_sha512(out, op.cleartext.GetPtr(), op.cleartext.GetSize());
+
+        ret = component::Digest(out, crypto_hash_sha512_BYTES);
+    } else {
+        crypto_hash_sha512_state state;
+
+        util::Multipart parts;
+
+        /* Initialize */
+        {
+            CF_CHECK_EQ(crypto_hash_sha512_init(&state), 0);
+            parts = util::ToParts(ds, op.cleartext);
+        }
+
+        /* Process */
+        for (const auto& part : parts) {
+            CF_CHECK_EQ(crypto_hash_sha512_update(&state, part.first, part.second), 0);
+        }
+
+        /* Finalize */
+        {
+            CF_CHECK_EQ(crypto_hash_sha512_final(&state, out), 0);
+        }
+
+        ret = component::Digest(out, crypto_hash_sha512_BYTES);
+    }
+
+end:
+
+    return ret;
+}
+
 std::optional<component::Digest> libsodium::OpDigest(operation::Digest& op) {
     using fuzzing::datasource::ID;
 
     std::optional<component::Digest> ret = std::nullopt;
 
     if ( op.digestType.Get() == ID("Cryptofuzz/Digest/SHA256") ) {
-        uint8_t out[crypto_hash_sha256_BYTES];
-
-        /* TODO return value */
-        crypto_hash_sha256(out, op.cleartext.GetPtr(), op.cleartext.GetSize());
-
-        ret = component::Digest(out, crypto_hash_sha256_BYTES);
+        ret = SHA256(op);
     } else if ( op.digestType.Get() == ID("Cryptofuzz/Digest/SHA512") ) {
-        uint8_t out[crypto_hash_sha512_BYTES];
-
-        /* TODO return value */
-        crypto_hash_sha512(out, op.cleartext.GetPtr(), op.cleartext.GetSize());
-
-        ret = component::Digest(out, crypto_hash_sha512_BYTES);
+        ret = SHA512(op);
     }
+
+    return ret;
+}
+
+std::optional<component::MAC> libsodium::HMAC_SHA256(operation::HMAC& op) const {
+    std::optional<component::MAC> ret = std::nullopt;
+
+    uint8_t out[crypto_auth_hmacsha256_BYTES];
+
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    bool doMulti = false;
+    try {
+        doMulti = ds.Get<bool>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    }
+
+    if ( doMulti == false ) {
+        CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_auth_hmacsha256_KEYBYTES);
+        CF_CHECK_EQ(crypto_auth_hmacsha256(out, op.cleartext.GetPtr(), op.cleartext.GetSize(), op.cipher.key.GetPtr()), 0);
+
+        ret = component::MAC(out, crypto_auth_hmacsha256_BYTES);
+    } else {
+        crypto_auth_hmacsha256_state state;
+
+        util::Multipart parts;
+
+        /* Initialize */
+        {
+            CF_CHECK_EQ(crypto_auth_hmacsha256_init(&state, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), 0);
+            parts = util::ToParts(ds, op.cleartext);
+        }
+
+        /* Process */
+        for (const auto& part : parts) {
+            CF_CHECK_EQ(crypto_auth_hmacsha256_update(&state, part.first, part.second), 0);
+        }
+
+        /* Finalize */
+        {
+            CF_CHECK_EQ(crypto_auth_hmacsha256_final(&state, out), 0);
+        }
+
+        ret = component::MAC(out, crypto_auth_hmacsha256_BYTES);
+    }
+
+end:
+
+    return ret;
+}
+
+std::optional<component::MAC> libsodium::HMAC_SHA512(operation::HMAC& op) const {
+    std::optional<component::MAC> ret = std::nullopt;
+
+    uint8_t out[crypto_auth_hmacsha512_BYTES];
+
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    bool doMulti = false;
+    try {
+        doMulti = ds.Get<bool>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    }
+
+    if ( doMulti == false ) {
+        CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_auth_hmacsha512_KEYBYTES);
+        CF_CHECK_EQ(crypto_auth_hmacsha512(out, op.cleartext.GetPtr(), op.cleartext.GetSize(), op.cipher.key.GetPtr()), 0);
+
+        ret = component::MAC(out, crypto_auth_hmacsha512_BYTES);
+    } else {
+        crypto_auth_hmacsha512_state state;
+
+        util::Multipart parts;
+
+        /* Initialize */
+        {
+            CF_CHECK_EQ(crypto_auth_hmacsha512_init(&state, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), 0);
+            parts = util::ToParts(ds, op.cleartext);
+        }
+
+        /* Process */
+        for (const auto& part : parts) {
+            CF_CHECK_EQ(crypto_auth_hmacsha512_update(&state, part.first, part.second), 0);
+        }
+
+        /* Finalize */
+        {
+            CF_CHECK_EQ(crypto_auth_hmacsha512_final(&state, out), 0);
+        }
+
+        ret = component::MAC(out, crypto_auth_hmacsha512_BYTES);
+    }
+
+end:
+
+    return ret;
+}
+
+std::optional<component::MAC> libsodium::HMAC_SHA512256(operation::HMAC& op) const {
+    std::optional<component::MAC> ret = std::nullopt;
+
+    uint8_t out[crypto_auth_hmacsha512256_BYTES];
+
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    bool doMulti = false;
+    try {
+        doMulti = ds.Get<bool>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    }
+
+    if ( doMulti == false ) {
+        CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_auth_hmacsha512256_KEYBYTES);
+        CF_CHECK_EQ(crypto_auth_hmacsha512256(out, op.cleartext.GetPtr(), op.cleartext.GetSize(), op.cipher.key.GetPtr()), 0);
+
+        ret = component::MAC(out, crypto_auth_hmacsha512256_BYTES);
+    } else {
+        crypto_auth_hmacsha512256_state state;
+
+        util::Multipart parts;
+
+        /* Initialize */
+        {
+            CF_CHECK_EQ(crypto_auth_hmacsha512256_init(&state, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), 0);
+            parts = util::ToParts(ds, op.cleartext);
+        }
+
+        /* Process */
+        for (const auto& part : parts) {
+            CF_CHECK_EQ(crypto_auth_hmacsha512256_update(&state, part.first, part.second), 0);
+        }
+
+        /* Finalize */
+        {
+            CF_CHECK_EQ(crypto_auth_hmacsha512256_final(&state, out), 0);
+        }
+
+        ret = component::MAC(out, crypto_auth_hmacsha512256_BYTES);
+    }
+
+end:
 
     return ret;
 }
@@ -43,35 +266,13 @@ std::optional<component::MAC> libsodium::OpHMAC(operation::HMAC& op) {
     std::optional<component::MAC> ret = std::nullopt;
 
     if ( op.digestType.Get() == ID("Cryptofuzz/Digest/SHA256") ) {
-        uint8_t out[crypto_auth_hmacsha256_BYTES];
-
-        CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_auth_hmacsha256_KEYBYTES);
-
-        /* TODO return value */
-        crypto_auth_hmacsha256(out, op.cleartext.GetPtr(), op.cleartext.GetSize(), op.cipher.key.GetPtr());
-
-        ret = component::MAC(out, crypto_auth_hmacsha256_BYTES);
+        ret = HMAC_SHA256(op);
     } else if ( op.digestType.Get() == ID("Cryptofuzz/Digest/SHA512") ) {
-        uint8_t out[crypto_auth_hmacsha512_BYTES];
-
-        CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_auth_hmacsha256_KEYBYTES);
-
-        /* TODO return value */
-        crypto_auth_hmacsha512(out, op.cleartext.GetPtr(), op.cleartext.GetSize(), op.cipher.key.GetPtr());
-
-        ret = component::MAC(out, crypto_auth_hmacsha512_BYTES);
+        ret = HMAC_SHA512(op);
     } else if ( op.digestType.Get() == ID("Cryptofuzz/Digest/SHA512-256") ) {
-        uint8_t out[crypto_auth_hmacsha512256_BYTES];
-
-        CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_auth_hmacsha512256_KEYBYTES);
-
-        /* TODO return value */
-        crypto_auth_hmacsha512256(out, op.cleartext.GetPtr(), op.cleartext.GetSize(), op.cipher.key.GetPtr());
-
-        ret = component::MAC(out, crypto_auth_hmacsha512256_BYTES);
+        ret = HMAC_SHA512256(op);
     }
 
-end:
     return ret;
 }
 

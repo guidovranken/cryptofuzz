@@ -7,6 +7,12 @@ namespace cryptofuzz {
 namespace module {
 
 class libsodium : public Module {
+    private:
+        std::optional<component::Digest> SHA256(operation::Digest& op) const;
+        std::optional<component::Digest> SHA512(operation::Digest& op) const;
+        std::optional<component::MAC> HMAC_SHA256(operation::HMAC& op) const;
+        std::optional<component::MAC> HMAC_SHA512(operation::HMAC& op) const;
+        std::optional<component::MAC> HMAC_SHA512256(operation::HMAC& op) const;
     public:
         libsodium(void);
         std::optional<component::Ciphertext> OpDigest(operation::Digest& op) override;
