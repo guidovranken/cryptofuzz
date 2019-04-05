@@ -5,8 +5,43 @@
 namespace cryptofuzz {
 namespace module {
 
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL)
+#if 1
+static void* OPENSSL_custom_malloc(size_t n, const char* file, int line) {
+    (void)file;
+    (void)line;
+
+    return util::malloc(n);
+}
+
+static void* OPENSSL_custom_realloc(void* ptr, size_t n, const char* file, int line) {
+    (void)file;
+    (void)line;
+
+    return util::realloc(ptr, n);
+}
+
+static void OPENSSL_custom_free(void* ptr, const char* file, int line) {
+    (void)file;
+    (void)line;
+
+    util::free(ptr);
+}
+#endif
+#endif
+
 OpenSSL::OpenSSL(void) :
     Module("OpenSSL") {
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL)
+#if 1
+    if ( CRYPTO_set_mem_functions(
+                OPENSSL_custom_malloc,
+                OPENSSL_custom_realloc,
+                OPENSSL_custom_free) != 1 ) {
+        abort();
+    }
+#endif
+#endif
      OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS, NULL);
 }
 

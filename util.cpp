@@ -500,6 +500,19 @@ uint8_t* malloc(const size_t n) {
     return n == 0 ? GetNullPtr() : (uint8_t*)::malloc(n);
 }
 
+uint8_t* realloc(void* ptr, const size_t n) {
+    if ( n == 0 ) {
+        free(ptr);
+        return GetNullPtr();
+    } else {
+        if ( ptr != GetNullPtr() ) {
+            return (uint8_t*)::realloc(ptr, n);
+        } else {
+            return malloc(n);
+        }
+    }
+}
+
 void free(void* ptr) {
     if ( ptr != GetNullPtr() ) {
         ::free(ptr);
