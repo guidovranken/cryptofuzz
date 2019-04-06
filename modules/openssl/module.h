@@ -28,7 +28,9 @@ class OpenSSL : public Module {
 #if !defined(CRYPTOFUZZ_BORINGSSL)
         std::optional<component::MAC> OpHMAC_EVP(operation::HMAC& op, Datasource& ds);
 #endif
+#if !defined(CRYPTOFUZZ_OPENSSL_102)
         std::optional<component::MAC> OpHMAC_HMAC(operation::HMAC& op, Datasource& ds);
+#endif
 
 #if !defined(CRYPTOFUZZ_BORINGSSL)
         std::optional<component::Ciphertext> OpSymmetricEncrypt_BIO(operation::SymmetricEncrypt& op, Datasource& ds);
@@ -49,16 +51,16 @@ class OpenSSL : public Module {
         std::optional<component::MAC> OpHMAC(operation::HMAC& op) override;
         std::optional<component::Ciphertext> OpSymmetricEncrypt(operation::SymmetricEncrypt& op) override;
         std::optional<component::Cleartext> OpSymmetricDecrypt(operation::SymmetricDecrypt& op) override;
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
         std::optional<component::Key> OpKDF_SCRYPT(operation::KDF_SCRYPT& op) override;
 #endif
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
         std::optional<component::Key> OpKDF_HKDF(operation::KDF_HKDF& op) override;
 #endif
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
         std::optional<component::Key> OpKDF_TLS1_PRF(operation::KDF_TLS1_PRF& op) override;
 #endif
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
         std::optional<component::Key> OpKDF_PBKDF2(operation::KDF_PBKDF2& op) override;
 #endif
         std::optional<component::MAC> OpCMAC(operation::CMAC& op) override;
