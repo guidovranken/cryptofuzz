@@ -287,5 +287,135 @@ end:
     return ret;
 }
 
+std::optional<component::Ciphertext> mbedTLS::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
+    std::optional<component::Ciphertext> ret = std::nullopt;
+
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    util::Multipart parts;
+
+    mbedtls_cipher_context_t cipher_ctx;
+    bool ctxInited = false;
+    const mbedtls_cipher_info_t *cipher_info = nullptr;
+
+    size_t out_size = op.ciphertextSize;
+    size_t outIdx = 0;
+    uint8_t* out = util::malloc(out_size);
+
+    /* Initialize */
+    {
+        parts = util::ToParts(ds, op.cleartext);
+        CF_CHECK_NE(cipher_info = to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
+
+        mbedtls_cipher_init(&cipher_ctx);
+        ctxInited = true;
+        CF_CHECK_EQ(mbedtls_cipher_setup(&cipher_ctx, cipher_info), 0);
+        CF_CHECK_EQ(mbedtls_cipher_setkey(&cipher_ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize() * 8, MBEDTLS_ENCRYPT), 0);
+        CF_CHECK_EQ(mbedtls_cipher_set_iv(&cipher_ctx, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize()), 0);
+        CF_CHECK_EQ(mbedtls_cipher_reset(&cipher_ctx), 0);
+
+        /* mbed TLS documentation:
+         *      "The buffer for the output data.
+         *      This must be able to hold at least ilen + block_size."
+         */
+        CF_CHECK_GTE(out_size, op.cleartext.GetSize() + mbedtls_cipher_get_block_size(&cipher_ctx));
+    }
+
+    /* Process */
+    for (const auto& part : parts) {
+        size_t olen;
+        CF_CHECK_EQ(mbedtls_cipher_update(&cipher_ctx, part.first, part.second, out, &olen), 0);
+        outIdx += olen;
+        out_size -= olen;
+    }
+
+    /* Finalize */
+    {
+        size_t olen;
+        CF_CHECK_EQ(mbedtls_cipher_finish(&cipher_ctx, out, &olen), 0);
+        outIdx += olen;
+        out_size -= olen;
+
+        ret = component::Ciphertext(out, outIdx);
+    }
+
+end:
+    util::free(out);
+
+    if ( ctxInited == true ) {
+        mbedtls_cipher_free(&cipher_ctx);
+    }
+
+    /* Too many differences with OpenSSL, so don't compare for now */
+    return std::nullopt;
+
+    return ret;
+}
+
+std::optional<component::Cleartext> mbedTLS::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
+    std::optional<component::Ciphertext> ret = std::nullopt;
+
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    util::Multipart parts;
+
+    mbedtls_cipher_context_t cipher_ctx;
+    bool ctxInited = false;
+    const mbedtls_cipher_info_t *cipher_info = nullptr;
+
+    size_t out_size = op.cleartextSize;
+    size_t outIdx = 0;
+    uint8_t* out = util::malloc(out_size);
+
+    /* Initialize */
+    {
+        parts = util::ToParts(ds, op.ciphertext);
+        CF_CHECK_NE(cipher_info = to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
+
+        mbedtls_cipher_init(&cipher_ctx);
+        ctxInited = true;
+        CF_CHECK_EQ(mbedtls_cipher_setup(&cipher_ctx, cipher_info), 0);
+        CF_CHECK_EQ(mbedtls_cipher_setkey(&cipher_ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize() * 8, MBEDTLS_DECRYPT), 0);
+        CF_CHECK_EQ(mbedtls_cipher_set_iv(&cipher_ctx, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize()), 0);
+        CF_CHECK_EQ(mbedtls_cipher_reset(&cipher_ctx), 0);
+
+        /* mbed TLS documentation:
+         *      "The buffer for the output data.
+         *      This must be able to hold at least ilen + block_size."
+         */
+        CF_CHECK_GTE(out_size, op.ciphertext.GetSize() + mbedtls_cipher_get_block_size(&cipher_ctx));
+    }
+
+    /* Process */
+    for (const auto& part : parts) {
+        size_t olen;
+        CF_CHECK_EQ(mbedtls_cipher_update(&cipher_ctx, part.first, part.second, out, &olen), 0);
+        outIdx += olen;
+        out_size -= olen;
+    }
+
+    /* Finalize */
+    {
+        size_t olen;
+        CF_CHECK_EQ(mbedtls_cipher_finish(&cipher_ctx, out, &olen), 0);
+        outIdx += olen;
+        out_size -= olen;
+
+        ret = component::Cleartext(out, outIdx);
+    }
+
+end:
+    util::free(out);
+
+    if ( ctxInited == true ) {
+        mbedtls_cipher_free(&cipher_ctx);
+    }
+
+    /* Too many differences with OpenSSL, so don't compare for now */
+    return std::nullopt;
+
+    return ret;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */
