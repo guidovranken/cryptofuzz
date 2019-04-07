@@ -24,6 +24,12 @@ const mbedtls_cipher_info_t* mbedTLS::to_mbedtls_cipher_info_t(const component::
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_CBC);
         case ID("Cryptofuzz/Cipher/AES_256_CBC"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_CBC);
+        case ID("Cryptofuzz/Cipher/AES_128_CFB128"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_CFB128);
+        case ID("Cryptofuzz/Cipher/AES_192_CFB128"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_CFB128);
+        case ID("Cryptofuzz/Cipher/AES_256_CFB128"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_CFB128);
         case ID("Cryptofuzz/Cipher/AES_128_CTR"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_CTR);
         case ID("Cryptofuzz/Cipher/AES_192_CTR"):
@@ -48,12 +54,58 @@ const mbedtls_cipher_info_t* mbedTLS::to_mbedtls_cipher_info_t(const component::
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_192_CBC);
         case ID("Cryptofuzz/Cipher/CAMELLIA_256_CBC"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_256_CBC);
+        case ID("Cryptofuzz/Cipher/CAMELLIA_128_CFB128"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_128_CFB128);
+        case ID("Cryptofuzz/Cipher/CAMELLIA_192_CFB128"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_192_CFB128);
+        case ID("Cryptofuzz/Cipher/CAMELLIA_256_CFB128"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_256_CFB128);
         case ID("Cryptofuzz/Cipher/CAMELLIA_128_CTR"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_128_CTR);
         case ID("Cryptofuzz/Cipher/CAMELLIA_192_CTR"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_192_CTR);
         case ID("Cryptofuzz/Cipher/CAMELLIA_256_CTR"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_256_CTR);
+        case ID("Cryptofuzz/Cipher/CAMELLIA_128_GCM"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_128_GCM);
+        case ID("Cryptofuzz/Cipher/CAMELLIA_192_GCM"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_192_GCM);
+        case ID("Cryptofuzz/Cipher/CAMELLIA_256_GCM"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_256_GCM);
+        case ID("Cryptofuzz/Cipher/DES_ECB"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_DES_ECB);
+        case ID("Cryptofuzz/Cipher/DES_CBC"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_DES_CBC);
+        case ID("Cryptofuzz/Cipher/DES_EDE_ECB"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_DES_EDE_ECB);
+        case ID("Cryptofuzz/Cipher/DES_EDE_CBC"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_DES_EDE_CBC);
+        case ID("Cryptofuzz/Cipher/DES_EDE3_ECB"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_DES_EDE3_ECB);
+        case ID("Cryptofuzz/Cipher/DES_EDE3_CBC"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_DES_EDE3_CBC);
+        case ID("Cryptofuzz/Cipher/BLOWFISH_ECB"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_BLOWFISH_ECB);
+        case ID("Cryptofuzz/Cipher/BLOWFISH_CBC"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_BLOWFISH_CBC);
+        case ID("Cryptofuzz/Cipher/BLOWFISH_CFB64"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_BLOWFISH_CFB64);
+        case ID("Cryptofuzz/Cipher/BLOWFISH_CTR"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_BLOWFISH_CTR);
+        case ID("Cryptofuzz/Cipher/ARC4_128"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARC4_128);
+        case ID("Cryptofuzz/Cipher/AES_128_CCM"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_CCM);
+        case ID("Cryptofuzz/Cipher/AES_192_CCM"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_CCM);
+        case ID("Cryptofuzz/Cipher/AES_256_CCM"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_CCM);
+        case ID("Cryptofuzz/Cipher/CAMELLIA_128_CCM"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_128_CCM);
+        case ID("Cryptofuzz/Cipher/CAMELLIA_192_CCM"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_192_CCM);
+        case ID("Cryptofuzz/Cipher/CAMELLIA_256_CCM"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_256_CCM);
         case ID("Cryptofuzz/Cipher/ARIA_128_ECB"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_128_ECB);
         case ID("Cryptofuzz/Cipher/ARIA_192_ECB"):
@@ -66,6 +118,12 @@ const mbedtls_cipher_info_t* mbedTLS::to_mbedtls_cipher_info_t(const component::
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_192_CBC);
         case ID("Cryptofuzz/Cipher/ARIA_256_CBC"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_256_CBC);
+        case ID("Cryptofuzz/Cipher/ARIA_128_CFB128"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_128_CFB128);
+        case ID("Cryptofuzz/Cipher/ARIA_192_CFB128"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_192_CFB128);
+        case ID("Cryptofuzz/Cipher/ARIA_256_CFB128"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_256_CFB128);
         case ID("Cryptofuzz/Cipher/ARIA_128_CTR"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_128_CTR);
         case ID("Cryptofuzz/Cipher/ARIA_192_CTR"):
@@ -78,6 +136,26 @@ const mbedtls_cipher_info_t* mbedTLS::to_mbedtls_cipher_info_t(const component::
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_192_GCM);
         case ID("Cryptofuzz/Cipher/ARIA_256_GCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_256_GCM);
+        case ID("Cryptofuzz/Cipher/ARIA_128_CCM"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_128_CCM);
+        case ID("Cryptofuzz/Cipher/ARIA_192_CCM"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_192_CCM);
+        case ID("Cryptofuzz/Cipher/ARIA_256_CCM"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_256_CCM);
+        case ID("Cryptofuzz/Cipher/AES_128_OFB"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_OFB);
+        case ID("Cryptofuzz/Cipher/AES_192_OFB"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_OFB);
+        case ID("Cryptofuzz/Cipher/AES_256_OFB"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_OFB);
+        case ID("Cryptofuzz/Cipher/AES_128_XTS"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_XTS);
+        case ID("Cryptofuzz/Cipher/AES_256_XTS"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_XTS);
+        case ID("Cryptofuzz/Cipher/CHACHA20"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CHACHA20);
+        case ID("Cryptofuzz/Cipher/CHACHA20_POLY1305"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CHACHA20_POLY1305);
         default:
             return nullptr;
     }
