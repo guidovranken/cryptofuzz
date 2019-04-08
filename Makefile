@@ -1,6 +1,6 @@
 all : cryptofuzz generate_dict generate_corpus
 
-CXXFLAGS += -Wall -Wextra -std=c++17 -I include/ -I . -DFUZZING_HEADERS_NO_IMPL
+CXXFLAGS += -Wall -Wextra -std=c++17 -I include/ -I . -I fuzzing-headers/include -DFUZZING_HEADERS_NO_IMPL
 
 driver.o : driver.cpp
 	$(CXX) $(CXXFLAGS) driver.cpp -c -o driver.o

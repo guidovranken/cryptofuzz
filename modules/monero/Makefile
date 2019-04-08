@@ -1,6 +1,6 @@
 all: module.a
 
-CXXFLAGS += -Wall -Wextra -std=c++17 -I ../../include -DFUZZING_HEADERS_NO_IMPL
+CXXFLAGS += -Wall -Wextra -std=c++17 -I ../../include -I ../../fuzzing-headers/include -DFUZZING_HEADERS_NO_IMPL
 
 module.a: module.o jh.o groestl.o skein.o hmac-keccak.o memwipe.o keccak.o
 	ar rcs module.a module.o jh.o groestl.o skein.o hmac-keccak.o memwipe.o keccak.o
