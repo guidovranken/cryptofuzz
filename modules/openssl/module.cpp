@@ -874,6 +874,11 @@ const EVP_AEAD* OpenSSL::toEVPAEAD(const component::SymmetricCipherType cipherTy
     static const std::map<uint64_t, const EVP_AEAD*> LUT = {
         { ID("Cryptofuzz/Cipher/CHACHA20_POLY1305"), EVP_aead_chacha20_poly1305() },
         { ID("Cryptofuzz/Cipher/XCHACHA20_POLY1305"), EVP_aead_xchacha20_poly1305() },
+        { ID("Cryptofuzz/Cipher/AES_128_GCM"), EVP_aead_aes_128_gcm() },
+        { ID("Cryptofuzz/Cipher/AES_256_GCM"), EVP_aead_aes_256_gcm() },
+#if defined(CRYPTOFUZZ_BORINGSSL)
+        { ID("Cryptofuzz/Cipher/AES_256_CBC_HMAC_SHA256"), EVP_aead_aes_128_ctr_hmac_sha256() },
+#endif
     };
 
     if ( LUT.find(cipherType.Get()) == LUT.end() ) {
@@ -884,8 +889,8 @@ const EVP_AEAD* OpenSSL::toEVPAEAD(const component::SymmetricCipherType cipherTy
 }
 #endif
 
-std::optional<component::Ciphertext> OpenSSL::OpDigest(operation::Digest& op) {
-    std::optional<component::Ciphertext> ret = std::nullopt;
+std::optional<component::Digest> OpenSSL::OpDigest(operation::Digest& op) {
+    std::optional<component::Digest> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     util::Multipart parts;
@@ -1098,7 +1103,12 @@ end:
 std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_BIO(operation::SymmetricEncrypt& op, Datasource& ds) {
     (void)ds;
 
-    std::optional<component::MAC> ret = std::nullopt;
+    std::optional<component::Ciphertext> ret = std::nullopt;
+
+    /* No support for AEAD tags and AAD with BIO */
+    if ( op.aad != std::nullopt ) {
+        return ret;
+    }
 
 #if defined(CRYPTOFUZZ_OPENSSL_102)
     using fuzzing::datasource::ID;
@@ -1166,7 +1176,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_BIO(operation::
             uint8_t out2[1];
             CF_CHECK_EQ(num2 = BIO_read(bio_cipher, out2, sizeof(out2)), 0);
         }
-        ret = component::Ciphertext(out, num);
+        ret = component::Ciphertext(Buffer(out, num));
     }
 
 end:
@@ -1178,9 +1188,35 @@ end:
 #endif
 
 std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::SymmetricEncrypt& op, Datasource& ds) {
-    std::optional<component::MAC> ret = std::nullopt;
+    std::optional<component::Ciphertext> ret = std::nullopt;
 
-    util::Multipart parts;
+    if ( op.tagSize != std::nullopt || op.aad != std::nullopt ) {
+        /* Trying to treat non-AEAD with AEAD-specific features (tag, aad)
+         * leads to all kinds of gnarly memory bugs in OpenSSL.
+         * It is quite arguably misuse of the OpenSSL API, so don't do this.
+         */
+        using fuzzing::datasource::ID;
+        switch ( op.cipher.cipherType.Get() ) {
+            case ID("Cryptofuzz/Cipher/AES_128_CCM"):
+            case ID("Cryptofuzz/Cipher/AES_192_CCM"):
+            case ID("Cryptofuzz/Cipher/AES_256_CCM"):
+            case ID("Cryptofuzz/Cipher/AES_128_GCM"):
+            case ID("Cryptofuzz/Cipher/AES_192_GCM"):
+            case ID("Cryptofuzz/Cipher/AES_256_GCM"):
+            case ID("Cryptofuzz/Cipher/ARIA_128_CCM"):
+            case ID("Cryptofuzz/Cipher/ARIA_192_CCM"):
+            case ID("Cryptofuzz/Cipher/ARIA_256_CCM"):
+            case ID("Cryptofuzz/Cipher/ARIA_128_GCM"):
+            case ID("Cryptofuzz/Cipher/ARIA_192_GCM"):
+            case ID("Cryptofuzz/Cipher/ARIA_256_GCM"):
+            case ID("Cryptofuzz/Cipher/CHACHA20_POLY1305"):
+                break;
+            default:
+                return ret;
+        }
+    }
+
+    util::Multipart partsCleartext, partsAAD;
 
     const EVP_CIPHER* cipher = nullptr;
     EVP_CIPHER_CTX* ctx = nullptr;
@@ -1188,6 +1224,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
     size_t out_size = op.ciphertextSize;
     size_t outIdx = 0;
     uint8_t* out = util::malloc(out_size);
+    uint8_t* outTag = op.tagSize != std::nullopt ? util::malloc(*op.tagSize) : nullptr;
 
     /* Initialize */
     {
@@ -1198,7 +1235,10 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
         /* Must be a multiple of the block size of this cipher */
         //CF_CHECK_EQ(op.cleartext.GetSize() % EVP_CIPHER_block_size(cipher), 0);
 
-        parts = util::ToParts(ds, op.cleartext);
+        partsCleartext = util::ToParts(ds, op.cleartext);
+        if ( op.aad != std::nullopt ) {
+            partsAAD = util::ToParts(ds, *(op.aad));
+        }
 
         CF_CHECK_EQ(checkSetIVLength(op.cipher.cipherType.Get(), cipher, ctx, op.cipher.iv.GetSize()), true);
         CF_CHECK_EQ(checkSetKeyLength(cipher, ctx, op.cipher.key.GetSize()), true);
@@ -1207,25 +1247,24 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
     }
 
     /* Process */
-#if 0
-    /* Setting AAD */
     {
-        int len = -1;
-        uint8_t aad[1] = {};
-        CF_CHECK_EQ(EVP_EncryptUpdate(ctx, nullptr, &len, aad, 1), 1);
-        outIdx += len;
-        out_size -= len;
-    }
-#endif
+        /* Set AAD */
+        if ( op.aad != std::nullopt ) {
+            for (const auto& part : partsAAD) {
+                int len;
+                CF_CHECK_EQ(EVP_EncryptUpdate(ctx, nullptr, &len, part.first, part.second), 1);
+            }
+        }
 
-    for (const auto& part : parts) {
-        /* "the amount of data written may be anything from zero bytes to (inl + cipher_block_size - 1)" */
-        CF_CHECK_GTE(out_size, part.second + EVP_CIPHER_block_size(cipher) - 1);
+        for (const auto& part : partsCleartext) {
+            /* "the amount of data written may be anything from zero bytes to (inl + cipher_block_size - 1)" */
+            CF_CHECK_GTE(out_size, part.second + EVP_CIPHER_block_size(cipher) - 1);
 
-        int len = -1;
-        CF_CHECK_EQ(EVP_EncryptUpdate(ctx, out + outIdx, &len, part.first, part.second), 1);
-        outIdx += len;
-        out_size -= len;
+            int len = -1;
+            CF_CHECK_EQ(EVP_EncryptUpdate(ctx, out + outIdx, &len, part.first, part.second), 1);
+            outIdx += len;
+            out_size -= len;
+        }
     }
 
     /* Finalize */
@@ -1236,13 +1275,26 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
         CF_CHECK_EQ(EVP_EncryptFinal_ex(ctx, out + outIdx, &len), 1);
         outIdx += len;
 
-        ret = component::Ciphertext(out, outIdx);
+        if ( op.tagSize != std::nullopt ) {
+#if !defined(CRYPTOFUZZ_LIBRESSL)
+            /* Get tag.
+             *
+             * See comments around EVP_CTRL_AEAD_SET_TAG in OpSymmetricDecrypt_EVP for reasons
+             * as to why this is disabled for LibreSSL.
+             */
+            CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_GET_TAG, *op.tagSize, outTag), 1);
+            ret = component::Ciphertext(Buffer(out, outIdx), Buffer(outTag, *op.tagSize));
+#endif
+        } else {
+            ret = component::Ciphertext(Buffer(out, outIdx));
+        }
     }
 
 end:
     EVP_CIPHER_CTX_free(ctx);
 
     util::free(out);
+    util::free(outTag);
 
     return ret;
 }
@@ -1261,10 +1313,18 @@ std::optional<component::Ciphertext> OpenSSL::AEAD_Encrypt(operation::SymmetricE
     size_t out_size = op.ciphertextSize;
     uint8_t* out = util::malloc(out_size);
 
+    const size_t tagSize = op.tagSize != std::nullopt ? *op.tagSize : 0;
+
     /* Initialize */
     {
         CF_CHECK_NE(aead = toEVPAEAD(op.cipher.cipherType), nullptr);
-        CF_CHECK_NE(EVP_AEAD_CTX_init(&ctx, aead, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), EVP_AEAD_DEFAULT_TAG_LENGTH, NULL), 0);
+        CF_CHECK_NE(EVP_AEAD_CTX_init(
+                    &ctx,
+                    aead,
+                    op.cipher.key.GetPtr(),
+                    op.cipher.key.GetSize(),
+                    tagSize,
+                    nullptr), 0);
         ctxInitialized = true;
     }
 
@@ -1278,14 +1338,24 @@ std::optional<component::Ciphertext> OpenSSL::AEAD_Encrypt(operation::SymmetricE
                     op.cipher.iv.GetSize(),
                     op.cleartext.GetPtr(),
                     op.cleartext.GetSize(),
-                    NULL,
-                    0),
+                    op.aad != std::nullopt ? op.aad->GetPtr() : nullptr,
+                    op.aad != std::nullopt ? op.aad->GetSize() : 0),
                 0);
     }
 
     /* Finalize */
     {
-        ret = component::Ciphertext(out, len);
+        /* The tag should be part of the output.
+         * Hence, the total output size should be equal or greater than the tag size.
+         * Note that removing this check will lead to an overflow below. */
+        if ( tagSize > len ) {
+            printf("tagSize > len in %s\n", __FUNCTION__);
+            abort();
+        }
+
+        const size_t ciphertextSize = len - tagSize;
+
+        ret = component::Ciphertext(Buffer(out, ciphertextSize), Buffer(out + ciphertextSize, tagSize));
     }
 
 end:
@@ -1310,7 +1380,14 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt(operation::Symm
 
 #if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
     if ( toEVPAEAD(op.cipher.cipherType) != nullptr ) {
-        return AEAD_Encrypt(op, ds);
+        if ( op.tagSize != std::nullopt || op.aad != std::nullopt ) {
+            /* BoringSSL supports AEAD via EVP -- this can be enabled later.
+             * LibreSSL supports AEAD via EVP only for GCM and CCM.
+             * This can also be enabled later.
+             * For now, use native AEAD functions with these libraries.
+             */
+            return AEAD_Encrypt(op, ds);
+        }
     }
 #endif
 
@@ -1326,10 +1403,15 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt(operation::Symm
 }
 
 #if !defined(CRYPTOFUZZ_BORINGSSL)
-std::optional<component::Ciphertext> OpenSSL::OpSymmetricDecrypt_BIO(operation::SymmetricDecrypt& op, Datasource& ds) {
+std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_BIO(operation::SymmetricDecrypt& op, Datasource& ds) {
     (void)ds;
 
-    std::optional<component::MAC> ret = std::nullopt;
+    std::optional<component::Cleartext> ret = std::nullopt;
+
+    /* No support for AEAD tags and AAD with BIO */
+    if ( op.aad != std::nullopt || op.tag != std::nullopt ) {
+        return ret;
+    }
 
 #if defined(CRYPTOFUZZ_OPENSSL_102)
     using fuzzing::datasource::ID;
@@ -1397,7 +1479,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricDecrypt_BIO(operation::
             uint8_t out2[1];
             CF_CHECK_EQ(num2 = BIO_read(bio_cipher, out2, sizeof(out2)), 0);
         }
-        ret = component::Ciphertext(out, num);
+        ret = component::Cleartext(out, num);
     }
 
 end:
@@ -1408,10 +1490,35 @@ end:
 }
 #endif
 
-std::optional<component::Ciphertext> OpenSSL::OpSymmetricDecrypt_EVP(operation::SymmetricDecrypt& op, Datasource& ds) {
-    std::optional<component::MAC> ret = std::nullopt;
+std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::SymmetricDecrypt& op, Datasource& ds) {
+    std::optional<component::Cleartext> ret = std::nullopt;
 
-    util::Multipart parts;
+    if ( op.tag != std::nullopt || op.aad != std::nullopt ) {
+        /* Trying to treat non-AEAD with AEAD-specific features (tag, aad)
+         * leads to all kinds of gnarly memory bugs in OpenSSL.
+         * It is quite arguably misuse of the OpenSSL API, so don't do this.
+         */
+        using fuzzing::datasource::ID;
+        switch ( op.cipher.cipherType.Get() ) {
+            case ID("Cryptofuzz/Cipher/AES_128_CCM"):
+            case ID("Cryptofuzz/Cipher/AES_192_CCM"):
+            case ID("Cryptofuzz/Cipher/AES_256_CCM"):
+            case ID("Cryptofuzz/Cipher/AES_128_GCM"):
+            case ID("Cryptofuzz/Cipher/AES_192_GCM"):
+            case ID("Cryptofuzz/Cipher/AES_256_GCM"):
+            case ID("Cryptofuzz/Cipher/ARIA_128_CCM"):
+            case ID("Cryptofuzz/Cipher/ARIA_192_CCM"):
+            case ID("Cryptofuzz/Cipher/ARIA_256_CCM"):
+            case ID("Cryptofuzz/Cipher/ARIA_128_GCM"):
+            case ID("Cryptofuzz/Cipher/ARIA_192_GCM"):
+            case ID("Cryptofuzz/Cipher/ARIA_256_GCM"):
+            case ID("Cryptofuzz/Cipher/CHACHA20_POLY1305"):
+                break;
+            default:
+                return ret;
+        }
+    }
+    util::Multipart partsCiphertext, partsAAD;
 
     const EVP_CIPHER* cipher = nullptr;
     EVP_CIPHER_CTX* ctx = nullptr;
@@ -1429,34 +1536,56 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricDecrypt_EVP(operation::
         /* Must be a multiple of the block size of this cipher */
         //CF_CHECK_EQ(op.ciphertext.GetSize() % EVP_CIPHER_block_size(cipher), 0);
 
-        parts = util::ToParts(ds, op.ciphertext);
+        partsCiphertext = util::ToParts(ds, op.ciphertext);
+        if ( op.aad != std::nullopt ) {
+            partsAAD = util::ToParts(ds, *(op.aad));
+        }
 
         CF_CHECK_EQ(checkSetIVLength(op.cipher.cipherType.Get(), cipher, ctx, op.cipher.iv.GetSize()), true);
         CF_CHECK_EQ(checkSetKeyLength(cipher, ctx, op.cipher.key.GetSize()), true);
 
+#if !defined(CRYPTOFUZZ_LIBRESSL)
+        /* Set tag.
+         *
+         * LibreSSL supports setting the tag via the EVP interface with EVP_CTRL_GCM_SET_TAG for GCM,
+         * and EVP_CTRL_CCM_SET_TAG for CCM, but does not provide a generic setter like EVP_CTRL_AEAD_SET_TAG
+         * that also sets the tag for chacha20-poly1305.
+         * At the moment, LibreSSL should never arrive here if tag is not nullopt; it is direct to AEAD_Decrypt
+         * in that case.
+         * Later, this can be changed to use the EVP interface for GCM and CCM ciphers.
+         */
+        if ( op.tag != std::nullopt ) {
+            CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, op.tag->GetSize(), (void*)op.tag->GetPtr()), 1);
+        }
+#endif
+
         CF_CHECK_EQ(EVP_DecryptInit_ex(ctx, nullptr, nullptr, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr()), 1);
     }
 
-#if 0
-    /* Setting AAD */
-    {
-        int len = -1;
-        uint8_t aad[1] = {};
-        CF_CHECK_EQ(EVP_DecryptUpdate(ctx, nullptr, &len, aad, 1), 1);
-        outIdx += len;
-        out_size -= len;
-    }
-#endif
-
     /* Process */
-    for (const auto& part : parts) {
-        CF_CHECK_GTE(out_size, part.second + EVP_CIPHER_block_size(cipher));
+    {
+        /* Set AAD */
+        if ( op.aad != std::nullopt ) {
 
-        int len = -1;
-        CF_CHECK_EQ(EVP_DecryptUpdate(ctx, out + outIdx, &len, part.first, part.second), 1);
+            int len;
+            CF_CHECK_EQ(EVP_DecryptUpdate(ctx, nullptr, &len, nullptr, op.ciphertext.GetSize()), 1);
 
-        outIdx += len;
-        out_size -= len;
+            for (const auto& part : partsAAD) {
+                int len;
+                CF_CHECK_EQ(EVP_DecryptUpdate(ctx, nullptr, &len, part.first, part.second), 1);
+            }
+        }
+
+        /* Set ciphertext */
+        for (const auto& part : partsCiphertext) {
+            CF_CHECK_GTE(out_size, part.second + EVP_CIPHER_block_size(cipher));
+
+            int len = -1;
+            CF_CHECK_EQ(EVP_DecryptUpdate(ctx, out + outIdx, &len, part.first, part.second), 1);
+
+            outIdx += len;
+            out_size -= len;
+        }
     }
 
     /* Finalize */
@@ -1492,25 +1621,40 @@ std::optional<component::Cleartext> OpenSSL::AEAD_Decrypt(operation::SymmetricDe
     size_t out_size = op.cleartextSize;
     uint8_t* out = util::malloc(out_size);
 
+    const size_t tagSize = op.tag != std::nullopt ? op.tag->GetSize() : 0;
+
     /* Initialize */
     {
         CF_CHECK_NE(aead = toEVPAEAD(op.cipher.cipherType), nullptr);
-        CF_CHECK_NE(EVP_AEAD_CTX_init(&ctx, aead, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), EVP_AEAD_DEFAULT_TAG_LENGTH, NULL), 0);
+        CF_CHECK_NE(EVP_AEAD_CTX_init(
+                    &ctx,
+                    aead,
+                    op.cipher.key.GetPtr(),
+                    op.cipher.key.GetSize(),
+                    tagSize,
+                    nullptr), 0);
         ctxInitialized = true;
     }
 
     /* Process */
     {
+        /* OpenSSL and derivates consume the ciphertext + tag in concatenated form */
+        std::vector<uint8_t> ciphertextAndTag(op.ciphertext.GetSize() + tagSize);
+        memcpy(ciphertextAndTag.data(), op.ciphertext.GetPtr(), op.ciphertext.GetSize());
+        if ( tagSize > 0 ) {
+            memcpy(ciphertextAndTag.data() + op.ciphertext.GetSize(), op.tag->GetPtr(), tagSize);
+        }
+
         CF_CHECK_NE(EVP_AEAD_CTX_open(&ctx,
                     out,
                     &len,
                     out_size,
                     op.cipher.iv.GetPtr(),
                     op.cipher.iv.GetSize(),
-                    op.ciphertext.GetPtr(),
-                    op.ciphertext.GetSize(),
-                    NULL,
-                    0),
+                    ciphertextAndTag.data(),
+                    ciphertextAndTag.size(),
+                    op.aad != std::nullopt ? op.aad->GetPtr() : nullptr,
+                    op.aad != std::nullopt ? op.aad->GetSize() : 0),
                 0);
     }
 
@@ -1541,7 +1685,10 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt(operation::Symme
 
 #if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
     if ( toEVPAEAD(op.cipher.cipherType) != nullptr ) {
-        return AEAD_Decrypt(op, ds);
+        if ( op.tag != std::nullopt || op.aad != std::nullopt ) {
+            /* See comment at OpSymmetricEncrypt */
+            return AEAD_Decrypt(op, ds);
+        }
     }
 #endif
 

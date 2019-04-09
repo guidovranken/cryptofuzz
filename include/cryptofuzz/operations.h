@@ -53,14 +53,20 @@ class SymmetricEncrypt : public Operation {
     public:
         const component::Cleartext cleartext;
         const component::SymmetricCipher cipher;
+        const std::optional<component::AAD> aad;
 
         const uint64_t ciphertextSize;
+        const std::optional<uint64_t> tagSize;
 
         SymmetricEncrypt(Datasource& ds, component::Modifier modifier) :
             Operation(std::move(modifier)),
             cleartext(ds),
             cipher(ds),
-            ciphertextSize(ds.Get<uint64_t>() % (10*1024*1024))
+            aad(ds.Get<bool>() ? std::nullopt : std::make_optional<component::AAD>(ds)),
+            ciphertextSize(ds.Get<uint64_t>() % (10*1024*1024)),
+            tagSize( ds.Get<bool>() ?
+                    std::nullopt :
+                    std::make_optional<uint64_t>(ds.Get<uint64_t>() % (10*1024*1024)) )
         { }
 
         std::string ToString(void) const override;
@@ -68,8 +74,10 @@ class SymmetricEncrypt : public Operation {
 
 class SymmetricDecrypt : public Operation {
     public:
-        const component::Ciphertext ciphertext;
+        const Buffer ciphertext;
         const component::SymmetricCipher cipher;
+        const std::optional<component::Tag> tag;
+        const std::optional<component::AAD> aad;
 
         const uint64_t cleartextSize;
 
@@ -77,9 +85,11 @@ class SymmetricDecrypt : public Operation {
             Operation(std::move(modifier)),
             ciphertext(ds),
             cipher(ds),
+            tag(ds.Get<bool>() ? std::nullopt : std::make_optional<component::Tag>(ds)),
+            aad(ds.Get<bool>() ? std::nullopt : std::make_optional<component::AAD>(ds)),
             cleartextSize(ds.Get<uint64_t>() % (10*1024*1024))
         { }
-        SymmetricDecrypt(const SymmetricEncrypt& opSymmetricEncrypt, const component::Ciphertext ciphertext, const uint64_t cleartextSize, component::Modifier modifier);
+        SymmetricDecrypt(const SymmetricEncrypt& opSymmetricEncrypt, const component::Ciphertext ciphertext, const uint64_t cleartextSize, std::optional<component::AAD> aad, component::Modifier modifier);
 
         std::string ToString(void) const override;
 };

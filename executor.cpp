@@ -79,10 +79,13 @@ template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>
 
 template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>::postprocess(std::shared_ptr<Module> module, operation::SymmetricEncrypt& op, const ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>::ResultPair& result) const {
     if ( result.second != std::nullopt ) {
-        fuzzing::memory::memory_test_msan(result.second->GetPtr(), result.second->GetSize());
+        fuzzing::memory::memory_test_msan(result.second->ciphertext.GetPtr(), result.second->ciphertext.GetSize());
+        if ( result.second->tag != std::nullopt ) {
+            fuzzing::memory::memory_test_msan(result.second->tag->GetPtr(), result.second->tag->GetSize());
+        }
     }
 
-    if ( op.cleartext.GetSize() > 0 && result.second != std::nullopt && result.second->GetSize() > 0 ) {
+    if ( op.cleartext.GetSize() > 0 && result.second != std::nullopt && result.second->ciphertext.GetSize() > 0 ) {
         using fuzzing::datasource::ID;
 
         bool tryDecrypt = true;
@@ -123,6 +126,8 @@ template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>
                     /* The size of the output buffer that OpSymmetricDecrypt() must use. */
                     op.cleartext.GetSize() + 32,
 
+                    op.aad,
+
                     /* Empty modifier */
                     {});
 
@@ -132,7 +137,8 @@ template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>
                 /* Decryption failed, OpSymmetricDecrypt() returned std::nullopt */
                 printf("Cannot decrypt ciphertext\n\n");
                 printf("Operation:\n%s\n", op.ToString().c_str());
-                printf("Ciphertext: %s\n", util::HexDump(result.second->Get()).c_str());
+                printf("Ciphertext: %s\n", util::HexDump(result.second->ciphertext.Get()).c_str());
+                printf("Tag: %s\n", result.second->tag ? util::HexDump(result.second->tag->Get()).c_str() : "nullopt");
                 abort();
             } else if ( cleartext->Get() != op.cleartext.Get() ) {
                 /* Decryption ostensibly succeeded, but the cleartext returned by OpSymmetricDecrypt()
@@ -140,7 +146,8 @@ template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>
 
                 printf("Cannot decrypt ciphertext (but decryption ostensibly succeeded)\n\n");
                 printf("Operation:\n%s\n", op.ToString().c_str());
-                printf("Ciphertext: %s\n", util::HexDump(result.second->Get()).c_str());
+                printf("Ciphertext: %s\n", util::HexDump(result.second->ciphertext.Get()).c_str());
+                printf("Tag: %s\n", result.second->tag ? util::HexDump(result.second->tag->Get()).c_str() : "nullopt");
                 printf("Purported cleartext: %s\n", util::HexDump(cleartext->Get()).c_str());
                 abort();
             }
@@ -148,7 +155,7 @@ template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>
     }
 }
 
-template<> std::optional<component::Cleartext> ExecutorBase<component::Cleartext, operation::SymmetricEncrypt>::callModule(std::shared_ptr<Module> module, operation::SymmetricEncrypt& op) const {
+template<> std::optional<component::Ciphertext> ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>::callModule(std::shared_ptr<Module> module, operation::SymmetricEncrypt& op) const {
     return module->OpSymmetricEncrypt(op);
 }
 

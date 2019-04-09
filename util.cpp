@@ -1,4 +1,5 @@
 #include <cryptofuzz/util.h>
+#include <cryptofuzz/util_hexdump.h>
 #include <fuzzing/datasource/id.hpp>
 #include <iomanip>
 #include <map>
@@ -470,6 +471,22 @@ std::string ToString(const Buffer& buffer) {
 
 std::string ToString(const bool val) {
     return val ? "true" : "false";
+}
+
+std::string ToString(const component::Ciphertext& ciphertext) {
+    std::string ret;
+
+    ret += util::HexDump(ciphertext.ciphertext.GetPtr(), ciphertext.ciphertext.GetSize(), "ciphertext");
+
+    ret += "\n";
+
+    if ( ciphertext.tag != std::nullopt ) {
+        ret += util::HexDump(ciphertext.tag->GetPtr(), ciphertext.tag->GetSize(), "tag");
+    } else {
+        ret += "(tag is nullopt)";
+    }
+
+    return ret;
 }
 
 class HaveBadPointer {

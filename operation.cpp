@@ -30,6 +30,7 @@ std::string SymmetricEncrypt::ToString(void) const {
 
     ss << "operation name: SymmetricEncrypt" << std::endl;
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+    ss << "aad: " << (aad ? util::HexDump(aad->Get()) : "nullopt") << std::endl;
     ss << "cipher iv: " << util::HexDump(cipher.iv.Get()) << std::endl;
     ss << "cipher key: " << util::HexDump(cipher.key.Get()) << std::endl;
     ss << "cipher: " << util::SymmetricCipherIDToString(cipher.cipherType) << std::endl;
@@ -43,6 +44,8 @@ std::string SymmetricDecrypt::ToString(void) const {
 
     ss << "operation name: SymmetricDecrypt" << std::endl;
     ss << "ciphertext: " << util::HexDump(ciphertext.Get()) << std::endl;
+    ss << "tag: " << (tag ? util::HexDump(tag->Get()) : "nullopt") << std::endl;
+    ss << "aad: " << (aad ? util::HexDump(aad->Get()) : "nullopt") << std::endl;
     ss << "cipher iv: " << util::HexDump(cipher.iv.Get()) << std::endl;
     ss << "cipher key: " << util::HexDump(cipher.key.Get()) << std::endl;
     ss << "cipher: " << util::SymmetricCipherIDToString(cipher.cipherType) << std::endl;
@@ -52,10 +55,12 @@ std::string SymmetricDecrypt::ToString(void) const {
 }
 
 /* Construct SymmetricDecrypt from SymmetricEncrypt */
-SymmetricDecrypt::SymmetricDecrypt(const SymmetricEncrypt& opSymmetricEncrypt, const component::Ciphertext ciphertext, const uint64_t cleartextSize, component::Modifier modifier) :
+SymmetricDecrypt::SymmetricDecrypt(const SymmetricEncrypt& opSymmetricEncrypt, const component::Ciphertext ciphertext, const uint64_t cleartextSize, std::optional<component::AAD> aad, component::Modifier modifier) :
     Operation(std::move(modifier)),
-    ciphertext(ciphertext),
+    ciphertext(ciphertext.ciphertext),
     cipher(opSymmetricEncrypt.cipher),
+    tag(ciphertext.tag),
+    aad(aad),
     cleartextSize(cleartextSize)
 { }
 

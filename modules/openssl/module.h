@@ -42,9 +42,9 @@ class OpenSSL : public Module {
 #endif
 
 #if !defined(CRYPTOFUZZ_BORINGSSL)
-        std::optional<component::Ciphertext> OpSymmetricDecrypt_BIO(operation::SymmetricDecrypt& op, Datasource& ds);
+        std::optional<component::Cleartext> OpSymmetricDecrypt_BIO(operation::SymmetricDecrypt& op, Datasource& ds);
 #endif
-        std::optional<component::Ciphertext> OpSymmetricDecrypt_EVP(operation::SymmetricDecrypt& op, Datasource& ds);
+        std::optional<component::Cleartext> OpSymmetricDecrypt_EVP(operation::SymmetricDecrypt& op, Datasource& ds);
     public:
         OpenSSL(void);
         std::optional<component::Digest> OpDigest(operation::Digest& op) override;
