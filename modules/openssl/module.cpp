@@ -1235,7 +1235,22 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
         /* Must be a multiple of the block size of this cipher */
         //CF_CHECK_EQ(op.cleartext.GetSize() % EVP_CIPHER_block_size(cipher), 0);
 
-        partsCleartext = util::ToParts(ds, op.cleartext);
+        {
+            using fuzzing::datasource::ID;
+            switch ( op.cipher.cipherType.Get() ) {
+                case ID("Cryptofuzz/Cipher/AES_128_XTS"):
+                case ID("Cryptofuzz/Cipher/AES_256_XTS"):
+                    /* XTS does not support chunked updating.
+                     * See: https://github.com/openssl/openssl/issues/8699
+                     */
+                    partsCleartext = { { op.cleartext.GetPtr(), op.cleartext.GetSize()} };
+                    break;
+                default:
+                    partsCleartext = util::ToParts(ds, op.cleartext);
+                    break;
+            }
+        }
+
         if ( op.aad != std::nullopt ) {
             partsAAD = util::ToParts(ds, *(op.aad));
         }
@@ -1536,7 +1551,22 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
         /* Must be a multiple of the block size of this cipher */
         //CF_CHECK_EQ(op.ciphertext.GetSize() % EVP_CIPHER_block_size(cipher), 0);
 
-        partsCiphertext = util::ToParts(ds, op.ciphertext);
+        {
+            using fuzzing::datasource::ID;
+            switch ( op.cipher.cipherType.Get() ) {
+                case ID("Cryptofuzz/Cipher/AES_128_XTS"):
+                case ID("Cryptofuzz/Cipher/AES_256_XTS"):
+                    /* XTS does not support chunked updating.
+                     * See: https://github.com/openssl/openssl/issues/8699
+                     */
+                    partsCiphertext = { { op.ciphertext.GetPtr(), op.ciphertext.GetSize()} };
+                    break;
+                default:
+                    partsCiphertext = util::ToParts(ds, op.ciphertext);
+                    break;
+            }
+        }
+
         if ( op.aad != std::nullopt ) {
             partsAAD = util::ToParts(ds, *(op.aad));
         }
