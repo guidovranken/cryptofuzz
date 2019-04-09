@@ -5,7 +5,7 @@
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 #include <openssl/cmac.h>
-#if !defined(CRYPTOFUZZ_BORINGSSL)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
 #include <openssl/kdf.h>
 #endif
 #include <openssl/pem.h>
