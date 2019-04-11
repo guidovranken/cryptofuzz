@@ -36,6 +36,7 @@ class Cipher(Component):
 
         self.operation = ModeOfOperation(cipher)
         self.isAEAD = isAEAD
+        self.isWRAP = bool(re.search(r'_WRAP', cipher))
 
 class Digest(Component):
     def __init__(self, digest):
@@ -57,19 +58,20 @@ class Table(object):
     def Add(self, obj):
         self.table += [ obj ]
         self.checkDuplicates()
+    def getStructName(self, asType):
+        return "{}LUT{}".format(self.prefix, "_t" if asType else "")
     def GetTableDecl(self):
         outStr = ""
-        outStr += "constexpr struct {\n"
+        outStr += "struct " + self.getStructName(True) + "{\n"
         for part in self.tableDecl:
             outStr += '    ' + part + ';\n'
-        outStr += "} " + "{}LUT".format(self.prefix)
+        outStr += "};\n"
         return outStr
     def getTableEntryList(self):
         raise NotImplementedError()
     def ToCPPTable(self):
-        outStr = self.GetTableDecl()
-        outStr += "[] = "
-        outStr += '{\n'
+        outStr = ""
+        outStr += "constexpr " + self.getStructName(True) + " " + self.getStructName(False) + "[] = {\n"
         for index in xrange(len(self.table)):
             outTableEntry = [ ToCryptofuzzID(self.prefix, self.table[index].name) ]
             outTableEntry.extend( self.getTableEntryList(index) )
@@ -79,6 +81,22 @@ class Table(object):
                 exit(1)
 
             outStr += '    {' + ", ".join( outTableEntry ) + '},\n'
+
+        outStr += '};\n\n'
+
+        return outStr
+    def ToCPPMap(self):
+        outStr = ""
+        outStr += "std::map<uint64_t, " + self.getStructName(True) + ">" + " " + self.getStructName(False) + "Map = {\n";
+        for index in xrange(len(self.table)):
+            outTableEntry = [ ToCryptofuzzID(self.prefix, self.table[index].name) ]
+            outTableEntry.extend( self.getTableEntryList(index) )
+
+            if len(outTableEntry) != len(self.tableDecl):
+                print "Size of table declaration and size of table entry doesn't match, exiting"
+                exit(1)
+
+            outStr += '    {' + outTableEntry[0] + ", {" + ", ".join( outTableEntry ) + '} },\n'
 
         outStr += '};\n\n'
 
@@ -96,6 +114,7 @@ class CipherTable(Table):
                 "bool OFB",
                 "bool XTS",
                 "bool AEAD",
+                "bool WRAP",
         ]
 
         super(CipherTable, self).__init__('Cipher', tableDecl)
@@ -111,6 +130,7 @@ class CipherTable(Table):
         tableEntry += [ 'true' if 'OFB' in self.table[index].operation.modeDict else 'false' ]
         tableEntry += [ 'true' if 'XTS' in self.table[index].operation.modeDict else 'false' ]
         tableEntry += [ 'true' if self.table[index].isAEAD else 'false' ]
+        tableEntry += [ 'true' if self.table[index].isWRAP else 'false' ]
 
         return tableEntry
 
@@ -264,6 +284,7 @@ ciphers.Add( Cipher("SM4_ECB") )
 ciphers.Add( Cipher("SM4_OFB") )
 
 # AEAD ciphers
+ciphers.Add( Cipher("CHACHA20_POLY1305", True) )
 ciphers.Add( Cipher("XCHACHA20_POLY1305", True) )
 ciphers.Add( Cipher("AES_128_GCM", True) )
 ciphers.Add( Cipher("AES_128_GCM_SIV", True) )
@@ -327,4 +348,9 @@ tables = [ciphers, digests]
 
 with open('repository_tbl.h', 'wb') as fp:
     for table in tables:
+        fp.write(table.GetTableDecl())
         fp.write(table.ToCPPTable())
+with open('repository_map.h', 'wb') as fp:
+    for table in tables:
+        fp.write(table.GetTableDecl())
+        fp.write(table.ToCPPMap())

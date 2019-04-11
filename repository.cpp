@@ -1,46 +1,80 @@
 #include <fuzzing/datasource/id.hpp>
 #include <cryptofuzz/repository.h>
+#include "repository_map.h"
 
 namespace cryptofuzz {
 namespace repository {
 
-#include "repository_tbl.h"
-
-template <typename LUT>
-inline constexpr long LUTCheck(const uint64_t id, const LUT* lut, const size_t lutSize) noexcept {
-    for (size_t i = 0; i < lutSize; i++) {
-        if ( lut[i].id == id ) {
-            return i;
-        }
+bool IsCCM(const uint64_t id) {
+    try {
+        return CipherLUTMap.at(id).CCM;
+    } catch ( std::out_of_range ) {
+        return false;
     }
-
-    return -1;
 }
 
-template <uint64_t id>
-constexpr long digestIndex(void) {
-    constexpr long index = LUTCheck(id, DigestLUT, sizeof(DigestLUT) / sizeof(DigestLUT[0]));
-    static_assert(-1 != index, "Not a valid digest");
-    return index;
+bool IsCFB(const uint64_t id) {
+    try {
+        return CipherLUTMap.at(id).CFB;
+    } catch ( std::out_of_range ) {
+        return false;
+    }
 }
 
-template <uint64_t id>
-constexpr uint64_t Digest(void) {
-    (void)digestIndex<id>();
-    return id;
+bool IsCTR(const uint64_t id) {
+    try {
+        return CipherLUTMap.at(id).CTR;
+    } catch ( std::out_of_range ) {
+        return false;
+    }
 }
 
-template <uint64_t id>
-constexpr long cipherIndex(void) {
-    constexpr long index = LUTCheck(id, CipherLUT, sizeof(CipherLUT) / sizeof(CipherLUT[0]));
-    static_assert(-1 != index, "Not a valid cipher");
-    return index;
+bool IsECB(const uint64_t id) {
+    try {
+        return CipherLUTMap.at(id).ECB;
+    } catch ( std::out_of_range ) {
+        return false;
+    }
 }
 
-template <uint64_t id>
-constexpr uint64_t Cipher(void) {
-    (void)cipherIndex<id>();
-    return id;
+bool IsOCB(const uint64_t id) {
+    try {
+        return CipherLUTMap.at(id).OCB;
+    } catch ( std::out_of_range ) {
+        return false;
+    }
+}
+
+bool IsOFB(const uint64_t id) {
+    try {
+        return CipherLUTMap.at(id).OFB;
+    } catch ( std::out_of_range ) {
+        return false;
+    }
+}
+
+bool IsXTS(const uint64_t id) {
+    try {
+        return CipherLUTMap.at(id).XTS;
+    } catch ( std::out_of_range ) {
+        return false;
+    }
+}
+
+bool IsAEAD(const uint64_t id) {
+    try {
+        return CipherLUTMap.at(id).AEAD;
+    } catch ( std::out_of_range ) {
+        return false;
+    }
+}
+
+bool IsWRAP(const uint64_t id) {
+    try {
+        return CipherLUTMap.at(id).WRAP;
+    } catch ( std::out_of_range ) {
+        return false;
+    }
 }
 
 } /* namespace repository */

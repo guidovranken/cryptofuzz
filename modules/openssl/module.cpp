@@ -1,5 +1,6 @@
 #include "module.h"
 #include <cryptofuzz/util.h>
+#include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
 
 namespace cryptofuzz {
@@ -55,66 +56,66 @@ const EVP_MD* OpenSSL::toEVPMD(const component::DigestType& digestType) const {
 
     static const std::map<uint64_t, const EVP_MD*> LUT = {
 #if defined(CRYPTOFUZZ_BORINGSSL)
-        { ID("Cryptofuzz/Digest/SHA1"), EVP_sha1() },
-        { ID("Cryptofuzz/Digest/SHA224"), EVP_sha224() },
-        { ID("Cryptofuzz/Digest/SHA256"), EVP_sha256() },
-        { ID("Cryptofuzz/Digest/SHA384"), EVP_sha384() },
-        { ID("Cryptofuzz/Digest/SHA512"), EVP_sha512() },
-        { ID("Cryptofuzz/Digest/MD4"), EVP_md4() },
-        { ID("Cryptofuzz/Digest/MD5"), EVP_md5() },
-        { ID("Cryptofuzz/Digest/MD5_SHA1"), EVP_md5_sha1() },
+        { CF_DIGEST("SHA1"), EVP_sha1() },
+        { CF_DIGEST("SHA224"), EVP_sha224() },
+        { CF_DIGEST("SHA256"), EVP_sha256() },
+        { CF_DIGEST("SHA384"), EVP_sha384() },
+        { CF_DIGEST("SHA512"), EVP_sha512() },
+        { CF_DIGEST("MD4"), EVP_md4() },
+        { CF_DIGEST("MD5"), EVP_md5() },
+        { CF_DIGEST("MD5_SHA1"), EVP_md5_sha1() },
 #elif defined(CRYPTOFUZZ_LIBRESSL)
-        { ID("Cryptofuzz/Digest/SHA1"), EVP_sha1() },
-        { ID("Cryptofuzz/Digest/SHA224"), EVP_sha224() },
-        { ID("Cryptofuzz/Digest/SHA256"), EVP_sha256() },
-        { ID("Cryptofuzz/Digest/SHA384"), EVP_sha384() },
-        { ID("Cryptofuzz/Digest/SHA512"), EVP_sha512() },
-        { ID("Cryptofuzz/Digest/MD4"), EVP_md4() },
-        { ID("Cryptofuzz/Digest/MD5"), EVP_md5() },
-        { ID("Cryptofuzz/Digest/MD5_SHA1"), EVP_md5_sha1() },
-        { ID("Cryptofuzz/Digest/RIPEMD160"), EVP_ripemd160() },
-        { ID("Cryptofuzz/Digest/WHIRLPOOL"), EVP_whirlpool() },
-        { ID("Cryptofuzz/Digest/SM3"), EVP_sm3() },
-        { ID("Cryptofuzz/Digest/GOST-R-34.11-94"), EVP_gostr341194() },
-        { ID("Cryptofuzz/Digest/GOST-28147-89"), EVP_gost2814789imit() },
-        { ID("Cryptofuzz/Digest/STREEBOG-256"), EVP_streebog256() },
-        { ID("Cryptofuzz/Digest/STREEBOG-512"), EVP_streebog512() },
+        { CF_DIGEST("SHA1"), EVP_sha1() },
+        { CF_DIGEST("SHA224"), EVP_sha224() },
+        { CF_DIGEST("SHA256"), EVP_sha256() },
+        { CF_DIGEST("SHA384"), EVP_sha384() },
+        { CF_DIGEST("SHA512"), EVP_sha512() },
+        { CF_DIGEST("MD4"), EVP_md4() },
+        { CF_DIGEST("MD5"), EVP_md5() },
+        { CF_DIGEST("MD5_SHA1"), EVP_md5_sha1() },
+        { CF_DIGEST("RIPEMD160"), EVP_ripemd160() },
+        { CF_DIGEST("WHIRLPOOL"), EVP_whirlpool() },
+        { CF_DIGEST("SM3"), EVP_sm3() },
+        { CF_DIGEST("GOST-R-34.11-94"), EVP_gostr341194() },
+        { CF_DIGEST("GOST-28147-89"), EVP_gost2814789imit() },
+        { CF_DIGEST("STREEBOG-256"), EVP_streebog256() },
+        { CF_DIGEST("STREEBOG-512"), EVP_streebog512() },
 #elif defined(CRYPTOFUZZ_OPENSSL_102)
-        { ID("Cryptofuzz/Digest/SHA1"), EVP_sha1() },
-        { ID("Cryptofuzz/Digest/SHA224"), EVP_sha224() },
-        { ID("Cryptofuzz/Digest/SHA256"), EVP_sha256() },
-        { ID("Cryptofuzz/Digest/SHA384"), EVP_sha384() },
-        { ID("Cryptofuzz/Digest/SHA512"), EVP_sha512() },
-        { ID("Cryptofuzz/Digest/MD2"), EVP_md2() },
-        { ID("Cryptofuzz/Digest/MD4"), EVP_md4() },
-        { ID("Cryptofuzz/Digest/MD5"), EVP_md5() },
-        { ID("Cryptofuzz/Digest/MDC2"), EVP_mdc2() },
-        { ID("Cryptofuzz/Digest/RIPEMD160"), EVP_ripemd160() },
-        { ID("Cryptofuzz/Digest/WHIRLPOOL"), EVP_whirlpool() },
+        { CF_DIGEST("SHA1"), EVP_sha1() },
+        { CF_DIGEST("SHA224"), EVP_sha224() },
+        { CF_DIGEST("SHA256"), EVP_sha256() },
+        { CF_DIGEST("SHA384"), EVP_sha384() },
+        { CF_DIGEST("SHA512"), EVP_sha512() },
+        { CF_DIGEST("MD2"), EVP_md2() },
+        { CF_DIGEST("MD4"), EVP_md4() },
+        { CF_DIGEST("MD5"), EVP_md5() },
+        { CF_DIGEST("MDC2"), EVP_mdc2() },
+        { CF_DIGEST("RIPEMD160"), EVP_ripemd160() },
+        { CF_DIGEST("WHIRLPOOL"), EVP_whirlpool() },
 #else
-        { ID("Cryptofuzz/Digest/SHA1"), EVP_sha1() },
-        { ID("Cryptofuzz/Digest/SHA224"), EVP_sha224() },
-        { ID("Cryptofuzz/Digest/SHA256"), EVP_sha256() },
-        { ID("Cryptofuzz/Digest/SHA384"), EVP_sha384() },
-        { ID("Cryptofuzz/Digest/SHA512"), EVP_sha512() },
-        { ID("Cryptofuzz/Digest/MD2"), EVP_md2() },
-        { ID("Cryptofuzz/Digest/MD4"), EVP_md4() },
-        { ID("Cryptofuzz/Digest/MD5"), EVP_md5() },
-        { ID("Cryptofuzz/Digest/MD5_SHA1"), EVP_md5_sha1() },
-        { ID("Cryptofuzz/Digest/MDC2"), EVP_mdc2() },
-        { ID("Cryptofuzz/Digest/RIPEMD160"), EVP_ripemd160() },
-        { ID("Cryptofuzz/Digest/WHIRLPOOL"), EVP_whirlpool() },
-        { ID("Cryptofuzz/Digest/SM3"), EVP_sm3() },
-        { ID("Cryptofuzz/Digest/BLAKE2B512"), EVP_blake2b512() },
-        { ID("Cryptofuzz/Digest/BLAKE2S256"), EVP_blake2s256() },
-        { ID("Cryptofuzz/Digest/SHAKE128"), EVP_shake128() },
-        { ID("Cryptofuzz/Digest/SHAKE256"), EVP_shake256() },
-        { ID("Cryptofuzz/Digest/SHA3-224"), EVP_sha3_224() },
-        { ID("Cryptofuzz/Digest/SHA3-256"), EVP_sha3_256() },
-        { ID("Cryptofuzz/Digest/SHA3-384"), EVP_sha3_384() },
-        { ID("Cryptofuzz/Digest/SHA3-512"), EVP_sha3_512() },
-        { ID("Cryptofuzz/Digest/SHA512-224"), EVP_sha512_224() },
-        { ID("Cryptofuzz/Digest/SHA512-256"), EVP_sha512_256() },
+        { CF_DIGEST("SHA1"), EVP_sha1() },
+        { CF_DIGEST("SHA224"), EVP_sha224() },
+        { CF_DIGEST("SHA256"), EVP_sha256() },
+        { CF_DIGEST("SHA384"), EVP_sha384() },
+        { CF_DIGEST("SHA512"), EVP_sha512() },
+        { CF_DIGEST("MD2"), EVP_md2() },
+        { CF_DIGEST("MD4"), EVP_md4() },
+        { CF_DIGEST("MD5"), EVP_md5() },
+        { CF_DIGEST("MD5_SHA1"), EVP_md5_sha1() },
+        { CF_DIGEST("MDC2"), EVP_mdc2() },
+        { CF_DIGEST("RIPEMD160"), EVP_ripemd160() },
+        { CF_DIGEST("WHIRLPOOL"), EVP_whirlpool() },
+        { CF_DIGEST("SM3"), EVP_sm3() },
+        { CF_DIGEST("BLAKE2B512"), EVP_blake2b512() },
+        { CF_DIGEST("BLAKE2S256"), EVP_blake2s256() },
+        { CF_DIGEST("SHAKE128"), EVP_shake128() },
+        { CF_DIGEST("SHAKE256"), EVP_shake256() },
+        { CF_DIGEST("SHA3-224"), EVP_sha3_224() },
+        { CF_DIGEST("SHA3-256"), EVP_sha3_256() },
+        { CF_DIGEST("SHA3-384"), EVP_sha3_384() },
+        { CF_DIGEST("SHA3-512"), EVP_sha3_512() },
+        { CF_DIGEST("SHA512-224"), EVP_sha512_224() },
+        { CF_DIGEST("SHA512-256"), EVP_sha512_256() },
 #endif
     };
 
@@ -130,736 +131,736 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
 
     switch ( cipherType.Get() ) {
 #if defined(CRYPTOFUZZ_BORINGSSL)
-        case ID("Cryptofuzz/Cipher/DES_CBC"):
+        case CF_CIPHER("DES_CBC"):
             return EVP_des_cbc();
-        case ID("Cryptofuzz/Cipher/DES_EDE_CBC"):
+        case CF_CIPHER("DES_EDE_CBC"):
             return EVP_des_ede_cbc();
-        case ID("Cryptofuzz/Cipher/DES_EDE3_CBC"):
+        case CF_CIPHER("DES_EDE3_CBC"):
             return EVP_des_ede3_cbc();
-        case ID("Cryptofuzz/Cipher/DES_ECB"):
+        case CF_CIPHER("DES_ECB"):
             return EVP_des_ecb();
-        case ID("Cryptofuzz/Cipher/DES_EDE"):
+        case CF_CIPHER("DES_EDE"):
             return EVP_des_ede();
-        case ID("Cryptofuzz/Cipher/DES_EDE3"):
+        case CF_CIPHER("DES_EDE3"):
             return EVP_des_ede3();
-        case ID("Cryptofuzz/Cipher/RC2_CBC"):
+        case CF_CIPHER("RC2_CBC"):
             return EVP_rc2_cbc();
-        case ID("Cryptofuzz/Cipher/RC2_40_CBC"):
+        case CF_CIPHER("RC2_40_CBC"):
             return EVP_rc2_40_cbc();
-        case ID("Cryptofuzz/Cipher/AES_128_ECB"):
+        case CF_CIPHER("AES_128_ECB"):
             return EVP_aes_128_ecb();
-        case ID("Cryptofuzz/Cipher/AES_128_CBC"):
+        case CF_CIPHER("AES_128_CBC"):
             return EVP_aes_128_cbc();
-        case ID("Cryptofuzz/Cipher/AES_128_OFB"):
+        case CF_CIPHER("AES_128_OFB"):
             return EVP_aes_128_ofb();
-        case ID("Cryptofuzz/Cipher/AES_128_CTR"):
+        case CF_CIPHER("AES_128_CTR"):
             return EVP_aes_128_ctr();
-        case ID("Cryptofuzz/Cipher/AES_128_GCM"):
+        case CF_CIPHER("AES_128_GCM"):
             return EVP_aes_128_gcm();
-        case ID("Cryptofuzz/Cipher/AES_192_ECB"):
+        case CF_CIPHER("AES_192_ECB"):
             return EVP_aes_192_ecb();
-        case ID("Cryptofuzz/Cipher/AES_192_CBC"):
+        case CF_CIPHER("AES_192_CBC"):
             return EVP_aes_192_cbc();
-        case ID("Cryptofuzz/Cipher/AES_192_OFB"):
+        case CF_CIPHER("AES_192_OFB"):
             return EVP_aes_192_ofb();
-        case ID("Cryptofuzz/Cipher/AES_192_CTR"):
+        case CF_CIPHER("AES_192_CTR"):
             return EVP_aes_192_ctr();
-        case ID("Cryptofuzz/Cipher/AES_192_GCM"):
+        case CF_CIPHER("AES_192_GCM"):
             return EVP_aes_192_gcm();
-        case ID("Cryptofuzz/Cipher/AES_256_ECB"):
+        case CF_CIPHER("AES_256_ECB"):
             return EVP_aes_256_ecb();
-        case ID("Cryptofuzz/Cipher/AES_256_CBC"):
+        case CF_CIPHER("AES_256_CBC"):
             return EVP_aes_256_cbc();
-        case ID("Cryptofuzz/Cipher/AES_256_OFB"):
+        case CF_CIPHER("AES_256_OFB"):
             return EVP_aes_256_ofb();
-        case ID("Cryptofuzz/Cipher/AES_256_CTR"):
+        case CF_CIPHER("AES_256_CTR"):
             return EVP_aes_256_ctr();
-        case ID("Cryptofuzz/Cipher/AES_256_GCM"):
+        case CF_CIPHER("AES_256_GCM"):
             return EVP_aes_256_gcm();
-        case ID("Cryptofuzz/Cipher/RC4"):
+        case CF_CIPHER("RC4"):
             return EVP_rc4();
 #elif defined(CRYPTOFUZZ_LIBRESSL)
-        case ID("Cryptofuzz/Cipher/DES_CFB"):
+        case CF_CIPHER("DES_CFB"):
             return EVP_des_cfb();
-        case ID("Cryptofuzz/Cipher/DES_CFB1"):
+        case CF_CIPHER("DES_CFB1"):
             return EVP_des_cfb1();
-        case ID("Cryptofuzz/Cipher/DES_CFB8"):
+        case CF_CIPHER("DES_CFB8"):
             return EVP_des_cfb8();
-        case ID("Cryptofuzz/Cipher/DES_EDE_CFB"):
+        case CF_CIPHER("DES_EDE_CFB"):
             return EVP_des_ede_cfb();
-        case ID("Cryptofuzz/Cipher/DES_EDE3_CFB"):
+        case CF_CIPHER("DES_EDE3_CFB"):
             return EVP_des_ede3_cfb();
-        case ID("Cryptofuzz/Cipher/DES_EDE3_CFB1"):
+        case CF_CIPHER("DES_EDE3_CFB1"):
             return EVP_des_ede3_cfb1();
-        case ID("Cryptofuzz/Cipher/DES_EDE3_CFB8"):
+        case CF_CIPHER("DES_EDE3_CFB8"):
             return EVP_des_ede3_cfb8();
-        case ID("Cryptofuzz/Cipher/DES_OFB"):
+        case CF_CIPHER("DES_OFB"):
             return EVP_des_ofb();
-        case ID("Cryptofuzz/Cipher/DES_EDE_OFB"):
+        case CF_CIPHER("DES_EDE_OFB"):
             return EVP_des_ede_ofb();
-        case ID("Cryptofuzz/Cipher/DES_EDE3_OFB"):
+        case CF_CIPHER("DES_EDE3_OFB"):
             return EVP_des_ede3_ofb();
-        case ID("Cryptofuzz/Cipher/DESX_CBC"):
+        case CF_CIPHER("DESX_CBC"):
             return EVP_desx_cbc();
-        case ID("Cryptofuzz/Cipher/DES_CBC"):
+        case CF_CIPHER("DES_CBC"):
             return EVP_des_cbc();
-        case ID("Cryptofuzz/Cipher/DES_EDE_CBC"):
+        case CF_CIPHER("DES_EDE_CBC"):
             return EVP_des_ede_cbc();
-        case ID("Cryptofuzz/Cipher/DES_EDE3_CBC"):
+        case CF_CIPHER("DES_EDE3_CBC"):
             return EVP_des_ede3_cbc();
-        case ID("Cryptofuzz/Cipher/DES_ECB"):
+        case CF_CIPHER("DES_ECB"):
             return EVP_des_ecb();
-        case ID("Cryptofuzz/Cipher/DES_EDE"):
+        case CF_CIPHER("DES_EDE"):
             return EVP_des_ede();
-        case ID("Cryptofuzz/Cipher/DES_EDE3"):
+        case CF_CIPHER("DES_EDE3"):
             return EVP_des_ede3();
-        case ID("Cryptofuzz/Cipher/RC4"):
+        case CF_CIPHER("RC4"):
             return EVP_rc4();
-        case ID("Cryptofuzz/Cipher/RC4_40"):
+        case CF_CIPHER("RC4_40"):
             return EVP_rc4_40();
-        case ID("Cryptofuzz/Cipher/RC4_HMAC_MD5"):
+        case CF_CIPHER("RC4_HMAC_MD5"):
             return EVP_rc4_hmac_md5();
-        case ID("Cryptofuzz/Cipher/IDEA_ECB"):
+        case CF_CIPHER("IDEA_ECB"):
             return EVP_idea_ecb();
-        case ID("Cryptofuzz/Cipher/IDEA_CFB"):
+        case CF_CIPHER("IDEA_CFB"):
             return EVP_idea_cfb();
-        case ID("Cryptofuzz/Cipher/IDEA_OFB"):
+        case CF_CIPHER("IDEA_OFB"):
             return EVP_idea_ofb();
-        case ID("Cryptofuzz/Cipher/IDEA_CBC"):
+        case CF_CIPHER("IDEA_CBC"):
             return EVP_idea_cbc();
-        case ID("Cryptofuzz/Cipher/SM4_ECB"):
+        case CF_CIPHER("SM4_ECB"):
             return EVP_sm4_ecb();
-        case ID("Cryptofuzz/Cipher/SM4_CBC"):
+        case CF_CIPHER("SM4_CBC"):
             return EVP_sm4_cbc();
-        case ID("Cryptofuzz/Cipher/SM4_CFB"):
+        case CF_CIPHER("SM4_CFB"):
             return EVP_sm4_cfb();
-        case ID("Cryptofuzz/Cipher/SM4_OFB"):
+        case CF_CIPHER("SM4_OFB"):
             return EVP_sm4_ofb();
-        case ID("Cryptofuzz/Cipher/SM4_CTR"):
+        case CF_CIPHER("SM4_CTR"):
             return EVP_sm4_ctr();
-        case ID("Cryptofuzz/Cipher/RC2_ECB"):
+        case CF_CIPHER("RC2_ECB"):
             return EVP_rc2_ecb();
-        case ID("Cryptofuzz/Cipher/RC2_CFB"):
+        case CF_CIPHER("RC2_CFB"):
             return EVP_rc2_cfb();
-        case ID("Cryptofuzz/Cipher/RC2_OFB"):
+        case CF_CIPHER("RC2_OFB"):
             return EVP_rc2_ofb();
-        case ID("Cryptofuzz/Cipher/RC2_CBC"):
+        case CF_CIPHER("RC2_CBC"):
             return EVP_rc2_cbc();
-        case ID("Cryptofuzz/Cipher/RC2_40_CBC"):
+        case CF_CIPHER("RC2_40_CBC"):
             return EVP_rc2_40_cbc();
-        case ID("Cryptofuzz/Cipher/RC2_64_CBC"):
+        case CF_CIPHER("RC2_64_CBC"):
             return EVP_rc2_64_cbc();
-        case ID("Cryptofuzz/Cipher/BF_ECB"):
+        case CF_CIPHER("BF_ECB"):
             return EVP_bf_ecb();
-        case ID("Cryptofuzz/Cipher/BF_CFB"):
+        case CF_CIPHER("BF_CFB"):
             return EVP_bf_cfb();
-        case ID("Cryptofuzz/Cipher/BF_OFB"):
+        case CF_CIPHER("BF_OFB"):
             return EVP_bf_ofb();
-        case ID("Cryptofuzz/Cipher/BF_CBC"):
+        case CF_CIPHER("BF_CBC"):
             return EVP_bf_cbc();
-        case ID("Cryptofuzz/Cipher/CAST5_ECB"):
+        case CF_CIPHER("CAST5_ECB"):
             return EVP_cast5_ecb();
-        case ID("Cryptofuzz/Cipher/CAST5_CFB"):
+        case CF_CIPHER("CAST5_CFB"):
             return EVP_cast5_cfb();
-        case ID("Cryptofuzz/Cipher/CAST5_OFB"):
+        case CF_CIPHER("CAST5_OFB"):
             return EVP_cast5_ofb();
-        case ID("Cryptofuzz/Cipher/CAST5_CBC"):
+        case CF_CIPHER("CAST5_CBC"):
             return EVP_cast5_cbc();
-        case ID("Cryptofuzz/Cipher/AES_128_ECB"):
+        case CF_CIPHER("AES_128_ECB"):
             return EVP_aes_128_ecb();
-        case ID("Cryptofuzz/Cipher/AES_128_CBC"):
+        case CF_CIPHER("AES_128_CBC"):
             return EVP_aes_128_cbc();
-        case ID("Cryptofuzz/Cipher/AES_128_CFB"):
+        case CF_CIPHER("AES_128_CFB"):
             return EVP_aes_128_cfb();
-        case ID("Cryptofuzz/Cipher/AES_128_CFB1"):
+        case CF_CIPHER("AES_128_CFB1"):
             return EVP_aes_128_cfb1();
-        case ID("Cryptofuzz/Cipher/AES_128_CFB8"):
+        case CF_CIPHER("AES_128_CFB8"):
             return EVP_aes_128_cfb8();
-        case ID("Cryptofuzz/Cipher/AES_128_OFB"):
+        case CF_CIPHER("AES_128_OFB"):
             return EVP_aes_128_ofb();
-        case ID("Cryptofuzz/Cipher/AES_128_CTR"):
+        case CF_CIPHER("AES_128_CTR"):
             return EVP_aes_128_ctr();
-        case ID("Cryptofuzz/Cipher/AES_128_GCM"):
+        case CF_CIPHER("AES_128_GCM"):
             return EVP_aes_128_gcm();
-        case ID("Cryptofuzz/Cipher/AES_128_XTS"):
+        case CF_CIPHER("AES_128_XTS"):
             return EVP_aes_128_xts();
-        case ID("Cryptofuzz/Cipher/AES_128_CCM"):
+        case CF_CIPHER("AES_128_CCM"):
             return EVP_aes_128_ccm();
-        case ID("Cryptofuzz/Cipher/AES_128_WRAP"):
+        case CF_CIPHER("AES_128_WRAP"):
             return EVP_aes_128_wrap();
-        case ID("Cryptofuzz/Cipher/AES_192_ECB"):
+        case CF_CIPHER("AES_192_ECB"):
             return EVP_aes_192_ecb();
-        case ID("Cryptofuzz/Cipher/AES_192_CBC"):
+        case CF_CIPHER("AES_192_CBC"):
             return EVP_aes_192_cbc();
-        case ID("Cryptofuzz/Cipher/AES_192_CFB"):
+        case CF_CIPHER("AES_192_CFB"):
             return EVP_aes_192_cfb();
-        case ID("Cryptofuzz/Cipher/AES_192_CFB1"):
+        case CF_CIPHER("AES_192_CFB1"):
             return EVP_aes_192_cfb1();
-        case ID("Cryptofuzz/Cipher/AES_192_CFB8"):
+        case CF_CIPHER("AES_192_CFB8"):
             return EVP_aes_192_cfb8();
-        case ID("Cryptofuzz/Cipher/AES_192_OFB"):
+        case CF_CIPHER("AES_192_OFB"):
             return EVP_aes_192_ofb();
-        case ID("Cryptofuzz/Cipher/AES_192_CTR"):
+        case CF_CIPHER("AES_192_CTR"):
             return EVP_aes_192_ctr();
-        case ID("Cryptofuzz/Cipher/AES_192_GCM"):
+        case CF_CIPHER("AES_192_GCM"):
             return EVP_aes_192_gcm();
-        case ID("Cryptofuzz/Cipher/AES_192_CCM"):
+        case CF_CIPHER("AES_192_CCM"):
             return EVP_aes_192_ccm();
-        case ID("Cryptofuzz/Cipher/AES_192_WRAP"):
+        case CF_CIPHER("AES_192_WRAP"):
             return EVP_aes_192_wrap();
-        case ID("Cryptofuzz/Cipher/AES_256_ECB"):
+        case CF_CIPHER("AES_256_ECB"):
             return EVP_aes_256_ecb();
-        case ID("Cryptofuzz/Cipher/AES_256_CBC"):
+        case CF_CIPHER("AES_256_CBC"):
             return EVP_aes_256_cbc();
-        case ID("Cryptofuzz/Cipher/AES_256_CFB"):
+        case CF_CIPHER("AES_256_CFB"):
             return EVP_aes_256_cfb();
-        case ID("Cryptofuzz/Cipher/AES_256_CFB1"):
+        case CF_CIPHER("AES_256_CFB1"):
             return EVP_aes_256_cfb1();
-        case ID("Cryptofuzz/Cipher/AES_256_CFB8"):
+        case CF_CIPHER("AES_256_CFB8"):
             return EVP_aes_256_cfb8();
-        case ID("Cryptofuzz/Cipher/AES_256_OFB"):
+        case CF_CIPHER("AES_256_OFB"):
             return EVP_aes_256_ofb();
-        case ID("Cryptofuzz/Cipher/AES_256_CTR"):
+        case CF_CIPHER("AES_256_CTR"):
             return EVP_aes_256_ctr();
-        case ID("Cryptofuzz/Cipher/AES_256_GCM"):
+        case CF_CIPHER("AES_256_GCM"):
             return EVP_aes_256_gcm();
-        case ID("Cryptofuzz/Cipher/AES_256_XTS"):
+        case CF_CIPHER("AES_256_XTS"):
             return EVP_aes_256_xts();
-        case ID("Cryptofuzz/Cipher/AES_256_CCM"):
+        case CF_CIPHER("AES_256_CCM"):
             return EVP_aes_256_ccm();
-        case ID("Cryptofuzz/Cipher/AES_256_WRAP"):
+        case CF_CIPHER("AES_256_WRAP"):
             return EVP_aes_256_wrap();
-        case ID("Cryptofuzz/Cipher/AES_128_CBC_HMAC_SHA1"):
+        case CF_CIPHER("AES_128_CBC_HMAC_SHA1"):
             return EVP_aes_128_cbc_hmac_sha1();
-        case ID("Cryptofuzz/Cipher/AES_256_CBC_HMAC_SHA1"):
+        case CF_CIPHER("AES_256_CBC_HMAC_SHA1"):
             return EVP_aes_256_cbc_hmac_sha1();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_ECB"):
+        case CF_CIPHER("CAMELLIA_128_ECB"):
             return EVP_camellia_128_ecb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_CBC"):
+        case CF_CIPHER("CAMELLIA_128_CBC"):
             return EVP_camellia_128_cbc();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_CFB"):
+        case CF_CIPHER("CAMELLIA_128_CFB"):
             return EVP_camellia_128_cfb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_CFB1"):
+        case CF_CIPHER("CAMELLIA_128_CFB1"):
             return EVP_camellia_128_cfb1();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_CFB8"):
+        case CF_CIPHER("CAMELLIA_128_CFB8"):
             return EVP_camellia_128_cfb8();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_OFB"):
+        case CF_CIPHER("CAMELLIA_128_OFB"):
             return EVP_camellia_128_ofb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_ECB"):
+        case CF_CIPHER("CAMELLIA_192_ECB"):
             return EVP_camellia_192_ecb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_CBC"):
+        case CF_CIPHER("CAMELLIA_192_CBC"):
             return EVP_camellia_192_cbc();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_CFB"):
+        case CF_CIPHER("CAMELLIA_192_CFB"):
             return EVP_camellia_192_cfb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_CFB1"):
+        case CF_CIPHER("CAMELLIA_192_CFB1"):
             return EVP_camellia_192_cfb1();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_CFB8"):
+        case CF_CIPHER("CAMELLIA_192_CFB8"):
             return EVP_camellia_192_cfb8();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_OFB"):
+        case CF_CIPHER("CAMELLIA_192_OFB"):
             return EVP_camellia_192_ofb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_ECB"):
+        case CF_CIPHER("CAMELLIA_256_ECB"):
             return EVP_camellia_256_ecb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_CBC"):
+        case CF_CIPHER("CAMELLIA_256_CBC"):
             return EVP_camellia_256_cbc();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_CFB"):
+        case CF_CIPHER("CAMELLIA_256_CFB"):
             return EVP_camellia_256_cfb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_CFB1"):
+        case CF_CIPHER("CAMELLIA_256_CFB1"):
             return EVP_camellia_256_cfb1();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_CFB8"):
+        case CF_CIPHER("CAMELLIA_256_CFB8"):
             return EVP_camellia_256_cfb8();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_OFB"):
+        case CF_CIPHER("CAMELLIA_256_OFB"):
             return EVP_camellia_256_ofb();
-        case ID("Cryptofuzz/Cipher/CHACHA20"):
+        case CF_CIPHER("CHACHA20"):
             return EVP_chacha20();
 #elif defined(CRYPTOFUZZ_OPENSSL_102)
-        case ID("Cryptofuzz/Cipher/DES_CFB"):
+        case CF_CIPHER("DES_CFB"):
             return EVP_des_cfb();
-        case ID("Cryptofuzz/Cipher/DES_CFB1"):
+        case CF_CIPHER("DES_CFB1"):
             return EVP_des_cfb1();
-        case ID("Cryptofuzz/Cipher/DES_CFB8"):
+        case CF_CIPHER("DES_CFB8"):
             return EVP_des_cfb8();
-        case ID("Cryptofuzz/Cipher/DES_EDE_CFB"):
+        case CF_CIPHER("DES_EDE_CFB"):
             return EVP_des_ede_cfb();
-        case ID("Cryptofuzz/Cipher/DES_EDE3_CFB"):
+        case CF_CIPHER("DES_EDE3_CFB"):
             return EVP_des_ede3_cfb();
-        case ID("Cryptofuzz/Cipher/DES_EDE3_CFB1"):
+        case CF_CIPHER("DES_EDE3_CFB1"):
             return EVP_des_ede3_cfb1();
-        case ID("Cryptofuzz/Cipher/DES_EDE3_CFB8"):
+        case CF_CIPHER("DES_EDE3_CFB8"):
             return EVP_des_ede3_cfb8();
-        case ID("Cryptofuzz/Cipher/DES_OFB"):
+        case CF_CIPHER("DES_OFB"):
             return EVP_des_ofb();
-        case ID("Cryptofuzz/Cipher/DES_EDE_OFB"):
+        case CF_CIPHER("DES_EDE_OFB"):
             return EVP_des_ede_ofb();
-        case ID("Cryptofuzz/Cipher/DES_EDE3_OFB"):
+        case CF_CIPHER("DES_EDE3_OFB"):
             return EVP_des_ede3_ofb();
-        case ID("Cryptofuzz/Cipher/DESX_CBC"):
+        case CF_CIPHER("DESX_CBC"):
             return EVP_desx_cbc();
-        case ID("Cryptofuzz/Cipher/DES_CBC"):
+        case CF_CIPHER("DES_CBC"):
             return EVP_des_cbc();
-        case ID("Cryptofuzz/Cipher/DES_EDE_CBC"):
+        case CF_CIPHER("DES_EDE_CBC"):
             return EVP_des_ede_cbc();
-        case ID("Cryptofuzz/Cipher/DES_EDE3_CBC"):
+        case CF_CIPHER("DES_EDE3_CBC"):
             return EVP_des_ede3_cbc();
-        case ID("Cryptofuzz/Cipher/DES_ECB"):
+        case CF_CIPHER("DES_ECB"):
             return EVP_des_ecb();
-        case ID("Cryptofuzz/Cipher/DES_EDE"):
+        case CF_CIPHER("DES_EDE"):
             return EVP_des_ede();
-        case ID("Cryptofuzz/Cipher/DES_EDE3"):
+        case CF_CIPHER("DES_EDE3"):
             return EVP_des_ede3();
-        case ID("Cryptofuzz/Cipher/DES_EDE3_WRAP"):
+        case CF_CIPHER("DES_EDE3_WRAP"):
             return EVP_des_ede3_wrap();
-        case ID("Cryptofuzz/Cipher/RC4"):
+        case CF_CIPHER("RC4"):
             return EVP_rc4();
-        case ID("Cryptofuzz/Cipher/RC4_40"):
+        case CF_CIPHER("RC4_40"):
             return EVP_rc4_40();
-        case ID("Cryptofuzz/Cipher/RC4_HMAC_MD5"):
+        case CF_CIPHER("RC4_HMAC_MD5"):
             return EVP_rc4_hmac_md5();
-        case ID("Cryptofuzz/Cipher/IDEA_ECB"):
+        case CF_CIPHER("IDEA_ECB"):
             return EVP_idea_ecb();
-        case ID("Cryptofuzz/Cipher/IDEA_CFB"):
+        case CF_CIPHER("IDEA_CFB"):
             return EVP_idea_cfb();
-        case ID("Cryptofuzz/Cipher/IDEA_OFB"):
+        case CF_CIPHER("IDEA_OFB"):
             return EVP_idea_ofb();
-        case ID("Cryptofuzz/Cipher/IDEA_CBC"):
+        case CF_CIPHER("IDEA_CBC"):
             return EVP_idea_cbc();
-        case ID("Cryptofuzz/Cipher/SEED_ECB"):
+        case CF_CIPHER("SEED_ECB"):
             return EVP_seed_ecb();
-        case ID("Cryptofuzz/Cipher/SEED_CFB"):
+        case CF_CIPHER("SEED_CFB"):
             return EVP_seed_cfb();
-        case ID("Cryptofuzz/Cipher/SEED_OFB"):
+        case CF_CIPHER("SEED_OFB"):
             return EVP_seed_ofb();
-        case ID("Cryptofuzz/Cipher/SEED_CBC"):
+        case CF_CIPHER("SEED_CBC"):
             return EVP_seed_cbc();
-        case ID("Cryptofuzz/Cipher/RC2_ECB"):
+        case CF_CIPHER("RC2_ECB"):
             return EVP_rc2_ecb();
-        case ID("Cryptofuzz/Cipher/RC2_CFB"):
+        case CF_CIPHER("RC2_CFB"):
             return EVP_rc2_cfb();
-        case ID("Cryptofuzz/Cipher/RC2_OFB"):
+        case CF_CIPHER("RC2_OFB"):
             return EVP_rc2_ofb();
-        case ID("Cryptofuzz/Cipher/RC2_CBC"):
+        case CF_CIPHER("RC2_CBC"):
             return EVP_rc2_cbc();
-        case ID("Cryptofuzz/Cipher/RC2_40_CBC"):
+        case CF_CIPHER("RC2_40_CBC"):
             return EVP_rc2_40_cbc();
-        case ID("Cryptofuzz/Cipher/RC2_64_CBC"):
+        case CF_CIPHER("RC2_64_CBC"):
             return EVP_rc2_64_cbc();
-        case ID("Cryptofuzz/Cipher/BF_ECB"):
+        case CF_CIPHER("BF_ECB"):
             return EVP_bf_ecb();
-        case ID("Cryptofuzz/Cipher/BF_CFB"):
+        case CF_CIPHER("BF_CFB"):
             return EVP_bf_cfb();
-        case ID("Cryptofuzz/Cipher/BF_OFB"):
+        case CF_CIPHER("BF_OFB"):
             return EVP_bf_ofb();
-        case ID("Cryptofuzz/Cipher/BF_CBC"):
+        case CF_CIPHER("BF_CBC"):
             return EVP_bf_cbc();
-        case ID("Cryptofuzz/Cipher/CAST5_ECB"):
+        case CF_CIPHER("CAST5_ECB"):
             return EVP_cast5_ecb();
-        case ID("Cryptofuzz/Cipher/CAST5_CFB"):
+        case CF_CIPHER("CAST5_CFB"):
             return EVP_cast5_cfb();
-        case ID("Cryptofuzz/Cipher/CAST5_OFB"):
+        case CF_CIPHER("CAST5_OFB"):
             return EVP_cast5_ofb();
-        case ID("Cryptofuzz/Cipher/CAST5_CBC"):
+        case CF_CIPHER("CAST5_CBC"):
             return EVP_cast5_cbc();
-        case ID("Cryptofuzz/Cipher/RC5_32_12_16_ECB"):
+        case CF_CIPHER("RC5_32_12_16_ECB"):
             return EVP_rc5_32_12_16_ecb();
-        case ID("Cryptofuzz/Cipher/RC5_32_12_16_CFB"):
+        case CF_CIPHER("RC5_32_12_16_CFB"):
             return EVP_rc5_32_12_16_cfb();
-        case ID("Cryptofuzz/Cipher/RC5_32_12_16_OFB"):
+        case CF_CIPHER("RC5_32_12_16_OFB"):
             return EVP_rc5_32_12_16_ofb();
-        case ID("Cryptofuzz/Cipher/RC5_32_12_16_CBC"):
+        case CF_CIPHER("RC5_32_12_16_CBC"):
             return EVP_rc5_32_12_16_cbc();
-        case ID("Cryptofuzz/Cipher/AES_128_ECB"):
+        case CF_CIPHER("AES_128_ECB"):
             return EVP_aes_128_ecb();
-        case ID("Cryptofuzz/Cipher/AES_128_CBC"):
+        case CF_CIPHER("AES_128_CBC"):
             return EVP_aes_128_cbc();
-        case ID("Cryptofuzz/Cipher/AES_128_CFB"):
+        case CF_CIPHER("AES_128_CFB"):
             return EVP_aes_128_cfb();
-        case ID("Cryptofuzz/Cipher/AES_128_CFB1"):
+        case CF_CIPHER("AES_128_CFB1"):
             return EVP_aes_128_cfb1();
-        case ID("Cryptofuzz/Cipher/AES_128_CFB8"):
+        case CF_CIPHER("AES_128_CFB8"):
             return EVP_aes_128_cfb8();
-        case ID("Cryptofuzz/Cipher/AES_128_OFB"):
+        case CF_CIPHER("AES_128_OFB"):
             return EVP_aes_128_ofb();
-        case ID("Cryptofuzz/Cipher/AES_128_CTR"):
+        case CF_CIPHER("AES_128_CTR"):
             return EVP_aes_128_ctr();
-        case ID("Cryptofuzz/Cipher/AES_128_GCM"):
+        case CF_CIPHER("AES_128_GCM"):
             return EVP_aes_128_gcm();
-        case ID("Cryptofuzz/Cipher/AES_128_XTS"):
+        case CF_CIPHER("AES_128_XTS"):
             return EVP_aes_128_xts();
-        case ID("Cryptofuzz/Cipher/AES_128_CCM"):
+        case CF_CIPHER("AES_128_CCM"):
             return EVP_aes_128_ccm();
-        case ID("Cryptofuzz/Cipher/AES_128_WRAP"):
+        case CF_CIPHER("AES_128_WRAP"):
             return EVP_aes_128_wrap();
-        case ID("Cryptofuzz/Cipher/AES_192_ECB"):
+        case CF_CIPHER("AES_192_ECB"):
             return EVP_aes_192_ecb();
-        case ID("Cryptofuzz/Cipher/AES_192_CBC"):
+        case CF_CIPHER("AES_192_CBC"):
             return EVP_aes_192_cbc();
-        case ID("Cryptofuzz/Cipher/AES_192_CFB"):
+        case CF_CIPHER("AES_192_CFB"):
             return EVP_aes_192_cfb();
-        case ID("Cryptofuzz/Cipher/AES_192_CFB1"):
+        case CF_CIPHER("AES_192_CFB1"):
             return EVP_aes_192_cfb1();
-        case ID("Cryptofuzz/Cipher/AES_192_CFB8"):
+        case CF_CIPHER("AES_192_CFB8"):
             return EVP_aes_192_cfb8();
-        case ID("Cryptofuzz/Cipher/AES_192_OFB"):
+        case CF_CIPHER("AES_192_OFB"):
             return EVP_aes_192_ofb();
-        case ID("Cryptofuzz/Cipher/AES_192_CTR"):
+        case CF_CIPHER("AES_192_CTR"):
             return EVP_aes_192_ctr();
-        case ID("Cryptofuzz/Cipher/AES_192_GCM"):
+        case CF_CIPHER("AES_192_GCM"):
             return EVP_aes_192_gcm();
-        case ID("Cryptofuzz/Cipher/AES_192_CCM"):
+        case CF_CIPHER("AES_192_CCM"):
             return EVP_aes_192_ccm();
-        case ID("Cryptofuzz/Cipher/AES_192_WRAP"):
+        case CF_CIPHER("AES_192_WRAP"):
             return EVP_aes_192_wrap();
-        case ID("Cryptofuzz/Cipher/AES_256_ECB"):
+        case CF_CIPHER("AES_256_ECB"):
             return EVP_aes_256_ecb();
-        case ID("Cryptofuzz/Cipher/AES_256_CBC"):
+        case CF_CIPHER("AES_256_CBC"):
             return EVP_aes_256_cbc();
-        case ID("Cryptofuzz/Cipher/AES_256_CFB"):
+        case CF_CIPHER("AES_256_CFB"):
             return EVP_aes_256_cfb();
-        case ID("Cryptofuzz/Cipher/AES_256_CFB1"):
+        case CF_CIPHER("AES_256_CFB1"):
             return EVP_aes_256_cfb1();
-        case ID("Cryptofuzz/Cipher/AES_256_CFB8"):
+        case CF_CIPHER("AES_256_CFB8"):
             return EVP_aes_256_cfb8();
-        case ID("Cryptofuzz/Cipher/AES_256_OFB"):
+        case CF_CIPHER("AES_256_OFB"):
             return EVP_aes_256_ofb();
-        case ID("Cryptofuzz/Cipher/AES_256_CTR"):
+        case CF_CIPHER("AES_256_CTR"):
             return EVP_aes_256_ctr();
-        case ID("Cryptofuzz/Cipher/AES_256_GCM"):
+        case CF_CIPHER("AES_256_GCM"):
             return EVP_aes_256_gcm();
-        case ID("Cryptofuzz/Cipher/AES_256_XTS"):
+        case CF_CIPHER("AES_256_XTS"):
             return EVP_aes_256_xts();
-        case ID("Cryptofuzz/Cipher/AES_256_CCM"):
+        case CF_CIPHER("AES_256_CCM"):
             return EVP_aes_256_ccm();
-        case ID("Cryptofuzz/Cipher/AES_256_WRAP"):
+        case CF_CIPHER("AES_256_WRAP"):
             return EVP_aes_256_wrap();
-        case ID("Cryptofuzz/Cipher/AES_128_CBC_HMAC_SHA1"):
+        case CF_CIPHER("AES_128_CBC_HMAC_SHA1"):
             return EVP_aes_128_cbc_hmac_sha1();
-        case ID("Cryptofuzz/Cipher/AES_256_CBC_HMAC_SHA1"):
+        case CF_CIPHER("AES_256_CBC_HMAC_SHA1"):
             return EVP_aes_256_cbc_hmac_sha1();
-        case ID("Cryptofuzz/Cipher/AES_128_CBC_HMAC_SHA256"):
+        case CF_CIPHER("AES_128_CBC_HMAC_SHA256"):
             return EVP_aes_128_cbc_hmac_sha256();
-        case ID("Cryptofuzz/Cipher/AES_256_CBC_HMAC_SHA256"):
+        case CF_CIPHER("AES_256_CBC_HMAC_SHA256"):
             return EVP_aes_256_cbc_hmac_sha256();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_ECB"):
+        case CF_CIPHER("CAMELLIA_128_ECB"):
             return EVP_camellia_128_ecb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_CBC"):
+        case CF_CIPHER("CAMELLIA_128_CBC"):
             return EVP_camellia_128_cbc();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_CFB"):
+        case CF_CIPHER("CAMELLIA_128_CFB"):
             return EVP_camellia_128_cfb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_CFB1"):
+        case CF_CIPHER("CAMELLIA_128_CFB1"):
             return EVP_camellia_128_cfb1();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_CFB8"):
+        case CF_CIPHER("CAMELLIA_128_CFB8"):
             return EVP_camellia_128_cfb8();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_OFB"):
+        case CF_CIPHER("CAMELLIA_128_OFB"):
             return EVP_camellia_128_ofb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_ECB"):
+        case CF_CIPHER("CAMELLIA_192_ECB"):
             return EVP_camellia_192_ecb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_CBC"):
+        case CF_CIPHER("CAMELLIA_192_CBC"):
             return EVP_camellia_192_cbc();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_CFB"):
+        case CF_CIPHER("CAMELLIA_192_CFB"):
             return EVP_camellia_192_cfb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_CFB1"):
+        case CF_CIPHER("CAMELLIA_192_CFB1"):
             return EVP_camellia_192_cfb1();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_CFB8"):
+        case CF_CIPHER("CAMELLIA_192_CFB8"):
             return EVP_camellia_192_cfb8();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_OFB"):
+        case CF_CIPHER("CAMELLIA_192_OFB"):
             return EVP_camellia_192_ofb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_ECB"):
+        case CF_CIPHER("CAMELLIA_256_ECB"):
             return EVP_camellia_256_ecb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_CBC"):
+        case CF_CIPHER("CAMELLIA_256_CBC"):
             return EVP_camellia_256_cbc();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_CFB"):
+        case CF_CIPHER("CAMELLIA_256_CFB"):
             return EVP_camellia_256_cfb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_CFB1"):
+        case CF_CIPHER("CAMELLIA_256_CFB1"):
             return EVP_camellia_256_cfb1();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_CFB8"):
+        case CF_CIPHER("CAMELLIA_256_CFB8"):
             return EVP_camellia_256_cfb8();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_OFB"):
+        case CF_CIPHER("CAMELLIA_256_OFB"):
             return EVP_camellia_256_ofb();
 #else
-        case ID("Cryptofuzz/Cipher/DES_CFB"):
+        case CF_CIPHER("DES_CFB"):
             return EVP_des_cfb();
-        case ID("Cryptofuzz/Cipher/DES_CFB1"):
+        case CF_CIPHER("DES_CFB1"):
             return EVP_des_cfb1();
-        case ID("Cryptofuzz/Cipher/DES_CFB8"):
+        case CF_CIPHER("DES_CFB8"):
             return EVP_des_cfb8();
-        case ID("Cryptofuzz/Cipher/DES_EDE_CFB"):
+        case CF_CIPHER("DES_EDE_CFB"):
             return EVP_des_ede_cfb();
-        case ID("Cryptofuzz/Cipher/DES_EDE3_CFB"):
+        case CF_CIPHER("DES_EDE3_CFB"):
             return EVP_des_ede3_cfb();
-        case ID("Cryptofuzz/Cipher/DES_EDE3_CFB1"):
+        case CF_CIPHER("DES_EDE3_CFB1"):
             return EVP_des_ede3_cfb1();
-        case ID("Cryptofuzz/Cipher/DES_EDE3_CFB8"):
+        case CF_CIPHER("DES_EDE3_CFB8"):
             return EVP_des_ede3_cfb8();
-        case ID("Cryptofuzz/Cipher/DES_OFB"):
+        case CF_CIPHER("DES_OFB"):
             return EVP_des_ofb();
-        case ID("Cryptofuzz/Cipher/DES_EDE_OFB"):
+        case CF_CIPHER("DES_EDE_OFB"):
             return EVP_des_ede_ofb();
-        case ID("Cryptofuzz/Cipher/DES_EDE3_OFB"):
+        case CF_CIPHER("DES_EDE3_OFB"):
             return EVP_des_ede3_ofb();
-        case ID("Cryptofuzz/Cipher/DESX_CBC"):
+        case CF_CIPHER("DESX_CBC"):
             return EVP_desx_cbc();
-        case ID("Cryptofuzz/Cipher/DES_CBC"):
+        case CF_CIPHER("DES_CBC"):
             return EVP_des_cbc();
-        case ID("Cryptofuzz/Cipher/DES_EDE_CBC"):
+        case CF_CIPHER("DES_EDE_CBC"):
             return EVP_des_ede_cbc();
-        case ID("Cryptofuzz/Cipher/DES_EDE3_CBC"):
+        case CF_CIPHER("DES_EDE3_CBC"):
             return EVP_des_ede3_cbc();
-        case ID("Cryptofuzz/Cipher/DES_ECB"):
+        case CF_CIPHER("DES_ECB"):
             return EVP_des_ecb();
-        case ID("Cryptofuzz/Cipher/DES_EDE"):
+        case CF_CIPHER("DES_EDE"):
             return EVP_des_ede();
-        case ID("Cryptofuzz/Cipher/DES_EDE3"):
+        case CF_CIPHER("DES_EDE3"):
             return EVP_des_ede3();
-        case ID("Cryptofuzz/Cipher/DES_EDE3_WRAP"):
+        case CF_CIPHER("DES_EDE3_WRAP"):
             return EVP_des_ede3_wrap();
-        case ID("Cryptofuzz/Cipher/RC4"):
+        case CF_CIPHER("RC4"):
             return EVP_rc4();
-        case ID("Cryptofuzz/Cipher/RC4_40"):
+        case CF_CIPHER("RC4_40"):
             return EVP_rc4_40();
-        case ID("Cryptofuzz/Cipher/RC4_HMAC_MD5"):
+        case CF_CIPHER("RC4_HMAC_MD5"):
             return EVP_rc4_hmac_md5();
-        case ID("Cryptofuzz/Cipher/IDEA_ECB"):
+        case CF_CIPHER("IDEA_ECB"):
             return EVP_idea_ecb();
-        case ID("Cryptofuzz/Cipher/IDEA_CFB"):
+        case CF_CIPHER("IDEA_CFB"):
             return EVP_idea_cfb();
-        case ID("Cryptofuzz/Cipher/IDEA_OFB"):
+        case CF_CIPHER("IDEA_OFB"):
             return EVP_idea_ofb();
-        case ID("Cryptofuzz/Cipher/IDEA_CBC"):
+        case CF_CIPHER("IDEA_CBC"):
             return EVP_idea_cbc();
-        case ID("Cryptofuzz/Cipher/SEED_ECB"):
+        case CF_CIPHER("SEED_ECB"):
             return EVP_seed_ecb();
-        case ID("Cryptofuzz/Cipher/SEED_CFB"):
+        case CF_CIPHER("SEED_CFB"):
             return EVP_seed_cfb();
-        case ID("Cryptofuzz/Cipher/SEED_OFB"):
+        case CF_CIPHER("SEED_OFB"):
             return EVP_seed_ofb();
-        case ID("Cryptofuzz/Cipher/SEED_CBC"):
+        case CF_CIPHER("SEED_CBC"):
             return EVP_seed_cbc();
-        case ID("Cryptofuzz/Cipher/SM4_ECB"):
+        case CF_CIPHER("SM4_ECB"):
             return EVP_sm4_ecb();
-        case ID("Cryptofuzz/Cipher/SM4_CBC"):
+        case CF_CIPHER("SM4_CBC"):
             return EVP_sm4_cbc();
-        case ID("Cryptofuzz/Cipher/SM4_CFB"):
+        case CF_CIPHER("SM4_CFB"):
             return EVP_sm4_cfb();
-        case ID("Cryptofuzz/Cipher/SM4_OFB"):
+        case CF_CIPHER("SM4_OFB"):
             return EVP_sm4_ofb();
-        case ID("Cryptofuzz/Cipher/SM4_CTR"):
+        case CF_CIPHER("SM4_CTR"):
             return EVP_sm4_ctr();
-        case ID("Cryptofuzz/Cipher/RC2_ECB"):
+        case CF_CIPHER("RC2_ECB"):
             return EVP_rc2_ecb();
-        case ID("Cryptofuzz/Cipher/RC2_CFB"):
+        case CF_CIPHER("RC2_CFB"):
             return EVP_rc2_cfb();
-        case ID("Cryptofuzz/Cipher/RC2_OFB"):
+        case CF_CIPHER("RC2_OFB"):
             return EVP_rc2_ofb();
-        case ID("Cryptofuzz/Cipher/RC2_CBC"):
+        case CF_CIPHER("RC2_CBC"):
             return EVP_rc2_cbc();
-        case ID("Cryptofuzz/Cipher/RC2_40_CBC"):
+        case CF_CIPHER("RC2_40_CBC"):
             return EVP_rc2_40_cbc();
-        case ID("Cryptofuzz/Cipher/RC2_64_CBC"):
+        case CF_CIPHER("RC2_64_CBC"):
             return EVP_rc2_64_cbc();
-        case ID("Cryptofuzz/Cipher/BF_ECB"):
+        case CF_CIPHER("BF_ECB"):
             return EVP_bf_ecb();
-        case ID("Cryptofuzz/Cipher/BF_CFB"):
+        case CF_CIPHER("BF_CFB"):
             return EVP_bf_cfb();
-        case ID("Cryptofuzz/Cipher/BF_OFB"):
+        case CF_CIPHER("BF_OFB"):
             return EVP_bf_ofb();
-        case ID("Cryptofuzz/Cipher/BF_CBC"):
+        case CF_CIPHER("BF_CBC"):
             return EVP_bf_cbc();
-        case ID("Cryptofuzz/Cipher/CAST5_ECB"):
+        case CF_CIPHER("CAST5_ECB"):
             return EVP_cast5_ecb();
-        case ID("Cryptofuzz/Cipher/CAST5_CFB"):
+        case CF_CIPHER("CAST5_CFB"):
             return EVP_cast5_cfb();
-        case ID("Cryptofuzz/Cipher/CAST5_OFB"):
+        case CF_CIPHER("CAST5_OFB"):
             return EVP_cast5_ofb();
-        case ID("Cryptofuzz/Cipher/CAST5_CBC"):
+        case CF_CIPHER("CAST5_CBC"):
             return EVP_cast5_cbc();
-        case ID("Cryptofuzz/Cipher/RC5_32_12_16_ECB"):
+        case CF_CIPHER("RC5_32_12_16_ECB"):
             return EVP_rc5_32_12_16_ecb();
-        case ID("Cryptofuzz/Cipher/RC5_32_12_16_CFB"):
+        case CF_CIPHER("RC5_32_12_16_CFB"):
             return EVP_rc5_32_12_16_cfb();
-        case ID("Cryptofuzz/Cipher/RC5_32_12_16_OFB"):
+        case CF_CIPHER("RC5_32_12_16_OFB"):
             return EVP_rc5_32_12_16_ofb();
-        case ID("Cryptofuzz/Cipher/RC5_32_12_16_CBC"):
+        case CF_CIPHER("RC5_32_12_16_CBC"):
             return EVP_rc5_32_12_16_cbc();
-        case ID("Cryptofuzz/Cipher/AES_128_ECB"):
+        case CF_CIPHER("AES_128_ECB"):
             return EVP_aes_128_ecb();
-        case ID("Cryptofuzz/Cipher/AES_128_CBC"):
+        case CF_CIPHER("AES_128_CBC"):
             return EVP_aes_128_cbc();
-        case ID("Cryptofuzz/Cipher/AES_128_CFB"):
+        case CF_CIPHER("AES_128_CFB"):
             return EVP_aes_128_cfb();
-        case ID("Cryptofuzz/Cipher/AES_128_CFB1"):
+        case CF_CIPHER("AES_128_CFB1"):
             return EVP_aes_128_cfb1();
-        case ID("Cryptofuzz/Cipher/AES_128_CFB8"):
+        case CF_CIPHER("AES_128_CFB8"):
             return EVP_aes_128_cfb8();
-        case ID("Cryptofuzz/Cipher/AES_128_OFB"):
+        case CF_CIPHER("AES_128_OFB"):
             return EVP_aes_128_ofb();
-        case ID("Cryptofuzz/Cipher/AES_128_CTR"):
+        case CF_CIPHER("AES_128_CTR"):
             return EVP_aes_128_ctr();
-        case ID("Cryptofuzz/Cipher/AES_128_GCM"):
+        case CF_CIPHER("AES_128_GCM"):
             return EVP_aes_128_gcm();
-        case ID("Cryptofuzz/Cipher/AES_128_OCB"):
+        case CF_CIPHER("AES_128_OCB"):
             return EVP_aes_128_ocb();
-        case ID("Cryptofuzz/Cipher/AES_128_XTS"):
+        case CF_CIPHER("AES_128_XTS"):
             return EVP_aes_128_xts();
-        case ID("Cryptofuzz/Cipher/AES_128_CCM"):
+        case CF_CIPHER("AES_128_CCM"):
             return EVP_aes_128_ccm();
-        case ID("Cryptofuzz/Cipher/AES_128_WRAP"):
+        case CF_CIPHER("AES_128_WRAP"):
             return EVP_aes_128_wrap();
-        case ID("Cryptofuzz/Cipher/AES_128_WRAP_PAD"):
+        case CF_CIPHER("AES_128_WRAP_PAD"):
             return EVP_aes_128_wrap_pad();
-        case ID("Cryptofuzz/Cipher/AES_192_ECB"):
+        case CF_CIPHER("AES_192_ECB"):
             return EVP_aes_192_ecb();
-        case ID("Cryptofuzz/Cipher/AES_192_CBC"):
+        case CF_CIPHER("AES_192_CBC"):
             return EVP_aes_192_cbc();
-        case ID("Cryptofuzz/Cipher/AES_192_CFB"):
+        case CF_CIPHER("AES_192_CFB"):
             return EVP_aes_192_cfb();
-        case ID("Cryptofuzz/Cipher/AES_192_CFB1"):
+        case CF_CIPHER("AES_192_CFB1"):
             return EVP_aes_192_cfb1();
-        case ID("Cryptofuzz/Cipher/AES_192_CFB8"):
+        case CF_CIPHER("AES_192_CFB8"):
             return EVP_aes_192_cfb8();
-        case ID("Cryptofuzz/Cipher/AES_192_OFB"):
+        case CF_CIPHER("AES_192_OFB"):
             return EVP_aes_192_ofb();
-        case ID("Cryptofuzz/Cipher/AES_192_CTR"):
+        case CF_CIPHER("AES_192_CTR"):
             return EVP_aes_192_ctr();
-        case ID("Cryptofuzz/Cipher/AES_192_GCM"):
+        case CF_CIPHER("AES_192_GCM"):
             return EVP_aes_192_gcm();
-        case ID("Cryptofuzz/Cipher/AES_192_CCM"):
+        case CF_CIPHER("AES_192_CCM"):
             return EVP_aes_192_ccm();
-        case ID("Cryptofuzz/Cipher/AES_192_WRAP"):
+        case CF_CIPHER("AES_192_WRAP"):
             return EVP_aes_192_wrap();
-        case ID("Cryptofuzz/Cipher/AES_192_WRAP_PAD"):
+        case CF_CIPHER("AES_192_WRAP_PAD"):
             return EVP_aes_192_wrap_pad();
-        case ID("Cryptofuzz/Cipher/AES_256_ECB"):
+        case CF_CIPHER("AES_256_ECB"):
             return EVP_aes_256_ecb();
-        case ID("Cryptofuzz/Cipher/AES_256_CBC"):
+        case CF_CIPHER("AES_256_CBC"):
             return EVP_aes_256_cbc();
-        case ID("Cryptofuzz/Cipher/AES_256_CFB"):
+        case CF_CIPHER("AES_256_CFB"):
             return EVP_aes_256_cfb();
-        case ID("Cryptofuzz/Cipher/AES_256_CFB1"):
+        case CF_CIPHER("AES_256_CFB1"):
             return EVP_aes_256_cfb1();
-        case ID("Cryptofuzz/Cipher/AES_256_CFB8"):
+        case CF_CIPHER("AES_256_CFB8"):
             return EVP_aes_256_cfb8();
-        case ID("Cryptofuzz/Cipher/AES_256_OFB"):
+        case CF_CIPHER("AES_256_OFB"):
             return EVP_aes_256_ofb();
-        case ID("Cryptofuzz/Cipher/AES_256_CTR"):
+        case CF_CIPHER("AES_256_CTR"):
             return EVP_aes_256_ctr();
-        case ID("Cryptofuzz/Cipher/AES_256_GCM"):
+        case CF_CIPHER("AES_256_GCM"):
             return EVP_aes_256_gcm();
-        case ID("Cryptofuzz/Cipher/AES_256_OCB"):
+        case CF_CIPHER("AES_256_OCB"):
             return EVP_aes_256_ocb();
-        case ID("Cryptofuzz/Cipher/AES_256_XTS"):
+        case CF_CIPHER("AES_256_XTS"):
             return EVP_aes_256_xts();
-        case ID("Cryptofuzz/Cipher/AES_256_CCM"):
+        case CF_CIPHER("AES_256_CCM"):
             return EVP_aes_256_ccm();
-        case ID("Cryptofuzz/Cipher/AES_256_WRAP"):
+        case CF_CIPHER("AES_256_WRAP"):
             return EVP_aes_256_wrap();
-        case ID("Cryptofuzz/Cipher/AES_256_WRAP_PAD"):
+        case CF_CIPHER("AES_256_WRAP_PAD"):
             return EVP_aes_256_wrap_pad();
-        case ID("Cryptofuzz/Cipher/AES_128_CBC_HMAC_SHA1"):
+        case CF_CIPHER("AES_128_CBC_HMAC_SHA1"):
             return EVP_aes_128_cbc_hmac_sha1();
-        case ID("Cryptofuzz/Cipher/AES_256_CBC_HMAC_SHA1"):
+        case CF_CIPHER("AES_256_CBC_HMAC_SHA1"):
             return EVP_aes_256_cbc_hmac_sha1();
-        case ID("Cryptofuzz/Cipher/AES_128_CBC_HMAC_SHA256"):
+        case CF_CIPHER("AES_128_CBC_HMAC_SHA256"):
             return EVP_aes_128_cbc_hmac_sha256();
-        case ID("Cryptofuzz/Cipher/AES_256_CBC_HMAC_SHA256"):
+        case CF_CIPHER("AES_256_CBC_HMAC_SHA256"):
             return EVP_aes_256_cbc_hmac_sha256();
-        case ID("Cryptofuzz/Cipher/ARIA_128_ECB"):
+        case CF_CIPHER("ARIA_128_ECB"):
             return EVP_aria_128_ecb();
-        case ID("Cryptofuzz/Cipher/ARIA_128_CBC"):
+        case CF_CIPHER("ARIA_128_CBC"):
             return EVP_aria_128_cbc();
-        case ID("Cryptofuzz/Cipher/ARIA_128_CFB"):
+        case CF_CIPHER("ARIA_128_CFB"):
             return EVP_aria_128_cfb();
-        case ID("Cryptofuzz/Cipher/ARIA_128_CFB1"):
+        case CF_CIPHER("ARIA_128_CFB1"):
             return EVP_aria_128_cfb1();
-        case ID("Cryptofuzz/Cipher/ARIA_128_CFB8"):
+        case CF_CIPHER("ARIA_128_CFB8"):
             return EVP_aria_128_cfb8();
-        case ID("Cryptofuzz/Cipher/ARIA_128_CTR"):
+        case CF_CIPHER("ARIA_128_CTR"):
             return EVP_aria_128_ctr();
-        case ID("Cryptofuzz/Cipher/ARIA_128_OFB"):
+        case CF_CIPHER("ARIA_128_OFB"):
             return EVP_aria_128_ofb();
-        case ID("Cryptofuzz/Cipher/ARIA_128_GCM"):
+        case CF_CIPHER("ARIA_128_GCM"):
             return EVP_aria_128_gcm();
-        case ID("Cryptofuzz/Cipher/ARIA_128_CCM"):
+        case CF_CIPHER("ARIA_128_CCM"):
             return EVP_aria_128_ccm();
-        case ID("Cryptofuzz/Cipher/ARIA_192_ECB"):
+        case CF_CIPHER("ARIA_192_ECB"):
             return EVP_aria_192_ecb();
-        case ID("Cryptofuzz/Cipher/ARIA_192_CBC"):
+        case CF_CIPHER("ARIA_192_CBC"):
             return EVP_aria_192_cbc();
-        case ID("Cryptofuzz/Cipher/ARIA_192_CFB"):
+        case CF_CIPHER("ARIA_192_CFB"):
             return EVP_aria_192_cfb();
-        case ID("Cryptofuzz/Cipher/ARIA_192_CFB1"):
+        case CF_CIPHER("ARIA_192_CFB1"):
             return EVP_aria_192_cfb1();
-        case ID("Cryptofuzz/Cipher/ARIA_192_CFB8"):
+        case CF_CIPHER("ARIA_192_CFB8"):
             return EVP_aria_192_cfb8();
-        case ID("Cryptofuzz/Cipher/ARIA_192_CTR"):
+        case CF_CIPHER("ARIA_192_CTR"):
             return EVP_aria_192_ctr();
-        case ID("Cryptofuzz/Cipher/ARIA_192_OFB"):
+        case CF_CIPHER("ARIA_192_OFB"):
             return EVP_aria_192_ofb();
-        case ID("Cryptofuzz/Cipher/ARIA_192_GCM"):
+        case CF_CIPHER("ARIA_192_GCM"):
             return EVP_aria_192_gcm();
-        case ID("Cryptofuzz/Cipher/ARIA_192_CCM"):
+        case CF_CIPHER("ARIA_192_CCM"):
             return EVP_aria_192_ccm();
-        case ID("Cryptofuzz/Cipher/ARIA_256_ECB"):
+        case CF_CIPHER("ARIA_256_ECB"):
             return EVP_aria_256_ecb();
-        case ID("Cryptofuzz/Cipher/ARIA_256_CBC"):
+        case CF_CIPHER("ARIA_256_CBC"):
             return EVP_aria_256_cbc();
-        case ID("Cryptofuzz/Cipher/ARIA_256_CFB"):
+        case CF_CIPHER("ARIA_256_CFB"):
             return EVP_aria_256_cfb();
-        case ID("Cryptofuzz/Cipher/ARIA_256_CFB1"):
+        case CF_CIPHER("ARIA_256_CFB1"):
             return EVP_aria_256_cfb1();
-        case ID("Cryptofuzz/Cipher/ARIA_256_CFB8"):
+        case CF_CIPHER("ARIA_256_CFB8"):
             return EVP_aria_256_cfb8();
-        case ID("Cryptofuzz/Cipher/ARIA_256_CTR"):
+        case CF_CIPHER("ARIA_256_CTR"):
             return EVP_aria_256_ctr();
-        case ID("Cryptofuzz/Cipher/ARIA_256_OFB"):
+        case CF_CIPHER("ARIA_256_OFB"):
             return EVP_aria_256_ofb();
-        case ID("Cryptofuzz/Cipher/ARIA_256_GCM"):
+        case CF_CIPHER("ARIA_256_GCM"):
             return EVP_aria_256_gcm();
-        case ID("Cryptofuzz/Cipher/ARIA_256_CCM"):
+        case CF_CIPHER("ARIA_256_CCM"):
             return EVP_aria_256_ccm();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_ECB"):
+        case CF_CIPHER("CAMELLIA_128_ECB"):
             return EVP_camellia_128_ecb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_CBC"):
+        case CF_CIPHER("CAMELLIA_128_CBC"):
             return EVP_camellia_128_cbc();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_CFB"):
+        case CF_CIPHER("CAMELLIA_128_CFB"):
             return EVP_camellia_128_cfb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_CFB1"):
+        case CF_CIPHER("CAMELLIA_128_CFB1"):
             return EVP_camellia_128_cfb1();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_CFB8"):
+        case CF_CIPHER("CAMELLIA_128_CFB8"):
             return EVP_camellia_128_cfb8();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_OFB"):
+        case CF_CIPHER("CAMELLIA_128_OFB"):
             return EVP_camellia_128_ofb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_ECB"):
+        case CF_CIPHER("CAMELLIA_192_ECB"):
             return EVP_camellia_192_ecb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_CBC"):
+        case CF_CIPHER("CAMELLIA_192_CBC"):
             return EVP_camellia_192_cbc();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_CFB"):
+        case CF_CIPHER("CAMELLIA_192_CFB"):
             return EVP_camellia_192_cfb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_CFB1"):
+        case CF_CIPHER("CAMELLIA_192_CFB1"):
             return EVP_camellia_192_cfb1();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_CFB8"):
+        case CF_CIPHER("CAMELLIA_192_CFB8"):
             return EVP_camellia_192_cfb8();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_OFB"):
+        case CF_CIPHER("CAMELLIA_192_OFB"):
             return EVP_camellia_192_ofb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_ECB"):
+        case CF_CIPHER("CAMELLIA_256_ECB"):
             return EVP_camellia_256_ecb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_CBC"):
+        case CF_CIPHER("CAMELLIA_256_CBC"):
             return EVP_camellia_256_cbc();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_CFB"):
+        case CF_CIPHER("CAMELLIA_256_CFB"):
             return EVP_camellia_256_cfb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_CFB1"):
+        case CF_CIPHER("CAMELLIA_256_CFB1"):
             return EVP_camellia_256_cfb1();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_CFB8"):
+        case CF_CIPHER("CAMELLIA_256_CFB8"):
             return EVP_camellia_256_cfb8();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_OFB"):
+        case CF_CIPHER("CAMELLIA_256_OFB"):
             return EVP_camellia_256_ofb();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_CTR"):
+        case CF_CIPHER("CAMELLIA_128_CTR"):
             return EVP_camellia_128_ctr();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_CTR"):
+        case CF_CIPHER("CAMELLIA_192_CTR"):
             return EVP_camellia_192_ctr();
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_CTR"):
+        case CF_CIPHER("CAMELLIA_256_CTR"):
             return EVP_camellia_256_ctr();
-        case ID("Cryptofuzz/Cipher/CHACHA20"):
+        case CF_CIPHER("CHACHA20"):
             return EVP_chacha20();
-        case ID("Cryptofuzz/Cipher/CHACHA20_POLY1305"):
+        case CF_CIPHER("CHACHA20_POLY1305"):
             return EVP_chacha20_poly1305();
 #endif
         default:
@@ -869,35 +870,33 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
 
 #if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
 const EVP_AEAD* OpenSSL::toEVPAEAD(const component::SymmetricCipherType cipherType) const {
-    using fuzzing::datasource::ID;
-
     static const std::map<uint64_t, const EVP_AEAD*> LUT = {
-        { ID("Cryptofuzz/Cipher/CHACHA20_POLY1305"), EVP_aead_chacha20_poly1305() },
-        { ID("Cryptofuzz/Cipher/XCHACHA20_POLY1305"), EVP_aead_xchacha20_poly1305() },
-        { ID("Cryptofuzz/Cipher/AES_128_GCM"), EVP_aead_aes_128_gcm() },
-        { ID("Cryptofuzz/Cipher/AES_256_GCM"), EVP_aead_aes_256_gcm() },
+        { CF_CIPHER("CHACHA20_POLY1305"), EVP_aead_chacha20_poly1305() },
+        { CF_CIPHER("XCHACHA20_POLY1305"), EVP_aead_xchacha20_poly1305() },
+        { CF_CIPHER("AES_128_GCM"), EVP_aead_aes_128_gcm() },
+        { CF_CIPHER("AES_256_GCM"), EVP_aead_aes_256_gcm() },
 #if defined(CRYPTOFUZZ_BORINGSSL)
-        { ID("Cryptofuzz/Cipher/AES_256_CBC_HMAC_SHA256"), EVP_aead_aes_128_ctr_hmac_sha256() },
-        { ID("Cryptofuzz/Cipher/AES_128_CTR_HMAC_SHA256"), EVP_aead_aes_128_ctr_hmac_sha256() },
-        { ID("Cryptofuzz/Cipher/AES_256_CTR_HMAC_SHA256"), EVP_aead_aes_256_ctr_hmac_sha256() },
-        { ID("Cryptofuzz/Cipher/AES_128_GCM_SIV"), EVP_aead_aes_128_gcm_siv() },
-        { ID("Cryptofuzz/Cipher/AES_256_GCM_SIV"), EVP_aead_aes_256_gcm_siv() },
-        { ID("Cryptofuzz/Cipher/AES_128_CCM_BLUETOOTH"), EVP_aead_aes_128_ccm_bluetooth() },
-        { ID("Cryptofuzz/Cipher/AES_128_CCM_BLUETOOTH_8"), EVP_aead_aes_128_ccm_bluetooth_8() },
-        { ID("Cryptofuzz/Cipher/AES_128_CBC_SHA1_TLS"), EVP_aead_aes_128_cbc_sha1_tls() },
-        { ID("Cryptofuzz/Cipher/AES_128_CBC_SHA1_TLS_IMPLICIT_IV"), EVP_aead_aes_128_cbc_sha1_tls_implicit_iv() },
-        { ID("Cryptofuzz/Cipher/AES_128_CBC_SHA256_TLS"), EVP_aead_aes_128_cbc_sha256_tls() },
-        { ID("Cryptofuzz/Cipher/AES_256_CBC_SHA1_TLS"), EVP_aead_aes_256_cbc_sha1_tls() },
-        { ID("Cryptofuzz/Cipher/AES_256_CBC_SHA1_TLS_IMPLICIT_IV"), EVP_aead_aes_256_cbc_sha1_tls_implicit_iv() },
-        { ID("Cryptofuzz/Cipher/AES_256_CBC_SHA256_TLS"), EVP_aead_aes_256_cbc_sha256_tls() },
-        { ID("Cryptofuzz/Cipher/AES_256_CBC_SHA384_TLS"), EVP_aead_aes_256_cbc_sha384_tls() },
-        { ID("Cryptofuzz/Cipher/DES_EDE3_CBC_SHA1_TLS"), EVP_aead_des_ede3_cbc_sha1_tls() },
-        { ID("Cryptofuzz/Cipher/DES_EDE3_CBC_SHA1_TLS_IMPLICIT_IV"), EVP_aead_des_ede3_cbc_sha1_tls_implicit_iv() },
-        { ID("Cryptofuzz/Cipher/NULL_SHA1_TLS"), EVP_aead_null_sha1_tls() },
-        { ID("Cryptofuzz/Cipher/AES_128_GCM_TLS12"), EVP_aead_aes_128_gcm_tls12() },
-        { ID("Cryptofuzz/Cipher/AES_256_GCM_TLS12"), EVP_aead_aes_256_gcm_tls12() },
-        { ID("Cryptofuzz/Cipher/AES_128_GCM_TLS13"), EVP_aead_aes_128_gcm_tls13() },
-        { ID("Cryptofuzz/Cipher/AES_256_GCM_TLS13"), EVP_aead_aes_256_gcm_tls13() },
+        { CF_CIPHER("AES_256_CBC_HMAC_SHA256"), EVP_aead_aes_128_ctr_hmac_sha256() },
+        { CF_CIPHER("AES_128_CTR_HMAC_SHA256"), EVP_aead_aes_128_ctr_hmac_sha256() },
+        { CF_CIPHER("AES_256_CTR_HMAC_SHA256"), EVP_aead_aes_256_ctr_hmac_sha256() },
+        { CF_CIPHER("AES_128_GCM_SIV"), EVP_aead_aes_128_gcm_siv() },
+        { CF_CIPHER("AES_256_GCM_SIV"), EVP_aead_aes_256_gcm_siv() },
+        { CF_CIPHER("AES_128_CCM_BLUETOOTH"), EVP_aead_aes_128_ccm_bluetooth() },
+        { CF_CIPHER("AES_128_CCM_BLUETOOTH_8"), EVP_aead_aes_128_ccm_bluetooth_8() },
+        { CF_CIPHER("AES_128_CBC_SHA1_TLS"), EVP_aead_aes_128_cbc_sha1_tls() },
+        { CF_CIPHER("AES_128_CBC_SHA1_TLS_IMPLICIT_IV"), EVP_aead_aes_128_cbc_sha1_tls_implicit_iv() },
+        { CF_CIPHER("AES_128_CBC_SHA256_TLS"), EVP_aead_aes_128_cbc_sha256_tls() },
+        { CF_CIPHER("AES_256_CBC_SHA1_TLS"), EVP_aead_aes_256_cbc_sha1_tls() },
+        { CF_CIPHER("AES_256_CBC_SHA1_TLS_IMPLICIT_IV"), EVP_aead_aes_256_cbc_sha1_tls_implicit_iv() },
+        { CF_CIPHER("AES_256_CBC_SHA256_TLS"), EVP_aead_aes_256_cbc_sha256_tls() },
+        { CF_CIPHER("AES_256_CBC_SHA384_TLS"), EVP_aead_aes_256_cbc_sha384_tls() },
+        { CF_CIPHER("DES_EDE3_CBC_SHA1_TLS"), EVP_aead_des_ede3_cbc_sha1_tls() },
+        { CF_CIPHER("DES_EDE3_CBC_SHA1_TLS_IMPLICIT_IV"), EVP_aead_des_ede3_cbc_sha1_tls_implicit_iv() },
+        { CF_CIPHER("NULL_SHA1_TLS"), EVP_aead_null_sha1_tls() },
+        { CF_CIPHER("AES_128_GCM_TLS12"), EVP_aead_aes_128_gcm_tls12() },
+        { CF_CIPHER("AES_256_GCM_TLS12"), EVP_aead_aes_256_gcm_tls12() },
+        { CF_CIPHER("AES_128_GCM_TLS13"), EVP_aead_aes_128_gcm_tls13() },
+        { CF_CIPHER("AES_256_GCM_TLS13"), EVP_aead_aes_256_gcm_tls13() },
 #endif
     };
 
@@ -958,7 +957,6 @@ std::optional<component::MAC> OpenSSL::OpHMAC_EVP(operation::HMAC& op, Datasourc
 
     /* Initialize */
     {
-        using fuzzing::datasource::ID;
         parts = util::ToParts(ds, op.cleartext);
 
         CF_CHECK_NE(ctx = EVP_MD_CTX_create(), nullptr);
@@ -1000,7 +998,6 @@ std::optional<component::MAC> OpenSSL::OpHMAC_HMAC(operation::HMAC& op, Datasour
 
     /* Initialize */
     {
-        using fuzzing::datasource::ID;
         parts = util::ToParts(ds, op.cleartext);
         CF_CHECK_NE(ctx = HMAC_CTX_new(), nullptr);
         /* TODO remove ? */
@@ -1055,46 +1052,26 @@ std::optional<component::MAC> OpenSSL::OpHMAC(operation::HMAC& op) {
 }
 
 bool OpenSSL::checkSetIVLength(const uint64_t cipherType, const EVP_CIPHER* cipher, EVP_CIPHER_CTX* ctx, const size_t inputIvLength) const {
-    using fuzzing::datasource::ID;
     (void)ctx;
 
     bool ret = false;
 
     const size_t ivLength = EVP_CIPHER_iv_length(cipher);
     if ( ivLength != inputIvLength ) {
-        switch ( cipherType ) {
 #if defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_OPENSSL_102)
-            case ID("Cryptofuzz/Cipher/AES_128_CCM"):
-            case ID("Cryptofuzz/Cipher/AES_192_CCM"):
-            case ID("Cryptofuzz/Cipher/AES_256_CCM"):
-                CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_SET_IVLEN, inputIvLength, nullptr), 1);
-                break;
-            case ID("Cryptofuzz/Cipher/AES_128_GCM"):
-            case ID("Cryptofuzz/Cipher/AES_192_GCM"):
-            case ID("Cryptofuzz/Cipher/AES_256_GCM"):
-                CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, inputIvLength, nullptr), 1);
-                break;
-#else
-            case ID("Cryptofuzz/Cipher/AES_128_CCM"):
-            case ID("Cryptofuzz/Cipher/AES_192_CCM"):
-            case ID("Cryptofuzz/Cipher/AES_256_CCM"):
-            case ID("Cryptofuzz/Cipher/AES_128_GCM"):
-            case ID("Cryptofuzz/Cipher/AES_192_GCM"):
-            case ID("Cryptofuzz/Cipher/AES_256_GCM"):
-            case ID("Cryptofuzz/Cipher/ARIA_128_CCM"):
-            case ID("Cryptofuzz/Cipher/ARIA_192_CCM"):
-            case ID("Cryptofuzz/Cipher/ARIA_256_CCM"):
-            case ID("Cryptofuzz/Cipher/ARIA_128_GCM"):
-            case ID("Cryptofuzz/Cipher/ARIA_192_GCM"):
-            case ID("Cryptofuzz/Cipher/ARIA_256_GCM"):
-            case ID("Cryptofuzz/Cipher/CHACHA20_POLY1305"):
-                CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, inputIvLength, nullptr), 1);
-                break;
-#endif
-            default:
-                goto end;
-                break;
+        if ( repository::IsCCM( cipherType ) ) {
+            CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_SET_IVLEN, inputIvLength, nullptr), 1);
+            ret = true;
+        } else if ( repository::IsGCM( cipherType ) ) {
+            CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, inputIvLength, nullptr), 1);
+            ret = true;
         }
+#else
+        if ( repository::IsAEAD( cipherType ) ) {
+            CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, inputIvLength, nullptr), 1);
+            ret = true;
+        }
+#endif
     }
 
     ret = true;
@@ -1131,17 +1108,9 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_BIO(operation::
     }
 
 #if defined(CRYPTOFUZZ_OPENSSL_102)
-    using fuzzing::datasource::ID;
-
-    /* These crash in OpenSSL 1.0.2 */
-    switch ( op.cipher.cipherType.Get() ) {
-        case ID("Cryptofuzz/Cipher/AES_128_WRAP"):
-        case ID("Cryptofuzz/Cipher/AES_192_WRAP"):
-        case ID("Cryptofuzz/Cipher/AES_256_WRAP"):
-        case ID("Cryptofuzz/Cipher/DES_EDE3_WRAP"):
-            return ret;
-        default:
-            break;
+    /* WRAP ciphers crash in OpenSSL 1.0.2 */
+    if ( repository::IsWRAP(op.cipher.cipherType.Get()) ) {
+        return ret;
     }
 #endif
 
@@ -1215,24 +1184,8 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
          * leads to all kinds of gnarly memory bugs in OpenSSL.
          * It is quite arguably misuse of the OpenSSL API, so don't do this.
          */
-        using fuzzing::datasource::ID;
-        switch ( op.cipher.cipherType.Get() ) {
-            case ID("Cryptofuzz/Cipher/AES_128_CCM"):
-            case ID("Cryptofuzz/Cipher/AES_192_CCM"):
-            case ID("Cryptofuzz/Cipher/AES_256_CCM"):
-            case ID("Cryptofuzz/Cipher/AES_128_GCM"):
-            case ID("Cryptofuzz/Cipher/AES_192_GCM"):
-            case ID("Cryptofuzz/Cipher/AES_256_GCM"):
-            case ID("Cryptofuzz/Cipher/ARIA_128_CCM"):
-            case ID("Cryptofuzz/Cipher/ARIA_192_CCM"):
-            case ID("Cryptofuzz/Cipher/ARIA_256_CCM"):
-            case ID("Cryptofuzz/Cipher/ARIA_128_GCM"):
-            case ID("Cryptofuzz/Cipher/ARIA_192_GCM"):
-            case ID("Cryptofuzz/Cipher/ARIA_256_GCM"):
-            case ID("Cryptofuzz/Cipher/CHACHA20_POLY1305"):
-                break;
-            default:
-                return ret;
+        if ( !repository::IsAEAD( op.cipher.cipherType.Get() ) ) {
+            return ret;
         }
     }
 
@@ -1255,20 +1208,13 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
         /* Must be a multiple of the block size of this cipher */
         //CF_CHECK_EQ(op.cleartext.GetSize() % EVP_CIPHER_block_size(cipher), 0);
 
-        {
-            using fuzzing::datasource::ID;
-            switch ( op.cipher.cipherType.Get() ) {
-                case ID("Cryptofuzz/Cipher/AES_128_XTS"):
-                case ID("Cryptofuzz/Cipher/AES_256_XTS"):
-                    /* XTS does not support chunked updating.
-                     * See: https://github.com/openssl/openssl/issues/8699
-                     */
-                    partsCleartext = { { op.cleartext.GetPtr(), op.cleartext.GetSize()} };
-                    break;
-                default:
-                    partsCleartext = util::ToParts(ds, op.cleartext);
-                    break;
-            }
+        /* XTS does not support chunked updating.
+         * See: https://github.com/openssl/openssl/issues/8699
+         */
+        if ( repository::IsXTS( op.cipher.cipherType.Get() ) ) {
+            partsCleartext = { { op.cleartext.GetPtr(), op.cleartext.GetSize()} };
+        } else {
+            partsCleartext = util::ToParts(ds, op.cleartext);
         }
 
         if ( op.aad != std::nullopt ) {
@@ -1449,17 +1395,9 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_BIO(operation::S
     }
 
 #if defined(CRYPTOFUZZ_OPENSSL_102)
-    using fuzzing::datasource::ID;
-
-    /* These crash in OpenSSL 1.0.2 */
-    switch ( op.cipher.cipherType.Get() ) {
-        case ID("Cryptofuzz/Cipher/AES_128_WRAP"):
-        case ID("Cryptofuzz/Cipher/AES_192_WRAP"):
-        case ID("Cryptofuzz/Cipher/AES_256_WRAP"):
-        case ID("Cryptofuzz/Cipher/DES_EDE3_WRAP"):
-            return ret;
-        default:
-            break;
+    /* WRAP ciphers crash in OpenSSL 1.0.2 */
+    if ( repository::IsWRAP(op.cipher.cipherType.Get()) ) {
+        return ret;
     }
 #endif
 
@@ -1533,24 +1471,8 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
          * leads to all kinds of gnarly memory bugs in OpenSSL.
          * It is quite arguably misuse of the OpenSSL API, so don't do this.
          */
-        using fuzzing::datasource::ID;
-        switch ( op.cipher.cipherType.Get() ) {
-            case ID("Cryptofuzz/Cipher/AES_128_CCM"):
-            case ID("Cryptofuzz/Cipher/AES_192_CCM"):
-            case ID("Cryptofuzz/Cipher/AES_256_CCM"):
-            case ID("Cryptofuzz/Cipher/AES_128_GCM"):
-            case ID("Cryptofuzz/Cipher/AES_192_GCM"):
-            case ID("Cryptofuzz/Cipher/AES_256_GCM"):
-            case ID("Cryptofuzz/Cipher/ARIA_128_CCM"):
-            case ID("Cryptofuzz/Cipher/ARIA_192_CCM"):
-            case ID("Cryptofuzz/Cipher/ARIA_256_CCM"):
-            case ID("Cryptofuzz/Cipher/ARIA_128_GCM"):
-            case ID("Cryptofuzz/Cipher/ARIA_192_GCM"):
-            case ID("Cryptofuzz/Cipher/ARIA_256_GCM"):
-            case ID("Cryptofuzz/Cipher/CHACHA20_POLY1305"):
-                break;
-            default:
-                return ret;
+        if ( !repository::IsAEAD( op.cipher.cipherType.Get() ) ) {
+            return ret;
         }
     }
     util::Multipart partsCiphertext, partsAAD;
@@ -1571,20 +1493,13 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
         /* Must be a multiple of the block size of this cipher */
         //CF_CHECK_EQ(op.ciphertext.GetSize() % EVP_CIPHER_block_size(cipher), 0);
 
-        {
-            using fuzzing::datasource::ID;
-            switch ( op.cipher.cipherType.Get() ) {
-                case ID("Cryptofuzz/Cipher/AES_128_XTS"):
-                case ID("Cryptofuzz/Cipher/AES_256_XTS"):
-                    /* XTS does not support chunked updating.
-                     * See: https://github.com/openssl/openssl/issues/8699
-                     */
-                    partsCiphertext = { { op.ciphertext.GetPtr(), op.ciphertext.GetSize()} };
-                    break;
-                default:
-                    partsCiphertext = util::ToParts(ds, op.ciphertext);
-                    break;
-            }
+        /* XTS does not support chunked updating.
+         * See: https://github.com/openssl/openssl/issues/8699
+         */
+        if ( repository::IsXTS( op.cipher.cipherType.Get() ) ) {
+            partsCiphertext = { { op.ciphertext.GetPtr(), op.ciphertext.GetSize()} };
+        } else {
+            partsCiphertext = util::ToParts(ds, op.ciphertext);
         }
 
         if ( op.aad != std::nullopt ) {
