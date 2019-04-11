@@ -16,11 +16,15 @@ tests.o : tests.cpp
 	$(CXX) $(CXXFLAGS) tests.cpp -c -o tests.o
 datasource.o : datasource.cpp
 	$(CXX) $(CXXFLAGS) datasource.cpp -c -o datasource.o
+repository_tbl.h : gen_repository.py
+	python gen_repository.py
+repository.o : repository.cpp repository_tbl.h
+	$(CXX) $(CXXFLAGS) repository.cpp -c -o repository.o
 
-cryptofuzz : driver.o executor.o util.o entry.o tests.o operation.o datasource.o
+cryptofuzz : driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o
 	test $(LIBFUZZER_LINK)
 	#$(CXX) $(CXXFLAGS) driver.o executor.o util.o entry.o tests.o operation.o datasource.o modules/openssl/module.a modules/mbedtls/module.a modules/boost/module.a modules/publicdomain/module.a modules/cppcrypto/module.a modules/monero/module.a Fuzzer/libFuzzer.a -o cryptofuzz
-	$(CXX) $(CXXFLAGS) driver.o executor.o util.o entry.o tests.o operation.o datasource.o modules/openssl/module.a $(LIBFUZZER_LINK) -o cryptofuzz
+	$(CXX) $(CXXFLAGS) driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o modules/openssl/module.a $(LIBFUZZER_LINK) -o cryptofuzz
 
 generate_dict: generate_dict.cpp
 	$(CXX) $(CXXFLAGS) generate_dict.cpp -o generate_dict
@@ -29,4 +33,4 @@ generate_corpus: generate_corpus.cpp
 	$(CXX) $(CXXFLAGS) generate_corpus.cpp -o generate_corpus
 
 clean:
-	rm -rf driver.o executor.o util.o entry.o operation.o tests.o datasource.o cryptofuzz generate_dict
+	rm -rf driver.o executor.o util.o entry.o operation.o tests.o datasource.o repository.o repository_tbl.h cryptofuzz generate_dict
