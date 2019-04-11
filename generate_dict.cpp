@@ -77,13 +77,22 @@ int main(void)
     write(fp, ID("Cryptofuzz/Cipher/AES_128_CBC") );
     write(fp, ID("Cryptofuzz/Cipher/AES_128_CBC_HMAC_SHA1") );
     write(fp, ID("Cryptofuzz/Cipher/AES_128_CBC_HMAC_SHA256") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_CBC_SHA1_TLS") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_CBC_SHA1_TLS_IMPLICIT_IV") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_CBC_SHA256_TLS") );
     write(fp, ID("Cryptofuzz/Cipher/AES_128_CCM") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_CCM_BLUETOOTH") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_CCM_BLUETOOTH_8") );
     write(fp, ID("Cryptofuzz/Cipher/AES_128_CFB") );
     write(fp, ID("Cryptofuzz/Cipher/AES_128_CFB1") );
     write(fp, ID("Cryptofuzz/Cipher/AES_128_CFB8") );
     write(fp, ID("Cryptofuzz/Cipher/AES_128_CTR") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_CTR_HMAC_SHA256") );
     write(fp, ID("Cryptofuzz/Cipher/AES_128_ECB") );
     write(fp, ID("Cryptofuzz/Cipher/AES_128_GCM") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_GCM_SIV") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_GCM_TLS12") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_128_GCM_TLS13") );
     write(fp, ID("Cryptofuzz/Cipher/AES_128_OCB") );
     write(fp, ID("Cryptofuzz/Cipher/AES_128_OFB") );
     write(fp, ID("Cryptofuzz/Cipher/AES_128_WRAP") );
@@ -104,13 +113,21 @@ int main(void)
     write(fp, ID("Cryptofuzz/Cipher/AES_256_CBC") );
     write(fp, ID("Cryptofuzz/Cipher/AES_256_CBC_HMAC_SHA1") );
     write(fp, ID("Cryptofuzz/Cipher/AES_256_CBC_HMAC_SHA256") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_CBC_SHA1_TLS") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_CBC_SHA1_TLS_IMPLICIT_IV") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_CBC_SHA256_TLS") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_CBC_SHA384_TLS") );
     write(fp, ID("Cryptofuzz/Cipher/AES_256_CCM") );
     write(fp, ID("Cryptofuzz/Cipher/AES_256_CFB") );
     write(fp, ID("Cryptofuzz/Cipher/AES_256_CFB1") );
     write(fp, ID("Cryptofuzz/Cipher/AES_256_CFB8") );
     write(fp, ID("Cryptofuzz/Cipher/AES_256_CTR") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_CTR_HMAC_SHA256") );
     write(fp, ID("Cryptofuzz/Cipher/AES_256_ECB") );
     write(fp, ID("Cryptofuzz/Cipher/AES_256_GCM") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_GCM_SIV") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_GCM_TLS12") );
+    write(fp, ID("Cryptofuzz/Cipher/AES_256_GCM_TLS13") );
     write(fp, ID("Cryptofuzz/Cipher/AES_256_OCB") );
     write(fp, ID("Cryptofuzz/Cipher/AES_256_OFB") );
     write(fp, ID("Cryptofuzz/Cipher/AES_256_WRAP") );
@@ -183,6 +200,8 @@ int main(void)
     write(fp, ID("Cryptofuzz/Cipher/DES_EDE") );
     write(fp, ID("Cryptofuzz/Cipher/DES_EDE3") );
     write(fp, ID("Cryptofuzz/Cipher/DES_EDE3_CBC") );
+    write(fp, ID("Cryptofuzz/Cipher/DES_EDE3_CBC_SHA1_TLS") );
+    write(fp, ID("Cryptofuzz/Cipher/DES_EDE3_CBC_SHA1_TLS_IMPLICIT_IV") );
     write(fp, ID("Cryptofuzz/Cipher/DES_EDE3_CFB") );
     write(fp, ID("Cryptofuzz/Cipher/DES_EDE3_CFB1") );
     write(fp, ID("Cryptofuzz/Cipher/DES_EDE3_CFB8") );
@@ -196,6 +215,7 @@ int main(void)
     write(fp, ID("Cryptofuzz/Cipher/IDEA_CFB") );
     write(fp, ID("Cryptofuzz/Cipher/IDEA_ECB") );
     write(fp, ID("Cryptofuzz/Cipher/IDEA_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/NULL_SHA1_TLS") );
     write(fp, ID("Cryptofuzz/Cipher/RC2_40_CBC") );
     write(fp, ID("Cryptofuzz/Cipher/RC2_64_CBC") );
     write(fp, ID("Cryptofuzz/Cipher/RC2_CBC") );
@@ -218,6 +238,7 @@ int main(void)
     write(fp, ID("Cryptofuzz/Cipher/SM4_CTR") );
     write(fp, ID("Cryptofuzz/Cipher/SM4_ECB") );
     write(fp, ID("Cryptofuzz/Cipher/SM4_OFB") );
+    write(fp, ID("Cryptofuzz/Cipher/XCHACHA20_POLY1305") );
 
     fclose(fp);
 

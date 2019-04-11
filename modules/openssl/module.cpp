@@ -878,6 +878,26 @@ const EVP_AEAD* OpenSSL::toEVPAEAD(const component::SymmetricCipherType cipherTy
         { ID("Cryptofuzz/Cipher/AES_256_GCM"), EVP_aead_aes_256_gcm() },
 #if defined(CRYPTOFUZZ_BORINGSSL)
         { ID("Cryptofuzz/Cipher/AES_256_CBC_HMAC_SHA256"), EVP_aead_aes_128_ctr_hmac_sha256() },
+        { ID("Cryptofuzz/Cipher/AES_128_CTR_HMAC_SHA256"), EVP_aead_aes_128_ctr_hmac_sha256() },
+        { ID("Cryptofuzz/Cipher/AES_256_CTR_HMAC_SHA256"), EVP_aead_aes_256_ctr_hmac_sha256() },
+        { ID("Cryptofuzz/Cipher/AES_128_GCM_SIV"), EVP_aead_aes_128_gcm_siv() },
+        { ID("Cryptofuzz/Cipher/AES_256_GCM_SIV"), EVP_aead_aes_256_gcm_siv() },
+        { ID("Cryptofuzz/Cipher/AES_128_CCM_BLUETOOTH"), EVP_aead_aes_128_ccm_bluetooth() },
+        { ID("Cryptofuzz/Cipher/AES_128_CCM_BLUETOOTH_8"), EVP_aead_aes_128_ccm_bluetooth_8() },
+        { ID("Cryptofuzz/Cipher/AES_128_CBC_SHA1_TLS"), EVP_aead_aes_128_cbc_sha1_tls() },
+        { ID("Cryptofuzz/Cipher/AES_128_CBC_SHA1_TLS_IMPLICIT_IV"), EVP_aead_aes_128_cbc_sha1_tls_implicit_iv() },
+        { ID("Cryptofuzz/Cipher/AES_128_CBC_SHA256_TLS"), EVP_aead_aes_128_cbc_sha256_tls() },
+        { ID("Cryptofuzz/Cipher/AES_256_CBC_SHA1_TLS"), EVP_aead_aes_256_cbc_sha1_tls() },
+        { ID("Cryptofuzz/Cipher/AES_256_CBC_SHA1_TLS_IMPLICIT_IV"), EVP_aead_aes_256_cbc_sha1_tls_implicit_iv() },
+        { ID("Cryptofuzz/Cipher/AES_256_CBC_SHA256_TLS"), EVP_aead_aes_256_cbc_sha256_tls() },
+        { ID("Cryptofuzz/Cipher/AES_256_CBC_SHA384_TLS"), EVP_aead_aes_256_cbc_sha384_tls() },
+        { ID("Cryptofuzz/Cipher/DES_EDE3_CBC_SHA1_TLS"), EVP_aead_des_ede3_cbc_sha1_tls() },
+        { ID("Cryptofuzz/Cipher/DES_EDE3_CBC_SHA1_TLS_IMPLICIT_IV"), EVP_aead_des_ede3_cbc_sha1_tls_implicit_iv() },
+        { ID("Cryptofuzz/Cipher/NULL_SHA1_TLS"), EVP_aead_null_sha1_tls() },
+        { ID("Cryptofuzz/Cipher/AES_128_GCM_TLS12"), EVP_aead_aes_128_gcm_tls12() },
+        { ID("Cryptofuzz/Cipher/AES_256_GCM_TLS12"), EVP_aead_aes_256_gcm_tls12() },
+        { ID("Cryptofuzz/Cipher/AES_128_GCM_TLS13"), EVP_aead_aes_128_gcm_tls13() },
+        { ID("Cryptofuzz/Cipher/AES_256_GCM_TLS13"), EVP_aead_aes_256_gcm_tls13() },
 #endif
     };
 
