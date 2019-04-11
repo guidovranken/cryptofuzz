@@ -10,6 +10,7 @@ bool IsCCM(const uint64_t id);
 bool IsCFB(const uint64_t id);
 bool IsCTR(const uint64_t id);
 bool IsECB(const uint64_t id);
+bool IsGCM(const uint64_t id);
 bool IsOCB(const uint64_t id);
 bool IsOFB(const uint64_t id);
 bool IsXTS(const uint64_t id);

@@ -37,6 +37,14 @@ bool IsECB(const uint64_t id) {
     }
 }
 
+bool IsGCM(const uint64_t id) {
+    try {
+        return CipherLUTMap.at(id).GCM;
+    } catch ( std::out_of_range ) {
+        return false;
+    }
+}
+
 bool IsOCB(const uint64_t id) {
     try {
         return CipherLUTMap.at(id).OCB;

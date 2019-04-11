@@ -12,6 +12,7 @@ class ModeOfOperation(object):
                 'CFB' : r'_?CFB[18]?',
                 'CTR' : r'_?CTR',
                 'ECB' : r'_?ECB',
+                'GCM' : r'_?GCM',
                 'OCB' : r'_?OCB',
                 'OFB' : r'_?OFB',
                 'XTS' : r'_?XTS',
@@ -110,6 +111,7 @@ class CipherTable(Table):
                 "bool CFB",
                 "bool CTR",
                 "bool ECB",
+                "bool GCM",
                 "bool OCB",
                 "bool OFB",
                 "bool XTS",
@@ -126,6 +128,7 @@ class CipherTable(Table):
         tableEntry += [ 'true' if 'CFB' in self.table[index].operation.modeDict else 'false' ]
         tableEntry += [ 'true' if 'CTR' in self.table[index].operation.modeDict else 'false' ]
         tableEntry += [ 'true' if 'ECB' in self.table[index].operation.modeDict else 'false' ]
+        tableEntry += [ 'true' if 'GCM' in self.table[index].operation.modeDict else 'false' ]
         tableEntry += [ 'true' if 'OCB' in self.table[index].operation.modeDict else 'false' ]
         tableEntry += [ 'true' if 'OFB' in self.table[index].operation.modeDict else 'false' ]
         tableEntry += [ 'true' if 'XTS' in self.table[index].operation.modeDict else 'false' ]
