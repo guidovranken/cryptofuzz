@@ -85,5 +85,21 @@ bool IsWRAP(const uint64_t id) {
     }
 }
 
+std::string DigestToString(const uint64_t id) {
+    try {
+        return DigestLUTMap.at(id).name;
+    } catch ( std::out_of_range ) {
+        return "(unknown)";
+    }
+}
+
+std::string CipherToString(const uint64_t id) {
+    try {
+        return CipherLUTMap.at(id).name;
+    } catch ( std::out_of_range ) {
+        return "(unknown)";
+    }
+}
+
 } /* namespace repository */
 } /* namespace cryptofuzz */

@@ -48,7 +48,7 @@ class Table(object):
     def __init__(self, prefix, tableDecl):
         self.table = []
         self.prefix = prefix
-        self.tableDecl = ['uint64_t id']
+        self.tableDecl = ['uint64_t id', 'const char* name']
         self.tableDecl.extend(tableDecl)
     def checkDuplicates(self):
         # Sanity check to assert that no duplicate items are added
@@ -74,7 +74,7 @@ class Table(object):
         outStr = ""
         outStr += "constexpr " + self.getStructName(True) + " " + self.getStructName(False) + "[] = {\n"
         for index in xrange(len(self.table)):
-            outTableEntry = [ ToCryptofuzzID(self.prefix, self.table[index].name) ]
+            outTableEntry = [ ToCryptofuzzID(self.prefix, self.table[index].name), "\"" + self.table[index].name + "\"" ]
             outTableEntry.extend( self.getTableEntryList(index) )
 
             if len(outTableEntry) != len(self.tableDecl):
@@ -90,7 +90,7 @@ class Table(object):
         outStr = ""
         outStr += "std::map<uint64_t, " + self.getStructName(True) + ">" + " " + self.getStructName(False) + "Map = {\n";
         for index in xrange(len(self.table)):
-            outTableEntry = [ ToCryptofuzzID(self.prefix, self.table[index].name) ]
+            outTableEntry = [ ToCryptofuzzID(self.prefix, self.table[index].name), "\"" + self.table[index].name + "\""]
             outTableEntry.extend( self.getTableEntryList(index) )
 
             if len(outTableEntry) != len(self.tableDecl):
