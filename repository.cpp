@@ -5,6 +5,14 @@
 namespace cryptofuzz {
 namespace repository {
 
+bool IsCBC(const uint64_t id) {
+    try {
+        return CipherLUTMap.at(id).CBC;
+    } catch ( std::out_of_range ) {
+        return false;
+    }
+}
+
 bool IsCCM(const uint64_t id) {
     try {
         return CipherLUTMap.at(id).CCM;
