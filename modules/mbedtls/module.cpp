@@ -1,5 +1,6 @@
 #include "module.h"
 #include <cryptofuzz/util.h>
+#include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
 
 namespace cryptofuzz {
@@ -12,149 +13,149 @@ const mbedtls_cipher_info_t* mbedTLS::to_mbedtls_cipher_info_t(const component::
     using fuzzing::datasource::ID;
 
     switch ( cipherType.Get() ) {
-        case ID("Cryptofuzz/Cipher/AES_128_ECB"):
+        case CF_CIPHER("AES_128_ECB"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_ECB);
-        case ID("Cryptofuzz/Cipher/AES_192_ECB"):
+        case CF_CIPHER("AES_192_ECB"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_ECB);
-        case ID("Cryptofuzz/Cipher/AES_256_ECB"):
+        case CF_CIPHER("AES_256_ECB"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_ECB);
-        case ID("Cryptofuzz/Cipher/AES_128_CBC"):
+        case CF_CIPHER("AES_128_CBC"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_CBC);
-        case ID("Cryptofuzz/Cipher/AES_192_CBC"):
+        case CF_CIPHER("AES_192_CBC"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_CBC);
-        case ID("Cryptofuzz/Cipher/AES_256_CBC"):
+        case CF_CIPHER("AES_256_CBC"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_CBC);
-        case ID("Cryptofuzz/Cipher/AES_128_CFB128"):
+        case CF_CIPHER("AES_128_CFB128"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_CFB128);
-        case ID("Cryptofuzz/Cipher/AES_192_CFB128"):
+        case CF_CIPHER("AES_192_CFB128"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_CFB128);
-        case ID("Cryptofuzz/Cipher/AES_256_CFB128"):
+        case CF_CIPHER("AES_256_CFB128"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_CFB128);
-        case ID("Cryptofuzz/Cipher/AES_128_CTR"):
+        case CF_CIPHER("AES_128_CTR"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_CTR);
-        case ID("Cryptofuzz/Cipher/AES_192_CTR"):
+        case CF_CIPHER("AES_192_CTR"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_CTR);
-        case ID("Cryptofuzz/Cipher/AES_256_CTR"):
+        case CF_CIPHER("AES_256_CTR"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_CTR);
-        case ID("Cryptofuzz/Cipher/AES_128_GCM"):
+        case CF_CIPHER("AES_128_GCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_GCM);
-        case ID("Cryptofuzz/Cipher/AES_192_GCM"):
+        case CF_CIPHER("AES_192_GCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_GCM);
-        case ID("Cryptofuzz/Cipher/AES_256_GCM"):
+        case CF_CIPHER("AES_256_GCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_GCM);
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_ECB"):
+        case CF_CIPHER("CAMELLIA_128_ECB"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_128_ECB);
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_ECB"):
+        case CF_CIPHER("CAMELLIA_192_ECB"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_192_ECB);
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_ECB"):
+        case CF_CIPHER("CAMELLIA_256_ECB"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_256_ECB);
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_CBC"):
+        case CF_CIPHER("CAMELLIA_128_CBC"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_128_CBC);
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_CBC"):
+        case CF_CIPHER("CAMELLIA_192_CBC"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_192_CBC);
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_CBC"):
+        case CF_CIPHER("CAMELLIA_256_CBC"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_256_CBC);
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_CFB128"):
+        case CF_CIPHER("CAMELLIA_128_CFB128"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_128_CFB128);
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_CFB128"):
+        case CF_CIPHER("CAMELLIA_192_CFB128"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_192_CFB128);
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_CFB128"):
+        case CF_CIPHER("CAMELLIA_256_CFB128"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_256_CFB128);
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_CTR"):
+        case CF_CIPHER("CAMELLIA_128_CTR"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_128_CTR);
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_CTR"):
+        case CF_CIPHER("CAMELLIA_192_CTR"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_192_CTR);
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_CTR"):
+        case CF_CIPHER("CAMELLIA_256_CTR"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_256_CTR);
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_GCM"):
+        case CF_CIPHER("CAMELLIA_128_GCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_128_GCM);
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_GCM"):
+        case CF_CIPHER("CAMELLIA_192_GCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_192_GCM);
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_GCM"):
+        case CF_CIPHER("CAMELLIA_256_GCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_256_GCM);
-        case ID("Cryptofuzz/Cipher/DES_ECB"):
+        case CF_CIPHER("DES_ECB"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_DES_ECB);
-        case ID("Cryptofuzz/Cipher/DES_CBC"):
+        case CF_CIPHER("DES_CBC"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_DES_CBC);
-        case ID("Cryptofuzz/Cipher/DES_EDE_ECB"):
+        case CF_CIPHER("DES_EDE_ECB"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_DES_EDE_ECB);
-        case ID("Cryptofuzz/Cipher/DES_EDE_CBC"):
+        case CF_CIPHER("DES_EDE_CBC"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_DES_EDE_CBC);
-        case ID("Cryptofuzz/Cipher/DES_EDE3_ECB"):
+        case CF_CIPHER("DES_EDE3_ECB"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_DES_EDE3_ECB);
-        case ID("Cryptofuzz/Cipher/DES_EDE3_CBC"):
+        case CF_CIPHER("DES_EDE3_CBC"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_DES_EDE3_CBC);
-        case ID("Cryptofuzz/Cipher/BLOWFISH_ECB"):
+        case CF_CIPHER("BLOWFISH_ECB"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_BLOWFISH_ECB);
-        case ID("Cryptofuzz/Cipher/BLOWFISH_CBC"):
+        case CF_CIPHER("BLOWFISH_CBC"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_BLOWFISH_CBC);
-        case ID("Cryptofuzz/Cipher/BLOWFISH_CFB64"):
+        case CF_CIPHER("BLOWFISH_CFB64"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_BLOWFISH_CFB64);
-        case ID("Cryptofuzz/Cipher/BLOWFISH_CTR"):
+        case CF_CIPHER("BLOWFISH_CTR"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_BLOWFISH_CTR);
-        case ID("Cryptofuzz/Cipher/ARC4_128"):
+        case CF_CIPHER("ARC4_128"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARC4_128);
-        case ID("Cryptofuzz/Cipher/AES_128_CCM"):
+        case CF_CIPHER("AES_128_CCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_CCM);
-        case ID("Cryptofuzz/Cipher/AES_192_CCM"):
+        case CF_CIPHER("AES_192_CCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_CCM);
-        case ID("Cryptofuzz/Cipher/AES_256_CCM"):
+        case CF_CIPHER("AES_256_CCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_CCM);
-        case ID("Cryptofuzz/Cipher/CAMELLIA_128_CCM"):
+        case CF_CIPHER("CAMELLIA_128_CCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_128_CCM);
-        case ID("Cryptofuzz/Cipher/CAMELLIA_192_CCM"):
+        case CF_CIPHER("CAMELLIA_192_CCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_192_CCM);
-        case ID("Cryptofuzz/Cipher/CAMELLIA_256_CCM"):
+        case CF_CIPHER("CAMELLIA_256_CCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_256_CCM);
-        case ID("Cryptofuzz/Cipher/ARIA_128_ECB"):
+        case CF_CIPHER("ARIA_128_ECB"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_128_ECB);
-        case ID("Cryptofuzz/Cipher/ARIA_192_ECB"):
+        case CF_CIPHER("ARIA_192_ECB"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_192_ECB);
-        case ID("Cryptofuzz/Cipher/ARIA_256_ECB"):
+        case CF_CIPHER("ARIA_256_ECB"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_256_ECB);
-        case ID("Cryptofuzz/Cipher/ARIA_128_CBC"):
+        case CF_CIPHER("ARIA_128_CBC"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_128_CBC);
-        case ID("Cryptofuzz/Cipher/ARIA_192_CBC"):
+        case CF_CIPHER("ARIA_192_CBC"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_192_CBC);
-        case ID("Cryptofuzz/Cipher/ARIA_256_CBC"):
+        case CF_CIPHER("ARIA_256_CBC"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_256_CBC);
-        case ID("Cryptofuzz/Cipher/ARIA_128_CFB128"):
+        case CF_CIPHER("ARIA_128_CFB128"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_128_CFB128);
-        case ID("Cryptofuzz/Cipher/ARIA_192_CFB128"):
+        case CF_CIPHER("ARIA_192_CFB128"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_192_CFB128);
-        case ID("Cryptofuzz/Cipher/ARIA_256_CFB128"):
+        case CF_CIPHER("ARIA_256_CFB128"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_256_CFB128);
-        case ID("Cryptofuzz/Cipher/ARIA_128_CTR"):
+        case CF_CIPHER("ARIA_128_CTR"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_128_CTR);
-        case ID("Cryptofuzz/Cipher/ARIA_192_CTR"):
+        case CF_CIPHER("ARIA_192_CTR"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_192_CTR);
-        case ID("Cryptofuzz/Cipher/ARIA_256_CTR"):
+        case CF_CIPHER("ARIA_256_CTR"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_256_CTR);
-        case ID("Cryptofuzz/Cipher/ARIA_128_GCM"):
+        case CF_CIPHER("ARIA_128_GCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_128_GCM);
-        case ID("Cryptofuzz/Cipher/ARIA_192_GCM"):
+        case CF_CIPHER("ARIA_192_GCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_192_GCM);
-        case ID("Cryptofuzz/Cipher/ARIA_256_GCM"):
+        case CF_CIPHER("ARIA_256_GCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_256_GCM);
-        case ID("Cryptofuzz/Cipher/ARIA_128_CCM"):
+        case CF_CIPHER("ARIA_128_CCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_128_CCM);
-        case ID("Cryptofuzz/Cipher/ARIA_192_CCM"):
+        case CF_CIPHER("ARIA_192_CCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_192_CCM);
-        case ID("Cryptofuzz/Cipher/ARIA_256_CCM"):
+        case CF_CIPHER("ARIA_256_CCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_256_CCM);
-        case ID("Cryptofuzz/Cipher/AES_128_OFB"):
+        case CF_CIPHER("AES_128_OFB"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_OFB);
-        case ID("Cryptofuzz/Cipher/AES_192_OFB"):
+        case CF_CIPHER("AES_192_OFB"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_OFB);
-        case ID("Cryptofuzz/Cipher/AES_256_OFB"):
+        case CF_CIPHER("AES_256_OFB"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_OFB);
-        case ID("Cryptofuzz/Cipher/AES_128_XTS"):
+        case CF_CIPHER("AES_128_XTS"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_XTS);
-        case ID("Cryptofuzz/Cipher/AES_256_XTS"):
+        case CF_CIPHER("AES_256_XTS"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_XTS);
-        case ID("Cryptofuzz/Cipher/CHACHA20"):
+        case CF_CIPHER("CHACHA20"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CHACHA20);
-        case ID("Cryptofuzz/Cipher/CHACHA20_POLY1305"):
+        case CF_CIPHER("CHACHA20_POLY1305"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CHACHA20_POLY1305);
         default:
             return nullptr;
@@ -165,15 +166,15 @@ mbedtls_md_type_t mbedTLS::to_mbedtls_md_type_t(const component::DigestType& dig
     using fuzzing::datasource::ID;
 
     static const std::map<uint64_t, mbedtls_md_type_t> LUT = {
-        { ID("Cryptofuzz/Digest/SHA1"), MBEDTLS_MD_SHA1 },
-        { ID("Cryptofuzz/Digest/SHA224"), MBEDTLS_MD_SHA224 },
-        { ID("Cryptofuzz/Digest/SHA256"), MBEDTLS_MD_SHA256 },
-        { ID("Cryptofuzz/Digest/SHA384"), MBEDTLS_MD_SHA384 },
-        { ID("Cryptofuzz/Digest/SHA512"), MBEDTLS_MD_SHA512 },
-        { ID("Cryptofuzz/Digest/MD2"), MBEDTLS_MD_MD2 },
-        { ID("Cryptofuzz/Digest/MD4"), MBEDTLS_MD_MD4 },
-        { ID("Cryptofuzz/Digest/MD5"), MBEDTLS_MD_MD5 },
-        { ID("Cryptofuzz/Digest/RIPEMD160"), MBEDTLS_MD_RIPEMD160 },
+        { CF_DIGEST("SHA1"), MBEDTLS_MD_SHA1 },
+        { CF_DIGEST("SHA224"), MBEDTLS_MD_SHA224 },
+        { CF_DIGEST("SHA256"), MBEDTLS_MD_SHA256 },
+        { CF_DIGEST("SHA384"), MBEDTLS_MD_SHA384 },
+        { CF_DIGEST("SHA512"), MBEDTLS_MD_SHA512 },
+        { CF_DIGEST("MD2"), MBEDTLS_MD_MD2 },
+        { CF_DIGEST("MD4"), MBEDTLS_MD_MD4 },
+        { CF_DIGEST("MD5"), MBEDTLS_MD_MD5 },
+        { CF_DIGEST("RIPEMD160"), MBEDTLS_MD_RIPEMD160 },
     };
 
     if ( LUT.find(digestType.Get()) == LUT.end() ) {
@@ -183,8 +184,8 @@ mbedtls_md_type_t mbedTLS::to_mbedtls_md_type_t(const component::DigestType& dig
     return LUT.at(digestType.Get());
 }
 
-std::optional<component::Ciphertext> mbedTLS::OpDigest(operation::Digest& op) {
-    std::optional<component::Ciphertext> ret = std::nullopt;
+std::optional<component::Digest> mbedTLS::OpDigest(operation::Digest& op) {
+    std::optional<component::Digest> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     util::Multipart parts;
@@ -290,6 +291,11 @@ end:
 std::optional<component::Ciphertext> mbedTLS::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
     std::optional<component::Ciphertext> ret = std::nullopt;
 
+    /* Currently no support for AEAD tags and AAD */
+    if ( op.aad != std::nullopt ) {
+        return ret;
+    }
+
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     util::Multipart parts;
@@ -336,7 +342,7 @@ std::optional<component::Ciphertext> mbedTLS::OpSymmetricEncrypt(operation::Symm
         outIdx += olen;
         out_size -= olen;
 
-        ret = component::Ciphertext(out, outIdx);
+        ret = component::Ciphertext(Buffer(out, outIdx));
     }
 
 end:
@@ -353,7 +359,12 @@ end:
 }
 
 std::optional<component::Cleartext> mbedTLS::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
-    std::optional<component::Ciphertext> ret = std::nullopt;
+    std::optional<component::Cleartext> ret = std::nullopt;
+
+    /* Currently no support for AEAD tags and AAD */
+    if ( op.aad != std::nullopt || op.tag != std::nullopt ) {
+        return ret;
+    }
 
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
