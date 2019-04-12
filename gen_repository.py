@@ -38,6 +38,7 @@ class Cipher(Component):
         self.operation = ModeOfOperation(cipher)
         self.isAEAD = isAEAD
         self.isWRAP = bool(re.search(r'_WRAP', cipher))
+        self.isAES = bool(re.search(r'^AES_', cipher))
 
 class Digest(Component):
     def __init__(self, digest):
@@ -117,6 +118,7 @@ class CipherTable(Table):
                 "bool XTS",
                 "bool AEAD",
                 "bool WRAP",
+                "bool AES",
         ]
 
         super(CipherTable, self).__init__('Cipher', tableDecl)
@@ -134,6 +136,7 @@ class CipherTable(Table):
         tableEntry += [ 'true' if 'XTS' in self.table[index].operation.modeDict else 'false' ]
         tableEntry += [ 'true' if self.table[index].isAEAD else 'false' ]
         tableEntry += [ 'true' if self.table[index].isWRAP else 'false' ]
+        tableEntry += [ 'true' if self.table[index].isAES else 'false' ]
 
         return tableEntry
 

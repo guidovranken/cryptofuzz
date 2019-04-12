@@ -85,6 +85,14 @@ bool IsWRAP(const uint64_t id) {
     }
 }
 
+bool IsAES(const uint64_t id) {
+    try {
+        return CipherLUTMap.at(id).AES;
+    } catch ( std::out_of_range ) {
+        return false;
+    }
+}
+
 std::string DigestToString(const uint64_t id) {
     try {
         return DigestLUTMap.at(id).name;

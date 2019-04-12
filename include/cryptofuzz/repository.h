@@ -16,6 +16,7 @@ bool IsOFB(const uint64_t id);
 bool IsXTS(const uint64_t id);
 bool IsAEAD(const uint64_t id);
 bool IsWRAP(const uint64_t id);
+bool IsAES(const uint64_t id);
 std::string DigestToString(const uint64_t id);
 std::string CipherToString(const uint64_t id);
 
