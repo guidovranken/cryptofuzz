@@ -1074,8 +1074,6 @@ bool OpenSSL::checkSetIVLength(const uint64_t cipherType, const EVP_CIPHER* ciph
 #endif
     }
 
-    ret = true;
-
 end:
     return ret;
 }
