@@ -2,6 +2,7 @@
 #include <cryptofuzz/util.h>
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
+#include <openssl/aes.h>
 
 namespace cryptofuzz {
 namespace module {
@@ -1350,7 +1351,49 @@ end:
 }
 #endif
 
+std::optional<component::Ciphertext> OpenSSL::AES_Encrypt(operation::SymmetricEncrypt& op) {
+    std::optional<component::Ciphertext> ret = std::nullopt;
+
+    AES_KEY key;
+    uint8_t* out = nullptr;
+
+    /* Initialize */
+    {
+        CF_CHECK_EQ(op.aad, std::nullopt);
+        CF_CHECK_EQ(op.tagSize, std::nullopt);
+        CF_CHECK_EQ(op.cipher.iv.GetSize(), 0);
+        CF_CHECK_GTE(op.cleartext.GetSize(), 0);
+        CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize());
+        CF_CHECK_EQ(op.cleartext.GetSize() % 16, 0);
+        CF_CHECK_EQ(AES_set_encrypt_key(op.cipher.key.GetPtr(), op.cipher.key.GetSize() * 8, &key), 0);
+    }
+
+    /* Process */
+    {
+        out = (uint8_t*)malloc(op.ciphertextSize);
+
+        for (size_t i = 0; i < op.cleartext.GetSize(); i += 16) {
+            AES_encrypt(op.cleartext.GetPtr() + i, out + i, &key);
+        }
+    }
+
+    /* Finalize */
+    {
+        ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
+    }
+
+end:
+
+    free(out);
+
+    return ret;
+}
+
 std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
+    if ( op.cipher.cipherType.Get() == CF_CIPHER("AES") ) {
+        return AES_Encrypt(op);
+    }
+
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     bool useEVP = true;
@@ -1639,7 +1682,49 @@ end:
 }
 #endif
 
+std::optional<component::Cleartext> OpenSSL::AES_Decrypt(operation::SymmetricDecrypt& op) {
+    std::optional<component::Cleartext> ret = std::nullopt;
+
+    AES_KEY key;
+    uint8_t* out = nullptr;
+
+    /* Initialize */
+    {
+        CF_CHECK_EQ(op.aad, std::nullopt);
+        CF_CHECK_EQ(op.tag, std::nullopt);
+        CF_CHECK_EQ(op.cipher.iv.GetSize(), 0);
+        CF_CHECK_GTE(op.ciphertext.GetSize(), 0);
+        CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
+        CF_CHECK_EQ(op.ciphertext.GetSize() % 16, 0);
+        CF_CHECK_EQ(AES_set_decrypt_key(op.cipher.key.GetPtr(), op.cipher.key.GetSize() * 8, &key), 0);
+    }
+
+    /* Process */
+    {
+        out = (uint8_t*)malloc(op.cleartextSize);
+
+        for (size_t i = 0; i < op.ciphertext.GetSize(); i += 16) {
+            AES_decrypt(op.ciphertext.GetPtr() + i, out + i, &key);
+        }
+    }
+
+    /* Finalize */
+    {
+        ret = component::Cleartext(out, op.ciphertext.GetSize());
+    }
+
+end:
+
+    free(out);
+
+    return ret;
+}
+
 std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
+    if ( op.cipher.cipherType.Get() == CF_CIPHER("AES") ) {
+        return AES_Decrypt(op);
+    }
+
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     bool useEVP = true;

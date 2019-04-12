@@ -153,6 +153,7 @@ class DigestTable(Table):
 
 ciphers = CipherTable()
 
+ciphers.Add( Cipher("AES") )
 ciphers.Add( Cipher("AES_128_CBC") )
 ciphers.Add( Cipher("AES_128_CBC_HMAC_SHA1") )
 ciphers.Add( Cipher("AES_128_CBC_HMAC_SHA256") )
