@@ -35,6 +35,7 @@ std::string SymmetricEncrypt::ToString(void) const {
     ss << "cipher key: " << util::HexDump(cipher.key.Get()) << std::endl;
     ss << "cipher: " << util::SymmetricCipherIDToString(cipher.cipherType) << std::endl;
     ss << "ciphertextSize: " << std::to_string(ciphertextSize) << std::endl;
+    ss << "tagSize: " << (tagSize ? std::to_string(*tagSize) : "nullopt") << std::endl;
 
     return ss.str();
 }
