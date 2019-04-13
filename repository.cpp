@@ -1,5 +1,8 @@
 #include <fuzzing/datasource/id.hpp>
 #include <cryptofuzz/repository.h>
+#include <map>
+#include <cstdint>
+#include <string>
 #include "repository_map.h"
 
 namespace cryptofuzz {
