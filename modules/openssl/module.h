@@ -40,8 +40,8 @@ class OpenSSL : public Module {
         std::optional<component::Ciphertext> AEAD_Encrypt(operation::SymmetricEncrypt& op, Datasource& ds);
         std::optional<component::Cleartext> AEAD_Decrypt(operation::SymmetricDecrypt& op, Datasource& ds);
 #endif
-        std::optional<component::Ciphertext> AES_Encrypt(operation::SymmetricEncrypt& op);
-        std::optional<component::Cleartext> AES_Decrypt(operation::SymmetricDecrypt& op);
+        std::optional<component::Ciphertext> AES_Encrypt(operation::SymmetricEncrypt& op, Datasource& ds);
+        std::optional<component::Cleartext> AES_Decrypt(operation::SymmetricDecrypt& op, Datasource& ds);
 
 #if !defined(CRYPTOFUZZ_BORINGSSL)
         std::optional<component::Cleartext> OpSymmetricDecrypt_BIO(operation::SymmetricDecrypt& op, Datasource& ds);
