@@ -4,6 +4,8 @@
 #include <fuzzing/datasource/id.hpp>
 #include <openssl/aes.h>
 
+#include "module_internal.h"
+
 namespace cryptofuzz {
 namespace module {
 
@@ -1078,6 +1080,7 @@ std::optional<component::MAC> OpenSSL::OpHMAC(operation::HMAC& op) {
     }
 }
 
+
 bool OpenSSL::checkSetIVLength(const uint64_t cipherType, const EVP_CIPHER* cipher, EVP_CIPHER_CTX* ctx, const size_t inputIvLength) const {
     (void)ctx;
 
@@ -1219,7 +1222,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
     util::Multipart partsCleartext, partsAAD;
 
     const EVP_CIPHER* cipher = nullptr;
-    EVP_CIPHER_CTX* ctx = nullptr;
+    CF_EVP_CIPHER_CTX ctx(ds);
 
     size_t out_size = op.ciphertextSize;
     size_t outIdx = 0;
@@ -1229,8 +1232,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
     /* Initialize */
     {
         CF_CHECK_NE(cipher = toEVPCIPHER(op.cipher.cipherType), nullptr);
-        CF_CHECK_NE(ctx = EVP_CIPHER_CTX_new(), nullptr);
-        CF_CHECK_EQ(EVP_EncryptInit_ex(ctx, cipher, nullptr, nullptr, nullptr), 1);
+        CF_CHECK_EQ(EVP_EncryptInit_ex(ctx.GetPtr(), cipher, nullptr, nullptr, nullptr), 1);
 
         /* Must be a multiple of the block size of this cipher */
         //CF_CHECK_EQ(op.cleartext.GetSize() % EVP_CIPHER_block_size(cipher), 0);
@@ -1248,10 +1250,10 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
             partsAAD = util::ToParts(ds, *(op.aad));
         }
 
-        CF_CHECK_EQ(checkSetIVLength(op.cipher.cipherType.Get(), cipher, ctx, op.cipher.iv.GetSize()), true);
-        CF_CHECK_EQ(checkSetKeyLength(cipher, ctx, op.cipher.key.GetSize()), true);
+        CF_CHECK_EQ(checkSetIVLength(op.cipher.cipherType.Get(), cipher, ctx.GetPtr(), op.cipher.iv.GetSize()), true);
+        CF_CHECK_EQ(checkSetKeyLength(cipher, ctx.GetPtr(), op.cipher.key.GetSize()), true);
 
-        CF_CHECK_EQ(EVP_EncryptInit_ex(ctx, nullptr, nullptr, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr()), 1);
+        CF_CHECK_EQ(EVP_EncryptInit_ex(ctx.GetPtr(), nullptr, nullptr, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr()), 1);
     }
 
     /* Process */
@@ -1260,7 +1262,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
         if ( op.aad != std::nullopt ) {
             for (const auto& part : partsAAD) {
                 int len;
-                CF_CHECK_EQ(EVP_EncryptUpdate(ctx, nullptr, &len, part.first, part.second), 1);
+                CF_CHECK_EQ(EVP_EncryptUpdate(ctx.GetPtr(), nullptr, &len, part.first, part.second), 1);
             }
         }
 
@@ -1269,7 +1271,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
             CF_CHECK_GTE(out_size, part.second + EVP_CIPHER_block_size(cipher) - 1);
 
             int len = -1;
-            CF_CHECK_EQ(EVP_EncryptUpdate(ctx, out + outIdx, &len, part.first, part.second), 1);
+            CF_CHECK_EQ(EVP_EncryptUpdate(ctx.GetPtr(), out + outIdx, &len, part.first, part.second), 1);
             outIdx += len;
             out_size -= len;
         }
@@ -1280,7 +1282,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
         CF_CHECK_GTE(out_size, static_cast<size_t>(EVP_CIPHER_block_size(cipher)));
 
         int len = -1;
-        CF_CHECK_EQ(EVP_EncryptFinal_ex(ctx, out + outIdx, &len), 1);
+        CF_CHECK_EQ(EVP_EncryptFinal_ex(ctx.GetPtr(), out + outIdx, &len), 1);
         outIdx += len;
 
         if ( op.tagSize != std::nullopt ) {
@@ -1290,7 +1292,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
              * See comments around EVP_CTRL_AEAD_SET_TAG in OpSymmetricDecrypt_EVP for reasons
              * as to why this is disabled for LibreSSL.
              */
-            CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_GET_TAG, *op.tagSize, outTag), 1);
+            CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx.GetPtr(), EVP_CTRL_AEAD_GET_TAG, *op.tagSize, outTag), 1);
             ret = component::Ciphertext(Buffer(out, outIdx), Buffer(outTag, *op.tagSize));
 #endif
         } else {
@@ -1299,7 +1301,6 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
     }
 
 end:
-    EVP_CIPHER_CTX_free(ctx);
 
     util::free(out);
     util::free(outTag);
@@ -1573,7 +1574,7 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
     util::Multipart partsCiphertext, partsAAD;
 
     const EVP_CIPHER* cipher = nullptr;
-    EVP_CIPHER_CTX* ctx = nullptr;
+    CF_EVP_CIPHER_CTX ctx(ds);
 
     size_t out_size = op.cleartextSize;
     size_t outIdx = 0;
@@ -1582,8 +1583,7 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
     /* Initialize */
     {
         CF_CHECK_NE(cipher = toEVPCIPHER(op.cipher.cipherType), nullptr);
-        CF_CHECK_NE(ctx = EVP_CIPHER_CTX_new(), nullptr);
-        CF_CHECK_EQ(EVP_DecryptInit_ex(ctx, cipher, nullptr, nullptr, nullptr), 1);
+        CF_CHECK_EQ(EVP_DecryptInit_ex(ctx.GetPtr(), cipher, nullptr, nullptr, nullptr), 1);
 
         /* Must be a multiple of the block size of this cipher */
         //CF_CHECK_EQ(op.ciphertext.GetSize() % EVP_CIPHER_block_size(cipher), 0);
@@ -1601,8 +1601,8 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
             partsAAD = util::ToParts(ds, *(op.aad));
         }
 
-        CF_CHECK_EQ(checkSetIVLength(op.cipher.cipherType.Get(), cipher, ctx, op.cipher.iv.GetSize()), true);
-        CF_CHECK_EQ(checkSetKeyLength(cipher, ctx, op.cipher.key.GetSize()), true);
+        CF_CHECK_EQ(checkSetIVLength(op.cipher.cipherType.Get(), cipher, ctx.GetPtr(), op.cipher.iv.GetSize()), true);
+        CF_CHECK_EQ(checkSetKeyLength(cipher, ctx.GetPtr(), op.cipher.key.GetSize()), true);
 
 #if !defined(CRYPTOFUZZ_LIBRESSL)
         /* Set tag.
@@ -1615,11 +1615,11 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
          * Later, this can be changed to use the EVP interface for GCM and CCM ciphers.
          */
         if ( op.tag != std::nullopt ) {
-            CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, op.tag->GetSize(), (void*)op.tag->GetPtr()), 1);
+            CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx.GetPtr(), EVP_CTRL_AEAD_SET_TAG, op.tag->GetSize(), (void*)op.tag->GetPtr()), 1);
         }
 #endif
 
-        CF_CHECK_EQ(EVP_DecryptInit_ex(ctx, nullptr, nullptr, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr()), 1);
+        CF_CHECK_EQ(EVP_DecryptInit_ex(ctx.GetPtr(), nullptr, nullptr, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr()), 1);
     }
 
     /* Process */
@@ -1628,11 +1628,11 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
         if ( op.aad != std::nullopt ) {
 
             int len;
-            CF_CHECK_EQ(EVP_DecryptUpdate(ctx, nullptr, &len, nullptr, op.ciphertext.GetSize()), 1);
+            CF_CHECK_EQ(EVP_DecryptUpdate(ctx.GetPtr(), nullptr, &len, nullptr, op.ciphertext.GetSize()), 1);
 
             for (const auto& part : partsAAD) {
                 int len;
-                CF_CHECK_EQ(EVP_DecryptUpdate(ctx, nullptr, &len, part.first, part.second), 1);
+                CF_CHECK_EQ(EVP_DecryptUpdate(ctx.GetPtr(), nullptr, &len, part.first, part.second), 1);
             }
         }
 
@@ -1641,7 +1641,7 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
             CF_CHECK_GTE(out_size, part.second + EVP_CIPHER_block_size(cipher));
 
             int len = -1;
-            CF_CHECK_EQ(EVP_DecryptUpdate(ctx, out + outIdx, &len, part.first, part.second), 1);
+            CF_CHECK_EQ(EVP_DecryptUpdate(ctx.GetPtr(), out + outIdx, &len, part.first, part.second), 1);
 
             outIdx += len;
             out_size -= len;
@@ -1653,14 +1653,13 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
         CF_CHECK_GTE(out_size, static_cast<size_t>(EVP_CIPHER_block_size(cipher)));
 
         int len = -1;
-        CF_CHECK_EQ(EVP_DecryptFinal_ex(ctx, out + outIdx, &len), 1);
+        CF_CHECK_EQ(EVP_DecryptFinal_ex(ctx.GetPtr(), out + outIdx, &len), 1);
         outIdx += len;
 
         ret = component::Cleartext(out, outIdx);
     }
 
 end:
-    EVP_CIPHER_CTX_free(ctx);
 
     util::free(out);
 
