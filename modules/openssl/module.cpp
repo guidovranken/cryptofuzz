@@ -1314,6 +1314,10 @@ std::optional<component::Ciphertext> OpenSSL::AEAD_Encrypt(operation::SymmetricE
 
     std::optional<component::Ciphertext> ret = std::nullopt;
 
+    if ( op.tagSize == std::nullopt ) {
+        return ret;
+    }
+
     const EVP_AEAD* aead = NULL;
     EVP_AEAD_CTX ctx;
     bool ctxInitialized = false;
@@ -1457,13 +1461,28 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt(operation::Symm
 
 #if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
     if ( toEVPAEAD(op.cipher.cipherType) != nullptr ) {
-        if ( op.tagSize != std::nullopt || op.aad != std::nullopt ) {
-            /* BoringSSL supports AEAD via EVP -- this can be enabled later.
-             * LibreSSL supports AEAD via EVP only for GCM and CCM.
-             * This can also be enabled later.
-             * For now, use native AEAD functions with these libraries.
-             */
+        bool do_AEAD_Encrypt = true;
+        if ( op.tagSize != std::nullopt ) {
+            do_AEAD_Encrypt = false;
+        } else if ( op.aad != std::nullopt ) {
+            do_AEAD_Encrypt = false;
+        }
+
+#if defined(CRYPTOFUZZ_BORINGSSL)
+        if ( do_AEAD_Encrypt == true ) {
+            if ( op.cipher.cipherType.Get() != CF_CIPHER("CHACHA20_POLY1305") &&
+                    op.cipher.cipherType.Get() != CF_CIPHER("XCHACHA20_POLY1305") ) {
+                try {
+                    do_AEAD_Encrypt = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            }
+        }
+#endif
+
+        if ( do_AEAD_Encrypt == true ) {
             return AEAD_Encrypt(op, ds);
+        } else {
+            /* Fall through to OpSymmetricEncrypt_EVP/OpSymmetricEncrypt_BIO */
         }
     }
 #endif
