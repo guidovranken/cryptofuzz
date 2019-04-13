@@ -989,6 +989,28 @@ end:
 #endif
 
 #if !defined(CRYPTOFUZZ_OPENSSL_102)
+HMAC_CTX* OpenSSL::Copy_HMAC_CTX(HMAC_CTX* ctx, Datasource& ds) {
+    bool doCopyCTX = true;
+    try {
+        doCopyCTX = ds.Get<bool>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+    if ( doCopyCTX == true ) {
+        HMAC_CTX* tmpCtx = HMAC_CTX_new();
+        if ( tmpCtx != nullptr ) {
+            if ( HMAC_CTX_copy(tmpCtx, ctx) == 1 ) {
+                /* Copy succeeded, free the old ctx */
+                HMAC_CTX_free(ctx);
+
+                /* Use the copied ctx */
+                ctx = tmpCtx;
+            }
+        }
+    }
+
+    return ctx;
+}
+
 std::optional<component::MAC> OpenSSL::OpHMAC_HMAC(operation::HMAC& op, Datasource& ds) {
     std::optional<component::MAC> ret = std::nullopt;
 
@@ -1005,10 +1027,13 @@ std::optional<component::MAC> OpenSSL::OpHMAC_HMAC(operation::HMAC& op, Datasour
         HMAC_CTX_reset(ctx);
         CF_CHECK_NE(md = toEVPMD(op.digestType), nullptr);
         CF_CHECK_EQ(HMAC_Init_ex(ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), md, nullptr), 1);
+
+        ctx = Copy_HMAC_CTX(ctx, ds);
     }
 
     /* Process */
     for (const auto& part : parts) {
+        ctx = Copy_HMAC_CTX(ctx, ds);
         CF_CHECK_EQ(HMAC_Update(ctx, part.first, part.second), 1);
     }
 
@@ -1016,6 +1041,7 @@ std::optional<component::MAC> OpenSSL::OpHMAC_HMAC(operation::HMAC& op, Datasour
     {
         unsigned int len = -1;
         uint8_t out[EVP_MAX_MD_SIZE];
+        ctx = Copy_HMAC_CTX(ctx, ds);
         CF_CHECK_EQ(HMAC_Final(ctx, out, &len), 1);
 
         ret = component::MAC(out, len);

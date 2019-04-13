@@ -29,6 +29,7 @@ class OpenSSL : public Module {
         std::optional<component::MAC> OpHMAC_EVP(operation::HMAC& op, Datasource& ds);
 #endif
 #if !defined(CRYPTOFUZZ_OPENSSL_102)
+        HMAC_CTX* Copy_HMAC_CTX(HMAC_CTX* ctx, Datasource& ds);
         std::optional<component::MAC> OpHMAC_HMAC(operation::HMAC& op, Datasource& ds);
 #endif
 
