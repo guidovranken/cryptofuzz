@@ -917,34 +917,31 @@ std::optional<component::Digest> OpenSSL::OpDigest(operation::Digest& op) {
 
     util::Multipart parts;
 
-    EVP_MD_CTX* ctx = nullptr;
+    CF_EVP_MD_CTX ctx(ds);
     const EVP_MD* md = nullptr;
 
     /* Initialize */
     {
         parts = util::ToParts(ds, op.cleartext);
         CF_CHECK_NE(md = toEVPMD(op.digestType), nullptr);
-        CF_CHECK_NE(ctx = EVP_MD_CTX_create(), nullptr);
-        CF_CHECK_EQ(EVP_DigestInit_ex(ctx, md, nullptr), 1);
+        CF_CHECK_EQ(EVP_DigestInit_ex(ctx.GetPtr(), md, nullptr), 1);
     }
 
     /* Process */
     for (const auto& part : parts) {
-        CF_CHECK_EQ(EVP_DigestUpdate(ctx, part.first, part.second), 1);
+        CF_CHECK_EQ(EVP_DigestUpdate(ctx.GetPtr(), part.first, part.second), 1);
     }
 
     /* Finalize */
     {
         unsigned int len = -1;
         unsigned char md[EVP_MAX_MD_SIZE];
-        CF_CHECK_EQ(EVP_DigestFinal_ex(ctx, md, &len), 1);
+        CF_CHECK_EQ(EVP_DigestFinal_ex(ctx.GetPtr(), md, &len), 1);
 
         ret = component::Digest(md, len);
     }
 
 end:
-    EVP_MD_CTX_destroy(ctx);
-
     return ret;
 }
 
@@ -954,7 +951,7 @@ std::optional<component::MAC> OpenSSL::OpHMAC_EVP(operation::HMAC& op, Datasourc
 
     util::Multipart parts;
 
-    EVP_MD_CTX* ctx = nullptr;
+    CF_EVP_MD_CTX ctx(ds);
     const EVP_MD* md = nullptr;
     EVP_PKEY *pkey = nullptr;
 
@@ -962,99 +959,66 @@ std::optional<component::MAC> OpenSSL::OpHMAC_EVP(operation::HMAC& op, Datasourc
     {
         parts = util::ToParts(ds, op.cleartext);
 
-        CF_CHECK_NE(ctx = EVP_MD_CTX_create(), nullptr);
         CF_CHECK_NE(md = toEVPMD(op.digestType), nullptr);
         CF_CHECK_NE(pkey = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, nullptr, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), nullptr);
-        CF_CHECK_EQ(EVP_DigestSignInit(ctx, nullptr, md, nullptr, pkey), 1);
+        CF_CHECK_EQ(EVP_DigestSignInit(ctx.GetPtr(), nullptr, md, nullptr, pkey), 1);
     }
 
     /* Process */
     for (const auto& part : parts) {
-        CF_CHECK_EQ(EVP_DigestSignUpdate(ctx, part.first, part.second), 1);
+        CF_CHECK_EQ(EVP_DigestSignUpdate(ctx.GetPtr(), part.first, part.second), 1);
     }
 
     /* Finalize */
     {
         size_t len = -1;
         uint8_t out[EVP_MAX_MD_SIZE];
-        CF_CHECK_EQ(EVP_DigestSignFinal(ctx, out, &len), 1);
+        CF_CHECK_EQ(EVP_DigestSignFinal(ctx.GetPtr(), out, &len), 1);
 
         ret = component::MAC(out, len);
     }
 
 end:
-    EVP_MD_CTX_destroy(ctx);
     EVP_PKEY_free(pkey);
 
     return ret;
 }
 #endif
 
-#if !defined(CRYPTOFUZZ_OPENSSL_102)
-HMAC_CTX* OpenSSL::Copy_HMAC_CTX(HMAC_CTX* ctx, Datasource& ds) {
-    bool doCopyCTX = true;
-    try {
-        doCopyCTX = ds.Get<bool>();
-    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
-
-    if ( doCopyCTX == true ) {
-        HMAC_CTX* tmpCtx = HMAC_CTX_new();
-        if ( tmpCtx != nullptr ) {
-            if ( HMAC_CTX_copy(tmpCtx, ctx) == 1 ) {
-                /* Copy succeeded, free the old ctx */
-                HMAC_CTX_free(ctx);
-
-                /* Use the copied ctx */
-                ctx = tmpCtx;
-            }
-        }
-    }
-
-    return ctx;
-}
-
 std::optional<component::MAC> OpenSSL::OpHMAC_HMAC(operation::HMAC& op, Datasource& ds) {
     std::optional<component::MAC> ret = std::nullopt;
 
     util::Multipart parts;
 
-    HMAC_CTX* ctx = nullptr;
+    CF_HMAC_CTX ctx(ds);
     const EVP_MD* md = nullptr;
 
     /* Initialize */
     {
         parts = util::ToParts(ds, op.cleartext);
-        CF_CHECK_NE(ctx = HMAC_CTX_new(), nullptr);
         /* TODO remove ? */
-        HMAC_CTX_reset(ctx);
+        HMAC_CTX_reset(ctx.GetPtr());
         CF_CHECK_NE(md = toEVPMD(op.digestType), nullptr);
-        CF_CHECK_EQ(HMAC_Init_ex(ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), md, nullptr), 1);
-
-        ctx = Copy_HMAC_CTX(ctx, ds);
+        CF_CHECK_EQ(HMAC_Init_ex(ctx.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), md, nullptr), 1);
     }
 
     /* Process */
     for (const auto& part : parts) {
-        ctx = Copy_HMAC_CTX(ctx, ds);
-        CF_CHECK_EQ(HMAC_Update(ctx, part.first, part.second), 1);
+        CF_CHECK_EQ(HMAC_Update(ctx.GetPtr(), part.first, part.second), 1);
     }
 
     /* Finalize */
     {
         unsigned int len = -1;
         uint8_t out[EVP_MAX_MD_SIZE];
-        ctx = Copy_HMAC_CTX(ctx, ds);
-        CF_CHECK_EQ(HMAC_Final(ctx, out, &len), 1);
+        CF_CHECK_EQ(HMAC_Final(ctx.GetPtr(), out, &len), 1);
 
         ret = component::MAC(out, len);
     }
 
 end:
-    HMAC_CTX_free(ctx);
-
     return ret;
 }
-#endif
 
 std::optional<component::MAC> OpenSSL::OpHMAC(operation::HMAC& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -1995,28 +1959,27 @@ std::optional<component::MAC> OpenSSL::OpCMAC(operation::CMAC& op) {
 
     util::Multipart parts;
 
-    CMAC_CTX* ctx = nullptr;
+    CF_CMAC_CTX ctx(ds);
     const EVP_CIPHER* cipher = nullptr;
 
     /* Initialize */
     {
         parts = util::ToParts(ds, op.cleartext);
 
-        CF_CHECK_NE(ctx = CMAC_CTX_new(), nullptr);
         CF_CHECK_NE(cipher = toEVPCIPHER(op.cipher.cipherType), nullptr);
-        CF_CHECK_EQ(CMAC_Init(ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), cipher, nullptr), 1);
+        CF_CHECK_EQ(CMAC_Init(ctx.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), cipher, nullptr), 1);
     }
 
     /* Process */
     for (const auto& part : parts) {
-        CF_CHECK_EQ(CMAC_Update(ctx, part.first, part.second), 1);
+        CF_CHECK_EQ(CMAC_Update(ctx.GetPtr(), part.first, part.second), 1);
     }
 
     /* Finalize */
     {
         size_t len = 0;
         uint8_t out[EVP_MAX_MD_SIZE];
-        CF_CHECK_EQ(CMAC_Final(ctx, out, &len), 1);
+        CF_CHECK_EQ(CMAC_Final(ctx.GetPtr(), out, &len), 1);
         if ( cipher != EVP_aes_128_cbc() ) {
             goto end;
         }
@@ -2024,8 +1987,6 @@ std::optional<component::MAC> OpenSSL::OpCMAC(operation::CMAC& op) {
     }
 
 end:
-    CMAC_CTX_free(ctx);
-
     return ret;
 }
 
