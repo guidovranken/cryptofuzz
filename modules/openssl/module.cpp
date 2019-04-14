@@ -1980,9 +1980,6 @@ std::optional<component::MAC> OpenSSL::OpCMAC(operation::CMAC& op) {
         size_t len = 0;
         uint8_t out[EVP_MAX_MD_SIZE];
         CF_CHECK_EQ(CMAC_Final(ctx.GetPtr(), out, &len), 1);
-        if ( cipher != EVP_aes_128_cbc() ) {
-            goto end;
-        }
         ret = component::MAC(out, len);
     }
 
