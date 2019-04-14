@@ -310,7 +310,12 @@ std::optional<component::Ciphertext> mbedTLS::OpSymmetricEncrypt(operation::Symm
 
     /* Initialize */
     {
-        parts = util::ToParts(ds, op.cleartext);
+        if ( repository::IsXTS( op.cipher.cipherType.Get() ) ) {
+            parts = { { op.cleartext.GetPtr(), op.cleartext.GetSize()} };
+        } else {
+            parts = util::ToParts(ds, op.cleartext);
+        }
+
         CF_CHECK_NE(cipher_info = to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
 
         mbedtls_cipher_init(&cipher_ctx);
@@ -377,7 +382,12 @@ std::optional<component::Cleartext> mbedTLS::OpSymmetricDecrypt(operation::Symme
 
     /* Initialize */
     {
-        parts = util::ToParts(ds, op.ciphertext);
+        if ( repository::IsXTS( op.cipher.cipherType.Get() ) ) {
+            parts = { { op.ciphertext.GetPtr(), op.ciphertext.GetSize()} };
+        } else {
+            parts = util::ToParts(ds, op.ciphertext);
+        }
+
         CF_CHECK_NE(cipher_info = to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
 
         mbedtls_cipher_init(&cipher_ctx);
