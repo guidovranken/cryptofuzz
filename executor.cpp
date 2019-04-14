@@ -434,6 +434,24 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
         operations.push_back( {module, op} );
     } while ( parentDs.Get<bool>() == true );
 
+
+    /* Enable this to run every operation on every loaded module */
+#if 0
+    {
+        std::vector< std::pair<std::shared_ptr<Module>, OperationType> > newOperations;
+
+        const size_t operationsSize = operations.size();
+        for (size_t i = 0; i < operationsSize; i++) {
+            for (const auto& m : modules ) {
+                if ( m.first == operations[i].first->ID ) {
+                    continue;
+                }
+                operations.push_back( {m.second, operations[i].second} );
+            }
+        }
+    }
+#endif
+
     /*
      * Enable this to test results of min. 2 modules always
     if ( operations.size() < 2 ) {
