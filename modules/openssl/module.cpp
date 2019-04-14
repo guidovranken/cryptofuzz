@@ -48,7 +48,7 @@ OpenSSL::OpenSSL(void) :
 #endif
 
 #if !defined(CRYPTOFUZZ_OPENSSL_102)
-     OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS, NULL);
+     OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS, nullptr);
 #else
      OpenSSL_add_all_algorithms();
 #endif
@@ -1282,7 +1282,7 @@ std::optional<component::Ciphertext> OpenSSL::AEAD_Encrypt(operation::SymmetricE
         return ret;
     }
 
-    const EVP_AEAD* aead = NULL;
+    const EVP_AEAD* aead = nullptr;
     EVP_AEAD_CTX ctx;
     bool ctxInitialized = false;
     size_t len;
@@ -1655,7 +1655,7 @@ std::optional<component::Cleartext> OpenSSL::AEAD_Decrypt(operation::SymmetricDe
 
     std::optional<component::Cleartext> ret = std::nullopt;
 
-    const EVP_AEAD* aead = NULL;
+    const EVP_AEAD* aead = nullptr;
     EVP_AEAD_CTX ctx;
     bool ctxInitialized = false;
     size_t len;
