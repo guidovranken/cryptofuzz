@@ -330,7 +330,7 @@ std::optional<component::Ciphertext> mbedTLS::OpSymmetricEncrypt(operation::Symm
     /* Process */
     for (const auto& part : parts) {
         size_t olen;
-        CF_CHECK_EQ(mbedtls_cipher_update(&cipher_ctx, part.first, part.second, out, &olen), 0);
+        CF_CHECK_EQ(mbedtls_cipher_update(&cipher_ctx, part.first, part.second, out + outIdx, &olen), 0);
         outIdx += olen;
         out_size -= olen;
     }
@@ -338,7 +338,7 @@ std::optional<component::Ciphertext> mbedTLS::OpSymmetricEncrypt(operation::Symm
     /* Finalize */
     {
         size_t olen;
-        CF_CHECK_EQ(mbedtls_cipher_finish(&cipher_ctx, out, &olen), 0);
+        CF_CHECK_EQ(mbedtls_cipher_finish(&cipher_ctx, out + outIdx, &olen), 0);
         outIdx += olen;
         out_size -= olen;
 
@@ -351,9 +351,6 @@ end:
     if ( ctxInited == true ) {
         mbedtls_cipher_free(&cipher_ctx);
     }
-
-    /* Too many differences with OpenSSL, so don't compare for now */
-    return std::nullopt;
 
     return ret;
 }
@@ -400,7 +397,7 @@ std::optional<component::Cleartext> mbedTLS::OpSymmetricDecrypt(operation::Symme
     /* Process */
     for (const auto& part : parts) {
         size_t olen;
-        CF_CHECK_EQ(mbedtls_cipher_update(&cipher_ctx, part.first, part.second, out, &olen), 0);
+        CF_CHECK_EQ(mbedtls_cipher_update(&cipher_ctx, part.first, part.second, out + outIdx, &olen), 0);
         outIdx += olen;
         out_size -= olen;
     }
@@ -408,7 +405,7 @@ std::optional<component::Cleartext> mbedTLS::OpSymmetricDecrypt(operation::Symme
     /* Finalize */
     {
         size_t olen;
-        CF_CHECK_EQ(mbedtls_cipher_finish(&cipher_ctx, out, &olen), 0);
+        CF_CHECK_EQ(mbedtls_cipher_finish(&cipher_ctx, out + outIdx, &olen), 0);
         outIdx += olen;
         out_size -= olen;
 
@@ -421,9 +418,6 @@ end:
     if ( ctxInited == true ) {
         mbedtls_cipher_free(&cipher_ctx);
     }
-
-    /* Too many differences with OpenSSL, so don't compare for now */
-    return std::nullopt;
 
     return ret;
 }
