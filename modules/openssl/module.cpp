@@ -1097,7 +1097,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_BIO(operation::
     std::optional<component::Ciphertext> ret = std::nullopt;
 
     /* No support for AEAD tags and AAD with BIO */
-    if ( op.aad != std::nullopt ) {
+    if ( op.tagSize != std::nullopt || op.aad != std::nullopt ) {
         return ret;
     }
 
