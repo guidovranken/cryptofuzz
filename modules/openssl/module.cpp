@@ -1050,7 +1050,7 @@ std::optional<component::MAC> OpenSSL::OpHMAC(operation::HMAC& op) {
 }
 
 
-bool OpenSSL::checkSetIVLength(const uint64_t cipherType, const EVP_CIPHER* cipher, EVP_CIPHER_CTX* ctx, const size_t inputIvLength) const {
+bool OpenSSL::checkSetIVLength(const EVP_CIPHER* cipher, EVP_CIPHER_CTX* ctx, const size_t inputIvLength) const {
     (void)ctx;
 
     bool ret = false;
@@ -1222,7 +1222,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
             partsAAD = util::ToParts(ds, *(op.aad));
         }
 
-        CF_CHECK_EQ(checkSetIVLength(op.cipher.cipherType.Get(), cipher, ctx.GetPtr(), op.cipher.iv.GetSize()), true);
+        CF_CHECK_EQ(checkSetIVLength(cipher, ctx.GetPtr(), op.cipher.iv.GetSize()), true);
         CF_CHECK_EQ(checkSetKeyLength(cipher, ctx.GetPtr(), op.cipher.key.GetSize()), true);
 
         CF_CHECK_EQ(EVP_EncryptInit_ex(ctx.GetPtr(), nullptr, nullptr, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr()), 1);
@@ -1603,7 +1603,7 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
             partsAAD = util::ToParts(ds, *(op.aad));
         }
 
-        CF_CHECK_EQ(checkSetIVLength(op.cipher.cipherType.Get(), cipher, ctx.GetPtr(), op.cipher.iv.GetSize()), true);
+        CF_CHECK_EQ(checkSetIVLength(cipher, ctx.GetPtr(), op.cipher.iv.GetSize()), true);
         CF_CHECK_EQ(checkSetKeyLength(cipher, ctx.GetPtr(), op.cipher.key.GetSize()), true);
 
 #if !defined(CRYPTOFUZZ_LIBRESSL)

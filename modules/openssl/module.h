@@ -23,7 +23,7 @@ class OpenSSL : public Module {
         const EVP_AEAD* toEVPAEAD(const component::SymmetricCipherType cipherType) const;
 #endif
 
-        bool checkSetIVLength(const uint64_t cipherType, const EVP_CIPHER* cipher, EVP_CIPHER_CTX* ctx, const size_t inputIvLength) const;
+        bool checkSetIVLength(const EVP_CIPHER* cipher, EVP_CIPHER_CTX* ctx, const size_t inputIvLength) const;
         bool checkSetKeyLength(const EVP_CIPHER* cipher, EVP_CIPHER_CTX* ctx, const size_t inputKeyLength) const;
 
 #if !defined(CRYPTOFUZZ_BORINGSSL)
