@@ -1199,9 +1199,9 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
             CF_CHECK_EQ(isAEAD(cipher), true);
 
             /* Disabled due to crashes */
-            CF_CHECK_NE(op.cipher.cipherType, CF_CIPHER("RC4_HMAC_MD5"));
-            CF_CHECK_NE(op.cipher.cipherType, CF_CIPHER("AES_128_CBC_HMAC_SHA256"));
-            CF_CHECK_NE(op.cipher.cipherType, CF_CIPHER("AES_256_CBC_HMAC_SHA256"));
+            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("RC4_HMAC_MD5"));
+            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_128_CBC_HMAC_SHA256"));
+            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_256_CBC_HMAC_SHA256"));
         }
 
         CF_CHECK_EQ(EVP_EncryptInit_ex(ctx.GetPtr(), cipher, nullptr, nullptr, nullptr), 1);
@@ -1470,6 +1470,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt(operation::Symm
     if ( useEVP == true ) {
         return OpSymmetricEncrypt_EVP(op, ds);
     } else {
+        /* XXX */ return OpSymmetricEncrypt_EVP(op, ds);
 #if !defined(CRYPTOFUZZ_BORINGSSL)
         return OpSymmetricEncrypt_BIO(op, ds);
 #else
@@ -1581,9 +1582,9 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
             CF_CHECK_EQ(isAEAD(cipher), true);
 
             /* Disabled due to crashes */
-            CF_CHECK_NE(op.cipher.cipherType, CF_CIPHER("RC4_HMAC_MD5"));
-            CF_CHECK_NE(op.cipher.cipherType, CF_CIPHER("AES_128_CBC_HMAC_SHA256"));
-            CF_CHECK_NE(op.cipher.cipherType, CF_CIPHER("AES_256_CBC_HMAC_SHA256"));
+            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("RC4_HMAC_MD5"));
+            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_128_CBC_HMAC_SHA256"));
+            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_256_CBC_HMAC_SHA256"));
         }
         CF_CHECK_EQ(EVP_DecryptInit_ex(ctx.GetPtr(), cipher, nullptr, nullptr, nullptr), 1);
 
@@ -1830,6 +1831,7 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt(operation::Symme
         return OpSymmetricDecrypt_EVP(op, ds);
     } else {
 #if !defined(CRYPTOFUZZ_BORINGSSL)
+        /* XXX */ return OpSymmetricDecrypt_EVP(op, ds);
         return OpSymmetricDecrypt_BIO(op, ds);
 #else
         return OpSymmetricDecrypt_EVP(op, ds);
