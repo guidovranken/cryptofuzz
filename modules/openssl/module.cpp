@@ -1197,6 +1197,11 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
              * It is quite arguably misuse of the OpenSSL API, so don't do this.
              */
             CF_CHECK_EQ(isAEAD(cipher), true);
+
+            /* Disabled due to crashes */
+            CF_CHECK_NE(op.cipher.cipherType, CF_CIPHER("RC4_HMAC_MD5"));
+            CF_CHECK_NE(op.cipher.cipherType, CF_CIPHER("AES_128_CBC_HMAC_SHA256"));
+            CF_CHECK_NE(op.cipher.cipherType, CF_CIPHER("AES_256_CBC_HMAC_SHA256"));
         }
 
         CF_CHECK_EQ(EVP_EncryptInit_ex(ctx.GetPtr(), cipher, nullptr, nullptr, nullptr), 1);
@@ -1574,6 +1579,11 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
              * It is quite arguably misuse of the OpenSSL API, so don't do this.
              */
             CF_CHECK_EQ(isAEAD(cipher), true);
+
+            /* Disabled due to crashes */
+            CF_CHECK_NE(op.cipher.cipherType, CF_CIPHER("RC4_HMAC_MD5"));
+            CF_CHECK_NE(op.cipher.cipherType, CF_CIPHER("AES_128_CBC_HMAC_SHA256"));
+            CF_CHECK_NE(op.cipher.cipherType, CF_CIPHER("AES_256_CBC_HMAC_SHA256"));
         }
         CF_CHECK_EQ(EVP_DecryptInit_ex(ctx.GetPtr(), cipher, nullptr, nullptr, nullptr), 1);
 
