@@ -54,6 +54,11 @@ OpenSSL::OpenSSL(void) :
 #endif
 }
 
+
+bool OpenSSL::isAEAD(const EVP_CIPHER* ctx) const {
+    return EVP_CIPHER_flags(ctx) & EVP_CIPH_FLAG_AEAD_CIPHER;
+}
+
 const EVP_MD* OpenSSL::toEVPMD(const component::DigestType& digestType) const {
     using fuzzing::datasource::ID;
 
@@ -1061,7 +1066,7 @@ bool OpenSSL::checkSetIVLength(const uint64_t cipherType, const EVP_CIPHER* ciph
             ret = true;
         }
 #else
-        if ( repository::IsAEAD( cipherType ) ) {
+        if ( isAEAD(cipher) == true ) {
             CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, inputIvLength, nullptr), 1);
             ret = true;
         }
@@ -1173,16 +1178,6 @@ end:
 std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::SymmetricEncrypt& op, Datasource& ds) {
     std::optional<component::Ciphertext> ret = std::nullopt;
 
-    if ( op.tagSize != std::nullopt || op.aad != std::nullopt ) {
-        /* Trying to treat non-AEAD with AEAD-specific features (tag, aad)
-         * leads to all kinds of gnarly memory bugs in OpenSSL.
-         * It is quite arguably misuse of the OpenSSL API, so don't do this.
-         */
-        if ( !repository::IsAEAD( op.cipher.cipherType.Get() ) ) {
-            return ret;
-        }
-    }
-
     util::Multipart partsCleartext, partsAAD;
 
     const EVP_CIPHER* cipher = nullptr;
@@ -1196,6 +1191,14 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
     /* Initialize */
     {
         CF_CHECK_NE(cipher = toEVPCIPHER(op.cipher.cipherType), nullptr);
+        if ( op.tagSize != std::nullopt || op.aad != std::nullopt ) {
+            /* Trying to treat non-AEAD with AEAD-specific features (tag, aad)
+             * leads to all kinds of gnarly memory bugs in OpenSSL.
+             * It is quite arguably misuse of the OpenSSL API, so don't do this.
+             */
+            CF_CHECK_EQ(isAEAD(cipher), true);
+        }
+
         CF_CHECK_EQ(EVP_EncryptInit_ex(ctx.GetPtr(), cipher, nullptr, nullptr, nullptr), 1);
 
         /* Must be a multiple of the block size of this cipher */
@@ -1553,15 +1556,6 @@ end:
 std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::SymmetricDecrypt& op, Datasource& ds) {
     std::optional<component::Cleartext> ret = std::nullopt;
 
-    if ( op.tag != std::nullopt || op.aad != std::nullopt ) {
-        /* Trying to treat non-AEAD with AEAD-specific features (tag, aad)
-         * leads to all kinds of gnarly memory bugs in OpenSSL.
-         * It is quite arguably misuse of the OpenSSL API, so don't do this.
-         */
-        if ( !repository::IsAEAD( op.cipher.cipherType.Get() ) ) {
-            return ret;
-        }
-    }
     util::Multipart partsCiphertext, partsAAD;
 
     const EVP_CIPHER* cipher = nullptr;
@@ -1574,6 +1568,13 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
     /* Initialize */
     {
         CF_CHECK_NE(cipher = toEVPCIPHER(op.cipher.cipherType), nullptr);
+        if ( op.tag != std::nullopt || op.aad != std::nullopt ) {
+            /* Trying to treat non-AEAD with AEAD-specific features (tag, aad)
+             * leads to all kinds of gnarly memory bugs in OpenSSL.
+             * It is quite arguably misuse of the OpenSSL API, so don't do this.
+             */
+            CF_CHECK_EQ(isAEAD(cipher), true);
+        }
         CF_CHECK_EQ(EVP_DecryptInit_ex(ctx.GetPtr(), cipher, nullptr, nullptr, nullptr), 1);
 
         /* Must be a multiple of the block size of this cipher */
