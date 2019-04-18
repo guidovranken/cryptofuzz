@@ -1199,8 +1199,10 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
              */
             CF_CHECK_EQ(isAEAD(cipher), true);
 
-            /* Disabled due to crashes */
+            /* Special TLS AEAD ciphers that should not be attempted to use with aad/tag */
             CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("RC4_HMAC_MD5"));
+            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_128_CBC_HMAC_SHA1"));
+            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_256_CBC_HMAC_SHA1"));
             CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_128_CBC_HMAC_SHA256"));
             CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_256_CBC_HMAC_SHA256"));
         }
@@ -1582,8 +1584,10 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
              */
             CF_CHECK_EQ(isAEAD(cipher), true);
 
-            /* Disabled due to crashes */
+            /* Special TLS AEAD ciphers that should not be attempted to use with aad/tag */
             CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("RC4_HMAC_MD5"));
+            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_128_CBC_HMAC_SHA1"));
+            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_256_CBC_HMAC_SHA1"));
             CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_128_CBC_HMAC_SHA256"));
             CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_256_CBC_HMAC_SHA256"));
         }
