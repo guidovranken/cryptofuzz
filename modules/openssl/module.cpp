@@ -1154,7 +1154,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_BIO(operation::
 
         /* BIO_read shouldn't report more written bytes than the buffer can hold */
         if ( num > (int)op.ciphertextSize ) {
-            goto end;
+            printf("Error: BIO_read reports more written bytes than the buffer can hold\n");
             abort();
         }
 
@@ -1543,7 +1543,7 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_BIO(operation::S
 
         /* BIO_read shouldn't report more written bytes than the buffer can hold */
         if ( num > (int)op.cleartextSize ) {
-            goto end;
+            printf("Error: BIO_read reports more written bytes than the buffer can hold\n");
             abort();
         }
 
