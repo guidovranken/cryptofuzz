@@ -1165,7 +1165,11 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_BIO(operation::
             uint8_t out2[1];
             CF_CHECK_EQ(num2 = BIO_read(bio_cipher, out2, sizeof(out2)), 0);
         }
-        ret = component::Ciphertext(Buffer(out, num));
+
+        /* Currently disabled to due length/padding mismatches with EVP, which are not necessarily OpenSSL's fault.
+         * (needs researching)
+         */
+        //ret = component::Ciphertext(Buffer(out, num));
     }
 
 end:
@@ -1473,7 +1477,6 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt(operation::Symm
     if ( useEVP == true ) {
         return OpSymmetricEncrypt_EVP(op, ds);
     } else {
-        /* XXX */ return OpSymmetricEncrypt_EVP(op, ds);
 #if !defined(CRYPTOFUZZ_BORINGSSL)
         return OpSymmetricEncrypt_BIO(op, ds);
 #else
@@ -1551,7 +1554,11 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_BIO(operation::S
             uint8_t out2[1];
             CF_CHECK_EQ(num2 = BIO_read(bio_cipher, out2, sizeof(out2)), 0);
         }
-        ret = component::Cleartext(out, num);
+
+        /* Currently disabled to due length/padding mismatches with EVP, which are not necessarily OpenSSL's fault.
+         * (needs researching)
+         */
+        //ret = component::Cleartext(out, num);
     }
 
 end:
@@ -1836,7 +1843,6 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt(operation::Symme
         return OpSymmetricDecrypt_EVP(op, ds);
     } else {
 #if !defined(CRYPTOFUZZ_BORINGSSL)
-        /* XXX */ return OpSymmetricDecrypt_EVP(op, ds);
         return OpSymmetricDecrypt_BIO(op, ds);
 #else
         return OpSymmetricDecrypt_EVP(op, ds);
