@@ -5,7 +5,7 @@ CXXFLAGS += -Wall -Wextra -std=c++17 -I ../../include -I ../../fuzzing-headers/i
 module.a: module.o
 	ar rcs module.a module.o
 	ranlib module.a
-module.o: module.cpp module.h Whirlpool.c nessie.h
+module.o: module.cpp module.h whirlpool/Whirlpool.c whirlpool/nessie.h
 	$(CXX) $(CXXFLAGS) -I -fPIC -c module.cpp -o module.o
 clean:
 	rm -rf *.o module.a
