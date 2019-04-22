@@ -3,16 +3,16 @@
 #include <fuzzing/datasource/id.hpp>
 
 extern "C" {
-    #include "Whirlpool.c"
+    #include "whirlpool/Whirlpool.c"
 }
 
 namespace cryptofuzz {
 namespace module {
 
-PublicDomain::PublicDomain(void) :
-    Module("Public Domain") { }
+Reference::Reference(void) :
+    Module("Reference implementations") { }
 
-std::optional<component::Digest> PublicDomain::WHIRLPOOL(operation::Digest& op, Datasource& ds) const {
+std::optional<component::Digest> Reference::WHIRLPOOL(operation::Digest& op, Datasource& ds) const {
     std::optional<component::Digest> ret = std::nullopt;
 
     util::Multipart parts;
@@ -39,7 +39,7 @@ std::optional<component::Digest> PublicDomain::WHIRLPOOL(operation::Digest& op, 
     return ret;
 }
 
-std::optional<component::Digest> PublicDomain::OpDigest(operation::Digest& op) {
+std::optional<component::Digest> Reference::OpDigest(operation::Digest& op) {
     using fuzzing::datasource::ID;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 

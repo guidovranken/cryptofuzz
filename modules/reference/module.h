@@ -7,10 +7,10 @@
 namespace cryptofuzz {
 namespace module {
 
-class PublicDomain : public Module {
+class Reference : public Module {
         std::optional<component::Digest> WHIRLPOOL(operation::Digest& op, Datasource& ds) const;
     public:
-        PublicDomain(void);
+        Reference(void);
         std::optional<component::Digest> OpDigest(operation::Digest& op) override;
 };
 
