@@ -1,5 +1,6 @@
 #include <cryptofuzz/operations.h>
 #include <cryptofuzz/util.h>
+#include <cryptofuzz/repository.h>
 #include <sstream>
 
 namespace cryptofuzz {
@@ -9,7 +10,7 @@ std::string Digest::ToString(void) const {
     std::stringstream ss;
 
     ss << "operation name: Digest" << std::endl;
-    ss << "digest: " << util::DigestIDToString(digestType) << std::endl;
+    ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
 
     return ss.str();
@@ -19,7 +20,7 @@ std::string HMAC::ToString(void) const {
     std::stringstream ss;
 
     ss << "operation name: HMAC" << std::endl;
-    ss << "digest: " << util::DigestIDToString(digestType) << std::endl;
+    ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
 
     return ss.str();
@@ -33,7 +34,7 @@ std::string SymmetricEncrypt::ToString(void) const {
     ss << "aad: " << (aad ? util::HexDump(aad->Get()) : "nullopt") << std::endl;
     ss << "cipher iv: " << util::HexDump(cipher.iv.Get()) << std::endl;
     ss << "cipher key: " << util::HexDump(cipher.key.Get()) << std::endl;
-    ss << "cipher: " << util::SymmetricCipherIDToString(cipher.cipherType) << std::endl;
+    ss << "cipher: " << repository::CipherToString(cipher.cipherType.Get()) << std::endl;
     ss << "ciphertextSize: " << std::to_string(ciphertextSize) << std::endl;
     ss << "tagSize: " << (tagSize ? std::to_string(*tagSize) : "nullopt") << std::endl;
 
@@ -49,7 +50,7 @@ std::string SymmetricDecrypt::ToString(void) const {
     ss << "aad: " << (aad ? util::HexDump(aad->Get()) : "nullopt") << std::endl;
     ss << "cipher iv: " << util::HexDump(cipher.iv.Get()) << std::endl;
     ss << "cipher key: " << util::HexDump(cipher.key.Get()) << std::endl;
-    ss << "cipher: " << util::SymmetricCipherIDToString(cipher.cipherType) << std::endl;
+    ss << "cipher: " << repository::CipherToString(cipher.cipherType.Get()) << std::endl;
     ss << "cleartextSize: " << std::to_string(cleartextSize) << std::endl;
 
     return ss.str();
@@ -82,7 +83,7 @@ std::string KDF_HKDF::ToString(void) const {
     std::stringstream ss;
 
     ss << "operation name: KDF_HKDF" << std::endl;
-    ss << "digest: " << util::DigestIDToString(digestType) << std::endl;
+    ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
     ss << "password: " << util::HexDump(password.Get()) << std::endl;
     ss << "salt: " << util::HexDump(salt.Get()) << std::endl;
     ss << "info: " << util::HexDump(info.Get()) << std::endl;
@@ -94,7 +95,7 @@ std::string KDF_TLS1_PRF::ToString(void) const {
     std::stringstream ss;
 
     ss << "operation name: KDF_TLS1_PRF" << std::endl;
-    ss << "digest: " << util::DigestIDToString(digestType) << std::endl;
+    ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
     ss << "secret: " << util::HexDump(secret.Get()) << std::endl;
     ss << "seed: " << util::HexDump(seed.Get()) << std::endl;
 
@@ -105,7 +106,7 @@ std::string KDF_PBKDF2::ToString(void) const {
     std::stringstream ss;
 
     ss << "operation name: KDF_PBKDF2" << std::endl;
-    ss << "digest: " << util::DigestIDToString(digestType) << std::endl;
+    ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
     ss << "password: " << util::HexDump(password.Get()) << std::endl;
     ss << "salt: " << util::HexDump(salt.Get()) << std::endl;
     ss << "iterations: " << std::to_string(iterations) << std::endl;
@@ -119,7 +120,7 @@ std::string CMAC::ToString(void) const {
     ss << "operation name: CMAC" << std::endl;
     ss << "cipher iv: " << util::HexDump(cipher.iv.Get()) << std::endl;
     ss << "cipher key: " << util::HexDump(cipher.key.Get()) << std::endl;
-    ss << "cipher: " << util::SymmetricCipherIDToString(cipher.cipherType) << std::endl;
+    ss << "cipher: " << repository::CipherToString(cipher.cipherType.Get()) << std::endl;
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
     ss << "key: " << util::HexDump(cipher.key.Get()) << std::endl;
 
@@ -130,7 +131,7 @@ std::string Sign::ToString(void) const {
     std::stringstream ss;
 
     ss << "operation name: Sign" << std::endl;
-    ss << "digest: " << util::DigestIDToString(digestType) << std::endl;
+    ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
 
     return ss.str();
@@ -140,7 +141,7 @@ std::string Verify::ToString(void) const {
     std::stringstream ss;
 
     ss << "operation name: Verify" << std::endl;
-    ss << "digest: " << util::DigestIDToString(digestType) << std::endl;
+    ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
 
     return ss.str();

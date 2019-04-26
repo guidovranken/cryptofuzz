@@ -18,9 +18,6 @@
 namespace cryptofuzz {
 namespace util {
 
-size_t GetDigestSize(const component::DigestType digestType);
-std::string DigestIDToString(const component::DigestType digestType);
-std::string SymmetricCipherIDToString(const component::SymmetricCipherType cipherType);
 using Multipart = std::vector< std::pair<const uint8_t*, size_t> >;
 Multipart ToParts(fuzzing::datasource::Datasource& ds, const Buffer& buffer);
 std::string ToString(const Buffer& buffer);
