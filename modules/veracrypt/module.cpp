@@ -215,8 +215,8 @@ std::optional<component::Ciphertext> Veracrypt::twofish(operation::SymmetricEncr
         CF_CHECK_EQ(op.tagSize, std::nullopt);
         CF_CHECK_EQ(op.aad, std::nullopt);
 
-        /* Fixed key size (16 bytes) */
-        CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
+        /* Fixed key size (32 bytes) */
+        CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
 
         /* Input size must be a multiple of 16 */
         CF_CHECK_EQ(op.cleartext.GetSize() % 16, 0);
@@ -232,7 +232,7 @@ std::optional<component::Ciphertext> Veracrypt::twofish(operation::SymmetricEncr
     {
         for (size_t i = 0; i < op.cleartext.GetSize(); i += 16) {
             /* Does not return a value */
-            twofish_encrypt(&instance, (const unsigned int*)op.cleartext.GetPtr() + i, (unsigned int*)out + i);
+            twofish_encrypt(&instance, (const unsigned int*)(op.cleartext.GetPtr() + i), (unsigned int*)(out + i));
         }
     }
 
@@ -276,7 +276,7 @@ std::optional<component::Cleartext> Veracrypt::twofish(operation::SymmetricDecry
     {
         for (size_t i = 0; i < op.ciphertext.GetSize(); i += 16) {
             /* Does not return a value */
-            twofish_decrypt(&instance, (const unsigned int*)op.ciphertext.GetPtr() + i, (unsigned int*)out + i);
+            twofish_decrypt(&instance, (const unsigned int*)(op.ciphertext.GetPtr() + i), (unsigned int*)(out + i));
         }
     }
 
