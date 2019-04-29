@@ -10,7 +10,28 @@
 namespace cryptofuzz {
 namespace util {
 
+const uint8_t* ToInPlace(fuzzing::datasource::Datasource& ds, uint8_t* out, const size_t outSize, const uint8_t* in, const size_t inSize) {
+    bool inPlace = false;
+
+    if ( outSize >= inSize ) {
+        try {
+            inPlace = ds.Get<bool>();
+        } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+        }
+    }
+
+    if ( inPlace == true && inSize > 0 ) {
+        memcpy(out, in, inSize);
+    }
+
+    return inPlace ? out : in;
+}
+
 Multipart ToParts(fuzzing::datasource::Datasource& ds, const Buffer& buffer) {
+    return ToParts(ds, buffer.GetPtr(), buffer.GetSize());
+}
+
+Multipart ToParts(fuzzing::datasource::Datasource& ds, const uint8_t* data, const size_t size) {
     Multipart ret;
 
     /* Position in buffer */
@@ -18,7 +39,7 @@ Multipart ToParts(fuzzing::datasource::Datasource& ds, const Buffer& buffer) {
 
     try {
         while ( ds.Get<bool>() == true ) {
-            const size_t left = buffer.GetSize() - curPos;
+            const size_t left = size - curPos;
 
             /* Determine part length */
             const size_t len = left == 0 ? 0 : ds.Get<uint64_t>() % left;
@@ -29,7 +50,7 @@ Multipart ToParts(fuzzing::datasource::Datasource& ds, const Buffer& buffer) {
                  * of buffer of size 0 */
                 ret.push_back( {GetNullPtr(), 0} );
             } else {
-                ret.push_back( {buffer.GetPtr() + curPos, len} );
+                ret.push_back( {data + curPos, len} );
             }
 
             /* Advance */
@@ -39,12 +60,12 @@ Multipart ToParts(fuzzing::datasource::Datasource& ds, const Buffer& buffer) {
     }
 
     /* Append the remainder of the buffer */
-    if ( buffer.GetSize() - curPos == 0 ) {
+    if ( size - curPos == 0 ) {
         /* Intentionally invalid pointer to detect dereference
          * of buffer of size 0 */
         ret.push_back( {GetNullPtr(), 0} );
     } else {
-        ret.push_back( {buffer.GetPtr() + curPos, buffer.GetSize() - curPos} );
+        ret.push_back( {data + curPos, size - curPos} );
     }
 
     return ret;

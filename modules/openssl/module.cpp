@@ -1216,13 +1216,19 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
         /* Must be a multiple of the block size of this cipher */
         //CF_CHECK_EQ(op.cleartext.GetSize() % EVP_CIPHER_block_size(cipher), 0);
 
-        /* XTS does not support chunked updating.
-         * See: https://github.com/openssl/openssl/issues/8699
-         */
-        if ( repository::IsXTS( op.cipher.cipherType.Get() ) ) {
-            partsCleartext = { { op.cleartext.GetPtr(), op.cleartext.GetSize()} };
-        } else {
-            partsCleartext = util::ToParts(ds, op.cleartext);
+        {
+            /* Convert cleartext to parts */
+
+            const uint8_t* cleartextPtr = util::ToInPlace(ds, out, out_size, op.cleartext.GetPtr(), op.cleartext.GetSize());
+
+            /* XTS does not support chunked updating.
+             * See: https://github.com/openssl/openssl/issues/8699
+             */
+            if ( repository::IsXTS( op.cipher.cipherType.Get() ) ) {
+                partsCleartext = { { cleartextPtr, op.cleartext.GetSize()} };
+            } else {
+                partsCleartext = util::ToParts(ds, cleartextPtr, op.cleartext.GetSize());
+            }
         }
 
         if ( op.aad != std::nullopt ) {
@@ -1603,13 +1609,19 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
         /* Must be a multiple of the block size of this cipher */
         //CF_CHECK_EQ(op.ciphertext.GetSize() % EVP_CIPHER_block_size(cipher), 0);
 
-        /* XTS does not support chunked updating.
-         * See: https://github.com/openssl/openssl/issues/8699
-         */
-        if ( repository::IsXTS( op.cipher.cipherType.Get() ) ) {
-            partsCiphertext = { { op.ciphertext.GetPtr(), op.ciphertext.GetSize()} };
-        } else {
-            partsCiphertext = util::ToParts(ds, op.ciphertext);
+        {
+            /* Convert ciphertext to parts */
+
+            const uint8_t* ciphertextPtr = util::ToInPlace(ds, out, out_size, op.ciphertext.GetPtr(), op.ciphertext.GetSize());
+
+            /* XTS does not support chunked updating.
+             * See: https://github.com/openssl/openssl/issues/8699
+             */
+            if ( repository::IsXTS( op.cipher.cipherType.Get() ) ) {
+                partsCiphertext = { { ciphertextPtr, op.ciphertext.GetSize()} };
+            } else {
+                partsCiphertext = util::ToParts(ds, ciphertextPtr, op.ciphertext.GetSize());
+            }
         }
 
         if ( op.aad != std::nullopt ) {

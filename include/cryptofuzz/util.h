@@ -18,8 +18,10 @@
 namespace cryptofuzz {
 namespace util {
 
+const uint8_t* ToInPlace(fuzzing::datasource::Datasource& ds, uint8_t* out, const size_t outSize, const uint8_t* in, const size_t inSize);
 using Multipart = std::vector< std::pair<const uint8_t*, size_t> >;
 Multipart ToParts(fuzzing::datasource::Datasource& ds, const Buffer& buffer);
+Multipart ToParts(fuzzing::datasource::Datasource& ds, const uint8_t* data, const size_t size);
 std::string ToString(const Buffer& buffer);
 std::string ToString(const bool val);
 std::string ToString(const component::Ciphertext& val);
