@@ -1,5 +1,6 @@
 #include "module.h"
 #include <cryptofuzz/util.h>
+#include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
 #include <memory>
 
@@ -48,20 +49,18 @@ std::optional<component::Digest> Bitcoin::digest(operation::Digest& op, Datasour
 }
 
 std::optional<component::Digest> Bitcoin::OpDigest(operation::Digest& op) {
-    using fuzzing::datasource::ID;
-
     std::optional<component::Digest> ret = std::nullopt;
 
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     switch ( op.digestType.Get() ) {
-        case ID("Cryptofuzz/Digest/SHA1"):
+        case CF_DIGEST("SHA1"):
             return digest<CSHA1>(op, ds);
-        case ID("Cryptofuzz/Digest/SHA256"):
+        case CF_DIGEST("SHA256"):
             return digest<CSHA256>(op, ds);
-        case ID("Cryptofuzz/Digest/SHA512"):
+        case CF_DIGEST("SHA512"):
             return digest<CSHA512>(op, ds);
-        case ID("Cryptofuzz/Digest/RIPEMD160"):
+        case CF_DIGEST("RIPEMD160"):
             return digest<CRIPEMD160>(op, ds);
     }
 
@@ -97,16 +96,14 @@ std::optional<component::MAC> Bitcoin::hmac(operation::HMAC& op, Datasource& ds)
 }
 
 std::optional<component::MAC> Bitcoin::OpHMAC(operation::HMAC& op) {
-    using fuzzing::datasource::ID;
-
     std::optional<component::MAC> ret = std::nullopt;
 
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     switch ( op.digestType.Get() ) {
-        case ID("Cryptofuzz/Digest/SHA256"):
+        case CF_DIGEST("SHA256"):
             return hmac<CHMAC_SHA256>(op, ds);
-        case ID("Cryptofuzz/Digest/SHA512"):
+        case CF_DIGEST("SHA512"):
             return hmac<CHMAC_SHA512>(op, ds);
     }
 
@@ -116,13 +113,17 @@ std::optional<component::MAC> Bitcoin::OpHMAC(operation::HMAC& op) {
 std::optional<component::Ciphertext> Bitcoin::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
     std::optional<component::Ciphertext> ret = std::nullopt;
 
+    if ( op.tagSize != std::nullopt || op.aad != std::nullopt ) {
+        return ret;
+    }
+
     std::unique_ptr<AES256CBCEncrypt> aes = nullptr;
     uint8_t* out = util::malloc(op.cleartext.GetSize() + AES_BLOCKSIZE);
     int numWritten;
 
     /* Initialize */
     {
-        CF_CHECK_EQ(op.cipher.cipherType.Get(), fuzzing::datasource::ID("Cryptofuzz/Cipher/AES_256_CBC"));
+        CF_CHECK_EQ(op.cipher.cipherType.Get(), CF_CIPHER("AES_256_CBC"));
         CF_CHECK_EQ(op.cipher.key.GetSize(), AES256_KEYSIZE);
         CF_CHECK_EQ(op.cipher.iv.GetSize(), AES_BLOCKSIZE);
         aes = std::make_unique<AES256CBCEncrypt>(op.cipher.key.GetPtr(), op.cipher.iv.GetPtr(), true);
@@ -135,7 +136,7 @@ std::optional<component::Ciphertext> Bitcoin::OpSymmetricEncrypt(operation::Symm
 
     /* Finalize */
     {
-        ret = component::Ciphertext(out, numWritten);
+        ret = component::Ciphertext(Buffer(out, numWritten));
     }
 
 end:
@@ -147,13 +148,17 @@ end:
 std::optional<component::Cleartext> Bitcoin::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
     std::optional<component::Cleartext> ret = std::nullopt;
 
+    if ( op.aad != std::nullopt || op.tag != std::nullopt ) {
+        return ret;
+    }
+
     std::unique_ptr<AES256CBCDecrypt> aes = nullptr;
     uint8_t* out = util::malloc(op.ciphertext.GetSize());
     int numWritten;
 
     /* Initialize */
     {
-        CF_CHECK_EQ(op.cipher.cipherType.Get(), fuzzing::datasource::ID("Cryptofuzz/Cipher/AES_256_CBC"));
+        CF_CHECK_EQ(op.cipher.cipherType.Get(), CF_CIPHER("AES_256_CBC"));
         CF_CHECK_EQ(op.cipher.key.GetSize(), AES256_KEYSIZE);
         CF_CHECK_EQ(op.cipher.iv.GetSize(), AES_BLOCKSIZE);
         aes = std::make_unique<AES256CBCDecrypt>(op.cipher.key.GetPtr(), op.cipher.iv.GetPtr(), true);
