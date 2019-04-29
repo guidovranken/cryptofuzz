@@ -1,5 +1,6 @@
 #include <cryptofuzz/util.h>
 #include <cryptofuzz/util_hexdump.h>
+#include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
 #include <iomanip>
 #include <map>
@@ -9,6 +10,25 @@
 
 namespace cryptofuzz {
 namespace util {
+
+Multipart CipherInputTransform(fuzzing::datasource::Datasource& ds, component::SymmetricCipherType cipherType, const uint8_t* in, const size_t inSize) {
+    if ( repository::IsXTS( cipherType.Get() ) ) {
+        /* XTS does not support chunked updating.
+         * See: https://github.com/openssl/openssl/issues/8699
+         */
+        return { { in, inSize} };
+    } else {
+        return util::ToParts(ds, in, inSize);
+    }
+}
+
+Multipart CipherInputTransform(fuzzing::datasource::Datasource& ds, component::SymmetricCipherType cipherType, uint8_t* out, const size_t outSize, const uint8_t* in, const size_t inSize) {
+    return CipherInputTransform(
+        ds,
+        cipherType,
+        util::ToInPlace(ds, out, outSize, in, inSize),
+        inSize);
+}
 
 const uint8_t* ToInPlace(fuzzing::datasource::Datasource& ds, uint8_t* out, const size_t outSize, const uint8_t* in, const size_t inSize) {
     bool inPlace = false;
