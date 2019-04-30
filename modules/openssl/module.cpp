@@ -1227,6 +1227,11 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
         CF_CHECK_EQ(checkSetKeyLength(cipher, ctx.GetPtr(), op.cipher.key.GetSize()), true);
 
         CF_CHECK_EQ(EVP_EncryptInit_ex(ctx.GetPtr(), nullptr, nullptr, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr()), 1);
+
+        /* Disable ECB padding for consistency with mbed TLS */
+        if ( repository::IsECB(op.cipher.cipherType.Get()) ) {
+            CF_CHECK_EQ(EVP_CIPHER_CTX_set_padding(ctx.GetPtr(), 0), 1);
+        }
     }
 
     /* Process */
@@ -1623,6 +1628,11 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
 #endif
 
         CF_CHECK_EQ(EVP_DecryptInit_ex(ctx.GetPtr(), nullptr, nullptr, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr()), 1);
+
+        /* Disable ECB padding for consistency with mbed TLS */
+        if ( repository::IsECB(op.cipher.cipherType.Get()) ) {
+            CF_CHECK_EQ(EVP_CIPHER_CTX_set_padding(ctx.GetPtr(), 0), 1);
+        }
     }
 
     /* Process */
