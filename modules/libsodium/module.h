@@ -15,7 +15,7 @@ class libsodium : public Module {
         std::optional<component::MAC> HMAC_SHA512256(operation::HMAC& op) const;
     public:
         libsodium(void);
-        std::optional<component::Ciphertext> OpDigest(operation::Digest& op) override;
+        std::optional<component::Digest> OpDigest(operation::Digest& op) override;
         std::optional<component::MAC> OpHMAC(operation::HMAC& op) override;
         std::optional<component::Ciphertext> OpSymmetricEncrypt(operation::SymmetricEncrypt& op) override;
         std::optional<component::Cleartext> OpSymmetricDecrypt(operation::SymmetricDecrypt& op) override;

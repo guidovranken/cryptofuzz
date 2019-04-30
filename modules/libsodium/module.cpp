@@ -1,6 +1,6 @@
 #include "module.h"
 #include <cryptofuzz/util.h>
-#include <fuzzing/datasource/id.hpp>
+#include <cryptofuzz/repository.h>
 #include <sodium.h>
 
 namespace cryptofuzz {
@@ -106,17 +106,14 @@ end:
 }
 
 std::optional<component::Digest> libsodium::OpDigest(operation::Digest& op) {
-    using fuzzing::datasource::ID;
-
-    std::optional<component::Digest> ret = std::nullopt;
-
-    if ( op.digestType.Get() == ID("Cryptofuzz/Digest/SHA256") ) {
-        ret = SHA256(op);
-    } else if ( op.digestType.Get() == ID("Cryptofuzz/Digest/SHA512") ) {
-        ret = SHA512(op);
+    switch ( op.digestType.Get() ) {
+        case CF_DIGEST("SHA256"):
+            return SHA256(op);
+        case CF_DIGEST("SHA512"):
+            return SHA512(op);
+        default:
+            return std::nullopt;
     }
-
-    return ret;
 }
 
 std::optional<component::MAC> libsodium::HMAC_SHA256(operation::HMAC& op) const {
@@ -261,271 +258,381 @@ end:
 }
 
 std::optional<component::MAC> libsodium::OpHMAC(operation::HMAC& op) {
-    using fuzzing::datasource::ID;
-
-    std::optional<component::MAC> ret = std::nullopt;
-
-    if ( op.digestType.Get() == ID("Cryptofuzz/Digest/SHA256") ) {
-        ret = HMAC_SHA256(op);
-    } else if ( op.digestType.Get() == ID("Cryptofuzz/Digest/SHA512") ) {
-        ret = HMAC_SHA512(op);
-    } else if ( op.digestType.Get() == ID("Cryptofuzz/Digest/SHA512-256") ) {
-        ret = HMAC_SHA512256(op);
+    switch ( op.digestType.Get() ) {
+        case CF_DIGEST("SHA256"):
+            return HMAC_SHA256(op);
+        case CF_DIGEST("SHA512"):
+            return HMAC_SHA512(op);
+        case CF_DIGEST("SHA512-256"):
+            return HMAC_SHA512256(op);
+        default:
+            return std::nullopt;
     }
-
-    return ret;
 }
 
-std::optional<component::Ciphertext> libsodium::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
-    using fuzzing::datasource::ID;
+namespace libsodium_detail {
 
-    std::optional<component::Ciphertext> ret = std::nullopt;
+template <size_t TAGLEN, size_t IVLEN, size_t KEYLEN>
+class AEAD {
+    private:
+        virtual int encrypt(unsigned char *c,
+                unsigned long long *clen,
+                const unsigned char *m,
+                unsigned long long mlen,
+                const unsigned char *ad,
+                unsigned long long adlen,
+                const unsigned char *nsec,
+                const unsigned char *npub,
+                const unsigned char *k) const = 0;
+        virtual int decrypt(unsigned char *m,
+                unsigned long long *mlen,
+                unsigned char *nsec,
+                const unsigned char *c,
+                unsigned long long clen,
+                const unsigned char *ad,
+                unsigned long long adlen,
+                const unsigned char *npub,
+                const unsigned char *k) const = 0;
+    public:
+        std::optional<component::Ciphertext> Encrypt(const operation::SymmetricEncrypt& op) const {
+            std::optional<component::Ciphertext> ret = std::nullopt;
 
-    uint8_t* out = util::malloc(op.ciphertextSize);
+            uint8_t* out = util::malloc(op.ciphertextSize);
 
-    if ( op.cipher.cipherType.Get() == ID("Cryptofuzz/Cipher/AES_256_CBC") ) {
-        CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize() + crypto_aead_aes256gcm_ABYTES);
-        CF_CHECK_EQ(op.cipher.iv.GetSize(), crypto_aead_aes256gcm_NPUBBYTES);
-        CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_aead_aes256gcm_KEYBYTES);
+            /* Operation must support tag output */
+            CF_CHECK_NE(op.tagSize, std::nullopt);
+            CF_CHECK_GTE(op.tagSize, TAGLEN);
 
-        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
-        bool usePrecomputation = false;
-        try {
-            usePrecomputation = ds.Get<bool>();
-        } catch ( fuzzing::datasource::Datasource::OutOfData ) {
-        }
+            /* Output must be able to hold message + tag */
+            CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize() + TAGLEN);
 
-        if ( usePrecomputation == false ) {
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), IVLEN);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), KEYLEN);
+
             unsigned long long ciphertext_len;
 
-            CF_CHECK_EQ(crypto_aead_aes256gcm_encrypt(
+            CF_CHECK_EQ(encrypt(
                         out,
                         &ciphertext_len,
                         op.cleartext.GetPtr(),
                         op.cleartext.GetSize(),
-                        (unsigned char*)0x12,
-                        0,
-                        NULL,
+                        op.aad == std::nullopt ? (const uint8_t*)0x12 : op.aad->GetPtr(),
+                        op.aad == std::nullopt ? 0: op.aad->GetSize(),
+                        nullptr,
                         op.cipher.iv.GetPtr(),
                         op.cipher.key.GetPtr()), 0);
 
-            ret = component::Ciphertext(out, ciphertext_len);
-        } else {
-            unsigned long long ciphertext_len;
+            if ( ciphertext_len > op.cleartext.GetSize() + TAGLEN ) {
+                abort();
+            }
+            if ( ciphertext_len < TAGLEN ) {
+                abort();
+            }
 
-            crypto_aead_aes256gcm_state ctx;
-            CF_CHECK_EQ(crypto_aead_aes256gcm_beforenm(&ctx, op.cipher.key.GetPtr()), 0);
-
-            CF_CHECK_EQ(crypto_aead_aes256gcm_encrypt_afternm(
-                        out,
-                        &ciphertext_len,
-                        op.cleartext.GetPtr(),
-                        op.cleartext.GetSize(),
-                        (unsigned char*)0x12,
-                        0,
-                        NULL,
-                        op.cipher.iv.GetPtr(),
-                        &ctx), 0);
-
-            ret = component::Ciphertext(out, ciphertext_len);
-        }
-    } else if ( op.cipher.cipherType.Get() == ID("Cryptofuzz/Cipher/CHACHA20_POLY1305_LIBSODIUM") ) {
-        CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize() + crypto_aead_chacha20poly1305_ABYTES);
-        CF_CHECK_EQ(op.cipher.iv.GetSize(), crypto_aead_chacha20poly1305_NPUBBYTES);
-        CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_aead_chacha20poly1305_KEYBYTES);
-
-        unsigned long long ciphertext_len;
-
-        CF_CHECK_EQ(crypto_aead_chacha20poly1305_encrypt(
-                out,
-                &ciphertext_len,
-                op.cleartext.GetPtr(),
-                op.cleartext.GetSize(),
-                (unsigned char*)0x12,
-                0,
-                NULL,
-                op.cipher.iv.GetPtr(),
-                op.cipher.key.GetPtr()), 0);
-
-        ret = component::Ciphertext(out, ciphertext_len);
-    } else if ( op.cipher.cipherType.Get() == ID("Cryptofuzz/Cipher/CHACHA20_POLY1305") ) {
-        CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize() + crypto_aead_chacha20poly1305_IETF_ABYTES);
-        CF_CHECK_EQ(op.cipher.iv.GetSize(), crypto_aead_chacha20poly1305_IETF_NPUBBYTES);
-        CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_aead_chacha20poly1305_IETF_KEYBYTES);
-
-        unsigned long long ciphertext_len;
-
-        CF_CHECK_EQ(crypto_aead_chacha20poly1305_ietf_encrypt(
-                out,
-                &ciphertext_len,
-                op.cleartext.GetPtr(),
-                op.cleartext.GetSize(),
-                (unsigned char*)0x12,
-                0,
-                NULL,
-                op.cipher.iv.GetPtr(),
-                op.cipher.key.GetPtr()), 0);
-
-        ret = component::Ciphertext(out, ciphertext_len);
-    } else if ( op.cipher.cipherType.Get() == ID("Cryptofuzz/Cipher/XCHACHA20_POLY1305") ) {
-        CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize() + crypto_aead_xchacha20poly1305_IETF_ABYTES);
-        CF_CHECK_EQ(op.cipher.iv.GetSize(), crypto_aead_xchacha20poly1305_IETF_NPUBBYTES);
-        CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_aead_xchacha20poly1305_IETF_KEYBYTES);
-
-        unsigned long long ciphertext_len;
-
-        CF_CHECK_EQ(crypto_aead_xchacha20poly1305_ietf_encrypt(
-                out,
-                &ciphertext_len,
-                op.cleartext.GetPtr(),
-                op.cleartext.GetSize(),
-                (unsigned char*)0x12,
-                0,
-                NULL,
-                op.cipher.iv.GetPtr(),
-                op.cipher.key.GetPtr()), 0);
-
-        ret = component::Ciphertext(out, ciphertext_len);
-    }
-
+            ret = component::Ciphertext(
+                    Buffer(out, ciphertext_len - TAGLEN),
+                    Buffer(out + ciphertext_len - TAGLEN, TAGLEN));
 end:
-    util::free(out);
-
-    return ret;
-}
-
-std::optional<component::Cleartext> libsodium::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
-    using fuzzing::datasource::ID;
-
-    std::optional<component::Cleartext> ret = std::nullopt;
-
-    uint8_t* out = nullptr;
-
-    if ( op.cipher.cipherType.Get() == ID("Cryptofuzz/Cipher/AES_256_CBC") ) {
-        CF_CHECK_GTE(op.ciphertext.GetSize(), crypto_aead_aes256gcm_ABYTES);
-
-        CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
-        CF_CHECK_EQ(op.cipher.iv.GetSize(), crypto_aead_aes256gcm_NPUBBYTES);
-        CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_aead_aes256gcm_KEYBYTES);
-
-        out = util::malloc(op.cleartextSize);
-
-        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
-        bool usePrecomputation = false;
-        try {
-            usePrecomputation = ds.Get<bool>();
-        } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+            util::free(out);
+            return ret;
         }
 
-        if ( usePrecomputation == false ) {
+        std::optional<component::Cleartext> Decrypt(const operation::SymmetricDecrypt& op) const {
+            std::optional<component::Cleartext> ret = std::nullopt;
+
+            size_t ciphertextAndTagSize;
+            uint8_t* ciphertextAndTag = nullptr;
+            uint8_t* out = nullptr;
+
+            CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
+            CF_CHECK_NE(op.tag, std::nullopt);
+
+            /* Concatenate ciphertext + tag */
+            {
+                ciphertextAndTagSize = op.ciphertext.GetSize() + op.tag->GetSize();
+                ciphertextAndTag = util::malloc(ciphertextAndTagSize);
+
+                if ( op.ciphertext.GetSize() ) {
+                    memcpy(ciphertextAndTag, op.ciphertext.GetPtr(), op.ciphertext.GetSize());
+                }
+                if ( op.tag->GetSize() ) {
+                    memcpy(ciphertextAndTag + op.ciphertext.GetSize(), op.tag->GetPtr(), op.tag->GetSize());
+                }
+            }
+
+            CF_CHECK_GTE(op.tag->GetSize(), TAGLEN);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), IVLEN);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), KEYLEN);
+
+            out = util::malloc(op.cleartextSize);
+
             unsigned long long cleartext_len;
 
-            CF_CHECK_EQ(crypto_aead_aes256gcm_decrypt(
+            CF_CHECK_EQ(decrypt(
                         out,
                         &cleartext_len,
-                        NULL,
-                        op.ciphertext.GetPtr(),
-                        op.ciphertext.GetSize(),
-                        (unsigned char*)0x12,
-                        0,
+                        nullptr,
+                        ciphertextAndTag,
+                        ciphertextAndTagSize,
+                        op.aad == std::nullopt ? (const uint8_t*)0x12 : op.aad->GetPtr(),
+                        op.aad == std::nullopt ? 0: op.aad->GetSize(),
                         op.cipher.iv.GetPtr(),
                         op.cipher.key.GetPtr()), 0);
 
             ret = component::Cleartext(out, cleartext_len);
-        } else {
-            unsigned long long cleartext_len;
-
-            crypto_aead_aes256gcm_state ctx;
-            CF_CHECK_EQ(crypto_aead_aes256gcm_beforenm(&ctx, op.cipher.key.GetPtr()), 0);
-
-            CF_CHECK_EQ(crypto_aead_aes256gcm_decrypt_afternm(
-                        out,
-                        &cleartext_len,
-                        NULL,
-                        op.ciphertext.GetPtr(),
-                        op.ciphertext.GetSize(),
-                        (unsigned char*)0x12,
-                        0,
-                        op.cipher.iv.GetPtr(),
-                        &ctx), 0);
-
-            ret = component::Ciphertext(out, cleartext_len);
-        }
-    } else if ( op.cipher.cipherType.Get() == ID("Cryptofuzz/Cipher/CHACHA20_POLY1305_LIBSODIUM") ) {
-        CF_CHECK_GTE(op.ciphertext.GetSize(), crypto_aead_chacha20poly1305_ABYTES);
-
-        CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
-        CF_CHECK_EQ(op.cipher.iv.GetSize(), crypto_aead_chacha20poly1305_NPUBBYTES);
-        CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_aead_chacha20poly1305_KEYBYTES);
-
-        out = util::malloc(op.cleartextSize);
-
-        unsigned long long cleartext_len;
-
-        CF_CHECK_EQ(crypto_aead_chacha20poly1305_decrypt(
-                out,
-                &cleartext_len,
-                NULL,
-                op.ciphertext.GetPtr(),
-                op.ciphertext.GetSize(),
-                (unsigned char*)0x12,
-                0,
-                op.cipher.iv.GetPtr(),
-                op.cipher.key.GetPtr()), 0);
-
-        ret = component::Cleartext(out, cleartext_len);
-    } else if ( op.cipher.cipherType.Get() == ID("Cryptofuzz/Cipher/CHACHA20_POLY1305") ) {
-        CF_CHECK_GTE(op.ciphertext.GetSize(), crypto_aead_chacha20poly1305_IETF_ABYTES);
-
-        CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
-        CF_CHECK_EQ(op.cipher.iv.GetSize(), crypto_aead_chacha20poly1305_IETF_NPUBBYTES);
-        CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_aead_chacha20poly1305_IETF_KEYBYTES);
-
-        out = util::malloc(op.cleartextSize);
-
-        unsigned long long cleartext_len;
-
-        CF_CHECK_EQ(crypto_aead_chacha20poly1305_ietf_decrypt(
-                out,
-                &cleartext_len,
-                NULL,
-                op.ciphertext.GetPtr(),
-                op.ciphertext.GetSize(),
-                (unsigned char*)0x12,
-                0,
-                op.cipher.iv.GetPtr(),
-                op.cipher.key.GetPtr()), 0);
-
-        ret = component::Cleartext(out, cleartext_len);
-    } else if ( op.cipher.cipherType.Get() == ID("Cryptofuzz/Cipher/XCHACHA20_POLY1305") ) {
-        CF_CHECK_GTE(op.ciphertext.GetSize(), crypto_aead_xchacha20poly1305_IETF_ABYTES);
-
-        CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
-        CF_CHECK_EQ(op.cipher.iv.GetSize(), crypto_aead_xchacha20poly1305_IETF_NPUBBYTES);
-        CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_aead_xchacha20poly1305_IETF_KEYBYTES);
-
-        out = util::malloc(op.cleartextSize);
-
-        unsigned long long cleartext_len;
-
-        CF_CHECK_EQ(crypto_aead_xchacha20poly1305_ietf_decrypt(
-                out,
-                &cleartext_len,
-                NULL,
-                op.ciphertext.GetPtr(),
-                op.ciphertext.GetSize(),
-                (unsigned char*)0x12,
-                0,
-                op.cipher.iv.GetPtr(),
-                op.cipher.key.GetPtr()), 0);
-
-        ret = component::Cleartext(out, cleartext_len);
-    }
 
 end:
-    util::free(out);
+            util::free(ciphertextAndTag);
+            util::free(out);
 
-    return ret;
+            return ret;
+        }
+};
+
+static class : public AEAD<
+                                crypto_aead_aes256gcm_ABYTES,
+                                crypto_aead_aes256gcm_NPUBBYTES,
+                                crypto_aead_aes256gcm_KEYBYTES> {
+    private:
+        int encrypt(unsigned char *c,
+                unsigned long long *clen,
+                const unsigned char *m,
+                unsigned long long mlen,
+                const unsigned char *ad,
+                unsigned long long adlen,
+                const unsigned char *nsec,
+                const unsigned char *npub,
+                const unsigned char *k) const override {
+            return crypto_aead_aes256gcm_encrypt(c, clen, m, mlen, ad, adlen, nsec, npub, k);
+        }
+
+        int decrypt(unsigned char *m,
+                unsigned long long *mlen,
+                unsigned char *nsec,
+                const unsigned char *c,
+                unsigned long long clen,
+                const unsigned char *ad,
+                unsigned long long adlen,
+                const unsigned char *npub,
+                const unsigned char *k) const override {
+            return crypto_aead_aes256gcm_decrypt(m, mlen, nsec, c, clen, ad, adlen, npub, k);
+        }
+} aes_256_gcm;
+
+static class : public AEAD<
+                                crypto_aead_aes256gcm_ABYTES,
+                                crypto_aead_aes256gcm_NPUBBYTES,
+                                crypto_aead_aes256gcm_KEYBYTES> {
+    private:
+        int encrypt(unsigned char *c,
+                unsigned long long *clen,
+                const unsigned char *m,
+                unsigned long long mlen,
+                const unsigned char *ad,
+                unsigned long long adlen,
+                const unsigned char *nsec,
+                const unsigned char *npub,
+                const unsigned char *k) const override {
+            int ret = -1;
+
+            crypto_aead_aes256gcm_state ctx;
+            CF_CHECK_EQ(crypto_aead_aes256gcm_beforenm(&ctx, k), 0);
+
+            CF_CHECK_EQ(crypto_aead_aes256gcm_encrypt_afternm(c, clen, m, mlen, ad, adlen, nsec, npub, &ctx), 0);
+
+            ret = 0;
+
+end:
+            return ret;
+        }
+
+        int decrypt(unsigned char *m,
+                unsigned long long *mlen,
+                unsigned char *nsec,
+                const unsigned char *c,
+                unsigned long long clen,
+                const unsigned char *ad,
+                unsigned long long adlen,
+                const unsigned char *npub,
+                const unsigned char *k) const override {
+            int ret = -1;
+            crypto_aead_aes256gcm_state ctx;
+            CF_CHECK_EQ(crypto_aead_aes256gcm_beforenm(&ctx, k), 0);
+
+            CF_CHECK_EQ(crypto_aead_aes256gcm_decrypt_afternm(m, mlen, nsec, c, clen, ad, adlen, npub, &ctx), 0);
+
+            ret = 0;
+end:
+            return ret;
+        }
+} aes_256_gcm_precompute;
+
+static class : public AEAD<
+                                crypto_aead_chacha20poly1305_ABYTES,
+                                crypto_aead_chacha20poly1305_NPUBBYTES,
+                                crypto_aead_chacha20poly1305_KEYBYTES> {
+    private:
+        int encrypt(unsigned char *c,
+                unsigned long long *clen,
+                const unsigned char *m,
+                unsigned long long mlen,
+                const unsigned char *ad,
+                unsigned long long adlen,
+                const unsigned char *nsec,
+                const unsigned char *npub,
+                const unsigned char *k) const override {
+            return crypto_aead_chacha20poly1305_encrypt(c, clen, m, mlen, ad, adlen, nsec, npub, k);
+        }
+
+        int decrypt(unsigned char *m,
+                unsigned long long *mlen,
+                unsigned char *nsec,
+                const unsigned char *c,
+                unsigned long long clen,
+                const unsigned char *ad,
+                unsigned long long adlen,
+                const unsigned char *npub,
+                const unsigned char *k) const override {
+            return crypto_aead_chacha20poly1305_decrypt(m, mlen, nsec, c, clen, ad, adlen, npub, k);
+        }
+} chacha20_poly1305_libsodium;
+
+static class : public AEAD<
+                                crypto_aead_chacha20poly1305_IETF_ABYTES,
+                                crypto_aead_chacha20poly1305_IETF_NPUBBYTES,
+                                crypto_aead_chacha20poly1305_IETF_KEYBYTES> {
+    private:
+        int encrypt(unsigned char *c,
+                unsigned long long *clen,
+                const unsigned char *m,
+                unsigned long long mlen,
+                const unsigned char *ad,
+                unsigned long long adlen,
+                const unsigned char *nsec,
+                const unsigned char *npub,
+                const unsigned char *k) const override {
+            return crypto_aead_chacha20poly1305_ietf_encrypt(c, clen, m, mlen, ad, adlen, nsec, npub, k);
+        }
+
+        int decrypt(unsigned char *m,
+                unsigned long long *mlen,
+                unsigned char *nsec,
+                const unsigned char *c,
+                unsigned long long clen,
+                const unsigned char *ad,
+                unsigned long long adlen,
+                const unsigned char *npub,
+                const unsigned char *k) const override {
+            return crypto_aead_chacha20poly1305_ietf_decrypt(m, mlen, nsec, c, clen, ad, adlen, npub, k);
+        }
+} chacha20_poly1305;
+
+static class : public AEAD<
+                                crypto_aead_xchacha20poly1305_IETF_ABYTES,
+                                crypto_aead_xchacha20poly1305_IETF_NPUBBYTES,
+                                crypto_aead_xchacha20poly1305_IETF_KEYBYTES> {
+    private:
+        int encrypt(unsigned char *c,
+                unsigned long long *clen,
+                const unsigned char *m,
+                unsigned long long mlen,
+                const unsigned char *ad,
+                unsigned long long adlen,
+                const unsigned char *nsec,
+                const unsigned char *npub,
+                const unsigned char *k) const override {
+            return crypto_aead_xchacha20poly1305_ietf_encrypt(c, clen, m, mlen, ad, adlen, nsec, npub, k);
+        }
+
+        int decrypt(unsigned char *m,
+                unsigned long long *mlen,
+                unsigned char *nsec,
+                const unsigned char *c,
+                unsigned long long clen,
+                const unsigned char *ad,
+                unsigned long long adlen,
+                const unsigned char *npub,
+                const unsigned char *k) const override {
+            return crypto_aead_xchacha20poly1305_ietf_decrypt(m, mlen, nsec, c, clen, ad, adlen, npub, k);
+        }
+} xchacha20_poly1305;
+
+} /* namespace libsodium_detail */
+
+std::optional<component::Ciphertext> libsodium::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
+    switch ( op.cipher.cipherType.Get() ) {
+        case    CF_CIPHER("AES_256_GCM"):
+            {
+                Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+                bool usePrecomputation = false;
+                try {
+                    usePrecomputation = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+                }
+
+                if ( usePrecomputation == false ) {
+                    return libsodium_detail::aes_256_gcm.Encrypt(op);
+                } else {
+                    return libsodium_detail::aes_256_gcm_precompute.Encrypt(op);
+                }
+            }
+            break;
+        case    CF_CIPHER("CHACHA20_POLY1305_LIBSODIUM"):
+            {
+                return libsodium_detail::chacha20_poly1305_libsodium.Encrypt(op);
+            }
+            break;
+        case    CF_CIPHER("CHACHA20_POLY1305"):
+            {
+                return libsodium_detail::chacha20_poly1305.Encrypt(op);
+            }
+            break;
+        case    CF_CIPHER("XCHACHA20_POLY1305"):
+            {
+                return libsodium_detail::xchacha20_poly1305.Encrypt(op);
+            }
+            break;
+        default:
+            return std::nullopt;
+    }
+}
+
+std::optional<component::Cleartext> libsodium::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
+    switch ( op.cipher.cipherType.Get() ) {
+        case    CF_CIPHER("AES_256_GCM"):
+            {
+                Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+                bool usePrecomputation = false;
+                try {
+                    usePrecomputation = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+                }
+
+                if ( usePrecomputation == false ) {
+                    return libsodium_detail::aes_256_gcm.Decrypt(op);
+                } else {
+                    return libsodium_detail::aes_256_gcm_precompute.Decrypt(op);
+                }
+            }
+            break;
+        case    CF_CIPHER("CHACHA20_POLY1305_LIBSODIUM"):
+            {
+                return libsodium_detail::chacha20_poly1305_libsodium.Decrypt(op);
+            }
+            break;
+        case    CF_CIPHER("CHACHA20_POLY1305"):
+            {
+                return libsodium_detail::chacha20_poly1305.Decrypt(op);
+            }
+            break;
+        case    CF_CIPHER("XCHACHA20_POLY1305"):
+            {
+                return libsodium_detail::xchacha20_poly1305.Decrypt(op);
+            }
+            break;
+        default:
+            return std::nullopt;
+    }
 }
 
 } /* namespace module */

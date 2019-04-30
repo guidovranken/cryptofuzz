@@ -318,6 +318,7 @@ ciphers.Add( Cipher("TWOFISH") )
 
 # AEAD ciphers
 ciphers.Add( Cipher("CHACHA20_POLY1305", True) )
+ciphers.Add( Cipher("CHACHA20_POLY1305_LIBSODIUM", True) )
 ciphers.Add( Cipher("XCHACHA20_POLY1305", True) )
 ciphers.Add( Cipher("AES_128_GCM", True) )
 ciphers.Add( Cipher("AES_128_GCM_SIV", True) )
