@@ -157,6 +157,18 @@ const mbedtls_cipher_info_t* mbedTLS::to_mbedtls_cipher_info_t(const component::
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CHACHA20);
         case CF_CIPHER("CHACHA20_POLY1305"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CHACHA20_POLY1305);
+        case CF_CIPHER("AES_128_WRAP"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_KW);
+        case CF_CIPHER("AES_128_WRAP_PAD"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_KWP);
+        case CF_CIPHER("AES_192_WRAP"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_KW);
+        case CF_CIPHER("AES_192_WRAP_PAD"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_KWP);
+        case CF_CIPHER("AES_256_WRAP"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_KW);
+        case CF_CIPHER("AES_256_WRAP_PAD"):
+            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_KWP);
         default:
             return nullptr;
     }
@@ -236,7 +248,6 @@ std::optional<component::MAC> mbedTLS::OpHMAC(operation::HMAC& op) {
 
     mbedtls_md_init(&md_ctx);
 
-
     /* Initialize */
     {
         parts = util::ToParts(ds, op.cleartext);
@@ -285,15 +296,67 @@ std::optional<component::MAC> mbedTLS::OpCMAC(operation::CMAC& op) {
 
 end:
 
+    /* ECB CMAC currently results in a mismatch with OpenSSL */
+    if ( repository::IsECB(op.cipher.cipherType.Get()) ) { return std::nullopt; }
+
+    return ret;
+}
+
+std::optional<component::Ciphertext> mbedTLS::encrypt_AEAD(operation::SymmetricEncrypt& op) const {
+    std::optional<component::Ciphertext> ret = std::nullopt;
+
+    mbedtls_cipher_context_t cipher_ctx;
+    const mbedtls_cipher_info_t *cipher_info = nullptr;
+    bool ctxInited = false;
+
+    if ( op.tagSize == std::nullopt ) {
+        return ret;
+    }
+
+    uint8_t* out = util::malloc(op.ciphertextSize);
+    uint8_t* tag = util::malloc(*op.tagSize);
+
+    /* Initialize */
+    {
+        CF_CHECK_NE(cipher_info = to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
+        mbedtls_cipher_init(&cipher_ctx);
+        ctxInited = true;
+        CF_CHECK_EQ(mbedtls_cipher_setup(&cipher_ctx, cipher_info), 0);
+        CF_CHECK_EQ(mbedtls_cipher_setkey(&cipher_ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize() * 8, MBEDTLS_ENCRYPT), 0);
+        CF_CHECK_EQ(mbedtls_cipher_reset(&cipher_ctx), 0);
+        /* "The buffer for the output data [...] must be able to hold at least ilen Bytes." */
+        CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize());
+    }
+
+    /* Process/finalize */
+    {
+        size_t olen;
+        CF_CHECK_EQ(mbedtls_cipher_auth_encrypt(&cipher_ctx,
+                    op.cipher.iv.GetPtr(), op.cipher.iv.GetSize(),
+                    op.aad != std::nullopt ? op.aad->GetPtr() : nullptr, op.aad != std::nullopt ? op.aad->GetSize() : 0,
+                    op.cleartext.GetPtr(), op.cleartext.GetSize(),
+                    out, &olen,
+                    tag, *op.tagSize), 0);
+
+        ret = component::Ciphertext(Buffer(out, olen), Buffer(tag, *op.tagSize));
+    }
+
+end:
+    util::free(out);
+    util::free(tag);
+
+    if ( ctxInited == true ) {
+        mbedtls_cipher_free(&cipher_ctx);
+    }
+
     return ret;
 }
 
 std::optional<component::Ciphertext> mbedTLS::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
     std::optional<component::Ciphertext> ret = std::nullopt;
 
-    /* Currently no support for AEAD tags and AAD */
-    if ( op.aad != std::nullopt ) {
-        return ret;
+    if ( op.tagSize != std::nullopt || op.aad != std::nullopt ) {
+        return encrypt_AEAD(op);
     }
 
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -310,20 +373,44 @@ std::optional<component::Ciphertext> mbedTLS::OpSymmetricEncrypt(operation::Symm
 
     /* Initialize */
     {
-        if ( repository::IsXTS( op.cipher.cipherType.Get() ) ) {
-            parts = { { op.cleartext.GetPtr(), op.cleartext.GetSize()} };
-        } else {
-            parts = util::ToParts(ds, op.cleartext);
-        }
-
         CF_CHECK_NE(cipher_info = to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
 
         mbedtls_cipher_init(&cipher_ctx);
         ctxInited = true;
+
         CF_CHECK_EQ(mbedtls_cipher_setup(&cipher_ctx, cipher_info), 0);
         CF_CHECK_EQ(mbedtls_cipher_setkey(&cipher_ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize() * 8, MBEDTLS_ENCRYPT), 0);
         CF_CHECK_EQ(mbedtls_cipher_set_iv(&cipher_ctx, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize()), 0);
         CF_CHECK_EQ(mbedtls_cipher_reset(&cipher_ctx), 0);
+        CF_CHECK_EQ(mbedtls_cipher_update_ad(&cipher_ctx, nullptr, 0), 0);
+
+        if ( repository::IsXTS( op.cipher.cipherType.Get() ) ) {
+            /* XTS input may not be chunked */
+
+            parts = { { op.cleartext.GetPtr(), op.cleartext.GetSize()} };
+        } else if ( repository::IsGCM( op.cipher.cipherType.Get() ) ) {
+            /* mbed TLS documentation:
+             *
+             * If the underlying cipher is used in GCM mode, all calls
+             * to this function, except for the last one before
+             * mbedtls_cipher_finish(), must have \p ilen as a
+             * multiple of the block size of the cipher.
+             */
+
+            const size_t blockSize = mbedtls_cipher_get_block_size(&cipher_ctx);
+            const size_t numBlocks = op.cleartext.GetSize() / blockSize;
+            const size_t remainder = op.cleartext.GetSize() % blockSize;
+
+            size_t i = 0;
+            for (i = 0; i < numBlocks; i++) {
+                parts.push_back( {op.cleartext.GetPtr() + (i * blockSize), blockSize} );
+            }
+
+            parts.push_back( {op.cleartext.GetPtr() + (i * blockSize), remainder} );
+        } else {
+            parts = util::ToParts(ds, op.cleartext);
+        }
+
 
         /* mbed TLS documentation:
          *      "The buffer for the output data.
@@ -357,15 +444,64 @@ end:
         mbedtls_cipher_free(&cipher_ctx);
     }
 
+    if ( op.cipher.cipherType.Get() == CF_CIPHER("CHACHA20") ) {
+        /* Currently mismatches with OpenSSL, needs researching */
+        return std::nullopt;
+    }
+
+    return ret;
+}
+
+std::optional<component::Cleartext> mbedTLS::decrypt_AEAD(operation::SymmetricDecrypt& op) const {
+    std::optional<component::Cleartext> ret = std::nullopt;
+
+    mbedtls_cipher_context_t cipher_ctx;
+    const mbedtls_cipher_info_t *cipher_info = nullptr;
+    bool ctxInited = false;
+
+    uint8_t* out = util::malloc(op.cleartextSize);
+
+    /* Initialize */
+    {
+        CF_CHECK_NE(cipher_info = to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
+        mbedtls_cipher_init(&cipher_ctx);
+        ctxInited = true;
+        CF_CHECK_EQ(mbedtls_cipher_setup(&cipher_ctx, cipher_info), 0);
+        CF_CHECK_EQ(mbedtls_cipher_setkey(&cipher_ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize() * 8, MBEDTLS_DECRYPT), 0);
+        CF_CHECK_EQ(mbedtls_cipher_reset(&cipher_ctx), 0);
+        /* "The buffer for the output data [...] must be able to hold at least ilen Bytes." */
+        CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
+    }
+
+
+    /* Process/finalize */
+    {
+        size_t olen;
+        CF_CHECK_EQ(mbedtls_cipher_auth_decrypt(&cipher_ctx,
+                    op.cipher.iv.GetPtr(), op.cipher.iv.GetSize(),
+                    op.aad != std::nullopt ? op.aad->GetPtr() : nullptr, op.aad != std::nullopt ? op.aad->GetSize() : 0,
+                    op.ciphertext.GetPtr(), op.ciphertext.GetSize(),
+                    out, &olen,
+                    op.tag != std::nullopt ? op.tag->GetPtr() : nullptr, op.tag != std::nullopt ? op.tag->GetSize() : 0), 0);
+
+        ret = component::Cleartext(Buffer(out, olen));
+    }
+
+end:
+    util::free(out);
+
+    if ( ctxInited == true ) {
+        mbedtls_cipher_free(&cipher_ctx);
+    }
+
     return ret;
 }
 
 std::optional<component::Cleartext> mbedTLS::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
     std::optional<component::Cleartext> ret = std::nullopt;
 
-    /* Currently no support for AEAD tags and AAD */
     if ( op.aad != std::nullopt || op.tag != std::nullopt ) {
-        return ret;
+        return decrypt_AEAD(op);
     }
 
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -382,20 +518,43 @@ std::optional<component::Cleartext> mbedTLS::OpSymmetricDecrypt(operation::Symme
 
     /* Initialize */
     {
-        if ( repository::IsXTS( op.cipher.cipherType.Get() ) ) {
-            parts = { { op.ciphertext.GetPtr(), op.ciphertext.GetSize()} };
-        } else {
-            parts = util::ToParts(ds, op.ciphertext);
-        }
-
         CF_CHECK_NE(cipher_info = to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
 
         mbedtls_cipher_init(&cipher_ctx);
         ctxInited = true;
+
         CF_CHECK_EQ(mbedtls_cipher_setup(&cipher_ctx, cipher_info), 0);
         CF_CHECK_EQ(mbedtls_cipher_setkey(&cipher_ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize() * 8, MBEDTLS_DECRYPT), 0);
         CF_CHECK_EQ(mbedtls_cipher_set_iv(&cipher_ctx, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize()), 0);
         CF_CHECK_EQ(mbedtls_cipher_reset(&cipher_ctx), 0);
+        CF_CHECK_EQ(mbedtls_cipher_update_ad(&cipher_ctx, nullptr, 0), 0);
+
+        if ( repository::IsXTS( op.cipher.cipherType.Get() ) ) {
+            /* XTS input may not be chunked */
+
+            parts = { { op.ciphertext.GetPtr(), op.ciphertext.GetSize()} };
+        } else if ( repository::IsGCM( op.cipher.cipherType.Get() ) ) {
+            /* mbed TLS documentation:
+             *
+             * If the underlying cipher is used in GCM mode, all calls
+             * to this function, except for the last one before
+             * mbedtls_cipher_finish(), must have ilen as a
+             * multiple of the block size of the cipher.
+             */
+
+            const size_t blockSize = mbedtls_cipher_get_block_size(&cipher_ctx);
+            const size_t numBlocks = op.ciphertext.GetSize() / blockSize;
+            const size_t remainder = op.ciphertext.GetSize() % blockSize;
+
+            size_t i = 0;
+            for (i = 0; i < numBlocks; i++) {
+                parts.push_back( {op.ciphertext.GetPtr() + (i * blockSize), blockSize} );
+            }
+
+            parts.push_back( {op.ciphertext.GetPtr() + (i * blockSize), remainder} );
+        } else {
+            parts = util::ToParts(ds, op.ciphertext);
+        }
 
         /* mbed TLS documentation:
          *      "The buffer for the output data.
@@ -427,6 +586,11 @@ end:
 
     if ( ctxInited == true ) {
         mbedtls_cipher_free(&cipher_ctx);
+    }
+
+    if ( op.cipher.cipherType.Get() == CF_CIPHER("CHACHA20") ) {
+        /* Currently mismatches with OpenSSL, needs researching */
+        return std::nullopt;
     }
 
     return ret;

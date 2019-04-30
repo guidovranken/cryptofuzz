@@ -19,6 +19,8 @@ class mbedTLS : public Module {
     private:
         const mbedtls_cipher_info_t* to_mbedtls_cipher_info_t(const component::SymmetricCipherType cipherType) const;
         mbedtls_md_type_t to_mbedtls_md_type_t(const component::DigestType& digestType) const;
+        std::optional<component::Ciphertext> encrypt_AEAD(operation::SymmetricEncrypt& op) const;
+        std::optional<component::Cleartext> decrypt_AEAD(operation::SymmetricDecrypt& op) const;
     public:
         mbedTLS(void);
         std::optional<component::Digest> OpDigest(operation::Digest& op) override;
