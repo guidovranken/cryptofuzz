@@ -345,6 +345,7 @@ end:
             uint8_t* out = nullptr;
 
             CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
+
             CF_CHECK_NE(op.tag, std::nullopt);
 
             /* Concatenate ciphertext + tag */
@@ -360,7 +361,7 @@ end:
                 }
             }
 
-            CF_CHECK_GTE(op.tag->GetSize(), TAGLEN);
+            CF_CHECK_EQ(op.tag->GetSize(), TAGLEN);
             CF_CHECK_EQ(op.cipher.iv.GetSize(), IVLEN);
             CF_CHECK_EQ(op.cipher.key.GetSize(), KEYLEN);
 
