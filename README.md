@@ -95,3 +95,7 @@ If you have more tests, please add them!
 - LibreSSL: [GOST HMAC uses and outputs uninitialized memory](https://cvsweb.openbsd.org/src/lib/libcrypto/evp/digest.c?rev=1.31&content-type=text/x-cvsweb-markup)
 - OpenSSL: [Overlong tag buffer leaves memory uninitialized in CCM mode](https://github.com/openssl/openssl/pull/8810)
 - OpenSSL: [Buffer write overflow when passing large RC5 key](https://github.com/openssl/openssl/pull/8834)
+- OpenSSL: [Hang after particular sequence of operations](https://github.com/openssl/openssl/issues/8827)
+- LibreSSL: Overlong tag buffer leaves memory uninitialized in CCM mode (TBA)
+- LibreSSL: AES GCM context copy crash (TBA)
+- LibreSSL: Streebog wrong output (TBA)
