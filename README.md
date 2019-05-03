@@ -99,3 +99,4 @@ If you have more tests, please add them!
 - LibreSSL: Overlong tag buffer leaves memory uninitialized in CCM mode (TBA)
 - LibreSSL: AES GCM context copy crash (TBA)
 - LibreSSL: Streebog wrong output (TBA)
+- OpenSSL: [EVP_EncryptUpdate, EVP_EncryptFinal_ex branching on uninitialized memory](https://github.com/openssl/openssl/pull/8874)
