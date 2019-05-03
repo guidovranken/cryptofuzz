@@ -432,6 +432,11 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
         }
 
         operations.push_back( {module, op} );
+
+        /* Limit number of operations per run to prevent time-outs */
+        if ( operations.size() == 20 ) {
+            break;
+        }
     } while ( parentDs.Get<bool>() == true );
 
 
