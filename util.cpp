@@ -17,6 +17,11 @@ Multipart CipherInputTransform(fuzzing::datasource::Datasource& ds, component::S
          * See: https://github.com/openssl/openssl/issues/8699
          */
         return { { in, inSize} };
+    } else if ( repository::IsCCM( cipherType.Get() ) ) {
+        /* CCM does not support chunked updating.
+         * See: https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption#Authenticated_Encryption_using_CCM_mode
+         */
+        return { { in, inSize} };
     } else {
         return util::ToParts(ds, in, inSize);
     }

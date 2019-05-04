@@ -1218,9 +1218,17 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
 
         /* Convert cleartext to parts */
         partsCleartext = util::CipherInputTransform(ds, op.cipher.cipherType, out, out_size, op.cleartext.GetPtr(), op.cleartext.GetSize());
+        partsCleartext = { { op.cleartext.GetPtr(), op.cleartext.GetSize()} };
 
         if ( op.aad != std::nullopt ) {
-            partsAAD = util::ToParts(ds, *(op.aad));
+            if ( repository::IsCCM( op.cipher.cipherType.Get() ) ) {
+                /* CCM does not support chunked AAD updating.
+                 * See: https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption#Authenticated_Encryption_using_CCM_mode
+                 */
+                partsAAD = { {op.aad->GetPtr(), op.aad->GetSize()} };
+            } else {
+                partsAAD = util::ToParts(ds, *(op.aad));
+            }
         }
 
         CF_CHECK_EQ(checkSetIVLength(op.cipher.cipherType.Get(), cipher, ctx.GetPtr(), op.cipher.iv.GetSize()), true);
@@ -1606,7 +1614,14 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
         partsCiphertext = util::CipherInputTransform(ds, op.cipher.cipherType, out, out_size, op.ciphertext.GetPtr(), op.ciphertext.GetSize());
 
         if ( op.aad != std::nullopt ) {
-            partsAAD = util::ToParts(ds, *(op.aad));
+            if ( repository::IsCCM( op.cipher.cipherType.Get() ) ) {
+                /* CCM does not support chunked AAD updating.
+                 * See: https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption#Authenticated_Encryption_using_CCM_mode
+                 */
+                partsAAD = { {op.aad->GetPtr(), op.aad->GetSize()} };
+            } else {
+                partsAAD = util::ToParts(ds, *(op.aad));
+            }
         }
 
         CF_CHECK_EQ(checkSetIVLength(op.cipher.cipherType.Get(), cipher, ctx.GetPtr(), op.cipher.iv.GetSize()), true);
