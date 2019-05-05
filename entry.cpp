@@ -33,6 +33,10 @@
   #include <modules/libsodium/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_CRYPTOPP)
+  #include <modules/cryptopp/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
@@ -71,6 +75,9 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
     driver->LoadModule( std::make_shared<cryptofuzz::module::libsodium>() );
 #endif
 
+#if defined(CRYPTOFUZZ_CRYPTOPP)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::CryptoPP>() );
+#endif
     return 0;
 }
 
