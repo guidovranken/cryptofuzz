@@ -1,6 +1,6 @@
 #include "module.h"
 #include <cryptofuzz/util.h>
-#include <fuzzing/datasource/id.hpp>
+#include <cryptofuzz/repository.h>
 
 extern "C" {
 #include "groestl.h"
@@ -75,47 +75,47 @@ std::optional<component::Digest> Monero::OpDigest(operation::Digest& op) {
     std::optional<component::Digest> ret = std::nullopt;
 
     switch ( op.digestType.Get() ) {
-        case ID("Cryptofuzz/Digest/GROESTL-256"):
+        case CF_DIGEST("GROESL_256"):
             {
                 return groestl(op, ds);
             }
             break;
-        case ID("Cryptofuzz/Digest/JH-224"):
+        case CF_DIGEST("JH_224"):
             {
                 return jh(op, ds, 224);
             }
             break;
-        case ID("Cryptofuzz/Digest/JH-256"):
+        case CF_DIGEST("JH_256"):
             {
                 return jh(op, ds, 256);
             }
             break;
-        case ID("Cryptofuzz/Digest/JH-384"):
+        case CF_DIGEST("JH_384"):
             {
                 return jh(op, ds, 384);
             }
             break;
-        case ID("Cryptofuzz/Digest/JH-512"):
+        case CF_DIGEST("JH_512"):
             {
                 return jh(op, ds, 512);
             }
             break;
-        case ID("Cryptofuzz/Digest/SKEIN-256"):
+        case CF_DIGEST("SKEIN_256"):
             {
                 return skein(op, ds, 256);
             }
             break;
-        case ID("Cryptofuzz/Digest/SKEIN-512"):
+        case CF_DIGEST("SKEIN_512"):
             {
                 return skein(op, ds, 512);
             }
             break;
-        case ID("Cryptofuzz/Digest/SKEIN-1024"):
+        case CF_DIGEST("SKEIN_1024"):
             {
                 return skein(op, ds, 1024);
             }
             break;
-        case ID("Cryptofuzz/Digest/KECCAK-256"):
+        case CF_DIGEST("KECCAK_256"):
             {
                 return keccak256(op, ds);
             }
@@ -132,7 +132,7 @@ std::optional<component::MAC> Monero::OpHMAC(operation::HMAC& op) {
     std::optional<component::MAC> ret = std::nullopt;
 
     switch ( op.digestType.Get() ) {
-        case ID("Cryptofuzz/Digest/KECCAK-256"):
+        case CF_DIGEST("KECCAK_256"):
             {
                 auto parts = util::ToParts(ds, op.cleartext);
 
