@@ -227,7 +227,7 @@ std::optional<component::MAC> libsodium::HMAC_SHA512256(operation::HMAC& op) con
         CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_auth_hmacsha512256_KEYBYTES);
         CF_CHECK_EQ(crypto_auth_hmacsha512256(out, op.cleartext.GetPtr(), op.cleartext.GetSize(), op.cipher.key.GetPtr()), 0);
 
-        ret = component::MAC(out, crypto_auth_hmacsha512256_BYTES);
+        //ret = component::MAC(out, crypto_auth_hmacsha512256_BYTES);
     } else {
         crypto_auth_hmacsha512256_state state;
 
@@ -249,7 +249,7 @@ std::optional<component::MAC> libsodium::HMAC_SHA512256(operation::HMAC& op) con
             CF_CHECK_EQ(crypto_auth_hmacsha512256_final(&state, out), 0);
         }
 
-        ret = component::MAC(out, crypto_auth_hmacsha512256_BYTES);
+        //ret = component::MAC(out, crypto_auth_hmacsha512256_BYTES);
     }
 
 end:
