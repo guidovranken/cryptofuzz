@@ -11,6 +11,7 @@
 #include <sm3.h>
 #include <blake2.h>
 #include <tiger.h>
+#include <keccak.h>
 #include <hmac.h>
 #include <memory>
 
@@ -82,6 +83,18 @@ std::optional<component::Digest> CryptoPP::OpDigest(operation::Digest& op) {
                 break;
             case CF_DIGEST("TIGER"):
                 hash = std::make_unique<::CryptoPP::Tiger>();
+                break;
+            case CF_DIGEST("KECCAK_224"):
+                hash = std::make_unique<::CryptoPP::Keccak_224>();
+                break;
+            case CF_DIGEST("KECCAK_256"):
+                hash = std::make_unique<::CryptoPP::Keccak_256>();
+                break;
+            case CF_DIGEST("KECCAK_384"):
+                hash = std::make_unique<::CryptoPP::Keccak_384>();
+                break;
+            case CF_DIGEST("KECCAK_512"):
+                hash = std::make_unique<::CryptoPP::Keccak_512>();
                 break;
         }
 
@@ -182,6 +195,14 @@ std::optional<component::MAC> CryptoPP::OpHMAC(operation::HMAC& op) {
             return CryptoPP_detail::HMAC<::CryptoPP::BLAKE2s>(op);
         case CF_DIGEST("TIGER"):
             return CryptoPP_detail::HMAC<::CryptoPP::Tiger>(op);
+        case CF_DIGEST("KECCAK_224"):
+            return CryptoPP_detail::HMAC<::CryptoPP::Keccak_224>(op);
+        case CF_DIGEST("KECCAK_256"):
+            return CryptoPP_detail::HMAC<::CryptoPP::Keccak_256>(op);
+        case CF_DIGEST("KECCAK_384"):
+            return CryptoPP_detail::HMAC<::CryptoPP::Keccak_384>(op);
+        case CF_DIGEST("KECCAK_512"):
+            return CryptoPP_detail::HMAC<::CryptoPP::Keccak_512>(op);
     }
 
     return std::nullopt;
