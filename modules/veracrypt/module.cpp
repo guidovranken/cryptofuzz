@@ -545,12 +545,12 @@ std::optional<component::Digest> Veracrypt::OpDigest(operation::Digest& op) {
                         unsigned char out[32];
                         /* Does not return a value */
                         STREEBOG_finalize(&ctx, out);
-                        //ret = component::Digest(out, 32);
+                        ret = component::Digest(out, 32);
                     } else {
                         unsigned char out[64];
                         /* Does not return a value */
                         STREEBOG_finalize(&ctx, out);
-                        //ret = component::Digest(out, 64);
+                        ret = component::Digest(out, 64);
                     }
                 }
             }
