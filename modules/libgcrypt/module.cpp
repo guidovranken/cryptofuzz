@@ -35,6 +35,7 @@ std::optional<component::Digest> libgcrypt::OpDigest(operation::Digest& op) {
         { CF_DIGEST("SHA3-512"), GCRY_MD_SHA3_512 },
         { CF_DIGEST("STREEBOG-256"), GCRY_MD_STRIBOG256 },
         { CF_DIGEST("STREEBOG-512"), GCRY_MD_STRIBOG512 },
+        { CF_DIGEST("TIGER"), GCRY_MD_TIGER1 },
     };
 
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
