@@ -28,102 +28,100 @@ std::optional<component::Digest> CryptoPP::OpDigest(operation::Digest& op) {
     std::unique_ptr<::CryptoPP::HashTransformation> hash = nullptr;
     util::Multipart parts;
 
-    try {
+    switch ( op.digestType.Get() ) {
+        case CF_DIGEST("SHA1"):
+            hash = std::make_unique<::CryptoPP::SHA1>();
+            break;
+        case CF_DIGEST("SHA224"):
+            hash = std::make_unique<::CryptoPP::SHA224>();
+            break;
+        case CF_DIGEST("SHA384"):
+            hash = std::make_unique<::CryptoPP::SHA384>();
+            break;
+        case CF_DIGEST("SHA512"):
+            hash = std::make_unique<::CryptoPP::SHA512>();
+            break;
+        case CF_DIGEST("SHAKE128"):
+            hash = std::make_unique<::CryptoPP::SHAKE128>();
+            break;
+        case CF_DIGEST("SHAKE256"):
+            hash = std::make_unique<::CryptoPP::SHAKE256>();
+            break;
+        case CF_DIGEST("RIPEMD128"):
+            hash = std::make_unique<::CryptoPP::RIPEMD128>();
+            break;
+        case CF_DIGEST("RIPEMD160"):
+            hash = std::make_unique<::CryptoPP::RIPEMD160>();
+            break;
+        case CF_DIGEST("RIPEMD256"):
+            hash = std::make_unique<::CryptoPP::RIPEMD256>();
+            break;
+        case CF_DIGEST("RIPEMD320"):
+            hash = std::make_unique<::CryptoPP::RIPEMD320>();
+            break;
+        case CF_DIGEST("WHIRLPOOL"):
+            hash = std::make_unique<::CryptoPP::Whirlpool>();
+            break;
+        case CF_DIGEST("MD2"):
+            hash = std::make_unique<::CryptoPP::Weak::MD2>();
+            break;
+        case CF_DIGEST("MD4"):
+            hash = std::make_unique<::CryptoPP::Weak::MD4>();
+            break;
+        case CF_DIGEST("MD5"):
+            hash = std::make_unique<::CryptoPP::Weak::MD5>();
+            break;
+        case CF_DIGEST("SM3"):
+            hash = std::make_unique<::CryptoPP::SM3>();
+            break;
+        case CF_DIGEST("BLAKE2B512"):
+            hash = std::make_unique<::CryptoPP::BLAKE2b>();
+            break;
+        case CF_DIGEST("BLAKE2S256"):
+            hash = std::make_unique<::CryptoPP::BLAKE2s>();
+            break;
+        case CF_DIGEST("TIGER"):
+            hash = std::make_unique<::CryptoPP::Tiger>();
+            break;
+        case CF_DIGEST("KECCAK_224"):
+            hash = std::make_unique<::CryptoPP::Keccak_224>();
+            break;
+        case CF_DIGEST("KECCAK_256"):
+            hash = std::make_unique<::CryptoPP::Keccak_256>();
+            break;
+        case CF_DIGEST("KECCAK_384"):
+            hash = std::make_unique<::CryptoPP::Keccak_384>();
+            break;
+        case CF_DIGEST("KECCAK_512"):
+            hash = std::make_unique<::CryptoPP::Keccak_512>();
+            break;
+    }
+
+    CF_CHECK_NE(hash, nullptr);
+
+    parts = util::ToParts(ds, op.cleartext);
+
+    /* Process */
+    for (const auto& part : parts) {
+        hash->Update(part.first, part.second);
+    }
+
+    /* Finalize */
+    {
+        size_t digestSize = hash->DigestSize();
+        uint8_t out[digestSize];
+        hash->Final(out);
+
         switch ( op.digestType.Get() ) {
-            case CF_DIGEST("SHA1"):
-                hash = std::make_unique<::CryptoPP::SHA1>();
-                break;
-            case CF_DIGEST("SHA224"):
-                hash = std::make_unique<::CryptoPP::SHA224>();
-                break;
-            case CF_DIGEST("SHA384"):
-                hash = std::make_unique<::CryptoPP::SHA384>();
-                break;
-            case CF_DIGEST("SHA512"):
-                hash = std::make_unique<::CryptoPP::SHA512>();
-                break;
-            case CF_DIGEST("SHAKE128"):
-                hash = std::make_unique<::CryptoPP::SHAKE128>();
-                break;
-            case CF_DIGEST("SHAKE256"):
-                hash = std::make_unique<::CryptoPP::SHAKE256>();
-                break;
-            case CF_DIGEST("RIPEMD128"):
-                hash = std::make_unique<::CryptoPP::RIPEMD128>();
-                break;
-            case CF_DIGEST("RIPEMD160"):
-                hash = std::make_unique<::CryptoPP::RIPEMD160>();
-                break;
-            case CF_DIGEST("RIPEMD256"):
-                hash = std::make_unique<::CryptoPP::RIPEMD256>();
-                break;
-            case CF_DIGEST("RIPEMD320"):
-                hash = std::make_unique<::CryptoPP::RIPEMD320>();
-                break;
-            case CF_DIGEST("WHIRLPOOL"):
-                hash = std::make_unique<::CryptoPP::Whirlpool>();
-                break;
-            case CF_DIGEST("MD2"):
-                hash = std::make_unique<::CryptoPP::Weak::MD2>();
-                break;
-            case CF_DIGEST("MD4"):
-                hash = std::make_unique<::CryptoPP::Weak::MD4>();
-                break;
-            case CF_DIGEST("MD5"):
-                hash = std::make_unique<::CryptoPP::Weak::MD5>();
-                break;
-            case CF_DIGEST("SM3"):
-                hash = std::make_unique<::CryptoPP::SM3>();
-                break;
-            case CF_DIGEST("BLAKE2B512"):
-                hash = std::make_unique<::CryptoPP::BLAKE2b>();
-                break;
-            case CF_DIGEST("BLAKE2S256"):
-                hash = std::make_unique<::CryptoPP::BLAKE2s>();
-                break;
-            case CF_DIGEST("TIGER"):
-                hash = std::make_unique<::CryptoPP::Tiger>();
-                break;
-            case CF_DIGEST("KECCAK_224"):
-                hash = std::make_unique<::CryptoPP::Keccak_224>();
-                break;
-            case CF_DIGEST("KECCAK_256"):
-                hash = std::make_unique<::CryptoPP::Keccak_256>();
-                break;
-            case CF_DIGEST("KECCAK_384"):
-                hash = std::make_unique<::CryptoPP::Keccak_384>();
-                break;
-            case CF_DIGEST("KECCAK_512"):
-                hash = std::make_unique<::CryptoPP::Keccak_512>();
+            case    CF_DIGEST("SHAKE128"):
+            case    CF_DIGEST("SHAKE256"):
+                /* For compatibility with OpenSSL */
+                digestSize /= 2;
                 break;
         }
 
-        CF_CHECK_NE(hash, nullptr);
-
-        parts = util::ToParts(ds, op.cleartext);
-
-        /* Process */
-        for (const auto& part : parts) {
-            hash->Update(part.first, part.second);
-        }
-
-        /* Finalize */
-        {
-            size_t digestSize = hash->DigestSize();
-            uint8_t out[digestSize];
-            hash->Final(out);
-
-            switch ( op.digestType.Get() ) {
-                case    CF_DIGEST("SHAKE128"):
-                case    CF_DIGEST("SHAKE256"):
-                    /* For compatibility with OpenSSL */
-                    digestSize /= 2;
-                break;
-            }
-
-            ret = component::Digest(out, digestSize);
-        }
-    } catch ( ::CryptoPP::Exception ) { }
+        ret = component::Digest(out, digestSize);
+    }
 
 end:
     return ret;
@@ -135,23 +133,21 @@ namespace CryptoPP_detail {
         Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
         std::optional<component::MAC> ret = std::nullopt;
 
-        try {
-            ::CryptoPP::HMAC<Digest> hmac(op.cipher.key.GetPtr(), op.cipher.key.GetSize());
-            util::Multipart parts = util::ToParts(ds, op.cleartext);
+        ::CryptoPP::HMAC<Digest> hmac(op.cipher.key.GetPtr(), op.cipher.key.GetSize());
+        util::Multipart parts = util::ToParts(ds, op.cleartext);
 
-            /* Process */
-            for (const auto& part : parts) {
-                hmac.Update(part.first, part.second);
-            }
+        /* Process */
+        for (const auto& part : parts) {
+            hmac.Update(part.first, part.second);
+        }
 
-            /* Finalize */
-            {
-                uint8_t out[::CryptoPP::HMAC<Digest>::DIGESTSIZE];
-                hmac.Final(out);
+        /* Finalize */
+        {
+            uint8_t out[::CryptoPP::HMAC<Digest>::DIGESTSIZE];
+            hmac.Final(out);
 
-                ret = component::MAC(out, ::CryptoPP::HMAC<Digest>::DIGESTSIZE);
-            }
-        } catch ( ::CryptoPP::Exception ) { }
+            ret = component::MAC(out, ::CryptoPP::HMAC<Digest>::DIGESTSIZE);
+        }
 
         return ret;
     }
