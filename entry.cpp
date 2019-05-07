@@ -41,6 +41,10 @@
   #include <modules/cryptopp/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_LIBGCRYPT)
+  #include <modules/libgcrypt/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
@@ -85,6 +89,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_CRYPTOPP)
     driver->LoadModule( std::make_shared<cryptofuzz::module::CryptoPP>() );
+#endif
+
+#if defined(CRYPTOFUZZ_LIBGCRYPT)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::libgcrypt>() );
 #endif
     return 0;
 }
