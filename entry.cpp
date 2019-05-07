@@ -5,6 +5,10 @@
 
 #include <modules/openssl/module.h>
 
+#if defined(CRYPTOFUZZ_BITCOIN)
+  #include <modules/bitcoin/module.h>
+#endif
+
 #if defined(CRYPTOFUZZ_REFERENCE)
   #include <modules/reference/module.h>
 #endif
@@ -46,6 +50,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
     driver = std::make_shared<cryptofuzz::Driver>();
 
     driver->LoadModule( std::make_shared<cryptofuzz::module::OpenSSL>() );
+
+#if defined(CRYPTOFUZZ_BITCOIN)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::Bitcoin>() );
+#endif
 
 #if defined(CRYPTOFUZZ_REFERENCE)
     driver->LoadModule( std::make_shared<cryptofuzz::module::Reference>() );
