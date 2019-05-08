@@ -33,4 +33,4 @@ generate_corpus: generate_corpus.cpp
 	$(CXX) $(CXXFLAGS) generate_corpus.cpp -o generate_corpus
 
 clean:
-	rm -rf driver.o executor.o util.o entry.o operation.o tests.o datasource.o repository.o repository_tbl.h cryptofuzz generate_dict
+	rm -rf driver.o executor.o util.o entry.o operation.o tests.o datasource.o repository.o repository_tbl.h cryptofuzz generate_dict generate_corpus
