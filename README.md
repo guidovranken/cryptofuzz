@@ -96,7 +96,7 @@ If you have more tests, please add them!
 - OpenSSL: [Overlong tag buffer leaves memory uninitialized in CCM mode](https://github.com/openssl/openssl/pull/8810)
 - OpenSSL: [Buffer write overflow when passing large RC5 key](https://github.com/openssl/openssl/pull/8834)
 - OpenSSL: [Hang after particular sequence of operations](https://github.com/openssl/openssl/issues/8827)
-- LibreSSL: Overlong tag buffer leaves memory uninitialized in CCM mode (TBA)
+- LibreSSL: Overlong tag buffer leaves memory uninitialized in CCM mode (https://cvsweb.openbsd.org/src/lib/libcrypto/modes/ccm128.c?rev=1.5&content-type=text/x-cvsweb-markup)
 - LibreSSL: AES GCM context copy crash (TBA)
 - LibreSSL: Streebog wrong output (TBA)
 - OpenSSL: [EVP_EncryptUpdate, EVP_EncryptFinal_ex branching on uninitialized memory](https://github.com/openssl/openssl/pull/8874)
