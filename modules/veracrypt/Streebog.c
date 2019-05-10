@@ -1865,15 +1865,8 @@ add512(const unsigned long long *x, const unsigned long long *y, unsigned long l
         /* Step 2: carry bit causes overflow */
         tmp += CF;
 
-		/* 
-		 * We don't include the carry bit overflow since it can break
-		 * mounting for some containers eventhough the probability of
-		 * such case is very low
-		 */
-		/*
         if (CF > 0 && tmp == 0)
             OF = 1;
-		*/
         CF = OF;
 
         r[i] = tmp;
