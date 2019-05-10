@@ -100,3 +100,4 @@ If you have more tests, please add them!
 - LibreSSL: AES GCM context copy crash (TBA)
 - LibreSSL: Streebog wrong output (TBA)
 - OpenSSL: [EVP_EncryptUpdate, EVP_EncryptFinal_ex branching on uninitialized memory](https://github.com/openssl/openssl/pull/8874)
+- libgcrypt: [Invalid output of MD4, MD5, RIPEMD160](https://lists.gnupg.org/pipermail/gcrypt-devel/2019-May/004712.html)
