@@ -25,7 +25,13 @@ std::optional<component::Digest> libgcrypt::OpDigest(operation::Digest& op) {
         { CF_DIGEST("MD5"), GCRY_MD_MD5 },
         { CF_DIGEST("RIPEMD160"), GCRY_MD_RMD160 },
         { CF_DIGEST("WHIRLPOOL"), GCRY_MD_WHIRLPOOL },
+        { CF_DIGEST("BLAKE2B160"), GCRY_MD_BLAKE2B_160 },
+        { CF_DIGEST("BLAKE2B256"), GCRY_MD_BLAKE2B_256 },
+        { CF_DIGEST("BLAKE2B384"), GCRY_MD_BLAKE2B_384 },
         { CF_DIGEST("BLAKE2B512"), GCRY_MD_BLAKE2B_512 },
+        { CF_DIGEST("BLAKE2S128"), GCRY_MD_BLAKE2S_128 },
+        { CF_DIGEST("BLAKE2S160"), GCRY_MD_BLAKE2S_160 },
+        { CF_DIGEST("BLAKE2S224"), GCRY_MD_BLAKE2S_224 },
         { CF_DIGEST("BLAKE2S256"), GCRY_MD_BLAKE2S_256 },
         { CF_DIGEST("SHAKE128"), GCRY_MD_SHAKE128 },
         { CF_DIGEST("SHAKE256"), GCRY_MD_SHAKE256 },
@@ -36,6 +42,10 @@ std::optional<component::Digest> libgcrypt::OpDigest(operation::Digest& op) {
         { CF_DIGEST("STREEBOG-256"), GCRY_MD_STRIBOG256 },
         { CF_DIGEST("STREEBOG-512"), GCRY_MD_STRIBOG512 },
         { CF_DIGEST("TIGER"), GCRY_MD_TIGER1 },
+        { CF_DIGEST("GOST-R-34.11-94"), GCRY_MD_GOSTR3411_94 },
+        { CF_DIGEST("CRC32"), GCRY_MD_CRC32 },
+        { CF_DIGEST("CRC32-RFC1510"), GCRY_MD_CRC32_RFC1510 },
+        { CF_DIGEST("CRC32-RFC2440"), GCRY_MD_CRC24_RFC2440 },
     };
 
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
