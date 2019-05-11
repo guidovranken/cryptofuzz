@@ -12,6 +12,8 @@
 #include <blake2.h>
 #include <tiger.h>
 #include <keccak.h>
+#include <crc.h>
+#include <adler32.h>
 #include <hmac.h>
 #include <twofish.h>
 #include <serpent.h>
@@ -109,6 +111,12 @@ std::optional<component::Digest> CryptoPP::OpDigest(operation::Digest& op) {
             break;
         case CF_DIGEST("KECCAK_512"):
             hash = std::make_unique<::CryptoPP::Keccak_512>();
+            break;
+        case CF_DIGEST("CRC32"):
+            hash = std::make_unique<::CryptoPP::CRC32>();
+            break;
+        case CF_DIGEST("ADLER32"):
+            hash = std::make_unique<::CryptoPP::Adler32>();
             break;
     }
 

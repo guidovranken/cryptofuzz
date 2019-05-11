@@ -350,6 +350,7 @@ ciphers.Add( Cipher("NULL_SHA1_TLS", True) )
 
 digests = DigestTable()
 
+digests.Add( Digest("ADLER32") )
 digests.Add( Digest("BLAKE2B160") )
 digests.Add( Digest("BLAKE2B256") )
 digests.Add( Digest("BLAKE2B384") )
