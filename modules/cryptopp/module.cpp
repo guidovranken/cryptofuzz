@@ -1,5 +1,6 @@
 #include "module.h"
 #include <cryptofuzz/util.h>
+#include <cryptofuzz/repository.h>
 #include <cryptlib.h>
 #include <sha.h>
 #include <shake.h>

@@ -1,5 +1,6 @@
 #include "module.h"
 #include <cryptofuzz/util.h>
+#include <cryptofuzz/repository.h>
 #include <gcrypt.h>
 
 namespace cryptofuzz {
