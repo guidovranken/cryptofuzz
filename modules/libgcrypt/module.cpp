@@ -44,9 +44,15 @@ std::optional<component::Digest> libgcrypt::OpDigest(operation::Digest& op) {
         { CF_DIGEST("STREEBOG-512"), GCRY_MD_STRIBOG512 },
         { CF_DIGEST("TIGER"), GCRY_MD_TIGER1 },
         { CF_DIGEST("GOST-R-34.11-94"), GCRY_MD_GOSTR3411_94 },
+
+        /* All CRCs currently disabled due to somewhat difficult
+         * to reproduce mismatches/garbage output.
+         */
+#if 0
         { CF_DIGEST("CRC32"), GCRY_MD_CRC32 },
         { CF_DIGEST("CRC32-RFC1510"), GCRY_MD_CRC32_RFC1510 },
         { CF_DIGEST("CRC32-RFC2440"), GCRY_MD_CRC24_RFC2440 },
+#endif
     };
 
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());

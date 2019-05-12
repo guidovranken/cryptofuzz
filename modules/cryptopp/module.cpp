@@ -999,6 +999,9 @@ end:
                     }
                     break;
 
+                /* Disabled because raw AES has been observed to output 15 bytes for
+                 * a 16 byte input. Needs further inspection.. */
+#if 0
                 /* Raw */
                 case    CF_CIPHER("AES"):
                     {
@@ -1020,6 +1023,7 @@ end:
                         ret = CryptoPP_detail::CryptRaw< ::CryptoPP::GOST >(op);
                     }
                     break;
+#endif
             }
         } catch ( ... ) { }
     }
