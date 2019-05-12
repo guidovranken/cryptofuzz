@@ -24,7 +24,7 @@ repository.o : repository.cpp repository_tbl.h
 cryptofuzz : driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o
 	test $(LIBFUZZER_LINK)
 	#$(CXX) $(CXXFLAGS) driver.o executor.o util.o entry.o tests.o operation.o datasource.o modules/openssl/module.a modules/mbedtls/module.a modules/boost/module.a modules/publicdomain/module.a modules/cppcrypto/module.a modules/monero/module.a Fuzzer/libFuzzer.a -o cryptofuzz
-	$(CXX) $(CXXFLAGS) $(LINK_FLAGS) driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o $(shell find modules -type f -name module.a) $(LIBFUZZER_LINK) -o cryptofuzz
+	$(CXX) $(CXXFLAGS) driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o $(shell find modules -type f -name module.a) $(LIBFUZZER_LINK) $(LINK_FLAGS) -o cryptofuzz
 
 generate_dict: generate_dict.cpp
 	$(CXX) $(CXXFLAGS) generate_dict.cpp -o generate_dict
