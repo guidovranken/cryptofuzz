@@ -27,3 +27,4 @@ Documentation on how to implement modules and use Cryptofuzz will follow.
 - libgcrypt: [Invalid output of MD4, MD5, RIPEMD160](https://lists.gnupg.org/pipermail/gcrypt-devel/2019-May/004712.html)
 - OpenSSL: RC5 signed integer overflow, TBA
 - LibreSSL: [AES CCM context copy crash](https://cvsweb.openbsd.org/src/lib/libcrypto/evp/e_aes.c?rev=1.39&content-type=text/x-cvsweb-markup)
+- LibreSSL: [DES EDE3 CFB1 leaves output uninitialized](https://cvsweb.openbsd.org/src/lib/libcrypto/evp/e_des3.c?rev=1.20&content-type=text/x-cvsweb-markup)
