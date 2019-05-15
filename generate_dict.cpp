@@ -23,6 +23,7 @@ int main(void)
     write(fp, ID("Cryptofuzz/Module/Beast") );
     write(fp, ID("Cryptofuzz/Module/CPPCrypto") );
     write(fp, ID("Cryptofuzz/Module/Crypto++") );
+    write(fp, ID("Cryptofuzz/Module/EverCrypt") );
     write(fp, ID("Cryptofuzz/Module/Monero") );
     write(fp, ID("Cryptofuzz/Module/OpenSSL") );
     write(fp, ID("Cryptofuzz/Module/Public Domain") );
