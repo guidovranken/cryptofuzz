@@ -8,7 +8,6 @@ module.a: module.o
 	ranlib module.a
 module.o: module.cpp module.h
 	test $(EVERCRYPT_INCLUDE_PATH)
-	test $(KREMLIN_INCLUDE_PATH)
-	$(CXX) $(CXXFLAGS) -I $(KREMLIN_INCLUDE_PATH) -I $(EVERCRYPT_INCLUDE_PATH) -fPIC -c module.cpp -o module.o
+	$(CXX) $(CXXFLAGS) -I $(EVERCRYPT_INCLUDE_PATH) -I $(KREMLIN_INCLUDE_PATH) -fPIC -c module.cpp -o module.o
 clean:
 	rm -rf *.o module.a

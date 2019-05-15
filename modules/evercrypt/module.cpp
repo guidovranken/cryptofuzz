@@ -18,7 +18,9 @@ namespace cryptofuzz {
 namespace module {
 
 EverCrypt::EverCrypt(void) :
-    Module("EverCrypt") { }
+    Module("EverCrypt") {
+  EverCrypt_AutoConfig2_init();
+}
 
 std::optional<component::Digest> EverCrypt::MD5(operation::Digest& op) const {
     std::optional<component::Digest> ret = std::nullopt;
@@ -383,6 +385,123 @@ std::optional<component::Key> EverCrypt::OpKDF_HKDF(operation::KDF_HKDF& op) {
             return HKDF(Spec_Hash_Definitions_SHA2_512, crypto_hash_sha512_BYTES, op);
         default:
             return std::nullopt;
+    }
+}
+
+namespace evercrypt_aead {
+
+template <uint8_t ALG, size_t TAGLEN, size_t IVLEN, size_t KEYLEN>
+class AEAD {
+    public:
+        std::optional<component::Ciphertext> Encrypt(operation::SymmetricEncrypt& op) const {
+            std::optional<component::Ciphertext> ret = std::nullopt;
+
+            uint8_t* out = util::malloc(op.ciphertextSize);
+
+            uint8_t* ek = nullptr;
+            unsigned long long ciphertext_len = op.cleartext.GetSize() + TAGLEN;
+
+            /* Operation must support tag output */
+            CF_CHECK_NE(op.tagSize, std::nullopt);
+            CF_CHECK_GTE(op.tagSize, TAGLEN);
+
+            /* Output must be able to hold message + tag */
+            CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize() + TAGLEN);
+
+            CF_CHECK_GTE(op.cipher.iv.GetSize(), IVLEN);
+            CF_CHECK_GTE(op.cipher.key.GetSize(), KEYLEN);
+
+            ek = EverCrypt_AEAD_expand_in(ALG, (uint8_t*)op.cipher.key.GetPtr());
+
+            CF_CHECK_EQ(EverCrypt_AEAD_encrypt(ALG,
+                                               ek,
+                                               (uint8_t*)op.cipher.iv.GetPtr(),
+                                               (uint8_t*)(op.aad == std::nullopt ? (const uint8_t*)0x12 : op.aad->GetPtr()),
+                                               op.aad == std::nullopt ? 0: op.aad->GetSize(),
+                                               (uint8_t*)op.cleartext.GetPtr(),
+                                               op.cleartext.GetSize(),
+                                               out,
+                                               out + ciphertext_len - TAGLEN), EverCrypt_AEAD_Success)
+
+
+            ret = component::Ciphertext(
+                            Buffer(out, ciphertext_len - TAGLEN),
+                            Buffer(out + ciphertext_len - TAGLEN, TAGLEN));
+
+end:
+            util::free(out);
+            util::free(ek);
+
+            return ret;
+        }
+
+        std::optional<component::Cleartext> Decrypt(operation::SymmetricDecrypt& op) const {
+            std::optional<component::Cleartext> ret = std::nullopt;
+
+            uint8_t* out = util::malloc(op.ciphertext.GetSize());
+            uint8_t* ek = nullptr;
+
+            CF_CHECK_NE(op.tag, std::nullopt);
+            CF_CHECK_GTE(op.tag->GetSize(), TAGLEN);
+            CF_CHECK_GTE(op.cipher.iv.GetSize(), IVLEN);
+            CF_CHECK_GTE(op.cipher.key.GetSize(), KEYLEN);
+
+            ek = EverCrypt_AEAD_expand_in(ALG, (uint8_t*)op.cipher.key.GetPtr());
+
+            CF_CHECK_EQ(EverCrypt_AEAD_decrypt(ALG,
+                                               ek,
+                                               (uint8_t*)op.cipher.iv.GetPtr(),
+                                               (uint8_t*)(op.aad == std::nullopt ? (const uint8_t*)0x12 : op.aad->GetPtr()),
+                                               op.aad == std::nullopt ? 0: op.aad->GetSize(),
+                                               (uint8_t*)op.ciphertext.GetPtr(),
+                                               op.ciphertext.GetSize(),
+                                               (uint8_t*)op.tag->GetPtr(),
+                                               out), EverCrypt_AEAD_Success)
+
+
+            ret = component::Cleartext(out, op.ciphertext.GetSize());
+
+end:
+            util::free(out);
+            util::free(ek);
+
+            return ret;
+        }
+
+};
+
+static class : public AEAD<Spec_AEAD_AES128_GCM, 16, 12, 16> { } aes_128_gcm;
+
+static class : public AEAD<Spec_AEAD_AES256_GCM, 16, 12, 32> { } aes_256_gcm;
+
+static class : public AEAD<Spec_AEAD_CHACHA20_POLY1305, 16, 12, 32> { } chacha20_poly1305;
+
+} /* namespace evercrypt_aead */
+
+
+std::optional<component::Ciphertext> EverCrypt::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
+    switch ( op.cipher.cipherType.Get() ) {
+    case CF_CIPHER("AES_128_GCM"):
+        return evercrypt_aead::aes_128_gcm.Encrypt(op);
+    case CF_CIPHER("AES_256_GCM"):
+        return evercrypt_aead::aes_256_gcm.Encrypt(op);
+    case CF_CIPHER("CHACHA20_POLY1305"):
+        return evercrypt_aead::chacha20_poly1305.Encrypt(op);
+    default:
+        return std::nullopt;
+    }
+}
+
+std::optional<component::Cleartext> EverCrypt::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
+    switch ( op.cipher.cipherType.Get() ) {
+    case CF_CIPHER("AES_128_GCM"):
+        return evercrypt_aead::aes_128_gcm.Decrypt(op);
+    case CF_CIPHER("AES_256_GCM"):
+        return evercrypt_aead::aes_256_gcm.Decrypt(op);
+    case CF_CIPHER("CHACHA20_POLY1305"):
+        return evercrypt_aead::chacha20_poly1305.Decrypt(op);
+    default:
+        return std::nullopt;
     }
 }
 
