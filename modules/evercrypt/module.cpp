@@ -408,8 +408,8 @@ class AEAD {
             /* Output must be able to hold message + tag */
             CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize() + TAGLEN);
 
-            CF_CHECK_GTE(op.cipher.iv.GetSize(), IVLEN);
-            CF_CHECK_GTE(op.cipher.key.GetSize(), KEYLEN);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), IVLEN);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), KEYLEN);
 
             ek = EverCrypt_AEAD_expand_in(ALG, (uint8_t*)op.cipher.key.GetPtr());
 
@@ -443,8 +443,8 @@ end:
 
             CF_CHECK_NE(op.tag, std::nullopt);
             CF_CHECK_GTE(op.tag->GetSize(), TAGLEN);
-            CF_CHECK_GTE(op.cipher.iv.GetSize(), IVLEN);
-            CF_CHECK_GTE(op.cipher.key.GetSize(), KEYLEN);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), IVLEN);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), KEYLEN);
 
             ek = EverCrypt_AEAD_expand_in(ALG, (uint8_t*)op.cipher.key.GetPtr());
 
