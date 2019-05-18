@@ -43,7 +43,7 @@ std::optional<component::Digest> libgcrypt::OpDigest(operation::Digest& op) {
         { CF_DIGEST("STREEBOG-256"), GCRY_MD_STRIBOG256 },
         { CF_DIGEST("STREEBOG-512"), GCRY_MD_STRIBOG512 },
         { CF_DIGEST("TIGER"), GCRY_MD_TIGER1 },
-        { CF_DIGEST("GOST-R-34.11-94"), GCRY_MD_GOSTR3411_94 },
+        { CF_DIGEST("GOST-R-34.11-94"), GCRY_MD_GOSTR3411_CP },
 
         /* All CRCs currently disabled due to somewhat difficult
          * to reproduce mismatches/garbage output.
