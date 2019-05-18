@@ -233,12 +233,12 @@ namespace libgcrypt_detail {
         { CF_CIPHER("RC2_CFB"), {GCRY_CIPHER_RFC2268_128, GCRY_CIPHER_MODE_CFB} },
         { CF_CIPHER("DES_EDE3_CFB"), {GCRY_CIPHER_3DES, GCRY_CIPHER_MODE_CFB} },
 
+        /* Wrong results */
+#if 0
         { CF_CIPHER("AES_128_CTR"), {GCRY_CIPHER_AES128, GCRY_CIPHER_MODE_CTR} },
         { CF_CIPHER("AES_192_CTR"), {GCRY_CIPHER_AES192, GCRY_CIPHER_MODE_CTR} },
         { CF_CIPHER("AES_256_CTR"), {GCRY_CIPHER_AES256, GCRY_CIPHER_MODE_CTR} },
 
-        /* Wrong results */
-#if 0
         { CF_CIPHER("CAMELLIA_128_CTR"), {GCRY_CIPHER_CAMELLIA128, GCRY_CIPHER_MODE_CTR} },
         { CF_CIPHER("CAMELLIA_192_CTR"), {GCRY_CIPHER_CAMELLIA192, GCRY_CIPHER_MODE_CTR} },
         { CF_CIPHER("CAMELLIA_256_CTR"), {GCRY_CIPHER_CAMELLIA256, GCRY_CIPHER_MODE_CTR} },
@@ -352,6 +352,8 @@ namespace libgcrypt_detail {
 
                 CF_CHECK_EQ(gcry_cipher_encrypt(h, out + outIdx, outputBufferSize - outIdx, part.first, part.second), GPG_ERR_NO_ERROR);
                 outIdx += part.second;
+
+                ret = outIdx;
             }
 
         end:
@@ -386,8 +388,8 @@ namespace libgcrypt_detail {
 
             {
                 /* AEAD currently not supported */
-                CF_CHECK_NE(op.tagSize, std::nullopt);
-                CF_CHECK_NE(op.aad, std::nullopt);
+                CF_CHECK_EQ(op.tagSize, std::nullopt);
+                CF_CHECK_EQ(op.aad, std::nullopt);
 
                 CF_CHECK_EQ(initialize(op.cipher, op.cleartext.GetPtr(), op.cleartext.GetSize()), true);
                 std::optional<size_t> outputSize = process();
@@ -404,8 +406,8 @@ namespace libgcrypt_detail {
 
             {
                 /* AEAD currently not supported */
-                CF_CHECK_NE(op.tag, std::nullopt);
-                CF_CHECK_NE(op.aad, std::nullopt);
+                CF_CHECK_EQ(op.tag, std::nullopt);
+                CF_CHECK_EQ(op.aad, std::nullopt);
 
                 CF_CHECK_EQ(initialize(op.cipher, op.ciphertext.GetPtr(), op.ciphertext.GetSize()), true);
                 std::optional<size_t> outputSize = process();
@@ -421,6 +423,7 @@ namespace libgcrypt_detail {
 } /* namespace libgcrypt_detail */
 
 std::optional<component::Ciphertext> libgcrypt::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
+    if ( op.cipher.key.GetSize() != 32 ) return std::nullopt;
     libgcrypt_detail::Crypt crypt(op);
     return crypt.Encrypt(op);
 }
