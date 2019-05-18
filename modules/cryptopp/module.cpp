@@ -43,198 +43,136 @@ namespace module {
 CryptoPP::CryptoPP(void) :
     Module("Crypto++") { }
 
+namespace CryptoPP_detail {
+    template <template <typename> class Function, class Ret, class In>
+    std::optional<Ret> InvokeByDigest(In& op) {
+        switch ( op.digestType.Get() ) {
+            case CF_DIGEST("SHA1"):
+                return Function<::CryptoPP::SHA1>::Compute(op);
+            case CF_DIGEST("SHA224"):
+                return Function<::CryptoPP::SHA224>::Compute(op);
+            case CF_DIGEST("SHA384"):
+                return Function<::CryptoPP::SHA384>::Compute(op);
+            case CF_DIGEST("SHA512"):
+                return Function<::CryptoPP::SHA512>::Compute(op);
+            case CF_DIGEST("SHAKE128"):
+                return Function<::CryptoPP::SHAKE128>::Compute(op);
+            case CF_DIGEST("SHAKE256"):
+                return Function<::CryptoPP::SHAKE256>::Compute(op);
+            case CF_DIGEST("RIPEMD128"):
+                return Function<::CryptoPP::RIPEMD128>::Compute(op);
+            case CF_DIGEST("RIPEMD160"):
+                return Function<::CryptoPP::RIPEMD160>::Compute(op);
+            case CF_DIGEST("RIPEMD256"):
+                return Function<::CryptoPP::RIPEMD256>::Compute(op);
+            case CF_DIGEST("RIPEMD320"):
+                return Function<::CryptoPP::RIPEMD320>::Compute(op);
+            case CF_DIGEST("WHIRLPOOL"):
+                return Function<::CryptoPP::Whirlpool>::Compute(op);
+            case CF_DIGEST("MD2"):
+                return Function<::CryptoPP::Weak::MD2>::Compute(op);
+            case CF_DIGEST("MD4"):
+                return Function<::CryptoPP::Weak::MD4>::Compute(op);
+            case CF_DIGEST("MD5"):
+                return Function<::CryptoPP::Weak::MD5>::Compute(op);
+            case CF_DIGEST("SM3"):
+                return Function<::CryptoPP::SM3>::Compute(op);
+            case CF_DIGEST("BLAKE2B512"):
+                return Function<::CryptoPP::BLAKE2b>::Compute(op);
+            case CF_DIGEST("BLAKE2S256"):
+                return Function<::CryptoPP::BLAKE2s>::Compute(op);
+            case CF_DIGEST("TIGER"):
+                return Function<::CryptoPP::Tiger>::Compute(op);
+            case CF_DIGEST("KECCAK_224"):
+                return Function<::CryptoPP::Keccak_224>::Compute(op);
+            case CF_DIGEST("KECCAK_256"):
+                return Function<::CryptoPP::Keccak_256>::Compute(op);
+            case CF_DIGEST("KECCAK_384"):
+                return Function<::CryptoPP::Keccak_384>::Compute(op);
+            case CF_DIGEST("KECCAK_512"):
+                return Function<::CryptoPP::Keccak_512>::Compute(op);
+            case CF_DIGEST("PANAMA"):
+                return Function<::CryptoPP::Weak::PanamaHash<::CryptoPP::LittleEndian>>::Compute(op);
+            default:
+                return std::nullopt;
+        }
+    }
+}
+
+namespace CryptoPP_detail {
+    template <class DigestAlgorithm>
+    class Digest {
+        public:
+            static std::optional<component::Digest> Compute(operation::Digest& op) {
+                Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+                std::optional<component::Digest> ret = std::nullopt;
+                DigestAlgorithm hash;
+                util::Multipart parts;
+
+                parts = util::ToParts(ds, op.cleartext);
+
+                /* Process */
+                for (const auto& part : parts) {
+                    hash.Update(part.first, part.second);
+                }
+
+                /* Finalize */
+                {
+                    size_t digestSize = hash.DigestSize();
+                    uint8_t out[digestSize];
+                    hash.Final(out);
+
+                    switch ( op.digestType.Get() ) {
+                        case    CF_DIGEST("SHAKE128"):
+                        case    CF_DIGEST("SHAKE256"):
+                            /* For compatibility with OpenSSL */
+                            digestSize /= 2;
+                            break;
+                    }
+
+                    ret = component::Digest(out, digestSize);
+                }
+
+                return ret;
+            }
+    };
+}
 
 std::optional<component::Digest> CryptoPP::OpDigest(operation::Digest& op) {
-    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
-    std::optional<component::Digest> ret = std::nullopt;
-    std::unique_ptr<::CryptoPP::HashTransformation> hash = nullptr;
-    util::Multipart parts;
-
-    switch ( op.digestType.Get() ) {
-        case CF_DIGEST("SHA1"):
-            hash = std::make_unique<::CryptoPP::SHA1>();
-            break;
-        case CF_DIGEST("SHA224"):
-            hash = std::make_unique<::CryptoPP::SHA224>();
-            break;
-        case CF_DIGEST("SHA384"):
-            hash = std::make_unique<::CryptoPP::SHA384>();
-            break;
-        case CF_DIGEST("SHA512"):
-            hash = std::make_unique<::CryptoPP::SHA512>();
-            break;
-        case CF_DIGEST("SHAKE128"):
-            hash = std::make_unique<::CryptoPP::SHAKE128>();
-            break;
-        case CF_DIGEST("SHAKE256"):
-            hash = std::make_unique<::CryptoPP::SHAKE256>();
-            break;
-        case CF_DIGEST("RIPEMD128"):
-            hash = std::make_unique<::CryptoPP::RIPEMD128>();
-            break;
-        case CF_DIGEST("RIPEMD160"):
-            hash = std::make_unique<::CryptoPP::RIPEMD160>();
-            break;
-        case CF_DIGEST("RIPEMD256"):
-            hash = std::make_unique<::CryptoPP::RIPEMD256>();
-            break;
-        case CF_DIGEST("RIPEMD320"):
-            hash = std::make_unique<::CryptoPP::RIPEMD320>();
-            break;
-        case CF_DIGEST("WHIRLPOOL"):
-            hash = std::make_unique<::CryptoPP::Whirlpool>();
-            break;
-        case CF_DIGEST("MD2"):
-            hash = std::make_unique<::CryptoPP::Weak::MD2>();
-            break;
-        case CF_DIGEST("MD4"):
-            hash = std::make_unique<::CryptoPP::Weak::MD4>();
-            break;
-        case CF_DIGEST("MD5"):
-            hash = std::make_unique<::CryptoPP::Weak::MD5>();
-            break;
-        case CF_DIGEST("SM3"):
-            hash = std::make_unique<::CryptoPP::SM3>();
-            break;
-        case CF_DIGEST("BLAKE2B512"):
-            hash = std::make_unique<::CryptoPP::BLAKE2b>();
-            break;
-        case CF_DIGEST("BLAKE2S256"):
-            hash = std::make_unique<::CryptoPP::BLAKE2s>();
-            break;
-        case CF_DIGEST("TIGER"):
-            hash = std::make_unique<::CryptoPP::Tiger>();
-            break;
-        case CF_DIGEST("KECCAK_224"):
-            hash = std::make_unique<::CryptoPP::Keccak_224>();
-            break;
-        case CF_DIGEST("KECCAK_256"):
-            hash = std::make_unique<::CryptoPP::Keccak_256>();
-            break;
-        case CF_DIGEST("KECCAK_384"):
-            hash = std::make_unique<::CryptoPP::Keccak_384>();
-            break;
-        case CF_DIGEST("KECCAK_512"):
-            hash = std::make_unique<::CryptoPP::Keccak_512>();
-            break;
-        case CF_DIGEST("PANAMA"):
-            hash = std::make_unique<::CryptoPP::Weak::PanamaHash<::CryptoPP::LittleEndian>>();
-            break;
-        case CF_DIGEST("CRC32"):
-            hash = std::make_unique<::CryptoPP::CRC32>();
-            break;
-        case CF_DIGEST("ADLER32"):
-            hash = std::make_unique<::CryptoPP::Adler32>();
-            break;
-    }
-
-    CF_CHECK_NE(hash, nullptr);
-
-    parts = util::ToParts(ds, op.cleartext);
-
-    /* Process */
-    for (const auto& part : parts) {
-        hash->Update(part.first, part.second);
-    }
-
-    /* Finalize */
-    {
-        size_t digestSize = hash->DigestSize();
-        uint8_t out[digestSize];
-        hash->Final(out);
-
-        switch ( op.digestType.Get() ) {
-            case    CF_DIGEST("SHAKE128"):
-            case    CF_DIGEST("SHAKE256"):
-                /* For compatibility with OpenSSL */
-                digestSize /= 2;
-                break;
-        }
-
-        ret = component::Digest(out, digestSize);
-    }
-
-end:
-    return ret;
+    return CryptoPP_detail::InvokeByDigest<CryptoPP_detail::Digest, component::Digest>(op);
 }
 
 namespace CryptoPP_detail {
     template <class Digest>
-    std::optional<component::MAC> HMAC(operation::HMAC& op) {
-        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
-        std::optional<component::MAC> ret = std::nullopt;
+    class HMAC {
+        public:
+            static std::optional<component::MAC> Compute(operation::HMAC& op) {
+                Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+                std::optional<component::MAC> ret = std::nullopt;
 
-        ::CryptoPP::HMAC<Digest> hmac(op.cipher.key.GetPtr(), op.cipher.key.GetSize());
-        util::Multipart parts = util::ToParts(ds, op.cleartext);
+                ::CryptoPP::HMAC<Digest> hmac(op.cipher.key.GetPtr(), op.cipher.key.GetSize());
+                util::Multipart parts = util::ToParts(ds, op.cleartext);
 
-        /* Process */
-        for (const auto& part : parts) {
-            hmac.Update(part.first, part.second);
-        }
+                /* Process */
+                for (const auto& part : parts) {
+                    hmac.Update(part.first, part.second);
+                }
 
-        /* Finalize */
-        {
-            uint8_t out[::CryptoPP::HMAC<Digest>::DIGESTSIZE];
-            hmac.Final(out);
+                /* Finalize */
+                {
+                    uint8_t out[::CryptoPP::HMAC<Digest>::DIGESTSIZE];
+                    hmac.Final(out);
 
-            ret = component::MAC(out, ::CryptoPP::HMAC<Digest>::DIGESTSIZE);
-        }
+                    ret = component::MAC(out, ::CryptoPP::HMAC<Digest>::DIGESTSIZE);
+                }
 
-        return ret;
-    }
+                return ret;
+            }
+    };
 }
 
 std::optional<component::MAC> CryptoPP::OpHMAC(operation::HMAC& op) {
-    switch ( op.digestType.Get() ) {
-        case CF_DIGEST("SHA1"):
-            return CryptoPP_detail::HMAC<::CryptoPP::SHA1>(op);
-        case CF_DIGEST("SHA224"):
-            return CryptoPP_detail::HMAC<::CryptoPP::SHA224>(op);
-        case CF_DIGEST("SHA384"):
-            return CryptoPP_detail::HMAC<::CryptoPP::SHA384>(op);
-        case CF_DIGEST("SHA512"):
-            return CryptoPP_detail::HMAC<::CryptoPP::SHA512>(op);
-        case CF_DIGEST("SHAKE128"):
-            return CryptoPP_detail::HMAC<::CryptoPP::SHAKE128>(op);
-        case CF_DIGEST("SHAKE256"):
-            return CryptoPP_detail::HMAC<::CryptoPP::SHAKE256>(op);
-        case CF_DIGEST("RIPEMD128"):
-            return CryptoPP_detail::HMAC<::CryptoPP::RIPEMD128>(op);
-        case CF_DIGEST("RIPEMD160"):
-            return CryptoPP_detail::HMAC<::CryptoPP::RIPEMD160>(op);
-        case CF_DIGEST("RIPEMD256"):
-            return CryptoPP_detail::HMAC<::CryptoPP::RIPEMD256>(op);
-        case CF_DIGEST("RIPEMD320"):
-            return CryptoPP_detail::HMAC<::CryptoPP::RIPEMD320>(op);
-        case CF_DIGEST("WHIRLPOOL"):
-            return CryptoPP_detail::HMAC<::CryptoPP::Whirlpool>(op);
-        case CF_DIGEST("MD2"):
-            return CryptoPP_detail::HMAC<::CryptoPP::Weak::MD2>(op);
-        case CF_DIGEST("MD4"):
-            return CryptoPP_detail::HMAC<::CryptoPP::Weak::MD4>(op);
-        case CF_DIGEST("MD5"):
-            return CryptoPP_detail::HMAC<::CryptoPP::Weak::MD5>(op);
-        case CF_DIGEST("SM3"):
-            return CryptoPP_detail::HMAC<::CryptoPP::SM3>(op);
-        case CF_DIGEST("BLAKE2B512"):
-            return CryptoPP_detail::HMAC<::CryptoPP::BLAKE2b>(op);
-        case CF_DIGEST("BLAKE2S256"):
-            return CryptoPP_detail::HMAC<::CryptoPP::BLAKE2s>(op);
-        case CF_DIGEST("TIGER"):
-            return CryptoPP_detail::HMAC<::CryptoPP::Tiger>(op);
-        case CF_DIGEST("KECCAK_224"):
-            return CryptoPP_detail::HMAC<::CryptoPP::Keccak_224>(op);
-        case CF_DIGEST("KECCAK_256"):
-            return CryptoPP_detail::HMAC<::CryptoPP::Keccak_256>(op);
-        case CF_DIGEST("KECCAK_384"):
-            return CryptoPP_detail::HMAC<::CryptoPP::Keccak_384>(op);
-        case CF_DIGEST("KECCAK_512"):
-            return CryptoPP_detail::HMAC<::CryptoPP::Keccak_512>(op);
-        case CF_DIGEST("PANAMA"):
-            return CryptoPP_detail::HMAC<::CryptoPP::Weak::PanamaHash<::CryptoPP::LittleEndian>>(op);
-    }
-
-    return std::nullopt;
+    return CryptoPP_detail::InvokeByDigest<CryptoPP_detail::HMAC, component::MAC>(op);
 }
 
 namespace CryptoPP_detail {
@@ -1070,88 +1008,42 @@ std::optional<component::Cleartext> CryptoPP::OpSymmetricDecrypt(operation::Symm
 
 namespace CryptoPP_detail {
     template <class Digest>
-    std::optional<component::Key> KDF_HKDF(operation::KDF_HKDF& op) {
-        std::optional<component::Key> ret = std::nullopt;
+    class KDF_HKDF {
+        public:
+        static std::optional<component::Key> Compute(operation::KDF_HKDF& op) {
+            std::optional<component::Key> ret = std::nullopt;
 
-        const size_t outSize = op.keySize;
-        uint8_t* out = util::malloc(outSize);
+            const size_t outSize = op.keySize;
+            uint8_t* out = util::malloc(outSize);
 
-        try {
-            ::CryptoPP::HKDF<Digest> hkdf;
+            try {
+                ::CryptoPP::HKDF<Digest> hkdf;
 
-            hkdf.DeriveKey(
-                    out,
-                    outSize,
-                    op.password.GetPtr(),
-                    op.password.GetSize(),
-                    op.salt.GetPtr(),
-                    op.salt.GetSize(),
-                    op.info.GetPtr(),
-                    op.info.GetSize());
-        } catch ( ... ) {
-            goto end;
-        }
+                hkdf.DeriveKey(
+                        out,
+                        outSize,
+                        op.password.GetPtr(),
+                        op.password.GetSize(),
+                        op.salt.GetPtr(),
+                        op.salt.GetSize(),
+                        op.info.GetPtr(),
+                        op.info.GetSize());
+            } catch ( ... ) {
+                goto end;
+            }
 
-        ret = component::Key(out, outSize);
+            ret = component::Key(out, outSize);
 
 end:
-        util::free(out);
+            util::free(out);
 
-        return ret;
-    }
+            return ret;
+        }
+    };
 }
 
 std::optional<component::Key> CryptoPP::OpKDF_HKDF(operation::KDF_HKDF& op) {
-    switch ( op.digestType.Get() ) {
-        case CF_DIGEST("SHA1"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::SHA1>(op);
-        case CF_DIGEST("SHA224"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::SHA224>(op);
-        case CF_DIGEST("SHA384"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::SHA384>(op);
-        case CF_DIGEST("SHA512"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::SHA512>(op);
-        case CF_DIGEST("SHAKE128"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::SHAKE128>(op);
-        case CF_DIGEST("SHAKE256"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::SHAKE256>(op);
-        case CF_DIGEST("RIPEMD128"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::RIPEMD128>(op);
-        case CF_DIGEST("RIPEMD160"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::RIPEMD160>(op);
-        case CF_DIGEST("RIPEMD256"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::RIPEMD256>(op);
-        case CF_DIGEST("RIPEMD320"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::RIPEMD320>(op);
-        case CF_DIGEST("WHIRLPOOL"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::Whirlpool>(op);
-        case CF_DIGEST("MD2"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::Weak::MD2>(op);
-        case CF_DIGEST("MD4"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::Weak::MD4>(op);
-        case CF_DIGEST("MD5"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::Weak::MD5>(op);
-        case CF_DIGEST("SM3"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::SM3>(op);
-        case CF_DIGEST("BLAKE2B512"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::BLAKE2b>(op);
-        case CF_DIGEST("BLAKE2S256"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::BLAKE2s>(op);
-        case CF_DIGEST("TIGER"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::Tiger>(op);
-        case CF_DIGEST("KECCAK_224"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::Keccak_224>(op);
-        case CF_DIGEST("KECCAK_256"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::Keccak_256>(op);
-        case CF_DIGEST("KECCAK_384"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::Keccak_384>(op);
-        case CF_DIGEST("KECCAK_512"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::Keccak_512>(op);
-        case CF_DIGEST("PANAMA"):
-            return CryptoPP_detail::KDF_HKDF<::CryptoPP::Weak::PanamaHash<::CryptoPP::LittleEndian>>(op);
-        default:
-            return std::nullopt;
-    }
+    return CryptoPP_detail::InvokeByDigest<CryptoPP_detail::KDF_HKDF, component::Key>(op);
 }
 
 std::optional<component::Key> CryptoPP::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
@@ -1191,87 +1083,41 @@ end:
 
 namespace CryptoPP_detail {
     template <class Digest>
-    std::optional<component::Key> KDF_PBKDF2(operation::KDF_PBKDF2& op) {
-        std::optional<component::Key> ret = std::nullopt;
+    class KDF_PBKDF2 {
+        public:
+        static std::optional<component::Key> Compute(operation::KDF_PBKDF2& op) {
+            std::optional<component::Key> ret = std::nullopt;
 
-        const size_t outSize = op.keySize;
-        uint8_t* out = util::malloc(outSize);
+            const size_t outSize = op.keySize;
+            uint8_t* out = util::malloc(outSize);
 
-        try {
-            ::CryptoPP::PKCS5_PBKDF2_HMAC<Digest> pbkdf2;
-            pbkdf2.DeriveKey(
-                    out,
-                    outSize,
-                    0,
-                    op.password.GetPtr(),
-                    op.password.GetSize(),
-                    op.salt.GetPtr(),
-                    op.salt.GetSize(),
-                    op.iterations);
-        } catch ( ... ) {
-            goto end;
-        }
+            try {
+                ::CryptoPP::PKCS5_PBKDF2_HMAC<Digest> pbkdf2;
+                pbkdf2.DeriveKey(
+                        out,
+                        outSize,
+                        0,
+                        op.password.GetPtr(),
+                        op.password.GetSize(),
+                        op.salt.GetPtr(),
+                        op.salt.GetSize(),
+                        op.iterations);
+            } catch ( ... ) {
+                goto end;
+            }
 
-        ret = component::Key(out, outSize);
+            ret = component::Key(out, outSize);
 
 end:
-        util::free(out);
+            util::free(out);
 
-        return ret;
-    }
+            return ret;
+        }
+    };
 }
 
 std::optional<component::Key> CryptoPP::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
-    switch ( op.digestType.Get() ) {
-        case CF_DIGEST("SHA1"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::SHA1>(op);
-        case CF_DIGEST("SHA224"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::SHA224>(op);
-        case CF_DIGEST("SHA384"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::SHA384>(op);
-        case CF_DIGEST("SHA512"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::SHA512>(op);
-        case CF_DIGEST("SHAKE128"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::SHAKE128>(op);
-        case CF_DIGEST("SHAKE256"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::SHAKE256>(op);
-        case CF_DIGEST("RIPEMD128"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::RIPEMD128>(op);
-        case CF_DIGEST("RIPEMD160"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::RIPEMD160>(op);
-        case CF_DIGEST("RIPEMD256"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::RIPEMD256>(op);
-        case CF_DIGEST("RIPEMD320"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::RIPEMD320>(op);
-        case CF_DIGEST("WHIRLPOOL"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Whirlpool>(op);
-        case CF_DIGEST("MD2"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Weak::MD2>(op);
-        case CF_DIGEST("MD4"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Weak::MD4>(op);
-        case CF_DIGEST("MD5"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Weak::MD5>(op);
-        case CF_DIGEST("SM3"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::SM3>(op);
-        case CF_DIGEST("BLAKE2B512"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::BLAKE2b>(op);
-        case CF_DIGEST("BLAKE2S256"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::BLAKE2s>(op);
-        case CF_DIGEST("TIGER"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Tiger>(op);
-        case CF_DIGEST("KECCAK_224"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Keccak_224>(op);
-        case CF_DIGEST("KECCAK_256"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Keccak_256>(op);
-        case CF_DIGEST("KECCAK_384"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Keccak_384>(op);
-        case CF_DIGEST("KECCAK_512"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Keccak_512>(op);
-        case CF_DIGEST("PANAMA"):
-            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Weak::PanamaHash<::CryptoPP::LittleEndian>>(op);
-        default:
-            return std::nullopt;
-    }
+    return CryptoPP_detail::InvokeByDigest<CryptoPP_detail::KDF_PBKDF2, component::Key>(op);
 }
 
 } /* namespace module */
