@@ -5,8 +5,12 @@
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 #include <openssl/cmac.h>
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
-#include <openssl/kdf.h>
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+ #if defined(CRYPTOFUZZ_BORINGSSL)
+  #include <openssl/hkdf.h>
+ #else
+  #include <openssl/kdf.h>
+ #endif
 #endif
 #include <openssl/pem.h>
 #include <optional>
@@ -58,7 +62,7 @@ class OpenSSL : public Module {
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
         std::optional<component::Key> OpKDF_SCRYPT(operation::KDF_SCRYPT& op) override;
 #endif
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
         std::optional<component::Key> OpKDF_HKDF(operation::KDF_HKDF& op) override;
 #endif
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)

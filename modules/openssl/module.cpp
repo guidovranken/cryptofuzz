@@ -1897,8 +1897,34 @@ end:
 }
 #endif
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
 std::optional<component::Key> OpenSSL::OpKDF_HKDF(operation::KDF_HKDF& op) {
+ #if defined(CRYPTOFUZZ_BORINGSSL)
+    std::optional<component::Key> ret = std::nullopt;
+    const EVP_MD* md = nullptr;
+
+    const size_t outSize = op.keySize;
+    uint8_t* out = util::malloc(outSize);
+
+    CF_CHECK_NE(md = toEVPMD(op.digestType), nullptr);
+    CF_CHECK_EQ(
+            HKDF(out,
+                outSize,
+                md,
+                op.password.GetPtr(),
+                op.password.GetSize(),
+                op.salt.GetPtr(),
+                op.salt.GetSize(),
+                op.info.GetPtr(),
+                op.info.GetSize()), 1);
+
+    ret = component::Key(out, outSize);
+
+end:
+    util::free(out);
+
+    return ret;
+ #else
     std::optional<component::Key> ret = std::nullopt;
     EVP_PKEY_CTX* pctx = nullptr;
     const EVP_MD* md = nullptr;
@@ -1930,6 +1956,7 @@ end:
     util::free(out);
 
     return ret;
+ #endif
 }
 #endif
 
