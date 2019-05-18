@@ -14,46 +14,58 @@ libgcrypt::libgcrypt(void) :
     gcry_control(GCRYCTL_DISABLE_SECMEM_WARN, 0);
 }
 
+namespace libgcrypt_detail {
+
+    std::optional<int> DigestIDToID(const uint64_t digestType) {
+        static const std::map<uint64_t, int> LUT = {
+            { CF_DIGEST("SHA1"), GCRY_MD_SHA1 },
+            { CF_DIGEST("SHA224"), GCRY_MD_SHA224 },
+            { CF_DIGEST("SHA256"), GCRY_MD_SHA256 },
+            { CF_DIGEST("SHA384"), GCRY_MD_SHA384 },
+            { CF_DIGEST("SHA512"), GCRY_MD_SHA512 },
+            { CF_DIGEST("MD4"), GCRY_MD_MD4 },
+            { CF_DIGEST("MD5"), GCRY_MD_MD5 },
+            { CF_DIGEST("RIPEMD160"), GCRY_MD_RMD160 },
+            { CF_DIGEST("WHIRLPOOL"), GCRY_MD_WHIRLPOOL },
+            { CF_DIGEST("BLAKE2B160"), GCRY_MD_BLAKE2B_160 },
+            { CF_DIGEST("BLAKE2B256"), GCRY_MD_BLAKE2B_256 },
+            { CF_DIGEST("BLAKE2B384"), GCRY_MD_BLAKE2B_384 },
+            { CF_DIGEST("BLAKE2B512"), GCRY_MD_BLAKE2B_512 },
+            { CF_DIGEST("BLAKE2S128"), GCRY_MD_BLAKE2S_128 },
+            { CF_DIGEST("BLAKE2S160"), GCRY_MD_BLAKE2S_160 },
+            { CF_DIGEST("BLAKE2S224"), GCRY_MD_BLAKE2S_224 },
+            { CF_DIGEST("BLAKE2S256"), GCRY_MD_BLAKE2S_256 },
+            { CF_DIGEST("SHAKE128"), GCRY_MD_SHAKE128 },
+            { CF_DIGEST("SHAKE256"), GCRY_MD_SHAKE256 },
+            { CF_DIGEST("SHA3-224"), GCRY_MD_SHA3_224 },
+            { CF_DIGEST("SHA3-256"), GCRY_MD_SHA3_256 },
+            { CF_DIGEST("SHA3-384"), GCRY_MD_SHA3_384 },
+            { CF_DIGEST("SHA3-512"), GCRY_MD_SHA3_512 },
+            { CF_DIGEST("STREEBOG-256"), GCRY_MD_STRIBOG256 },
+            { CF_DIGEST("STREEBOG-512"), GCRY_MD_STRIBOG512 },
+            { CF_DIGEST("TIGER"), GCRY_MD_TIGER1 },
+            { CF_DIGEST("GOST-R-34.11-94"), GCRY_MD_GOSTR3411_CP },
+
+            /* All CRCs currently disabled due to somewhat difficult
+             * to reproduce mismatches/garbage output.
+             */
+#if 0
+            { CF_DIGEST("CRC32"), GCRY_MD_CRC32 },
+            { CF_DIGEST("CRC32-RFC1510"), GCRY_MD_CRC32_RFC1510 },
+            { CF_DIGEST("CRC32-RFC2440"), GCRY_MD_CRC24_RFC2440 },
+#endif
+        };
+
+        std::optional<int> ret = std::nullopt;
+
+        CF_CHECK_NE(LUT.find(digestType), LUT.end());
+        ret = LUT.at(digestType);
+end:
+        return ret;
+    }
+} /* namespace libgcrypt_detail */
 
 std::optional<component::Digest> libgcrypt::OpDigest(operation::Digest& op) {
-    static const std::map<uint64_t, int> LUT = {
-        { CF_DIGEST("SHA1"), GCRY_MD_SHA1 },
-        { CF_DIGEST("SHA224"), GCRY_MD_SHA224 },
-        { CF_DIGEST("SHA256"), GCRY_MD_SHA256 },
-        { CF_DIGEST("SHA384"), GCRY_MD_SHA384 },
-        { CF_DIGEST("SHA512"), GCRY_MD_SHA512 },
-        { CF_DIGEST("MD4"), GCRY_MD_MD4 },
-        { CF_DIGEST("MD5"), GCRY_MD_MD5 },
-        { CF_DIGEST("RIPEMD160"), GCRY_MD_RMD160 },
-        { CF_DIGEST("WHIRLPOOL"), GCRY_MD_WHIRLPOOL },
-        { CF_DIGEST("BLAKE2B160"), GCRY_MD_BLAKE2B_160 },
-        { CF_DIGEST("BLAKE2B256"), GCRY_MD_BLAKE2B_256 },
-        { CF_DIGEST("BLAKE2B384"), GCRY_MD_BLAKE2B_384 },
-        { CF_DIGEST("BLAKE2B512"), GCRY_MD_BLAKE2B_512 },
-        { CF_DIGEST("BLAKE2S128"), GCRY_MD_BLAKE2S_128 },
-        { CF_DIGEST("BLAKE2S160"), GCRY_MD_BLAKE2S_160 },
-        { CF_DIGEST("BLAKE2S224"), GCRY_MD_BLAKE2S_224 },
-        { CF_DIGEST("BLAKE2S256"), GCRY_MD_BLAKE2S_256 },
-        { CF_DIGEST("SHAKE128"), GCRY_MD_SHAKE128 },
-        { CF_DIGEST("SHAKE256"), GCRY_MD_SHAKE256 },
-        { CF_DIGEST("SHA3-224"), GCRY_MD_SHA3_224 },
-        { CF_DIGEST("SHA3-256"), GCRY_MD_SHA3_256 },
-        { CF_DIGEST("SHA3-384"), GCRY_MD_SHA3_384 },
-        { CF_DIGEST("SHA3-512"), GCRY_MD_SHA3_512 },
-        { CF_DIGEST("STREEBOG-256"), GCRY_MD_STRIBOG256 },
-        { CF_DIGEST("STREEBOG-512"), GCRY_MD_STRIBOG512 },
-        { CF_DIGEST("TIGER"), GCRY_MD_TIGER1 },
-        { CF_DIGEST("GOST-R-34.11-94"), GCRY_MD_GOSTR3411_CP },
-
-        /* All CRCs currently disabled due to somewhat difficult
-         * to reproduce mismatches/garbage output.
-         */
-#if 0
-        { CF_DIGEST("CRC32"), GCRY_MD_CRC32 },
-        { CF_DIGEST("CRC32-RFC1510"), GCRY_MD_CRC32_RFC1510 },
-        { CF_DIGEST("CRC32-RFC2440"), GCRY_MD_CRC24_RFC2440 },
-#endif
-    };
 
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     std::optional<component::Digest> ret = std::nullopt;
@@ -61,19 +73,18 @@ std::optional<component::Digest> libgcrypt::OpDigest(operation::Digest& op) {
 
     gcry_md_hd_t h;
     bool hOpen = false;
-    int digestType = -1;
+    std::optional<int> digestType = std::nullopt;
 
     /* Initialize */
     {
-        CF_CHECK_NE(LUT.find(op.digestType.Get()), LUT.end());
-        digestType = LUT.at(op.digestType.Get());
+        CF_CHECK_NE(digestType = libgcrypt_detail::DigestIDToID(op.digestType.Get()), std::nullopt);
 
         bool useSecMem = false;
         try {
             useSecMem = ds.Get<bool>();
         } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
-        CF_CHECK_EQ(gcry_md_open(&h, digestType, useSecMem ? GCRY_MD_FLAG_SECURE : 0), GPG_ERR_NO_ERROR);
+        CF_CHECK_EQ(gcry_md_open(&h, *digestType, useSecMem ? GCRY_MD_FLAG_SECURE : 0), GPG_ERR_NO_ERROR);
         hOpen = true;
 
         parts = util::ToParts(ds, op.cleartext);
@@ -115,7 +126,7 @@ std::optional<component::Digest> libgcrypt::OpDigest(operation::Digest& op) {
                 {
                     /* Same output size as OpenSSL with SHAKE128 by default */
                     uint8_t out[16];
-                    CF_CHECK_EQ(gcry_md_extract(h, digestType, out, sizeof(out)), GPG_ERR_NO_ERROR);
+                    CF_CHECK_EQ(gcry_md_extract(h, *digestType, out, sizeof(out)), GPG_ERR_NO_ERROR);
                     ret = component::Digest(out, sizeof(out));
                 }
                 break;
@@ -123,15 +134,15 @@ std::optional<component::Digest> libgcrypt::OpDigest(operation::Digest& op) {
                 {
                     /* Same output size as OpenSSL with SHAKE256 by default */
                     uint8_t out[32];
-                    CF_CHECK_EQ(gcry_md_extract(h, digestType, out, sizeof(out)), GPG_ERR_NO_ERROR);
+                    CF_CHECK_EQ(gcry_md_extract(h, *digestType, out, sizeof(out)), GPG_ERR_NO_ERROR);
                     ret = component::Digest(out, sizeof(out));
                 }
                 break;
             default:
                 {
-                    auto out = gcry_md_read(h, digestType);
+                    auto out = gcry_md_read(h, *digestType);
                     CF_CHECK_NE(out, nullptr);
-                    ret = component::Digest(out, gcry_md_get_algo_dlen(digestType));
+                    ret = component::Digest(out, gcry_md_get_algo_dlen(*digestType));
                 }
                 break;
         }
@@ -146,43 +157,24 @@ end:
 }
 
 std::optional<component::MAC> libgcrypt::OpHMAC(operation::HMAC& op) {
-    static const std::map<uint64_t, int> LUT = {
-        { CF_DIGEST("SHA1"), GCRY_MAC_HMAC_SHA1 },
-        { CF_DIGEST("SHA224"), GCRY_MAC_HMAC_SHA224 },
-        { CF_DIGEST("SHA256"), GCRY_MAC_HMAC_SHA256 },
-        { CF_DIGEST("SHA384"), GCRY_MAC_HMAC_SHA384 },
-        { CF_DIGEST("SHA512"), GCRY_MAC_HMAC_SHA512 },
-        { CF_DIGEST("MD4"), GCRY_MAC_HMAC_MD4 },
-        { CF_DIGEST("MD5"), GCRY_MAC_HMAC_MD5 },
-        { CF_DIGEST("RIPEMD160"), GCRY_MAC_HMAC_RMD160 },
-        { CF_DIGEST("WHIRLPOOL"), GCRY_MAC_HMAC_WHIRLPOOL },
-        { CF_DIGEST("SHA3-224"), GCRY_MAC_HMAC_SHA3_224 },
-        { CF_DIGEST("SHA3-256"), GCRY_MAC_HMAC_SHA3_256 },
-        { CF_DIGEST("SHA3-384"), GCRY_MAC_HMAC_SHA3_384 },
-        { CF_DIGEST("SHA3-512"), GCRY_MAC_HMAC_SHA3_512 },
-        { CF_DIGEST("STREEBOG-256"), GCRY_MAC_HMAC_STRIBOG256 },
-        { CF_DIGEST("STREEBOG-512"), GCRY_MAC_HMAC_STRIBOG512 },
-    };
-
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     std::optional<component::MAC> ret = std::nullopt;
     util::Multipart parts;
 
     gcry_mac_hd_t h;
     bool hOpen = false;
-    int hmacType = -1;
+    std::optional<int> hmacType = std::nullopt;
 
     /* Initialize */
     {
-        CF_CHECK_NE(LUT.find(op.digestType.Get()), LUT.end());
-        hmacType = LUT.at(op.digestType.Get());
+        CF_CHECK_NE(hmacType = libgcrypt_detail::DigestIDToID(op.digestType.Get()), std::nullopt);
 
         bool useSecMem = false;
         try {
             useSecMem = ds.Get<bool>();
         } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
-        CF_CHECK_EQ(gcry_mac_open(&h, hmacType, useSecMem ? GCRY_MD_FLAG_SECURE : 0, nullptr), GPG_ERR_NO_ERROR);
+        CF_CHECK_EQ(gcry_mac_open(&h, *hmacType, useSecMem ? GCRY_MD_FLAG_SECURE : 0, nullptr), GPG_ERR_NO_ERROR);
         hOpen = true;
 
         CF_CHECK_EQ(gcry_mac_setkey(h, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), GPG_ERR_NO_ERROR);
@@ -197,7 +189,7 @@ std::optional<component::MAC> libgcrypt::OpHMAC(operation::HMAC& op) {
 
     /* Finalize */
     {
-        size_t length = gcry_mac_get_algo_maclen(hmacType);
+        size_t length = gcry_mac_get_algo_maclen(*hmacType);
         CF_CHECK_GTE(length, 0);
         uint8_t out[length];
         CF_CHECK_EQ(gcry_mac_read(h, out, &length), GPG_ERR_NO_ERROR);
@@ -467,49 +459,18 @@ end:
 }
 
 std::optional<component::Key> libgcrypt::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
-    static const std::map<uint64_t, int> LUT = {
-        { CF_DIGEST("SHA1"), GCRY_MD_SHA1 },
-        { CF_DIGEST("SHA224"), GCRY_MD_SHA224 },
-        { CF_DIGEST("SHA256"), GCRY_MD_SHA256 },
-        { CF_DIGEST("SHA384"), GCRY_MD_SHA384 },
-        { CF_DIGEST("SHA512"), GCRY_MD_SHA512 },
-        { CF_DIGEST("MD4"), GCRY_MD_MD4 },
-        { CF_DIGEST("MD5"), GCRY_MD_MD5 },
-        { CF_DIGEST("RIPEMD160"), GCRY_MD_RMD160 },
-        { CF_DIGEST("WHIRLPOOL"), GCRY_MD_WHIRLPOOL },
-        { CF_DIGEST("BLAKE2B160"), GCRY_MD_BLAKE2B_160 },
-        { CF_DIGEST("BLAKE2B256"), GCRY_MD_BLAKE2B_256 },
-        { CF_DIGEST("BLAKE2B384"), GCRY_MD_BLAKE2B_384 },
-        { CF_DIGEST("BLAKE2B512"), GCRY_MD_BLAKE2B_512 },
-        { CF_DIGEST("BLAKE2S128"), GCRY_MD_BLAKE2S_128 },
-        { CF_DIGEST("BLAKE2S160"), GCRY_MD_BLAKE2S_160 },
-        { CF_DIGEST("BLAKE2S224"), GCRY_MD_BLAKE2S_224 },
-        { CF_DIGEST("BLAKE2S256"), GCRY_MD_BLAKE2S_256 },
-        { CF_DIGEST("SHAKE128"), GCRY_MD_SHAKE128 },
-        { CF_DIGEST("SHAKE256"), GCRY_MD_SHAKE256 },
-        { CF_DIGEST("SHA3-224"), GCRY_MD_SHA3_224 },
-        { CF_DIGEST("SHA3-256"), GCRY_MD_SHA3_256 },
-        { CF_DIGEST("SHA3-384"), GCRY_MD_SHA3_384 },
-        { CF_DIGEST("SHA3-512"), GCRY_MD_SHA3_512 },
-        { CF_DIGEST("STREEBOG-256"), GCRY_MD_STRIBOG256 },
-        { CF_DIGEST("STREEBOG-512"), GCRY_MD_STRIBOG512 },
-        { CF_DIGEST("TIGER"), GCRY_MD_TIGER1 },
-        { CF_DIGEST("GOST-R-34.11-94"), GCRY_MD_GOSTR3411_CP },
-    };
-
     std::optional<component::Key> ret = std::nullopt;
 
     const size_t outSize = op.keySize;
     uint8_t* out = util::malloc(outSize);
 
-    int digestType = -1;
-    CF_CHECK_NE(LUT.find(op.digestType.Get()), LUT.end());
-    digestType = LUT.at(op.digestType.Get());
+    std::optional<int> digestType = std::nullopt;
+    CF_CHECK_NE(digestType = libgcrypt_detail::DigestIDToID(op.digestType.Get()), std::nullopt);
     CF_CHECK_EQ(gcry_kdf_derive(
                 op.password.GetPtr(),
                 op.password.GetSize(),
                 GCRY_KDF_PBKDF2,
-                digestType,
+                *digestType,
                 op.salt.GetPtr(),
                 op.salt.GetSize(),
                 op.iterations,
