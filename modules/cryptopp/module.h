@@ -14,6 +14,7 @@ class CryptoPP : public Module {
         std::optional<component::MAC> OpHMAC(operation::HMAC& op) override;
         std::optional<component::Ciphertext> OpSymmetricEncrypt(operation::SymmetricEncrypt& op) override;
         std::optional<component::Cleartext> OpSymmetricDecrypt(operation::SymmetricDecrypt& op) override;
+        std::optional<component::Key> OpKDF_HKDF(operation::KDF_HKDF& op) override;
 };
 
 } /* namespace module */
