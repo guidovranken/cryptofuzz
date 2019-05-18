@@ -1864,7 +1864,7 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt(operation::Symme
 }
 
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
-std::optional<component::Key> OpenSSL::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
+std::optional<component::Key> OpenSSL::OpKDF_SCRYPT_EVP_PKEY(operation::KDF_SCRYPT& op) const {
     std::optional<component::Key> ret = std::nullopt;
     EVP_PKEY_CTX* pctx = nullptr;
 
@@ -1894,6 +1894,58 @@ end:
     util::free(out);
 
     return ret;
+}
+#endif
+
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+std::optional<component::Key> OpenSSL::OpKDF_SCRYPT_EVP_KDF(operation::KDF_SCRYPT& op) const {
+    std::optional<component::Key> ret = std::nullopt;
+    EVP_KDF_CTX *kctx = nullptr;
+
+    size_t out_size = op.keySize;
+    uint8_t* out = util::malloc(out_size);
+
+    /* Initialize */
+    {
+        CF_CHECK_NE(kctx = EVP_KDF_CTX_new_id(EVP_KDF_SCRYPT), nullptr);
+        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_PASS, op.password.GetPtr(), op.password.GetSize()), 1);
+        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_SALT, op.salt.GetPtr(), op.salt.GetSize()), 1);
+        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_SCRYPT_N, op.N) , 1);
+        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_SCRYPT_R, op.r) , 1);
+        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_SCRYPT_P, op.p) , 1);
+    }
+
+    /* Process/finalize */
+    {
+        CF_CHECK_EQ(EVP_KDF_derive(kctx, out, out_size), 1);
+
+        ret = component::Key(out, out_size);
+    }
+
+end:
+    EVP_KDF_CTX_free(kctx);
+
+    util::free(out);
+
+    return ret;
+}
+#endif
+
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+std::optional<component::Key> OpenSSL::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    bool useEVP_PKEY = true;
+    try {
+        useEVP_PKEY = ds.Get<bool>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    }
+
+    if ( useEVP_PKEY == true ) {
+        return OpKDF_SCRYPT_EVP_PKEY(op);
+    } else {
+        return OpKDF_SCRYPT_EVP_KDF(op);
+    }
 }
 #endif
 
