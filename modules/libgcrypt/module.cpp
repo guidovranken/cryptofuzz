@@ -438,5 +438,90 @@ std::optional<component::Cleartext> libgcrypt::OpSymmetricDecrypt(operation::Sym
     return crypt.Decrypt(op);
 }
 
+std::optional<component::Key> libgcrypt::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
+    std::optional<component::Key> ret = std::nullopt;
+
+    const size_t outSize = op.keySize;
+    uint8_t* out = util::malloc(outSize);
+
+    /* Block size fixed at 8 */
+    CF_CHECK_EQ(op.r, 8);
+
+    CF_CHECK_EQ(gcry_kdf_derive(
+                op.password.GetPtr(),
+                op.password.GetSize(),
+                GCRY_KDF_SCRYPT,
+                op.N,
+                op.salt.GetPtr(),
+                op.salt.GetSize(),
+                op.p,
+                outSize,
+                out), GPG_ERR_NO_ERROR);
+
+    ret = component::Key(out, outSize);
+
+end:
+    util::free(out);
+
+    return ret;
+}
+
+std::optional<component::Key> libgcrypt::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
+    static const std::map<uint64_t, int> LUT = {
+        { CF_DIGEST("SHA1"), GCRY_MD_SHA1 },
+        { CF_DIGEST("SHA224"), GCRY_MD_SHA224 },
+        { CF_DIGEST("SHA256"), GCRY_MD_SHA256 },
+        { CF_DIGEST("SHA384"), GCRY_MD_SHA384 },
+        { CF_DIGEST("SHA512"), GCRY_MD_SHA512 },
+        { CF_DIGEST("MD4"), GCRY_MD_MD4 },
+        { CF_DIGEST("MD5"), GCRY_MD_MD5 },
+        { CF_DIGEST("RIPEMD160"), GCRY_MD_RMD160 },
+        { CF_DIGEST("WHIRLPOOL"), GCRY_MD_WHIRLPOOL },
+        { CF_DIGEST("BLAKE2B160"), GCRY_MD_BLAKE2B_160 },
+        { CF_DIGEST("BLAKE2B256"), GCRY_MD_BLAKE2B_256 },
+        { CF_DIGEST("BLAKE2B384"), GCRY_MD_BLAKE2B_384 },
+        { CF_DIGEST("BLAKE2B512"), GCRY_MD_BLAKE2B_512 },
+        { CF_DIGEST("BLAKE2S128"), GCRY_MD_BLAKE2S_128 },
+        { CF_DIGEST("BLAKE2S160"), GCRY_MD_BLAKE2S_160 },
+        { CF_DIGEST("BLAKE2S224"), GCRY_MD_BLAKE2S_224 },
+        { CF_DIGEST("BLAKE2S256"), GCRY_MD_BLAKE2S_256 },
+        { CF_DIGEST("SHAKE128"), GCRY_MD_SHAKE128 },
+        { CF_DIGEST("SHAKE256"), GCRY_MD_SHAKE256 },
+        { CF_DIGEST("SHA3-224"), GCRY_MD_SHA3_224 },
+        { CF_DIGEST("SHA3-256"), GCRY_MD_SHA3_256 },
+        { CF_DIGEST("SHA3-384"), GCRY_MD_SHA3_384 },
+        { CF_DIGEST("SHA3-512"), GCRY_MD_SHA3_512 },
+        { CF_DIGEST("STREEBOG-256"), GCRY_MD_STRIBOG256 },
+        { CF_DIGEST("STREEBOG-512"), GCRY_MD_STRIBOG512 },
+        { CF_DIGEST("TIGER"), GCRY_MD_TIGER1 },
+        { CF_DIGEST("GOST-R-34.11-94"), GCRY_MD_GOSTR3411_CP },
+    };
+
+    std::optional<component::Key> ret = std::nullopt;
+
+    const size_t outSize = op.keySize;
+    uint8_t* out = util::malloc(outSize);
+
+    int digestType = -1;
+    CF_CHECK_NE(LUT.find(op.digestType.Get()), LUT.end());
+    digestType = LUT.at(op.digestType.Get());
+    CF_CHECK_EQ(gcry_kdf_derive(
+                op.password.GetPtr(),
+                op.password.GetSize(),
+                GCRY_KDF_PBKDF2,
+                digestType,
+                op.salt.GetPtr(),
+                op.salt.GetSize(),
+                op.iterations,
+                outSize,
+                out), GPG_ERR_NO_ERROR);
+
+    ret = component::Key(out, outSize);
+
+end:
+    util::free(out);
+
+    return ret;
+}
 } /* namespace module */
 } /* namespace cryptofuzz */
