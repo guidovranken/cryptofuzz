@@ -1931,8 +1931,40 @@ end:
 }
 #endif
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
 std::optional<component::Key> OpenSSL::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
+ #if defined(CRYPTOFUZZ_BORINGSSL)
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    std::optional<component::Key> ret = std::nullopt;
+
+    size_t outSize = op.keySize;
+    uint8_t* out = util::malloc(outSize);
+
+    size_t maxMem = 0;
+    try {
+        maxMem = ds.Get<uint64_t>() % (64*1024*1024);
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    }
+
+    CF_CHECK_EQ(EVP_PBE_scrypt(
+                (const char*)(op.password.GetPtr()),
+                op.password.GetSize(),
+                op.salt.GetPtr(),
+                op.salt.GetSize(),
+                op.N,
+                op.r,
+                op.p,
+                maxMem,
+                out,
+                outSize), 1);
+
+    ret = component::Key(out, outSize);
+
+end:
+    util::free(out);
+
+    return ret;
+ #else
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     bool useEVP_PKEY = true;
@@ -1946,6 +1978,7 @@ std::optional<component::Key> OpenSSL::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
     } else {
         return OpKDF_SCRYPT_EVP_KDF(op);
     }
+ #endif
 }
 #endif
 
