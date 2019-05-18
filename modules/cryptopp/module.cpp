@@ -32,6 +32,7 @@
 #include <aria.h>
 #include <hkdf.h>
 #include <scrypt.h>
+#include <pwdbased.h>
 #include <filters.h>
 #include <memory>
 
@@ -1178,6 +1179,89 @@ end:
     util::free(out);
 
     return ret;
+}
+
+namespace CryptoPP_detail {
+    template <class Digest>
+    std::optional<component::Key> KDF_PBKDF2(operation::KDF_PBKDF2& op) {
+        std::optional<component::Key> ret = std::nullopt;
+
+        const size_t outSize = op.keySize;
+        uint8_t* out = util::malloc(outSize);
+
+        try {
+            ::CryptoPP::PKCS5_PBKDF2_HMAC<Digest> pbkdf2;
+            pbkdf2.DeriveKey(
+                    out,
+                    outSize,
+                    0,
+                    op.password.GetPtr(),
+                    op.password.GetSize(),
+                    op.salt.GetPtr(),
+                    op.salt.GetSize(),
+                    op.iterations);
+        } catch ( ... ) {
+            goto end;
+        }
+
+        ret = component::Key(out, outSize);
+
+end:
+        util::free(out);
+
+        return ret;
+    }
+}
+
+std::optional<component::Key> CryptoPP::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
+    switch ( op.digestType.Get() ) {
+        case CF_DIGEST("SHA1"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::SHA1>(op);
+        case CF_DIGEST("SHA224"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::SHA224>(op);
+        case CF_DIGEST("SHA384"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::SHA384>(op);
+        case CF_DIGEST("SHA512"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::SHA512>(op);
+        case CF_DIGEST("SHAKE128"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::SHAKE128>(op);
+        case CF_DIGEST("SHAKE256"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::SHAKE256>(op);
+        case CF_DIGEST("RIPEMD128"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::RIPEMD128>(op);
+        case CF_DIGEST("RIPEMD160"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::RIPEMD160>(op);
+        case CF_DIGEST("RIPEMD256"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::RIPEMD256>(op);
+        case CF_DIGEST("RIPEMD320"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::RIPEMD320>(op);
+        case CF_DIGEST("WHIRLPOOL"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Whirlpool>(op);
+        case CF_DIGEST("MD2"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Weak::MD2>(op);
+        case CF_DIGEST("MD4"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Weak::MD4>(op);
+        case CF_DIGEST("MD5"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Weak::MD5>(op);
+        case CF_DIGEST("SM3"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::SM3>(op);
+        case CF_DIGEST("BLAKE2B512"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::BLAKE2b>(op);
+        case CF_DIGEST("BLAKE2S256"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::BLAKE2s>(op);
+        case CF_DIGEST("TIGER"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Tiger>(op);
+        case CF_DIGEST("KECCAK_224"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Keccak_224>(op);
+        case CF_DIGEST("KECCAK_256"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Keccak_256>(op);
+        case CF_DIGEST("KECCAK_384"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Keccak_384>(op);
+        case CF_DIGEST("KECCAK_512"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Keccak_512>(op);
+        default:
+            return std::nullopt;
+    }
 }
 
 } /* namespace module */
