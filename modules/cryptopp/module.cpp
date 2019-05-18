@@ -31,6 +31,7 @@
 #include <camellia.h>
 #include <aria.h>
 #include <hkdf.h>
+#include <scrypt.h>
 #include <filters.h>
 #include <memory>
 
@@ -1142,6 +1143,41 @@ std::optional<component::Key> CryptoPP::OpKDF_HKDF(operation::KDF_HKDF& op) {
         default:
             return std::nullopt;
     }
+}
+
+std::optional<component::Key> CryptoPP::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
+    std::optional<component::Key> ret = std::nullopt;
+
+    const size_t outSize = op.keySize;
+    uint8_t* out = util::malloc(outSize);
+
+    /* Crash occurs with r == 1 */
+    CF_CHECK_GTE(op.r, 1);
+
+    try {
+        ::CryptoPP::Scrypt scrypt;
+
+        scrypt.DeriveKey(
+                out,
+                outSize,
+                op.password.GetPtr(),
+                op.password.GetSize(),
+                op.salt.GetPtr(),
+                op.salt.GetSize(),
+                op.N,
+                op.r,
+                op.p);
+
+    } catch ( ... ) {
+        goto end;
+    }
+
+    ret = component::Key(out, outSize);
+
+end:
+    util::free(out);
+
+    return ret;
 }
 
 } /* namespace module */
