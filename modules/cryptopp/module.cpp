@@ -13,6 +13,7 @@
 #include <blake2.h>
 #include <tiger.h>
 #include <keccak.h>
+#include <panama.h>
 #include <crc.h>
 #include <adler32.h>
 #include <hmac.h>
@@ -115,6 +116,9 @@ std::optional<component::Digest> CryptoPP::OpDigest(operation::Digest& op) {
             break;
         case CF_DIGEST("KECCAK_512"):
             hash = std::make_unique<::CryptoPP::Keccak_512>();
+            break;
+        case CF_DIGEST("PANAMA"):
+            hash = std::make_unique<::CryptoPP::Weak::PanamaHash<::CryptoPP::LittleEndian>>();
             break;
         case CF_DIGEST("CRC32"):
             hash = std::make_unique<::CryptoPP::CRC32>();
@@ -226,6 +230,8 @@ std::optional<component::MAC> CryptoPP::OpHMAC(operation::HMAC& op) {
             return CryptoPP_detail::HMAC<::CryptoPP::Keccak_384>(op);
         case CF_DIGEST("KECCAK_512"):
             return CryptoPP_detail::HMAC<::CryptoPP::Keccak_512>(op);
+        case CF_DIGEST("PANAMA"):
+            return CryptoPP_detail::HMAC<::CryptoPP::Weak::PanamaHash<::CryptoPP::LittleEndian>>(op);
     }
 
     return std::nullopt;
@@ -1141,6 +1147,8 @@ std::optional<component::Key> CryptoPP::OpKDF_HKDF(operation::KDF_HKDF& op) {
             return CryptoPP_detail::KDF_HKDF<::CryptoPP::Keccak_384>(op);
         case CF_DIGEST("KECCAK_512"):
             return CryptoPP_detail::KDF_HKDF<::CryptoPP::Keccak_512>(op);
+        case CF_DIGEST("PANAMA"):
+            return CryptoPP_detail::KDF_HKDF<::CryptoPP::Weak::PanamaHash<::CryptoPP::LittleEndian>>(op);
         default:
             return std::nullopt;
     }
@@ -1259,6 +1267,8 @@ std::optional<component::Key> CryptoPP::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) 
             return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Keccak_384>(op);
         case CF_DIGEST("KECCAK_512"):
             return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Keccak_512>(op);
+        case CF_DIGEST("PANAMA"):
+            return CryptoPP_detail::KDF_PBKDF2<::CryptoPP::Weak::PanamaHash<::CryptoPP::LittleEndian>>(op);
         default:
             return std::nullopt;
     }
