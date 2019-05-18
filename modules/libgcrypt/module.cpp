@@ -157,24 +157,43 @@ end:
 }
 
 std::optional<component::MAC> libgcrypt::OpHMAC(operation::HMAC& op) {
+    static const std::map<uint64_t, int> LUT = {
+        { CF_DIGEST("SHA1"), GCRY_MAC_HMAC_SHA1 },
+        { CF_DIGEST("SHA224"), GCRY_MAC_HMAC_SHA224 },
+        { CF_DIGEST("SHA256"), GCRY_MAC_HMAC_SHA256 },
+        { CF_DIGEST("SHA384"), GCRY_MAC_HMAC_SHA384 },
+        { CF_DIGEST("SHA512"), GCRY_MAC_HMAC_SHA512 },
+        { CF_DIGEST("MD4"), GCRY_MAC_HMAC_MD4 },
+        { CF_DIGEST("MD5"), GCRY_MAC_HMAC_MD5 },
+        { CF_DIGEST("RIPEMD160"), GCRY_MAC_HMAC_RMD160 },
+        { CF_DIGEST("WHIRLPOOL"), GCRY_MAC_HMAC_WHIRLPOOL },
+        { CF_DIGEST("SHA3-224"), GCRY_MAC_HMAC_SHA3_224 },
+        { CF_DIGEST("SHA3-256"), GCRY_MAC_HMAC_SHA3_256 },
+        { CF_DIGEST("SHA3-384"), GCRY_MAC_HMAC_SHA3_384 },
+        { CF_DIGEST("SHA3-512"), GCRY_MAC_HMAC_SHA3_512 },
+        { CF_DIGEST("STREEBOG-256"), GCRY_MAC_HMAC_STRIBOG256 },
+        { CF_DIGEST("STREEBOG-512"), GCRY_MAC_HMAC_STRIBOG512 },
+    };
+
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     std::optional<component::MAC> ret = std::nullopt;
     util::Multipart parts;
 
     gcry_mac_hd_t h;
     bool hOpen = false;
-    std::optional<int> hmacType = std::nullopt;
+    int hmacType = -1;
 
     /* Initialize */
     {
-        CF_CHECK_NE(hmacType = libgcrypt_detail::DigestIDToID(op.digestType.Get()), std::nullopt);
+        CF_CHECK_NE(LUT.find(op.digestType.Get()), LUT.end());
+        hmacType = LUT.at(op.digestType.Get());
 
         bool useSecMem = false;
         try {
             useSecMem = ds.Get<bool>();
         } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
-        CF_CHECK_EQ(gcry_mac_open(&h, *hmacType, useSecMem ? GCRY_MD_FLAG_SECURE : 0, nullptr), GPG_ERR_NO_ERROR);
+        CF_CHECK_EQ(gcry_mac_open(&h, hmacType, useSecMem ? GCRY_MD_FLAG_SECURE : 0, nullptr), GPG_ERR_NO_ERROR);
         hOpen = true;
 
         CF_CHECK_EQ(gcry_mac_setkey(h, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), GPG_ERR_NO_ERROR);
@@ -189,7 +208,7 @@ std::optional<component::MAC> libgcrypt::OpHMAC(operation::HMAC& op) {
 
     /* Finalize */
     {
-        size_t length = gcry_mac_get_algo_maclen(*hmacType);
+        size_t length = gcry_mac_get_algo_maclen(hmacType);
         CF_CHECK_GTE(length, 0);
         uint8_t out[length];
         CF_CHECK_EQ(gcry_mac_read(h, out, &length), GPG_ERR_NO_ERROR);
