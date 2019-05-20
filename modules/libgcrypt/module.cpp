@@ -353,6 +353,7 @@ namespace libgcrypt_detail {
             return ret;
         }
 
+        template <bool Encrypt>
         std::optional<size_t> process(void) {
             std::optional<size_t> ret = std::nullopt;
             size_t outIdx = 0;
@@ -369,7 +370,11 @@ namespace libgcrypt_detail {
                     CF_CHECK_EQ(gcry_cipher_final(h), GPG_ERR_NO_ERROR);
                 }
 
-                CF_CHECK_EQ(gcry_cipher_encrypt(h, out + outIdx, outputBufferSize - outIdx, part.first, part.second), GPG_ERR_NO_ERROR);
+                if ( Encrypt == true ) {
+                    CF_CHECK_EQ(gcry_cipher_encrypt(h, out + outIdx, outputBufferSize - outIdx, part.first, part.second), GPG_ERR_NO_ERROR);
+                } else {
+                    CF_CHECK_EQ(gcry_cipher_decrypt(h, out + outIdx, outputBufferSize - outIdx, part.first, part.second), GPG_ERR_NO_ERROR);
+                }
                 outIdx += part.second;
 
                 ret = outIdx;
@@ -411,7 +416,7 @@ namespace libgcrypt_detail {
                 CF_CHECK_EQ(op.aad, std::nullopt);
 
                 CF_CHECK_EQ(initialize(op.cipher, op.cleartext.GetPtr(), op.cleartext.GetSize()), true);
-                std::optional<size_t> outputSize = process();
+                std::optional<size_t> outputSize = process<true>();
                 CF_CHECK_NE(outputSize, std::nullopt);
 
                 ret = component::Ciphertext(Buffer(out, *outputSize));
@@ -429,7 +434,7 @@ namespace libgcrypt_detail {
                 CF_CHECK_EQ(op.aad, std::nullopt);
 
                 CF_CHECK_EQ(initialize(op.cipher, op.ciphertext.GetPtr(), op.ciphertext.GetSize()), true);
-                std::optional<size_t> outputSize = process();
+                std::optional<size_t> outputSize = process<false>();
                 CF_CHECK_NE(outputSize, std::nullopt);
 
                 ret = component::Cleartext(out, *outputSize);
