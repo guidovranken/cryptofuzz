@@ -990,6 +990,7 @@ end:
 }
 #endif
 
+#if !defined(CRYPTOFUZZ_OPENSSL_102)
 std::optional<component::MAC> OpenSSL::OpHMAC_HMAC(operation::HMAC& op, Datasource& ds) {
     std::optional<component::MAC> ret = std::nullopt;
 
@@ -1024,6 +1025,7 @@ std::optional<component::MAC> OpenSSL::OpHMAC_HMAC(operation::HMAC& op, Datasour
 end:
     return ret;
 }
+#endif
 
 std::optional<component::MAC> OpenSSL::OpHMAC(operation::HMAC& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -1280,7 +1282,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
         outIdx += len;
 
         if ( op.tagSize != std::nullopt ) {
-#if !defined(CRYPTOFUZZ_LIBRESSL)
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
             /* Get tag.
              *
              * See comments around EVP_CTRL_AEAD_SET_TAG in OpSymmetricDecrypt_EVP for reasons
@@ -1627,7 +1629,7 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
         CF_CHECK_EQ(checkSetIVLength(op.cipher.cipherType.Get(), cipher, ctx.GetPtr(), op.cipher.iv.GetSize()), true);
         CF_CHECK_EQ(checkSetKeyLength(cipher, ctx.GetPtr(), op.cipher.key.GetSize()), true);
 
-#if !defined(CRYPTOFUZZ_LIBRESSL)
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
         /* Set tag.
          *
          * LibreSSL supports setting the tag via the EVP interface with EVP_CTRL_GCM_SET_TAG for GCM,
