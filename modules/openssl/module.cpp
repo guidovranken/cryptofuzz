@@ -1347,7 +1347,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_BIO(operation::
         return ret;
     }
 
-#if 0
+#if defined(CRYPTOFUZZ_OPENSSL_102)
     /* WRAP ciphers crash in OpenSSL 1.0.2 */
     if ( repository::IsWRAP(op.cipher.cipherType.Get()) ) {
         return ret;
@@ -1743,7 +1743,7 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_BIO(operation::S
         return ret;
     }
 
-#if 0
+#if defined(CRYPTOFUZZ_OPENSSL_102)
     /* WRAP ciphers crash in OpenSSL 1.0.2 */
     if ( repository::IsWRAP(op.cipher.cipherType.Get()) ) {
         return ret;
