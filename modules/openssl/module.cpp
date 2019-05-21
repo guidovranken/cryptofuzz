@@ -100,6 +100,21 @@ const EVP_MD* OpenSSL::toEVPMD(const component::DigestType& digestType) const {
         { CF_DIGEST("MDC2"), EVP_mdc2() },
         { CF_DIGEST("RIPEMD160"), EVP_ripemd160() },
         { CF_DIGEST("WHIRLPOOL"), EVP_whirlpool() },
+#elif defined(CRYPTOFUZZ_OPENSSL_110)
+        { CF_DIGEST("SHA1"), EVP_sha1() },
+        { CF_DIGEST("SHA224"), EVP_sha224() },
+        { CF_DIGEST("SHA256"), EVP_sha256() },
+        { CF_DIGEST("SHA384"), EVP_sha384() },
+        { CF_DIGEST("SHA512"), EVP_sha512() },
+        { CF_DIGEST("MD2"), EVP_md2() },
+        { CF_DIGEST("MD4"), EVP_md4() },
+        { CF_DIGEST("MD5"), EVP_md5() },
+        { CF_DIGEST("MD5_SHA1"), EVP_md5_sha1() },
+        { CF_DIGEST("MDC2"), EVP_mdc2() },
+        { CF_DIGEST("RIPEMD160"), EVP_ripemd160() },
+        { CF_DIGEST("WHIRLPOOL"), EVP_whirlpool() },
+        { CF_DIGEST("BLAKE2B512"), EVP_blake2b512() },
+        { CF_DIGEST("BLAKE2S256"), EVP_blake2s256() },
 #else
         { CF_DIGEST("SHA1"), EVP_sha1() },
         { CF_DIGEST("SHA224"), EVP_sha224() },
@@ -583,6 +598,229 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
             return EVP_camellia_256_cfb8();
         case CF_CIPHER("CAMELLIA_256_OFB"):
             return EVP_camellia_256_ofb();
+#elif defined(CRYPTOFUZZ_OPENSSL_110)
+        case CF_CIPHER("DES_CFB"):
+            return EVP_des_cfb();
+        case CF_CIPHER("DES_CFB1"):
+            return EVP_des_cfb1();
+        case CF_CIPHER("DES_CFB8"):
+            return EVP_des_cfb8();
+        case CF_CIPHER("DES_EDE_CFB"):
+            return EVP_des_ede_cfb();
+        case CF_CIPHER("DES_EDE3_CFB"):
+            return EVP_des_ede3_cfb();
+        case CF_CIPHER("DES_EDE3_CFB1"):
+            return EVP_des_ede3_cfb1();
+        case CF_CIPHER("DES_EDE3_CFB8"):
+            return EVP_des_ede3_cfb8();
+        case CF_CIPHER("DES_OFB"):
+            return EVP_des_ofb();
+        case CF_CIPHER("DES_EDE_OFB"):
+            return EVP_des_ede_ofb();
+        case CF_CIPHER("DES_EDE3_OFB"):
+            return EVP_des_ede3_ofb();
+        case CF_CIPHER("DESX_CBC"):
+            return EVP_desx_cbc();
+        case CF_CIPHER("DES_CBC"):
+            return EVP_des_cbc();
+        case CF_CIPHER("DES_EDE_CBC"):
+            return EVP_des_ede_cbc();
+        case CF_CIPHER("DES_EDE3_CBC"):
+            return EVP_des_ede3_cbc();
+        case CF_CIPHER("DES_ECB"):
+            return EVP_des_ecb();
+        case CF_CIPHER("DES_EDE"):
+            return EVP_des_ede();
+        case CF_CIPHER("DES_EDE3"):
+            return EVP_des_ede3();
+        case CF_CIPHER("DES_EDE3_WRAP"):
+            return EVP_des_ede3_wrap();
+        case CF_CIPHER("RC4"):
+            return EVP_rc4();
+        case CF_CIPHER("RC4_40"):
+            return EVP_rc4_40();
+        case CF_CIPHER("RC4_HMAC_MD5"):
+            return EVP_rc4_hmac_md5();
+        case CF_CIPHER("IDEA_ECB"):
+            return EVP_idea_ecb();
+        case CF_CIPHER("IDEA_CFB"):
+            return EVP_idea_cfb();
+        case CF_CIPHER("IDEA_OFB"):
+            return EVP_idea_ofb();
+        case CF_CIPHER("IDEA_CBC"):
+            return EVP_idea_cbc();
+        case CF_CIPHER("SEED_ECB"):
+            return EVP_seed_ecb();
+        case CF_CIPHER("SEED_CFB"):
+            return EVP_seed_cfb();
+        case CF_CIPHER("SEED_OFB"):
+            return EVP_seed_ofb();
+        case CF_CIPHER("SEED_CBC"):
+            return EVP_seed_cbc();
+        case CF_CIPHER("RC2_ECB"):
+            return EVP_rc2_ecb();
+        case CF_CIPHER("RC2_CFB"):
+            return EVP_rc2_cfb();
+        case CF_CIPHER("RC2_OFB"):
+            return EVP_rc2_ofb();
+        case CF_CIPHER("RC2_CBC"):
+            return EVP_rc2_cbc();
+        case CF_CIPHER("RC2_40_CBC"):
+            return EVP_rc2_40_cbc();
+        case CF_CIPHER("RC2_64_CBC"):
+            return EVP_rc2_64_cbc();
+        case CF_CIPHER("BF_ECB"):
+            return EVP_bf_ecb();
+        case CF_CIPHER("BF_CFB"):
+            return EVP_bf_cfb();
+        case CF_CIPHER("BF_OFB"):
+            return EVP_bf_ofb();
+        case CF_CIPHER("BF_CBC"):
+            return EVP_bf_cbc();
+        case CF_CIPHER("CAST5_ECB"):
+            return EVP_cast5_ecb();
+        case CF_CIPHER("CAST5_CFB"):
+            return EVP_cast5_cfb();
+        case CF_CIPHER("CAST5_OFB"):
+            return EVP_cast5_ofb();
+        case CF_CIPHER("CAST5_CBC"):
+            return EVP_cast5_cbc();
+        case CF_CIPHER("RC5_32_12_16_ECB"):
+            return EVP_rc5_32_12_16_ecb();
+        case CF_CIPHER("RC5_32_12_16_CFB"):
+            return EVP_rc5_32_12_16_cfb();
+        case CF_CIPHER("RC5_32_12_16_OFB"):
+            return EVP_rc5_32_12_16_ofb();
+        case CF_CIPHER("RC5_32_12_16_CBC"):
+            return EVP_rc5_32_12_16_cbc();
+        case CF_CIPHER("AES_128_ECB"):
+            return EVP_aes_128_ecb();
+        case CF_CIPHER("AES_128_CBC"):
+            return EVP_aes_128_cbc();
+        case CF_CIPHER("AES_128_CFB"):
+            return EVP_aes_128_cfb();
+        case CF_CIPHER("AES_128_CFB1"):
+            return EVP_aes_128_cfb1();
+        case CF_CIPHER("AES_128_CFB8"):
+            return EVP_aes_128_cfb8();
+        case CF_CIPHER("AES_128_OFB"):
+            return EVP_aes_128_ofb();
+        case CF_CIPHER("AES_128_CTR"):
+            return EVP_aes_128_ctr();
+        case CF_CIPHER("AES_128_GCM"):
+            return EVP_aes_128_gcm();
+        case CF_CIPHER("AES_128_OCB"):
+            return EVP_aes_128_ocb();
+        case CF_CIPHER("AES_128_XTS"):
+            return EVP_aes_128_xts();
+        case CF_CIPHER("AES_128_CCM"):
+            return EVP_aes_128_ccm();
+        case CF_CIPHER("AES_128_WRAP"):
+            return EVP_aes_128_wrap();
+        case CF_CIPHER("AES_128_WRAP_PAD"):
+            return EVP_aes_128_wrap_pad();
+        case CF_CIPHER("AES_192_ECB"):
+            return EVP_aes_192_ecb();
+        case CF_CIPHER("AES_192_CBC"):
+            return EVP_aes_192_cbc();
+        case CF_CIPHER("AES_192_CFB"):
+            return EVP_aes_192_cfb();
+        case CF_CIPHER("AES_192_CFB1"):
+            return EVP_aes_192_cfb1();
+        case CF_CIPHER("AES_192_CFB8"):
+            return EVP_aes_192_cfb8();
+        case CF_CIPHER("AES_192_OFB"):
+            return EVP_aes_192_ofb();
+        case CF_CIPHER("AES_192_CTR"):
+            return EVP_aes_192_ctr();
+        case CF_CIPHER("AES_192_GCM"):
+            return EVP_aes_192_gcm();
+        case CF_CIPHER("AES_192_CCM"):
+            return EVP_aes_192_ccm();
+        case CF_CIPHER("AES_192_WRAP"):
+            return EVP_aes_192_wrap();
+        case CF_CIPHER("AES_192_WRAP_PAD"):
+            return EVP_aes_192_wrap_pad();
+        case CF_CIPHER("AES_256_ECB"):
+            return EVP_aes_256_ecb();
+        case CF_CIPHER("AES_256_CBC"):
+            return EVP_aes_256_cbc();
+        case CF_CIPHER("AES_256_CFB"):
+            return EVP_aes_256_cfb();
+        case CF_CIPHER("AES_256_CFB1"):
+            return EVP_aes_256_cfb1();
+        case CF_CIPHER("AES_256_CFB8"):
+            return EVP_aes_256_cfb8();
+        case CF_CIPHER("AES_256_OFB"):
+            return EVP_aes_256_ofb();
+        case CF_CIPHER("AES_256_CTR"):
+            return EVP_aes_256_ctr();
+        case CF_CIPHER("AES_256_GCM"):
+            return EVP_aes_256_gcm();
+        case CF_CIPHER("AES_256_OCB"):
+            return EVP_aes_256_ocb();
+        case CF_CIPHER("AES_256_XTS"):
+            return EVP_aes_256_xts();
+        case CF_CIPHER("AES_256_CCM"):
+            return EVP_aes_256_ccm();
+        case CF_CIPHER("AES_256_WRAP"):
+            return EVP_aes_256_wrap();
+        case CF_CIPHER("AES_256_WRAP_PAD"):
+            return EVP_aes_256_wrap_pad();
+        case CF_CIPHER("AES_128_CBC_HMAC_SHA1"):
+            return EVP_aes_128_cbc_hmac_sha1();
+        case CF_CIPHER("AES_256_CBC_HMAC_SHA1"):
+            return EVP_aes_256_cbc_hmac_sha1();
+        case CF_CIPHER("AES_128_CBC_HMAC_SHA256"):
+            return EVP_aes_128_cbc_hmac_sha256();
+        case CF_CIPHER("AES_256_CBC_HMAC_SHA256"):
+            return EVP_aes_256_cbc_hmac_sha256();
+        case CF_CIPHER("CAMELLIA_128_ECB"):
+            return EVP_camellia_128_ecb();
+        case CF_CIPHER("CAMELLIA_128_CBC"):
+            return EVP_camellia_128_cbc();
+        case CF_CIPHER("CAMELLIA_128_CFB"):
+            return EVP_camellia_128_cfb();
+        case CF_CIPHER("CAMELLIA_128_CFB1"):
+            return EVP_camellia_128_cfb1();
+        case CF_CIPHER("CAMELLIA_128_CFB8"):
+            return EVP_camellia_128_cfb8();
+        case CF_CIPHER("CAMELLIA_128_OFB"):
+            return EVP_camellia_128_ofb();
+        case CF_CIPHER("CAMELLIA_192_ECB"):
+            return EVP_camellia_192_ecb();
+        case CF_CIPHER("CAMELLIA_192_CBC"):
+            return EVP_camellia_192_cbc();
+        case CF_CIPHER("CAMELLIA_192_CFB"):
+            return EVP_camellia_192_cfb();
+        case CF_CIPHER("CAMELLIA_192_CFB1"):
+            return EVP_camellia_192_cfb1();
+        case CF_CIPHER("CAMELLIA_192_CFB8"):
+            return EVP_camellia_192_cfb8();
+        case CF_CIPHER("CAMELLIA_192_OFB"):
+            return EVP_camellia_192_ofb();
+        case CF_CIPHER("CAMELLIA_256_ECB"):
+            return EVP_camellia_256_ecb();
+        case CF_CIPHER("CAMELLIA_256_CBC"):
+            return EVP_camellia_256_cbc();
+        case CF_CIPHER("CAMELLIA_256_CFB"):
+            return EVP_camellia_256_cfb();
+        case CF_CIPHER("CAMELLIA_256_CFB1"):
+            return EVP_camellia_256_cfb1();
+        case CF_CIPHER("CAMELLIA_256_CFB8"):
+            return EVP_camellia_256_cfb8();
+        case CF_CIPHER("CAMELLIA_256_OFB"):
+            return EVP_camellia_256_ofb();
+        case CF_CIPHER("CAMELLIA_128_CTR"):
+            return EVP_camellia_128_ctr();
+        case CF_CIPHER("CAMELLIA_192_CTR"):
+            return EVP_camellia_192_ctr();
+        case CF_CIPHER("CAMELLIA_256_CTR"):
+            return EVP_camellia_256_ctr();
+        case CF_CIPHER("CHACHA20"):
+            return EVP_chacha20();
+        case CF_CIPHER("CHACHA20_POLY1305"):
+            return EVP_chacha20_poly1305();
 #else
         case CF_CIPHER("DES_CFB"):
             return EVP_des_cfb();
@@ -1109,7 +1347,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_BIO(operation::
         return ret;
     }
 
-#if defined(CRYPTOFUZZ_OPENSSL_102)
+#if 0
     /* WRAP ciphers crash in OpenSSL 1.0.2 */
     if ( repository::IsWRAP(op.cipher.cipherType.Get()) ) {
         return ret;
@@ -1505,7 +1743,7 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_BIO(operation::S
         return ret;
     }
 
-#if defined(CRYPTOFUZZ_OPENSSL_102)
+#if 0
     /* WRAP ciphers crash in OpenSSL 1.0.2 */
     if ( repository::IsWRAP(op.cipher.cipherType.Get()) ) {
         return ret;
@@ -1865,7 +2103,7 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt(operation::Symme
     }
 }
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
 std::optional<component::Key> OpenSSL::OpKDF_SCRYPT_EVP_PKEY(operation::KDF_SCRYPT& op) const {
     std::optional<component::Key> ret = std::nullopt;
     EVP_PKEY_CTX* pctx = nullptr;
@@ -1899,7 +2137,7 @@ end:
 }
 #endif
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
 std::optional<component::Key> OpenSSL::OpKDF_SCRYPT_EVP_KDF(operation::KDF_SCRYPT& op) const {
     std::optional<component::Key> ret = std::nullopt;
     EVP_KDF_CTX *kctx = nullptr;
@@ -1933,7 +2171,7 @@ end:
 }
 #endif
 
-#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
 std::optional<component::Key> OpenSSL::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
  #if defined(CRYPTOFUZZ_BORINGSSL)
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -2082,7 +2320,7 @@ end:
 }
 #endif
 
-#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111)
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110)
 std::optional<component::Key> OpenSSL::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
  #if defined(CRYPTOFUZZ_BORINGSSL)
     std::optional<component::Key> ret = std::nullopt;

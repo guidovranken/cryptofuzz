@@ -53,10 +53,10 @@ class OpenSSL : public Module {
         std::optional<component::Cleartext> OpSymmetricDecrypt_BIO(operation::SymmetricDecrypt& op, Datasource& ds);
 #endif
         std::optional<component::Cleartext> OpSymmetricDecrypt_EVP(operation::SymmetricDecrypt& op, Datasource& ds);
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
         std::optional<component::Key> OpKDF_SCRYPT_EVP_PKEY(operation::KDF_SCRYPT& op) const;
 #endif
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
         std::optional<component::Key> OpKDF_SCRYPT_EVP_KDF(operation::KDF_SCRYPT& op) const;
 #endif
     public:
@@ -65,7 +65,7 @@ class OpenSSL : public Module {
         std::optional<component::MAC> OpHMAC(operation::HMAC& op) override;
         std::optional<component::Ciphertext> OpSymmetricEncrypt(operation::SymmetricEncrypt& op) override;
         std::optional<component::Cleartext> OpSymmetricDecrypt(operation::SymmetricDecrypt& op) override;
-#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
         std::optional<component::Key> OpKDF_SCRYPT(operation::KDF_SCRYPT& op) override;
 #endif
 #if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
@@ -74,7 +74,7 @@ class OpenSSL : public Module {
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
         std::optional<component::Key> OpKDF_TLS1_PRF(operation::KDF_TLS1_PRF& op) override;
 #endif
-#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111)
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110)
         std::optional<component::Key> OpKDF_PBKDF2(operation::KDF_PBKDF2& op) override;
 #endif
         std::optional<component::MAC> OpCMAC(operation::CMAC& op) override;
