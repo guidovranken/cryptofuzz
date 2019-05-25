@@ -376,9 +376,9 @@ namespace libgcrypt_detail {
                     CF_CHECK_EQ(gcry_cipher_decrypt(h, out + outIdx, outputBufferSize - outIdx, part.first, part.second), GPG_ERR_NO_ERROR);
                 }
                 outIdx += part.second;
-
-                ret = outIdx;
             }
+
+            ret = outIdx;
 
         end:
             return ret;
