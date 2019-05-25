@@ -4,12 +4,12 @@
 #include <cryptofuzz/module.h>
 
 extern "C" {
-#include <generic/EverCrypt_AutoConfig2.h>
-#include <generic/EverCrypt_Hash.h>
-#include <generic/EverCrypt_Hash_Incremental.h>
-#include <generic/EverCrypt_HMAC.h>
-#include <generic/EverCrypt_HKDF.h>
-#include <generic/EverCrypt_AEAD.h>
+#include <portable/EverCrypt_AutoConfig2.h>
+#include <portable/EverCrypt_Hash.h>
+#include <portable/EverCrypt_Hash_Incremental.h>
+#include <portable/EverCrypt_HMAC.h>
+#include <portable/EverCrypt_HKDF.h>
+#include <portable/EverCrypt_AEAD.h>
 }
 
 namespace cryptofuzz {
