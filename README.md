@@ -30,3 +30,5 @@ Documentation on how to implement modules and use Cryptofuzz will follow.
 - LibreSSL: [DES EDE3 CFB1 leaves output uninitialized](https://cvsweb.openbsd.org/src/lib/libcrypto/evp/e_des3.c?rev=1.20&content-type=text/x-cvsweb-markup)
 - Crypto++: [Scrypt crash with blocksize 0](https://github.com/weidai11/cryptopp/commit/e0b60439bf63b02ed93bc2c5b4ed15125fd6f278)
 - EverCrypt: Illegal instruction exception on non-AVX CPUs
+- OpenSSL: [OpenSSL 1.0.2: RC4 OOB read](https://github.com/openssl/openssl/issues/8972)
+- OpenSSL: [OpenSSL 1.0.2: Branch on uninitialized memory in EVP_CIPHER_CTX_copy](https://github.com/openssl/openssl/issues/8980)
