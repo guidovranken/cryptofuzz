@@ -16,6 +16,7 @@ class ExecutorBase {
     private:
         const uint64_t operationID;
         const std::map<uint64_t, std::shared_ptr<Module> > modules;
+        bool debug = false;
 
         using ResultPair = std::pair< std::shared_ptr<Module>, std::optional<ResultType> >;
         using ResultSet = std::vector<ResultPair>;
@@ -39,7 +40,7 @@ class ExecutorBase {
         void abort(std::vector<std::string> moduleNames, const std::string operation, const std::string algorithm, const std::string reason) const;
     public:
         void Run(Datasource& parentDs, const uint8_t* data, const size_t size) const;
-        ExecutorBase(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules);
+        ExecutorBase(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const bool debug = false);
         virtual ~ExecutorBase();
 };
 

@@ -15,17 +15,17 @@ void Driver::LoadModule(std::shared_ptr<Module> module) {
 void Driver::Run(const uint8_t* data, const size_t size) const {
     using fuzzing::datasource::ID;
 
-    static ExecutorDigest executorDigest(ID("Cryptofuzz/Operation/Digest"), modules);
-    static ExecutorHMAC executorHMAC(ID("Cryptofuzz/Operation/HMAC"), modules);
-    static ExecutorCMAC executorCMAC(ID("Cryptofuzz/Operation/CMAC"), modules);
-    static ExecutorSymmetricEncrypt executorSymmetricEncrypt(ID("Cryptofuzz/Operation/SymmetricEncrypt"), modules);
-    static ExecutorSymmetricDecrypt executorSymmetricDecrypt(ID("Cryptofuzz/Operation/SymmetricDecrypt"), modules);
-    static ExecutorKDF_SCRYPT executorKDF_SCRYPT(ID("Cryptofuzz/Operation/KDF_SCRYPT"), modules);
-    static ExecutorKDF_HKDF executorKDF_HKDF(ID("Cryptofuzz/Operation/KDF_HKDF"), modules);
-    static ExecutorKDF_TLS1_PRF executorKDF_TLS1_PRF(ID("Cryptofuzz/Operation/KDF_TLS1_PRF"), modules);
-    static ExecutorKDF_PBKDF2 executorKDF_PBKDF2(ID("Cryptofuzz/Operation/KDF_PBKDF2"), modules);
-    static ExecutorSign executorSign(ID("Cryptofuzz/Operation/Sign"), modules);
-    static ExecutorVerify executorVerify(ID("Cryptofuzz/Operation/Verify"), modules);
+    static ExecutorDigest executorDigest(ID("Cryptofuzz/Operation/Digest"), modules, debug);
+    static ExecutorHMAC executorHMAC(ID("Cryptofuzz/Operation/HMAC"), modules, debug);
+    static ExecutorCMAC executorCMAC(ID("Cryptofuzz/Operation/CMAC"), modules, debug);
+    static ExecutorSymmetricEncrypt executorSymmetricEncrypt(ID("Cryptofuzz/Operation/SymmetricEncrypt"), modules, debug);
+    static ExecutorSymmetricDecrypt executorSymmetricDecrypt(ID("Cryptofuzz/Operation/SymmetricDecrypt"), modules, debug);
+    static ExecutorKDF_SCRYPT executorKDF_SCRYPT(ID("Cryptofuzz/Operation/KDF_SCRYPT"), modules, debug);
+    static ExecutorKDF_HKDF executorKDF_HKDF(ID("Cryptofuzz/Operation/KDF_HKDF"), modules, debug);
+    static ExecutorKDF_TLS1_PRF executorKDF_TLS1_PRF(ID("Cryptofuzz/Operation/KDF_TLS1_PRF"), modules, debug);
+    static ExecutorKDF_PBKDF2 executorKDF_PBKDF2(ID("Cryptofuzz/Operation/KDF_PBKDF2"), modules, debug);
+    static ExecutorSign executorSign(ID("Cryptofuzz/Operation/Sign"), modules, debug);
+    static ExecutorVerify executorVerify(ID("Cryptofuzz/Operation/Verify"), modules, debug);
 
     try {
 
@@ -74,5 +74,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     } catch ( Datasource::OutOfData ) {
     }
 };
+
+Driver::Driver(const bool debug) :
+    debug(debug)
+{ }
 
 } /* namespace cryptofuzz */

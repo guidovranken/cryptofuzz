@@ -333,9 +333,10 @@ template<> std::optional<bool> ExecutorBase<bool, operation::Verify>::callModule
 }
 
 template <class ResultType, class OperationType>
-ExecutorBase<ResultType, OperationType>::ExecutorBase(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules) :
+ExecutorBase<ResultType, OperationType>::ExecutorBase(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const bool debug) :
     operationID(operationID),
-    modules(modules)
+    modules(modules),
+    debug(debug)
 {
 }
 
@@ -516,6 +517,10 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
                     }
                 }
             }
+        }
+
+        if ( debug == true ) {
+            printf("Running:\n%s\n", op.ToString().c_str());
         }
 
         results.push_back( {module, std::move(callModule(module, op))} );
