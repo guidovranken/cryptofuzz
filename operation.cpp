@@ -80,6 +80,7 @@ std::string KDF_SCRYPT::ToString(void) const {
     ss << "N: " << std::to_string(N) << std::endl;
     ss << "r: " << std::to_string(r) << std::endl;
     ss << "p: " << std::to_string(p) << std::endl;
+    ss << "keySize: " << std::to_string(keySize) << std::endl;
 
     return ss.str();
 }
@@ -93,6 +94,7 @@ std::string KDF_HKDF::ToString(void) const {
     ss << "password: " << util::HexDump(password.Get()) << std::endl;
     ss << "salt: " << util::HexDump(salt.Get()) << std::endl;
     ss << "info: " << util::HexDump(info.Get()) << std::endl;
+    ss << "keySize: " << std::to_string(keySize) << std::endl;
 
     return ss.str();
 }
@@ -105,6 +107,7 @@ std::string KDF_TLS1_PRF::ToString(void) const {
     ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
     ss << "secret: " << util::HexDump(secret.Get()) << std::endl;
     ss << "seed: " << util::HexDump(seed.Get()) << std::endl;
+    ss << "keySize: " << std::to_string(keySize) << std::endl;
 
     return ss.str();
 }
@@ -118,6 +121,7 @@ std::string KDF_PBKDF2::ToString(void) const {
     ss << "password: " << util::HexDump(password.Get()) << std::endl;
     ss << "salt: " << util::HexDump(salt.Get()) << std::endl;
     ss << "iterations: " << std::to_string(iterations) << std::endl;
+    ss << "keySize: " << std::to_string(keySize) << std::endl;
 
     return ss.str();
 }
