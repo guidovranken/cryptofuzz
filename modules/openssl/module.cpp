@@ -1687,6 +1687,21 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt(operation::Symm
         return AES_Encrypt(op, ds);
     }
 
+#if defined(CRYPTOFUZZ_OPENSSL_102) || defined(CRYPTOFUZZ_OPENSSL_110)
+    /* Prevent OOB write for large keys in RC5.
+     * Fixed in OpenSSL master, but will not be fixed for OpenSSL 1.0.2 and 1.1.0
+     */
+    if ( op.cipher.key.GetSize() > 255 ) {
+        switch ( op.cipher.cipherType.Get() ) {
+            case CF_CIPHER("RC5_32_12_16_ECB"):
+            case CF_CIPHER("RC5_32_12_16_CFB"):
+            case CF_CIPHER("RC5_32_12_16_OFB"):
+            case CF_CIPHER("RC5_32_12_16_CBC"):
+                return std::nullopt;
+        }
+    }
+#endif
+
     bool useEVP = true;
     try {
         useEVP = ds.Get<bool>();
@@ -2076,6 +2091,21 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt(operation::Symme
     if ( op.cipher.cipherType.Get() == CF_CIPHER("AES") ) {
         return AES_Decrypt(op, ds);
     }
+
+#if defined(CRYPTOFUZZ_OPENSSL_102) || defined(CRYPTOFUZZ_OPENSSL_110)
+    /* Prevent OOB write for large keys in RC5.
+     * Fixed in OpenSSL master, but will not be fixed for OpenSSL 1.0.2 and 1.1.0
+     */
+    if ( op.cipher.key.GetSize() > 255 ) {
+        switch ( op.cipher.cipherType.Get() ) {
+            case CF_CIPHER("RC5_32_12_16_ECB"):
+            case CF_CIPHER("RC5_32_12_16_CFB"):
+            case CF_CIPHER("RC5_32_12_16_OFB"):
+            case CF_CIPHER("RC5_32_12_16_CBC"):
+                return std::nullopt;
+        }
+    }
+#endif
 
     bool useEVP = true;
     try {
