@@ -93,6 +93,7 @@ template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>
 
         switch ( op.cipher.cipherType.Get() ) {
             case    ID("Cryptofuzz/Cipher/AES_128_OCB"):
+            case    ID("Cryptofuzz/Cipher/AES_256_OCB"):
 
             case    ID("Cryptofuzz/Cipher/AES_128_GCM"):
             case    ID("Cryptofuzz/Cipher/AES_192_GCM"):
