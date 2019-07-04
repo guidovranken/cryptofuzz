@@ -1687,6 +1687,12 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt(operation::Symm
         return AES_Encrypt(op, ds);
     }
 
+#if defined(CRYPTOFUZZ_OPENSSL_110)
+    if ( repository::IsCCM( op.cipher.cipherType.Get() ) ) {
+        return std::nullopt;
+    }
+#endif
+
 #if defined(CRYPTOFUZZ_OPENSSL_102) || defined(CRYPTOFUZZ_OPENSSL_110)
     /* Prevent OOB write for large keys in RC5.
      * Fixed in OpenSSL master, but will not be fixed for OpenSSL 1.0.2 and 1.1.0
