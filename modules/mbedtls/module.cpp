@@ -93,7 +93,7 @@ const mbedtls_cipher_info_t* mbedTLS::to_mbedtls_cipher_info_t(const component::
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_BLOWFISH_CFB64);
         case CF_CIPHER("BLOWFISH_CTR"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_BLOWFISH_CTR);
-        case CF_CIPHER("ARC4_128"):
+        case CF_CIPHER("RC4"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARC4_128);
         case CF_CIPHER("AES_128_CCM"):
             return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_CCM);
