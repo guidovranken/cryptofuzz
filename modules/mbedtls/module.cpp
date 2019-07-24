@@ -596,5 +596,40 @@ end:
     return ret;
 }
 
+std::optional<component::Key> mbedTLS::OpKDF_HKDF(operation::KDF_HKDF& op) {
+    std::optional<component::Key> ret = std::nullopt;
+
+    mbedtls_md_type_t md_type = MBEDTLS_MD_NONE;
+    mbedtls_md_info_t const* md_info = nullptr;
+    uint8_t* out = util::malloc(op.keySize);
+
+    CF_CHECK_NE(md_type = to_mbedtls_md_type_t(op.digestType), MBEDTLS_MD_NONE);
+    CF_CHECK_NE(md_info = mbedtls_md_info_from_type(md_type), nullptr);
+
+    /* https://tls.mbed.org/api/hkdf_8h.html:
+     *
+     * "The length of the output keying material in bytes.
+     * This must be less than or equal to 255 * md.size bytes."
+     */
+    CF_CHECK_LTE(op.keySize, 255 * mbedtls_md_get_size(md_info));
+    CF_CHECK_EQ(
+            mbedtls_hkdf(
+                md_info,
+                op.salt.GetPtr(),
+                op.salt.GetSize(),
+                op.password.GetPtr(),
+                op.password.GetSize(),
+                op.info.GetPtr(),
+                op.info.GetSize(),
+                out,
+                op.keySize), 0);
+
+    ret = component::Key(out, op.keySize);
+
+end:
+    util::free(out);
+    return ret;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */

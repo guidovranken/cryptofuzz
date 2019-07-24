@@ -10,6 +10,7 @@
 #include <mbedtls/chacha20.h>
 #include <mbedtls/cipher.h>
 #include <mbedtls/cmac.h>
+#include <mbedtls/hkdf.h>
 #include <optional>
 
 namespace cryptofuzz {
@@ -28,6 +29,7 @@ class mbedTLS : public Module {
         std::optional<component::MAC> OpCMAC(operation::CMAC& op) override;
         std::optional<component::Ciphertext> OpSymmetricEncrypt(operation::SymmetricEncrypt& op) override;
         std::optional<component::Cleartext> OpSymmetricDecrypt(operation::SymmetricDecrypt& op) override;
+        std::optional<component::Key> OpKDF_HKDF(operation::KDF_HKDF& op) override;
 };
 
 } /* namespace module */
