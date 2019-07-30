@@ -14,7 +14,7 @@ std::optional<component::Digest> Boost::OpDigest(operation::Digest& op) {
     std::optional<component::Digest> ret = std::nullopt;
 
     switch ( op.digestType.Get() ) {
-        case ID("Cryptofuzz/Digest/SHA1"):
+        case CF_DIGEST("SHA1"):
             {
                 boost::uuids::detail::sha1 sha1;
                 sha1.process_bytes(op.cleartext.GetPtr(), op.cleartext.GetSize());
