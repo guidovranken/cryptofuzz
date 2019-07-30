@@ -83,27 +83,27 @@ std::optional<component::Digest> Reference::OpDigest(operation::Digest& op) {
     std::optional<component::Digest> ret = std::nullopt;
 
     switch ( op.digestType.Get() ) {
-        case ID("Cryptofuzz/Digest/GROESTL_224"):
+        case CF_DIGEST("GROESTL_224"):
             {
                 return GROESTL(op, ds, 224);
             }
             break;
-        case ID("Cryptofuzz/Digest/GROESTL_256"):
+        case CF_DIGEST("GROESTL_256"):
             {
                 return GROESTL(op, ds, 256);
             }
             break;
-        case ID("Cryptofuzz/Digest/GROESTL_384"):
+        case CF_DIGEST("GROESTL_384"):
             {
                 return GROESTL(op, ds, 384);
             }
             break;
-        case ID("Cryptofuzz/Digest/GROESTL_512"):
+        case CF_DIGEST("GROESTL_512"):
             {
                 return GROESTL(op, ds, 512);
             }
             break;
-        case ID("Cryptofuzz/Digest/WHIRLPOOL"):
+        case CF_DIGEST("WHIRLPOOL"):
             {
                 return WHIRLPOOL(op, ds);
             }
