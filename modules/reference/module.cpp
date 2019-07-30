@@ -2,6 +2,10 @@
 #include <cryptofuzz/util.h>
 #include <fuzzing/datasource/id.hpp>
 
+#if defined(CRYPTOFUZZ_REFERENCE_CITY_O_PATH)
+#include "cityhash/src/city.h"
+#endif
+
 extern "C" {
     #include "groestl/groestl-cryptofuzz.h"
 }
@@ -83,6 +87,29 @@ std::optional<component::Digest> Reference::OpDigest(operation::Digest& op) {
     std::optional<component::Digest> ret = std::nullopt;
 
     switch ( op.digestType.Get() ) {
+#if defined(CRYPTOFUZZ_REFERENCE_CITY_O_PATH)
+        case CF_DIGEST("CITYHASH32"):
+            {
+                const auto res = CityHash32((const char*)op.cleartext.GetPtr(), op.cleartext.GetSize());
+                /* TODO endianness */
+                ret = component::Digest((const uint8_t*)&res, sizeof(res));
+            }
+            break;
+        case CF_DIGEST("CITYHASH64"):
+            {
+                const auto res = CityHash64((const char*)op.cleartext.GetPtr(), op.cleartext.GetSize());
+                /* TODO endianness */
+                ret = component::Digest((const uint8_t*)&res, sizeof(res));
+            }
+            break;
+        case CF_DIGEST("CITYHASH128"):
+            {
+                const auto res = CityHash128((const char*)op.cleartext.GetPtr(), op.cleartext.GetSize());
+                /* TODO endianness */
+                ret = component::Digest((const uint8_t*)&res, sizeof(res));
+            }
+            break;
+#endif
         case CF_DIGEST("GROESTL_224"):
             {
                 return GROESTL(op, ds, 224);
