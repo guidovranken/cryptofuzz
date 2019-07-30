@@ -16,6 +16,6 @@ whirlpool.o : whirlpool/Whirlpool.c whirlpool/nessie.h
 	$(CC) $(CFLAGS) -I -fPIC -c whirlpool/Whirlpool.c -o whirlpool.o
 
 module.o: module.cpp module.h whirlpool/nessie.h groestl/groestl-cryptofuzz.h
-	$(CXX) $(CXXFLAGS) -I -fPIC -c module.cpp -o module.o
+	$(CXX) $(CXXFLAGS) -I -fPIC -c module.cpp $(if $(CRYPTOFUZZ_REFERENCE_CITY_O_PATH),"-DCRYPTOFUZZ_REFERENCE_CITY_O_PATH=\"$(CRYPTOFUZZ_REFERENCE_CITY_O_PATH)\"","") -o module.o
 clean:
 	rm -rf *.o module.a

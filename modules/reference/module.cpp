@@ -3,7 +3,7 @@
 #include <fuzzing/datasource/id.hpp>
 
 #if defined(CRYPTOFUZZ_REFERENCE_CITY_O_PATH)
-#include "cityhash/src/city.h"
+#include <city.h>
 #endif
 
 extern "C" {
