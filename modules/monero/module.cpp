@@ -75,7 +75,7 @@ std::optional<component::Digest> Monero::OpDigest(operation::Digest& op) {
     std::optional<component::Digest> ret = std::nullopt;
 
     switch ( op.digestType.Get() ) {
-        case CF_DIGEST("GROESL_256"):
+        case CF_DIGEST("GROESTL_256"):
             {
                 return groestl(op, ds);
             }
