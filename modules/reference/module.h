@@ -9,6 +9,7 @@ namespace module {
 
 class Reference : public Module {
         std::optional<component::Digest> WHIRLPOOL(operation::Digest& op, Datasource& ds) const;
+        std::optional<component::Digest> GROESTL(operation::Digest& op, Datasource& ds, const size_t bitSize) const;
     public:
         Reference(void);
         std::optional<component::Digest> OpDigest(operation::Digest& op) override;
