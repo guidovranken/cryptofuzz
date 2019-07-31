@@ -3,6 +3,7 @@
 #include <cryptofuzz/components.h>
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/datasource.hpp>
+#include "../../third_party/json/json.hpp"
 
 namespace cryptofuzz {
 namespace operation {
@@ -17,8 +18,13 @@ class Operation {
             modifier(std::move(modifier))
         { }
 
+        Operation(nlohmann::json modifier) :
+            modifier(modifier)
+        { }
+
         virtual std::string Name(void) const = 0;
         virtual std::string ToString(void) const = 0;
+        virtual nlohmann::json ToJSON(void) const = 0;
         virtual std::string GetAlgorithmString(void) const {
             return "(no algorithm)";
         }
@@ -35,8 +41,15 @@ class Digest : public Operation {
             digestType(ds)
         { }
 
+        Digest(nlohmann::json json) :
+            Operation(json["modifier"]),
+            cleartext(json["cleartext"]),
+            digestType(json["digestType"])
+        { }
+
         std::string Name(void) const override;
         std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
         std::string GetAlgorithmString(void) const override {
             return repository::DigestToString(digestType.Get());
         }
@@ -54,9 +67,16 @@ class HMAC : public Operation {
             digestType(ds),
             cipher(ds)
         { }
+        HMAC(nlohmann::json json) :
+            Operation(json["modifier"]),
+            cleartext(json["cleartext"]),
+            digestType(json["digestType"]),
+            cipher(json["cipher"])
+        { }
 
         std::string Name(void) const override;
         std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
         std::string GetAlgorithmString(void) const override {
             return repository::DigestToString(digestType.Get());
         }
@@ -81,9 +101,26 @@ class SymmetricEncrypt : public Operation {
                     std::nullopt :
                     std::make_optional<uint64_t>(ds.Get<uint64_t>() % (10*1024*1024)) )
         { }
+        SymmetricEncrypt(nlohmann::json json) :
+            Operation(json["modifier"]),
+            cleartext(json["cleartext"]),
+            cipher(json["cipher"]),
+            aad(
+                    json["aad_enabled"].get<bool>() ?
+                        std::optional<component::AAD>(json["aad"].get<uint64_t>()) :
+                        std::optional<component::AAD>(std::nullopt)
+            ),
+            ciphertextSize(json["ciphertextSize"].get<uint64_t>()),
+            tagSize(
+                    json["tagSize_enabled"].get<bool>() ?
+                        std::optional<uint64_t>(json["tagSize"].get<uint64_t>()) :
+                        std::optional<uint64_t>(std::nullopt)
+            )
+        { }
 
         std::string Name(void) const override;
         std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
         std::string GetAlgorithmString(void) const override {
             return repository::CipherToString(cipher.cipherType.Get());
         }
@@ -107,9 +144,26 @@ class SymmetricDecrypt : public Operation {
             cleartextSize(ds.Get<uint64_t>() % (10*1024*1024))
         { }
         SymmetricDecrypt(const SymmetricEncrypt& opSymmetricEncrypt, const component::Ciphertext ciphertext, const uint64_t cleartextSize, std::optional<component::AAD> aad, component::Modifier modifier);
+        SymmetricDecrypt(nlohmann::json json) :
+            Operation(json["modifier"]),
+            ciphertext(json["ciphertext"]),
+            cipher(json["cipher"]),
+            tag(
+                    json["tag_enabled"].get<bool>() ?
+                        std::optional<component::Tag>(json["tag"].get<uint64_t>()) :
+                        std::optional<component::Tag>(std::nullopt)
+            ),
+            aad(
+                    json["aad_enabled"].get<bool>() ?
+                        std::optional<component::AAD>(json["aad"].get<uint64_t>()) :
+                        std::optional<component::AAD>(std::nullopt)
+            ),
+            cleartextSize(json["cleartextSize"].get<uint64_t>())
+        { }
 
         std::string Name(void) const override;
         std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
         std::string GetAlgorithmString(void) const override {
             return repository::CipherToString(cipher.cipherType.Get());
         }
@@ -134,9 +188,19 @@ class KDF_SCRYPT : public Operation {
             p(ds.Get<uint64_t>() % 5),
             keySize(ds.Get<uint64_t>() % 1024)
         { }
+        KDF_SCRYPT(nlohmann::json json) :
+            Operation(json["modifier"]),
+            password(json["password"]),
+            salt(json["salt"]),
+            N(json["N"].get<uint64_t>()),
+            r(json["r"].get<uint64_t>()),
+            p(json["p"].get<uint64_t>()),
+            keySize(json["keySize"].get<uint64_t>())
+        { }
 
         std::string Name(void) const override;
         std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
 };
 
 class KDF_HKDF : public Operation {
@@ -156,9 +220,18 @@ class KDF_HKDF : public Operation {
             info(ds),
             keySize(ds.Get<uint64_t>() % 1024)
         { }
+        KDF_HKDF(nlohmann::json json) :
+            Operation(json["modifier"]),
+            digestType(json["digestType"]),
+            password(json["password"]),
+            salt(json["salt"]),
+            info(json["info"]),
+            keySize(json["keySize"].get<uint64_t>())
+        { }
 
         std::string Name(void) const override;
         std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
 };
 
 class KDF_TLS1_PRF : public Operation {
@@ -176,9 +249,17 @@ class KDF_TLS1_PRF : public Operation {
             seed(ds),
             keySize(ds.Get<uint64_t>() % 1024)
         { }
+        KDF_TLS1_PRF(nlohmann::json json) :
+            Operation(json["modifier"]),
+            digestType(json["digestType"]),
+            secret(json["secret"]),
+            seed(json["seed"]),
+            keySize(json["keySize"].get<uint64_t>())
+        { }
 
         std::string Name(void) const override;
         std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
 };
 
 class KDF_PBKDF2 : public Operation {
@@ -198,9 +279,18 @@ class KDF_PBKDF2 : public Operation {
             iterations(ds.Get<uint64_t>() % 5),
             keySize(ds.Get<uint64_t>() % 1024)
         { }
+        KDF_PBKDF2(nlohmann::json json) :
+            Operation(json["modifier"]),
+            digestType(json["digestType"]),
+            password(json["password"]),
+            salt(json["salt"]),
+            iterations(json["iterations"].get<uint64_t>()),
+            keySize(json["keySize"].get<uint64_t>())
+        { }
 
         std::string Name(void) const override;
         std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
 };
 
 class CMAC : public Operation {
@@ -213,9 +303,15 @@ class CMAC : public Operation {
             cleartext(ds),
             cipher(ds)
         { }
+        CMAC(nlohmann::json json) :
+            Operation(json["modifier"]),
+            cleartext(json["cleartext"]),
+            cipher(json["cipher"])
+        { }
 
         std::string Name(void) const override;
         std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
 };
 
 class Sign : public Operation {
@@ -236,6 +332,7 @@ class Sign : public Operation {
 
         std::string Name(void) const override;
         std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
 };
 
 class Verify : public Operation {
@@ -256,6 +353,7 @@ class Verify : public Operation {
 
         std::string Name(void) const override;
         std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
 };
 
 } /* namespace operation */

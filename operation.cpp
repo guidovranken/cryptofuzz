@@ -17,6 +17,14 @@ std::string Digest::ToString(void) const {
     return ss.str();
 }
 
+nlohmann::json Digest::ToJSON(void) const {
+    nlohmann::json j;
+    j["cleartext"] = cleartext.ToJSON();
+    j["digestType"] = digestType.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string HMAC::Name(void) const { return "HMAC"; }
 std::string HMAC::ToString(void) const {
     std::stringstream ss;
@@ -26,6 +34,15 @@ std::string HMAC::ToString(void) const {
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
 
     return ss.str();
+}
+
+nlohmann::json HMAC::ToJSON(void) const {
+    nlohmann::json j;
+    j["cleartext"] = cleartext.ToJSON();
+    j["digestType"] = digestType.ToJSON();
+    j["cipher"] = cipher.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
 }
 
 std::string SymmetricEncrypt::Name(void) const { return "SymmetricEncrypt"; }
@@ -44,6 +61,19 @@ std::string SymmetricEncrypt::ToString(void) const {
     return ss.str();
 }
 
+nlohmann::json SymmetricEncrypt::ToJSON(void) const {
+    nlohmann::json j;
+    j["cleartext"] = cleartext.ToJSON();
+    j["cipher"] = cipher.ToJSON();
+    j["aad_enabled"] = (bool)(aad != std::nullopt);
+    j["aad"] = aad != std::nullopt ? aad->ToJSON() : "";
+    j["ciphertextSize"] = ciphertextSize;
+    j["tagSize_enabled"] = (bool)(tagSize != std::nullopt);
+    j["tagSize"] = tagSize != std::nullopt ? *tagSize : 0;
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string SymmetricDecrypt::Name(void) const { return "SymmetricDecrypt"; }
 std::string SymmetricDecrypt::ToString(void) const {
     std::stringstream ss;
@@ -58,6 +88,19 @@ std::string SymmetricDecrypt::ToString(void) const {
     ss << "cleartextSize: " << std::to_string(cleartextSize) << std::endl;
 
     return ss.str();
+}
+
+nlohmann::json SymmetricDecrypt::ToJSON(void) const {
+    nlohmann::json j;
+    j["ciphertext"] = ciphertext.ToJSON();
+    j["cipher"] = cipher.ToJSON();
+    j["aad_enabled"] = (bool)(aad != std::nullopt);
+    j["aad"] = aad != std::nullopt ? aad->ToJSON() : "";
+    j["tag_enabled"] = (bool)(tag != std::nullopt);
+    j["tag"] = tag != std::nullopt ? tag->ToJSON() : "";
+    j["cleartextSize"] = cleartextSize;
+    j["modifier"] = modifier.ToJSON();
+    return j;
 }
 
 /* Construct SymmetricDecrypt from SymmetricEncrypt */
@@ -85,6 +128,18 @@ std::string KDF_SCRYPT::ToString(void) const {
     return ss.str();
 }
 
+nlohmann::json KDF_SCRYPT::ToJSON(void) const {
+    nlohmann::json j;
+    j["password"] = password.ToJSON();
+    j["salt"] = salt.ToJSON();
+    j["N"] = N;
+    j["r"] = r;
+    j["p"] = p;
+    j["keySize"] = keySize;
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string KDF_HKDF::Name(void) const { return "KDF_HKDF"; }
 std::string KDF_HKDF::ToString(void) const {
     std::stringstream ss;
@@ -99,6 +154,17 @@ std::string KDF_HKDF::ToString(void) const {
     return ss.str();
 }
 
+nlohmann::json KDF_HKDF::ToJSON(void) const {
+    nlohmann::json j;
+    j["digestType"] = digestType.ToJSON();
+    j["password"] = password.ToJSON();
+    j["salt"] = salt.ToJSON();
+    j["info"] = info.ToJSON();
+    j["keySize"] = keySize;
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string KDF_TLS1_PRF::Name(void) const { return "KDF_TLS1_PRF"; }
 std::string KDF_TLS1_PRF::ToString(void) const {
     std::stringstream ss;
@@ -110,6 +176,16 @@ std::string KDF_TLS1_PRF::ToString(void) const {
     ss << "keySize: " << std::to_string(keySize) << std::endl;
 
     return ss.str();
+}
+
+nlohmann::json KDF_TLS1_PRF::ToJSON(void) const {
+    nlohmann::json j;
+    j["digestType"] = digestType.ToJSON();
+    j["secret"] = secret.ToJSON();
+    j["seed"] = seed.ToJSON();
+    j["keySize"] = keySize;
+    j["modifier"] = modifier.ToJSON();
+    return j;
 }
 
 std::string KDF_PBKDF2::Name(void) const { return "KDF_PBKDF2"; }
@@ -126,6 +202,17 @@ std::string KDF_PBKDF2::ToString(void) const {
     return ss.str();
 }
 
+nlohmann::json KDF_PBKDF2::ToJSON(void) const {
+    nlohmann::json j;
+    j["digestType"] = digestType.ToJSON();
+    j["password"] = password.ToJSON();
+    j["salt"] = salt.ToJSON();
+    j["iterations"] = iterations;
+    j["keySize"] = keySize;
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string CMAC::Name(void) const { return "CMAC"; }
 std::string CMAC::ToString(void) const {
     std::stringstream ss;
@@ -140,6 +227,14 @@ std::string CMAC::ToString(void) const {
     return ss.str();
 }
 
+nlohmann::json CMAC::ToJSON(void) const {
+    nlohmann::json j;
+    j["cleartext"] = cleartext.ToJSON();
+    j["cipher"] = cipher.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string Sign::Name(void) const { return "Sign"; }
 std::string Sign::ToString(void) const {
     std::stringstream ss;
@@ -151,6 +246,10 @@ std::string Sign::ToString(void) const {
     return ss.str();
 }
 
+nlohmann::json Sign::ToJSON(void) const {
+    throw std::runtime_error("Not implemented");
+}
+
 std::string Verify::Name(void) const { return "Verify"; }
 std::string Verify::ToString(void) const {
     std::stringstream ss;
@@ -160,6 +259,10 @@ std::string Verify::ToString(void) const {
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
 
     return ss.str();
+}
+
+nlohmann::json Verify::ToJSON(void) const {
+    throw std::runtime_error("Not implemented");
 }
 
 /* Construct Verify from Sign */

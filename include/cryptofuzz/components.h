@@ -3,6 +3,7 @@
 #include <cryptofuzz/generic.h>
 #include <cryptofuzz/util_hexdump.h>
 #include <fuzzing/datasource/datasource.hpp>
+#include "../../third_party/json/json.hpp"
 
 namespace cryptofuzz {
 namespace component {
@@ -36,6 +37,18 @@ class SymmetricCipher {
             key(ds),
             cipherType(ds)
         { }
+        SymmetricCipher(nlohmann::json json) :
+            iv(json["iv"]),
+            key(json["key"]),
+            cipherType(json["cipherType"])
+        { }
+        nlohmann::json ToJSON(void) const {
+            nlohmann::json j;
+            j["iv"] = iv.ToJSON();
+            j["key"] = key.ToJSON();
+            j["cipherType"] = cipherType.ToJSON();
+            return j;
+        }
 };
 
 class AsymmetricCipher {

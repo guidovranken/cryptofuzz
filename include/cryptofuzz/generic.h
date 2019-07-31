@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <fuzzing/datasource/datasource.hpp>
+#include <boost/algorithm/hex.hpp>
+#include "../../third_party/json/json.hpp"
 
 namespace cryptofuzz {
 
@@ -25,8 +27,18 @@ class Type {
             type(other.type)
         { }
 
+        Type(nlohmann::json json) :
+            type(json.get<uint64_t>())
+        { }
+
         uint64_t Get(void) const {
             return type;
+        }
+
+        nlohmann::json ToJSON(void) const {
+            nlohmann::json j;
+            j = type;
+            return j;
         }
 
         /* TODO comparison operator */
@@ -39,6 +51,11 @@ class Buffer {
         Buffer(Datasource& ds) :
             data( ds.GetData(0, 0, 32000) )
         { }
+
+        Buffer(nlohmann::json json) {
+            const auto s = json.get<std::string>();
+            boost::algorithm::unhex(s, std::back_inserter(data));
+        }
 
         Buffer(const uint8_t* data, const size_t size) :
             data(data, data + size)
@@ -73,6 +90,14 @@ class Buffer {
 
         inline bool operator==(const Buffer& rhs) const {
             return data == rhs.data;
+        }
+
+        nlohmann::json ToJSON(void) const {
+            nlohmann::json j;
+            std::string asHex;
+            boost::algorithm::hex(data, std::back_inserter(asHex));
+            j = asHex;
+            return j;
         }
 };
 
