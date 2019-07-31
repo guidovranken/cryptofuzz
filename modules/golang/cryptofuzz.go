@@ -58,7 +58,8 @@ func Golang_Cryptofuzz_GetResult() *C.char {
 
 func digest(modifier ByteSlice, cleartext ByteSlice, h hash.Hash) {
     /* TODO use modifier */
-    res := ByteSlice(h.Sum(cleartext))
+    h.Write(cleartext)
+    res := ByteSlice(h.Sum(nil))
     res2, err := json.Marshal(&res)
     if err != nil {
         panic("")
