@@ -12,7 +12,7 @@ int main(void)
     for (const auto digest : DigestLUTMap ) {
         auto digestStr = std::string(digest.second.name);
         digestStr = std::regex_replace(digestStr, std::regex("[.-]"), "_");
-        fprintf(fp, "func is%s(id uint64) bool { return id == %zu }\n", digestStr.c_str(), digest.first);
+        fprintf(fp, "func is%s(id uint64) bool { return id == %s }\n", digestStr.c_str(), std::to_string(digest.first).c_str());
     }
     for (const auto cipher : CipherLUTMap ) {
         auto cipherStr = std::string(cipher.second.name);
@@ -21,7 +21,7 @@ int main(void)
             /* XXX */
             continue;
         }
-        fprintf(fp, "func is%s(id uint64) bool { return id == %zu }\n", cipherStr.c_str(), cipher.first);
+        fprintf(fp, "func is%s(id uint64) bool { return id == %s }\n", cipherStr.c_str(), std::to_string(cipher.first).c_str());
     }
     fclose(fp);
 }
