@@ -31,6 +31,7 @@ int main(void)
     write(fp, ID("Cryptofuzz/Module/libgcrypt") );
     write(fp, ID("Cryptofuzz/Module/libsodium") );
     write(fp, ID("Cryptofuzz/Module/mbed TLS") );
+    write(fp, ID("Cryptofuzz/Module/Golang") );
 
     write(fp, ID("Cryptofuzz/Operation/Digest") );
     write(fp, ID("Cryptofuzz/Operation/HMAC") );

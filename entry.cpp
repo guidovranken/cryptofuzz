@@ -49,6 +49,10 @@
   #include <modules/evercrypt/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_GOLANG)
+  #include <modules/golang/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
@@ -108,6 +112,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_EVERCRYPT)
     driver->LoadModule( std::make_shared<cryptofuzz::module::EverCrypt>() );
+#endif
+
+#if defined(CRYPTOFUZZ_GOLANG)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::Golang>() );
 #endif
     return 0;
 }
