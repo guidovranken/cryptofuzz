@@ -96,27 +96,27 @@ func Golang_Cryptofuzz_OpDigest(in []byte) {
         digest(op.Modifier, op.Cleartext, sha512.New())
     } else if isBLAKE2S128(op.DigestType) {
         h, err := blake2s.New128(nil)
-        if err != nil {
+        if err == nil {
             digest(op.Modifier, op.Cleartext, h)
         }
     } else if isBLAKE2S256(op.DigestType) {
         h, err := blake2s.New256(nil)
-        if err != nil {
+        if err == nil {
             digest(op.Modifier, op.Cleartext, h)
         }
     } else if isBLAKE2B256(op.DigestType) {
         h, err := blake2b.New256(nil)
-        if err != nil {
+        if err == nil {
             digest(op.Modifier, op.Cleartext, h)
         }
     } else if isBLAKE2B384(op.DigestType) {
         h, err := blake2b.New384(nil)
-        if err != nil {
+        if err == nil {
             digest(op.Modifier, op.Cleartext, h)
         }
     } else if isBLAKE2B512(op.DigestType) {
         h, err := blake2b.New512(nil)
-        if err != nil {
+        if err == nil {
             digest(op.Modifier, op.Cleartext, h)
         }
     }
