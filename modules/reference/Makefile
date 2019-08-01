@@ -2,9 +2,12 @@ all: module.a
 
 CXXFLAGS += -Wall -Wextra -std=c++17 -I ../../include -I ../../fuzzing-headers/include -DFUZZING_HEADERS_NO_IMPL
 
-module.a: module.o groestl.o groestl-cryptofuzz.o whirlpool.o
-	ar rcs module.a module.o groestl.o groestl-cryptofuzz.o whirlpool.o $(if $(CRYPTOFUZZ_REFERENCE_CITY_O_PATH),$(CRYPTOFUZZ_REFERENCE_CITY_O_PATH),$())
+module.a: module.o xxhash.o groestl.o groestl-cryptofuzz.o whirlpool.o
+	ar rcs module.a module.o xxhash.o groestl.o groestl-cryptofuzz.o whirlpool.o $(if $(CRYPTOFUZZ_REFERENCE_CITY_O_PATH),$(CRYPTOFUZZ_REFERENCE_CITY_O_PATH),$())
 	ranlib module.a
+
+xxhash.o : xxhash/xxhash.c xxhash/xxhash.h
+	$(CC) $(CFLAGS) -I -fPIC -c xxhash/xxhash.c -o xxhash.o
 
 groestl.o : groestl/Groestl-ref.c groestl/Groestl-ref.h
 	$(CC) $(CFLAGS) -I -fPIC -c groestl/Groestl-ref.c -o groestl.o

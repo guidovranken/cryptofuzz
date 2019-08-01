@@ -412,6 +412,8 @@ digests.Add( Digest("T1HA-128") )
 digests.Add( Digest("T1HA-64") )
 digests.Add( Digest("TIGER") )
 digests.Add( Digest("WHIRLPOOL") )
+digests.Add( Digest("XXHASH32") )
+digests.Add( Digest("XXHASH64") )
 
 tables = [ciphers, digests]
 

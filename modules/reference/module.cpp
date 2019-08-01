@@ -8,6 +8,10 @@
 #endif
 
 extern "C" {
+    #include "xxhash/xxhash.h"
+}
+
+extern "C" {
     #include "groestl/groestl-cryptofuzz.h"
 }
 
@@ -79,6 +83,102 @@ end:
     groestl_free(ctx);
 
     return ret;
+}
+
+std::optional<component::Digest> Reference::XXHASH64_OneShot(operation::Digest& op) const {
+    const auto hash = XXH64(op.cleartext.GetPtr(), op.cleartext.GetSize(), 0 /* seed */);
+    return component::Digest((const uint8_t*)(&hash), sizeof(hash));
+}
+
+std::optional<component::Digest> Reference::XXHASH64_Streaming(operation::Digest& op, Datasource& ds) const {
+    std::optional<component::Digest> ret = std::nullopt;
+
+    util::Multipart parts;
+    XXH64_state_t* state = nullptr;
+
+    /* Initialize */
+    {
+        CF_CHECK_NE(state = XXH64_createState(), nullptr);
+        CF_CHECK_NE(XXH64_reset(state, 0 /* seed */), XXH_ERROR);
+        parts = util::ToParts(ds, op.cleartext);
+    }
+
+    /* Process */
+    for (const auto& part : parts) {
+        CF_CHECK_NE(XXH64_update(state, part.first, part.second), XXH_ERROR);
+    }
+
+    /* Finalize */
+    {
+        const auto hash = XXH64_digest(state);
+        ret = component::Digest((const uint8_t*)(&hash), sizeof(hash));
+    }
+
+end:
+    XXH64_freeState(state);
+
+    return ret;
+}
+
+std::optional<component::Digest> Reference::XXHASH64(operation::Digest& op, Datasource& ds) const {
+    bool useOneShot = true;
+    try {
+        useOneShot = ds.Get<bool>();
+    } catch ( ... ) { }
+
+    if ( useOneShot == true ) {
+        return XXHASH64_OneShot(op);
+    } else {
+        return XXHASH64_Streaming(op, ds);
+    }
+}
+
+std::optional<component::Digest> Reference::XXHASH32_OneShot(operation::Digest& op) const {
+    const auto hash = XXH32(op.cleartext.GetPtr(), op.cleartext.GetSize(), 0 /* seed */);
+    return component::Digest((const uint8_t*)(&hash), sizeof(hash));
+}
+
+std::optional<component::Digest> Reference::XXHASH32_Streaming(operation::Digest& op, Datasource& ds) const {
+    std::optional<component::Digest> ret = std::nullopt;
+
+    util::Multipart parts;
+    XXH32_state_t* state = nullptr;
+
+    /* Initialize */
+    {
+        CF_CHECK_NE(state = XXH32_createState(), nullptr);
+        CF_CHECK_NE(XXH32_reset(state, 0 /* seed */), XXH_ERROR);
+        parts = util::ToParts(ds, op.cleartext);
+    }
+
+    /* Process */
+    for (const auto& part : parts) {
+        CF_CHECK_NE(XXH32_update(state, part.first, part.second), XXH_ERROR);
+    }
+
+    /* Finalize */
+    {
+        const auto hash = XXH32_digest(state);
+        ret = component::Digest((const uint8_t*)(&hash), sizeof(hash));
+    }
+
+end:
+    XXH32_freeState(state);
+
+    return ret;
+}
+
+std::optional<component::Digest> Reference::XXHASH32(operation::Digest& op, Datasource& ds) const {
+    bool useOneShot = true;
+    try {
+        useOneShot = ds.Get<bool>();
+    } catch ( ... ) { }
+
+    if ( useOneShot == true ) {
+        return XXHASH32_OneShot(op);
+    } else {
+        return XXHASH32_Streaming(op, ds);
+    }
 }
 
 std::optional<component::Digest> Reference::OpDigest(operation::Digest& op) {
@@ -176,6 +276,16 @@ std::optional<component::Digest> Reference::OpDigest(operation::Digest& op) {
         case CF_DIGEST("WHIRLPOOL"):
             {
                 return WHIRLPOOL(op, ds);
+            }
+            break;
+        case CF_DIGEST("XXHASH64"):
+            {
+                return XXHASH64(op, ds);
+            }
+            break;
+        case CF_DIGEST("XXHASH32"):
+            {
+                return XXHASH32(op, ds);
             }
             break;
     }
