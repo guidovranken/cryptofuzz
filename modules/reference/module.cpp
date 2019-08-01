@@ -4,6 +4,7 @@
 
 #if defined(CRYPTOFUZZ_REFERENCE_CITY_O_PATH)
 #include <city.h>
+#include <citycrc.h>
 #endif
 
 extern "C" {
@@ -104,12 +105,54 @@ std::optional<component::Digest> Reference::OpDigest(operation::Digest& op) {
             break;
         case CF_DIGEST("CITYHASH128"):
             {
-                const auto res = CityHash128((const char*)op.cleartext.GetPtr(), op.cleartext.GetSize());
-                /* TODO endianness */
-                ret = component::Digest((const uint8_t*)&res, sizeof(res));
+                bool useCrcMethod = false;
+                try {
+                    /* Always get the bool, so the structure of the input file is retained */
+#ifdef __SSE4_2__
+                    useCrcMethod =
+#endif
+                        ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+                }
+
+                if ( useCrcMethod == false ) {
+                    const auto res = CityHash128((const char*)op.cleartext.GetPtr(), op.cleartext.GetSize());
+                    /* TODO endianness */
+                    ret = component::Digest((const uint8_t*)&res, sizeof(res));
+                } else {
+/* CityHashCrc128 is not compiled if __SSE4_2__ is undefined */
+#ifdef __SSE4_2__
+                    const auto res = CityHashCrc128((const char*)op.cleartext.GetPtr(), op.cleartext.GetSize());
+                    /* TODO endianness */
+                    ret = component::Digest((const uint8_t*)&res, sizeof(res));
+#else
+                    /* This should never happen */
+                    abort();
+#endif /* __SSE4_2__ */
+                }
             }
             break;
-#endif
+/* CityHashCrc256 is not compiled if __SSE4_2__ is undefined */
+#ifdef __SSE4_2__
+        case CF_DIGEST("CITYHASH256"):
+            {
+                uint64_t out[4];
+
+                /* Don't output into an uint8_t array directory, to prevent alignment violations */
+                /* noret */ CityHashCrc256((const char*)op.cleartext.GetPtr(), op.cleartext.GetSize(), out);
+
+                /* uint64_t[4] -> uint8_t[] */
+                uint8_t outBytes[sizeof(out)];
+                for (size_t i = 0; i < 4; i++) {
+                    memcpy(outBytes + i * sizeof(uint64_t), &(out[i]), sizeof(uint64_t));
+                }
+
+                /* TODO endianness */
+                ret = component::Digest(outBytes, sizeof(outBytes));
+            }
+            break;
+#endif /* __SSE4_2__ */
+#endif /* CRYPTOFUZZ_REFERENCE_CITY_O_PATH */
         case CF_DIGEST("GROESTL_224"):
             {
                 return GROESTL(op, ds, 224);
