@@ -7,6 +7,7 @@
 #include <sstream>
 #include <vector>
 #include <cstdlib>
+#include "third_party/cpu_features/include/cpuinfo_x86.h"
 
 namespace cryptofuzz {
 namespace util {
@@ -208,6 +209,12 @@ void free(void* ptr) {
     if ( ptr != GetNullPtr() ) {
         ::free(ptr);
     }
+}
+
+bool HaveSSE42(void) {
+    const cpu_features::X86Info info = cpu_features::GetX86Info();
+    const auto features = info.features;
+    return features.sse4_2;
 }
 
 } /* namespace util */

@@ -8,6 +8,7 @@ namespace cryptofuzz {
 namespace module {
 
 class Reference : public Module {
+        const bool haveSSE42;
         std::optional<component::Digest> WHIRLPOOL(operation::Digest& op, Datasource& ds) const;
         std::optional<component::Digest> GROESTL(operation::Digest& op, Datasource& ds, const size_t bitSize) const;
         std::optional<component::Digest> XXHASH64_OneShot(operation::Digest& op) const;
