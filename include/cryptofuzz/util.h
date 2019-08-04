@@ -31,6 +31,7 @@ uint8_t* GetNullPtr(void);
 uint8_t* malloc(const size_t n);
 uint8_t* realloc(void* ptr, const size_t n);
 void free(void* ptr);
+bool HaveSSE42(void);
 
 } /* namespace util */
 } /* namespace cryptofuzz */

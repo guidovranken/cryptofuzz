@@ -26,7 +26,9 @@ namespace cryptofuzz {
 namespace module {
 
 Reference::Reference(void) :
-    Module("Reference implementations") { }
+    Module("Reference implementations"),
+    haveSSE42(util::HaveSSE42()) {
+}
 
 std::optional<component::Digest> Reference::WHIRLPOOL(operation::Digest& op, Datasource& ds) const {
     std::optional<component::Digest> ret = std::nullopt;
@@ -208,50 +210,49 @@ std::optional<component::Digest> Reference::OpDigest(operation::Digest& op) {
                 bool useCrcMethod = false;
                 try {
                     /* Always get the bool, so the structure of the input file is retained */
-#ifdef __SSE4_2__
+#if defined(__x86_64__) || defined(_M_X64)
                     useCrcMethod =
 #endif
                         ds.Get<bool>();
                 } catch ( fuzzing::datasource::Datasource::OutOfData ) {
                 }
 
-                if ( useCrcMethod == false ) {
+                if ( useCrcMethod == false || haveSSE42 == false ) {
                     const auto res = CityHash128((const char*)op.cleartext.GetPtr(), op.cleartext.GetSize());
                     /* TODO endianness */
                     ret = component::Digest((const uint8_t*)&res, sizeof(res));
                 } else {
-/* CityHashCrc128 is not compiled if __SSE4_2__ is undefined */
-#ifdef __SSE4_2__
+/* CityHashCrc128 is not compiled on 32 bit */
+#if defined(__x86_64__) || defined(_M_X64)
                     const auto res = CityHashCrc128((const char*)op.cleartext.GetPtr(), op.cleartext.GetSize());
                     /* TODO endianness */
                     ret = component::Digest((const uint8_t*)&res, sizeof(res));
-#else
-                    /* This should never happen */
-                    abort();
-#endif /* __SSE4_2__ */
+#endif
                 }
             }
             break;
-/* CityHashCrc256 is not compiled if __SSE4_2__ is undefined */
-#ifdef __SSE4_2__
         case CF_DIGEST("CITYHASH256"):
             {
-                uint64_t out[4];
+/* CityHashCrc256 is not compiled on 32 bit */
+#if defined(__x86_64__) || defined(_M_X64)
+                if ( haveSSE42 ) {
+                    uint64_t out[4];
 
-                /* Don't output into an uint8_t array directory, to prevent alignment violations */
-                /* noret */ CityHashCrc256((const char*)op.cleartext.GetPtr(), op.cleartext.GetSize(), out);
+                    /* Don't output into an uint8_t array directory, to prevent alignment violations */
+                    /* noret */ CityHashCrc256((const char*)op.cleartext.GetPtr(), op.cleartext.GetSize(), out);
 
-                /* uint64_t[4] -> uint8_t[] */
-                uint8_t outBytes[sizeof(out)];
-                for (size_t i = 0; i < 4; i++) {
-                    memcpy(outBytes + i * sizeof(uint64_t), &(out[i]), sizeof(uint64_t));
+                    /* uint64_t[4] -> uint8_t[] */
+                    uint8_t outBytes[sizeof(out)];
+                    for (size_t i = 0; i < 4; i++) {
+                        memcpy(outBytes + i * sizeof(uint64_t), &(out[i]), sizeof(uint64_t));
+                    }
+
+                    /* TODO endianness */
+                    ret = component::Digest(outBytes, sizeof(outBytes));
                 }
-
-                /* TODO endianness */
-                ret = component::Digest(outBytes, sizeof(outBytes));
+#endif
             }
             break;
-#endif /* __SSE4_2__ */
 #endif /* CRYPTOFUZZ_REFERENCE_CITY_O_PATH */
         case CF_DIGEST("GROESTL_224"):
             {
