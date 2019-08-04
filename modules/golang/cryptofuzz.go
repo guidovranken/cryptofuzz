@@ -13,6 +13,7 @@ import (
     "crypto/sha512"
     "golang.org/x/crypto/blake2s"
     "golang.org/x/crypto/blake2b"
+    "encoding/binary"
     "encoding/json"
     "encoding/hex"
 )
@@ -56,14 +57,39 @@ func Golang_Cryptofuzz_GetResult() *C.char {
     return C.CString(string(result))
 }
 
+func slice(modifier ByteSlice, in ByteSlice) []ByteSlice {
+    ret := make([]ByteSlice, 0)
+    modifierPos := 0
+    pos := uint32(0)
+
+    for uint32(len(in)) - pos > 0 {
+        curLength := uint32(len(in)) - pos
+
+        if modifierPos + 4 < len(modifier) {
+            curLength = binary.LittleEndian.Uint32(modifier[modifierPos:modifierPos+4]) % (curLength+1)
+            modifierPos += 4
+        }
+
+        ret = append(ret, in[pos:pos+curLength])
+        pos += curLength
+    }
+
+    return ret
+}
+
 func digest(modifier ByteSlice, cleartext ByteSlice, h hash.Hash) {
-    /* TODO use modifier */
-    h.Write(cleartext)
+    slices := slice(modifier, cleartext)
+    for i := 0; i < len(slices); i++ {
+        h.Write(slices[i])
+    }
+
     res := ByteSlice(h.Sum(nil))
+
     res2, err := json.Marshal(&res)
     if err != nil {
         panic("")
     }
+
     setResult(res2)
 }
 
@@ -121,5 +147,26 @@ func Golang_Cryptofuzz_OpDigest(in []byte) {
         }
     }
 }
+
+/*
+testing
+func main() {
+    for j := 0; j < 5000; j++ {
+        cleartext := make([]byte, rand.Intn(1024))
+        rand.Read(cleartext)
+
+        prev := ByteSlice{}
+        for i := 0; i < 5000; i++ {
+            modifier := make([]byte, rand.Intn(1024))
+            rand.Read(modifier)
+            cur := digest(modifier, cleartext, md5.New())
+            if i > 0 && !bytes.Equal(cur, prev) {
+                panic("")
+            }
+            prev = cur
+        }
+    }
+}
+*/
 
 func main() { }
