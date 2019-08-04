@@ -41,7 +41,9 @@ class Type {
             return j;
         }
 
-        /* TODO comparison operator */
+        inline bool operator==(const Type& rhs) const {
+            return type == rhs.type;
+        }
 };
 
 class Buffer {

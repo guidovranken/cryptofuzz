@@ -53,6 +53,12 @@ class Digest : public Operation {
         std::string GetAlgorithmString(void) const override {
             return repository::DigestToString(digestType.Get());
         }
+        inline bool operator==(const Digest& rhs) const {
+            return
+                (cleartext == rhs.cleartext) &&
+                (digestType == rhs.digestType) &&
+                (modifier == rhs.modifier);
+        }
 };
 
 class HMAC : public Operation {
@@ -79,6 +85,13 @@ class HMAC : public Operation {
         nlohmann::json ToJSON(void) const override;
         std::string GetAlgorithmString(void) const override {
             return repository::DigestToString(digestType.Get());
+        }
+        inline bool operator==(const HMAC& rhs) const {
+            return
+                (cleartext == rhs.cleartext) &&
+                (digestType == rhs.digestType) &&
+                (cipher == rhs.cipher) &&
+                (modifier == rhs.modifier);
         }
 };
 
@@ -124,6 +137,15 @@ class SymmetricEncrypt : public Operation {
         std::string GetAlgorithmString(void) const override {
             return repository::CipherToString(cipher.cipherType.Get());
         }
+        inline bool operator==(const SymmetricEncrypt& rhs) const {
+            return
+                (cleartext == rhs.cleartext) &&
+                (cipher == rhs.cipher) &&
+                (aad == rhs.aad) &&
+                (ciphertextSize == rhs.ciphertextSize) &&
+                (tagSize == rhs.tagSize) &&
+                (modifier == rhs.modifier);
+        }
 };
 
 class SymmetricDecrypt : public Operation {
@@ -167,6 +189,15 @@ class SymmetricDecrypt : public Operation {
         std::string GetAlgorithmString(void) const override {
             return repository::CipherToString(cipher.cipherType.Get());
         }
+        inline bool operator==(const SymmetricDecrypt& rhs) const {
+            return
+                (ciphertext == rhs.ciphertext) &&
+                (cipher == rhs.cipher) &&
+                (tag == rhs.tag) &&
+                (aad == rhs.aad) &&
+                (cleartextSize == rhs.cleartextSize) &&
+                (modifier == rhs.modifier);
+        }
 };
 
 class KDF_SCRYPT : public Operation {
@@ -201,6 +232,16 @@ class KDF_SCRYPT : public Operation {
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const KDF_SCRYPT& rhs) const {
+            return
+                (password == rhs.password) &&
+                (salt == rhs.salt) &&
+                (N == rhs.N) &&
+                (r == rhs.r) &&
+                (p == rhs.p) &&
+                (keySize == rhs.keySize) &&
+                (modifier == rhs.modifier);
+        }
 };
 
 class KDF_HKDF : public Operation {
@@ -232,6 +273,15 @@ class KDF_HKDF : public Operation {
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const KDF_HKDF& rhs) const {
+            return
+                (digestType == rhs.digestType) &&
+                (password == rhs.password) &&
+                (salt == rhs.salt) &&
+                (info == rhs.info) &&
+                (keySize == rhs.keySize) &&
+                (modifier == rhs.modifier);
+        }
 };
 
 class KDF_TLS1_PRF : public Operation {
@@ -260,6 +310,13 @@ class KDF_TLS1_PRF : public Operation {
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const KDF_TLS1_PRF& rhs) const {
+            return
+                (digestType == rhs.digestType) &&
+                (secret == rhs.secret) &&
+                (seed == rhs.seed) &&
+                (modifier == rhs.modifier);
+        }
 };
 
 class KDF_PBKDF2 : public Operation {
@@ -291,6 +348,15 @@ class KDF_PBKDF2 : public Operation {
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const KDF_PBKDF2& rhs) const {
+            return
+                (digestType == rhs.digestType) &&
+                (password == rhs.password) &&
+                (salt == rhs.salt) &&
+                (iterations == rhs.iterations) &&
+                (keySize == rhs.keySize) &&
+                (modifier == rhs.modifier);
+        }
 };
 
 class CMAC : public Operation {
@@ -312,6 +378,12 @@ class CMAC : public Operation {
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const CMAC& rhs) const {
+            return
+                (cleartext == rhs.cleartext) &&
+                (cipher == rhs.cipher) &&
+                (modifier == rhs.modifier);
+        }
 };
 
 class Sign : public Operation {
@@ -333,6 +405,11 @@ class Sign : public Operation {
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const Sign& rhs) const {
+            (void)rhs;
+            /* TODO */
+            return false;
+        }
 };
 
 class Verify : public Operation {
@@ -354,6 +431,11 @@ class Verify : public Operation {
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const Verify& rhs) const {
+            (void)rhs;
+            /* TODO */
+            return false;
+        }
 };
 
 } /* namespace operation */

@@ -49,6 +49,12 @@ class SymmetricCipher {
             j["cipherType"] = cipherType.ToJSON();
             return j;
         }
+        inline bool operator==(const SymmetricCipher& rhs) const {
+            return
+                (iv == rhs.iv) &&
+                (key == rhs.key) &&
+                (cipherType == rhs.cipherType);
+        }
 };
 
 class AsymmetricCipher {
