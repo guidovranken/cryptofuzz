@@ -46,5 +46,26 @@ std::optional<component::Digest> Golang::OpDigest(operation::Digest& op) {
     return getResultAs<component::Digest>();
 }
 
+std::optional<component::Key> Golang::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
+    auto jsonStr = op.ToJSON().dump();
+    Golang_Cryptofuzz_OpKDF_SCRYPT(toGoSlice(jsonStr));
+
+    return getResultAs<component::Key>();
+}
+
+std::optional<component::Key> Golang::OpKDF_HKDF(operation::KDF_HKDF& op) {
+    auto jsonStr = op.ToJSON().dump();
+    Golang_Cryptofuzz_OpKDF_HKDF(toGoSlice(jsonStr));
+
+    return getResultAs<component::Key>();
+}
+
+std::optional<component::Key> Golang::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
+    auto jsonStr = op.ToJSON().dump();
+    Golang_Cryptofuzz_OpKDF_PBKDF2(toGoSlice(jsonStr));
+
+    return getResultAs<component::Key>();
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */
