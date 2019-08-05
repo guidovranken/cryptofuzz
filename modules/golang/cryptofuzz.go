@@ -13,6 +13,7 @@ import (
     "crypto/sha1"
     "crypto/sha256"
     "crypto/sha512"
+    "crypto/hmac"
     "golang.org/x/crypto/blake2s"
     "golang.org/x/crypto/blake2b"
     "golang.org/x/crypto/scrypt"
@@ -45,6 +46,19 @@ type OpDigest struct {
     Modifier ByteSlice
     Cleartext ByteSlice
     DigestType uint64
+}
+
+type ComponentCipher struct {
+    IV ByteSlice
+    Key ByteSlice
+    CipherType uint64
+}
+
+type OpHMAC struct {
+    Modifier ByteSlice
+    Cleartext ByteSlice
+    DigestType uint64
+    Cipher ComponentCipher
 }
 
 type OpKDF_SCRYPT struct {
@@ -190,6 +204,33 @@ func Golang_Cryptofuzz_OpDigest(in []byte) {
     digest(op.Modifier, op.Cleartext, h)
 }
 
+//export Golang_Cryptofuzz_OpHMAC
+func Golang_Cryptofuzz_OpHMAC(in []byte) {
+    resetResult()
+
+    var op OpHMAC
+    err := json.Unmarshal(in, &op)
+    if err != nil {
+        return
+    }
+
+    hash, err := toHashFunc(op.DigestType)
+    if err != nil {
+        return
+    }
+
+    hmac := hmac.New(hash, op.Cipher.Key)
+
+    slices := slice(op.Modifier, op.Cleartext)
+
+    for i := 0; i < len(slices); i++ {
+        hmac.Write(slices[i])
+    }
+
+    mac := hmac.Sum(nil)
+
+    setResult(mac)
+}
 
 //export Golang_Cryptofuzz_OpKDF_SCRYPT
 func Golang_Cryptofuzz_OpKDF_SCRYPT(in []byte) {

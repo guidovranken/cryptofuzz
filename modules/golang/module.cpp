@@ -46,6 +46,13 @@ std::optional<component::Digest> Golang::OpDigest(operation::Digest& op) {
     return getResultAs<component::Digest>();
 }
 
+std::optional<component::MAC> Golang::OpHMAC(operation::HMAC& op) {
+    auto jsonStr = op.ToJSON().dump();
+    Golang_Cryptofuzz_OpHMAC(toGoSlice(jsonStr));
+
+    return getResultAs<component::MAC>();
+}
+
 std::optional<component::Key> Golang::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
     auto jsonStr = op.ToJSON().dump();
     Golang_Cryptofuzz_OpKDF_SCRYPT(toGoSlice(jsonStr));
