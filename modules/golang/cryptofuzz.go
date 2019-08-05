@@ -186,15 +186,19 @@ func digest(modifier ByteSlice, cleartext ByteSlice, h hash.Hash) {
     setResult(res2)
 }
 
+func unmarshal(in []byte, op interface{}) {
+    err := json.Unmarshal(in, &op)
+    if err != nil {
+        panic("Cannot unmarshal JSON, which is expected to be well-formed")
+    }
+}
+
 //export Golang_Cryptofuzz_OpDigest
 func Golang_Cryptofuzz_OpDigest(in []byte) {
     resetResult()
 
     var op OpDigest
-    err := json.Unmarshal(in, &op)
-    if err != nil {
-        return
-    }
+    unmarshal(in, op)
 
     h, err := toHashInstance(op.DigestType)
     if err != nil {
@@ -209,10 +213,7 @@ func Golang_Cryptofuzz_OpHMAC(in []byte) {
     resetResult()
 
     var op OpHMAC
-    err := json.Unmarshal(in, &op)
-    if err != nil {
-        return
-    }
+    unmarshal(in, op)
 
     hash, err := toHashFunc(op.DigestType)
     if err != nil {
@@ -237,10 +238,7 @@ func Golang_Cryptofuzz_OpKDF_SCRYPT(in []byte) {
     resetResult()
 
     var op OpKDF_SCRYPT
-    err := json.Unmarshal(in, &op)
-    if err != nil {
-        return
-    }
+    unmarshal(in, op)
 
     /* division by zero. TODO report? */
     if op.R == 0 || op.P == 0 {
@@ -260,10 +258,7 @@ func Golang_Cryptofuzz_OpKDF_HKDF(in []byte) {
     resetResult()
 
     var op OpKDF_HKDF
-    err := json.Unmarshal(in, &op)
-    if err != nil {
-        return
-    }
+    unmarshal(in, op)
 
     h, err := toHashFunc(op.DigestType)
     if err != nil {
@@ -284,10 +279,7 @@ func Golang_Cryptofuzz_OpKDF_PBKDF2(in []byte) {
     resetResult()
 
     var op OpKDF_PBKDF2
-    err := json.Unmarshal(in, &op)
-    if err != nil {
-        return
-    }
+    unmarshal(in, op)
 
     h, err := toHashFunc(op.DigestType)
     if err != nil {
