@@ -1,10 +1,12 @@
 package main
 
 import (
+    "fmt"
     "bytes"
     "hash"
     "hash/crc32"
     "hash/adler32"
+    "io"
     "golang.org/x/crypto/md4"
     "crypto/md5"
     "golang.org/x/crypto/ripemd160"
@@ -13,6 +15,9 @@ import (
     "crypto/sha512"
     "golang.org/x/crypto/blake2s"
     "golang.org/x/crypto/blake2b"
+    "golang.org/x/crypto/scrypt"
+    "golang.org/x/crypto/hkdf"
+    "golang.org/x/crypto/pbkdf2"
     "encoding/binary"
     "encoding/json"
     "encoding/hex"
@@ -42,6 +47,35 @@ type OpDigest struct {
     DigestType uint64
 }
 
+type OpKDF_SCRYPT struct {
+    Modifier ByteSlice
+    Cleartext ByteSlice
+    Password ByteSlice
+    Salt ByteSlice
+    N uint64
+    R uint64
+    P uint64
+    KeySize uint64
+}
+
+type OpKDF_HKDF struct {
+    Modifier ByteSlice
+    DigestType uint64
+    Password ByteSlice
+    Salt ByteSlice
+    Info ByteSlice
+    KeySize uint64
+}
+
+type OpKDF_PBKDF2 struct {
+    Modifier ByteSlice
+    DigestType uint64
+    Password ByteSlice
+    Salt ByteSlice
+    Iterations uint64
+    KeySize uint64
+}
+
 var result []byte
 
 func resetResult() {
@@ -55,6 +89,51 @@ func setResult(r []byte) {
 //export Golang_Cryptofuzz_GetResult
 func Golang_Cryptofuzz_GetResult() *C.char {
     return C.CString(string(result))
+}
+
+func toHashFunc(digestType uint64) (func() hash.Hash, error) {
+    if false {
+    } else if isMD4(digestType) {
+        return md4.New, nil
+    } else if isMD5(digestType) {
+        return md5.New, nil
+    } else if isRIPEMD160(digestType) {
+        return ripemd160.New, nil
+    } else if isSHA1(digestType) {
+        return sha1.New, nil
+    } else if isSHA256(digestType) {
+        return sha256.New, nil
+    } else if isSHA512(digestType) {
+        return sha512.New, nil
+    }
+
+    return nil, fmt.Errorf("Unsupported digest ID")
+}
+
+func toHashInstance(digestType uint64) (hash.Hash, error) {
+
+    if false {
+    } else if isCRC32(digestType) {
+        return crc32.NewIEEE(), nil
+    } else if isADLER32(digestType) {
+        return adler32.New(), nil
+    } else if isBLAKE2S128(digestType) {
+        return blake2s.New128(nil)
+    } else if isBLAKE2S256(digestType) {
+        return blake2s.New256(nil)
+    } else if isBLAKE2B256(digestType) {
+        return blake2b.New256(nil)
+    } else if isBLAKE2B384(digestType) {
+        return blake2b.New384(nil)
+    } else if isBLAKE2B512(digestType) {
+        return blake2b.New512(nil)
+    }
+
+    h, err := toHashFunc(digestType)
+    if err != nil {
+        return nil, err
+    }
+    return h(), nil
 }
 
 func slice(modifier ByteSlice, in ByteSlice) []ByteSlice {
@@ -103,49 +182,80 @@ func Golang_Cryptofuzz_OpDigest(in []byte) {
         return
     }
 
-    if false {
-    } else if isCRC32(op.DigestType) {
-        digest(op.Modifier, op.Cleartext, crc32.NewIEEE())
-    } else if isADLER32(op.DigestType) {
-        digest(op.Modifier, op.Cleartext, adler32.New())
-    } else if isMD4(op.DigestType) {
-        digest(op.Modifier, op.Cleartext, md4.New())
-    } else if isMD5(op.DigestType) {
-        digest(op.Modifier, op.Cleartext, md5.New())
-    } else if isRIPEMD160(op.DigestType) {
-        digest(op.Modifier, op.Cleartext, ripemd160.New())
-    } else if isSHA1(op.DigestType) {
-        digest(op.Modifier, op.Cleartext, sha1.New())
-    } else if isSHA256(op.DigestType) {
-        digest(op.Modifier, op.Cleartext, sha256.New())
-    } else if isSHA512(op.DigestType) {
-        digest(op.Modifier, op.Cleartext, sha512.New())
-    } else if isBLAKE2S128(op.DigestType) {
-        h, err := blake2s.New128(nil)
-        if err == nil {
-            digest(op.Modifier, op.Cleartext, h)
-        }
-    } else if isBLAKE2S256(op.DigestType) {
-        h, err := blake2s.New256(nil)
-        if err == nil {
-            digest(op.Modifier, op.Cleartext, h)
-        }
-    } else if isBLAKE2B256(op.DigestType) {
-        h, err := blake2b.New256(nil)
-        if err == nil {
-            digest(op.Modifier, op.Cleartext, h)
-        }
-    } else if isBLAKE2B384(op.DigestType) {
-        h, err := blake2b.New384(nil)
-        if err == nil {
-            digest(op.Modifier, op.Cleartext, h)
-        }
-    } else if isBLAKE2B512(op.DigestType) {
-        h, err := blake2b.New512(nil)
-        if err == nil {
-            digest(op.Modifier, op.Cleartext, h)
-        }
+    h, err := toHashInstance(op.DigestType)
+    if err != nil {
+        return
     }
+
+    digest(op.Modifier, op.Cleartext, h)
+}
+
+
+//export Golang_Cryptofuzz_OpKDF_SCRYPT
+func Golang_Cryptofuzz_OpKDF_SCRYPT(in []byte) {
+    resetResult()
+
+    var op OpKDF_SCRYPT
+    err := json.Unmarshal(in, &op)
+    if err != nil {
+        return
+    }
+
+    /* division by zero. TODO report? */
+    if op.R == 0 || op.P == 0 {
+        return
+    }
+
+    res, err := scrypt.Key(op.Password, op.Salt, int(op.N), int(op.R), int(op.P), int(op.KeySize))
+    if err != nil {
+        return
+    }
+
+    setResult(res)
+}
+
+//export Golang_Cryptofuzz_OpKDF_HKDF
+func Golang_Cryptofuzz_OpKDF_HKDF(in []byte) {
+    resetResult()
+
+    var op OpKDF_HKDF
+    err := json.Unmarshal(in, &op)
+    if err != nil {
+        return
+    }
+
+    h, err := toHashFunc(op.DigestType)
+    if err != nil {
+        return
+    }
+
+    hkdf := hkdf.New(h, op.Password, op.Salt, op.Info)
+    key := make([]byte, op.KeySize)
+    if _, err := io.ReadFull(hkdf, key); err != nil {
+        return
+    }
+
+    setResult(key)
+}
+
+//export Golang_Cryptofuzz_OpKDF_PBKDF2
+func Golang_Cryptofuzz_OpKDF_PBKDF2(in []byte) {
+    resetResult()
+
+    var op OpKDF_PBKDF2
+    err := json.Unmarshal(in, &op)
+    if err != nil {
+        return
+    }
+
+    h, err := toHashFunc(op.DigestType)
+    if err != nil {
+        return
+    }
+
+    key := pbkdf2.Key(op.Password, op.Salt, int(op.KeySize), int(op.Iterations), h)
+
+    setResult(key)
 }
 
 /*
