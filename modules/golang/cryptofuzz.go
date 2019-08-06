@@ -18,6 +18,7 @@ import (
     "golang.org/x/crypto/pbkdf2"
     "golang.org/x/crypto/ripemd160"
     "golang.org/x/crypto/scrypt"
+    "golang.org/x/crypto/sha3"
     "hash"
     "hash/adler32"
     "hash/crc32"
@@ -119,6 +120,18 @@ func toHashFunc(digestType uint64) (func() hash.Hash, error) {
         return sha256.New, nil
     } else if isSHA512(digestType) {
         return sha512.New, nil
+    } else if isSHA3_224(digestType) {
+        return sha3.New224, nil
+    } else if isSHA3_256(digestType) {
+        return sha3.New256, nil
+    } else if isSHA3_384(digestType) {
+        return sha3.New384, nil
+    } else if isSHA3_512(digestType) {
+        return sha3.New512, nil
+    } else if isKECCAK_256(digestType) {
+        return sha3.NewLegacyKeccak256, nil
+    } else if isKECCAK_512(digestType) {
+        return sha3.NewLegacyKeccak512, nil
     }
 
     return nil, fmt.Errorf("Unsupported digest ID")
