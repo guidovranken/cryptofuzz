@@ -6,8 +6,23 @@
 namespace cryptofuzz {
 namespace module {
 
+static void* mbedTLS_custom_calloc(size_t A, size_t B) {
+    /* TODO detect overflows */
+
+    return util::malloc(A*B);
+}
+
+static void mbedTLS_custom_free(void* ptr) {
+    util::free(ptr);
+}
+
 mbedTLS::mbedTLS(void) :
-    Module("mbed TLS") { }
+    Module("mbed TLS") {
+
+    if ( mbedtls_platform_set_calloc_free(mbedTLS_custom_calloc, mbedTLS_custom_free) != 0 ) {
+        abort();
+    }
+}
 
 const mbedtls_cipher_info_t* mbedTLS::to_mbedtls_cipher_info_t(const component::SymmetricCipherType cipherType) const {
     using fuzzing::datasource::ID;

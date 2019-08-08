@@ -12,6 +12,7 @@
 #include <mbedtls/cmac.h>
 #include <mbedtls/hkdf.h>
 #include <mbedtls/pkcs5.h>
+#include <mbedtls/platform.h>
 #include <optional>
 
 namespace cryptofuzz {
