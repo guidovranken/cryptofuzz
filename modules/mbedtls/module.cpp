@@ -12,166 +12,92 @@ mbedTLS::mbedTLS(void) :
 const mbedtls_cipher_info_t* mbedTLS::to_mbedtls_cipher_info_t(const component::SymmetricCipherType cipherType) const {
     using fuzzing::datasource::ID;
 
-    switch ( cipherType.Get() ) {
-        case CF_CIPHER("AES_128_ECB"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_ECB);
-        case CF_CIPHER("AES_192_ECB"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_ECB);
-        case CF_CIPHER("AES_256_ECB"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_ECB);
-        case CF_CIPHER("AES_128_CBC"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_CBC);
-        case CF_CIPHER("AES_192_CBC"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_CBC);
-        case CF_CIPHER("AES_256_CBC"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_CBC);
-        case CF_CIPHER("AES_128_CFB128"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_CFB128);
-        case CF_CIPHER("AES_192_CFB128"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_CFB128);
-        case CF_CIPHER("AES_256_CFB128"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_CFB128);
-        case CF_CIPHER("AES_128_CTR"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_CTR);
-        case CF_CIPHER("AES_192_CTR"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_CTR);
-        case CF_CIPHER("AES_256_CTR"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_CTR);
-        case CF_CIPHER("AES_128_GCM"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_GCM);
-        case CF_CIPHER("AES_192_GCM"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_GCM);
-        case CF_CIPHER("AES_256_GCM"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_GCM);
-        case CF_CIPHER("CAMELLIA_128_ECB"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_128_ECB);
-        case CF_CIPHER("CAMELLIA_192_ECB"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_192_ECB);
-        case CF_CIPHER("CAMELLIA_256_ECB"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_256_ECB);
-        case CF_CIPHER("CAMELLIA_128_CBC"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_128_CBC);
-        case CF_CIPHER("CAMELLIA_192_CBC"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_192_CBC);
-        case CF_CIPHER("CAMELLIA_256_CBC"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_256_CBC);
-        case CF_CIPHER("CAMELLIA_128_CFB128"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_128_CFB128);
-        case CF_CIPHER("CAMELLIA_192_CFB128"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_192_CFB128);
-        case CF_CIPHER("CAMELLIA_256_CFB128"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_256_CFB128);
-        case CF_CIPHER("CAMELLIA_128_CTR"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_128_CTR);
-        case CF_CIPHER("CAMELLIA_192_CTR"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_192_CTR);
-        case CF_CIPHER("CAMELLIA_256_CTR"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_256_CTR);
-        case CF_CIPHER("CAMELLIA_128_GCM"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_128_GCM);
-        case CF_CIPHER("CAMELLIA_192_GCM"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_192_GCM);
-        case CF_CIPHER("CAMELLIA_256_GCM"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_256_GCM);
-        case CF_CIPHER("DES_ECB"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_DES_ECB);
-        case CF_CIPHER("DES_CBC"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_DES_CBC);
-        case CF_CIPHER("DES_EDE_ECB"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_DES_EDE_ECB);
-        case CF_CIPHER("DES_EDE_CBC"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_DES_EDE_CBC);
-        case CF_CIPHER("DES_EDE3_ECB"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_DES_EDE3_ECB);
-        case CF_CIPHER("DES_EDE3_CBC"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_DES_EDE3_CBC);
-        case CF_CIPHER("BLOWFISH_ECB"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_BLOWFISH_ECB);
-        case CF_CIPHER("BLOWFISH_CBC"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_BLOWFISH_CBC);
-        case CF_CIPHER("BLOWFISH_CFB64"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_BLOWFISH_CFB64);
-        case CF_CIPHER("BLOWFISH_CTR"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_BLOWFISH_CTR);
-        case CF_CIPHER("RC4"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARC4_128);
-        case CF_CIPHER("AES_128_CCM"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_CCM);
-        case CF_CIPHER("AES_192_CCM"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_CCM);
-        case CF_CIPHER("AES_256_CCM"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_CCM);
-        case CF_CIPHER("CAMELLIA_128_CCM"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_128_CCM);
-        case CF_CIPHER("CAMELLIA_192_CCM"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_192_CCM);
-        case CF_CIPHER("CAMELLIA_256_CCM"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CAMELLIA_256_CCM);
-        case CF_CIPHER("ARIA_128_ECB"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_128_ECB);
-        case CF_CIPHER("ARIA_192_ECB"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_192_ECB);
-        case CF_CIPHER("ARIA_256_ECB"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_256_ECB);
-        case CF_CIPHER("ARIA_128_CBC"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_128_CBC);
-        case CF_CIPHER("ARIA_192_CBC"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_192_CBC);
-        case CF_CIPHER("ARIA_256_CBC"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_256_CBC);
-        case CF_CIPHER("ARIA_128_CFB128"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_128_CFB128);
-        case CF_CIPHER("ARIA_192_CFB128"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_192_CFB128);
-        case CF_CIPHER("ARIA_256_CFB128"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_256_CFB128);
-        case CF_CIPHER("ARIA_128_CTR"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_128_CTR);
-        case CF_CIPHER("ARIA_192_CTR"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_192_CTR);
-        case CF_CIPHER("ARIA_256_CTR"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_256_CTR);
-        case CF_CIPHER("ARIA_128_GCM"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_128_GCM);
-        case CF_CIPHER("ARIA_192_GCM"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_192_GCM);
-        case CF_CIPHER("ARIA_256_GCM"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_256_GCM);
-        case CF_CIPHER("ARIA_128_CCM"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_128_CCM);
-        case CF_CIPHER("ARIA_192_CCM"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_192_CCM);
-        case CF_CIPHER("ARIA_256_CCM"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_ARIA_256_CCM);
-        case CF_CIPHER("AES_128_OFB"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_OFB);
-        case CF_CIPHER("AES_192_OFB"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_OFB);
-        case CF_CIPHER("AES_256_OFB"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_OFB);
-        case CF_CIPHER("AES_128_XTS"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_XTS);
-        case CF_CIPHER("AES_256_XTS"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_XTS);
-        case CF_CIPHER("CHACHA20"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CHACHA20);
-        case CF_CIPHER("CHACHA20_POLY1305"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_CHACHA20_POLY1305);
-        case CF_CIPHER("AES_128_WRAP"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_KW);
-        case CF_CIPHER("AES_128_WRAP_PAD"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_128_KWP);
-        case CF_CIPHER("AES_192_WRAP"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_KW);
-        case CF_CIPHER("AES_192_WRAP_PAD"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_192_KWP);
-        case CF_CIPHER("AES_256_WRAP"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_KW);
-        case CF_CIPHER("AES_256_WRAP_PAD"):
-            return mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_KWP);
-        default:
-            return nullptr;
+    static const std::map<uint64_t, mbedtls_cipher_type_t> LUT = {
+        { CF_CIPHER("AES_128_ECB"), MBEDTLS_CIPHER_AES_128_ECB  },
+        { CF_CIPHER("AES_192_ECB"), MBEDTLS_CIPHER_AES_192_ECB  },
+        { CF_CIPHER("AES_256_ECB"), MBEDTLS_CIPHER_AES_256_ECB  },
+        { CF_CIPHER("AES_128_CBC"), MBEDTLS_CIPHER_AES_128_CBC  },
+        { CF_CIPHER("AES_192_CBC"), MBEDTLS_CIPHER_AES_192_CBC  },
+        { CF_CIPHER("AES_256_CBC"), MBEDTLS_CIPHER_AES_256_CBC  },
+        { CF_CIPHER("AES_128_CFB128"), MBEDTLS_CIPHER_AES_128_CFB128  },
+        { CF_CIPHER("AES_192_CFB128"), MBEDTLS_CIPHER_AES_192_CFB128  },
+        { CF_CIPHER("AES_256_CFB128"), MBEDTLS_CIPHER_AES_256_CFB128  },
+        { CF_CIPHER("AES_128_CTR"), MBEDTLS_CIPHER_AES_128_CTR  },
+        { CF_CIPHER("AES_192_CTR"), MBEDTLS_CIPHER_AES_192_CTR  },
+        { CF_CIPHER("AES_256_CTR"), MBEDTLS_CIPHER_AES_256_CTR  },
+        { CF_CIPHER("AES_128_GCM"), MBEDTLS_CIPHER_AES_128_GCM  },
+        { CF_CIPHER("AES_192_GCM"), MBEDTLS_CIPHER_AES_192_GCM  },
+        { CF_CIPHER("AES_256_GCM"), MBEDTLS_CIPHER_AES_256_GCM  },
+        { CF_CIPHER("CAMELLIA_128_ECB"), MBEDTLS_CIPHER_CAMELLIA_128_ECB  },
+        { CF_CIPHER("CAMELLIA_192_ECB"), MBEDTLS_CIPHER_CAMELLIA_192_ECB  },
+        { CF_CIPHER("CAMELLIA_256_ECB"), MBEDTLS_CIPHER_CAMELLIA_256_ECB  },
+        { CF_CIPHER("CAMELLIA_128_CBC"), MBEDTLS_CIPHER_CAMELLIA_128_CBC  },
+        { CF_CIPHER("CAMELLIA_192_CBC"), MBEDTLS_CIPHER_CAMELLIA_192_CBC  },
+        { CF_CIPHER("CAMELLIA_256_CBC"), MBEDTLS_CIPHER_CAMELLIA_256_CBC  },
+        { CF_CIPHER("CAMELLIA_128_CFB128"), MBEDTLS_CIPHER_CAMELLIA_128_CFB128  },
+        { CF_CIPHER("CAMELLIA_192_CFB128"), MBEDTLS_CIPHER_CAMELLIA_192_CFB128  },
+        { CF_CIPHER("CAMELLIA_256_CFB128"), MBEDTLS_CIPHER_CAMELLIA_256_CFB128  },
+        { CF_CIPHER("CAMELLIA_128_CTR"), MBEDTLS_CIPHER_CAMELLIA_128_CTR  },
+        { CF_CIPHER("CAMELLIA_192_CTR"), MBEDTLS_CIPHER_CAMELLIA_192_CTR  },
+        { CF_CIPHER("CAMELLIA_256_CTR"), MBEDTLS_CIPHER_CAMELLIA_256_CTR  },
+        { CF_CIPHER("CAMELLIA_128_GCM"), MBEDTLS_CIPHER_CAMELLIA_128_GCM  },
+        { CF_CIPHER("CAMELLIA_192_GCM"), MBEDTLS_CIPHER_CAMELLIA_192_GCM  },
+        { CF_CIPHER("CAMELLIA_256_GCM"), MBEDTLS_CIPHER_CAMELLIA_256_GCM  },
+        { CF_CIPHER("DES_ECB"), MBEDTLS_CIPHER_DES_ECB  },
+        { CF_CIPHER("DES_CBC"), MBEDTLS_CIPHER_DES_CBC  },
+        { CF_CIPHER("DES_EDE_ECB"), MBEDTLS_CIPHER_DES_EDE_ECB  },
+        { CF_CIPHER("DES_EDE_CBC"), MBEDTLS_CIPHER_DES_EDE_CBC  },
+        { CF_CIPHER("DES_EDE3_ECB"), MBEDTLS_CIPHER_DES_EDE3_ECB  },
+        { CF_CIPHER("DES_EDE3_CBC"), MBEDTLS_CIPHER_DES_EDE3_CBC  },
+        { CF_CIPHER("BLOWFISH_ECB"), MBEDTLS_CIPHER_BLOWFISH_ECB  },
+        { CF_CIPHER("BLOWFISH_CBC"), MBEDTLS_CIPHER_BLOWFISH_CBC  },
+        { CF_CIPHER("BLOWFISH_CFB64"), MBEDTLS_CIPHER_BLOWFISH_CFB64  },
+        { CF_CIPHER("BLOWFISH_CTR"), MBEDTLS_CIPHER_BLOWFISH_CTR  },
+        { CF_CIPHER("RC4"), MBEDTLS_CIPHER_ARC4_128  },
+        { CF_CIPHER("AES_128_CCM"), MBEDTLS_CIPHER_AES_128_CCM  },
+        { CF_CIPHER("AES_192_CCM"), MBEDTLS_CIPHER_AES_192_CCM  },
+        { CF_CIPHER("AES_256_CCM"), MBEDTLS_CIPHER_AES_256_CCM  },
+        { CF_CIPHER("CAMELLIA_128_CCM"), MBEDTLS_CIPHER_CAMELLIA_128_CCM  },
+        { CF_CIPHER("CAMELLIA_192_CCM"), MBEDTLS_CIPHER_CAMELLIA_192_CCM  },
+        { CF_CIPHER("CAMELLIA_256_CCM"), MBEDTLS_CIPHER_CAMELLIA_256_CCM  },
+        { CF_CIPHER("ARIA_128_ECB"), MBEDTLS_CIPHER_ARIA_128_ECB  },
+        { CF_CIPHER("ARIA_192_ECB"), MBEDTLS_CIPHER_ARIA_192_ECB  },
+        { CF_CIPHER("ARIA_256_ECB"), MBEDTLS_CIPHER_ARIA_256_ECB  },
+        { CF_CIPHER("ARIA_128_CBC"), MBEDTLS_CIPHER_ARIA_128_CBC  },
+        { CF_CIPHER("ARIA_192_CBC"), MBEDTLS_CIPHER_ARIA_192_CBC  },
+        { CF_CIPHER("ARIA_256_CBC"), MBEDTLS_CIPHER_ARIA_256_CBC  },
+        { CF_CIPHER("ARIA_128_CFB128"), MBEDTLS_CIPHER_ARIA_128_CFB128  },
+        { CF_CIPHER("ARIA_192_CFB128"), MBEDTLS_CIPHER_ARIA_192_CFB128  },
+        { CF_CIPHER("ARIA_256_CFB128"), MBEDTLS_CIPHER_ARIA_256_CFB128  },
+        { CF_CIPHER("ARIA_128_CTR"), MBEDTLS_CIPHER_ARIA_128_CTR  },
+        { CF_CIPHER("ARIA_192_CTR"), MBEDTLS_CIPHER_ARIA_192_CTR  },
+        { CF_CIPHER("ARIA_256_CTR"), MBEDTLS_CIPHER_ARIA_256_CTR  },
+        { CF_CIPHER("ARIA_128_GCM"), MBEDTLS_CIPHER_ARIA_128_GCM  },
+        { CF_CIPHER("ARIA_192_GCM"), MBEDTLS_CIPHER_ARIA_192_GCM  },
+        { CF_CIPHER("ARIA_256_GCM"), MBEDTLS_CIPHER_ARIA_256_GCM  },
+        { CF_CIPHER("ARIA_128_CCM"), MBEDTLS_CIPHER_ARIA_128_CCM  },
+        { CF_CIPHER("ARIA_192_CCM"), MBEDTLS_CIPHER_ARIA_192_CCM  },
+        { CF_CIPHER("ARIA_256_CCM"), MBEDTLS_CIPHER_ARIA_256_CCM  },
+        { CF_CIPHER("AES_128_OFB"), MBEDTLS_CIPHER_AES_128_OFB  },
+        { CF_CIPHER("AES_192_OFB"), MBEDTLS_CIPHER_AES_192_OFB  },
+        { CF_CIPHER("AES_256_OFB"), MBEDTLS_CIPHER_AES_256_OFB  },
+        { CF_CIPHER("AES_128_XTS"), MBEDTLS_CIPHER_AES_128_XTS  },
+        { CF_CIPHER("AES_256_XTS"), MBEDTLS_CIPHER_AES_256_XTS  },
+        { CF_CIPHER("CHACHA20"), MBEDTLS_CIPHER_CHACHA20  },
+        { CF_CIPHER("CHACHA20_POLY1305"), MBEDTLS_CIPHER_CHACHA20_POLY1305  },
+        { CF_CIPHER("AES_128_WRAP"), MBEDTLS_CIPHER_AES_128_KW  },
+        { CF_CIPHER("AES_128_WRAP_PAD"), MBEDTLS_CIPHER_AES_128_KWP  },
+        { CF_CIPHER("AES_192_WRAP"), MBEDTLS_CIPHER_AES_192_KW  },
+        { CF_CIPHER("AES_192_WRAP_PAD"), MBEDTLS_CIPHER_AES_192_KWP  },
+        { CF_CIPHER("AES_256_WRAP"), MBEDTLS_CIPHER_AES_256_KW  },
+        { CF_CIPHER("AES_256_WRAP_PAD"), MBEDTLS_CIPHER_AES_256_KWP },
+    };
+
+    if ( LUT.find(cipherType.Get()) == LUT.end() ) {
+        return nullptr;
     }
+
+    return mbedtls_cipher_info_from_type( LUT.at(cipherType.Get()) );
 }
 
 mbedtls_md_type_t mbedTLS::to_mbedtls_md_type_t(const component::DigestType& digestType) const {
