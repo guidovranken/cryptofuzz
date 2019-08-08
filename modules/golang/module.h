@@ -3,6 +3,7 @@
 #include <cryptofuzz/components.h>
 #include <cryptofuzz/module.h>
 #include "../../third_party/json/json.hpp"
+#include <optional>
 
 namespace cryptofuzz {
 namespace module {
@@ -10,7 +11,7 @@ namespace module {
 class Golang : public Module {
     private:
         std::string getResult(void) const;
-        nlohmann::json getJsonResult(void) const;
+        std::optional<nlohmann::json> getJsonResult(void) const;
 
         template <class T> std::optional<T> getResultAs(void) const;
     public:

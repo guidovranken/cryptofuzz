@@ -21,16 +21,27 @@ std::string Golang::getResult(void) const {
     return ret;
 }
 
-nlohmann::json Golang::getJsonResult(void) const {
-    return nlohmann::json::parse(getResult());
+std::optional<nlohmann::json> Golang::getJsonResult(void) const {
+    const auto res = getResult();
+    if ( res.empty() ) {
+        return std::nullopt;
+    }
+
+    try {
+        return nlohmann::json::parse(getResult());
+    } catch ( std::exception e ) {
+        /* Must always parse correctly non-empty strings */
+        abort();
+    }
 }
 
 template <class T> std::optional<T> Golang::getResultAs(void) const {
     std::optional<T> ret = std::nullopt;
 
-    try {
-        ret = T(getJsonResult());
-    } catch ( ... ) { }
+    auto j = getJsonResult();
+    if ( j != std::nullopt ) {
+        ret = T(*j);
+    }
 
     return ret;
 }

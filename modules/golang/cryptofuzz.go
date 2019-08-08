@@ -97,8 +97,12 @@ func resetResult() {
     result = []byte{}
 }
 
-func setResult(r []byte) {
-    result = r
+func setResult(r ByteSlice) {
+    r2, err := json.Marshal(&r)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+    result = r2
 }
 
 //export Golang_Cryptofuzz_GetResult
@@ -191,12 +195,7 @@ func digest(modifier ByteSlice, cleartext ByteSlice, h hash.Hash) {
 
     res := ByteSlice(h.Sum(nil))
 
-    res2, err := json.Marshal(&res)
-    if err != nil {
-        panic("")
-    }
-
-    setResult(res2)
+    setResult(res)
 }
 
 func unmarshal(in []byte, op interface{}) {
