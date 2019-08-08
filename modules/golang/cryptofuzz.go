@@ -62,6 +62,12 @@ type OpHMAC struct {
     Cipher ComponentCipher
 }
 
+type OpCMAC struct {
+    Modifier ByteSlice
+    Cleartext ByteSlice
+    Cipher ComponentCipher
+}
+
 type OpKDF_SCRYPT struct {
     Modifier ByteSlice
     Cleartext ByteSlice
@@ -243,6 +249,16 @@ func Golang_Cryptofuzz_OpHMAC(in []byte) {
     mac := hmac.Sum(nil)
 
     setResult(mac)
+}
+
+//export Golang_Cryptofuzz_OpCMAC
+func Golang_Cryptofuzz_OpCMAC(in []byte) {
+    resetResult()
+
+    var op OpCMAC
+    unmarshal(in, op)
+
+    /* TODO */
 }
 
 //export Golang_Cryptofuzz_OpKDF_SCRYPT

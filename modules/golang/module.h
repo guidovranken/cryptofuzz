@@ -18,6 +18,7 @@ class Golang : public Module {
         Golang(void);
         std::optional<component::Digest> OpDigest(operation::Digest& op) override;
         std::optional<component::MAC> OpHMAC(operation::HMAC& op) override;
+        std::optional<component::MAC> OpCMAC(operation::CMAC& op) override;
         std::optional<component::Key> OpKDF_SCRYPT(operation::KDF_SCRYPT& op) override;
         std::optional<component::Key> OpKDF_HKDF(operation::KDF_HKDF& op) override;
         std::optional<component::Key> OpKDF_PBKDF2(operation::KDF_PBKDF2& op) override;
