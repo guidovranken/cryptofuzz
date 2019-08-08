@@ -11,6 +11,7 @@
 #include <mbedtls/cipher.h>
 #include <mbedtls/cmac.h>
 #include <mbedtls/hkdf.h>
+#include <mbedtls/pkcs5.h>
 #include <optional>
 
 namespace cryptofuzz {
@@ -30,6 +31,7 @@ class mbedTLS : public Module {
         std::optional<component::Ciphertext> OpSymmetricEncrypt(operation::SymmetricEncrypt& op) override;
         std::optional<component::Cleartext> OpSymmetricDecrypt(operation::SymmetricDecrypt& op) override;
         std::optional<component::Key> OpKDF_HKDF(operation::KDF_HKDF& op) override;
+        std::optional<component::Key> OpKDF_PBKDF2(operation::KDF_PBKDF2& op) override;
 };
 
 } /* namespace module */

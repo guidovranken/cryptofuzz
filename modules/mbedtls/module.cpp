@@ -557,5 +557,41 @@ end:
     return ret;
 }
 
+std::optional<component::Key> mbedTLS::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
+    std::optional<component::Key> ret = std::nullopt;
+
+    mbedtls_md_type_t md_type = MBEDTLS_MD_NONE;
+    mbedtls_md_info_t const* md_info = nullptr;
+    mbedtls_md_context_t md_ctx;
+    uint8_t* out = util::malloc(op.keySize);
+
+    /* Initialize */
+    {
+        mbedtls_md_init(&md_ctx);
+        CF_CHECK_NE(md_type = to_mbedtls_md_type_t(op.digestType), MBEDTLS_MD_NONE);
+        CF_CHECK_NE(md_info = mbedtls_md_info_from_type(md_type), nullptr);
+        CF_CHECK_EQ(mbedtls_md_setup(&md_ctx, md_info, 0), 0 );
+        CF_CHECK_EQ(mbedtls_md_starts(&md_ctx), 0);
+    }
+
+    CF_CHECK_EQ(mbedtls_pkcs5_pbkdf2_hmac(
+                &md_ctx,
+                op.password.GetPtr(),
+                op.password.GetSize(),
+                op.salt.GetPtr(),
+                op.salt.GetSize(),
+                op.iterations,
+                op.keySize,
+                out), 0);
+
+    ret = component::Key(out, op.keySize);
+
+end:
+    mbedtls_md_free(&md_ctx);
+    util::free(out);
+
+    return ret;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */
