@@ -216,7 +216,7 @@ func Golang_Cryptofuzz_OpDigest(in []byte) {
     resetResult()
 
     var op OpDigest
-    unmarshal(in, op)
+    unmarshal(in, &op)
 
     h, err := toHashInstance(op.DigestType)
     if err != nil {
@@ -231,7 +231,7 @@ func Golang_Cryptofuzz_OpHMAC(in []byte) {
     resetResult()
 
     var op OpHMAC
-    unmarshal(in, op)
+    unmarshal(in, &op)
 
     hash, err := toHashFunc(op.DigestType)
     if err != nil {
@@ -256,7 +256,7 @@ func Golang_Cryptofuzz_OpCMAC(in []byte) {
     resetResult()
 
     var op OpCMAC
-    unmarshal(in, op)
+    unmarshal(in, &op)
 
     /* TODO */
 }
@@ -266,7 +266,7 @@ func Golang_Cryptofuzz_OpKDF_SCRYPT(in []byte) {
     resetResult()
 
     var op OpKDF_SCRYPT
-    unmarshal(in, op)
+    unmarshal(in, &op)
 
     /* division by zero. TODO report? */
     if op.R == 0 || op.P == 0 {
@@ -286,7 +286,7 @@ func Golang_Cryptofuzz_OpKDF_HKDF(in []byte) {
     resetResult()
 
     var op OpKDF_HKDF
-    unmarshal(in, op)
+    unmarshal(in, &op)
 
     h, err := toHashFunc(op.DigestType)
     if err != nil {
@@ -307,7 +307,7 @@ func Golang_Cryptofuzz_OpKDF_PBKDF2(in []byte) {
     resetResult()
 
     var op OpKDF_PBKDF2
-    unmarshal(in, op)
+    unmarshal(in, &op)
 
     h, err := toHashFunc(op.DigestType)
     if err != nil {
