@@ -253,6 +253,27 @@ template<> std::optional<component::Key> ExecutorBase<component::Key, operation:
     return module->OpKDF_PBKDF2(op);
 }
 
+/* Specialization for operation::KDF_SSH */
+template<> void ExecutorBase<component::Key, operation::KDF_SSH>::updateExtraCounters(const uint64_t moduleID, operation::KDF_SSH& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::Key, operation::KDF_SSH>::postprocess(std::shared_ptr<Module> module, operation::KDF_SSH& op, const ExecutorBase<component::Key, operation::KDF_SSH>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+
+    if ( result.second != std::nullopt ) {
+        fuzzing::memory::memory_test_msan(result.second->GetPtr(), result.second->GetSize());
+    }
+}
+
+template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_SSH>::callModule(std::shared_ptr<Module> module, operation::KDF_SSH& op) const {
+    return module->OpKDF_SSH(op);
+}
+
 /* Specialization for operation::KDF_TLS1_PRF */
 template<> void ExecutorBase<component::Key, operation::KDF_TLS1_PRF>::updateExtraCounters(const uint64_t moduleID, operation::KDF_TLS1_PRF& op) const {
     (void)moduleID;
@@ -550,6 +571,7 @@ template class ExecutorBase<component::Key, operation::KDF_SCRYPT>;
 template class ExecutorBase<component::Key, operation::KDF_HKDF>; 
 template class ExecutorBase<component::Key, operation::KDF_TLS1_PRF>; 
 template class ExecutorBase<component::Key, operation::KDF_PBKDF2>; 
+template class ExecutorBase<component::Key, operation::KDF_SSH>;
 template class ExecutorBase<component::Signature, operation::Sign>; 
 template class ExecutorBase<bool, operation::Verify>; 
 

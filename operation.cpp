@@ -213,6 +213,33 @@ nlohmann::json KDF_PBKDF2::ToJSON(void) const {
     return j;
 }
 
+std::string KDF_SSH::Name(void) const { return "KDF_SSH"; }
+std::string KDF_SSH::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: KDF_SSH" << std::endl;
+    ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
+    ss << "key: " << util::HexDump(key.Get()) << std::endl;
+    ss << "xcghash: " << util::HexDump(xcghash.Get()) << std::endl;
+    ss << "session_id: " << util::HexDump(session_id.Get()) << std::endl;
+    ss << "type: " << util::HexDump(type.Get()) << std::endl;
+    ss << "keySize: " << std::to_string(keySize) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json KDF_SSH::ToJSON(void) const {
+    nlohmann::json j;
+    j["digestType"] = digestType.ToJSON();
+    j["key"] = key.ToJSON();
+    j["xcghash"] = xcghash.ToJSON();
+    j["session_id"] = session_id.ToJSON();
+    j["type"] = type.ToJSON();
+    j["keySize"] = keySize;
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string CMAC::Name(void) const { return "CMAC"; }
 std::string CMAC::ToString(void) const {
     std::stringstream ss;

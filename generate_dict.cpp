@@ -41,6 +41,7 @@ int main(void)
     write(fp, ID("Cryptofuzz/Operation/KDF_HKDF") );
     write(fp, ID("Cryptofuzz/Operation/KDF_TLS1_PRF") );
     write(fp, ID("Cryptofuzz/Operation/KDF_PBKDF2") );
+    write(fp, ID("Cryptofuzz/Operation/KDF_SSH") );
     write(fp, ID("Cryptofuzz/Operation/CMAC") );
     write(fp, ID("Cryptofuzz/Operation/Sign") );
     write(fp, ID("Cryptofuzz/Operation/Verify") );

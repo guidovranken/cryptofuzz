@@ -52,6 +52,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::Key> OpKDF_SSH(operation::KDF_SSH& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::MAC> OpCMAC(operation::CMAC& op) {
             (void)op;
             return std::nullopt;

@@ -24,6 +24,7 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorKDF_HKDF executorKDF_HKDF(ID("Cryptofuzz/Operation/KDF_HKDF"), modules, debug);
     static ExecutorKDF_TLS1_PRF executorKDF_TLS1_PRF(ID("Cryptofuzz/Operation/KDF_TLS1_PRF"), modules, debug);
     static ExecutorKDF_PBKDF2 executorKDF_PBKDF2(ID("Cryptofuzz/Operation/KDF_PBKDF2"), modules, debug);
+    static ExecutorKDF_SSH executorKDF_SSH(ID("Cryptofuzz/Operation/KDF_SSH"), modules, debug);
     static ExecutorSign executorSign(ID("Cryptofuzz/Operation/Sign"), modules, debug);
     static ExecutorVerify executorVerify(ID("Cryptofuzz/Operation/Verify"), modules, debug);
 
@@ -61,6 +62,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case    ID("Cryptofuzz/Operation/KDF_PBKDF2"):
                 executorKDF_PBKDF2.Run(ds, payload.data(), payload.size());
+                break;
+            case    ID("Cryptofuzz/Operation/KDF_SSH"):
+                executorKDF_SSH.Run(ds, payload.data(), payload.size());
                 break;
 #if 0
             case    ID("Cryptofuzz/Operation/Sign"):

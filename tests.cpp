@@ -69,6 +69,11 @@ void test(const operation::KDF_PBKDF2& op, const std::optional<component::Key>& 
     (void)result;
 }
 
+void test(const operation::KDF_SSH& op, const std::optional<component::Key>& result) {
+    (void)op;
+    (void)result;
+}
+
 void test(const operation::Sign& op, const std::optional<component::Signature>& result) {
     (void)op;
     (void)result;
