@@ -14,6 +14,13 @@ static void write(FILE* fp, uint64_t val) {
     fprintf(fp, "\"\n");
 }
 
+template <class T>
+static void writeMap(FILE* fp, T& map) {
+    for (const auto item : map ) {
+        write(fp, item.first);
+    }
+}
+
 int main(void)
 {
     using fuzzing::datasource::ID;
@@ -33,17 +40,9 @@ int main(void)
     write(fp, ID("Cryptofuzz/Module/mbed TLS") );
     write(fp, ID("Cryptofuzz/Module/Golang") );
 
-    for (const auto operation : OperationLUTMap ) {
-        write(fp, operation.first);
-    }
-
-    for (const auto digest : DigestLUTMap ) {
-        write(fp, digest.first);
-    }
-
-    for (const auto cipher : CipherLUTMap ) {
-        write(fp, cipher.first);
-    }
+    writeMap(fp, OperationLUTMap);
+    writeMap(fp, DigestLUTMap);
+    writeMap(fp, CipherLUTMap);
 
     fclose(fp);
 
