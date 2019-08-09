@@ -15,17 +15,15 @@ void Driver::LoadModule(std::shared_ptr<Module> module) {
 void Driver::Run(const uint8_t* data, const size_t size) const {
     using fuzzing::datasource::ID;
 
-    static ExecutorDigest executorDigest(ID("Cryptofuzz/Operation/Digest"), modules, debug);
-    static ExecutorHMAC executorHMAC(ID("Cryptofuzz/Operation/HMAC"), modules, debug);
-    static ExecutorCMAC executorCMAC(ID("Cryptofuzz/Operation/CMAC"), modules, debug);
-    static ExecutorSymmetricEncrypt executorSymmetricEncrypt(ID("Cryptofuzz/Operation/SymmetricEncrypt"), modules, debug);
-    static ExecutorSymmetricDecrypt executorSymmetricDecrypt(ID("Cryptofuzz/Operation/SymmetricDecrypt"), modules, debug);
-    static ExecutorKDF_SCRYPT executorKDF_SCRYPT(ID("Cryptofuzz/Operation/KDF_SCRYPT"), modules, debug);
-    static ExecutorKDF_HKDF executorKDF_HKDF(ID("Cryptofuzz/Operation/KDF_HKDF"), modules, debug);
-    static ExecutorKDF_TLS1_PRF executorKDF_TLS1_PRF(ID("Cryptofuzz/Operation/KDF_TLS1_PRF"), modules, debug);
-    static ExecutorKDF_PBKDF2 executorKDF_PBKDF2(ID("Cryptofuzz/Operation/KDF_PBKDF2"), modules, debug);
-    static ExecutorSign executorSign(ID("Cryptofuzz/Operation/Sign"), modules, debug);
-    static ExecutorVerify executorVerify(ID("Cryptofuzz/Operation/Verify"), modules, debug);
+    static ExecutorDigest executorDigest(CF_OPERATION("Digest"), modules, debug);
+    static ExecutorHMAC executorHMAC(CF_OPERATION("HMAC"), modules, debug);
+    static ExecutorCMAC executorCMAC(CF_OPERATION("CMAC"), modules, debug);
+    static ExecutorSymmetricEncrypt executorSymmetricEncrypt(CF_OPERATION("SymmetricEncrypt"), modules, debug);
+    static ExecutorSymmetricDecrypt executorSymmetricDecrypt(CF_OPERATION("SymmetricDecrypt"), modules, debug);
+    static ExecutorKDF_SCRYPT executorKDF_SCRYPT(CF_OPERATION("KDF_SCRYPT"), modules, debug);
+    static ExecutorKDF_HKDF executorKDF_HKDF(CF_OPERATION("KDF_HKDF"), modules, debug);
+    static ExecutorKDF_TLS1_PRF executorKDF_TLS1_PRF(CF_OPERATION("KDF_TLS1_PRF"), modules, debug);
+    static ExecutorKDF_PBKDF2 executorKDF_PBKDF2(CF_OPERATION("KDF_PBKDF2"), modules, debug);
 
     try {
 
@@ -35,31 +33,31 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
         const auto payload = ds.GetData(0, 1);
 
         switch ( operation ) {
-            case    ID("Cryptofuzz/Operation/Digest"):
+            case CF_OPERATION("Digest"):
                 executorDigest.Run(ds, payload.data(), payload.size());
                 break;
-            case    ID("Cryptofuzz/Operation/HMAC"):
+            case CF_OPERATION("HMAC"):
                 executorHMAC.Run(ds, payload.data(), payload.size());
                 break;
-            case    ID("Cryptofuzz/Operation/CMAC"):
+            case CF_OPERATION("CMAC"):
                 executorCMAC.Run(ds, payload.data(), payload.size());
                 break;
-            case    ID("Cryptofuzz/Operation/SymmetricEncrypt"):
+            case CF_OPERATION("SymmetricEncrypt"):
                 executorSymmetricEncrypt.Run(ds, payload.data(), payload.size());
                 break;
-            case    ID("Cryptofuzz/Operation/SymmetricDecrypt"):
+            case CF_OPERATION("SymmetricDecrypt"):
                 executorSymmetricDecrypt.Run(ds, payload.data(), payload.size());
                 break;
-            case    ID("Cryptofuzz/Operation/KDF_SCRYPT"):
+            case CF_OPERATION("KDF_SCRYPT"):
                 executorKDF_SCRYPT.Run(ds, payload.data(), payload.size());
                 break;
-            case    ID("Cryptofuzz/Operation/KDF_HKDF"):
+            case CF_OPERATION("KDF_HKDF"):
                 executorKDF_HKDF.Run(ds, payload.data(), payload.size());
                 break;
-            case    ID("Cryptofuzz/Operation/KDF_TLS1_PRF"):
+            case CF_OPERATION("KDF_TLS1_PRF"):
                 executorKDF_TLS1_PRF.Run(ds, payload.data(), payload.size());
                 break;
-            case    ID("Cryptofuzz/Operation/KDF_PBKDF2"):
+            case CF_OPERATION("KDF_PBKDF2"):
                 executorKDF_PBKDF2.Run(ds, payload.data(), payload.size());
                 break;
 #if 0

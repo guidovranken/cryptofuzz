@@ -33,17 +33,9 @@ int main(void)
     write(fp, ID("Cryptofuzz/Module/mbed TLS") );
     write(fp, ID("Cryptofuzz/Module/Golang") );
 
-    write(fp, ID("Cryptofuzz/Operation/Digest") );
-    write(fp, ID("Cryptofuzz/Operation/HMAC") );
-    write(fp, ID("Cryptofuzz/Operation/SymmetricDecrypt") );
-    write(fp, ID("Cryptofuzz/Operation/SymmetricEncrypt") );
-    write(fp, ID("Cryptofuzz/Operation/KDF_SCRYPT") );
-    write(fp, ID("Cryptofuzz/Operation/KDF_HKDF") );
-    write(fp, ID("Cryptofuzz/Operation/KDF_TLS1_PRF") );
-    write(fp, ID("Cryptofuzz/Operation/KDF_PBKDF2") );
-    write(fp, ID("Cryptofuzz/Operation/CMAC") );
-    write(fp, ID("Cryptofuzz/Operation/Sign") );
-    write(fp, ID("Cryptofuzz/Operation/Verify") );
+    for (const auto operation : OperationLUTMap ) {
+        write(fp, operation.first);
+    }
 
     for (const auto digest : DigestLUTMap ) {
         write(fp, digest.first);

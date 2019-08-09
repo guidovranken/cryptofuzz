@@ -31,6 +31,10 @@ class Component(object):
     def __init__(self, name):
         self.name = name
 
+class Operation(Component):
+    def __init__(self, operation):
+        super(Operation, self).__init__(operation)
+
 class Cipher(Component):
     def __init__(self, cipher, isAEAD = False):
         super(Cipher, self).__init__(cipher)
@@ -150,6 +154,29 @@ class DigestTable(Table):
         tableEntry = []
         
         return tableEntry
+
+class OperationTable(Table):
+    def __init__(self):
+        tableDecl = [
+        ]
+
+        super(OperationTable, self).__init__('Operation', tableDecl)
+    def getTableEntryList(self, index):
+        tableEntry = []
+
+        return tableEntry
+
+
+operations = OperationTable()
+operations.Add( Operation("Digest") )
+operations.Add( Operation("HMAC") )
+operations.Add( Operation("CMAC") )
+operations.Add( Operation("SymmetricEncrypt") )
+operations.Add( Operation("SymmetricDecrypt") )
+operations.Add( Operation("KDF_SCRYPT") )
+operations.Add( Operation("KDF_HKDF") )
+operations.Add( Operation("KDF_TLS1_PRF") )
+operations.Add( Operation("KDF_PBKDF2") )
 
 ciphers = CipherTable()
 
@@ -415,7 +442,7 @@ digests.Add( Digest("WHIRLPOOL") )
 digests.Add( Digest("XXHASH32") )
 digests.Add( Digest("XXHASH64") )
 
-tables = [ciphers, digests]
+tables = [operations, ciphers, digests]
 
 with open('repository_tbl.h', 'wb') as fp:
     for table in tables:
