@@ -314,7 +314,7 @@ func Golang_Cryptofuzz_OpKDF_PBKDF2(in []byte) {
         return
     }
 
-    key := pbkdf2.Key(op.Password, op.Salt, int(op.KeySize), int(op.Iterations), h)
+    key := pbkdf2.Key(op.Password, op.Salt, int(op.Iterations), int(op.KeySize), h)
 
     setResult(key)
 }
