@@ -11,6 +11,7 @@ import (
     "encoding/hex"
     "encoding/json"
     "fmt"
+    "golang.org/x/crypto/argon2"
     "golang.org/x/crypto/blake2b"
     "golang.org/x/crypto/blake2s"
     "golang.org/x/crypto/hkdf"
@@ -95,6 +96,17 @@ type OpKDF_PBKDF2 struct {
     Salt ByteSlice
     Iterations uint64
     KeySize uint64
+}
+
+type OpKDF_ARGON2 struct {
+    Modifier ByteSlice
+    Password ByteSlice
+    Salt ByteSlice
+    Type uint8
+    Threads uint8
+    Memory uint32
+    Iterations uint32
+    KeySize uint32
 }
 
 var result []byte
@@ -315,6 +327,40 @@ func Golang_Cryptofuzz_OpKDF_PBKDF2(in []byte) {
     }
 
     key := pbkdf2.Key(op.Password, op.Salt, int(op.Iterations), int(op.KeySize), h)
+
+    setResult(key)
+}
+
+//export Golang_Cryptofuzz_OpKDF_ARGON2
+func Golang_Cryptofuzz_OpKDF_ARGON2(in []byte) {
+    resetResult()
+
+    var op OpKDF_ARGON2
+    unmarshal(in, &op)
+
+    if op.Iterations == 0 {
+        return
+    }
+
+    if op.Threads == 0 {
+        return
+    }
+
+    /* KeySize == 0 crashes, see https://github.com/golang/go/issues/33583 */
+    if op.KeySize == 0 {
+        return
+    }
+
+    var key []byte
+    if op.Type == 1 {
+        /* Argon2_i */
+        key = argon2.Key(op.Password, op.Salt, op.Iterations, op.Memory, op.Threads, op.KeySize)
+    } else if op.Type == 2 {
+        /* Argon2_id */
+        key = argon2.IDKey(op.Password, op.Salt, op.Iterations, op.Memory, op.Threads, op.KeySize)
+    } else {
+        return
+    }
 
     setResult(key)
 }

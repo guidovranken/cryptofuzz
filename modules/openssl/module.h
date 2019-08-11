@@ -77,6 +77,9 @@ class OpenSSL : public Module {
 #if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110)
         std::optional<component::Key> OpKDF_PBKDF2(operation::KDF_PBKDF2& op) override;
 #endif
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110)
+        std::optional<component::Key> OpKDF_ARGON2(operation::KDF_ARGON2& op) override;
+#endif
         std::optional<component::MAC> OpCMAC(operation::CMAC& op) override;
         std::optional<component::Signature> OpSign(operation::Sign& op) override;
         std::optional<bool> OpVerify(operation::Verify& op) override;

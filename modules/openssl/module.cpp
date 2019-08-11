@@ -2416,6 +2416,57 @@ end:
 }
 #endif
 
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110)
+std::optional<component::Key> OpenSSL::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    /* Pending https://github.com/openssl/openssl/pull/9444 */
+#if 0
+    uint8_t* out = util::malloc(op.keySize);
+    EVP_KDF_CTX *kctx = nullptr;
+
+    /* Initialize */
+    {
+        int type = -1;
+        switch ( op.type ) {
+            case    0:
+                type = EVP_KDF_ARGON2D;
+                break;
+            case    1:
+                type = EVP_KDF_ARGON2I;
+                break;
+            case    2:
+                type = EVP_KDF_ARGON2ID;
+                break;
+            default:
+                goto end;
+        }
+        CF_CHECK_GTE(op.keySize, 64);
+        CF_CHECK_EQ(op.threads, 1);
+        CF_CHECK_NE(kctx = EVP_KDF_CTX_new_id(type), nullptr);
+        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_PASS, op.password.GetPtr(), op.password.GetSize()), 1);
+        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_SALT, op.salt.GetPtr(), op.salt.GetSize()), 1);
+        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_ITER, op.iterations), 1);
+        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_ARGON2_THREADS, op.threads), 1);
+        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_ARGON2_MEM_COST, op.memory), 1);
+    }
+
+    /* Process/finalize */
+    {
+        CF_CHECK_EQ(EVP_KDF_derive(kctx, out, op.keySize), 1);
+
+        ret = component::Key(out, op.keySize);
+    }
+
+end:
+    EVP_KDF_CTX_free(kctx);
+
+    util::free(out);
+
+#endif
+    return ret;
+}
+#endif
+
 std::optional<component::MAC> OpenSSL::OpCMAC(operation::CMAC& op) {
     std::optional<component::MAC> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());

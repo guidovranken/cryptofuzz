@@ -22,6 +22,10 @@ extern "C" {
     void NESSIEfinalize(struct NESSIEstruct * const structpointer, unsigned char * const result);
 }
 
+extern "C" {
+    #include "argon2/include/argon2.h"
+}
+
 namespace cryptofuzz {
 namespace module {
 
@@ -290,6 +294,50 @@ std::optional<component::Digest> Reference::OpDigest(operation::Digest& op) {
             }
             break;
     }
+
+    return ret;
+}
+
+std::optional<component::Key> Reference::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    uint8_t* out = util::malloc(op.keySize);
+
+    argon2_type type;
+    switch ( op.type ) {
+        case    0:
+            type = Argon2_d;
+            break;
+        case    1:
+            type = Argon2_i;
+            break;
+        case    2:
+            type = Argon2_id;
+            break;
+        default:
+            goto end;
+    }
+
+    CF_CHECK_LTE(op.threads, 32);
+    CF_CHECK_EQ(argon2_hash(
+                op.iterations,
+                op.memory,
+                op.threads,
+                op.password.GetPtr(),
+                op.password.GetSize(),
+                op.salt.GetPtr(),
+                op.salt.GetSize(),
+                out,
+                op.keySize,
+                nullptr,
+                0,
+                type,
+                ARGON2_VERSION_13
+        ), ARGON2_OK);
+
+    ret = component::Key(out, op.keySize);
+
+end:
+    util::free(out);
 
     return ret;
 }

@@ -636,5 +636,39 @@ std::optional<component::Cleartext> libsodium::OpSymmetricDecrypt(operation::Sym
     }
 }
 
+std::optional<component::Key> libsodium::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    uint8_t* out = util::malloc(op.keySize);
+
+    CF_CHECK_EQ(op.salt.GetSize(), crypto_pwhash_SALTBYTES);
+    CF_CHECK_EQ(op.threads, 1);
+    CF_CHECK_GTE(op.keySize, crypto_pwhash_BYTES_MIN);
+    CF_CHECK_GTE(op.password.GetSize(), crypto_pwhash_PASSWD_MIN);
+    CF_CHECK_LTE(op.password.GetSize(), crypto_pwhash_PASSWD_MAX);
+    CF_CHECK_GTE(op.iterations, crypto_pwhash_OPSLIMIT_MIN);
+    CF_CHECK_LTE(op.iterations, crypto_pwhash_OPSLIMIT_MAX);
+    CF_CHECK_GTE(op.memory * 1024, crypto_pwhash_MEMLIMIT_MIN);
+    //CF_CHECK_LTE(op.memory, crypto_pwhash_MEMLIMIT_MAX);
+
+    CF_CHECK_EQ(op.type == 1 || op.type == 2, true);
+    CF_CHECK_EQ(crypto_pwhash(
+                out,
+                op.keySize,
+                (const char*)op.password.GetPtr(),
+                op.password.GetSize(),
+                op.salt.GetPtr(),
+                op.iterations,
+                op.memory * 1024,
+                op.type == 1 ? crypto_pwhash_ALG_ARGON2I13 : crypto_pwhash_ALG_ARGON2ID13
+            ), 0);
+
+    ret = component::Key(out, op.keySize);
+
+end:
+    util::free(out);
+
+    return ret;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */

@@ -19,6 +19,7 @@ class libsodium : public Module {
         std::optional<component::MAC> OpHMAC(operation::HMAC& op) override;
         std::optional<component::Ciphertext> OpSymmetricEncrypt(operation::SymmetricEncrypt& op) override;
         std::optional<component::Cleartext> OpSymmetricDecrypt(operation::SymmetricDecrypt& op) override;
+        std::optional<component::Key> OpKDF_ARGON2(operation::KDF_ARGON2& op) override;
 };
 
 } /* namespace module */
