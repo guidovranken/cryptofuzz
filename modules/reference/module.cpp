@@ -207,31 +207,24 @@ std::optional<component::Digest> Reference::OpDigest(operation::Digest& op) {
             break;
         case CF_DIGEST("CITYHASH128"):
             {
-                bool useCrcMethod = false;
-                try {
-                    /* Always get the bool, so the structure of the input file is retained */
+                const auto res = CityHash128((const char*)op.cleartext.GetPtr(), op.cleartext.GetSize());
+                /* TODO endianness */
+                ret = component::Digest((const uint8_t*)&res, sizeof(res));
+            }
+            break;
+        case CF_DIGEST("CITYHASHCRC128"):
+            {
+                /* CityHashCrc128 is not compiled on 32 bit */
 #if defined(__x86_64__) || defined(_M_X64)
-                    useCrcMethod =
-#endif
-                        ds.Get<bool>();
-                } catch ( fuzzing::datasource::Datasource::OutOfData ) {
-                }
-
-                if ( useCrcMethod == false || haveSSE42 == false ) {
-                    const auto res = CityHash128((const char*)op.cleartext.GetPtr(), op.cleartext.GetSize());
-                    /* TODO endianness */
-                    ret = component::Digest((const uint8_t*)&res, sizeof(res));
-                } else {
-/* CityHashCrc128 is not compiled on 32 bit */
-#if defined(__x86_64__) || defined(_M_X64)
+                if ( haveSSE42 == true ) {
                     const auto res = CityHashCrc128((const char*)op.cleartext.GetPtr(), op.cleartext.GetSize());
                     /* TODO endianness */
                     ret = component::Digest((const uint8_t*)&res, sizeof(res));
-#endif
                 }
+#endif
             }
             break;
-        case CF_DIGEST("CITYHASH256"):
+        case CF_DIGEST("CITYHASHCRC256"):
             {
 /* CityHashCrc256 is not compiled on 32 bit */
 #if defined(__x86_64__) || defined(_M_X64)
