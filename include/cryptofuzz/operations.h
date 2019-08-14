@@ -376,7 +376,7 @@ class KDF_ARGON2 : public Operation {
             type(ds.Get<uint8_t>()),
             threads(ds.Get<uint8_t>()),
             memory(ds.Get<uint32_t>() % (64*1024)),
-            iterations(ds.Get<uint32_t>() % 5),
+            iterations(ds.Get<uint32_t>() % 3),
             keySize(ds.Get<uint32_t>() % 1024)
         { }
         KDF_ARGON2(nlohmann::json json) :
