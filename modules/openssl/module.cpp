@@ -2418,6 +2418,7 @@ end:
 
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110)
 std::optional<component::Key> OpenSSL::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
+    (void)op;
     std::optional<component::Key> ret = std::nullopt;
     /* Pending https://github.com/openssl/openssl/pull/9444 */
 #if 0
