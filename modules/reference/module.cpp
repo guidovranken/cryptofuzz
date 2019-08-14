@@ -311,6 +311,7 @@ std::optional<component::Key> Reference::OpKDF_ARGON2(operation::KDF_ARGON2& op)
     }
 
     CF_CHECK_LTE(op.threads, 32);
+#if 0
     CF_CHECK_EQ(argon2_hash(
                 op.iterations,
                 op.memory,
@@ -328,6 +329,7 @@ std::optional<component::Key> Reference::OpKDF_ARGON2(operation::KDF_ARGON2& op)
         ), ARGON2_OK);
 
     ret = component::Key(out, op.keySize);
+#endif
 
 end:
     util::free(out);
