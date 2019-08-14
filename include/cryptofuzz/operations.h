@@ -359,6 +359,53 @@ class KDF_PBKDF2 : public Operation {
         }
 };
 
+class KDF_ARGON2 : public Operation {
+    public:
+        const component::Cleartext password;
+        const component::Cleartext salt;
+        const uint8_t type;
+        const uint8_t threads;
+        const uint32_t memory;
+        const uint32_t iterations;
+        const uint32_t keySize;
+
+        KDF_ARGON2(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            password(ds),
+            salt(ds),
+            type(ds.Get<uint8_t>()),
+            threads(ds.Get<uint8_t>()),
+            memory(ds.Get<uint32_t>() % (64*1024)),
+            iterations(ds.Get<uint32_t>() % 3),
+            keySize(ds.Get<uint32_t>() % 1024)
+        { }
+        KDF_ARGON2(nlohmann::json json) :
+            Operation(json["modifier"]),
+            password(json["password"]),
+            salt(json["salt"]),
+            type(json["type"].get<uint8_t>()),
+            threads(json["threads"].get<uint8_t>()),
+            memory(json["memory"].get<uint32_t>()),
+            iterations(json["iterations"].get<uint32_t>()),
+            keySize(json["keySize"].get<uint32_t>())
+        { }
+
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const KDF_ARGON2& rhs) const {
+            return
+                (password == rhs.password) &&
+                (salt == rhs.salt) &&
+                (type == rhs.type) &&
+                (threads == rhs.threads) &&
+                (memory == rhs.memory) &&
+                (iterations == rhs.iterations) &&
+                (keySize == rhs.keySize) &&
+                (modifier == rhs.modifier);
+        }
+};
+
 class CMAC : public Operation {
     public:
         const component::Cleartext cleartext;

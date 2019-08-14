@@ -24,6 +24,7 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorKDF_HKDF executorKDF_HKDF(CF_OPERATION("KDF_HKDF"), modules, debug);
     static ExecutorKDF_TLS1_PRF executorKDF_TLS1_PRF(CF_OPERATION("KDF_TLS1_PRF"), modules, debug);
     static ExecutorKDF_PBKDF2 executorKDF_PBKDF2(CF_OPERATION("KDF_PBKDF2"), modules, debug);
+    static ExecutorKDF_ARGON2 executorKDF_ARGON2(CF_OPERATION("KDF_ARGON2"), modules, debug);
 
     try {
 
@@ -59,6 +60,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("KDF_PBKDF2"):
                 executorKDF_PBKDF2.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("KDF_ARGON2"):
+                executorKDF_ARGON2.Run(ds, payload.data(), payload.size());
                 break;
 #if 0
             case    ID("Cryptofuzz/Operation/Sign"):

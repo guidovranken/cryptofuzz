@@ -52,6 +52,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::Key> OpKDF_ARGON2(operation::KDF_ARGON2& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::MAC> OpCMAC(operation::CMAC& op) {
             (void)op;
             return std::nullopt;

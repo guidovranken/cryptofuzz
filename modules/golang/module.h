@@ -22,6 +22,7 @@ class Golang : public Module {
         std::optional<component::Key> OpKDF_SCRYPT(operation::KDF_SCRYPT& op) override;
         std::optional<component::Key> OpKDF_HKDF(operation::KDF_HKDF& op) override;
         std::optional<component::Key> OpKDF_PBKDF2(operation::KDF_PBKDF2& op) override;
+        std::optional<component::Key> OpKDF_ARGON2(operation::KDF_ARGON2& op) override;
 };
 
 } /* namespace module */

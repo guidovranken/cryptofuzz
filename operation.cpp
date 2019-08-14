@@ -213,6 +213,35 @@ nlohmann::json KDF_PBKDF2::ToJSON(void) const {
     return j;
 }
 
+std::string KDF_ARGON2::Name(void) const { return "KDF_ARGON2"; }
+std::string KDF_ARGON2::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: KDF_ARGON2" << std::endl;
+    ss << "password: " << util::HexDump(password.Get()) << std::endl;
+    ss << "salt: " << util::HexDump(salt.Get()) << std::endl;
+    ss << "type: " << std::to_string(type) << std::endl;
+    ss << "threads: " << std::to_string(threads) << std::endl;
+    ss << "memory: " << std::to_string(memory) << std::endl;
+    ss << "iterations: " << std::to_string(iterations) << std::endl;
+    ss << "keySize: " << std::to_string(keySize) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json KDF_ARGON2::ToJSON(void) const {
+    nlohmann::json j;
+    j["password"] = password.ToJSON();
+    j["salt"] = salt.ToJSON();
+    j["type"] = type;
+    j["threads"] = threads;
+    j["memory"] = memory;
+    j["iterations"] = iterations;
+    j["keySize"] = keySize;
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string CMAC::Name(void) const { return "CMAC"; }
 std::string CMAC::ToString(void) const {
     std::stringstream ss;

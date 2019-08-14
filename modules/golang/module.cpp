@@ -92,5 +92,12 @@ std::optional<component::Key> Golang::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
     return getResultAs<component::Key>();
 }
 
+std::optional<component::Key> Golang::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
+    auto jsonStr = op.ToJSON().dump();
+    Golang_Cryptofuzz_OpKDF_ARGON2(toGoSlice(jsonStr));
+
+    return getResultAs<component::Key>();
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */
