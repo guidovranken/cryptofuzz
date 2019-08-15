@@ -31,6 +31,10 @@ class Component(object):
     def __init__(self, name):
         self.name = name
 
+class Module(Component):
+    def __init__(self, module):
+        super(Module, self).__init__(module)
+
 class Operation(Component):
     def __init__(self, operation):
         super(Operation, self).__init__(operation)
@@ -155,6 +159,17 @@ class DigestTable(Table):
         
         return tableEntry
 
+class ModuleTable(Table):
+    def __init__(self):
+        tableDecl = [
+        ]
+
+        super(ModuleTable, self).__init__('Module', tableDecl)
+    def getTableEntryList(self, index):
+        tableEntry = []
+
+        return tableEntry
+
 class OperationTable(Table):
     def __init__(self):
         tableDecl = [
@@ -166,6 +181,20 @@ class OperationTable(Table):
 
         return tableEntry
 
+modules = ModuleTable()
+modules.Add( Module("Beast") )
+modules.Add( Module("CPPCrypto") )
+modules.Add( Module("Crypto++") )
+modules.Add( Module("EverCrypt") )
+modules.Add( Module("Golang") )
+modules.Add( Module("Monero") )
+modules.Add( Module("OpenSSL") )
+modules.Add( Module("Public Domain") )
+modules.Add( Module("Reference implementations") )
+modules.Add( Module("Veracrypt") )
+modules.Add( Module("libgcrypt") )
+modules.Add( Module("libsodium") )
+modules.Add( Module("mbed TLS") )
 
 operations = OperationTable()
 operations.Add( Operation("Digest") )
@@ -448,7 +477,7 @@ digests.Add( Digest("WHIRLPOOL") )
 digests.Add( Digest("XXHASH32") )
 digests.Add( Digest("XXHASH64") )
 
-tables = [operations, ciphers, digests]
+tables = [modules, operations, ciphers, digests]
 
 with open('repository_tbl.h', 'wb') as fp:
     for table in tables:

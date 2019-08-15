@@ -34,6 +34,19 @@ inline constexpr long LUTCheck(const uint64_t id, const LUT* lut, const size_t l
 }
 
 template <uint64_t id>
+constexpr long moduleIndex(void) {
+    constexpr long index = LUTCheck(id, ModuleLUT, sizeof(ModuleLUT) / sizeof(ModuleLUT[0]));
+    static_assert(-1 != index, "Not a valid module");
+    return index;
+}
+
+template <uint64_t id>
+constexpr uint64_t Module(void) {
+    (void)moduleIndex<id>();
+    return id;
+}
+
+template <uint64_t id>
 constexpr long operationIndex(void) {
     constexpr long index = LUTCheck(id, OperationLUT, sizeof(OperationLUT) / sizeof(OperationLUT[0]));
     static_assert(-1 != index, "Not a valid operation");
@@ -77,4 +90,5 @@ constexpr uint64_t Cipher(void) {
 
 #define CF_CIPHER(s) cryptofuzz::repository::Cipher<fuzzing::datasource::ID("Cryptofuzz/Cipher/" s)>()
 #define CF_DIGEST(s) cryptofuzz::repository::Digest<fuzzing::datasource::ID("Cryptofuzz/Digest/" s)>()
+#define CF_MODULE(s) cryptofuzz::repository::Module<fuzzing::datasource::ID("Cryptofuzz/Module/" s)>()
 #define CF_OPERATION(s) cryptofuzz::repository::Operation<fuzzing::datasource::ID("Cryptofuzz/Operation/" s)>()
