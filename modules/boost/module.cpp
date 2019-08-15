@@ -33,7 +33,7 @@ std::optional<component::Digest> Boost::OpDigest(operation::Digest& op) {
                     tmp = out2[i+1];
                     out2[i+1] = out2[i+2];
                     out2[i+2] = tmp;
-                } 
+                }
 
                 ret = component::Digest(out2, 20);
             }
