@@ -46,7 +46,7 @@ template <class T> std::optional<T> Golang::getResultAs(void) const {
     return ret;
 }
 
-static GoSlice toGoSlice(std::string in) {
+static GoSlice toGoSlice(std::string& in) {
     return {in.data(), static_cast<GoInt>(in.size()), static_cast<GoInt>(in.size())};
 }
 
