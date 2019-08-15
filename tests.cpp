@@ -1,5 +1,6 @@
 #include "tests.h"
 #include <fuzzing/datasource/id.hpp>
+#include <cryptofuzz/repository.h>
 
 namespace cryptofuzz {
 namespace tests {
@@ -22,7 +23,7 @@ static void test_ChaCha20_Poly1305_IV(const operation::SymmetricEncrypt& op, con
      * https://www.openssl.org/news/secadv/20190306.txt
      */
 
-    if ( op.cipher.cipherType.Get() != ID("Cryptofuzz/Cipher/CHACHA20_POLY1305") ) {
+    if ( op.cipher.cipherType.Get() != CF_CIPHER("CHACHA20_POLY1305") ) {
         return;
     }
 
