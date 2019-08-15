@@ -291,6 +291,76 @@ std::optional<component::Digest> Reference::OpDigest(operation::Digest& op) {
     return ret;
 }
 
+std::optional<component::MAC> Reference::OpHMAC(operation::HMAC& op) {
+    using fuzzing::datasource::ID;
+
+    std::optional<component::Digest> ret = std::nullopt;
+
+    switch ( op.digestType.Get() ) {
+#if defined(CRYPTOFUZZ_REFERENCE_CITY_O_PATH)
+        /* Note: Cityhash + seed is not actually a HMAC, but it is convenient here to use it as such */
+        case CF_DIGEST("CITYHASH64SEED8"):
+            {
+                uint64_t seed;
+                if ( op.cipher.key.GetSize() == sizeof(seed) ) {
+                    memcpy(&seed, op.cipher.key.GetPtr(), sizeof(seed));
+
+                    const auto res = CityHash64WithSeed((const char*)op.cleartext.GetPtr(), op.cleartext.GetSize(), seed);
+                    /* TODO endianness */
+                    ret = component::Digest((const uint8_t*)&res, sizeof(res));
+                }
+            }
+            break;
+        case CF_DIGEST("CITYHASH64SEED16"):
+            {
+                uint64_t seed1, seed2;
+                if ( op.cipher.key.GetSize() == sizeof(seed1) + sizeof(seed2) ) {
+                    memcpy(&seed1, op.cipher.key.GetPtr(), sizeof(seed1));
+                    memcpy(&seed2, op.cipher.key.GetPtr() + sizeof(seed1), sizeof(seed2));
+
+                    const auto res = CityHash64WithSeeds((const char*)op.cleartext.GetPtr(), op.cleartext.GetSize(), seed1, seed2);
+                    /* TODO endianness */
+                    ret = component::Digest((const uint8_t*)&res, sizeof(res));
+                }
+            }
+            break;
+        case CF_DIGEST("CITYHASH128SEED16"):
+            {
+                if ( haveSSE42 == true ) {
+                    uint128 seed;
+                    if ( op.cipher.key.GetSize() == sizeof(seed) ) {
+                        memcpy(&seed, op.cipher.key.GetPtr(), sizeof(seed));
+
+                        const auto res = CityHash128WithSeed((const char*)op.cleartext.GetPtr(), op.cleartext.GetSize(), seed);
+                        /* TODO endianness */
+                        ret = component::Digest((const uint8_t*)&res, sizeof(res));
+                    }
+                }
+            }
+            break;
+        case CF_DIGEST("CITYHASHCRC128SEED16"):
+            {
+/* CityHashCrc128WithSeed is not compiled on 32 bit */
+#if defined(__x86_64__) || defined(_M_X64)
+                if ( haveSSE42 == true ) {
+                    uint128 seed;
+                    if ( op.cipher.key.GetSize() == sizeof(seed) ) {
+                        memcpy(&seed, op.cipher.key.GetPtr(), sizeof(seed));
+
+                        const auto res = CityHashCrc128WithSeed((const char*)op.cleartext.GetPtr(), op.cleartext.GetSize(), seed);
+                        /* TODO endianness */
+                        ret = component::Digest((const uint8_t*)&res, sizeof(res));
+                    }
+                }
+            }
+#endif
+            break;
+#endif
+    }
+
+    return ret;
+}
+
 std::optional<component::Key> Reference::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
     std::optional<component::Key> ret = std::nullopt;
     uint8_t* out = util::malloc(op.keySize);
