@@ -15,7 +15,7 @@ static void write(FILE* fp, uint64_t val) {
 }
 
 template <class T>
-static void writeMap(FILE* fp, T& map) {
+static void writeMap(FILE* fp, const T& map) {
     for (const auto item : map ) {
         write(fp, item.first);
     }
