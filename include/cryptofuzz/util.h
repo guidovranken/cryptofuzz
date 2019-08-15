@@ -32,6 +32,7 @@ uint8_t* malloc(const size_t n);
 uint8_t* realloc(void* ptr, const size_t n);
 void free(void* ptr);
 bool HaveSSE42(void);
+void abort(const std::vector<std::string> components);
 
 } /* namespace util */
 } /* namespace cryptofuzz */

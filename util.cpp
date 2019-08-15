@@ -7,6 +7,7 @@
 #include <sstream>
 #include <vector>
 #include <cstdlib>
+#include <boost/algorithm/string/join.hpp>
 #include "third_party/cpu_features/include/cpuinfo_x86.h"
 
 namespace cryptofuzz {
@@ -215,6 +216,13 @@ bool HaveSSE42(void) {
     const cpu_features::X86Info info = cpu_features::GetX86Info();
     const auto features = info.features;
     return features.sse4_2;
+}
+
+void abort(const std::vector<std::string> components) {
+    const std::string joined = boost::algorithm::join(components, "-");
+    printf("Assertion failure: %s\n", joined.c_str());
+    fflush(stdout);
+    ::abort();
 }
 
 } /* namespace util */

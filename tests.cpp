@@ -1,9 +1,18 @@
 #include "tests.h"
 #include <fuzzing/datasource/id.hpp>
 #include <cryptofuzz/repository.h>
+#include <cryptofuzz/util.h>
 
 namespace cryptofuzz {
 namespace tests {
+
+template <class ResultType, class OperationType>
+void verifyKeySize(const OperationType& op, const ResultType& result) {
+    if ( result != std::nullopt && op.keySize != result->GetSize() ) {
+        /* TODO include module name in abort message */
+        util::abort({op.Name(), "invalid keySize"});
+    }
+}
 
 void test(const operation::Digest& op, const std::optional<component::Digest>& result) {
     (void)op;
@@ -51,28 +60,23 @@ void test(const operation::CMAC& op, const std::optional<component::MAC>& result
 }
 
 void test(const operation::KDF_SCRYPT& op, const std::optional<component::Key>& result) {
-    (void)op;
-    (void)result;
+    verifyKeySize(op, result);
 }
 
 void test(const operation::KDF_HKDF& op, const std::optional<component::Key>& result) {
-    (void)op;
-    (void)result;
+    verifyKeySize(op, result);
 }
 
 void test(const operation::KDF_TLS1_PRF& op, const std::optional<component::Key>& result) {
-    (void)op;
-    (void)result;
+    verifyKeySize(op, result);
 }
 
 void test(const operation::KDF_PBKDF2& op, const std::optional<component::Key>& result) {
-    (void)op;
-    (void)result;
+    verifyKeySize(op, result);
 }
 
 void test(const operation::KDF_ARGON2& op, const std::optional<component::Key>& result) {
-    (void)op;
-    (void)result;
+    verifyKeySize(op, result);
 }
 
 void test(const operation::Sign& op, const std::optional<component::Signature>& result) {
