@@ -1114,6 +1114,51 @@ end:
             return ret;
         }
     };
+
+    template <class Digest>
+    class KDF_PBKDF1 {
+        public:
+        static std::optional<component::Key> Compute(operation::KDF_PBKDF1& op) {
+            std::optional<component::Key> ret = std::nullopt;
+
+
+            const size_t outSize = op.keySize;
+            uint8_t* out = util::malloc(outSize);
+
+            /* TODO The following two checks are to work around the bugs described
+             * in https://github.com/weidai11/cryptopp/issues/874
+             * Remove these checks once fixed in upstream
+             */
+            CF_CHECK_NE(op.keySize, 0);
+            CF_CHECK_LTE(op.keySize, Digest::DIGESTSIZE);
+
+            try {
+                ::CryptoPP::PKCS5_PBKDF1<Digest> pbkdf1;
+                pbkdf1.DeriveKey(
+                        out,
+                        outSize,
+                        0,
+                        op.password.GetPtr(),
+                        op.password.GetSize(),
+                        op.salt.GetPtr(),
+                        op.salt.GetSize(),
+                        op.iterations);
+            } catch ( ... ) {
+                goto end;
+            }
+
+            ret = component::Key(out, outSize);
+
+end:
+            util::free(out);
+
+            return ret;
+        }
+    };
+}
+
+std::optional<component::Key> CryptoPP::OpKDF_PBKDF1(operation::KDF_PBKDF1& op) {
+    return CryptoPP_detail::InvokeByDigest<CryptoPP_detail::KDF_PBKDF1, component::Key>(op);
 }
 
 std::optional<component::Key> CryptoPP::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {

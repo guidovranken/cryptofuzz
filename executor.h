@@ -53,6 +53,7 @@ using ExecutorSymmetricDecrypt = ExecutorBase<component::Cleartext, operation::S
 using ExecutorKDF_SCRYPT = ExecutorBase<component::Key, operation::KDF_SCRYPT>;
 using ExecutorKDF_HKDF = ExecutorBase<component::Key, operation::KDF_HKDF>;
 using ExecutorKDF_TLS1_PRF = ExecutorBase<component::Key, operation::KDF_TLS1_PRF>;
+using ExecutorKDF_PBKDF1 = ExecutorBase<component::Key, operation::KDF_PBKDF1>;
 using ExecutorKDF_PBKDF2 = ExecutorBase<component::Key, operation::KDF_PBKDF2>;
 using ExecutorKDF_ARGON2 = ExecutorBase<component::Key, operation::KDF_ARGON2>;
 using ExecutorSign = ExecutorBase<component::Signature, operation::Sign>;

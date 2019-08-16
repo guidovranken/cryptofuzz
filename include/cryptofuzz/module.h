@@ -48,6 +48,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::Key> OpKDF_PBKDF1(operation::KDF_PBKDF1& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::Key> OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
             (void)op;
             return std::nullopt;

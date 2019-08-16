@@ -319,6 +319,46 @@ class KDF_TLS1_PRF : public Operation {
         }
 };
 
+class KDF_PBKDF1 : public Operation {
+    public:
+        const component::DigestType digestType;
+        const component::Cleartext password;
+        const component::Cleartext salt;
+        const uint64_t iterations;
+
+        const uint64_t keySize;
+
+        KDF_PBKDF1(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            digestType(ds),
+            password(ds),
+            salt(ds),
+            iterations(ds.Get<uint64_t>() % 5),
+            keySize(ds.Get<uint64_t>() % 1024)
+        { }
+        KDF_PBKDF1(nlohmann::json json) :
+            Operation(json["modifier"]),
+            digestType(json["digestType"]),
+            password(json["password"]),
+            salt(json["salt"]),
+            iterations(json["iterations"].get<uint64_t>()),
+            keySize(json["keySize"].get<uint64_t>())
+        { }
+
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const KDF_PBKDF1& rhs) const {
+            return
+                (digestType == rhs.digestType) &&
+                (password == rhs.password) &&
+                (salt == rhs.salt) &&
+                (iterations == rhs.iterations) &&
+                (keySize == rhs.keySize) &&
+                (modifier == rhs.modifier);
+        }
+};
+
 class KDF_PBKDF2 : public Operation {
     public:
         const component::DigestType digestType;

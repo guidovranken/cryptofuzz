@@ -205,6 +205,7 @@ operations.Add( Operation("SymmetricDecrypt") )
 operations.Add( Operation("KDF_SCRYPT") )
 operations.Add( Operation("KDF_HKDF") )
 operations.Add( Operation("KDF_TLS1_PRF") )
+operations.Add( Operation("KDF_PBKDF1") )
 operations.Add( Operation("KDF_PBKDF2") )
 operations.Add( Operation("KDF_ARGON2") )
 

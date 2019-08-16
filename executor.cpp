@@ -232,6 +232,27 @@ template<> std::optional<component::Key> ExecutorBase<component::Key, operation:
     return module->OpKDF_HKDF(op);
 }
 
+/* Specialization for operation::KDF_PBKDF1 */
+template<> void ExecutorBase<component::Key, operation::KDF_PBKDF1>::updateExtraCounters(const uint64_t moduleID, operation::KDF_PBKDF1& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::Key, operation::KDF_PBKDF1>::postprocess(std::shared_ptr<Module> module, operation::KDF_PBKDF1& op, const ExecutorBase<component::Key, operation::KDF_PBKDF1>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+
+    if ( result.second != std::nullopt ) {
+        fuzzing::memory::memory_test_msan(result.second->GetPtr(), result.second->GetSize());
+    }
+}
+
+template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_PBKDF1>::callModule(std::shared_ptr<Module> module, operation::KDF_PBKDF1& op) const {
+    return module->OpKDF_PBKDF1(op);
+}
+
 /* Specialization for operation::KDF_PBKDF2 */
 template<> void ExecutorBase<component::Key, operation::KDF_PBKDF2>::updateExtraCounters(const uint64_t moduleID, operation::KDF_PBKDF2& op) const {
     (void)moduleID;
@@ -570,6 +591,7 @@ template class ExecutorBase<component::Cleartext, operation::SymmetricDecrypt>;
 template class ExecutorBase<component::Key, operation::KDF_SCRYPT>;
 template class ExecutorBase<component::Key, operation::KDF_HKDF>;
 template class ExecutorBase<component::Key, operation::KDF_TLS1_PRF>;
+template class ExecutorBase<component::Key, operation::KDF_PBKDF1>;
 template class ExecutorBase<component::Key, operation::KDF_PBKDF2>;
 template class ExecutorBase<component::Key, operation::KDF_ARGON2>;
 template class ExecutorBase<component::Signature, operation::Sign>;
