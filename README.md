@@ -32,3 +32,4 @@ Documentation on how to implement modules and use Cryptofuzz will follow.
 - EverCrypt: Illegal instruction exception on non-AVX CPUs
 - OpenSSL: [OpenSSL 1.0.2: RC4 OOB read](https://github.com/openssl/openssl/issues/8972)
 - OpenSSL: [OpenSSL 1.0.2: Branch on uninitialized memory in EVP_CIPHER_CTX_copy](https://github.com/openssl/openssl/issues/8980)
+- Crypto++: [PBKDF1 OOB read](https://github.com/weidai11/cryptopp/issues/874)
