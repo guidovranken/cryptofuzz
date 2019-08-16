@@ -35,6 +35,7 @@
 #include <scrypt.h>
 #include <pwdbased.h>
 #include <filters.h>
+#include <kalyna.h>
 #include <memory>
 
 namespace cryptofuzz {
@@ -364,6 +365,27 @@ end:
         try {
             switch ( op.cipher.cipherType.Get() ) {
                 /* CFB */
+                case    CF_CIPHER("KALYNA128_CFB"):
+                    {
+                        if ( op.cipher.key.GetSize() == 128 / 8) {
+                            ret = CryptoPP_detail::CryptCFB< ::CryptoPP::Kalyna128 >(op);
+                        }
+                    }
+                    break;
+                case    CF_CIPHER("KALYNA256_CFB"):
+                    {
+                        if ( op.cipher.key.GetSize() == 256 / 8) {
+                            ret = CryptoPP_detail::CryptCFB< ::CryptoPP::Kalyna256 >(op);
+                        }
+                    }
+                    break;
+                case    CF_CIPHER("KALYNA512_CFB"):
+                    {
+                        if ( op.cipher.key.GetSize() == 512 / 8) {
+                            ret = CryptoPP_detail::CryptCFB< ::CryptoPP::Kalyna512 >(op);
+                        }
+                    }
+                    break;
                 case    CF_CIPHER("DES_CFB"):
                     {
                         ret = CryptoPP_detail::CryptCFB< ::CryptoPP::DES >(op);
@@ -471,6 +493,28 @@ end:
                     break;
 
                     /* CFB8 */
+                case    CF_CIPHER("KALYNA128_CFB8"):
+                    {
+                        if ( op.cipher.key.GetSize() == 128 / 8) {
+                            ret = CryptoPP_detail::CryptCFB< ::CryptoPP::Kalyna128, 1 >(op);
+                            if ( ret ) printf("a\n");
+                        }
+                    }
+                    break;
+                case    CF_CIPHER("KALYNA256_CFB8"):
+                    {
+                        if ( op.cipher.key.GetSize() == 256 / 8) {
+                            ret = CryptoPP_detail::CryptCFB< ::CryptoPP::Kalyna256, 1 >(op);
+                        }
+                    }
+                    break;
+                case    CF_CIPHER("KALYNA512_CFB8"):
+                    {
+                        if ( op.cipher.key.GetSize() == 512 / 8) {
+                            ret = CryptoPP_detail::CryptCFB< ::CryptoPP::Kalyna512, 1 >(op);
+                        }
+                    }
+                    break;
                 case    CF_CIPHER("DES_CFB8"):
                     {
                         ret = CryptoPP_detail::CryptCFB< ::CryptoPP::DES, 1 >(op);
@@ -546,6 +590,27 @@ end:
                     break;
 
                     /* CBC */
+                case    CF_CIPHER("KALYNA128_CBC"):
+                    {
+                        if ( op.cipher.key.GetSize() == 128 / 8) {
+                            ret = CryptoPP_detail::CryptCBC< ::CryptoPP::Kalyna128 >(op);
+                        }
+                    }
+                    break;
+                case    CF_CIPHER("KALYNA256_CBC"):
+                    {
+                        if ( op.cipher.key.GetSize() == 256 / 8) {
+                            ret = CryptoPP_detail::CryptCBC< ::CryptoPP::Kalyna256 >(op);
+                        }
+                    }
+                    break;
+                case    CF_CIPHER("KALYNA512_CBC"):
+                    {
+                        if ( op.cipher.key.GetSize() == 512 / 8) {
+                            ret = CryptoPP_detail::CryptCBC< ::CryptoPP::Kalyna512 >(op);
+                        }
+                    }
+                    break;
                 case    CF_CIPHER("DESX_CBC"):
                     {
                         /* Difference
@@ -665,6 +730,27 @@ end:
                     break;
 
                     /* ECB */
+                case    CF_CIPHER("KALYNA128_ECB"):
+                    {
+                        if ( op.cipher.key.GetSize() == 128 / 8) {
+                            ret = CryptoPP_detail::CryptECB< ::CryptoPP::Kalyna128 >(op);
+                        }
+                    }
+                    break;
+                case    CF_CIPHER("KALYNA256_ECB"):
+                    {
+                        if ( op.cipher.key.GetSize() == 256 / 8) {
+                            ret = CryptoPP_detail::CryptECB< ::CryptoPP::Kalyna256 >(op);
+                        }
+                    }
+                    break;
+                case    CF_CIPHER("KALYNA512_ECB"):
+                    {
+                        if ( op.cipher.key.GetSize() == 512 / 8) {
+                            ret = CryptoPP_detail::CryptECB< ::CryptoPP::Kalyna512 >(op);
+                        }
+                    }
+                    break;
                 case    CF_CIPHER("DES_ECB"):
                     {
                         CryptoPP_detail::CryptECB< ::CryptoPP::DES >(op);
@@ -765,6 +851,27 @@ end:
                     break;
 
                     /* CTR */
+                case    CF_CIPHER("KALYNA128_CTR"):
+                    {
+                        if ( op.cipher.key.GetSize() == 128 / 8) {
+                            ret = CryptoPP_detail::CryptCTR< ::CryptoPP::Kalyna128 >(op);
+                        }
+                    }
+                    break;
+                case    CF_CIPHER("KALYNA256_CTR"):
+                    {
+                        if ( op.cipher.key.GetSize() == 256 / 8) {
+                            ret = CryptoPP_detail::CryptCTR< ::CryptoPP::Kalyna256 >(op);
+                        }
+                    }
+                    break;
+                case    CF_CIPHER("KALYNA512_CTR"):
+                    {
+                        if ( op.cipher.key.GetSize() == 512 / 8) {
+                            ret = CryptoPP_detail::CryptCTR< ::CryptoPP::Kalyna512 >(op);
+                        }
+                    }
+                    break;
                 case    CF_CIPHER("SM4_CTR"):
                     {
                         ret = CryptoPP_detail::CryptCTR< ::CryptoPP::SM4 >(op);
@@ -835,6 +942,27 @@ end:
                     break;
 
                     /* OFB */
+                case    CF_CIPHER("KALYNA128_OFB"):
+                    {
+                        if ( op.cipher.key.GetSize() == 128 / 8) {
+                            ret = CryptoPP_detail::CryptOFB< ::CryptoPP::Kalyna128 >(op);
+                        }
+                    }
+                    break;
+                case    CF_CIPHER("KALYNA256_OFB"):
+                    {
+                        if ( op.cipher.key.GetSize() == 256 / 8) {
+                            ret = CryptoPP_detail::CryptOFB< ::CryptoPP::Kalyna256 >(op);
+                        }
+                    }
+                    break;
+                case    CF_CIPHER("KALYNA512_OFB"):
+                    {
+                        if ( op.cipher.key.GetSize() == 512 / 8) {
+                            ret = CryptoPP_detail::CryptOFB< ::CryptoPP::Kalyna512 >(op);
+                        }
+                    }
+                    break;
                 case    CF_CIPHER("DES_OFB"):
                     {
                         ret = CryptoPP_detail::CryptOFB< ::CryptoPP::DES >(op);
