@@ -352,8 +352,8 @@ std::optional<component::MAC> Reference::OpHMAC(operation::HMAC& op) {
                         ret = component::Digest((const uint8_t*)&res, sizeof(res));
                     }
                 }
-            }
 #endif
+            }
             break;
 #endif
     }
