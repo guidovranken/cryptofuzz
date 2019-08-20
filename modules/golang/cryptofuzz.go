@@ -30,6 +30,11 @@ import "C"
 
 type ByteSlice []byte
 
+type SliceOpt struct {
+    slice ByteSlice
+    opt byte
+}
+
 func (b *ByteSlice) MarshalJSON() ([]byte, error) {
     var buffer bytes.Buffer
     buffer.WriteString("\"")
@@ -185,8 +190,8 @@ func toHashInstance(digestType uint64) (hash.Hash, error) {
     return h(), nil
 }
 
-func slice(modifier ByteSlice, in ByteSlice) []ByteSlice {
-    ret := make([]ByteSlice, 0)
+func slice(modifier ByteSlice, in ByteSlice) []SliceOpt {
+    ret := make([]SliceOpt, 0)
     modifierPos := 0
     pos := uint32(0)
 
@@ -198,7 +203,15 @@ func slice(modifier ByteSlice, in ByteSlice) []ByteSlice {
             modifierPos += 4
         }
 
-        ret = append(ret, in[pos:pos+curLength])
+        var opt byte = 0
+        if modifierPos + 1 < len(modifier) {
+            opt = modifier[modifierPos]
+            modifierPos += 1
+        }
+
+        sliceopt := SliceOpt{in[pos:pos+curLength], opt}
+
+        ret = append(ret, sliceopt)
         pos += curLength
     }
 
@@ -207,8 +220,19 @@ func slice(modifier ByteSlice, in ByteSlice) []ByteSlice {
 
 func digest(modifier ByteSlice, cleartext ByteSlice, h hash.Hash) {
     slices := slice(modifier, cleartext)
-    for i := 0; i < len(slices); i++ {
-        h.Write(slices[i])
+    var again bool = true
+    loops := 0
+    for again == true {
+        again = false
+        for i := 0; i < len(slices); i++ {
+            h.Write(slices[i].slice)
+            if loops < 3 && slices[i].opt & 1 == 1 {
+                h.Reset()
+                again = true
+                loops += 1
+                break
+            }
+        }
     }
 
     res := ByteSlice(h.Sum(nil))
@@ -218,8 +242,26 @@ func digest(modifier ByteSlice, cleartext ByteSlice, h hash.Hash) {
 
 func digestShake(modifier ByteSlice, cleartext ByteSlice, outsize uint64, h sha3.ShakeHash) {
     slices := slice(modifier, cleartext)
-    for i := 0; i < len(slices); i++ {
-        h.Write(slices[i])
+    var again bool = true
+    loops := 0
+    for again == true {
+        again = false
+        for i := 0; i < len(slices); i++ {
+            h.Write(slices[i].slice)
+            if loops < 3 && slices[i].opt & 1 == 1 {
+                h.Reset()
+                again = true
+                loops += 1
+                break
+            }
+            if slices[i].opt & 2 == 2 {
+                clone := h.Clone()
+                if slices[i].opt & 4 == 4 {
+                    h.Reset()
+                }
+                h = clone
+            }
+        }
     }
 
     res := make([]byte, outsize)
@@ -273,9 +315,19 @@ func Golang_Cryptofuzz_OpHMAC(in []byte) {
     hmac := hmac.New(hash, op.Cipher.Key)
 
     slices := slice(op.Modifier, op.Cleartext)
-
-    for i := 0; i < len(slices); i++ {
-        hmac.Write(slices[i])
+    var again bool = true
+    loops := 0
+    for again == true {
+        again = false
+        for i := 0; i < len(slices); i++ {
+            hmac.Write(slices[i].slice)
+            if loops < 3 && slices[i].opt & 1 == 1 {
+                hmac.Reset()
+                again = true
+                loops += 1
+                break
+            }
+        }
     }
 
     mac := hmac.Sum(nil)
