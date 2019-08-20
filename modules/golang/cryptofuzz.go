@@ -216,6 +216,18 @@ func digest(modifier ByteSlice, cleartext ByteSlice, h hash.Hash) {
     setResult(res)
 }
 
+func digestShake(modifier ByteSlice, cleartext ByteSlice, outsize uint64, h sha3.ShakeHash) {
+    slices := slice(modifier, cleartext)
+    for i := 0; i < len(slices); i++ {
+        h.Write(slices[i])
+    }
+
+    res := make([]byte, outsize)
+    h.Read(res)
+
+    setResult(res)
+}
+
 func unmarshal(in []byte, op interface{}) {
     err := json.Unmarshal(in, &op)
     if err != nil {
@@ -230,12 +242,20 @@ func Golang_Cryptofuzz_OpDigest(in []byte) {
     var op OpDigest
     unmarshal(in, &op)
 
-    h, err := toHashInstance(op.DigestType)
-    if err != nil {
-        return
-    }
+    if isSHAKE128(op.DigestType) {
+        h := sha3.NewShake128()
+        digestShake(op.Modifier, op.Cleartext, 16, h)
+    } else if isSHAKE256(op.DigestType) {
+        h := sha3.NewShake256()
+        digestShake(op.Modifier, op.Cleartext, 32, h)
+    } else {
+        h, err := toHashInstance(op.DigestType)
+        if err != nil {
+            return
+        }
 
-    digest(op.Modifier, op.Cleartext, h)
+        digest(op.Modifier, op.Cleartext, h)
+    }
 }
 
 //export Golang_Cryptofuzz_OpHMAC
