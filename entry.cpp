@@ -53,6 +53,10 @@
   #include <modules/golang/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_NSS)
+  #include <modules/nss/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
@@ -116,6 +120,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_GOLANG)
     driver->LoadModule( std::make_shared<cryptofuzz::module::Golang>() );
+#endif
+
+#if defined(CRYPTOFUZZ_NSS)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::NSS>() );
 #endif
     return 0;
 }
