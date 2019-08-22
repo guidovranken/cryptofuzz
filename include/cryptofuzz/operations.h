@@ -441,6 +441,7 @@ class KDF_ARGON2 : public Operation {
                 (threads == rhs.threads) &&
                 (memory == rhs.memory) &&
                 (iterations == rhs.iterations) &&
+                (keySize == rhs.keySize) &&
                 (modifier == rhs.modifier);
         }
 };
