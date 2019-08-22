@@ -11,7 +11,6 @@ namespace module {
 
 class NSS : public Module {
     private:
-        NSSInitContext* nss_context = nullptr;
         std::optional<SECOidTag> toOID(const component::DigestType& digestType) const;
     public:
         NSS(void);

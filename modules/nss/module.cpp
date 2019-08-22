@@ -8,13 +8,10 @@ namespace module {
 
 NSS::NSS(void) :
     Module("NSS") {
-    /* Copied from curl */
-    if(!NSS_IsInitialized() && !nss_context) {
-        static NSSInitParameters params;
-        params.length = sizeof(params);
-        nss_context = NSS_InitContext("", "", "", "", &params, NSS_INIT_READONLY
-                | NSS_INIT_NOCERTDB   | NSS_INIT_NOMODDB       | NSS_INIT_FORCEOPEN
-                | NSS_INIT_NOROOTINIT | NSS_INIT_OPTIMIZESPACE | NSS_INIT_PK11RELOAD);
+    const SECStatus rv = NSS_NoDB_Init(NULL);
+    if(rv != SECSuccess) {
+        printf("Cannot initialize NSS\n");
+        abort();
     }
 }
 
