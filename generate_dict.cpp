@@ -1,5 +1,8 @@
 #include <cstdint>
 #include <cstddef>
+#include <sstream>
+#include <iomanip>
+#include <vector>
 #include <stdio.h>
 #include <fuzzing/datasource/id.hpp>
 #include "repository_map.h"
@@ -21,6 +24,29 @@ static void writeMap(FILE* fp, const T& map) {
     }
 }
 
+static void writeBuffer(FILE* fp, const size_t size) {
+    if ( size > 255 ) {
+        printf("Sizes > 255 unsupported\n");
+        abort();
+    }
+
+    std::stringstream ss;
+
+    ss << "\"";
+
+    for (size_t i = 0; i < 4 + size; i++) {
+        if ( i == 0 ) {
+            ss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << size;
+        } else {
+            ss << "\\x00";
+        }
+    }
+
+    ss << "\"";
+
+    fprintf(fp, "%s\n", ss.str().c_str());
+}
+
 int main(void)
 {
     using fuzzing::datasource::ID;
@@ -31,6 +57,14 @@ int main(void)
     writeMap(fp, OperationLUTMap);
     writeMap(fp, DigestLUTMap);
     writeMap(fp, CipherLUTMap);
+
+    {
+        const std::vector<uint8_t> bufferSizes = {1, 2, 4, 8, 12, 16, 32, 133 /* SSH KDF key */};
+        for (const auto& size : bufferSizes) {
+            writeBuffer(fp, size);
+        }
+
+    }
 
     fclose(fp);
 
