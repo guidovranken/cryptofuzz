@@ -497,7 +497,6 @@ end:
                     {
                         if ( op.cipher.key.GetSize() == 128 / 8) {
                             ret = CryptoPP_detail::CryptCFB< ::CryptoPP::Kalyna128, 1 >(op);
-                            if ( ret ) printf("a\n");
                         }
                     }
                     break;
