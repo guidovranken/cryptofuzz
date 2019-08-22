@@ -2467,6 +2467,43 @@ end:
     return ret;
 }
 #endif
+    
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110)
+std::optional<component::Key> OpenSSL::OpKDF_SSH(operation::KDF_SSH& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    EVP_KDF_CTX *kctx = nullptr;
+    const EVP_MD* md = nullptr;
+
+    size_t out_size = op.keySize;
+    uint8_t* out = util::malloc(out_size);
+
+    /* Initialize */
+    {
+        CF_CHECK_EQ(op.type.GetSize(), 1);
+        CF_CHECK_NE(md = toEVPMD(op.digestType), nullptr);
+        CF_CHECK_NE(kctx = EVP_KDF_CTX_new_id(EVP_KDF_SSHKDF), nullptr);
+        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_KEY, op.key.GetPtr(), op.key.GetSize()), 1);
+        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_SSHKDF_XCGHASH, op.xcghash.GetPtr(), op.xcghash.GetSize()), 1);
+        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_SSHKDF_SESSION_ID, op.session_id.GetPtr(), op.session_id.GetSize()), 1);
+        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_SSHKDF_TYPE, *(op.type.GetPtr())), 1);
+        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_MD, md), 1);
+    }
+
+    /* Process/finalize */
+    {
+        CF_CHECK_EQ(EVP_KDF_derive(kctx, out, out_size), 1);
+
+        ret = component::Key(out, out_size);
+    }
+
+end:
+    EVP_KDF_CTX_free(kctx);
+
+    util::free(out);
+
+    return ret;
+}
+#endif
 
 std::optional<component::MAC> OpenSSL::OpCMAC(operation::CMAC& op) {
     std::optional<component::MAC> ret = std::nullopt;

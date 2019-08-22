@@ -282,6 +282,14 @@ template<> void ExecutorBase<component::Key, operation::KDF_ARGON2>::updateExtra
     /* TODO */
 }
 
+/* Specialization for operation::KDF_SSH */
+template<> void ExecutorBase<component::Key, operation::KDF_SSH>::updateExtraCounters(const uint64_t moduleID, operation::KDF_SSH& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
 template<> void ExecutorBase<component::Key, operation::KDF_ARGON2>::postprocess(std::shared_ptr<Module> module, operation::KDF_ARGON2& op, const ExecutorBase<component::Key, operation::KDF_ARGON2>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -293,6 +301,19 @@ template<> void ExecutorBase<component::Key, operation::KDF_ARGON2>::postprocess
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_ARGON2>::callModule(std::shared_ptr<Module> module, operation::KDF_ARGON2& op) const {
     return module->OpKDF_ARGON2(op);
+}
+
+template<> void ExecutorBase<component::Key, operation::KDF_SSH>::postprocess(std::shared_ptr<Module> module, operation::KDF_SSH& op, const ExecutorBase<component::Key, operation::KDF_SSH>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+
+    if ( result.second != std::nullopt ) {
+        fuzzing::memory::memory_test_msan(result.second->GetPtr(), result.second->GetSize());
+    }
+}
+
+template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_SSH>::callModule(std::shared_ptr<Module> module, operation::KDF_SSH& op) const {
+    return module->OpKDF_SSH(op);
 }
 
 /* Specialization for operation::KDF_TLS1_PRF */
@@ -594,6 +615,7 @@ template class ExecutorBase<component::Key, operation::KDF_TLS1_PRF>;
 template class ExecutorBase<component::Key, operation::KDF_PBKDF1>;
 template class ExecutorBase<component::Key, operation::KDF_PBKDF2>;
 template class ExecutorBase<component::Key, operation::KDF_ARGON2>;
+template class ExecutorBase<component::Key, operation::KDF_SSH>;
 template class ExecutorBase<component::Signature, operation::Sign>;
 template class ExecutorBase<bool, operation::Verify>;
 

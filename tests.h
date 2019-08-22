@@ -17,6 +17,7 @@ void test(const operation::KDF_TLS1_PRF& op, const std::optional<component::Key>
 void test(const operation::KDF_PBKDF1& op, const std::optional<component::Key>& result);
 void test(const operation::KDF_PBKDF2& op, const std::optional<component::Key>& result);
 void test(const operation::KDF_ARGON2& op, const std::optional<component::Key>& result);
+void test(const operation::KDF_SSH& op, const std::optional<component::Key>& result);
 void test(const operation::Sign& op, const std::optional<component::Signature>& result);
 void test(const operation::Verify& op, const std::optional<bool>& result);
 

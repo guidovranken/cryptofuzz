@@ -441,6 +441,48 @@ class KDF_ARGON2 : public Operation {
                 (threads == rhs.threads) &&
                 (memory == rhs.memory) &&
                 (iterations == rhs.iterations) &&
+                (modifier == rhs.modifier);
+        }
+};
+
+class KDF_SSH : public Operation {
+    public:
+        const component::DigestType digestType;
+        const component::Cleartext key;
+        const component::Cleartext xcghash;
+        const component::Cleartext session_id;
+        const component::Cleartext type;
+        const uint64_t keySize;
+
+        KDF_SSH(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            digestType(ds),
+            key(ds),
+            xcghash(ds),
+            session_id(ds),
+            type(ds),
+            keySize(ds.Get<uint64_t>() % 1024)
+        { }
+        KDF_SSH(nlohmann::json json) :
+            Operation(json["modifier"]),
+            digestType(json["digestType"]),
+            key(json["key"]),
+            xcghash(json["xcghash"]),
+            session_id(json["session_id"]),
+            type(json["type"]),
+            keySize(json["keySize"].get<uint64_t>())
+        { }
+
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const KDF_SSH& rhs) const {
+            return
+                (digestType == rhs.digestType) &&
+                (key == rhs.key) &&
+                (xcghash == rhs.xcghash) &&
+                (session_id == rhs.session_id) &&
+                (type == rhs.type) &&
                 (keySize == rhs.keySize) &&
                 (modifier == rhs.modifier);
         }

@@ -83,6 +83,10 @@ void test(const operation::KDF_ARGON2& op, const std::optional<component::Key>& 
     verifyKeySize(op, result);
 }
 
+void test(const operation::KDF_SSH& op, const std::optional<component::Key>& result) {
+    verifyKeySize(op, result);
+}
+
 void test(const operation::Sign& op, const std::optional<component::Signature>& result) {
     (void)op;
     (void)result;

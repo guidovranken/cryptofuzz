@@ -56,6 +56,7 @@ using ExecutorKDF_TLS1_PRF = ExecutorBase<component::Key, operation::KDF_TLS1_PR
 using ExecutorKDF_PBKDF1 = ExecutorBase<component::Key, operation::KDF_PBKDF1>;
 using ExecutorKDF_PBKDF2 = ExecutorBase<component::Key, operation::KDF_PBKDF2>;
 using ExecutorKDF_ARGON2 = ExecutorBase<component::Key, operation::KDF_ARGON2>;
+using ExecutorKDF_SSH = ExecutorBase<component::Key, operation::KDF_SSH>;
 using ExecutorSign = ExecutorBase<component::Signature, operation::Sign>;
 using ExecutorVerify = ExecutorBase<bool, operation::Verify>;
 

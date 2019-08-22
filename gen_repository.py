@@ -208,6 +208,7 @@ operations.Add( Operation("KDF_TLS1_PRF") )
 operations.Add( Operation("KDF_PBKDF1") )
 operations.Add( Operation("KDF_PBKDF2") )
 operations.Add( Operation("KDF_ARGON2") )
+operations.Add( Operation("KDF_SSH") )
 
 ciphers = CipherTable()
 

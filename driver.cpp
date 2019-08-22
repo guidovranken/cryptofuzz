@@ -26,6 +26,7 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorKDF_PBKDF1 executorKDF_PBKDF1(CF_OPERATION("KDF_PBKDF1"), modules, debug);
     static ExecutorKDF_PBKDF2 executorKDF_PBKDF2(CF_OPERATION("KDF_PBKDF2"), modules, debug);
     static ExecutorKDF_ARGON2 executorKDF_ARGON2(CF_OPERATION("KDF_ARGON2"), modules, debug);
+    static ExecutorKDF_SSH executorKDF_SSH(ID("Cryptofuzz/Operation/KDF_SSH"), modules, debug);
 
     try {
 
@@ -67,6 +68,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("KDF_ARGON2"):
                 executorKDF_ARGON2.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("KDF_SSH"):
+                executorKDF_SSH.Run(ds, payload.data(), payload.size());
                 break;
 #if 0
             case    ID("Cryptofuzz/Operation/Sign"):
