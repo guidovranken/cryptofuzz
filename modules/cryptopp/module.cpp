@@ -732,21 +732,21 @@ end:
                 case    CF_CIPHER("KALYNA128_ECB"):
                     {
                         if ( op.cipher.key.GetSize() == 128 / 8) {
-                            ret = CryptoPP_detail::CryptECB< ::CryptoPP::Kalyna128 >(op);
+                            CryptoPP_detail::CryptECB< ::CryptoPP::Kalyna128 >(op);
                         }
                     }
                     break;
                 case    CF_CIPHER("KALYNA256_ECB"):
                     {
                         if ( op.cipher.key.GetSize() == 256 / 8) {
-                            ret = CryptoPP_detail::CryptECB< ::CryptoPP::Kalyna256 >(op);
+                            CryptoPP_detail::CryptECB< ::CryptoPP::Kalyna256 >(op);
                         }
                     }
                     break;
                 case    CF_CIPHER("KALYNA512_ECB"):
                     {
                         if ( op.cipher.key.GetSize() == 512 / 8) {
-                            ret = CryptoPP_detail::CryptECB< ::CryptoPP::Kalyna512 >(op);
+                            CryptoPP_detail::CryptECB< ::CryptoPP::Kalyna512 >(op);
                         }
                     }
                     break;
