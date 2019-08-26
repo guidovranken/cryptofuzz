@@ -183,6 +183,7 @@ class OperationTable(Table):
 
 modules = ModuleTable()
 modules.Add( Module("Beast") )
+modules.Add( Module("Botan") )
 modules.Add( Module("CPPCrypto") )
 modules.Add( Module("Crypto++") )
 modules.Add( Module("EverCrypt") )
