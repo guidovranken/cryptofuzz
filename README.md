@@ -34,3 +34,5 @@ Documentation on how to implement modules and use Cryptofuzz will follow.
 - OpenSSL: [OpenSSL 1.0.2: Branch on uninitialized memory in EVP_CIPHER_CTX_copy](https://github.com/openssl/openssl/issues/8980)
 - Crypto++: [PBKDF1 OOB read](https://github.com/weidai11/cryptopp/issues/874)
 - NSS: [MD2 invalid output](https://bugzilla.mozilla.org/show_bug.cgi?id=1575923)
+- Botan: [CAST5_CBC invalid output](https://github.com/randombit/botan/issues/2081)
+- Botan: [Streebog invalid output](https://github.com/randombit/botan/issues/2082)
