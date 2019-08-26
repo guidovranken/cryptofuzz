@@ -57,6 +57,10 @@
   #include <modules/nss/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_BOTAN)
+  #include <modules/botan/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
@@ -124,6 +128,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_NSS)
     driver->LoadModule( std::make_shared<cryptofuzz::module::NSS>() );
+#endif
+
+#if defined(CRYPTOFUZZ_BOTAN)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::Botan>() );
 #endif
     return 0;
 }
