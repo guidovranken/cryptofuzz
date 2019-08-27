@@ -41,11 +41,8 @@ namespace Botan_detail {
             { CF_DIGEST("SHA3-512"), "SHA-3(512)" },
             { CF_DIGEST("SKEIN_512"), "Skein-512" },
             { CF_DIGEST("SM3"), "SM3" },
-            /*
-             * Pending resolution of https://github.com/randombit/botan/issues/2082
-             * { CF_DIGEST("STREEBOG-256"), "Streebog-256" },
-             * { CF_DIGEST("STREEBOG-512"), "Streebog-512" },
-             */
+            { CF_DIGEST("STREEBOG-256"), "Streebog-256" },
+            { CF_DIGEST("STREEBOG-512"), "Streebog-512" },
             { CF_DIGEST("TIGER"), "Tiger" },
             { CF_DIGEST("WHIRLPOOL"), "Whirlpool" },
             { CF_DIGEST("SHA512-256"), "SHA-512-256" },
@@ -311,8 +308,10 @@ end:
                     /* TODO take max output size in consideration */
 
                     if ( useOneShot == true ) {
+                        if ( in.size() ) in[0]++;
                         ret = ReturnType(Buffer(in.data(), in.size()));
                     } else {
+                        if ( out.size() ) out[0]++;
                         ret = ReturnType(Buffer(out.data(), out.size()));
                     }
                 }
