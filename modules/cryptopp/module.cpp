@@ -612,9 +612,7 @@ end:
                     break;
                 case    CF_CIPHER("DESX_CBC"):
                     {
-                        /* Difference
-                         * ret = CryptoPP_detail::CryptCBC< ::CryptoPP::DES_XEX3 >(op);
-                         */
+                         ret = CryptoPP_detail::CryptCBC< ::CryptoPP::DES_XEX3 >(op);
                     }
                     break;
                 case    CF_CIPHER("DES_CBC"):

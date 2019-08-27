@@ -188,7 +188,14 @@ namespace Botan_detail {
             { CF_CIPHER("CAST5_CBC"), "CAST5/CBC" },
             { CF_CIPHER("CAST5_ECB"), "CAST5/ECB" },
             { CF_CIPHER("CHACHA20"), "ChaCha(20)" },
-            { CF_CIPHER("DESX_CBC"), "DESX/CBC" },
+            /*
+             * Pending resolution of
+             *
+             * - https://marc.info/?l=libressl&m=156686457502005&w=2
+             * - https://github.com/openssl/openssl/issues/9703
+             *
+             * { CF_CIPHER("DESX_CBC"), "DESX/CBC" },
+             */
             { CF_CIPHER("DES_CBC"), "DES/CBC" },
             { CF_CIPHER("DES_ECB"), "DES/ECB" },
             { CF_CIPHER("DES_EDE3_CBC"), "DES-EDE/CCB" },
