@@ -308,10 +308,8 @@ end:
                     /* TODO take max output size in consideration */
 
                     if ( useOneShot == true ) {
-                        if ( in.size() ) in[0]++;
                         ret = ReturnType(Buffer(in.data(), in.size()));
                     } else {
-                        if ( out.size() ) out[0]++;
                         ret = ReturnType(Buffer(out.data(), out.size()));
                     }
                 }
