@@ -3,7 +3,9 @@
 #include <memory>
 #include "driver.h"
 
-#include <modules/openssl/module.h>
+#if !defined(CRYPTOFUZZ_NO_OPENSSL)
+  #include <modules/openssl/module.h>
+#endif
 
 #if defined(CRYPTOFUZZ_BITCOIN)
   #include <modules/bitcoin/module.h>
@@ -76,7 +78,9 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
     driver = std::make_shared<cryptofuzz::Driver>(debug);
 
+#if !defined(CRYPTOFUZZ_NO_OPENSSL)
     driver->LoadModule( std::make_shared<cryptofuzz::module::OpenSSL>() );
+#endif
 
 #if defined(CRYPTOFUZZ_BITCOIN)
     driver->LoadModule( std::make_shared<cryptofuzz::module::Bitcoin>() );
