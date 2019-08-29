@@ -223,7 +223,7 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
             return EVP_des_ede_ofb();
         case CF_CIPHER("DES_EDE3_OFB"):
             return EVP_des_ede3_ofb();
-        case CF_CIPHER("DESX_CBC"):
+        case CF_CIPHER("DESX_A_CBC"):
             return EVP_desx_cbc();
         case CF_CIPHER("DES_CBC"):
             return EVP_des_cbc();
@@ -416,7 +416,7 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
             return EVP_des_ede_ofb();
         case CF_CIPHER("DES_EDE3_OFB"):
             return EVP_des_ede3_ofb();
-        case CF_CIPHER("DESX_CBC"):
+        case CF_CIPHER("DESX_A_CBC"):
             return EVP_desx_cbc();
         case CF_CIPHER("DES_CBC"):
             return EVP_des_cbc();
@@ -619,7 +619,7 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
             return EVP_des_ede_ofb();
         case CF_CIPHER("DES_EDE3_OFB"):
             return EVP_des_ede3_ofb();
-        case CF_CIPHER("DESX_CBC"):
+        case CF_CIPHER("DESX_A_CBC"):
             return EVP_desx_cbc();
         case CF_CIPHER("DES_CBC"):
             return EVP_des_cbc();
@@ -842,7 +842,7 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
             return EVP_des_ede_ofb();
         case CF_CIPHER("DES_EDE3_OFB"):
             return EVP_des_ede3_ofb();
-        case CF_CIPHER("DESX_CBC"):
+        case CF_CIPHER("DESX_A_CBC"):
             return EVP_desx_cbc();
         case CF_CIPHER("DES_CBC"):
             return EVP_des_cbc();

@@ -610,7 +610,7 @@ end:
                         }
                     }
                     break;
-                case    CF_CIPHER("DESX_CBC"):
+                case    CF_CIPHER("DESX_B_CBC"):
                     {
                          ret = CryptoPP_detail::CryptCBC< ::CryptoPP::DES_XEX3 >(op);
                     }
