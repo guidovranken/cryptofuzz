@@ -4,6 +4,8 @@
 #include <botan/hash.h>
 #include <botan/mac.h>
 #include <botan/cipher_mode.h>
+#include <botan/pbkdf.h>
+#include <botan/pwdhash.h>
 
 namespace cryptofuzz {
 namespace module {
@@ -16,6 +18,12 @@ Botan::Botan(void) :
 }
 
 namespace Botan_detail {
+    const std::string parenthesize(const std::string parent, const std::string child) {
+        static const std::string pOpen("(");
+        static const std::string pClose(")");
+
+        return parent + pOpen + child + pClose;
+    }
 
     std::optional<std::string> DigestIDToString(const uint64_t digestType) {
         static const std::map<uint64_t, std::string> LUT = {
@@ -129,7 +137,7 @@ std::optional<component::MAC> Botan::OpHMAC(operation::HMAC& op) {
                 algoStringCopy = "SHAKE-256(512)";
             }
 
-            const std::string hmacString = std::string("HMAC(") + algoStringCopy + std::string(")");
+            const std::string hmacString = Botan_detail::parenthesize("HMAC", algoStringCopy);
             CF_CHECK_NE(hmac = ::Botan::MessageAuthenticationCode::create(hmacString), nullptr);
 
             try {
@@ -327,6 +335,51 @@ std::optional<component::Ciphertext> Botan::OpSymmetricEncrypt(operation::Symmet
 
 std::optional<component::Cleartext> Botan::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
     return Botan_detail::Crypt<component::Cleartext, operation::SymmetricDecrypt>(op);
+}
+
+std::optional<component::Key> Botan::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    std::unique_ptr<::Botan::PasswordHashFamily> pwdhash_fam = nullptr;
+    std::unique_ptr<::Botan::PasswordHash> pwdhash = nullptr;
+    uint8_t* out = util::malloc(op.keySize);
+
+    try {
+        /* Initialize */
+        {
+            /* TODO remove once https://github.com/randombit/botan/issues/2088 has been addressed */
+            CF_CHECK_GT(op.iterations, 0);
+
+            std::optional<std::string> algoString;
+            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
+
+            const std::string pbkdf2String = Botan_detail::parenthesize("PBKDF2", *algoString);
+            CF_CHECK_NE(pwdhash_fam = ::Botan::PasswordHashFamily::create(pbkdf2String), nullptr);
+
+            CF_CHECK_NE(pwdhash = pwdhash_fam->from_params(op.iterations), nullptr);
+
+        }
+
+        /* Process */
+        {
+            pwdhash->derive_key(
+                    out,
+                    op.keySize,
+                    (const char*)op.password.GetPtr(),
+                    op.password.GetSize(),
+                    op.salt.GetPtr(),
+                    op.salt.GetSize());
+        }
+
+        /* Finalize */
+        {
+            ret = component::Key(out, op.keySize);
+        }
+    } catch ( ... ) { }
+
+end:
+    util::free(out);
+
+    return ret;
 }
 } /* namespace module */
 } /* namespace cryptofuzz */
