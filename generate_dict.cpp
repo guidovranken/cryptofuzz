@@ -59,7 +59,7 @@ int main(void)
     writeMap(fp, CipherLUTMap);
 
     {
-        const std::vector<uint8_t> bufferSizes = {1, 2, 4, 8, 12, 16, 32, 133 /* SSH KDF key */};
+        const std::vector<uint8_t> bufferSizes = {1, 2, 4, 8, 12, 16, 32};
         for (const auto& size : bufferSizes) {
             writeBuffer(fp, size);
         }
