@@ -36,3 +36,4 @@ Documentation on how to implement modules and use Cryptofuzz will follow.
 - NSS: [MD2 invalid output](https://bugzilla.mozilla.org/show_bug.cgi?id=1575923)
 - Botan: [CAST5_CBC invalid output](https://github.com/randombit/botan/issues/2081)
 - Botan: [Streebog invalid output](https://github.com/randombit/botan/issues/2082)
+- Botan: [PBKDF2 hang (very long loop) if iterations == 0](https://github.com/randombit/botan/issues/2088)
