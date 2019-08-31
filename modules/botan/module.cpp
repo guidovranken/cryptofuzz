@@ -346,9 +346,6 @@ std::optional<component::Key> Botan::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
     try {
         /* Initialize */
         {
-            /* TODO remove once https://github.com/randombit/botan/issues/2088 has been addressed */
-            CF_CHECK_GT(op.iterations, 0);
-
             std::optional<std::string> algoString;
             CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
             std::string algoStringCopy = *algoString;
