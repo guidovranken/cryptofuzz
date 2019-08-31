@@ -26,42 +26,7 @@ namespace Botan_detail {
     }
 
     std::optional<std::string> DigestIDToString(const uint64_t digestType) {
-        static const std::map<uint64_t, std::string> LUT = {
-            { CF_DIGEST("ADLER32"), "Adler32" },
-            { CF_DIGEST("BLAKE2B160"), "Blake2b(160)" },
-            { CF_DIGEST("BLAKE2B256"), "Blake2b(256)" },
-            { CF_DIGEST("BLAKE2B384"), "Blake2b(384)" },
-            { CF_DIGEST("BLAKE2B512"), "Blake2b(512)" },
-            { CF_DIGEST("CRC32-RFC2440"), "CRC24" },
-            { CF_DIGEST("CRC32"), "CRC32" },
-            { CF_DIGEST("GOST-R-34.11-94"), "GOST-R-34.11-94" },
-            { CF_DIGEST("MD4"), "MD4" },
-            { CF_DIGEST("MD5"), "MD5" },
-            { CF_DIGEST("RIPEMD160"), "RIPEMD-160" },
-            { CF_DIGEST("SHA1"), "SHA1" },
-            { CF_DIGEST("SHA224"), "SHA-224" },
-            { CF_DIGEST("SHA256"), "SHA-256" },
-            { CF_DIGEST("SHA384"), "SHA-384" },
-            { CF_DIGEST("SHA512"), "SHA-512" },
-            { CF_DIGEST("SHA3-224"), "SHA-3(224)" },
-            { CF_DIGEST("SHA3-256"), "SHA-3(256)" },
-            { CF_DIGEST("SHA3-384"), "SHA-3(384)" },
-            { CF_DIGEST("SHA3-512"), "SHA-3(512)" },
-            { CF_DIGEST("SKEIN_512"), "Skein-512" },
-            { CF_DIGEST("SM3"), "SM3" },
-            { CF_DIGEST("STREEBOG-256"), "Streebog-256" },
-            { CF_DIGEST("STREEBOG-512"), "Streebog-512" },
-            { CF_DIGEST("TIGER"), "Tiger" },
-            { CF_DIGEST("WHIRLPOOL"), "Whirlpool" },
-            { CF_DIGEST("SHA512-256"), "SHA-512-256" },
-            { CF_DIGEST("SHAKE128"), "SHAKE-128(128)" },
-            { CF_DIGEST("SHAKE256"), "SHAKE-256(256)" },
-            { CF_DIGEST("KECCAK_224"), "Keccak-1600(224)" },
-            { CF_DIGEST("KECCAK_256"), "Keccak-1600(256)" },
-            { CF_DIGEST("KECCAK_384"), "Keccak-1600(384)" },
-            { CF_DIGEST("KECCAK_512"), "Keccak-1600(512)" },
-        };
-
+#include "digest_string_lut.h"
         std::optional<std::string> ret = std::nullopt;
 
         CF_CHECK_NE(LUT.find(digestType), LUT.end());
@@ -169,50 +134,7 @@ end:
 namespace Botan_detail {
 
     std::optional<std::string> CipherIDToString(const uint64_t digestType) {
-        static const std::map<uint64_t, std::string> LUT = {
-            { CF_CIPHER("AES_128_CBC"), "AES-128/CBC" },
-            { CF_CIPHER("AES_128_CTR"), "AES-128/CTR" },
-            { CF_CIPHER("AES_128_OCB"), "AES-128/OCB" },
-            { CF_CIPHER("AES_128_XTS"), "AES-128/XTS" },
-            { CF_CIPHER("AES_192_CBC"), "AES-192/CBC" },
-            { CF_CIPHER("AES_192_CTR"), "AES-192/CTR" },
-            { CF_CIPHER("AES_256_CBC"), "AES-256/CBC" },
-            { CF_CIPHER("AES_256_CTR"), "AES-256/CTR" },
-            { CF_CIPHER("AES_256_OCB"), "AES-256/OCB" },
-            { CF_CIPHER("AES_256_XTS"), "AES-256/XTS" },
-            { CF_CIPHER("ARIA_128_CBC"), "ARIA-128/CBC" },
-            { CF_CIPHER("ARIA_128_CTR"), "ARIA-128/CTR" },
-            { CF_CIPHER("ARIA_192_CBC"), "ARIA-192/CBC" },
-            { CF_CIPHER("ARIA_192_CTR"), "ARIA-192/CTR" },
-            { CF_CIPHER("ARIA_256_CBC"), "ARIA-256/CBC" },
-            { CF_CIPHER("ARIA_256_CTR"), "ARIA-256/CTR" },
-            { CF_CIPHER("BF_CBC"), "Blowfish/CBC" },
-            { CF_CIPHER("CAMELLIA_128_CBC"), "Camellia-128/CBC" },
-            { CF_CIPHER("CAMELLIA_128_ECB"), "Camellia-128/ECB" },
-            { CF_CIPHER("CAMELLIA_192_CBC"), "Camellia-192/CBC" },
-            { CF_CIPHER("CAMELLIA_192_ECB"), "Camellia-192/ECB" },
-            { CF_CIPHER("CAMELLIA_256_CBC"), "Camellia-256/CBC" },
-            { CF_CIPHER("CAMELLIA_256_ECB"), "Camellia-256/ECB" },
-            { CF_CIPHER("CAST5_CBC"), "CAST5/CBC" },
-            { CF_CIPHER("CAST5_ECB"), "CAST5/ECB" },
-            { CF_CIPHER("CHACHA20"), "ChaCha(20)" },
-            { CF_CIPHER("DESX_B_CBC"), "DESX/CBC" },
-            { CF_CIPHER("DES_CBC"), "DES/CBC" },
-            { CF_CIPHER("DES_ECB"), "DES/ECB" },
-            { CF_CIPHER("DES_EDE3_CBC"), "DES-EDE/CCB" },
-            { CF_CIPHER("DES_EDE3_ECB"), "DES-EDE/ECB" },
-            { CF_CIPHER("IDEA_CBC"), "IDEA/CBC" },
-            { CF_CIPHER("IDEA_ECB"), "IDEA/ECB" },
-            { CF_CIPHER("SEED_CBC"), "SEED/CBC" },
-            { CF_CIPHER("SEED_ECB"), "SEED/ECB" },
-            { CF_CIPHER("SEED_OFB"), "SEED/OFB" },
-            { CF_CIPHER("SM4_CBC"), "SM4/CBC" },
-            { CF_CIPHER("SM4_CTR"), "SM4/CTR" },
-            { CF_CIPHER("SM4_ECB"), "SM4/ECB" },
-            { CF_CIPHER("SM4_OFB"), "SM4/OFB" },
-            //{ CF_CIPHER("GOST-28147-89"), "GOST-28147-89/CBC" },
-        };
-
+#include "cipher_string_lut.h"
         std::optional<std::string> ret = std::nullopt;
 
         CF_CHECK_NE(LUT.find(digestType), LUT.end());

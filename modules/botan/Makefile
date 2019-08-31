@@ -1,4 +1,4 @@
-all: module.a
+all: module.a test_strings
 
 CXXFLAGS += -Wall -Wextra -std=c++17 -I ../../include -I ../../fuzzing-headers/include -DFUZZING_HEADERS_NO_IMPL
 
@@ -9,5 +9,9 @@ module.a: module.o
 module.o: module.cpp module.h
 	test $(BOTAN_INCLUDE_PATH)
 	$(CXX) $(CXXFLAGS) -I $(BOTAN_INCLUDE_PATH) -fPIC -c module.cpp -o module.o
+test_strings : test_strings.cpp
+	test $(LIBBOTAN_A_PATH)
+	test $(BOTAN_INCLUDE_PATH)
+	$(CXX) $(CXXFLAGS) -I $(BOTAN_INCLUDE_PATH) test_strings.cpp $(LIBBOTAN_A_PATH) -o test_strings
 clean:
 	rm -rf *.o module.a
