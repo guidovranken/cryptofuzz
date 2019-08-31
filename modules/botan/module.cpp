@@ -351,8 +351,14 @@ std::optional<component::Key> Botan::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
 
             std::optional<std::string> algoString;
             CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
+            std::string algoStringCopy = *algoString;
+            if ( algoStringCopy == "SHAKE-128(128)" ) {
+                algoStringCopy = "SHAKE-128(256)";
+            } else if ( algoStringCopy == "SHAKE-256(256)" ) {
+                algoStringCopy = "SHAKE-256(512)";
+            }
 
-            const std::string pbkdf2String = Botan_detail::parenthesize("PBKDF2", *algoString);
+            const std::string pbkdf2String = Botan_detail::parenthesize("PBKDF2", algoStringCopy);
             CF_CHECK_NE(pwdhash_fam = ::Botan::PasswordHashFamily::create(pbkdf2String), nullptr);
 
             CF_CHECK_NE(pwdhash = pwdhash_fam->from_params(op.iterations), nullptr);
