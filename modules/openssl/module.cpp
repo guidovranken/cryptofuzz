@@ -3,6 +3,8 @@
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
 #include <openssl/aes.h>
+#include <openssl/kdf.h>
+#include <openssl/core_names.h>
 
 #include "module_internal.h"
 
@@ -2176,33 +2178,64 @@ end:
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
 std::optional<component::Key> OpenSSL::OpKDF_SCRYPT_EVP_KDF(operation::KDF_SCRYPT& op) const {
     std::optional<component::Key> ret = std::nullopt;
-    EVP_KDF_CTX *kctx = nullptr;
-
-    size_t out_size = op.keySize;
-    uint8_t* out = util::malloc(out_size);
+    EVP_KDF_CTX* kctx = nullptr;
+    OSSL_PARAM params[7], *p = params;
+    uint8_t* out = util::malloc(op.keySize);
 
     /* Initialize */
     {
-        CF_CHECK_NE(kctx = EVP_KDF_CTX_new_id(EVP_KDF_SCRYPT), nullptr);
-        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_PASS, op.password.GetPtr(), op.password.GetSize()), 1);
-        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_SALT, op.salt.GetPtr(), op.salt.GetSize()), 1);
-        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_SCRYPT_N, op.N) , 1);
-        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_SCRYPT_R, op.r) , 1);
-        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_SCRYPT_P, op.p) , 1);
+
+        auto passwordCopy = op.password.Get();
+        *p++ = OSSL_PARAM_construct_octet_string(
+                OSSL_KDF_PARAM_PASSWORD,
+                passwordCopy.data(),
+                passwordCopy.size());
+
+        auto saltCopy = op.salt.Get();
+        *p++ = OSSL_PARAM_construct_octet_string(
+                OSSL_KDF_PARAM_SALT,
+                saltCopy.data(),
+                saltCopy.size());
+
+        unsigned int N = op.N;
+        *p++ = OSSL_PARAM_construct_uint(OSSL_KDF_PARAM_SCRYPT_N, &N);
+
+        unsigned int r = op.r;
+        *p++ = OSSL_PARAM_construct_uint(OSSL_KDF_PARAM_SCRYPT_R, &r);
+
+        unsigned int p_ = op.p;
+        *p++ = OSSL_PARAM_construct_uint(OSSL_KDF_PARAM_SCRYPT_P, &p_);
+
+        unsigned int maxmem = 1024;
+        *p++ = OSSL_PARAM_construct_uint(OSSL_KDF_PARAM_SCRYPT_MAXMEM, &maxmem);
+
+        *p = OSSL_PARAM_construct_end();
+
+        {
+            EVP_KDF* kdf = EVP_KDF_fetch(nullptr, OSSL_KDF_NAME_SCRYPT, nullptr);
+            CF_CHECK_NE(kdf, nullptr);
+            kctx = EVP_KDF_CTX_new(kdf);
+            EVP_KDF_free(kdf);
+            CF_CHECK_NE(kctx, nullptr);
+        }
+
+        CF_CHECK_EQ(EVP_KDF_CTX_set_params(kctx, params), 1);
     }
 
-    /* Process/finalize */
+    /* Process */
     {
-        CF_CHECK_EQ(EVP_KDF_derive(kctx, out, out_size), 1);
+        CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize), 0);
+    }
 
-        ret = component::Key(out, out_size);
+    /* Finalize */
+    {
+        ret = component::Key(out, op.keySize);
     }
 
 end:
     EVP_KDF_CTX_free(kctx);
 
     util::free(out);
-
     return ret;
 }
 #endif
@@ -2383,27 +2416,57 @@ end:
     return ret;
  #else
     std::optional<component::Key> ret = std::nullopt;
-    EVP_KDF_CTX *kctx = nullptr;
+    EVP_KDF_CTX* kctx = nullptr;
     const EVP_MD* md = nullptr;
-
-    size_t out_size = op.keySize;
-    uint8_t* out = util::malloc(out_size);
+    OSSL_PARAM params[6], *p = params;
+    uint8_t* out = util::malloc(op.keySize);
 
     /* Initialize */
     {
         CF_CHECK_NE(md = toEVPMD(op.digestType), nullptr);
-        CF_CHECK_NE(kctx = EVP_KDF_CTX_new_id(EVP_KDF_PBKDF2), nullptr);
-        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_PASS, op.password.GetPtr(), op.password.GetSize()), 1);
-        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_SALT, op.salt.GetPtr(), op.salt.GetSize()), 1);
-        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_ITER, op.iterations), 1);
-        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_MD, md), 1);
+
+        auto passwordCopy = op.password.Get();
+        *p++ = OSSL_PARAM_construct_octet_string(
+                OSSL_KDF_PARAM_PASSWORD,
+                passwordCopy.data(),
+                passwordCopy.size());
+
+        auto saltCopy = op.salt.Get();
+        *p++ = OSSL_PARAM_construct_octet_string(
+                OSSL_KDF_PARAM_SALT,
+                saltCopy.data(),
+                saltCopy.size());
+
+        unsigned int iterations = op.iterations;
+        *p++ = OSSL_PARAM_construct_uint(OSSL_KDF_PARAM_ITER, &iterations);
+
+        std::string mdName(EVP_MD_name(md));
+        *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST, mdName.data(), mdName.size() + 1);
+
+        int pkcs5 = 0;
+        *p++ = OSSL_PARAM_construct_int(OSSL_KDF_PARAM_PKCS5, &pkcs5);
+
+        *p = OSSL_PARAM_construct_end();
+
+        {
+            EVP_KDF* kdf = EVP_KDF_fetch(nullptr, OSSL_KDF_NAME_PBKDF2, nullptr);
+            CF_CHECK_NE(kdf, nullptr);
+            kctx = EVP_KDF_CTX_new(kdf);
+            EVP_KDF_free(kdf);
+            CF_CHECK_NE(kctx, nullptr);
+        }
+
+        CF_CHECK_EQ(EVP_KDF_CTX_set_params(kctx, params), 1);
     }
 
-    /* Process/finalize */
+    /* Process */
     {
-        CF_CHECK_EQ(EVP_KDF_derive(kctx, out, out_size), 1);
+        CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize), 0);
+    }
 
-        ret = component::Key(out, out_size);
+    /* Finalize */
+    {
+        ret = component::Key(out, op.keySize);
     }
 
 end:
@@ -2471,29 +2534,61 @@ end:
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110)
 std::optional<component::Key> OpenSSL::OpKDF_SSH(operation::KDF_SSH& op) {
     std::optional<component::Key> ret = std::nullopt;
-    EVP_KDF_CTX *kctx = nullptr;
+    EVP_KDF_CTX* kctx = nullptr;
     const EVP_MD* md = nullptr;
-
-    size_t out_size = op.keySize;
-    uint8_t* out = util::malloc(out_size);
+    OSSL_PARAM params[6], *p = params;
+    uint8_t* out = util::malloc(op.keySize);
 
     /* Initialize */
     {
-        CF_CHECK_EQ(op.type.GetSize(), 1);
         CF_CHECK_NE(md = toEVPMD(op.digestType), nullptr);
-        CF_CHECK_NE(kctx = EVP_KDF_CTX_new_id(EVP_KDF_SSHKDF), nullptr);
-        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_KEY, op.key.GetPtr(), op.key.GetSize()), 1);
-        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_SSHKDF_XCGHASH, op.xcghash.GetPtr(), op.xcghash.GetSize()), 1);
-        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_SSHKDF_SESSION_ID, op.session_id.GetPtr(), op.session_id.GetSize()), 1);
-        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_SSHKDF_TYPE, *(op.type.GetPtr())), 1);
-        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_MD, md), 1);
+
+        std::string mdName(EVP_MD_name(md));
+        *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST, mdName.data(), mdName.size() + 1);
+
+        auto keyCopy = op.key.Get();
+        *p++ = OSSL_PARAM_construct_octet_string(
+                OSSL_KDF_PARAM_PASSWORD,
+                keyCopy.data(),
+                keyCopy.size());
+
+        auto xcghashCopy = op.xcghash.Get();
+        *p++ = OSSL_PARAM_construct_octet_string(
+                OSSL_KDF_PARAM_SSHKDF_XCGHASH,
+                xcghashCopy.data(),
+                xcghashCopy.size());
+
+        auto session_idCopy = op.session_id.Get();
+        *p++ = OSSL_PARAM_construct_octet_string(
+                OSSL_KDF_PARAM_SSHKDF_SESSION_ID,
+                session_idCopy.data(),
+                session_idCopy.size());
+
+        char type = *(op.type.GetPtr());
+        *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_SSHKDF_TYPE,
+                &type, sizeof(type));
+
+        *p = OSSL_PARAM_construct_end();
+
+        {
+            EVP_KDF* kdf = EVP_KDF_fetch(nullptr, OSSL_KDF_NAME_SSHKDF, nullptr);
+            CF_CHECK_NE(kdf, nullptr);
+            kctx = EVP_KDF_CTX_new(kdf);
+            EVP_KDF_free(kdf);
+            CF_CHECK_NE(kctx, nullptr);
+        }
+
+        CF_CHECK_EQ(EVP_KDF_CTX_set_params(kctx, params), 1);
     }
 
-    /* Process/finalize */
+    /* Process */
     {
-        CF_CHECK_EQ(EVP_KDF_derive(kctx, out, out_size), 1);
+        CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize), 0);
+    }
 
-        ret = component::Key(out, out_size);
+    /* Finalize */
+    {
+        ret = component::Key(out, op.keySize);
     }
 
 end:
