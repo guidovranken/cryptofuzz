@@ -19,6 +19,7 @@ bool IsWRAP(const uint64_t id);
 bool IsAES(const uint64_t id);
 std::string DigestToString(const uint64_t id);
 std::string CipherToString(const uint64_t id);
+std::string ECC_CurveToString(const uint64_t id);
 
 #include "../../repository_tbl.h"
 
@@ -85,6 +86,19 @@ constexpr uint64_t Cipher(void) {
     return id;
 }
 
+template <uint64_t id>
+constexpr long ecc_CurveIndex(void) {
+    constexpr long index = LUTCheck(id, ECC_CurveLUT, sizeof(ECC_CurveLUT) / sizeof(ECC_CurveLUT[0]));
+    static_assert(-1 != index, "Not a valid ECC curve");
+    return index;
+}
+
+template <uint64_t id>
+constexpr uint64_t ECC_Curve(void) {
+    (void)ecc_CurveIndex<id>();
+    return id;
+}
+
 } /* namespace repository */
 } /* namespace cryptofuzz */
 
@@ -92,3 +106,4 @@ constexpr uint64_t Cipher(void) {
 #define CF_DIGEST(s) cryptofuzz::repository::Digest<fuzzing::datasource::ID("Cryptofuzz/Digest/" s)>()
 #define CF_MODULE(s) cryptofuzz::repository::Module<fuzzing::datasource::ID("Cryptofuzz/Module/" s)>()
 #define CF_OPERATION(s) cryptofuzz::repository::Operation<fuzzing::datasource::ID("Cryptofuzz/Operation/" s)>()
+#define CF_ECC_CURVE(s) cryptofuzz::repository::ECC_Curve<fuzzing::datasource::ID("Cryptofuzz/ECC_Curve/" s)>()

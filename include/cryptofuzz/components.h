@@ -12,6 +12,7 @@ using SymmetricCipherType = Type;
 using AsymmetricCipherType = Type;
 using DigestType = Type;
 using KDFType = Type;
+using CurveType = Type;
 
 using Modifier = Buffer;
 using Cleartext = Buffer;
@@ -26,6 +27,8 @@ using Signature = Buffer;
 using PrivateKeyPEM = Buffer;
 using Tag = Buffer;
 using AAD = Buffer;
+
+using ECC_PrivateKey = Bignum;
 
 class SymmetricCipher {
     public:
@@ -86,6 +89,30 @@ class Ciphertext {
             return (ciphertext == rhs.ciphertext) && (tag == rhs.tag);
         }
 };
+
+class BignumPair {
+    public:
+        Bignum first, second;
+
+        BignumPair(Datasource& ds) :
+            first(ds),
+            second(ds)
+        { }
+
+        BignumPair(const std::string first, const std::string second) :
+            first(first),
+            second(second)
+        { }
+
+        inline bool operator==(const BignumPair& rhs) const {
+            return
+                (first == rhs.first) &&
+                (second == rhs.second);
+        }
+};
+
+using ECC_PublicKey = BignumPair;
+using ECDSA_Signature = BignumPair;
 
 } /* namespace component */
 } /* namespace cryptofuzz */

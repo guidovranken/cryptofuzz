@@ -20,6 +20,9 @@ void test(const operation::KDF_ARGON2& op, const std::optional<component::Key>& 
 void test(const operation::KDF_SSH& op, const std::optional<component::Key>& result);
 void test(const operation::Sign& op, const std::optional<component::Signature>& result);
 void test(const operation::Verify& op, const std::optional<bool>& result);
+void test(const operation::ECC_PrivateToPublic& op, const std::optional<component::ECC_PublicKey>& result);
+void test(const operation::ECDSA_Sign& op, const std::optional<component::ECDSA_Signature>& result);
+void test(const operation::ECDSA_Verify& op, const std::optional<bool>& result);
 
 } /* namespace tests */
 } /* namespace cryptofuzz */

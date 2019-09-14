@@ -354,5 +354,65 @@ Verify::Verify(const Sign& opSign, const component::Signature signature, compone
     signature(signature)
 { }
 
+std::string ECC_PrivateToPublic::Name(void) const { return "ECC_PrivateToPublic"; }
+std::string ECC_PrivateToPublic::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: ECC_PrivateToPublic" << std::endl;
+    ss << "private key: " << priv.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json ECC_PrivateToPublic::ToJSON(void) const {
+    nlohmann::json j;
+    j["priv"] = priv.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string ECDSA_Sign::Name(void) const { return "ECDSA_Sign"; }
+std::string ECDSA_Sign::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: ECDSA_Sign" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "private key: " << priv.ToString() << std::endl;
+    ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json ECDSA_Sign::ToJSON(void) const {
+    nlohmann::json j;
+
+    /* TODO */
+
+    return j;
+}
+
+std::string ECDSA_Verify::Name(void) const { return "ECDSA_Verify"; }
+std::string ECDSA_Verify::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: ECDSA_Verify" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "public key X: " << pub.first.ToString() << std::endl;
+    ss << "public key Y: " << pub.second.ToString() << std::endl;
+    ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+    ss << "signature R: " << signature.first.ToString() << std::endl;
+    ss << "signature S: " << signature.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json ECDSA_Verify::ToJSON(void) const {
+    nlohmann::json j;
+
+    /* TODO */
+
+    return j;
+}
+
 } /* namespace operation */
 } /* namespace cryptofuzz */

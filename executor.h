@@ -59,5 +59,8 @@ using ExecutorKDF_ARGON2 = ExecutorBase<component::Key, operation::KDF_ARGON2>;
 using ExecutorKDF_SSH = ExecutorBase<component::Key, operation::KDF_SSH>;
 using ExecutorSign = ExecutorBase<component::Signature, operation::Sign>;
 using ExecutorVerify = ExecutorBase<bool, operation::Verify>;
+using ExecutorECC_PrivateToPublic = ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>;
+using ExecutorECDSA_Sign = ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>;
+using ExecutorECDSA_Verify = ExecutorBase<bool, operation::ECDSA_Verify>;
 
 } /* namespace cryptofuzz */

@@ -165,6 +165,20 @@ std::string ToString(const component::Ciphertext& ciphertext) {
     return ret;
 }
 
+std::string ToString(const component::ECC_PublicKey& val) {
+    std::string ret;
+
+    ret += "X: ";
+    ret += val.first.ToString();
+    ret += "\n";
+
+    ret += "Y: ";
+    ret += val.second.ToString();
+    ret += "\n";
+
+    return ret;
+}
+
 class HaveBadPointer {
     private:
         bool haveBadPointer = false;

@@ -27,6 +27,7 @@ Multipart ToParts(fuzzing::datasource::Datasource& ds, const uint8_t* data, cons
 std::string ToString(const Buffer& buffer);
 std::string ToString(const bool val);
 std::string ToString(const component::Ciphertext& val);
+std::string ToString(const component::ECC_PublicKey& val);
 uint8_t* GetNullPtr(void);
 uint8_t* malloc(const size_t n);
 uint8_t* realloc(void* ptr, const size_t n);

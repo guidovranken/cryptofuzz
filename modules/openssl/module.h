@@ -86,6 +86,8 @@ class OpenSSL : public Module {
         std::optional<component::MAC> OpCMAC(operation::CMAC& op) override;
         std::optional<component::Signature> OpSign(operation::Sign& op) override;
         std::optional<bool> OpVerify(operation::Verify& op) override;
+        std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) override;
+        std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) override;
 };
 
 } /* namespace module */
