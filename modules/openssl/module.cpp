@@ -2825,16 +2825,101 @@ static std::optional<int> toCurveNID(const component::CurveType& curveType) {
     return LUT.at(curveType.Get());
 }
 
+namespace OpenSSL_detail {
+    class Bignum {
+        private:
+            BIGNUM* bn = nullptr;
+            Datasource& ds;
+            bool locked = false;
+        public:
+            Bignum(Datasource& ds) :
+                ds(ds)
+            { }
+
+            ~Bignum() {
+                if ( locked == false ) {
+                    BN_free(bn);
+                }
+            }
+
+            void Lock(void) {
+                locked = true;
+            }
+
+            bool New(void) {
+                if ( locked == true ) {
+                    printf("Cannot renew locked Bignum\n");
+                    abort();
+                }
+
+                BN_free(bn);
+                bn = BN_new();
+
+                return bn != nullptr;
+            }
+
+            bool Set(const std::string s) {
+                if ( locked == true ) {
+                    printf("Cannot set locked Bignum\n");
+                    abort();
+                }
+
+                bool ret = false;
+
+                CF_CHECK_NE(BN_dec2bn(&bn, s.c_str()), 0);
+
+                ret = true;
+            end:
+                return ret;
+            }
+
+            BIGNUM* GetPtr(const bool allowDup = true) {
+                if ( locked == false ) {
+                    try {
+                        {
+                            const bool changeConstness = ds.Get<bool>();
+                            if ( changeConstness == true ) {
+                                const bool constness = ds.Get<bool>();
+
+                                if ( constness == true ) {
+                                    /* noret */ BN_set_flags(bn, BN_FLG_CONSTTIME);
+                                } else {
+                                    /* noret */ BN_set_flags(bn, 0);
+                                }
+                            }
+                        }
+
+                        {
+                            if ( allowDup == true ) {
+                                const bool dup = ds.Get<bool>();
+
+                                if ( dup == true ) {
+                                    BIGNUM* tmp = BN_dup(bn);
+                                    if ( tmp != nullptr ) {
+                                        BN_free(bn);
+                                        bn = tmp;
+                                    }
+                                }
+                            }
+                        }
+                    } catch ( ... ) { }
+                }
+
+                return bn;
+            }
+    };
+};
+
 std::optional<component::ECC_PublicKey> OpenSSL::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     CF_EC_KEY key(ds);
     EC_GROUP* group = nullptr;
-    BIGNUM* prv = nullptr;
+    OpenSSL_detail::Bignum prv(ds);
     EC_POINT* pub = nullptr;
-    BIGNUM* pub_x = nullptr;
-    BIGNUM* pub_y = nullptr;
+    OpenSSL_detail::Bignum pub_x(ds);
+    OpenSSL_detail::Bignum pub_y(ds);
     char* pub_x_str = nullptr;
     char* pub_y_str = nullptr;
 
@@ -2847,34 +2932,30 @@ std::optional<component::ECC_PublicKey> OpenSSL::OpECC_PrivateToPublic(operation
     CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group), 1);
 
     /* Load private key */
-    CF_CHECK_NE(BN_dec2bn(&prv, op.priv.ToString(ds).c_str()), 0);
+    CF_CHECK_EQ(prv.Set(op.priv.ToString(ds)), true);
 
     /* Set private key */
-    CF_CHECK_EQ(EC_KEY_set_private_key(key.GetPtr(), prv), 1);
+    CF_CHECK_EQ(EC_KEY_set_private_key(key.GetPtr(), prv.GetPtr()), 1);
 
     /* Compute public key */
     CF_CHECK_NE(pub = EC_POINT_new(group), nullptr);
-    CF_CHECK_EQ(EC_POINT_mul(group, pub, prv, nullptr, nullptr, nullptr), 1);
+    CF_CHECK_EQ(EC_POINT_mul(group, pub, prv.GetPtr(), nullptr, nullptr, nullptr), 1);
 
-    /* Convert public key to bignum x/y */
-    CF_CHECK_NE(pub_x = BN_new(), nullptr);
-    CF_CHECK_NE(pub_y = BN_new(), nullptr);
+    CF_CHECK_EQ(pub_x.New(), true);
+    CF_CHECK_EQ(pub_y.New(), true);
     /* TODO deprecated */
-    CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group, pub, pub_x, pub_y, nullptr), 0);
+    CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group, pub, pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
 
     /* Convert bignum x/y to strings */
-    CF_CHECK_NE(pub_x_str = BN_bn2dec(pub_x), nullptr);
-    CF_CHECK_NE(pub_y_str = BN_bn2dec(pub_y), nullptr);
+    CF_CHECK_NE(pub_x_str = BN_bn2dec(pub_x.GetPtr()), nullptr);
+    CF_CHECK_NE(pub_y_str = BN_bn2dec(pub_y.GetPtr()), nullptr);
 
     /* Save bignum x/y */
     ret = { std::string(pub_x_str), std::string(pub_y_str) };
 
 end:
-    BN_free(prv);
     EC_POINT_free(pub);
     EC_GROUP_free(group);
-    BN_free(pub_x);
-    BN_free(pub_y);
     OPENSSL_free(pub_x_str);
     OPENSSL_free(pub_y_str);
 
@@ -2891,11 +2972,11 @@ std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     ECDSA_SIG* signature = nullptr;
 
     EC_POINT* pub = nullptr;
-    BIGNUM* pub_x = nullptr;
-    BIGNUM* pub_y = nullptr;
+    OpenSSL_detail::Bignum pub_x(ds);
+    OpenSSL_detail::Bignum pub_y(ds);
 
-    BIGNUM* sig_r = nullptr;
-    BIGNUM* sig_s = nullptr;
+    OpenSSL_detail::Bignum sig_s(ds);
+    OpenSSL_detail::Bignum sig_r(ds);
 
     /* Initialize */
     {
@@ -2907,24 +2988,26 @@ std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group), 1);
 
         /* Construct signature */
-        CF_CHECK_NE(BN_dec2bn(&sig_r, op.signature.first.ToString(ds).c_str()), 0);
-        CF_CHECK_NE(BN_dec2bn(&sig_s, op.signature.second.ToString(ds).c_str()), 0);
+        CF_CHECK_EQ(sig_r.Set(op.signature.first.ToString(ds)), true);
+        CF_CHECK_EQ(sig_s.Set(op.signature.second.ToString(ds)), true);
         CF_CHECK_NE(signature = ECDSA_SIG_new(), nullptr);
 #if defined(CRYPTOFUZZ_OPENSSL_102)
         BN_free(signature->r);
         BN_free(signature->s);
-        signature->r = sig_r;
-        signature->s = sig_s;
+        signature->r = sig_r.GetPtr(false);
+        signature->s = sig_s.GetPtr(false);
 #else
-        CF_CHECK_EQ(ECDSA_SIG_set0(signature, sig_r, sig_s), 1);
+        CF_CHECK_EQ(ECDSA_SIG_set0(signature, sig_r.GetPtr(false), sig_s.GetPtr(false)), 1);
+        sig_r.Lock();
+        sig_s.Lock();
 #endif
 
         /* Construct key */
         CF_CHECK_NE(pub = EC_POINT_new(group), nullptr);
-        CF_CHECK_NE(BN_dec2bn(&pub_x, op.pub.first.ToString(ds).c_str()), 0);
-        CF_CHECK_NE(BN_dec2bn(&pub_y, op.pub.second.ToString(ds).c_str()), 0);
+        CF_CHECK_EQ(pub_x.Set(op.pub.first.ToString(ds)), true);
+        CF_CHECK_EQ(pub_y.Set(op.pub.second.ToString(ds)), true);
         /* TODO deprecated */
-        CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group, pub, pub_x, pub_y, nullptr), 0);
+        CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group, pub, pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
         CF_CHECK_EQ(EC_KEY_set_public_key(key.GetPtr(), pub), 1);
     }
 
@@ -2947,16 +3030,11 @@ end:
 //#if defined(CRYPTOFUZZ_OPENSSL_102)
 //    ECDSA_SIG_free(signature);
 //#else
-    if ( signature == nullptr ) {
-        BN_free(sig_r);
-        BN_free(sig_s);
-    } else {
+    if ( signature != nullptr ) {
         ECDSA_SIG_free(signature);
     }
 //#endif
     EC_POINT_free(pub);
-    BN_free(pub_x);
-    BN_free(pub_y);
 
     return ret;
 }
