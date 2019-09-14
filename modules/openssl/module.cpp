@@ -2879,6 +2879,7 @@ namespace OpenSSL_detail {
                         {
                             const bool changeConstness = ds.Get<bool>();
                             if ( changeConstness == true ) {
+#if !defined(CRYPTOFUZZ_BORINGSSL)
                                 const bool constness = ds.Get<bool>();
 
                                 if ( constness == true ) {
@@ -2886,6 +2887,7 @@ namespace OpenSSL_detail {
                                 } else {
                                     /* noret */ BN_set_flags(bn, 0);
                                 }
+#endif
                             }
                         }
 
