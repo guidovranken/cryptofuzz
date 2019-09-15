@@ -3000,9 +3000,9 @@ std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         signature->s = sig_s.GetPtr(false);
 #else
         CF_CHECK_EQ(ECDSA_SIG_set0(signature, sig_r.GetPtr(false), sig_s.GetPtr(false)), 1);
+#endif
         sig_r.Lock();
         sig_s.Lock();
-#endif
 
         /* Construct key */
         CF_CHECK_NE(pub = EC_POINT_new(group), nullptr);
