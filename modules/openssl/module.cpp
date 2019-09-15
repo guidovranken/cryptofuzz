@@ -2544,6 +2544,7 @@ std::optional<component::Key> OpenSSL::OpKDF_SSH(operation::KDF_SSH& op) {
     /* Initialize */
     {
         CF_CHECK_NE(md = toEVPMD(op.digestType), nullptr);
+        CF_CHECK_EQ(op.type.GetSize(), 1);
 
         std::string mdName(EVP_MD_name(md));
         *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST, mdName.data(), mdName.size() + 1);
