@@ -2945,8 +2945,7 @@ std::optional<component::ECC_PublicKey> OpenSSL::OpECC_PrivateToPublic(operation
 
     CF_CHECK_EQ(pub_x.New(), true);
     CF_CHECK_EQ(pub_y.New(), true);
-    /* TODO deprecated */
-    CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group, pub, pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+    CF_CHECK_NE(EC_POINT_get_affine_coordinates(group, pub, pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
 
     /* Convert bignum x/y to strings */
     CF_CHECK_NE(pub_x_str = BN_bn2dec(pub_x.GetPtr()), nullptr);
@@ -3008,8 +3007,7 @@ std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         CF_CHECK_NE(pub = EC_POINT_new(group), nullptr);
         CF_CHECK_EQ(pub_x.Set(op.pub.first.ToString(ds)), true);
         CF_CHECK_EQ(pub_y.Set(op.pub.second.ToString(ds)), true);
-        /* TODO deprecated */
-        CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group, pub, pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+        CF_CHECK_NE(EC_POINT_set_affine_coordinates(group, pub, pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
         CF_CHECK_EQ(EC_KEY_set_public_key(key.GetPtr(), pub), 1);
     }
 
