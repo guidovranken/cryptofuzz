@@ -2946,10 +2946,10 @@ std::optional<component::ECC_PublicKey> OpenSSL::OpECC_PrivateToPublic(operation
     CF_CHECK_EQ(pub_x.New(), true);
     CF_CHECK_EQ(pub_y.New(), true);
 
-#if defined(CRYPTOFUZZ_OPENSSL_102)
-    CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group, pub, pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
-#else
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
     CF_CHECK_NE(EC_POINT_get_affine_coordinates(group, pub, pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+#else
+    CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group, pub, pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
 #endif
 
     /* Convert bignum x/y to strings */
@@ -3012,10 +3012,10 @@ std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         CF_CHECK_NE(pub = EC_POINT_new(group), nullptr);
         CF_CHECK_EQ(pub_x.Set(op.pub.first.ToString(ds)), true);
         CF_CHECK_EQ(pub_y.Set(op.pub.second.ToString(ds)), true);
-#if defined(CRYPTOFUZZ_OPENSSL_102)
-        CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group, pub, pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
-#else
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
         CF_CHECK_NE(EC_POINT_set_affine_coordinates(group, pub, pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+#else
+        CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group, pub, pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
 #endif
         CF_CHECK_EQ(EC_KEY_set_public_key(key.GetPtr(), pub), 1);
     }
