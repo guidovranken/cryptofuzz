@@ -1,41 +1,45 @@
 #include "module.h"
 #include <cryptofuzz/util.h>
 #include <cryptofuzz/repository.h>
+#include <adler32.h>
+#include <aes.h>
+#include <aria.h>
+#include <blake2.h>
+#include <blowfish.h>
+#include <camellia.h>
+#include <cast.h>
+#include <crc.h>
 #include <cryptlib.h>
-#include <sha.h>
-#include <shake.h>
-#include <ripemd.h>
-#include <whrlpool.h>
+#include <des.h>
+#include <eccrypto.h>
+#include <ecp.h>
+#include <filters.h>
+#include <gost.h>
+#include <hkdf.h>
+#include <hmac.h>
+#include <idea.h>
+#include <kalyna.h>
+#include <keccak.h>
 #include <md2.h>
 #include <md4.h>
 #include <md5.h>
-#include <sm3.h>
-#include <blake2.h>
-#include <tiger.h>
-#include <keccak.h>
-#include <panama.h>
-#include <crc.h>
-#include <adler32.h>
-#include <hmac.h>
-#include <twofish.h>
-#include <serpent.h>
-#include <gost.h>
-#include <aes.h>
-#include <des.h>
-#include <idea.h>
-#include <seed.h>
 #include <modes.h>
-#include <sm4.h>
-#include <rc2.h>
-#include <blowfish.h>
-#include <cast.h>
-#include <camellia.h>
-#include <aria.h>
-#include <hkdf.h>
-#include <scrypt.h>
+#include <oids.h>
+#include <osrng.h>
+#include <panama.h>
 #include <pwdbased.h>
-#include <filters.h>
-#include <kalyna.h>
+#include <rc2.h>
+#include <ripemd.h>
+#include <scrypt.h>
+#include <seed.h>
+#include <serpent.h>
+#include <sha.h>
+#include <shake.h>
+#include <sm3.h>
+#include <sm4.h>
+#include <tiger.h>
+#include <twofish.h>
+#include <whrlpool.h>
 #include <memory>
 
 namespace cryptofuzz {
@@ -1288,6 +1292,106 @@ std::optional<component::Key> CryptoPP::OpKDF_PBKDF1(operation::KDF_PBKDF1& op) 
 
 std::optional<component::Key> CryptoPP::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
     return CryptoPP_detail::InvokeByDigest<CryptoPP_detail::KDF_PBKDF2, component::Key>(op);
+}
+
+namespace CryptoPP_detail {
+    const ::CryptoPP::DL_GroupParameters_EC<::CryptoPP::ECP>& ResolveCurve(const component::CurveType& curveType) {
+        static const std::map<uint64_t, const ::CryptoPP::DL_GroupParameters_EC<::CryptoPP::ECP>> LUT = {
+            { CF_ECC_CURVE("brainpool160r1"), ::CryptoPP::ASN1::brainpoolP160r1() },
+            { CF_ECC_CURVE("brainpool192r1"), ::CryptoPP::ASN1::brainpoolP192r1() },
+            { CF_ECC_CURVE("brainpool224r1"), ::CryptoPP::ASN1::brainpoolP224r1() },
+            { CF_ECC_CURVE("brainpool256r1"), ::CryptoPP::ASN1::brainpoolP256r1() },
+            { CF_ECC_CURVE("brainpool320r1"), ::CryptoPP::ASN1::brainpoolP320r1() },
+            { CF_ECC_CURVE("brainpool384r1"), ::CryptoPP::ASN1::brainpoolP384r1() },
+            { CF_ECC_CURVE("brainpool512r1"), ::CryptoPP::ASN1::brainpoolP512r1() },
+            { CF_ECC_CURVE("secp112r1"), ::CryptoPP::ASN1::secp112r1() },
+            { CF_ECC_CURVE("secp112r2"), ::CryptoPP::ASN1::secp112r2() },
+            { CF_ECC_CURVE("secp128r1"), ::CryptoPP::ASN1::secp128r1() },
+            { CF_ECC_CURVE("secp128r2"), ::CryptoPP::ASN1::secp128r2() },
+            { CF_ECC_CURVE("secp160k1"), ::CryptoPP::ASN1::secp160k1() },
+            { CF_ECC_CURVE("secp160r1"), ::CryptoPP::ASN1::secp160r1() },
+            { CF_ECC_CURVE("secp160r2"), ::CryptoPP::ASN1::secp160r2() },
+            { CF_ECC_CURVE("secp192k1"), ::CryptoPP::ASN1::secp192k1() },
+            { CF_ECC_CURVE("secp224k1"), ::CryptoPP::ASN1::secp224k1() },
+            { CF_ECC_CURVE("secp224r1"), ::CryptoPP::ASN1::secp224r1() },
+            { CF_ECC_CURVE("secp256k1"), ::CryptoPP::ASN1::secp256k1() },
+            { CF_ECC_CURVE("secp384r1"), ::CryptoPP::ASN1::secp384r1() },
+            { CF_ECC_CURVE("secp521r1"), ::CryptoPP::ASN1::secp521r1() },
+        };
+
+        if ( LUT.find(curveType.Get()) == LUT.end() ) {
+            throw std::exception();
+        }
+
+        return LUT.at(curveType.Get());
+    }
+}
+
+std::optional<component::ECC_PublicKey> CryptoPP::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
+    std::optional<component::ECC_PublicKey> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    ::CryptoPP::ECDSA<::CryptoPP::ECP, ::CryptoPP::SHA256>::PrivateKey privateKey;
+    ::CryptoPP::ECDSA<::CryptoPP::ECP, ::CryptoPP::SHA256>::PublicKey publicKey;
+
+    const ::CryptoPP::Integer privStr(op.priv.ToString(ds).c_str());
+
+    try {
+        const ::CryptoPP::DL_GroupParameters_EC<::CryptoPP::ECP>& curve = CryptoPP_detail::ResolveCurve(op.curveType);
+        privateKey.Initialize(curve, privStr);
+    } catch ( ... ) {
+        goto end;
+    }
+
+    privateKey.MakePublicKey(publicKey);
+
+    ret = {
+        ::CryptoPP::IntToString<>(publicKey.GetPublicElement().x, 10),
+        ::CryptoPP::IntToString<>(publicKey.GetPublicElement().y, 10),
+    };
+
+end:
+    return ret;
+}
+
+std::optional<bool> CryptoPP::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    const ::CryptoPP::Integer pubXStr(op.pub.first.ToString(ds).c_str());
+    const ::CryptoPP::Integer pubYStr(op.pub.first.ToString(ds).c_str());
+    const ::CryptoPP::Integer sigRStr(op.signature.first.ToString(ds).c_str());
+    const ::CryptoPP::Integer sigSStr(op.signature.second.ToString(ds).c_str());
+
+    ::CryptoPP::ECP::Point pubPoint(pubXStr, pubYStr);
+    ::CryptoPP::ECDSA<::CryptoPP::ECP, ::CryptoPP::SHA256>::PublicKey publicKey;
+
+    /* TODO digest type */
+
+    try {
+        const ::CryptoPP::DL_GroupParameters_EC<::CryptoPP::ECP>& curve = CryptoPP_detail::ResolveCurve(op.curveType);
+        publicKey.Initialize(curve, pubPoint);
+    } catch ( ... ) {
+        goto end;
+    }
+
+    {
+        ::CryptoPP::ECDSA<::CryptoPP::ECP, ::CryptoPP::SHA256>::Verifier verifier(publicKey);
+
+        const size_t expectedSignatureLength = verifier.SignatureLength();
+        if ( (expectedSignatureLength % 2) != 0 ) abort();
+        uint8_t signature[expectedSignatureLength];
+
+        sigRStr.Encode(signature + 0, expectedSignatureLength / 2);
+        sigSStr.Encode(signature + (expectedSignatureLength / 2), expectedSignatureLength / 2);
+
+        try {
+            ret = verifier.VerifyMessage(op.cleartext.GetPtr(), op.cleartext.GetSize(), signature, sizeof(signature));
+        } catch ( ... ) { }
+    }
+
+end:
+    return ret;
 }
 
 } /* namespace module */
