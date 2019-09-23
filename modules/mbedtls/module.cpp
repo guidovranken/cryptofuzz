@@ -2,6 +2,8 @@
 #include <cryptofuzz/util.h>
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
+#include <mbedtls/ecp.h>
+#include <mbedtls/ecdsa.h>
 
 namespace cryptofuzz {
 namespace module {
@@ -605,6 +607,130 @@ end:
     mbedtls_md_free(&md_ctx);
     util::free(out);
 
+    return ret;
+}
+
+namespace mbedTLS_detail {
+    std::optional<uint16_t> toTLSID(const component::CurveType& curveType) {
+        static const std::map<uint64_t, uint16_t> LUT = {
+            { CF_ECC_CURVE("secp521r1"), 25 },
+            { CF_ECC_CURVE("brainpool512r1"), 28 },
+            { CF_ECC_CURVE("secp384r1"), 24 },
+            { CF_ECC_CURVE("brainpool384r1"), 27 },
+            { CF_ECC_CURVE("secp256r1"), 23 },
+            { CF_ECC_CURVE("secp256k1"), 22 },
+            { CF_ECC_CURVE("brainpool256r1"), 26 },
+            { CF_ECC_CURVE("secp224r1"), 21 },
+            { CF_ECC_CURVE("secp224k1"), 20 },
+            { CF_ECC_CURVE("secp192r1"), 19 },
+            { CF_ECC_CURVE("secp192k1"), 18 },
+            { CF_ECC_CURVE("x25519"), 29 },
+        };
+
+        if ( LUT.find(curveType.Get()) == LUT.end() ) {
+            return std::nullopt;;
+        }
+
+        return LUT.at(curveType.Get());
+    }
+
+    std::optional<std::string> MPIToString(const mbedtls_mpi* mpi) {
+        std::optional<std::string> ret;
+        char* output = NULL;
+        size_t olen;
+
+        CF_CHECK_EQ(mbedtls_mpi_write_string(mpi, 10, nullptr, 0, &olen), MBEDTLS_ERR_MPI_BUFFER_TOO_SMALL);
+        CF_CHECK_NE(output = (char*)malloc(olen), nullptr);
+        CF_CHECK_EQ(mbedtls_mpi_write_string(mpi, 10, output, olen, &olen), 0);
+
+        ret = std::string(output);
+
+end:
+        free(output);
+        return ret;
+    }
+}
+
+std::optional<component::ECC_PublicKey> mbedTLS::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
+    std::optional<component::ECC_PublicKey> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    mbedtls_ecp_keypair keypair;
+    const mbedtls_ecp_curve_info* curve_info = nullptr;
+
+    /* noret */ mbedtls_ecp_keypair_init(&keypair);
+
+    {
+        std::optional<uint16_t> tls_id;
+        CF_CHECK_NE(tls_id = mbedTLS_detail::toTLSID(op.curveType), std::nullopt);
+        CF_CHECK_NE(curve_info = mbedtls_ecp_curve_info_from_tls_id(*tls_id), nullptr);
+    }
+
+    CF_CHECK_EQ(mbedtls_ecp_group_load(&keypair.grp, curve_info->grp_id), 0);
+
+    /* Private key */
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&keypair.d, 10, op.priv.ToString(ds).c_str()), 0);
+
+    CF_CHECK_EQ(mbedtls_ecp_mul(&keypair.grp, &keypair.Q, &keypair.d, &keypair.grp.G, nullptr, nullptr), 0);
+
+    {
+        std::optional<std::string> pub_x_str;
+        std::optional<std::string> pub_y_str;
+
+        CF_CHECK_NE(pub_x_str = mbedTLS_detail::MPIToString(&keypair.Q.X), std::nullopt);
+        CF_CHECK_NE(pub_y_str = mbedTLS_detail::MPIToString(&keypair.Q.Y), std::nullopt);
+
+        ret = { *pub_x_str, *pub_y_str };
+    }
+
+end:
+    /* noret */ mbedtls_ecp_keypair_free(&keypair);
+
+    return ret;
+}
+
+std::optional<bool> mbedTLS::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    mbedtls_ecdsa_context ctx;
+    mbedtls_mpi sig_r, sig_s;
+    const mbedtls_ecp_curve_info* curve_info = nullptr;
+
+    /* noret */ mbedtls_ecdsa_init(&ctx);
+    /* noret */ mbedtls_mpi_init(&sig_r);
+    /* noret */ mbedtls_mpi_init(&sig_s);
+
+    {
+        std::optional<uint16_t> tls_id;
+        CF_CHECK_NE(tls_id = mbedTLS_detail::toTLSID(op.curveType), std::nullopt);
+        CF_CHECK_NE(curve_info = mbedtls_ecp_curve_info_from_tls_id(*tls_id), nullptr);
+    }
+
+    CF_CHECK_EQ(mbedtls_ecp_group_load(&ctx.grp, curve_info->grp_id), 0);
+
+    /* Pubkey */
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&ctx.Q.X, 10, op.pub.first.ToString(ds).c_str()), 0);
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&ctx.Q.Y, 10, op.pub.second.ToString(ds).c_str()), 0);
+    CF_CHECK_EQ(mbedtls_mpi_lset(&ctx.Q.Z, 1), 0);
+
+    /* Signature */
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&sig_s, 10, op.signature.first.ToString(ds).c_str()), 0);
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&sig_r, 10, op.signature.second.ToString(ds).c_str()), 0);
+
+    {
+        const auto verifyRes = mbedtls_ecdsa_verify(&ctx.grp, op.cleartext.GetPtr(), op.cleartext.GetSize(), &ctx.Q, &sig_r, &sig_s);
+        if ( verifyRes == 0 ) {
+            ret = true;
+        } else if ( verifyRes == MBEDTLS_ERR_ECP_VERIFY_FAILED ) {
+            ret = false;
+        }
+    }
+
+end:
+    /* noret */ mbedtls_ecdsa_free(&ctx);
+    /* noret */ mbedtls_mpi_free(&sig_r);
+    /* noret */ mbedtls_mpi_free(&sig_s);
     return ret;
 }
 
