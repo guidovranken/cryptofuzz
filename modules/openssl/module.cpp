@@ -3036,13 +3036,9 @@ std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
 
 end:
     EC_GROUP_free(group);
-//#if defined(CRYPTOFUZZ_OPENSSL_102)
-//    ECDSA_SIG_free(signature);
-//#else
     if ( signature != nullptr ) {
         ECDSA_SIG_free(signature);
     }
-//#endif
     EC_POINT_free(pub);
 
     return ret;
