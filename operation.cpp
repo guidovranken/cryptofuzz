@@ -368,6 +368,7 @@ std::string ECC_PrivateToPublic::ToString(void) const {
 nlohmann::json ECC_PrivateToPublic::ToJSON(void) const {
     nlohmann::json j;
     j["priv"] = priv.ToJSON();
+    j["curveType"] = curveType.ToJSON();
     j["modifier"] = modifier.ToJSON();
     return j;
 }
@@ -409,9 +410,13 @@ std::string ECDSA_Verify::ToString(void) const {
 
 nlohmann::json ECDSA_Verify::ToJSON(void) const {
     nlohmann::json j;
-
-    /* TODO */
-
+    j["curveType"] = curveType.ToJSON();
+    j["pub_x"] = pub.first.ToJSON();
+    j["pub_y"] = pub.first.ToJSON();
+    j["cleartext"] = cleartext.ToJSON();
+    j["sig_r"] = signature.first.ToJSON();
+    j["sig_s"] = signature.second.ToJSON();
+    j["modifier"] = modifier.ToJSON();
     return j;
 }
 
