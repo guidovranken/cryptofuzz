@@ -359,6 +359,7 @@ std::string ECC_PrivateToPublic::ToString(void) const {
     std::stringstream ss;
 
     ss << "operation name: ECC_PrivateToPublic" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
     ss << "private key: " << priv.ToString() << std::endl;
 
     return ss.str();
