@@ -469,6 +469,8 @@ std::optional<component::Key> Botan::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
     } catch ( ... ) { }
 
 end:
+    util::free(out);
+
     return ret;
 }
 
