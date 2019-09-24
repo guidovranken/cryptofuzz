@@ -6,6 +6,7 @@
 #include <botan/cipher_mode.h>
 #include <botan/pbkdf.h>
 #include <botan/pwdhash.h>
+#include <botan/kdf.h>
 
 namespace cryptofuzz {
 namespace module {
@@ -259,6 +260,117 @@ std::optional<component::Cleartext> Botan::OpSymmetricDecrypt(operation::Symmetr
     return Botan_detail::Crypt<component::Cleartext, operation::SymmetricDecrypt>(op);
 }
 
+std::optional<component::Key> Botan::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    std::unique_ptr<::Botan::PasswordHashFamily> pwdhash_fam = nullptr;
+    std::unique_ptr<::Botan::PasswordHash> pwdhash = nullptr;
+    uint8_t* out = util::malloc(op.keySize);
+
+    try {
+        /* Initialize */
+        {
+            CF_CHECK_NE(pwdhash_fam = ::Botan::PasswordHashFamily::create("Scrypt"), nullptr);
+            CF_CHECK_NE(pwdhash = pwdhash_fam->from_params(op.N, op.r, op.p), nullptr);
+
+        }
+
+        /* Process */
+        {
+            pwdhash->derive_key(
+                    out,
+                    op.keySize,
+                    (const char*)op.password.GetPtr(),
+                    op.password.GetSize(),
+                    op.salt.GetPtr(),
+                    op.salt.GetSize());
+        }
+
+        /* Finalize */
+        {
+            ret = component::Key(out, op.keySize);
+        }
+    } catch ( ... ) { }
+
+end:
+    util::free(out);
+
+    return ret;
+}
+
+std::optional<component::Key> Botan::OpKDF_HKDF(operation::KDF_HKDF& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    std::unique_ptr<::Botan::KDF> hkdf = nullptr;
+
+    try {
+        {
+            std::optional<std::string> algoString;
+            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
+            std::string algoStringCopy = *algoString;
+            if ( algoStringCopy == "SHAKE-128(128)" ) {
+                algoStringCopy = "SHAKE-128(256)";
+            } else if ( algoStringCopy == "SHAKE-256(256)" ) {
+                algoStringCopy = "SHAKE-256(512)";
+            }
+
+            const std::string hkdfString = Botan_detail::parenthesize("HKDF", algoStringCopy);
+            hkdf = ::Botan::KDF::create(hkdfString);
+        }
+
+        {
+            auto derived = hkdf->derive_key(op.keySize, op.password.Get(), op.salt.Get(), op.info.Get());
+            ret = component::Key(derived.data(), derived.size());
+        }
+    } catch ( ... ) { }
+
+end:
+    return ret;
+}
+
+std::optional<component::Key> Botan::OpKDF_PBKDF1(operation::KDF_PBKDF1& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    std::unique_ptr<::Botan::PBKDF> pbkdf1 = nullptr;
+    uint8_t* out = util::malloc(op.keySize);
+
+    try {
+        /* Initialize */
+        {
+            std::optional<std::string> algoString;
+            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
+            std::string algoStringCopy = *algoString;
+            if ( algoStringCopy == "SHAKE-128(128)" ) {
+                algoStringCopy = "SHAKE-128(256)";
+            } else if ( algoStringCopy == "SHAKE-256(256)" ) {
+                algoStringCopy = "SHAKE-256(512)";
+            }
+
+            const std::string pbkdf1String = Botan_detail::parenthesize("PBKDF1", algoStringCopy);
+            CF_CHECK_NE(pbkdf1 = ::Botan::PBKDF::create(pbkdf1String), nullptr);
+        }
+
+        /* Process */
+        {
+            const std::string passphrase(op.password.GetPtr(), op.password.GetPtr() + op.password.GetSize());
+            pbkdf1->pbkdf_iterations(
+                    out,
+                    op.keySize,
+                    passphrase,
+                    op.salt.GetPtr(),
+                    op.salt.GetSize(),
+                    op.iterations);
+        }
+
+        /* Finalize */
+        {
+            ret = component::Key(out, op.keySize);
+        }
+    } catch ( ... ) { }
+
+end:
+    util::free(out);
+
+    return ret;
+}
+
 std::optional<component::Key> Botan::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
     std::optional<component::Key> ret = std::nullopt;
     std::unique_ptr<::Botan::PasswordHashFamily> pwdhash_fam = nullptr;
@@ -306,5 +418,59 @@ end:
 
     return ret;
 }
+
+std::optional<component::Key> Botan::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    std::unique_ptr<::Botan::PasswordHashFamily> pwdhash_fam = nullptr;
+    std::unique_ptr<::Botan::PasswordHash> pwdhash = nullptr;
+    uint8_t* out = util::malloc(op.keySize);
+
+    try {
+        /* Initialize */
+        {
+            std::string argon2String;
+
+            switch ( op.type ) {
+                case    0:
+                    argon2String = "Argon2d";
+                    break;
+                case    1:
+                    argon2String = "Argon2i";
+                    break;
+                case    2:
+                    argon2String = "Argon2id";
+                    break;
+                default:
+                    goto end;
+            }
+            CF_CHECK_NE(pwdhash_fam = ::Botan::PasswordHashFamily::create(argon2String), nullptr);
+
+            CF_CHECK_NE(pwdhash = pwdhash_fam->from_params(
+                        op.memory,
+                        op.iterations,
+                        op.threads), nullptr);
+        }
+
+        /* Process */
+        {
+            pwdhash->derive_key(
+                    out,
+                    op.keySize,
+                    (const char*)op.password.GetPtr(),
+                    op.password.GetSize(),
+                    op.salt.GetPtr(),
+                    op.salt.GetSize());
+        }
+
+        /* Finalize */
+        {
+            ret = component::Key(out, op.keySize);
+        }
+    } catch ( ... ) { }
+
+end:
+    return ret;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */
