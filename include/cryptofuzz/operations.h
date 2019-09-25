@@ -47,6 +47,8 @@ class Digest : public Operation {
             digestType(json["digestType"])
         { }
 
+
+        static size_t MaxOperations(void) { return 20; }
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
@@ -80,6 +82,7 @@ class HMAC : public Operation {
             cipher(json["cipher"])
         { }
 
+        static size_t MaxOperations(void) { return 20; }
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
@@ -131,6 +134,7 @@ class SymmetricEncrypt : public Operation {
             )
         { }
 
+        static size_t MaxOperations(void) { return 20; }
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
@@ -183,6 +187,7 @@ class SymmetricDecrypt : public Operation {
             cleartextSize(json["cleartextSize"].get<uint64_t>())
         { }
 
+        static size_t MaxOperations(void) { return 20; }
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
@@ -229,6 +234,7 @@ class KDF_SCRYPT : public Operation {
             keySize(json["keySize"].get<uint64_t>())
         { }
 
+        static size_t MaxOperations(void) { return 20; }
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
@@ -270,6 +276,7 @@ class KDF_HKDF : public Operation {
             keySize(json["keySize"].get<uint64_t>())
         { }
 
+        static size_t MaxOperations(void) { return 20; }
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
@@ -307,6 +314,7 @@ class KDF_TLS1_PRF : public Operation {
             keySize(json["keySize"].get<uint64_t>())
         { }
 
+        static size_t MaxOperations(void) { return 20; }
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
@@ -345,6 +353,7 @@ class KDF_PBKDF1 : public Operation {
             keySize(json["keySize"].get<uint64_t>())
         { }
 
+        static size_t MaxOperations(void) { return 20; }
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
@@ -385,6 +394,7 @@ class KDF_PBKDF2 : public Operation {
             keySize(json["keySize"].get<uint64_t>())
         { }
 
+        static size_t MaxOperations(void) { return 20; }
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
@@ -430,6 +440,7 @@ class KDF_ARGON2 : public Operation {
             keySize(json["keySize"].get<uint32_t>())
         { }
 
+        static size_t MaxOperations(void) { return 3; }
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
@@ -474,6 +485,7 @@ class KDF_SSH : public Operation {
             keySize(json["keySize"].get<uint64_t>())
         { }
 
+        static size_t MaxOperations(void) { return 20; }
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
@@ -505,6 +517,7 @@ class CMAC : public Operation {
             cipher(json["cipher"])
         { }
 
+        static size_t MaxOperations(void) { return 20; }
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
@@ -532,6 +545,7 @@ class Sign : public Operation {
             signatureSize(ds.Get<uint64_t>() % (10*1024*1024))
         { }
 
+        static size_t MaxOperations(void) { return 20; }
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
@@ -558,6 +572,7 @@ class Verify : public Operation {
         { }
         Verify(const Sign& opSign, const component::Signature signature, component::Modifier modifier);
 
+        static size_t MaxOperations(void) { return 20; }
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;

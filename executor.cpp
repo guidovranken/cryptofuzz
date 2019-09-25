@@ -3,6 +3,7 @@
 #include <cryptofuzz/util.h>
 #include <fuzzing/memory.hpp>
 #include <algorithm>
+#include <set>
 
 extern "C" {
 //__attribute__((section("__libfuzzer_extra_counters")))
@@ -529,25 +530,34 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
         operations.push_back( {module, op} );
 
         /* Limit number of operations per run to prevent time-outs */
-        if ( operations.size() == 20 ) {
+        if ( operations.size() == OperationType::MaxOperations() ) {
             break;
         }
     } while ( parentDs.Get<bool>() == true );
 
+    if ( operations.empty() == true ) {
+        return;
+    }
 
     /* Enable this to run every operation on every loaded module */
 #if 1
     {
-        std::vector< std::pair<std::shared_ptr<Module>, OperationType> > newOperations;
+        std::set<uint64_t> moduleIDs;
+        for (const auto& m : modules ) {
+            moduleIDs.insert(m.first);
+        }
 
-        const size_t operationsSize = operations.size();
-        for (size_t i = 0; i < operationsSize; i++) {
-            for (const auto& m : modules ) {
-                if ( m.first == operations[i].first->ID ) {
-                    continue;
-                }
-                operations.push_back( {m.second, operations[i].second} );
-            }
+        std::set<uint64_t> operationModuleIDs;
+        for (const auto& op : operations) {
+            operationModuleIDs.insert(op.first->ID);
+        }
+
+        std::vector<uint64_t> addModuleIDs(moduleIDs.size());
+        auto it = std::set_difference(moduleIDs.begin(), moduleIDs.end(), operationModuleIDs.begin(), operationModuleIDs.end(), addModuleIDs.begin());
+        addModuleIDs.resize(it - addModuleIDs.begin());
+
+        for (const auto& id : addModuleIDs) {
+            operations.push_back({ modules.at(id), operations[0].second});
         }
     }
 #endif
