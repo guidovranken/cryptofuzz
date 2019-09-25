@@ -2,6 +2,17 @@
 #include <cryptofuzz/util.h>
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
+#include <mbedtls/md.h>
+#include <mbedtls/aes.h>
+#include <mbedtls/des.h>
+#include <mbedtls/aria.h>
+#include <mbedtls/camellia.h>
+#include <mbedtls/chacha20.h>
+#include <mbedtls/cipher.h>
+#include <mbedtls/cmac.h>
+#include <mbedtls/hkdf.h>
+#include <mbedtls/pkcs5.h>
+#include <mbedtls/platform.h>
 
 namespace cryptofuzz {
 namespace module {
@@ -24,117 +35,120 @@ mbedTLS::mbedTLS(void) :
     }
 }
 
-const mbedtls_cipher_info_t* mbedTLS::to_mbedtls_cipher_info_t(const component::SymmetricCipherType cipherType) const {
-    using fuzzing::datasource::ID;
+namespace mbedTLS_detail {
+    const mbedtls_cipher_info_t* to_mbedtls_cipher_info_t(const component::SymmetricCipherType cipherType) {
+        using fuzzing::datasource::ID;
 
-    static const std::map<uint64_t, mbedtls_cipher_type_t> LUT = {
-        { CF_CIPHER("AES_128_ECB"), MBEDTLS_CIPHER_AES_128_ECB  },
-        { CF_CIPHER("AES_192_ECB"), MBEDTLS_CIPHER_AES_192_ECB  },
-        { CF_CIPHER("AES_256_ECB"), MBEDTLS_CIPHER_AES_256_ECB  },
-        { CF_CIPHER("AES_128_CBC"), MBEDTLS_CIPHER_AES_128_CBC  },
-        { CF_CIPHER("AES_192_CBC"), MBEDTLS_CIPHER_AES_192_CBC  },
-        { CF_CIPHER("AES_256_CBC"), MBEDTLS_CIPHER_AES_256_CBC  },
-        { CF_CIPHER("AES_128_CFB128"), MBEDTLS_CIPHER_AES_128_CFB128  },
-        { CF_CIPHER("AES_192_CFB128"), MBEDTLS_CIPHER_AES_192_CFB128  },
-        { CF_CIPHER("AES_256_CFB128"), MBEDTLS_CIPHER_AES_256_CFB128  },
-        { CF_CIPHER("AES_128_CTR"), MBEDTLS_CIPHER_AES_128_CTR  },
-        { CF_CIPHER("AES_192_CTR"), MBEDTLS_CIPHER_AES_192_CTR  },
-        { CF_CIPHER("AES_256_CTR"), MBEDTLS_CIPHER_AES_256_CTR  },
-        { CF_CIPHER("AES_128_GCM"), MBEDTLS_CIPHER_AES_128_GCM  },
-        { CF_CIPHER("AES_192_GCM"), MBEDTLS_CIPHER_AES_192_GCM  },
-        { CF_CIPHER("AES_256_GCM"), MBEDTLS_CIPHER_AES_256_GCM  },
-        { CF_CIPHER("CAMELLIA_128_ECB"), MBEDTLS_CIPHER_CAMELLIA_128_ECB  },
-        { CF_CIPHER("CAMELLIA_192_ECB"), MBEDTLS_CIPHER_CAMELLIA_192_ECB  },
-        { CF_CIPHER("CAMELLIA_256_ECB"), MBEDTLS_CIPHER_CAMELLIA_256_ECB  },
-        { CF_CIPHER("CAMELLIA_128_CBC"), MBEDTLS_CIPHER_CAMELLIA_128_CBC  },
-        { CF_CIPHER("CAMELLIA_192_CBC"), MBEDTLS_CIPHER_CAMELLIA_192_CBC  },
-        { CF_CIPHER("CAMELLIA_256_CBC"), MBEDTLS_CIPHER_CAMELLIA_256_CBC  },
-        { CF_CIPHER("CAMELLIA_128_CFB128"), MBEDTLS_CIPHER_CAMELLIA_128_CFB128  },
-        { CF_CIPHER("CAMELLIA_192_CFB128"), MBEDTLS_CIPHER_CAMELLIA_192_CFB128  },
-        { CF_CIPHER("CAMELLIA_256_CFB128"), MBEDTLS_CIPHER_CAMELLIA_256_CFB128  },
-        { CF_CIPHER("CAMELLIA_128_CTR"), MBEDTLS_CIPHER_CAMELLIA_128_CTR  },
-        { CF_CIPHER("CAMELLIA_192_CTR"), MBEDTLS_CIPHER_CAMELLIA_192_CTR  },
-        { CF_CIPHER("CAMELLIA_256_CTR"), MBEDTLS_CIPHER_CAMELLIA_256_CTR  },
-        { CF_CIPHER("CAMELLIA_128_GCM"), MBEDTLS_CIPHER_CAMELLIA_128_GCM  },
-        { CF_CIPHER("CAMELLIA_192_GCM"), MBEDTLS_CIPHER_CAMELLIA_192_GCM  },
-        { CF_CIPHER("CAMELLIA_256_GCM"), MBEDTLS_CIPHER_CAMELLIA_256_GCM  },
-        { CF_CIPHER("DES_ECB"), MBEDTLS_CIPHER_DES_ECB  },
-        { CF_CIPHER("DES_CBC"), MBEDTLS_CIPHER_DES_CBC  },
-        { CF_CIPHER("DES_EDE_ECB"), MBEDTLS_CIPHER_DES_EDE_ECB  },
-        { CF_CIPHER("DES_EDE_CBC"), MBEDTLS_CIPHER_DES_EDE_CBC  },
-        { CF_CIPHER("DES_EDE3_ECB"), MBEDTLS_CIPHER_DES_EDE3_ECB  },
-        { CF_CIPHER("DES_EDE3_CBC"), MBEDTLS_CIPHER_DES_EDE3_CBC  },
-        { CF_CIPHER("BLOWFISH_ECB"), MBEDTLS_CIPHER_BLOWFISH_ECB  },
-        { CF_CIPHER("BLOWFISH_CBC"), MBEDTLS_CIPHER_BLOWFISH_CBC  },
-        { CF_CIPHER("BLOWFISH_CFB64"), MBEDTLS_CIPHER_BLOWFISH_CFB64  },
-        { CF_CIPHER("BLOWFISH_CTR"), MBEDTLS_CIPHER_BLOWFISH_CTR  },
-        { CF_CIPHER("RC4"), MBEDTLS_CIPHER_ARC4_128  },
-        { CF_CIPHER("AES_128_CCM"), MBEDTLS_CIPHER_AES_128_CCM  },
-        { CF_CIPHER("AES_192_CCM"), MBEDTLS_CIPHER_AES_192_CCM  },
-        { CF_CIPHER("AES_256_CCM"), MBEDTLS_CIPHER_AES_256_CCM  },
-        { CF_CIPHER("CAMELLIA_128_CCM"), MBEDTLS_CIPHER_CAMELLIA_128_CCM  },
-        { CF_CIPHER("CAMELLIA_192_CCM"), MBEDTLS_CIPHER_CAMELLIA_192_CCM  },
-        { CF_CIPHER("CAMELLIA_256_CCM"), MBEDTLS_CIPHER_CAMELLIA_256_CCM  },
-        { CF_CIPHER("ARIA_128_ECB"), MBEDTLS_CIPHER_ARIA_128_ECB  },
-        { CF_CIPHER("ARIA_192_ECB"), MBEDTLS_CIPHER_ARIA_192_ECB  },
-        { CF_CIPHER("ARIA_256_ECB"), MBEDTLS_CIPHER_ARIA_256_ECB  },
-        { CF_CIPHER("ARIA_128_CBC"), MBEDTLS_CIPHER_ARIA_128_CBC  },
-        { CF_CIPHER("ARIA_192_CBC"), MBEDTLS_CIPHER_ARIA_192_CBC  },
-        { CF_CIPHER("ARIA_256_CBC"), MBEDTLS_CIPHER_ARIA_256_CBC  },
-        { CF_CIPHER("ARIA_128_CFB128"), MBEDTLS_CIPHER_ARIA_128_CFB128  },
-        { CF_CIPHER("ARIA_192_CFB128"), MBEDTLS_CIPHER_ARIA_192_CFB128  },
-        { CF_CIPHER("ARIA_256_CFB128"), MBEDTLS_CIPHER_ARIA_256_CFB128  },
-        { CF_CIPHER("ARIA_128_CTR"), MBEDTLS_CIPHER_ARIA_128_CTR  },
-        { CF_CIPHER("ARIA_192_CTR"), MBEDTLS_CIPHER_ARIA_192_CTR  },
-        { CF_CIPHER("ARIA_256_CTR"), MBEDTLS_CIPHER_ARIA_256_CTR  },
-        { CF_CIPHER("ARIA_128_GCM"), MBEDTLS_CIPHER_ARIA_128_GCM  },
-        { CF_CIPHER("ARIA_192_GCM"), MBEDTLS_CIPHER_ARIA_192_GCM  },
-        { CF_CIPHER("ARIA_256_GCM"), MBEDTLS_CIPHER_ARIA_256_GCM  },
-        { CF_CIPHER("ARIA_128_CCM"), MBEDTLS_CIPHER_ARIA_128_CCM  },
-        { CF_CIPHER("ARIA_192_CCM"), MBEDTLS_CIPHER_ARIA_192_CCM  },
-        { CF_CIPHER("ARIA_256_CCM"), MBEDTLS_CIPHER_ARIA_256_CCM  },
-        { CF_CIPHER("AES_128_OFB"), MBEDTLS_CIPHER_AES_128_OFB  },
-        { CF_CIPHER("AES_192_OFB"), MBEDTLS_CIPHER_AES_192_OFB  },
-        { CF_CIPHER("AES_256_OFB"), MBEDTLS_CIPHER_AES_256_OFB  },
-        { CF_CIPHER("AES_128_XTS"), MBEDTLS_CIPHER_AES_128_XTS  },
-        { CF_CIPHER("AES_256_XTS"), MBEDTLS_CIPHER_AES_256_XTS  },
-        { CF_CIPHER("CHACHA20"), MBEDTLS_CIPHER_CHACHA20  },
-        { CF_CIPHER("CHACHA20_POLY1305"), MBEDTLS_CIPHER_CHACHA20_POLY1305  },
-        { CF_CIPHER("AES_128_WRAP"), MBEDTLS_CIPHER_AES_128_KW  },
-        { CF_CIPHER("AES_128_WRAP_PAD"), MBEDTLS_CIPHER_AES_128_KWP  },
-        { CF_CIPHER("AES_192_WRAP"), MBEDTLS_CIPHER_AES_192_KW  },
-        { CF_CIPHER("AES_192_WRAP_PAD"), MBEDTLS_CIPHER_AES_192_KWP  },
-        { CF_CIPHER("AES_256_WRAP"), MBEDTLS_CIPHER_AES_256_KW  },
-        { CF_CIPHER("AES_256_WRAP_PAD"), MBEDTLS_CIPHER_AES_256_KWP },
-    };
+        static const std::map<uint64_t, mbedtls_cipher_type_t> LUT = {
+            { CF_CIPHER("AES_128_ECB"), MBEDTLS_CIPHER_AES_128_ECB  },
+            { CF_CIPHER("AES_192_ECB"), MBEDTLS_CIPHER_AES_192_ECB  },
+            { CF_CIPHER("AES_256_ECB"), MBEDTLS_CIPHER_AES_256_ECB  },
+            { CF_CIPHER("AES_128_CBC"), MBEDTLS_CIPHER_AES_128_CBC  },
+            { CF_CIPHER("AES_192_CBC"), MBEDTLS_CIPHER_AES_192_CBC  },
+            { CF_CIPHER("AES_256_CBC"), MBEDTLS_CIPHER_AES_256_CBC  },
+            { CF_CIPHER("AES_128_CFB128"), MBEDTLS_CIPHER_AES_128_CFB128  },
+            { CF_CIPHER("AES_192_CFB128"), MBEDTLS_CIPHER_AES_192_CFB128  },
+            { CF_CIPHER("AES_256_CFB128"), MBEDTLS_CIPHER_AES_256_CFB128  },
+            { CF_CIPHER("AES_128_CTR"), MBEDTLS_CIPHER_AES_128_CTR  },
+            { CF_CIPHER("AES_192_CTR"), MBEDTLS_CIPHER_AES_192_CTR  },
+            { CF_CIPHER("AES_256_CTR"), MBEDTLS_CIPHER_AES_256_CTR  },
+            { CF_CIPHER("AES_128_GCM"), MBEDTLS_CIPHER_AES_128_GCM  },
+            { CF_CIPHER("AES_192_GCM"), MBEDTLS_CIPHER_AES_192_GCM  },
+            { CF_CIPHER("AES_256_GCM"), MBEDTLS_CIPHER_AES_256_GCM  },
+            { CF_CIPHER("CAMELLIA_128_ECB"), MBEDTLS_CIPHER_CAMELLIA_128_ECB  },
+            { CF_CIPHER("CAMELLIA_192_ECB"), MBEDTLS_CIPHER_CAMELLIA_192_ECB  },
+            { CF_CIPHER("CAMELLIA_256_ECB"), MBEDTLS_CIPHER_CAMELLIA_256_ECB  },
+            { CF_CIPHER("CAMELLIA_128_CBC"), MBEDTLS_CIPHER_CAMELLIA_128_CBC  },
+            { CF_CIPHER("CAMELLIA_192_CBC"), MBEDTLS_CIPHER_CAMELLIA_192_CBC  },
+            { CF_CIPHER("CAMELLIA_256_CBC"), MBEDTLS_CIPHER_CAMELLIA_256_CBC  },
+            { CF_CIPHER("CAMELLIA_128_CFB128"), MBEDTLS_CIPHER_CAMELLIA_128_CFB128  },
+            { CF_CIPHER("CAMELLIA_192_CFB128"), MBEDTLS_CIPHER_CAMELLIA_192_CFB128  },
+            { CF_CIPHER("CAMELLIA_256_CFB128"), MBEDTLS_CIPHER_CAMELLIA_256_CFB128  },
+            { CF_CIPHER("CAMELLIA_128_CTR"), MBEDTLS_CIPHER_CAMELLIA_128_CTR  },
+            { CF_CIPHER("CAMELLIA_192_CTR"), MBEDTLS_CIPHER_CAMELLIA_192_CTR  },
+            { CF_CIPHER("CAMELLIA_256_CTR"), MBEDTLS_CIPHER_CAMELLIA_256_CTR  },
+            { CF_CIPHER("CAMELLIA_128_GCM"), MBEDTLS_CIPHER_CAMELLIA_128_GCM  },
+            { CF_CIPHER("CAMELLIA_192_GCM"), MBEDTLS_CIPHER_CAMELLIA_192_GCM  },
+            { CF_CIPHER("CAMELLIA_256_GCM"), MBEDTLS_CIPHER_CAMELLIA_256_GCM  },
+            { CF_CIPHER("DES_ECB"), MBEDTLS_CIPHER_DES_ECB  },
+            { CF_CIPHER("DES_CBC"), MBEDTLS_CIPHER_DES_CBC  },
+            { CF_CIPHER("DES_EDE_ECB"), MBEDTLS_CIPHER_DES_EDE_ECB  },
+            { CF_CIPHER("DES_EDE_CBC"), MBEDTLS_CIPHER_DES_EDE_CBC  },
+            { CF_CIPHER("DES_EDE3_ECB"), MBEDTLS_CIPHER_DES_EDE3_ECB  },
+            { CF_CIPHER("DES_EDE3_CBC"), MBEDTLS_CIPHER_DES_EDE3_CBC  },
+            { CF_CIPHER("BLOWFISH_ECB"), MBEDTLS_CIPHER_BLOWFISH_ECB  },
+            { CF_CIPHER("BLOWFISH_CBC"), MBEDTLS_CIPHER_BLOWFISH_CBC  },
+            { CF_CIPHER("BLOWFISH_CFB64"), MBEDTLS_CIPHER_BLOWFISH_CFB64  },
+            { CF_CIPHER("BLOWFISH_CTR"), MBEDTLS_CIPHER_BLOWFISH_CTR  },
+            { CF_CIPHER("RC4"), MBEDTLS_CIPHER_ARC4_128  },
+            { CF_CIPHER("AES_128_CCM"), MBEDTLS_CIPHER_AES_128_CCM  },
+            { CF_CIPHER("AES_192_CCM"), MBEDTLS_CIPHER_AES_192_CCM  },
+            { CF_CIPHER("AES_256_CCM"), MBEDTLS_CIPHER_AES_256_CCM  },
+            { CF_CIPHER("CAMELLIA_128_CCM"), MBEDTLS_CIPHER_CAMELLIA_128_CCM  },
+            { CF_CIPHER("CAMELLIA_192_CCM"), MBEDTLS_CIPHER_CAMELLIA_192_CCM  },
+            { CF_CIPHER("CAMELLIA_256_CCM"), MBEDTLS_CIPHER_CAMELLIA_256_CCM  },
+            { CF_CIPHER("ARIA_128_ECB"), MBEDTLS_CIPHER_ARIA_128_ECB  },
+            { CF_CIPHER("ARIA_192_ECB"), MBEDTLS_CIPHER_ARIA_192_ECB  },
+            { CF_CIPHER("ARIA_256_ECB"), MBEDTLS_CIPHER_ARIA_256_ECB  },
+            { CF_CIPHER("ARIA_128_CBC"), MBEDTLS_CIPHER_ARIA_128_CBC  },
+            { CF_CIPHER("ARIA_192_CBC"), MBEDTLS_CIPHER_ARIA_192_CBC  },
+            { CF_CIPHER("ARIA_256_CBC"), MBEDTLS_CIPHER_ARIA_256_CBC  },
+            { CF_CIPHER("ARIA_128_CFB128"), MBEDTLS_CIPHER_ARIA_128_CFB128  },
+            { CF_CIPHER("ARIA_192_CFB128"), MBEDTLS_CIPHER_ARIA_192_CFB128  },
+            { CF_CIPHER("ARIA_256_CFB128"), MBEDTLS_CIPHER_ARIA_256_CFB128  },
+            { CF_CIPHER("ARIA_128_CTR"), MBEDTLS_CIPHER_ARIA_128_CTR  },
+            { CF_CIPHER("ARIA_192_CTR"), MBEDTLS_CIPHER_ARIA_192_CTR  },
+            { CF_CIPHER("ARIA_256_CTR"), MBEDTLS_CIPHER_ARIA_256_CTR  },
+            { CF_CIPHER("ARIA_128_GCM"), MBEDTLS_CIPHER_ARIA_128_GCM  },
+            { CF_CIPHER("ARIA_192_GCM"), MBEDTLS_CIPHER_ARIA_192_GCM  },
+            { CF_CIPHER("ARIA_256_GCM"), MBEDTLS_CIPHER_ARIA_256_GCM  },
+            { CF_CIPHER("ARIA_128_CCM"), MBEDTLS_CIPHER_ARIA_128_CCM  },
+            { CF_CIPHER("ARIA_192_CCM"), MBEDTLS_CIPHER_ARIA_192_CCM  },
+            { CF_CIPHER("ARIA_256_CCM"), MBEDTLS_CIPHER_ARIA_256_CCM  },
+            { CF_CIPHER("AES_128_OFB"), MBEDTLS_CIPHER_AES_128_OFB  },
+            { CF_CIPHER("AES_192_OFB"), MBEDTLS_CIPHER_AES_192_OFB  },
+            { CF_CIPHER("AES_256_OFB"), MBEDTLS_CIPHER_AES_256_OFB  },
+            { CF_CIPHER("AES_128_XTS"), MBEDTLS_CIPHER_AES_128_XTS  },
+            { CF_CIPHER("AES_256_XTS"), MBEDTLS_CIPHER_AES_256_XTS  },
+            { CF_CIPHER("CHACHA20"), MBEDTLS_CIPHER_CHACHA20  },
+            { CF_CIPHER("CHACHA20_POLY1305"), MBEDTLS_CIPHER_CHACHA20_POLY1305  },
+            { CF_CIPHER("AES_128_WRAP"), MBEDTLS_CIPHER_AES_128_KW  },
+            { CF_CIPHER("AES_128_WRAP_PAD"), MBEDTLS_CIPHER_AES_128_KWP  },
+            { CF_CIPHER("AES_192_WRAP"), MBEDTLS_CIPHER_AES_192_KW  },
+            { CF_CIPHER("AES_192_WRAP_PAD"), MBEDTLS_CIPHER_AES_192_KWP  },
+            { CF_CIPHER("AES_256_WRAP"), MBEDTLS_CIPHER_AES_256_KW  },
+            { CF_CIPHER("AES_256_WRAP_PAD"), MBEDTLS_CIPHER_AES_256_KWP },
+        };
 
-    if ( LUT.find(cipherType.Get()) == LUT.end() ) {
-        return nullptr;
+        if ( LUT.find(cipherType.Get()) == LUT.end() ) {
+            return nullptr;
+        }
+
+        return mbedtls_cipher_info_from_type( LUT.at(cipherType.Get()) );
     }
 
-    return mbedtls_cipher_info_from_type( LUT.at(cipherType.Get()) );
-}
+    mbedtls_md_type_t to_mbedtls_md_type_t(const component::DigestType& digestType) {
+        using fuzzing::datasource::ID;
 
-mbedtls_md_type_t mbedTLS::to_mbedtls_md_type_t(const component::DigestType& digestType) const {
-    using fuzzing::datasource::ID;
+        static const std::map<uint64_t, mbedtls_md_type_t> LUT = {
+            { CF_DIGEST("SHA1"), MBEDTLS_MD_SHA1 },
+            { CF_DIGEST("SHA224"), MBEDTLS_MD_SHA224 },
+            { CF_DIGEST("SHA256"), MBEDTLS_MD_SHA256 },
+            { CF_DIGEST("SHA384"), MBEDTLS_MD_SHA384 },
+            { CF_DIGEST("SHA512"), MBEDTLS_MD_SHA512 },
+            { CF_DIGEST("MD2"), MBEDTLS_MD_MD2 },
+            { CF_DIGEST("MD4"), MBEDTLS_MD_MD4 },
+            { CF_DIGEST("MD5"), MBEDTLS_MD_MD5 },
+            { CF_DIGEST("RIPEMD160"), MBEDTLS_MD_RIPEMD160 },
+        };
 
-    static const std::map<uint64_t, mbedtls_md_type_t> LUT = {
-        { CF_DIGEST("SHA1"), MBEDTLS_MD_SHA1 },
-        { CF_DIGEST("SHA224"), MBEDTLS_MD_SHA224 },
-        { CF_DIGEST("SHA256"), MBEDTLS_MD_SHA256 },
-        { CF_DIGEST("SHA384"), MBEDTLS_MD_SHA384 },
-        { CF_DIGEST("SHA512"), MBEDTLS_MD_SHA512 },
-        { CF_DIGEST("MD2"), MBEDTLS_MD_MD2 },
-        { CF_DIGEST("MD4"), MBEDTLS_MD_MD4 },
-        { CF_DIGEST("MD5"), MBEDTLS_MD_MD5 },
-        { CF_DIGEST("RIPEMD160"), MBEDTLS_MD_RIPEMD160 },
-    };
+        if ( LUT.find(digestType.Get()) == LUT.end() ) {
+            return MBEDTLS_MD_NONE;
+        }
 
-    if ( LUT.find(digestType.Get()) == LUT.end() ) {
-        return MBEDTLS_MD_NONE;
+        return LUT.at(digestType.Get());
     }
 
-    return LUT.at(digestType.Get());
 }
 
 std::optional<component::Digest> mbedTLS::OpDigest(operation::Digest& op) {
@@ -152,7 +166,7 @@ std::optional<component::Digest> mbedTLS::OpDigest(operation::Digest& op) {
     {
         parts = util::ToParts(ds, op.cleartext);
 
-        CF_CHECK_NE(md_type = to_mbedtls_md_type_t(op.digestType), MBEDTLS_MD_NONE);
+        CF_CHECK_NE(md_type = mbedTLS_detail::to_mbedtls_md_type_t(op.digestType), MBEDTLS_MD_NONE);
         CF_CHECK_NE(md_info = mbedtls_md_info_from_type(md_type), nullptr);
         CF_CHECK_EQ(mbedtls_md_setup(&md_ctx, md_info, 0), 0 );
         CF_CHECK_EQ(mbedtls_md_starts(&md_ctx), 0);
@@ -193,7 +207,7 @@ std::optional<component::MAC> mbedTLS::OpHMAC(operation::HMAC& op) {
     {
         parts = util::ToParts(ds, op.cleartext);
 
-        CF_CHECK_NE(md_type = to_mbedtls_md_type_t(op.digestType), MBEDTLS_MD_NONE);
+        CF_CHECK_NE(md_type = mbedTLS_detail::to_mbedtls_md_type_t(op.digestType), MBEDTLS_MD_NONE);
         CF_CHECK_NE(md_info = mbedtls_md_info_from_type(md_type), nullptr);
         CF_CHECK_EQ(mbedtls_md_setup(&md_ctx, md_info, 1), 0 );
         CF_CHECK_EQ(mbedtls_md_hmac_starts(&md_ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), 0);
@@ -225,7 +239,7 @@ std::optional<component::MAC> mbedTLS::OpCMAC(operation::CMAC& op) {
 
     /* Initialize */
     {
-        CF_CHECK_NE(cipher_info = to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
+        CF_CHECK_NE(cipher_info = mbedTLS_detail::to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
     }
 
     {
@@ -243,61 +257,63 @@ end:
     return ret;
 }
 
-std::optional<component::Ciphertext> mbedTLS::encrypt_AEAD(operation::SymmetricEncrypt& op) const {
-    std::optional<component::Ciphertext> ret = std::nullopt;
+namespace mbedTLS_detail {
+    std::optional<component::Ciphertext> encrypt_AEAD(operation::SymmetricEncrypt& op) {
+        std::optional<component::Ciphertext> ret = std::nullopt;
 
-    mbedtls_cipher_context_t cipher_ctx;
-    const mbedtls_cipher_info_t *cipher_info = nullptr;
-    bool ctxInited = false;
+        mbedtls_cipher_context_t cipher_ctx;
+        const mbedtls_cipher_info_t *cipher_info = nullptr;
+        bool ctxInited = false;
 
-    if ( op.tagSize == std::nullopt ) {
-        return ret;
-    }
+        if ( op.tagSize == std::nullopt ) {
+            return ret;
+        }
 
-    uint8_t* out = util::malloc(op.ciphertextSize);
-    uint8_t* tag = util::malloc(*op.tagSize);
+        uint8_t* out = util::malloc(op.ciphertextSize);
+        uint8_t* tag = util::malloc(*op.tagSize);
 
-    /* Initialize */
-    {
-        CF_CHECK_NE(cipher_info = to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
-        mbedtls_cipher_init(&cipher_ctx);
-        ctxInited = true;
-        CF_CHECK_EQ(mbedtls_cipher_setup(&cipher_ctx, cipher_info), 0);
-        CF_CHECK_EQ(mbedtls_cipher_setkey(&cipher_ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize() * 8, MBEDTLS_ENCRYPT), 0);
-        CF_CHECK_EQ(mbedtls_cipher_reset(&cipher_ctx), 0);
-        /* "The buffer for the output data [...] must be able to hold at least ilen Bytes." */
-        CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize());
-    }
+        /* Initialize */
+        {
+            CF_CHECK_NE(cipher_info = mbedTLS_detail::to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
+            mbedtls_cipher_init(&cipher_ctx);
+            ctxInited = true;
+            CF_CHECK_EQ(mbedtls_cipher_setup(&cipher_ctx, cipher_info), 0);
+            CF_CHECK_EQ(mbedtls_cipher_setkey(&cipher_ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize() * 8, MBEDTLS_ENCRYPT), 0);
+            CF_CHECK_EQ(mbedtls_cipher_reset(&cipher_ctx), 0);
+            /* "The buffer for the output data [...] must be able to hold at least ilen Bytes." */
+            CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize());
+        }
 
-    /* Process/finalize */
-    {
-        size_t olen;
-        CF_CHECK_EQ(mbedtls_cipher_auth_encrypt(&cipher_ctx,
-                    op.cipher.iv.GetPtr(), op.cipher.iv.GetSize(),
-                    op.aad != std::nullopt ? op.aad->GetPtr() : nullptr, op.aad != std::nullopt ? op.aad->GetSize() : 0,
-                    op.cleartext.GetPtr(), op.cleartext.GetSize(),
-                    out, &olen,
-                    tag, *op.tagSize), 0);
+        /* Process/finalize */
+        {
+            size_t olen;
+            CF_CHECK_EQ(mbedtls_cipher_auth_encrypt(&cipher_ctx,
+                        op.cipher.iv.GetPtr(), op.cipher.iv.GetSize(),
+                        op.aad != std::nullopt ? op.aad->GetPtr() : nullptr, op.aad != std::nullopt ? op.aad->GetSize() : 0,
+                        op.cleartext.GetPtr(), op.cleartext.GetSize(),
+                        out, &olen,
+                        tag, *op.tagSize), 0);
 
-        ret = component::Ciphertext(Buffer(out, olen), Buffer(tag, *op.tagSize));
-    }
+            ret = component::Ciphertext(Buffer(out, olen), Buffer(tag, *op.tagSize));
+        }
 
 end:
-    util::free(out);
-    util::free(tag);
+        util::free(out);
+        util::free(tag);
 
-    if ( ctxInited == true ) {
-        mbedtls_cipher_free(&cipher_ctx);
+        if ( ctxInited == true ) {
+            mbedtls_cipher_free(&cipher_ctx);
+        }
+
+        return ret;
     }
-
-    return ret;
 }
 
 std::optional<component::Ciphertext> mbedTLS::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
     std::optional<component::Ciphertext> ret = std::nullopt;
 
     if ( op.tagSize != std::nullopt || op.aad != std::nullopt ) {
-        return encrypt_AEAD(op);
+        return mbedTLS_detail::encrypt_AEAD(op);
     }
 
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -314,7 +330,7 @@ std::optional<component::Ciphertext> mbedTLS::OpSymmetricEncrypt(operation::Symm
 
     /* Initialize */
     {
-        CF_CHECK_NE(cipher_info = to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
+        CF_CHECK_NE(cipher_info = mbedTLS_detail::to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
 
         mbedtls_cipher_init(&cipher_ctx);
         ctxInited = true;
@@ -393,56 +409,58 @@ end:
     return ret;
 }
 
-std::optional<component::Cleartext> mbedTLS::decrypt_AEAD(operation::SymmetricDecrypt& op) const {
-    std::optional<component::Cleartext> ret = std::nullopt;
+namespace mbedTLS_detail {
+    std::optional<component::Cleartext> decrypt_AEAD(operation::SymmetricDecrypt& op) {
+        std::optional<component::Cleartext> ret = std::nullopt;
 
-    mbedtls_cipher_context_t cipher_ctx;
-    const mbedtls_cipher_info_t *cipher_info = nullptr;
-    bool ctxInited = false;
+        mbedtls_cipher_context_t cipher_ctx;
+        const mbedtls_cipher_info_t *cipher_info = nullptr;
+        bool ctxInited = false;
 
-    uint8_t* out = util::malloc(op.cleartextSize);
+        uint8_t* out = util::malloc(op.cleartextSize);
 
-    /* Initialize */
-    {
-        CF_CHECK_NE(cipher_info = to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
-        mbedtls_cipher_init(&cipher_ctx);
-        ctxInited = true;
-        CF_CHECK_EQ(mbedtls_cipher_setup(&cipher_ctx, cipher_info), 0);
-        CF_CHECK_EQ(mbedtls_cipher_setkey(&cipher_ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize() * 8, MBEDTLS_DECRYPT), 0);
-        CF_CHECK_EQ(mbedtls_cipher_reset(&cipher_ctx), 0);
-        /* "The buffer for the output data [...] must be able to hold at least ilen Bytes." */
-        CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
-    }
+        /* Initialize */
+        {
+            CF_CHECK_NE(cipher_info = mbedTLS_detail::to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
+            mbedtls_cipher_init(&cipher_ctx);
+            ctxInited = true;
+            CF_CHECK_EQ(mbedtls_cipher_setup(&cipher_ctx, cipher_info), 0);
+            CF_CHECK_EQ(mbedtls_cipher_setkey(&cipher_ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize() * 8, MBEDTLS_DECRYPT), 0);
+            CF_CHECK_EQ(mbedtls_cipher_reset(&cipher_ctx), 0);
+            /* "The buffer for the output data [...] must be able to hold at least ilen Bytes." */
+            CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
+        }
 
 
-    /* Process/finalize */
-    {
-        size_t olen;
-        CF_CHECK_EQ(mbedtls_cipher_auth_decrypt(&cipher_ctx,
-                    op.cipher.iv.GetPtr(), op.cipher.iv.GetSize(),
-                    op.aad != std::nullopt ? op.aad->GetPtr() : nullptr, op.aad != std::nullopt ? op.aad->GetSize() : 0,
-                    op.ciphertext.GetPtr(), op.ciphertext.GetSize(),
-                    out, &olen,
-                    op.tag != std::nullopt ? op.tag->GetPtr() : nullptr, op.tag != std::nullopt ? op.tag->GetSize() : 0), 0);
+        /* Process/finalize */
+        {
+            size_t olen;
+            CF_CHECK_EQ(mbedtls_cipher_auth_decrypt(&cipher_ctx,
+                        op.cipher.iv.GetPtr(), op.cipher.iv.GetSize(),
+                        op.aad != std::nullopt ? op.aad->GetPtr() : nullptr, op.aad != std::nullopt ? op.aad->GetSize() : 0,
+                        op.ciphertext.GetPtr(), op.ciphertext.GetSize(),
+                        out, &olen,
+                        op.tag != std::nullopt ? op.tag->GetPtr() : nullptr, op.tag != std::nullopt ? op.tag->GetSize() : 0), 0);
 
-        ret = component::Cleartext(Buffer(out, olen));
-    }
+            ret = component::Cleartext(Buffer(out, olen));
+        }
 
 end:
-    util::free(out);
+        util::free(out);
 
-    if ( ctxInited == true ) {
-        mbedtls_cipher_free(&cipher_ctx);
+        if ( ctxInited == true ) {
+            mbedtls_cipher_free(&cipher_ctx);
+        }
+
+        return ret;
     }
-
-    return ret;
 }
 
 std::optional<component::Cleartext> mbedTLS::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
     std::optional<component::Cleartext> ret = std::nullopt;
 
     if ( op.aad != std::nullopt || op.tag != std::nullopt ) {
-        return decrypt_AEAD(op);
+        return mbedTLS_detail::decrypt_AEAD(op);
     }
 
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -459,7 +477,7 @@ std::optional<component::Cleartext> mbedTLS::OpSymmetricDecrypt(operation::Symme
 
     /* Initialize */
     {
-        CF_CHECK_NE(cipher_info = to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
+        CF_CHECK_NE(cipher_info = mbedTLS_detail::to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
 
         mbedtls_cipher_init(&cipher_ctx);
         ctxInited = true;
@@ -544,7 +562,7 @@ std::optional<component::Key> mbedTLS::OpKDF_HKDF(operation::KDF_HKDF& op) {
     mbedtls_md_info_t const* md_info = nullptr;
     uint8_t* out = util::malloc(op.keySize);
 
-    CF_CHECK_NE(md_type = to_mbedtls_md_type_t(op.digestType), MBEDTLS_MD_NONE);
+    CF_CHECK_NE(md_type = mbedTLS_detail::to_mbedtls_md_type_t(op.digestType), MBEDTLS_MD_NONE);
     CF_CHECK_NE(md_info = mbedtls_md_info_from_type(md_type), nullptr);
 
     /* https://tls.mbed.org/api/hkdf_8h.html:
@@ -583,7 +601,7 @@ std::optional<component::Key> mbedTLS::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
     /* Initialize */
     {
         mbedtls_md_init(&md_ctx);
-        CF_CHECK_NE(md_type = to_mbedtls_md_type_t(op.digestType), MBEDTLS_MD_NONE);
+        CF_CHECK_NE(md_type = mbedTLS_detail::to_mbedtls_md_type_t(op.digestType), MBEDTLS_MD_NONE);
         CF_CHECK_NE(md_info = mbedtls_md_info_from_type(md_type), nullptr);
         CF_CHECK_EQ(mbedtls_md_setup(&md_ctx, md_info, 0), 0 );
         CF_CHECK_EQ(mbedtls_md_starts(&md_ctx), 0);
