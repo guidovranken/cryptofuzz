@@ -603,7 +603,7 @@ std::optional<component::Key> mbedTLS::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
         mbedtls_md_init(&md_ctx);
         CF_CHECK_NE(md_type = mbedTLS_detail::to_mbedtls_md_type_t(op.digestType), MBEDTLS_MD_NONE);
         CF_CHECK_NE(md_info = mbedtls_md_info_from_type(md_type), nullptr);
-        CF_CHECK_EQ(mbedtls_md_setup(&md_ctx, md_info, 0), 0 );
+        CF_CHECK_EQ(mbedtls_md_setup(&md_ctx, md_info, 1), 0 );
         CF_CHECK_EQ(mbedtls_md_starts(&md_ctx), 0);
     }
 
