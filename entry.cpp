@@ -63,6 +63,10 @@
   #include <modules/botan/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_NETTLE)
+  #include <modules/nettle/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
@@ -136,6 +140,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_BOTAN)
     driver->LoadModule( std::make_shared<cryptofuzz::module::Botan>() );
+#endif
+
+#if defined(CRYPTOFUZZ_NETTLE)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::Nettle>() );
 #endif
     return 0;
 }
