@@ -26,12 +26,19 @@ namespace Botan_detail {
         return parent + pOpen + child + pClose;
     }
 
-    std::optional<std::string> DigestIDToString(const uint64_t digestType) {
+    std::optional<std::string> DigestIDToString(const uint64_t digestType, const bool altShake = false) {
 #include "digest_string_lut.h"
         std::optional<std::string> ret = std::nullopt;
 
         CF_CHECK_NE(LUT.find(digestType), LUT.end());
-        ret = LUT.at(digestType);
+
+        if ( altShake == true && digestType == CF_DIGEST("SHAKE128") ) {
+            ret = "SHAKE-128(256)";
+        } else if ( altShake == true && digestType == CF_DIGEST("SHAKE256") ) {
+            ret = "SHAKE-256(512)";
+        } else {
+            ret = LUT.at(digestType);
+        }
 end:
         return ret;
     }
@@ -95,15 +102,9 @@ std::optional<component::MAC> Botan::OpHMAC(operation::HMAC& op) {
         /* Initialize */
         {
             std::optional<std::string> algoString;
-            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
-            std::string algoStringCopy = *algoString;
-            if ( algoStringCopy == "SHAKE-128(128)" ) {
-                algoStringCopy = "SHAKE-128(256)";
-            } else if ( algoStringCopy == "SHAKE-256(256)" ) {
-                algoStringCopy = "SHAKE-256(512)";
-            }
+            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get(), true), std::nullopt);
 
-            const std::string hmacString = Botan_detail::parenthesize("HMAC", algoStringCopy);
+            const std::string hmacString = Botan_detail::parenthesize("HMAC", *algoString);
             CF_CHECK_NE(hmac = ::Botan::MessageAuthenticationCode::create(hmacString), nullptr);
 
             try {
@@ -304,15 +305,9 @@ std::optional<component::Key> Botan::OpKDF_HKDF(operation::KDF_HKDF& op) {
     try {
         {
             std::optional<std::string> algoString;
-            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
-            std::string algoStringCopy = *algoString;
-            if ( algoStringCopy == "SHAKE-128(128)" ) {
-                algoStringCopy = "SHAKE-128(256)";
-            } else if ( algoStringCopy == "SHAKE-256(256)" ) {
-                algoStringCopy = "SHAKE-256(512)";
-            }
+            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get(), true), std::nullopt);
 
-            const std::string hkdfString = Botan_detail::parenthesize("HKDF", algoStringCopy);
+            const std::string hkdfString = Botan_detail::parenthesize("HKDF", *algoString);
             hkdf = ::Botan::KDF::create(hkdfString);
         }
 
@@ -335,15 +330,9 @@ std::optional<component::Key> Botan::OpKDF_PBKDF1(operation::KDF_PBKDF1& op) {
         /* Initialize */
         {
             std::optional<std::string> algoString;
-            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
-            std::string algoStringCopy = *algoString;
-            if ( algoStringCopy == "SHAKE-128(128)" ) {
-                algoStringCopy = "SHAKE-128(256)";
-            } else if ( algoStringCopy == "SHAKE-256(256)" ) {
-                algoStringCopy = "SHAKE-256(512)";
-            }
+            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get(), true), std::nullopt);
 
-            const std::string pbkdf1String = Botan_detail::parenthesize("PBKDF1", algoStringCopy);
+            const std::string pbkdf1String = Botan_detail::parenthesize("PBKDF1", *algoString);
             CF_CHECK_NE(pbkdf1 = ::Botan::PBKDF::create(pbkdf1String), nullptr);
         }
 
@@ -381,15 +370,9 @@ std::optional<component::Key> Botan::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
         /* Initialize */
         {
             std::optional<std::string> algoString;
-            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
-            std::string algoStringCopy = *algoString;
-            if ( algoStringCopy == "SHAKE-128(128)" ) {
-                algoStringCopy = "SHAKE-128(256)";
-            } else if ( algoStringCopy == "SHAKE-256(256)" ) {
-                algoStringCopy = "SHAKE-256(512)";
-            }
+            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get(), true), std::nullopt);
 
-            const std::string pbkdf2String = Botan_detail::parenthesize("PBKDF2", algoStringCopy);
+            const std::string pbkdf2String = Botan_detail::parenthesize("PBKDF2", *algoString);
             CF_CHECK_NE(pwdhash_fam = ::Botan::PasswordHashFamily::create(pbkdf2String), nullptr);
 
             CF_CHECK_NE(pwdhash = pwdhash_fam->from_params(op.iterations), nullptr);
