@@ -13,7 +13,7 @@ generate_ids : generate_ids.cpp
 ids.go : generate_ids
 	./generate_ids
 cryptofuzz.a: cryptofuzz.go ids.go
-	go build -buildmode=c-archive cryptofuzz.go ids.go
+	go build -o cryptofuzz.a -buildmode=c-archive cryptofuzz.go ids.go
 module.o: cryptofuzz.a module.cpp module.h
 	$(CXX) $(CXXFLAGS) -fPIC -c module.cpp -o module.o
 clean:
