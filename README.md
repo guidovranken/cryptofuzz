@@ -37,3 +37,7 @@ Documentation on how to implement modules and use Cryptofuzz will follow.
 - Botan: [CAST5_CBC invalid output](https://github.com/randombit/botan/issues/2081)
 - Botan: [Streebog invalid output](https://github.com/randombit/botan/issues/2082)
 - Botan: [PBKDF2 hang (very long loop) if iterations == 0](https://github.com/randombit/botan/issues/2088)
+- NSS: [HKDF SHA1 stack buffer overflow, CVE-2019-11759](https://hg.mozilla.org/projects/nss/rev/c0913ad7a5609751a8dfc37ae2e0a7a0cd6a42dd)
+- NSS: [RC2 CBC OOB read with undersized IV](https://hg.mozilla.org/projects/nss/rev/dc86215aea17672228b28cf3516da89a751cc24d)
+- NSS: [SEED_CBC encryption out-of-bounds write](https://hg.mozilla.org/projects/nss/rev/7580a5a212c78ab21fc4878330dd7872c3b530b8)
+- NSS: [CKM_AES_GCM succeeds with invalid tag sizes, risk of memory corruption](https://hg.mozilla.org/projects/nss/rev/4e3971fd992c0513d0696048c64b7230e5b6039b)
