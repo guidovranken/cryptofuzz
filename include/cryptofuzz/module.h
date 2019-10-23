@@ -88,6 +88,18 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::BLS_PublicKey> OpBLS_PrivateToPublic(operation::BLS_PrivateToPublic& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::BLS_Signature> OpBLS_Sign(operation::BLS_Sign& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<bool> OpBLS_Verify(operation::BLS_Verify& op) {
+            (void)op;
+            return std::nullopt;
+        }
 };
 
 } /* namespace cryptofuzz */

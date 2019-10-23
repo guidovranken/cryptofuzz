@@ -63,6 +63,14 @@
   #include <modules/botan/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_MCL)
+  #include <modules/mcl/module.h>
+#endif
+
+#if defined(CRYPTOFUZZ_CHIA_BLS)
+  #include <modules/chia_bls/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
@@ -136,6 +144,14 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_BOTAN)
     driver->LoadModule( std::make_shared<cryptofuzz::module::Botan>() );
+#endif
+
+#if defined(CRYPTOFUZZ_MCL)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::mcl>() );
+#endif
+
+#if defined(CRYPTOFUZZ_CHIA_BLS)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::chia_bls>() );
 #endif
     return 0;
 }

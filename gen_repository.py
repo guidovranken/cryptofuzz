@@ -211,6 +211,9 @@ modules.Add( Module("Veracrypt") )
 modules.Add( Module("libgcrypt") )
 modules.Add( Module("libsodium") )
 modules.Add( Module("mbed TLS") )
+modules.Add( Module("mcl") )
+modules.Add( Module("Chia Network bls-signatures") )
+modules.Add( Module("milagro_bls") )
 
 operations = OperationTable()
 operations.Add( Operation("Digest") )
@@ -228,6 +231,9 @@ operations.Add( Operation("KDF_SSH") )
 operations.Add( Operation("ECC_PrivateToPublic") )
 operations.Add( Operation("ECDSA_Sign") )
 operations.Add( Operation("ECDSA_Verify") )
+operations.Add( Operation("BLS_PrivateToPublic") )
+operations.Add( Operation("BLS_Sign") )
+operations.Add( Operation("BLS_Verify") )
 
 ciphers = CipherTable()
 
@@ -629,6 +635,11 @@ ecc_curves.Add( ECC_Curve("x962_p239v1") )
 ecc_curves.Add( ECC_Curve("x962_p239v2") )
 ecc_curves.Add( ECC_Curve("x962_p239v3") )
 ecc_curves.Add( ECC_Curve("x962_p256v1") )
+
+ecc_curves.Add( ECC_Curve("BLS12_381") )
+ecc_curves.Add( ECC_Curve("BN256") )
+ecc_curves.Add( ECC_Curve("BN384") )
+ecc_curves.Add( ECC_Curve("BN512") )
 
 tables = [modules, operations, ciphers, digests, ecc_curves]
 

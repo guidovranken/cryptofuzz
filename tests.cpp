@@ -112,5 +112,20 @@ void test(const operation::ECDSA_Verify& op, const std::optional<bool>& result) 
     (void)result;
 }
 
+void test(const operation::BLS_PrivateToPublic& op, const std::optional<component::BLS_PublicKey>& result) {
+    (void)op;
+    (void)result;
+}
+
+void test(const operation::BLS_Sign& op, const std::optional<component::BLS_Signature>& result) {
+    (void)op;
+    (void)result;
+}
+
+void test(const operation::BLS_Verify& op, const std::optional<bool>& result) {
+    (void)op;
+    (void)result;
+}
+
 } /* namespace tests */
 } /* namespace cryptofuzz */

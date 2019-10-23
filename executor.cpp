@@ -475,6 +475,85 @@ template<> std::optional<bool> ExecutorBase<bool, operation::ECDSA_Verify>::call
     return module->OpECDSA_Verify(op);
 }
 
+/* Specialization for operation::BLS_PrivateToPublic */
+template<> void ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>::updateExtraCounters(const uint64_t moduleID, operation::BLS_PrivateToPublic& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>::postprocess(std::shared_ptr<Module> module, operation::BLS_PrivateToPublic& op, const ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::BLS_PublicKey> ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>::callModule(std::shared_ptr<Module> module, operation::BLS_PrivateToPublic& op) const {
+    const size_t size = op.priv.ToTrimmedString().size();
+
+    if ( size == 0 || size > 4096 ) {
+        return std::nullopt;
+    }
+
+    return module->OpBLS_PrivateToPublic(op);
+}
+
+/* Specialization for operation::BLS_Sign */
+template<> void ExecutorBase<component::BLS_Signature, operation::BLS_Sign>::updateExtraCounters(const uint64_t moduleID, operation::BLS_Sign& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::BLS_Signature, operation::BLS_Sign>::postprocess(std::shared_ptr<Module> module, operation::BLS_Sign& op, const ExecutorBase<component::BLS_Signature, operation::BLS_Sign>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::BLS_Signature> ExecutorBase<component::BLS_Signature, operation::BLS_Sign>::callModule(std::shared_ptr<Module> module, operation::BLS_Sign& op) const {
+    const size_t size = op.priv.ToTrimmedString().size();
+
+    if ( size == 0 || size > 4096 ) {
+        return std::nullopt;
+    }
+
+    return module->OpBLS_Sign(op);
+}
+
+/* Specialization for operation::BLS_Verify */
+template<> void ExecutorBase<bool, operation::BLS_Verify>::updateExtraCounters(const uint64_t moduleID, operation::BLS_Verify& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<bool, operation::BLS_Verify>::postprocess(std::shared_ptr<Module> module, operation::BLS_Verify& op, const ExecutorBase<bool, operation::BLS_Verify>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<bool> ExecutorBase<bool, operation::BLS_Verify>::callModule(std::shared_ptr<Module> module, operation::BLS_Verify& op) const {
+    const std::vector<size_t> sizes = {
+        op.pub.first.ToTrimmedString().size(),
+        op.pub.second.ToTrimmedString().size(),
+        op.signature.first.ToTrimmedString().size(),
+        op.signature.second.ToTrimmedString().size(),
+    };
+
+    for (const auto& size : sizes) {
+        if ( size == 0 || size > 4096 ) {
+            return std::nullopt;
+        }
+    }
+
+    return module->OpBLS_Verify(op);
+}
+
 template <class ResultType, class OperationType>
 ExecutorBase<ResultType, OperationType>::ExecutorBase(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const bool debug) :
     operationID(operationID),
@@ -613,20 +692,29 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
         }
     } while ( parentDs.Get<bool>() == true );
 
+    if ( operations.empty() == true ) {
+        return;
+    }
 
     /* Enable this to run every operation on every loaded module */
 #if 1
     {
-        std::vector< std::pair<std::shared_ptr<Module>, OperationType> > newOperations;
+        std::set<uint64_t> moduleIDs;
+        for (const auto& m : modules ) {
+            moduleIDs.insert(m.first);
+        }
 
-        const size_t operationsSize = operations.size();
-        for (size_t i = 0; i < operationsSize; i++) {
-            for (const auto& m : modules ) {
-                if ( m.first == operations[i].first->ID ) {
-                    continue;
-                }
-                operations.push_back( {m.second, operations[i].second} );
-            }
+        std::set<uint64_t> operationModuleIDs;
+        for (const auto& op : operations) {
+            operationModuleIDs.insert(op.first->ID);
+        }
+
+        std::vector<uint64_t> addModuleIDs(moduleIDs.size());
+        auto it = std::set_difference(moduleIDs.begin(), moduleIDs.end(), operationModuleIDs.begin(), operationModuleIDs.end(), addModuleIDs.begin());
+        addModuleIDs.resize(it - addModuleIDs.begin());
+
+        for (const auto& id : addModuleIDs) {
+            operations.push_back({ modules.at(id), operations[0].second});
         }
     }
 #endif
@@ -700,5 +788,8 @@ template class ExecutorBase<bool, operation::Verify>;
 template class ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>;
 template class ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>;
 template class ExecutorBase<bool, operation::ECDSA_Verify>;
+template class ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>;
+template class ExecutorBase<component::BLS_Signature, operation::BLS_Sign>;
+template class ExecutorBase<bool, operation::BLS_Verify>;
 
 } /* namespace cryptofuzz */

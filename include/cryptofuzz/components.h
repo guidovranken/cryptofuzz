@@ -114,5 +114,9 @@ class BignumPair {
 using ECC_PublicKey = BignumPair;
 using ECDSA_Signature = BignumPair;
 
+using BLS_PrivateKey = Bignum;
+using BLS_PublicKey = BignumPair;
+using BLS_Signature = BignumPair;
+
 } /* namespace component */
 } /* namespace cryptofuzz */

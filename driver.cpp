@@ -30,6 +30,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorECC_PrivateToPublic executorECC_PrivateToPublic(CF_OPERATION("ECC_PrivateToPublic"), modules, debug);
     static ExecutorECDSA_Sign executorECDSA_Sign(CF_OPERATION("ECDSA_Sign"), modules, debug);
     static ExecutorECDSA_Verify executorECDSA_Verify(CF_OPERATION("ECDSA_Verify"), modules, debug);
+    static ExecutorBLS_PrivateToPublic executorBLS_PrivateToPublic(CF_OPERATION("BLS_PrivateToPublic"), modules, debug);
+    static ExecutorBLS_Sign executorBLS_Sign(CF_OPERATION("BLS_Sign"), modules, debug);
+    static ExecutorBLS_Verify executorBLS_Verify(CF_OPERATION("BLS_Verify"), modules, debug);
 
     try {
 
@@ -39,6 +42,7 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
         const auto payload = ds.GetData(0, 1);
 
         switch ( operation ) {
+#if 0
             case CF_OPERATION("Digest"):
                 executorDigest.Run(ds, payload.data(), payload.size());
                 break;
@@ -83,6 +87,8 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 executorVerify.Run(ds, payload.data(), payload.size());
                 break;
 #endif
+#endif
+#if 0
             case CF_OPERATION("ECC_PrivateToPublic"):
                 executorECC_PrivateToPublic.Run(ds, payload.data(), payload.size());
                 break;
@@ -91,6 +97,16 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("ECDSA_Verify"):
                 executorECDSA_Verify.Run(ds, payload.data(), payload.size());
+                break;
+#endif
+            case CF_OPERATION("BLS_PrivateToPublic"):
+                executorBLS_PrivateToPublic.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_Sign"):
+                executorBLS_Sign.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_Verify"):
+                executorBLS_Verify.Run(ds, payload.data(), payload.size());
                 break;
         }
     } catch ( Datasource::OutOfData ) {

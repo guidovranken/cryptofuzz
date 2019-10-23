@@ -23,6 +23,9 @@ void test(const operation::Verify& op, const std::optional<bool>& result);
 void test(const operation::ECC_PrivateToPublic& op, const std::optional<component::ECC_PublicKey>& result);
 void test(const operation::ECDSA_Sign& op, const std::optional<component::ECDSA_Signature>& result);
 void test(const operation::ECDSA_Verify& op, const std::optional<bool>& result);
+void test(const operation::BLS_PrivateToPublic& op, const std::optional<component::BLS_PublicKey>& result);
+void test(const operation::BLS_Sign& op, const std::optional<component::BLS_Signature>& result);
+void test(const operation::BLS_Verify& op, const std::optional<bool>& result);
 
 } /* namespace tests */
 } /* namespace cryptofuzz */
