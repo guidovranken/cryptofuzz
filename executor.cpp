@@ -3,6 +3,7 @@
 #include <cryptofuzz/util.h>
 #include <fuzzing/memory.hpp>
 #include <algorithm>
+#include <set>
 
 extern "C" {
 //__attribute__((section("__libfuzzer_extra_counters")))
