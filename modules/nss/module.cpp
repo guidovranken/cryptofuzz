@@ -465,7 +465,7 @@ namespace nss_detail {
                 CF_CHECK_NE(param = (SECItem *)PORT_Alloc(sizeof(SECItem)), nullptr);
                 CF_CHECK_NE(aes_ctr_params = (CK_AES_CTR_PARAMS*)PORT_Alloc(sizeof(CK_AES_CTR_PARAMS)), nullptr);
 
-                aes_ctr_params->ulCounterBits = 32;
+                aes_ctr_params->ulCounterBits = 128;
                 memcpy(aes_ctr_params->cb, op.cipher.iv.GetPtr(), 16);
 
                 param->type = siBuffer;
