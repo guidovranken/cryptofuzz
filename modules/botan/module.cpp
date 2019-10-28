@@ -3,6 +3,7 @@
 #include <cryptofuzz/repository.h>
 #include <botan/hash.h>
 #include <botan/mac.h>
+#include <botan/cmac.h>
 #include <botan/cipher_mode.h>
 #include <botan/pbkdf.h>
 #include <botan/pwdhash.h>
@@ -135,12 +136,12 @@ end:
 
 namespace Botan_detail {
 
-    std::optional<std::string> CipherIDToString(const uint64_t digestType) {
+    std::optional<std::string> CipherIDToString(const uint64_t digestType, const bool withMode = true) {
 #include "cipher_string_lut.h"
         std::optional<std::string> ret = std::nullopt;
 
         CF_CHECK_NE(LUT.find(digestType), LUT.end());
-        ret = LUT.at(digestType);
+        ret = withMode ? LUT.at(digestType).first : LUT.at(digestType).second;
 end:
         return ret;
     }
@@ -252,6 +253,51 @@ end:
         }
 
 } /* namespace Botan_detail */
+
+std::optional<component::MAC> Botan::OpCMAC(operation::CMAC& op) {
+    if ( op.cipher.cipherType.Get() != CF_CIPHER("AES_128_CBC") ) {
+        return {};
+    }
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    std::optional<component::MAC> ret = std::nullopt;
+    std::unique_ptr<::Botan::CMAC> cmac = nullptr;
+    std::unique_ptr<::Botan::BlockCipher> cipher = nullptr;
+    util::Multipart parts;
+
+    const ::Botan::SymmetricKey key(op.cipher.key.GetPtr(), op.cipher.key.GetSize());
+
+    try {
+        /* Initialize */
+        {
+            {
+                std::optional<std::string> algoString;
+                CF_CHECK_NE(algoString = Botan_detail::CipherIDToString(op.cipher.cipherType.Get(), false), std::nullopt);
+
+                CF_CHECK_NE(cipher = ::Botan::BlockCipher::create(*algoString), nullptr);
+            }
+
+            CF_CHECK_NE(cmac = std::make_unique<::Botan::CMAC>(cipher->clone()), nullptr);
+            cmac->set_key(key);
+
+            parts = util::ToParts(ds, op.cleartext);
+        }
+
+        /* Process */
+        for (const auto& part : parts) {
+            cmac->update(part.first, part.second);
+        }
+
+        /* Finalize */
+        {
+            const auto res = cmac->final();
+            ret = component::MAC(res.data(), res.size());
+        }
+
+    } catch ( ... ) { }
+
+end:
+    return ret;
+}
 
 std::optional<component::Ciphertext> Botan::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
     return Botan_detail::Crypt<component::Ciphertext, operation::SymmetricEncrypt>(op);

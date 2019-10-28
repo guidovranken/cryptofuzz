@@ -17,9 +17,9 @@ static void test_digests(void) {
 static void test_ciphers(void) {
 #include "cipher_string_lut.h"
     for (auto it = LUT.begin(); it != LUT.end(); it++) {
-        const auto crypt = ::Botan::Cipher_Mode::create(it->second, ::Botan::ENCRYPTION);
+        const auto crypt = ::Botan::Cipher_Mode::create(it->second.first, ::Botan::ENCRYPTION);
         if ( crypt == nullptr ) {
-            printf("Cannot instantiate cipher: %s\n", it->second.c_str());
+            printf("Cannot instantiate cipher: %s\n", it->second.first.c_str());
         }
     }
 }
