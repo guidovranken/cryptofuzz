@@ -42,3 +42,4 @@ Documentation on how to implement modules and use Cryptofuzz will follow.
 - NSS: [SEED_CBC encryption out-of-bounds write](https://hg.mozilla.org/projects/nss/rev/7580a5a212c78ab21fc4878330dd7872c3b530b8)
 - NSS: [CKM_AES_GCM succeeds with invalid tag sizes, risk of memory corruption](https://hg.mozilla.org/projects/nss/rev/4e3971fd992c0513d0696048c64b7230e5b6039b)
 - NSS: [PBKDF2 memory leak if key size > 256](https://bugzilla.mozilla.org/show_bug.cgi?id=1591363)
+- NSS: [DES IV buffer overread if IV is undersized](https://bugzilla.mozilla.org/show_bug.cgi?id=1591742)
