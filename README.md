@@ -2,7 +2,9 @@
 
 ## Documentation
 
-Documentation on how to implement modules and use Cryptofuzz will follow.
+For building Cryptofuzz, please refer to [`docs/building.md`](docs/building.md).
+
+For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/running.md).
 
 ## Hall of Fame
 
