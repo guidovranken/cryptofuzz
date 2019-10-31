@@ -1,32 +1,62 @@
 # Building Cryptofuzz
 
-## Preparation
+There are three main steps in building Cryptofuzz to begin fuzzing:
+
+ 1. Generating Cryptofuzz Headers
+ 2. Building Cryptographic Libraries and Cryptofuzz Modules
+ 3. Building Cryptofuzz
+
+## 1. Generating Cryptofuzz Headers
 
 Run:
 
-```python gen_repository.py```
+```sh
+python2 gen_repository.py
+```
 
 to generate look-up tables required for the compilation of Cryptofuzz.
 
-Set the fuzzing engine:
+If you don't, you'll typically see an error message like:
 
-```sh
-export LIBFUZZER_LINK="-fsanitize=fuzzer"
-```
+    include/cryptofuzz/repository.h:23:10: fatal error: ../../repository_tbl.h: No such file or directory
+       23 | #include "../../repository_tbl.h"
+          |          ^~~~~~~~~~~~~~~~~~~~~~~~
 
-Recommended compilation flags for both Cryptofuzz and cryptographic libraries are:
+## 2. Building Cryptographic Libraries and Cryptofuzz Modules
+
+Refer to the following documentation for building your desired set of
+libraries. Note that Cryptofuzz is built around differential fuzzing;
+having multiple libraries for a given primitive is helpful in finding
+bugs.
+
+When building Cryptofuzz and cryptographic libraries, the suggested
+compilation flags are:
 
 ```sh
 export CFLAGS="-fsanitize=address,undefined,fuzzer-no-link -O2 -g"
 export CXXFLAGS="-fsanitize=address,undefined,fuzzer-no-link -D_GLIBCXX_DEBUG -O2 -g"
 ```
 
-## Building modules
+Some libraries might also require `-Wl,--unresolved-symbols=ignore-all` in
+order to build successfully.
 
-For library-specific build instructions, please refer to:
+Available library-specific build instructions:
 
-[OpenSSL, LibreSSL, BoringSSL](openssl.md)
+ - [OpenSSL, LibreSSL, BoringSSL](openssl.md)
+ - [Botan](botan.md)
+ - [Crypto++](cryptopp.md)
+ - [NSS](nss.md)
 
-[Botan](botan.md)
+## 3. Building Cryptofuzz
 
-[Crypto++](cryptopp.md)
+Set the fuzzing engine link:
+
+```sh
+export LIBFUZZER_LINK="-fsanitize=fuzzer"
+```
+
+Then, build Cryptofuzz:
+
+```sh
+make
+```
