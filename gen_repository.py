@@ -335,6 +335,7 @@ ciphers.Add( Cipher("CAST5_CFB") )
 ciphers.Add( Cipher("CAST5_ECB") )
 ciphers.Add( Cipher("CAST5_OFB") )
 ciphers.Add( Cipher("CHACHA20") )
+ciphers.Add( Cipher("DES") )
 # DESX_A/DESX_B: See https://github.com/openssl/openssl/issues/9703#issuecomment-526197301
 ciphers.Add( Cipher("DESX_A_CBC") )
 ciphers.Add( Cipher("DESX_B_CBC") )
