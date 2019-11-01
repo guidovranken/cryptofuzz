@@ -193,12 +193,8 @@ std::optional<component::MAC> NSS::OpCMAC(operation::CMAC& op) {
     ret = component::MAC(output.data(), output.size());
 
 end:
-    if ( p11_key != nullptr ) {
-        PK11_FreeSymKey(p11_key);
-    }
-    if ( slot != nullptr ) {
-        PK11_FreeSlot(slot);
-    }
+    PK11_FreeSymKey(p11_key);
+    PK11_FreeSlot(slot);
 
     return ret;
 }

@@ -255,7 +255,7 @@ end:
 } /* namespace Botan_detail */
 
 std::optional<component::MAC> Botan::OpCMAC(operation::CMAC& op) {
-    if ( op.cipher.cipherType.Get() != CF_CIPHER("AES_128_CBC") ) {
+    if ( op.cipher.cipherType.Get() != CF_CIPHER("AES") ) {
         return {};
     }
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
