@@ -293,6 +293,29 @@ nlohmann::json KDF_SSH::ToJSON(void) const {
     return j;
 }
 
+std::string KDF_X963::Name(void) const { return "KDF_X963"; }
+std::string KDF_X963::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: KDF_X963" << std::endl;
+    ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
+    ss << "secret: " << util::HexDump(secret.Get()) << std::endl;
+    ss << "info: " << util::HexDump(info.Get()) << std::endl;
+    ss << "keySize: " << std::to_string(keySize) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json KDF_X963::ToJSON(void) const {
+    nlohmann::json j;
+    j["digestType"] = digestType.ToJSON();
+    j["secret"] = secret.ToJSON();
+    j["info"] = info.ToJSON();
+    j["keySize"] = keySize;
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string CMAC::Name(void) const { return "CMAC"; }
 std::string CMAC::ToString(void) const {
     std::stringstream ss;

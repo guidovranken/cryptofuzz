@@ -501,6 +501,42 @@ class KDF_SSH : public Operation {
         }
 };
 
+class KDF_X963 : public Operation {
+    public:
+        const component::DigestType digestType;
+        const component::Cleartext secret;
+        const component::Cleartext info;
+        const uint64_t keySize;
+
+        KDF_X963(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            digestType(ds),
+            secret(ds),
+            info(ds),
+            keySize(ds.Get<uint64_t>() % 1024)
+        { }
+        KDF_X963(nlohmann::json json) :
+            Operation(json["modifier"]),
+            digestType(json["digestType"]),
+            secret(json["secret"]),
+            info(json["info"]),
+            keySize(json["keySize"].get<uint64_t>())
+        { }
+
+        static size_t MaxOperations(void) { return 20; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const KDF_X963& rhs) const {
+            return
+                (digestType == rhs.digestType) &&
+                (secret == rhs.secret) &&
+                (info == rhs.info) &&
+                (keySize == rhs.keySize) &&
+                (modifier == rhs.modifier);
+        }
+};
+
 class CMAC : public Operation {
     public:
         const component::Cleartext cleartext;
