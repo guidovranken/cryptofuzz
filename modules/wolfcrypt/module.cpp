@@ -1440,13 +1440,10 @@ end:
 std::optional<component::Key> wolfCrypt::OpKDF_TLS1_PRF(operation::KDF_TLS1_PRF& op) {
     std::optional<component::Key> ret = std::nullopt;
 
-    /* TODO check digest */
-
     uint8_t* out = util::malloc(op.keySize);
 
-    auto hashType = wolfCrypt_detail::toHashType(op.digestType);
+    CF_CHECK_EQ(op.digestType.Get(), CF_DIGEST("MD5_SHA1"));
 
-    CF_CHECK_NE(hashType, std::nullopt);
     CF_CHECK_EQ(wc_PRF_TLSv1(out,
             op.keySize,
             op.secret.GetPtr(),
