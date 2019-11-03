@@ -1267,7 +1267,7 @@ std::optional<component::MAC> wolfCrypt::OpCMAC(operation::CMAC& op) {
     Cmac ctx;
     uint8_t out[AES_BLOCK_SIZE];
     util::Multipart parts;
-    uint32_t outSize;
+    uint32_t outSize = sizeof(out);
 
     bool useOneShot = true;
 
