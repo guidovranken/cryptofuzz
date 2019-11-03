@@ -1386,6 +1386,9 @@ std::optional<component::Key> wolfCrypt::OpKDF_SCRYPT(operation::KDF_SCRYPT& op)
 
     uint8_t* out = util::malloc(op.keySize);
 
+    const size_t N = op.N >> 1;
+
+    CF_CHECK_EQ(N << 1, op.N);
     CF_CHECK_GT(op.p, 0);
 
     CF_CHECK_EQ(wc_scrypt(
