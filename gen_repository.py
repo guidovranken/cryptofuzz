@@ -1,4 +1,14 @@
+#!/usr/bin/python3
+
+from __future__ import print_function
+
 import re
+
+# Python2 <-> Python3 shim to make range behave like range on Python3
+try:
+    range = xrange
+except NameError:
+    pass
 
 def ToCryptofuzzID(prefix, item):
     return 'fuzzing::datasource::ID("Cryptofuzz/{}/{}")'.format(prefix, item)
@@ -18,12 +28,12 @@ class ModeOfOperation(object):
                 'XTS' : r'_?XTS',
         }
 
-        for name, regex in regexDict.iteritems():
+        for name, regex in regexDict.items():
             if bool(re.search(regex, cipher)):
                 self.modeDict[name] = True
 
         if len(self.modeDict.keys()) > 1:
-            print "Tried setting more than 1 mode, exiting"
+            print("Tried setting more than 1 mode, exiting")
             exit(1)
 
 # Components
@@ -63,7 +73,7 @@ class Table(object):
         # Sanity check to assert that no duplicate items are added
         nameList = [obj.name for obj in self.table]
         if len(set(nameList)) != len(nameList):
-            print "Duplicate entry: {}, exiting".format(self.table[-1].name)
+            print("Duplicate entry: {}, exiting".format(self.table[-1].name))
             exit(1)
     def Add(self, obj):
         self.table += [ obj ]
@@ -82,12 +92,12 @@ class Table(object):
     def ToCPPTable(self):
         outStr = ""
         outStr += "constexpr " + self.getStructName(True) + " " + self.getStructName(False) + "[] = {\n"
-        for index in xrange(len(self.table)):
+        for index in range(len(self.table)):
             outTableEntry = [ ToCryptofuzzID(self.prefix, self.table[index].name), "\"" + self.table[index].name + "\"" ]
             outTableEntry.extend( self.getTableEntryList(index) )
 
             if len(outTableEntry) != len(self.tableDecl):
-                print "Size of table declaration and size of table entry doesn't match, exiting"
+                print("Size of table declaration and size of table entry doesn't match, exiting")
                 exit(1)
 
             outStr += '    {' + ", ".join( outTableEntry ) + '},\n'
@@ -98,12 +108,12 @@ class Table(object):
     def ToCPPMap(self):
         outStr = ""
         outStr += "std::map<uint64_t, " + self.getStructName(True) + ">" + " " + self.getStructName(False) + "Map = {\n";
-        for index in xrange(len(self.table)):
+        for index in range(len(self.table)):
             outTableEntry = [ ToCryptofuzzID(self.prefix, self.table[index].name), "\"" + self.table[index].name + "\""]
             outTableEntry.extend( self.getTableEntryList(index) )
 
             if len(outTableEntry) != len(self.tableDecl):
-                print "Size of table declaration and size of table entry doesn't match, exiting"
+                print("Size of table declaration and size of table entry doesn't match, exiting")
                 exit(1)
 
             outStr += '    {' + outTableEntry[0] + ", {" + ", ".join( outTableEntry ) + '} },\n'
@@ -543,11 +553,11 @@ digests.Add( Digest("XXHASH64") )
 
 tables = [modules, operations, ciphers, digests]
 
-with open('repository_tbl.h', 'wb') as fp:
+with open('repository_tbl.h', 'w') as fp:
     for table in tables:
         fp.write(table.GetTableDecl())
         fp.write(table.ToCPPTable())
-with open('repository_map.h', 'wb') as fp:
+with open('repository_map.h', 'w') as fp:
     for table in tables:
         fp.write(table.GetTableDecl())
         fp.write(table.ToCPPMap())
