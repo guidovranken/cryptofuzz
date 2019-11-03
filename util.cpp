@@ -98,6 +98,31 @@ Multipart ToParts(fuzzing::datasource::Datasource& ds, const uint8_t* data, cons
     return ret;
 }
 
+std::vector<uint8_t> Pkcs7Pad(std::vector<uint8_t> in, const size_t blocksize) {
+    size_t numPadBytes = blocksize - (in.size() % blocksize);
+
+    const uint8_t padByte = static_cast<uint8_t>(numPadBytes);
+    for (size_t i = 0; i < numPadBytes; i++) {
+        in.push_back(padByte);
+    }
+
+    return in;
+}
+
+std::optional<std::vector<uint8_t>> Pkcs7Unpad(std::vector<uint8_t> in, const size_t blocksize) {
+    if ( in.size() == 0 || (in.size() % blocksize) != 0 ) {
+        return std::nullopt;
+    }
+
+    const auto numPadBytes = static_cast<size_t>(in.back());
+
+    if ( numPadBytes > in.size() ) {
+        return std::nullopt;
+    }
+
+    return std::vector<uint8_t>(in.data(), in.data() + in.size() - numPadBytes);
+}
+
 std::string HexDump(const void *_data, const size_t len, const std::string description) {
     unsigned char *data = (unsigned char*)_data;
 

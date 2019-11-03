@@ -67,6 +67,10 @@
   #include <modules/nettle/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_WOLFCRYPT)
+  #include <modules/wolfcrypt/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
@@ -144,6 +148,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_NETTLE)
     driver->LoadModule( std::make_shared<cryptofuzz::module::Nettle>() );
+#endif
+
+#if defined(CRYPTOFUZZ_WOLFCRYPT)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::wolfCrypt>() );
 #endif
     return 0;
 }

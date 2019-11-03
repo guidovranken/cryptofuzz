@@ -46,6 +46,7 @@ Available library-specific build instructions:
  - [Botan](botan.md)
  - [Crypto++](cryptopp.md)
  - [NSS](nss.md)
+ - [wolfCrypt](wolfcrypt.md)
 
 ## 3. Building Cryptofuzz
 
@@ -60,3 +61,4 @@ Then, build Cryptofuzz:
 ```sh
 make
 ```
+

@@ -59,6 +59,10 @@ class Buffer {
             boost::algorithm::unhex(s, std::back_inserter(data));
         }
 
+        explicit Buffer(const std::vector<uint8_t>& data) :
+            data(data)
+        { }
+
         Buffer(const uint8_t* data, const size_t size) :
             data(data, data + size)
         { }
