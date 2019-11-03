@@ -30,3 +30,5 @@ For library-specific build instructions, please refer to:
 [Botan](botan.md)
 
 [Crypto++](cryptopp.md)
+
+[wolfCrypt](wolfcrypt.md)
