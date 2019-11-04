@@ -10,7 +10,7 @@ From the OpenSSL root directory:
 ./config enable-md2 enable-rc5
 make
 export OPENSSL_INCLUDE_PATH=`realpath include/`
-export OPENSSL_LIBRARY_A_PATH=`realpath libcrypto.a`
+export OPENSSL_LIBCRYPTO_A_PATH=`realpath libcrypto.a`
 ```
 
 Add the parameter ```no-asm``` to the ```./config``` command to build without assembly language optimizations.
