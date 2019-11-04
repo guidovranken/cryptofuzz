@@ -36,6 +36,7 @@
 #include <pwdbased.h>
 #include <filters.h>
 #include <kalyna.h>
+#include <xts.h>
 #include <memory>
 
 namespace cryptofuzz {
@@ -310,6 +311,11 @@ end:
     }
 
     template <typename Cipher>
+    std::optional<component::Ciphertext> CryptXTS(operation::SymmetricEncrypt& op) {
+        return Encrypt<::CryptoPP::XTS_Mode<Cipher>, Cipher::BLOCKSIZE, true, false>(op);
+    }
+
+    template <typename Cipher>
     std::optional<component::Ciphertext> CryptRaw(operation::SymmetricEncrypt& op) {
         if ( op.cleartext.GetSize() == 0 ) {
             return std::nullopt;
@@ -344,6 +350,11 @@ end:
     template <typename Cipher>
     std::optional<component::Cleartext> CryptOFB(operation::SymmetricDecrypt& op) {
         return Decrypt<::CryptoPP::OFB_Mode<Cipher>, Cipher::BLOCKSIZE, true, false>(op);
+    }
+
+    template <typename Cipher>
+    std::optional<component::Cleartext> CryptXTS(operation::SymmetricDecrypt& op) {
+        return Decrypt<::CryptoPP::XTS_Mode<Cipher>, Cipher::BLOCKSIZE, true, false>(op);
     }
 
     template <typename Cipher>
@@ -1067,6 +1078,29 @@ end:
                     {
                         if ( op.cipher.key.GetSize() == 256 / 8) {
                             ret = CryptoPP_detail::CryptOFB< ::CryptoPP::ARIA >(op);
+                        }
+                    }
+                    break;
+
+                /* XTS */
+                case    CF_CIPHER("AES_128_XTS"):
+                    {
+                        if ( op.cipher.key.GetSize() == 128 / 8) {
+                            ret = CryptoPP_detail::CryptXTS< ::CryptoPP::AES >(op);
+                        }
+                    }
+                    break;
+                case    CF_CIPHER("AES_256_XTS"):
+                    {
+                        if ( op.cipher.key.GetSize() == 256 / 8) {
+                            ret = CryptoPP_detail::CryptXTS< ::CryptoPP::AES >(op);
+                        }
+                    }
+                    break;
+                case    CF_CIPHER("AES_512_XTS"):
+                    {
+                        if ( op.cipher.key.GetSize() == 512 / 8) {
+                            ret = CryptoPP_detail::CryptXTS< ::CryptoPP::AES >(op);
                         }
                     }
                     break;
