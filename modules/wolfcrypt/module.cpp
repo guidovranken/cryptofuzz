@@ -759,16 +759,20 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
         }
         break;
 
+        case CF_CIPHER("AES_128_XTS"):
+        case CF_CIPHER("AES_192_XTS"):
         case CF_CIPHER("AES_256_XTS"):
-        case CF_CIPHER("AES_512_XTS"):
         {
             XtsAes ctx;
 
             switch ( op.cipher.cipherType.Get() ) {
-                case CF_CIPHER("AES_256_XTS"):
-                    CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
+                case CF_CIPHER("AES_128_XTS"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
                     break;
-                case CF_CIPHER("AES_512_XTS"):
+                case CF_CIPHER("AES_192_XTS"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 24);
+                    break;
+                case CF_CIPHER("AES_256_XTS"):
                     CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
                     break;
             }
@@ -857,8 +861,8 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
         {
             Des3 ctx;
 
-            CF_CHECK_EQ(op.cipher.key.GetSize(), 8);
-            CF_CHECK_EQ(op.cipher.iv.GetSize(), 8);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 24);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 24);
 
             const auto cleartext = util::Pkcs7Pad(op.cleartext.Get(), 8);
             out = util::malloc(cleartext.size());
@@ -1119,16 +1123,20 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
         }
         break;
 
+        case CF_CIPHER("AES_128_XTS"):
+        case CF_CIPHER("AES_192_XTS"):
         case CF_CIPHER("AES_256_XTS"):
-        case CF_CIPHER("AES_512_XTS"):
         {
             XtsAes ctx;
 
             switch ( op.cipher.cipherType.Get() ) {
-                case CF_CIPHER("AES_256_XTS"):
-                    CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
+                case CF_CIPHER("AES_128_XTS"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
                     break;
-                case CF_CIPHER("AES_512_XTS"):
+                case CF_CIPHER("AES_192_XTS"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 24);
+                    break;
+                case CF_CIPHER("AES_256_XTS"):
                     CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
                     break;
             }
@@ -1218,8 +1226,8 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
         {
             Des3 ctx;
 
-            CF_CHECK_EQ(op.cipher.key.GetSize(), 8);
-            CF_CHECK_EQ(op.cipher.iv.GetSize(), 8);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 24);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 24);
 
             out = util::malloc(op.ciphertext.GetSize());
 
