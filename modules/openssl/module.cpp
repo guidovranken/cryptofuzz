@@ -2601,6 +2601,63 @@ end:
 
     return ret;
 }
+
+std::optional<component::Key> OpenSSL::OpKDF_X963(operation::KDF_X963& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    EVP_KDF_CTX* kctx = nullptr;
+    const EVP_MD* md = nullptr;
+    OSSL_PARAM params[4], *p = params;
+    uint8_t* out = util::malloc(op.keySize);
+
+    /* Initialize */
+    {
+        CF_CHECK_NE(md = toEVPMD(op.digestType), nullptr);
+
+        std::string mdName(EVP_MD_name(md));
+        *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST, mdName.data(), mdName.size() + 1);
+
+        auto secretCopy = op.secret.Get();
+        *p++ = OSSL_PARAM_construct_octet_string(
+                OSSL_KDF_PARAM_SECRET,
+                secretCopy.data(),
+                secretCopy.size());
+
+        auto infoCopy = op.info.Get();
+        *p++ = OSSL_PARAM_construct_octet_string(
+                OSSL_KDF_PARAM_INFO,
+                infoCopy.data(),
+                infoCopy.size());
+
+        *p = OSSL_PARAM_construct_end();
+
+        {
+            EVP_KDF* kdf = EVP_KDF_fetch(nullptr, "X963KDF", nullptr);
+            CF_CHECK_NE(kdf, nullptr);
+            kctx = EVP_KDF_CTX_new(kdf);
+            EVP_KDF_free(kdf);
+            CF_CHECK_NE(kctx, nullptr);
+        }
+
+        CF_CHECK_EQ(EVP_KDF_CTX_set_params(kctx, params), 1);
+    }
+
+    /* Process */
+    {
+        CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize), 0);
+    }
+
+    /* Finalize */
+    {
+        ret = component::Key(out, op.keySize);
+    }
+
+end:
+    EVP_KDF_CTX_free(kctx);
+
+    util::free(out);
+
+    return ret;
+}
 #endif
 
 std::optional<component::MAC> OpenSSL::OpCMAC(operation::CMAC& op) {
