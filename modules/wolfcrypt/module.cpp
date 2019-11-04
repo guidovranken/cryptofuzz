@@ -1230,6 +1230,7 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
             CF_CHECK_NE(unpaddedCleartext, std::nullopt);
             ret = component::Cleartext(Buffer(*unpaddedCleartext));
         }
+        break;
 
         case CF_CIPHER("IDEA_CBC"):
         {
