@@ -435,11 +435,6 @@ namespace nss_detail {
 
         /* Initialize */
         {
-            /* Workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=1591742 */
-            if ( op.cipher.cipherType.Get() == CF_CIPHER("DES_CBC") ) {
-                CF_CHECK_GT(op.cipher.iv.GetSize(), 8);
-            }
-
             CF_CHECK_GT(op.cipher.key.GetSize(), 0);
             CF_CHECK_GT(op.cipher.iv.GetSize(), 0);
             CF_CHECK_GT(GetInSize(op), 0);
