@@ -362,7 +362,7 @@ namespace nss_detail {
             inSize = invec.size();
         } else {
             inPtr = GetInPtr(op),
-                  inSize = GetInSize(op);
+            inSize = GetInSize(op);
         }
 
         return PK11_Decrypt(
@@ -663,7 +663,7 @@ std::optional<component::Key> NSS::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
     CF_CHECK_LTE(op.keySize, 256); /* Workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=1591363 */
     CF_CHECK_NE(oid = nss_detail::toHMACOID(op.digestType), std::nullopt);
     algId = ScopedSECAlgorithmID(PK11_CreatePBEV2AlgorithmID(SEC_OID_PKCS5_PBKDF2, /* unused */ SEC_OID_PKCS5_PBKDF2, *oid, op.keySize,
-						     op.iterations, &saltItem));
+                op.iterations, &saltItem));
     CF_CHECK_NE(algId.get(), nullptr);
 
     /* Derive */

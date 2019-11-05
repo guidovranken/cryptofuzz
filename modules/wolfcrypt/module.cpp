@@ -342,7 +342,7 @@ end:
             }
     };
 
-    
+
     Digest<Md2, MD2_DIGEST_SIZE, Init_Void<Md2>, DigestUpdate_Void<Md2>, DigestFinalize_Void<Md2>>
         md2(wc_InitMd2, wc_Md2Update, wc_Md2Final);
 
@@ -663,7 +663,7 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
                     CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
                     break;
             }
-            
+
             CF_CHECK_NE(op.tagSize, std::nullopt);
             CF_CHECK_NE(op.aad, std::nullopt);
 
@@ -1475,7 +1475,7 @@ end:
 
     return ret;
 }
-        
+
 std::optional<component::Key> wolfCrypt::OpKDF_X963(operation::KDF_X963& op) {
     std::optional<component::Key> ret = std::nullopt;
 
