@@ -10,6 +10,9 @@
 #include <nettle/hmac.h>
 #include <nettle/cmac.h>
 #include <nettle/pbkdf2.h>
+#include <nettle/gcm.h>
+#include <nettle/xts.h>
+#include <nettle/arcfour.h>
 
 namespace cryptofuzz {
 namespace module {
@@ -285,6 +288,180 @@ std::optional<component::MAC> Nettle::OpCMAC(operation::CMAC& op) {
             break;
     }
 
+    return ret;
+}
+
+std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
+    std::optional<component::Ciphertext> ret = std::nullopt;
+
+    uint8_t* out = nullptr;
+    uint8_t* outTag = nullptr;
+
+    switch ( op.cipher.cipherType.Get() ) {
+        case CF_CIPHER("AES_128_GCM"):
+        {
+            struct gcm_aes128_ctx ctx;
+
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 128 / 8);
+            CF_CHECK_NE(op.tagSize, std::nullopt);
+            CF_CHECK_NE(op.aad, std::nullopt);
+            CF_CHECK_LTE(*op.tagSize, GCM_DIGEST_SIZE);
+            CF_CHECK_EQ(op.cleartext.GetSize() % 16, 0);
+
+            out = util::malloc(op.cleartext.GetSize());
+            outTag = util::malloc(*op.tagSize);
+
+            /* noret */ gcm_aes128_set_key(&ctx, op.cipher.key.GetPtr());
+            /* noret */ gcm_aes128_set_iv(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr());
+            /* noret */ gcm_aes128_update(&ctx, op.aad->GetSize(), op.aad->GetPtr());
+            /* noret */ gcm_aes128_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr());
+            /* noret */ gcm_aes128_digest(&ctx, *op.tagSize, outTag);
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
+        }
+        break;
+
+        case CF_CIPHER("AES_256_GCM"):
+        {
+            struct gcm_aes256_ctx ctx;
+
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 256 / 8);
+            CF_CHECK_NE(op.tagSize, std::nullopt);
+            CF_CHECK_NE(op.aad, std::nullopt);
+            CF_CHECK_LTE(*op.tagSize, GCM_DIGEST_SIZE);
+            CF_CHECK_EQ(op.cleartext.GetSize() % 16, 0);
+
+            out = util::malloc(op.cleartext.GetSize());
+            outTag = util::malloc(*op.tagSize);
+
+            /* noret */ gcm_aes256_set_key(&ctx, op.cipher.key.GetPtr());
+            /* noret */ gcm_aes256_set_iv(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr());
+            /* noret */ gcm_aes256_update(&ctx, op.aad->GetSize(), op.aad->GetPtr());
+            /* noret */ gcm_aes256_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr());
+            /* noret */ gcm_aes256_digest(&ctx, *op.tagSize, outTag);
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
+        }
+        break;
+
+        case CF_CIPHER("AES_128_XTS"):
+        {
+            struct xts_aes128_key ctx;
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 256 / 8);
+            CF_CHECK_GT(op.cleartext.GetSize(), 0);
+            CF_CHECK_EQ(op.cleartext.GetSize() % 16, 0);
+            CF_CHECK_GT(op.cipher.iv.GetSize(), 0); /* XXX crashes without this check */
+
+            out = util::malloc(op.cleartext.GetSize());
+
+            /* noret */ xts_aes128_set_encrypt_key(&ctx, op.cipher.key.GetPtr());
+            /* noret */ xts_aes128_encrypt_message(&ctx, op.cipher.iv.GetPtr(), op.cleartext.GetSize(), out, op.cleartext.GetPtr());
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("AES_256_XTS"):
+        {
+            struct xts_aes256_key ctx;
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 512 / 8);
+            CF_CHECK_GT(op.cleartext.GetSize(), 0);
+            CF_CHECK_EQ(op.cleartext.GetSize() % 16, 0);
+            CF_CHECK_GT(op.cipher.iv.GetSize(), 0); /* XXX crashes without this check */
+
+            out = util::malloc(op.cleartext.GetSize());
+
+            /* noret */ xts_aes256_set_encrypt_key(&ctx, op.cipher.key.GetPtr());
+            /* noret */ xts_aes256_encrypt_message(&ctx, op.cipher.iv.GetPtr(), op.cleartext.GetSize(), out, op.cleartext.GetPtr());
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("RC4"):
+        {
+            struct arcfour_ctx ctx;
+
+            CF_CHECK_GTE(op.cipher.key.GetSize(), ARCFOUR_MIN_KEY_SIZE);
+            CF_CHECK_LTE(op.cipher.key.GetSize(), ARCFOUR_MAX_KEY_SIZE);
+
+            out = util::malloc(op.cleartext.GetSize());
+
+            /* noret */ arcfour_set_key(&ctx, op.cipher.key.GetSize(), op.cipher.key.GetPtr());
+            /* noret */ arcfour_crypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr());
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
+        }
+        break;
+    }
+
+end:
+    util::free(out);
+    util::free(outTag);
+
+    return ret;
+}
+
+
+std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
+    std::optional<component::Cleartext> ret = std::nullopt;
+
+    uint8_t* out = nullptr;
+
+    switch ( op.cipher.cipherType.Get() ) {
+        case CF_CIPHER("AES_128_XTS"):
+        {
+            struct xts_aes128_key ctx;
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 256 / 8);
+            CF_CHECK_GT(op.ciphertext.GetSize(), 0);
+            CF_CHECK_EQ(op.ciphertext.GetSize() % 16, 0);
+            CF_CHECK_GT(op.cipher.iv.GetSize(), 0); /* XXX crashes without this check */
+
+            out = util::malloc(op.ciphertext.GetSize());
+
+            /* noret */ xts_aes128_set_decrypt_key(&ctx, op.cipher.key.GetPtr());
+            /* noret */ xts_aes128_decrypt_message(&ctx, op.cipher.iv.GetPtr(), op.ciphertext.GetSize(), out, op.ciphertext.GetPtr());
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("AES_256_XTS"):
+        {
+            struct xts_aes256_key ctx;
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 512 / 8);
+            CF_CHECK_GT(op.ciphertext.GetSize(), 0);
+            CF_CHECK_EQ(op.ciphertext.GetSize() % 16, 0);
+            CF_CHECK_GT(op.cipher.iv.GetSize(), 0); /* XXX crashes without this check */
+
+            out = util::malloc(op.ciphertext.GetSize());
+
+            /* noret */ xts_aes256_set_decrypt_key(&ctx, op.cipher.key.GetPtr());
+            /* noret */ xts_aes256_decrypt_message(&ctx, op.cipher.iv.GetPtr(), op.ciphertext.GetSize(), out, op.ciphertext.GetPtr());
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("RC4"):
+        {
+            struct arcfour_ctx ctx;
+
+            CF_CHECK_GTE(op.cipher.key.GetSize(), ARCFOUR_MIN_KEY_SIZE);
+            CF_CHECK_LTE(op.cipher.key.GetSize(), ARCFOUR_MAX_KEY_SIZE);
+
+            out = util::malloc(op.ciphertext.GetSize());
+
+            /* noret */ arcfour_set_key(&ctx, op.cipher.key.GetSize(), op.cipher.key.GetPtr());
+            /* noret */ arcfour_crypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr());
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+    }
+
+end:
+    util::free(out);
     return ret;
 }
 
