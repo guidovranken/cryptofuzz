@@ -754,5 +754,116 @@ class BLS_Verify : public Operation {
         }
 };
 
+class BLS_Pairing : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::G1 q;
+        const component::G2 p;
+        std::optional<component::Cleartext> hashInput;
+
+        BLS_Pairing(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            q(ds),
+            p(ds),
+            hashInput(ds.Get<bool>() ? std::nullopt : std::make_optional<component::Cleartext>(ds))
+        { }
+        /*
+        BLS_Pairing(const component::CurveType curveType, const component::G1 q, const component::G2 p, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(curveType),
+            q(std::move(q)),
+            p(std::move(p))
+        { }
+        */
+        BLS_Pairing(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            q(json["q_x"], json["q_y"]),
+            p(json["p_v"], json["p_w"], json["p_x"], json["p_y"]),
+            hashInput(
+                    json["hashInput"].get<bool>() ?
+                        std::optional<component::AAD>(json["hashInput"]) :
+                        std::optional<component::AAD>(std::nullopt)
+            )
+        { }
+
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_Pairing& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (p == rhs.p) &&
+                (q == rhs.q) &&
+                (hashInput == rhs.hashInput) &&
+                (modifier == rhs.modifier);
+        }
+};
+
+class BLS_HashToG1 : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::Cleartext cleartext;
+
+        BLS_HashToG1(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            cleartext(ds)
+        { }
+        BLS_HashToG1(const component::CurveType curveType, const component::Cleartext cleartext, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(curveType),
+            cleartext(cleartext)
+        { }
+        BLS_HashToG1(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            cleartext(json["cleartext"])
+        { }
+
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_HashToG1& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (cleartext == rhs.cleartext) &&
+                (modifier == rhs.modifier);
+        }
+};
+
+class BLS_HashToG2 : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::Cleartext cleartext;
+
+        BLS_HashToG2(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            cleartext(ds)
+        { }
+        BLS_HashToG2(const component::CurveType curveType, const component::Cleartext cleartext, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(curveType),
+            cleartext(cleartext)
+        { }
+        BLS_HashToG2(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            cleartext(json["cleartext"])
+        { }
+
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_HashToG2& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (cleartext == rhs.cleartext) &&
+                (modifier == rhs.modifier);
+        }
+};
+
 } /* namespace operation */
 } /* namespace cryptofuzz */

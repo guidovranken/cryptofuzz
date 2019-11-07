@@ -234,6 +234,9 @@ operations.Add( Operation("ECDSA_Verify") )
 operations.Add( Operation("BLS_PrivateToPublic") )
 operations.Add( Operation("BLS_Sign") )
 operations.Add( Operation("BLS_Verify") )
+operations.Add( Operation("BLS_Pairing") )
+operations.Add( Operation("BLS_HashToG1") )
+operations.Add( Operation("BLS_HashToG2") )
 
 ciphers = CipherTable()
 

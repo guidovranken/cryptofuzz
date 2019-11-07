@@ -50,13 +50,18 @@ mcl::mcl(void) :
 
 namespace mcl_detail {
 
-std::vector<std::string> splitPubkeyStr(const std::string& s) {
+std::vector<std::string> split(const std::string& s, std::optional<size_t> expectedNumParts = std::nullopt) {
     std::vector<std::string> parts;
     std::stringstream ss(s);
     std::string tok;
 
     while (getline(ss, tok, ' ') ) {
         parts.push_back(tok);
+    }
+
+    if ( expectedNumParts != std::nullopt && parts.size() != *expectedNumParts ) {
+        printf("parts.size(): %zu, expected: %zu\n", parts.size(), *expectedNumParts);
+        abort();
     }
 
     return parts;
@@ -98,7 +103,7 @@ std::optional<component::ECC_PublicKey> mcl::OpECC_PrivateToPublic(operation::EC
         ::mcl::ecdsa::PublicKey pub;
         ::mcl::ecdsa::getPublicKey(pub, sec);
         pub.normalize();
-        const auto parts = mcl_detail::splitPubkeyStr(pub.getStr(10));
+        const auto parts = mcl_detail::split(pub.getStr(10));
         if ( parts.size() != 3 ) {
             abort();
         }
@@ -120,7 +125,7 @@ std::optional<component::ECDSA_Signature> mcl::OpECDSA_Sign(operation::ECDSA_Sig
         ::mcl::ecdsa::SecretKey sec;
         sec.setStr(op.priv.ToString(ds).c_str(), 10);
         sign(sig, sec, op.cleartext.GetPtr(), op.cleartext.GetSize());
-        const auto parts = mcl_detail::splitPubkeyStr(sig.getStr(10));
+        const auto parts = mcl_detail::split(sig.getStr(10));
         if ( parts.size() != 2 ) {
             abort();
         }
@@ -210,6 +215,47 @@ std::optional<bool> mcl::OpBLS_Verify(operation::BLS_Verify& op) {
         case    CF_ECC_CURVE("BN512"):
             return mcl_detail::bn512::OpBLS_Verify(op);
             */
+        default:
+            return std::nullopt;
+    }
+
+    return std::nullopt;
+}
+
+std::optional<bool> mcl::OpBLS_Pairing(operation::BLS_Pairing& op) {
+    switch ( op.curveType.Get() ) {
+        case    CF_ECC_CURVE("BLS12_381"):
+            return mcl_detail::bls12::OpBLS_Pairing(op);
+            /*
+        case    CF_ECC_CURVE("BN256"):
+            return mcl_detail::bn256::OpBLS_Pairing(op);
+        case    CF_ECC_CURVE("BN384"):
+            return mcl_detail::bn384::OpBLS_Pairing(op);
+        case    CF_ECC_CURVE("BN512"):
+            return mcl_detail::bn512::OpBLS_Pairing(op);
+            */
+        default:
+            return std::nullopt;
+    }
+
+    return std::nullopt;
+}
+
+std::optional<component::G1> mcl::OpBLS_HashToG1(operation::BLS_HashToG1& op) {
+    switch ( op.curveType.Get() ) {
+        case    CF_ECC_CURVE("BLS12_381"):
+            return mcl_detail::bls12::OpBLS_HashToG1(op);
+        default:
+            return std::nullopt;
+    }
+
+    return std::nullopt;
+}
+
+std::optional<component::G2> mcl::OpBLS_HashToG2(operation::BLS_HashToG2& op) {
+    switch ( op.curveType.Get() ) {
+        case    CF_ECC_CURVE("BLS12_381"):
+            return mcl_detail::bls12::OpBLS_HashToG2(op);
         default:
             return std::nullopt;
     }

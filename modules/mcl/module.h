@@ -19,6 +19,9 @@ class mcl : public Module {
         std::optional<component::BLS_PublicKey> OpBLS_PrivateToPublic(operation::BLS_PrivateToPublic& op);
         std::optional<component::BLS_Signature> OpBLS_Sign(operation::BLS_Sign& op);
         std::optional<bool> OpBLS_Verify(operation::BLS_Verify& op);
+        std::optional<bool> OpBLS_Pairing(operation::BLS_Pairing& op);
+        std::optional<component::G1> OpBLS_HashToG1(operation::BLS_HashToG1& op);
+        std::optional<component::G2> OpBLS_HashToG2(operation::BLS_HashToG2& op);
 };
 
 } /* namespace module */

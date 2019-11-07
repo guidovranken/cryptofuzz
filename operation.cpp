@@ -477,11 +477,63 @@ std::string BLS_Verify::ToString(void) const {
 nlohmann::json BLS_Verify::ToJSON(void) const {
     nlohmann::json j;
     j["curveType"] = curveType.ToJSON();
-    j["pub_x"] = pub.first.ToJSON();
-    j["pub_y"] = pub.second.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string BLS_Pairing::Name(void) const { return "BLS_Pairing"; }
+std::string BLS_Pairing::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_Pairing" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    /* TODO q,p */
+
+    return ss.str();
+}
+
+nlohmann::json BLS_Pairing::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    /* TODO q,p */
+    return j;
+}
+
+std::string BLS_HashToG1::Name(void) const { return "BLS_HashToG1"; }
+std::string BLS_HashToG1::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_HashToG1" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_HashToG1::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
     j["cleartext"] = cleartext.ToJSON();
-    j["sig_r"] = signature.first.ToJSON();
-    j["sig_s"] = signature.second.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string BLS_HashToG2::Name(void) const { return "BLS_HashToG2"; }
+std::string BLS_HashToG2::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_HashToG2" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_HashToG2::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+    j["cleartext"] = cleartext.ToJSON();
     j["modifier"] = modifier.ToJSON();
     return j;
 }
