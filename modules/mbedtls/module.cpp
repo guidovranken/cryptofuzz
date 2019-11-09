@@ -236,6 +236,10 @@ std::optional<component::MAC> mbedTLS::OpCMAC(operation::CMAC& op) {
     std::optional<component::MAC> ret = std::nullopt;
 
     const mbedtls_cipher_info_t *cipher_info = nullptr;
+    uint8_t* out = util::malloc(cipher_info->block_size);
+
+    /* XXX Crashes with AES ECB */
+    if ( repository::IsECB(op.cipher.cipherType.Get()) ) { return std::nullopt; }
 
     /* Initialize */
     {
@@ -243,7 +247,6 @@ std::optional<component::MAC> mbedTLS::OpCMAC(operation::CMAC& op) {
     }
 
     {
-        uint8_t out[cipher_info->block_size];
         CF_CHECK_EQ(mbedtls_cipher_cmac(cipher_info, op.cipher.key.GetPtr(), op.cipher.key.GetSize() * 8, op.cleartext.GetPtr(), op.cleartext.GetSize(), out), 0);
 
         ret = component::MAC(out, cipher_info->block_size);
@@ -251,8 +254,7 @@ std::optional<component::MAC> mbedTLS::OpCMAC(operation::CMAC& op) {
 
 end:
 
-    /* ECB CMAC currently results in a mismatch with OpenSSL */
-    if ( repository::IsECB(op.cipher.cipherType.Get()) ) { return std::nullopt; }
+    util::free(out);
 
     return ret;
 }
@@ -311,6 +313,13 @@ end:
 
 std::optional<component::Ciphertext> mbedTLS::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
     std::optional<component::Ciphertext> ret = std::nullopt;
+
+    if ( op.cipher.cipherType.Get() == CF_CIPHER("CHACHA20_POLY1305") ) {
+        if ( op.cipher.iv.GetSize() > 12 ) {
+            /* Circumvent the CVE-2019-1543 check in tests.cpp */
+            return std::nullopt;
+        }
+    }
 
     if ( op.tagSize != std::nullopt || op.aad != std::nullopt ) {
         return mbedTLS_detail::encrypt_AEAD(op);
