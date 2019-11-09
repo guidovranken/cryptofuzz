@@ -236,7 +236,7 @@ std::optional<component::MAC> mbedTLS::OpCMAC(operation::CMAC& op) {
     std::optional<component::MAC> ret = std::nullopt;
 
     const mbedtls_cipher_info_t *cipher_info = nullptr;
-    uint8_t* out = util::malloc(cipher_info->block_size);
+    uint8_t* out = nullptr;
 
     /* XXX Crashes with AES ECB */
     if ( repository::IsECB(op.cipher.cipherType.Get()) ) { return std::nullopt; }
@@ -244,6 +244,7 @@ std::optional<component::MAC> mbedTLS::OpCMAC(operation::CMAC& op) {
     /* Initialize */
     {
         CF_CHECK_NE(cipher_info = mbedTLS_detail::to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
+        out = util::malloc(cipher_info->block_size);
     }
 
     {
