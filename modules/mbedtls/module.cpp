@@ -19,8 +19,12 @@ namespace module {
 
 static void* mbedTLS_custom_calloc(size_t A, size_t B) {
     /* TODO detect overflows */
-
-    return util::malloc(A*B);
+    const size_t size = A*B;
+    void* p = util::malloc(size);
+    if ( size ) {
+        memset(p, 0x00, size);
+    }
+    return p;
 }
 
 static void mbedTLS_custom_free(void* ptr) {
@@ -237,9 +241,6 @@ std::optional<component::MAC> mbedTLS::OpCMAC(operation::CMAC& op) {
 
     const mbedtls_cipher_info_t *cipher_info = nullptr;
     uint8_t* out = nullptr;
-
-    /* XXX Crashes with AES ECB */
-    if ( repository::IsECB(op.cipher.cipherType.Get()) ) { return std::nullopt; }
 
     /* Initialize */
     {
