@@ -44,4 +44,7 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - NSS: [SEED_CBC encryption out-of-bounds write](https://hg.mozilla.org/projects/nss/rev/7580a5a212c78ab21fc4878330dd7872c3b530b8)
 - NSS: [CKM_AES_GCM succeeds with invalid tag sizes, risk of memory corruption](https://hg.mozilla.org/projects/nss/rev/4e3971fd992c0513d0696048c64b7230e5b6039b)
 - NSS: [PBKDF2 memory leak if key size > 256](https://bugzilla.mozilla.org/show_bug.cgi?id=1591363)
-- NSS: [DES IV buffer overread if IV is undersized](https://bugzilla.mozilla.org/show_bug.cgi?id=1591742)
+- NSS: [DES IV buffer overread if IV is undersized](https://hg.mozilla.org/projects/nss/rev/35857ae98190c590ae00a01cb1a2ed48def3915f)
+- wolfCrypt: [RC4 may dereference empty key](https://github.com/wolfSSL/wolfssl/pull/2578)
+- wolfCrypt: [SCRYPT leaves output buffer uninitialized](https://github.com/wolfSSL/wolfssl/pull/2578)
+- wolfCrypt: wc_HKDF + BLAKE2B leaves output buffer uninitialized
