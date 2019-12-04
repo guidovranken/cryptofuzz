@@ -571,11 +571,21 @@ end:
 }
 
 std::optional<component::Ciphertext> NSS::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
-    return nss_detail::Crypt<component::Ciphertext, operation::SymmetricEncrypt>(op);
+    std::optional<component::Ciphertext> ret = nss_detail::Crypt<component::Ciphertext, operation::SymmetricEncrypt>(op);
+    if ( repository::IsCBC(op.cipher.cipherType.Get()) ) {
+        return std::nullopt;
+    } else {
+        return ret;
+    }
 }
 
 std::optional<component::Cleartext> NSS::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
-    return nss_detail::Crypt<component::Cleartext, operation::SymmetricDecrypt>(op);
+    std::optional<component::Cleartext> ret = nss_detail::Crypt<component::Cleartext, operation::SymmetricDecrypt>(op);
+    if ( repository::IsCBC(op.cipher.cipherType.Get()) ) {
+        return std::nullopt;
+    } else {
+        return ret;
+    }
 }
 
 namespace nss_detail {
