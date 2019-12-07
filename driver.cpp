@@ -28,6 +28,7 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorKDF_ARGON2 executorKDF_ARGON2(CF_OPERATION("KDF_ARGON2"), modules, debug);
     static ExecutorKDF_SSH executorKDF_SSH(ID("Cryptofuzz/Operation/KDF_SSH"), modules, debug);
     static ExecutorECC_PrivateToPublic executorECC_PrivateToPublic(CF_OPERATION("ECC_PrivateToPublic"), modules, debug);
+    static ExecutorECC_GenerateKeyPair executorECC_GenerateKeyPair(CF_OPERATION("ECC_GenerateKeyPair"), modules, debug);
     static ExecutorECDSA_Sign executorECDSA_Sign(CF_OPERATION("ECDSA_Sign"), modules, debug);
     static ExecutorECDSA_Verify executorECDSA_Verify(CF_OPERATION("ECDSA_Verify"), modules, debug);
 
@@ -85,6 +86,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
 #endif
             case CF_OPERATION("ECC_PrivateToPublic"):
                 executorECC_PrivateToPublic.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("ECC_GenerateKeyPair"):
+                executorECC_GenerateKeyPair.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("ECDSA_Sign"):
                 executorECDSA_Sign.Run(ds, payload.data(), payload.size());

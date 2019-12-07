@@ -595,6 +595,30 @@ class ECC_PrivateToPublic : public Operation {
         }
 };
 
+class ECC_GenerateKeyPair : public Operation {
+    public:
+        const component::CurveType curveType;
+
+        ECC_GenerateKeyPair(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds)
+        { }
+
+        ECC_GenerateKeyPair(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"])
+        { }
+
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const ECC_GenerateKeyPair& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (modifier == rhs.modifier);
+        }
+};
+
 class ECDSA_Sign : public Operation {
     public:
         const component::CurveType curveType;

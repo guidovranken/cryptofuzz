@@ -420,6 +420,24 @@ template<> std::optional<component::ECC_PublicKey> ExecutorBase<component::ECC_P
     return module->OpECC_PrivateToPublic(op);
 }
 
+/* Specialization for operation::ECC_GenerateKeyPair */
+template<> void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::updateExtraCounters(const uint64_t moduleID, operation::ECC_GenerateKeyPair& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::postprocess(std::shared_ptr<Module> module, operation::ECC_GenerateKeyPair& op, const ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::ECC_KeyPair> ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::callModule(std::shared_ptr<Module> module, operation::ECC_GenerateKeyPair& op) const {
+    return module->OpECC_GenerateKeyPair(op);
+}
+
 /* Specialization for operation::ECDSA_Sign */
 template<> void ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::updateExtraCounters(const uint64_t moduleID, operation::ECDSA_Sign& op) const {
     (void)moduleID;
@@ -501,6 +519,14 @@ typename ExecutorBase<ResultType, OperationType>::ResultSet ExecutorBase<ResultT
     }
 
     return ret;
+}
+
+/* Do not compare ECC_GenerateKeyPair results, because the result can be produced indeterministically */
+template <>
+void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::compare(const ResultSet& results, const uint8_t* data, const size_t size) const {
+    (void)results;
+    (void)data;
+    (void)size;
 }
 
 template <class ResultType, class OperationType>
@@ -698,6 +724,7 @@ template class ExecutorBase<component::Key, operation::KDF_SSH>;
 template class ExecutorBase<component::Signature, operation::Sign>;
 template class ExecutorBase<bool, operation::Verify>;
 template class ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>;
+template class ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>;
 template class ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>;
 template class ExecutorBase<bool, operation::ECDSA_Verify>;
 

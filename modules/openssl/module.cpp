@@ -2968,6 +2968,66 @@ end:
     return ret;
 }
 
+std::optional<component::ECC_KeyPair> OpenSSL::OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) {
+    std::optional<component::ECC_KeyPair> ret = std::nullopt;
+
+    EC_KEY* key = nullptr;
+    const BIGNUM* priv = nullptr;
+    char* priv_str = nullptr;
+    EC_GROUP* group = nullptr;
+    EC_POINT* pub = nullptr;
+    BIGNUM* pub_x = nullptr;
+    BIGNUM* pub_y = nullptr;
+    char* pub_x_str = nullptr;
+    char* pub_y_str = nullptr;
+
+    std::optional<int> curveNID;
+    CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
+    CF_CHECK_NE(key = EC_KEY_new_by_curve_name(*curveNID), nullptr);
+    CF_CHECK_EQ(EC_KEY_generate_key(key), 1);
+
+    /* Private key */
+    {
+        CF_CHECK_NE(priv = EC_KEY_get0_private_key(key), nullptr);
+        CF_CHECK_NE(priv_str = BN_bn2dec(priv), nullptr);
+    }
+
+    /* Public key */
+    {
+        CF_CHECK_NE(pub_x = BN_new(), nullptr);
+        CF_CHECK_NE(pub_y = BN_new(), nullptr);
+        CF_CHECK_NE(group = EC_GROUP_new_by_curve_name(*curveNID), nullptr);
+        CF_CHECK_NE(pub = EC_POINT_new(group), nullptr);
+        CF_CHECK_EQ(EC_POINT_mul(group, pub, priv, nullptr, nullptr, nullptr), 1);
+
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+        CF_CHECK_NE(EC_POINT_get_affine_coordinates(group, pub, pub_x, pub_y, nullptr), 0);
+#else
+        CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group, pub, pub_x, pub_y, nullptr), 0);
+#endif
+
+        CF_CHECK_NE(pub_x_str = BN_bn2dec(pub_x), nullptr);
+        CF_CHECK_NE(pub_y_str = BN_bn2dec(pub_y), nullptr);
+    }
+
+    {
+        ret = {
+            std::string(priv_str),
+            { std::string(pub_x_str), std::string(pub_y_str) }
+        };
+    }
+end:
+    EC_KEY_free(key);
+    OPENSSL_free(priv_str);
+    EC_POINT_free(pub);
+    EC_GROUP_free(group);
+    BN_free(pub_x);
+    BN_free(pub_y);
+    OPENSSL_free(pub_x_str);
+    OPENSSL_free(pub_y_str);
+    return ret;
+}
+
 std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());

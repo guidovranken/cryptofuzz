@@ -102,6 +102,11 @@ void test(const operation::ECC_PrivateToPublic& op, const std::optional<componen
     (void)result;
 }
 
+void test(const operation::ECC_GenerateKeyPair& op, const std::optional<component::ECC_KeyPair>& result) {
+    (void)op;
+    (void)result;
+}
+
 void test(const operation::ECDSA_Sign& op, const std::optional<component::ECDSA_Signature>& result) {
     (void)op;
     (void)result;

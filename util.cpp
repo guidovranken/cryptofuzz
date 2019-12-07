@@ -179,6 +179,24 @@ std::string ToString(const component::ECC_PublicKey& val) {
     return ret;
 }
 
+std::string ToString(const component::ECC_KeyPair& val) {
+    std::string ret;
+
+    ret += "Priv: ";
+    ret += val.priv.ToString();
+    ret += "\n";
+
+    ret += "X: ";
+    ret += val.pub.first.ToString();
+    ret += "\n";
+
+    ret += "Y: ";
+    ret += val.pub.second.ToString();
+    ret += "\n";
+
+    return ret;
+}
+
 class HaveBadPointer {
     private:
         bool haveBadPointer = false;

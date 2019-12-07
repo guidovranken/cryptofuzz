@@ -80,6 +80,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::ECC_KeyPair> OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::ECDSA_Signature> OpECDSA_Sign(operation::ECDSA_Sign& op) {
             (void)op;
             return std::nullopt;

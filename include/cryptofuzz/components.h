@@ -112,6 +112,29 @@ class BignumPair {
 };
 
 using ECC_PublicKey = BignumPair;
+
+class ECC_KeyPair {
+    public:
+        ECC_PrivateKey priv;
+        ECC_PublicKey pub;
+
+        ECC_KeyPair(Datasource& ds) :
+            priv(ds),
+            pub(ds)
+        { }
+
+        ECC_KeyPair(ECC_PrivateKey priv, BignumPair pub) :
+            priv(priv),
+            pub(pub)
+        { }
+
+        inline bool operator==(const ECC_KeyPair& rhs) const {
+            return
+                (priv == rhs.priv) &&
+                (pub == rhs.pub);
+        }
+};
+
 using ECDSA_Signature = BignumPair;
 
 } /* namespace component */

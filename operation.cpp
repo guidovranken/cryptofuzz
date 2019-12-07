@@ -372,6 +372,22 @@ nlohmann::json ECC_PrivateToPublic::ToJSON(void) const {
     j["modifier"] = modifier.ToJSON();
     return j;
 }
+std::string ECC_GenerateKeyPair::Name(void) const { return "ECC_GenerateKeyPair"; }
+std::string ECC_GenerateKeyPair::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: ECC_GenerateKeyPair" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json ECC_GenerateKeyPair::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
 
 std::string ECDSA_Sign::Name(void) const { return "ECDSA_Sign"; }
 std::string ECDSA_Sign::ToString(void) const {

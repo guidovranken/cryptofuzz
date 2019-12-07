@@ -226,6 +226,7 @@ operations.Add( Operation("KDF_PBKDF2") )
 operations.Add( Operation("KDF_ARGON2") )
 operations.Add( Operation("KDF_SSH") )
 operations.Add( Operation("ECC_PrivateToPublic") )
+operations.Add( Operation("ECC_GenerateKeyPair") )
 operations.Add( Operation("ECDSA_Sign") )
 operations.Add( Operation("ECDSA_Verify") )
 
