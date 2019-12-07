@@ -2790,5 +2790,377 @@ end:
     return ret;
 }
 
+static std::optional<int> toCurveNID(const component::CurveType& curveType) {
+    static const std::map<uint64_t, int> LUT = {
+        { CF_ECC_CURVE("brainpool160r1"), NID_brainpoolP160r1 },
+        { CF_ECC_CURVE("brainpool160t1"), NID_brainpoolP160t1 },
+        { CF_ECC_CURVE("brainpool192r1"), NID_brainpoolP192r1 },
+        { CF_ECC_CURVE("brainpool192t1"), NID_brainpoolP192t1 },
+        { CF_ECC_CURVE("brainpool224r1"), NID_brainpoolP224r1 },
+        { CF_ECC_CURVE("brainpool224t1"), NID_brainpoolP224t1 },
+        { CF_ECC_CURVE("brainpool256r1"), NID_brainpoolP256r1 },
+        { CF_ECC_CURVE("brainpool256t1"), NID_brainpoolP256t1 },
+        { CF_ECC_CURVE("brainpool320r1"), NID_brainpoolP320r1 },
+        { CF_ECC_CURVE("brainpool320t1"), NID_brainpoolP320t1 },
+        { CF_ECC_CURVE("brainpool384r1"), NID_brainpoolP384r1 },
+        { CF_ECC_CURVE("brainpool384t1"), NID_brainpoolP384t1 },
+        { CF_ECC_CURVE("brainpool512r1"), NID_brainpoolP512r1 },
+        { CF_ECC_CURVE("brainpool512t1"), NID_brainpoolP512t1 },
+        { CF_ECC_CURVE("secp112r1"), NID_secp112r1 },
+        { CF_ECC_CURVE("secp112r2"), NID_secp112r2 },
+        { CF_ECC_CURVE("secp128r1"), NID_secp128r1 },
+        { CF_ECC_CURVE("secp128r2"), NID_secp128r2 },
+        { CF_ECC_CURVE("secp160k1"), NID_secp160k1 },
+        { CF_ECC_CURVE("secp160r1"), NID_secp160r1 },
+        { CF_ECC_CURVE("secp160r2"), NID_secp160r2 },
+        { CF_ECC_CURVE("secp192k1"), NID_secp192k1 },
+        { CF_ECC_CURVE("secp224k1"), NID_secp224k1 },
+        { CF_ECC_CURVE("secp224r1"), NID_secp224r1 },
+        { CF_ECC_CURVE("secp256k1"), NID_secp256k1 },
+        { CF_ECC_CURVE("secp384r1"), NID_secp384r1 },
+        { CF_ECC_CURVE("secp521r1"), NID_secp521r1 },
+        { CF_ECC_CURVE("sect113r1"), NID_sect113r1 },
+        { CF_ECC_CURVE("sect113r2"), NID_sect113r2 },
+        { CF_ECC_CURVE("sect131r1"), NID_sect131r1 },
+        { CF_ECC_CURVE("sect131r2"), NID_sect131r2 },
+        { CF_ECC_CURVE("sect163k1"), NID_sect163k1 },
+        { CF_ECC_CURVE("sect163r1"), NID_sect163r1 },
+        { CF_ECC_CURVE("sect163r2"), NID_sect163r2 },
+        { CF_ECC_CURVE("sect193r1"), NID_sect193r1 },
+        { CF_ECC_CURVE("sect193r2"), NID_sect193r2 },
+        { CF_ECC_CURVE("sect233k1"), NID_sect233k1 },
+        { CF_ECC_CURVE("sect233r1"), NID_sect233r1 },
+        { CF_ECC_CURVE("sect239k1"), NID_sect239k1 },
+        { CF_ECC_CURVE("sect283k1"), NID_sect283k1 },
+        { CF_ECC_CURVE("sect283r1"), NID_sect283r1 },
+        { CF_ECC_CURVE("sect409k1"), NID_sect409k1 },
+        { CF_ECC_CURVE("sect409r1"), NID_sect409r1 },
+        { CF_ECC_CURVE("sect571k1"), NID_sect571k1 },
+        { CF_ECC_CURVE("sect571r1"), NID_sect571r1 },
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+        { CF_ECC_CURVE("sm2p256v1"), NID_sm2 },
+#endif
+        { CF_ECC_CURVE("wap_wsg_idm_ecid_wtls1"), NID_wap_wsg_idm_ecid_wtls1 },
+        { CF_ECC_CURVE("wap_wsg_idm_ecid_wtls10"), NID_wap_wsg_idm_ecid_wtls10 },
+        { CF_ECC_CURVE("wap_wsg_idm_ecid_wtls11"), NID_wap_wsg_idm_ecid_wtls11 },
+        { CF_ECC_CURVE("wap_wsg_idm_ecid_wtls12"), NID_wap_wsg_idm_ecid_wtls12 },
+        { CF_ECC_CURVE("wap_wsg_idm_ecid_wtls3"), NID_wap_wsg_idm_ecid_wtls3 },
+        { CF_ECC_CURVE("wap_wsg_idm_ecid_wtls4"), NID_wap_wsg_idm_ecid_wtls4 },
+        { CF_ECC_CURVE("wap_wsg_idm_ecid_wtls5"), NID_wap_wsg_idm_ecid_wtls5 },
+        { CF_ECC_CURVE("wap_wsg_idm_ecid_wtls6"), NID_wap_wsg_idm_ecid_wtls6 },
+        { CF_ECC_CURVE("wap_wsg_idm_ecid_wtls7"), NID_wap_wsg_idm_ecid_wtls7 },
+        { CF_ECC_CURVE("wap_wsg_idm_ecid_wtls8"), NID_wap_wsg_idm_ecid_wtls8 },
+        { CF_ECC_CURVE("wap_wsg_idm_ecid_wtls9"), NID_wap_wsg_idm_ecid_wtls9 },
+        { CF_ECC_CURVE("x962_c2pnb163v1"), NID_X9_62_c2pnb163v1 },
+        { CF_ECC_CURVE("x962_c2pnb163v2"), NID_X9_62_c2pnb163v2 },
+        { CF_ECC_CURVE("x962_c2pnb163v3"), NID_X9_62_c2pnb163v3 },
+        { CF_ECC_CURVE("x962_c2pnb176v1"), NID_X9_62_c2pnb176v1 },
+        { CF_ECC_CURVE("x962_c2pnb208w1"), NID_X9_62_c2pnb208w1 },
+        { CF_ECC_CURVE("x962_c2pnb272w1"), NID_X9_62_c2pnb272w1 },
+        { CF_ECC_CURVE("x962_c2pnb304w1"), NID_X9_62_c2pnb304w1 },
+        { CF_ECC_CURVE("x962_c2pnb368w1"), NID_X9_62_c2pnb368w1 },
+        { CF_ECC_CURVE("x962_c2tnb191v1"), NID_X9_62_c2tnb191v1 },
+        { CF_ECC_CURVE("x962_c2tnb191v2"), NID_X9_62_c2tnb191v2 },
+        { CF_ECC_CURVE("x962_c2tnb191v3"), NID_X9_62_c2tnb191v3 },
+        { CF_ECC_CURVE("x962_c2tnb239v1"), NID_X9_62_c2tnb239v1 },
+        { CF_ECC_CURVE("x962_c2tnb239v2"), NID_X9_62_c2tnb239v2 },
+        { CF_ECC_CURVE("x962_c2tnb239v3"), NID_X9_62_c2tnb239v3 },
+        { CF_ECC_CURVE("x962_c2tnb359v1"), NID_X9_62_c2tnb359v1 },
+        { CF_ECC_CURVE("x962_c2tnb431r1"), NID_X9_62_c2tnb431r1 },
+        { CF_ECC_CURVE("x962_p192v1"), NID_X9_62_prime192v1 },
+        { CF_ECC_CURVE("x962_p192v2"), NID_X9_62_prime192v2 },
+        { CF_ECC_CURVE("x962_p192v3"), NID_X9_62_prime192v3 },
+        { CF_ECC_CURVE("x962_p239v1"), NID_X9_62_prime239v1 },
+        { CF_ECC_CURVE("x962_p239v2"), NID_X9_62_prime239v2 },
+        { CF_ECC_CURVE("x962_p239v3"), NID_X9_62_prime239v3 },
+        { CF_ECC_CURVE("x962_p256v1"), NID_X9_62_prime256v1 },
+    };
+
+    if ( LUT.find(curveType.Get()) == LUT.end() ) {
+        return std::nullopt;;
+    }
+
+    return LUT.at(curveType.Get());
+}
+
+namespace OpenSSL_detail {
+    class Bignum {
+        private:
+            BIGNUM* bn = nullptr;
+            Datasource& ds;
+            bool locked = false;
+        public:
+            Bignum(Datasource& ds) :
+                ds(ds)
+            { }
+
+            ~Bignum() {
+                if ( locked == false ) {
+                    BN_free(bn);
+                }
+            }
+
+            void Lock(void) {
+                locked = true;
+            }
+
+            bool New(void) {
+                if ( locked == true ) {
+                    printf("Cannot renew locked Bignum\n");
+                    abort();
+                }
+
+                BN_free(bn);
+                bn = BN_new();
+
+                return bn != nullptr;
+            }
+
+            bool Set(const std::string s) {
+                if ( locked == true ) {
+                    printf("Cannot set locked Bignum\n");
+                    abort();
+                }
+
+                bool ret = false;
+
+                CF_CHECK_NE(BN_dec2bn(&bn, s.c_str()), 0);
+
+                ret = true;
+            end:
+                return ret;
+            }
+
+            BIGNUM* GetPtr(const bool allowDup = true) {
+                if ( locked == false ) {
+                    try {
+                        {
+                            const bool changeConstness = ds.Get<bool>();
+                            if ( changeConstness == true ) {
+#if !defined(CRYPTOFUZZ_BORINGSSL)
+                                const bool constness = ds.Get<bool>();
+
+                                if ( constness == true ) {
+                                    /* noret */ BN_set_flags(bn, BN_FLG_CONSTTIME);
+                                } else {
+                                    /* noret */ BN_set_flags(bn, 0);
+                                }
+#endif
+                            }
+                        }
+
+                        {
+                            if ( allowDup == true ) {
+                                const bool dup = ds.Get<bool>();
+
+                                if ( dup == true ) {
+                                    BIGNUM* tmp = BN_dup(bn);
+                                    if ( tmp != nullptr ) {
+                                        BN_free(bn);
+                                        bn = tmp;
+                                    }
+                                }
+                            }
+                        }
+                    } catch ( ... ) { }
+                }
+
+                return bn;
+            }
+    };
+};
+
+std::optional<component::ECC_PublicKey> OpenSSL::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
+    std::optional<component::ECC_PublicKey> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    CF_EC_KEY key(ds);
+    EC_GROUP* group = nullptr;
+    OpenSSL_detail::Bignum prv(ds);
+    EC_POINT* pub = nullptr;
+    OpenSSL_detail::Bignum pub_x(ds);
+    OpenSSL_detail::Bignum pub_y(ds);
+    char* pub_x_str = nullptr;
+    char* pub_y_str = nullptr;
+
+    {
+        std::optional<int> curveNID;
+        CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
+        CF_CHECK_NE(group = EC_GROUP_new_by_curve_name(*curveNID), nullptr);
+    }
+
+    CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group), 1);
+
+    /* Load private key */
+    CF_CHECK_EQ(prv.Set(op.priv.ToString(ds)), true);
+
+    /* Set private key */
+    CF_CHECK_EQ(EC_KEY_set_private_key(key.GetPtr(), prv.GetPtr()), 1);
+
+    /* Compute public key */
+    CF_CHECK_NE(pub = EC_POINT_new(group), nullptr);
+    CF_CHECK_EQ(EC_POINT_mul(group, pub, prv.GetPtr(), nullptr, nullptr, nullptr), 1);
+
+    CF_CHECK_EQ(pub_x.New(), true);
+    CF_CHECK_EQ(pub_y.New(), true);
+
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+    CF_CHECK_NE(EC_POINT_get_affine_coordinates(group, pub, pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+#else
+    CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group, pub, pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+#endif
+
+    /* Convert bignum x/y to strings */
+    CF_CHECK_NE(pub_x_str = BN_bn2dec(pub_x.GetPtr()), nullptr);
+    CF_CHECK_NE(pub_y_str = BN_bn2dec(pub_y.GetPtr()), nullptr);
+
+    /* Save bignum x/y */
+    ret = { std::string(pub_x_str), std::string(pub_y_str) };
+
+end:
+    EC_POINT_free(pub);
+    EC_GROUP_free(group);
+    OPENSSL_free(pub_x_str);
+    OPENSSL_free(pub_y_str);
+
+    return ret;
+}
+
+std::optional<component::ECC_KeyPair> OpenSSL::OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) {
+    std::optional<component::ECC_KeyPair> ret = std::nullopt;
+
+    EC_KEY* key = nullptr;
+    const BIGNUM* priv = nullptr;
+    char* priv_str = nullptr;
+    EC_GROUP* group = nullptr;
+    EC_POINT* pub = nullptr;
+    BIGNUM* pub_x = nullptr;
+    BIGNUM* pub_y = nullptr;
+    char* pub_x_str = nullptr;
+    char* pub_y_str = nullptr;
+
+    std::optional<int> curveNID;
+    CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
+    CF_CHECK_NE(key = EC_KEY_new_by_curve_name(*curveNID), nullptr);
+    CF_CHECK_EQ(EC_KEY_generate_key(key), 1);
+
+    /* Private key */
+    {
+        CF_CHECK_NE(priv = EC_KEY_get0_private_key(key), nullptr);
+        CF_CHECK_NE(priv_str = BN_bn2dec(priv), nullptr);
+    }
+
+    /* Public key */
+    {
+        CF_CHECK_NE(pub_x = BN_new(), nullptr);
+        CF_CHECK_NE(pub_y = BN_new(), nullptr);
+        CF_CHECK_NE(group = EC_GROUP_new_by_curve_name(*curveNID), nullptr);
+        CF_CHECK_NE(pub = EC_POINT_new(group), nullptr);
+        CF_CHECK_EQ(EC_POINT_mul(group, pub, priv, nullptr, nullptr, nullptr), 1);
+
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+        CF_CHECK_NE(EC_POINT_get_affine_coordinates(group, pub, pub_x, pub_y, nullptr), 0);
+#else
+        CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group, pub, pub_x, pub_y, nullptr), 0);
+#endif
+
+        CF_CHECK_NE(pub_x_str = BN_bn2dec(pub_x), nullptr);
+        CF_CHECK_NE(pub_y_str = BN_bn2dec(pub_y), nullptr);
+    }
+
+    {
+        ret = {
+            std::string(priv_str),
+            { std::string(pub_x_str), std::string(pub_y_str) }
+        };
+    }
+end:
+    EC_KEY_free(key);
+    OPENSSL_free(priv_str);
+    EC_POINT_free(pub);
+    EC_GROUP_free(group);
+    BN_free(pub_x);
+    BN_free(pub_y);
+    OPENSSL_free(pub_x_str);
+    OPENSSL_free(pub_y_str);
+    return ret;
+}
+
+std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    CF_EC_KEY key(ds);
+    EC_GROUP* group = nullptr;
+
+    ECDSA_SIG* signature = nullptr;
+
+    EC_POINT* pub = nullptr;
+    OpenSSL_detail::Bignum pub_x(ds);
+    OpenSSL_detail::Bignum pub_y(ds);
+
+    OpenSSL_detail::Bignum sig_s(ds);
+    OpenSSL_detail::Bignum sig_r(ds);
+
+    /* Initialize */
+    {
+        {
+            std::optional<int> curveNID;
+            CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
+            CF_CHECK_NE(group = EC_GROUP_new_by_curve_name(*curveNID), nullptr);
+        }
+        CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group), 1);
+
+        /* Construct signature */
+        CF_CHECK_EQ(sig_r.Set(op.signature.first.ToString(ds)), true);
+        CF_CHECK_EQ(sig_s.Set(op.signature.second.ToString(ds)), true);
+        CF_CHECK_NE(signature = ECDSA_SIG_new(), nullptr);
+#if defined(CRYPTOFUZZ_OPENSSL_102)
+        BN_free(signature->r);
+        BN_free(signature->s);
+        signature->r = sig_r.GetPtr(false);
+        signature->s = sig_s.GetPtr(false);
+#else
+        CF_CHECK_EQ(ECDSA_SIG_set0(signature, sig_r.GetPtr(false), sig_s.GetPtr(false)), 1);
+#endif
+        sig_r.Lock();
+        sig_s.Lock();
+
+        /* Construct key */
+        CF_CHECK_NE(pub = EC_POINT_new(group), nullptr);
+        CF_CHECK_EQ(pub_x.Set(op.pub.first.ToString(ds)), true);
+        CF_CHECK_EQ(pub_y.Set(op.pub.second.ToString(ds)), true);
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+        CF_CHECK_NE(EC_POINT_set_affine_coordinates(group, pub, pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+#else
+        CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group, pub, pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+#endif
+        CF_CHECK_EQ(EC_KEY_set_public_key(key.GetPtr(), pub), 1);
+    }
+
+    /* Process */
+    {
+        const int res = ECDSA_do_verify(op.cleartext.GetPtr(), op.cleartext.GetSize(), signature, key.GetPtr());
+
+        if ( res == 0 ) {
+            ret = false;
+        } else if ( res == 1 ) {
+            ret = true;
+        } else {
+            /* ECDSA_do_verify failed -- don't set ret */
+        }
+
+    }
+
+end:
+    EC_GROUP_free(group);
+    if ( signature != nullptr ) {
+        ECDSA_SIG_free(signature);
+    }
+    EC_POINT_free(pub);
+
+    return ret;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */

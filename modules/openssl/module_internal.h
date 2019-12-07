@@ -87,9 +87,23 @@ template<> CMAC_CTX* CTX_Copier<CMAC_CTX>::newCTX(void) const { return CMAC_CTX_
 template<> int CTX_Copier<CMAC_CTX>::copyCTX(CMAC_CTX* dest, CMAC_CTX* src) const { return CMAC_CTX_copy(dest, src); }
 template<> void CTX_Copier<CMAC_CTX>::freeCTX(CMAC_CTX* ctx) const { return CMAC_CTX_free(ctx); }
 
+template<> EC_KEY* CTX_Copier<EC_KEY>::newCTX(void) const { return EC_KEY_new(); }
+template<> int CTX_Copier<EC_KEY>::copyCTX(EC_KEY* dest, EC_KEY* src) const {
+#if !defined(CRYPTOFUZZ_BORINGSSL)
+    return EC_KEY_copy(dest, src) == nullptr ? 0 : 1;
+#else
+    (void)dest;
+    (void)src;
+    return 0;
+#endif
+}
+template<> void CTX_Copier<EC_KEY>::freeCTX(EC_KEY* ctx) const { return EC_KEY_free(ctx); }
+
 using CF_EVP_MD_CTX = CTX_Copier<EVP_MD_CTX>;
 using CF_EVP_CIPHER_CTX = CTX_Copier<EVP_CIPHER_CTX>;
 using CF_HMAC_CTX = CTX_Copier<HMAC_CTX>;
 using CF_CMAC_CTX = CTX_Copier<CMAC_CTX>;
+using CF_EC_KEY = CTX_Copier<EC_KEY>;
+using CF_EC_POINT = CTX_Copier<EC_POINT>;
 } /* namespace module */
 } /* namespace cryptofuzz */

@@ -8,6 +8,11 @@
 #include <botan/pbkdf.h>
 #include <botan/pwdhash.h>
 #include <botan/kdf.h>
+#include <botan/system_rng.h>
+#include <botan/bigint.h>
+#include <botan/ecdsa.h>
+#include <botan/pubkey.h>
+#include <botan/ber_dec.h>
 
 namespace cryptofuzz {
 namespace module {
@@ -500,6 +505,145 @@ std::optional<component::Key> Botan::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
 end:
     util::free(out);
 
+    return ret;
+}
+
+namespace Botan_detail {
+    std::optional<std::string> CurveIDToString(const uint64_t curveID) {
+#include "curve_string_lut.h"
+        std::optional<std::string> ret = std::nullopt;
+
+        CF_CHECK_NE(LUT.find(curveID), LUT.end());
+        ret = LUT.at(curveID);
+end:
+        return ret;
+    }
+} /* namespace Botan_detail */
+
+std::optional<component::ECC_PublicKey> Botan::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
+    std::optional<component::ECC_PublicKey> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    static ::Botan::System_RNG rng;
+    try {
+        std::optional<std::string> curveString;
+        CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
+        ::Botan::EC_Group group(*curveString);
+
+        const ::Botan::BigInt priv_bn(op.priv.ToString(ds));
+        auto priv = std::make_unique<::Botan::ECDSA_PrivateKey>(::Botan::ECDSA_PrivateKey(rng, group, priv_bn));
+
+        const auto pub_x = priv->public_point().get_affine_x();
+        const auto pub_y = priv->public_point().get_affine_y();
+
+        ret = { pub_x.to_dec_string(), pub_y.to_dec_string() };
+    } catch ( ... ) { }
+
+end:
+    return ret;
+}
+
+std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_Sign& op) {
+    std::optional<component::ECDSA_Signature> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    std::unique_ptr<::Botan::ECDSA_PrivateKey> priv = nullptr;
+    std::unique_ptr<::Botan::Public_Key> pub = nullptr;
+    std::unique_ptr<::Botan::PK_Signer> signer;
+
+    static ::Botan::System_RNG rng;
+
+    try {
+        /* Initialize */
+        {
+            std::optional<std::string> curveString;
+            CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
+            ::Botan::EC_Group group(*curveString);
+
+            /* TODO check hash algorithm */
+
+            /* Private key */
+            {
+                const ::Botan::BigInt priv_bn(op.priv.ToString(ds));
+                priv = std::make_unique<::Botan::ECDSA_PrivateKey>(::Botan::ECDSA_PrivateKey(rng, group, priv_bn));
+            }
+
+            /* Prepare signer */
+            signer.reset(new ::Botan::PK_Signer(*priv, rng, "EMSA1(SHA-1)", ::Botan::DER_SEQUENCE));
+        }
+
+        /* Process */
+        {
+            const auto signature = signer->sign_message(op.cleartext.Get(), rng);
+
+            /* Retrieve R and S */
+            {
+                ::Botan::BER_Decoder decoder(signature);
+                ::Botan::BER_Decoder ber_sig = decoder.start_cons(::Botan::SEQUENCE);
+
+                size_t count = 0;
+
+                ::Botan::BigInt R;
+                ::Botan::BigInt S;
+                while(ber_sig.more_items())
+                {
+                    switch ( count ) {
+                        case    0:
+                            ber_sig.decode(R);
+                            break;
+                        case    1:
+                            ber_sig.decode(S);
+                            break;
+                        default:
+                            printf("Error: Too many parts in signature BER\n");
+                            abort();
+                    }
+
+                    ++count;
+                }
+
+                const auto R_str = R.to_dec_string();
+                const auto S_str = S.to_dec_string();
+
+                ret = { R_str, S_str };
+            }
+        }
+    } catch ( ... ) { }
+
+end:
+    return ret;
+}
+
+std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    std::unique_ptr<::Botan::Public_Key> pub = nullptr;
+
+    try {
+        std::optional<std::string> curveString;
+        CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
+        ::Botan::EC_Group group(*curveString);
+
+        {
+            const ::Botan::BigInt pub_x(op.pub.first.ToString(ds));
+            const ::Botan::BigInt pub_y(op.pub.second.ToString(ds));
+            const ::Botan::PointGFp public_point = group.point(pub_x, pub_y);
+            pub = std::make_unique<::Botan::ECDSA_PublicKey>(::Botan::ECDSA_PublicKey(group, public_point));
+        }
+
+        ::Botan::PK_Verifier verifier(*pub, "Raw");
+
+        const ::Botan::BigInt R(op.signature.first.ToString(ds));
+        const ::Botan::BigInt S(op.signature.second.ToString(ds));
+
+        /* XXX may throw: Encoding error: encode_fixed_length_int_pair: values too large to encode properly */
+        auto sig = ::Botan::BigInt::encode_fixed_length_int_pair(R, S, group.get_order_bytes());
+
+        ret = verifier.verify_message(op.cleartext.Get(), sig);
+    } catch ( ... ) { }
+
+end:
     return ret;
 }
 

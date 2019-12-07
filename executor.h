@@ -60,5 +60,9 @@ using ExecutorKDF_SSH = ExecutorBase<component::Key, operation::KDF_SSH>;
 using ExecutorKDF_X963 = ExecutorBase<component::Key, operation::KDF_X963>;
 using ExecutorSign = ExecutorBase<component::Signature, operation::Sign>;
 using ExecutorVerify = ExecutorBase<bool, operation::Verify>;
+using ExecutorECC_PrivateToPublic = ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>;
+using ExecutorECC_GenerateKeyPair = ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>;
+using ExecutorECDSA_Sign = ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>;
+using ExecutorECDSA_Verify = ExecutorBase<bool, operation::ECDSA_Verify>;
 
 } /* namespace cryptofuzz */

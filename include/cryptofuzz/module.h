@@ -80,6 +80,22 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::ECC_KeyPair> OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::ECDSA_Signature> OpECDSA_Sign(operation::ECDSA_Sign& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) {
+            (void)op;
+            return std::nullopt;
+        }
 };
 
 } /* namespace cryptofuzz */

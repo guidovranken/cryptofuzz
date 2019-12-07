@@ -2,6 +2,8 @@ package main
 
 import (
     "bytes"
+    "crypto/ecdsa"
+    "crypto/elliptic"
     "crypto/hmac"
     "crypto/md5"
     "crypto/sha1"
@@ -24,6 +26,7 @@ import (
     "hash/adler32"
     "hash/crc32"
     "io"
+    "math/big"
 )
 
 import "C"
@@ -112,6 +115,22 @@ type OpKDF_ARGON2 struct {
     Memory uint32
     Iterations uint32
     KeySize uint32
+}
+
+type OpECC_PrivateToPublic struct {
+    Modifier ByteSlice
+    CurveType uint64
+    Priv string
+}
+
+type OpECDSA_Verify struct {
+    Modifier ByteSlice
+    CurveType uint64
+    Pub_X string
+    Pub_Y string
+    Cleartext ByteSlice
+    Sig_R string
+    Sig_S string
 }
 
 var result []byte
@@ -435,6 +454,73 @@ func Golang_Cryptofuzz_OpKDF_ARGON2(in []byte) {
     }
 
     setResult(key)
+}
+
+func decodeBignum(s string) *big.Int {
+    bn, ok := new(big.Int).SetString(s, 10)
+    if ok == false {
+        panic("Cannot decode bignum")
+    }
+    return bn
+}
+
+func toCurve(curveType uint64) (elliptic.Curve, error) {
+    if issecp224k1(curveType) {
+        return elliptic.P224(), nil
+    } else if issecp256k1(curveType) {
+        return elliptic.P256(), nil
+    } else {
+        return nil, fmt.Errorf("Unsupported digest ID")
+    }
+
+}
+
+//export Golang_Cryptofuzz_OpECC_PrivateToPublic
+func Golang_Cryptofuzz_OpECC_PrivateToPublic(in []byte) {
+    resetResult()
+
+    var op OpECC_PrivateToPublic
+    unmarshal(in, &op)
+
+    curve, err := toCurve(op.CurveType)
+    if err != nil {
+        return
+    }
+
+    privateKey := new(ecdsa.PrivateKey)
+    privBN := decodeBignum(op.Priv)
+    privateKey.D = privBN
+    privateKey.PublicKey.Curve = curve
+
+    privateKey.PublicKey.X, privateKey.PublicKey.Y = privateKey.PublicKey.Curve.ScalarBaseMult(privBN.Bytes())
+
+    /* TODO set result */
+}
+
+//export Golang_Cryptofuzz_OpECDSA_Verify
+func Golang_Cryptofuzz_OpECDSA_Verify(in []byte) {
+    resetResult()
+
+    var op OpECDSA_Verify
+    unmarshal(in, &op)
+
+    curve, err := toCurve(op.CurveType)
+    if err != nil {
+        return
+    }
+
+
+    sigR := decodeBignum(op.Sig_R)
+    sigS := decodeBignum(op.Sig_S)
+
+    pubKey := new(ecdsa.PublicKey)
+    pubKey.Curve = curve
+    pubKey.X = decodeBignum(op.Pub_X)
+    pubKey.Y = decodeBignum(op.Pub_Y)
+
+    ecdsa.Verify(pubKey, op.Cleartext, sigR, sigS)
+
+    /* TODO set result */
 }
 
 /*

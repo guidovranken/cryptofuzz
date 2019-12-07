@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <fuzzing/datasource/datasource.hpp>
 #include <boost/algorithm/hex.hpp>
+#include <boost/algorithm/string.hpp>
 #include "../../third_party/json/json.hpp"
 
 namespace cryptofuzz {
@@ -104,6 +105,72 @@ class Buffer {
             boost::algorithm::hex(data, std::back_inserter(asHex));
             j = asHex;
             return j;
+        }
+};
+
+class Bignum {
+    private:
+        Buffer data;
+        void transform(void) {
+            auto& ptr = data.GetVectorPtr();
+
+            for (size_t i = 0; i < ptr.size(); i++) {
+                if ( isdigit(ptr[i]) ) continue;
+                ptr[i] %= 10;
+                ptr[i] += '0';
+            }
+        }
+    public:
+        Bignum(Datasource& ds) :
+            data(ds) {
+            transform();
+        }
+
+        Bignum(nlohmann::json json) :
+            data(json)
+        {
+            transform();
+        }
+
+        Bignum(const std::string s) :
+            data((const uint8_t*)s.data(), s.size())
+        { }
+
+        /* Copy constructor */
+        Bignum(const Bignum& other) {
+            data = other.data;
+        }
+
+        inline bool operator==(const Bignum& rhs) const {
+            return data == rhs.data;
+        }
+
+        std::string ToString(void) const {
+            return std::string(data.GetPtr(), data.GetPtr() + data.GetSize());
+        }
+
+        std::string ToTrimmedString(void) const {
+            auto s = ToString();
+            trim_left_if(s, boost::is_any_of("0"));
+
+            return s;
+        }
+
+        /* Prefix the string with a pseudo-random amount of zeroes */
+        std::string ToString(Datasource& ds) const {
+            std::string zeros;
+
+            try {
+                while ( ds.Get<bool>() == true ) {
+                    zeros += "0";
+                }
+            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+            return zeros + ToTrimmedString();
+        }
+
+        nlohmann::json ToJSON(void) const {
+            return data.ToJSON();
         }
 };
 

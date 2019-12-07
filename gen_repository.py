@@ -62,6 +62,10 @@ class Digest(Component):
     def __init__(self, digest):
         super(Digest, self).__init__( digest)
 
+class ECC_Curve(Component):
+    def __init__(self, operation):
+        super(ECC_Curve, self).__init__(operation)
+
 # Tables
 class Table(object):
     def __init__(self, prefix, tableDecl):
@@ -191,6 +195,17 @@ class OperationTable(Table):
 
         return tableEntry
 
+class ECC_CurveTable(Table):
+    def __init__(self):
+        tableDecl = [
+        ]
+
+        super(ECC_CurveTable, self).__init__('ECC_Curve', tableDecl)
+    def getTableEntryList(self, index):
+        tableEntry = []
+
+        return tableEntry
+
 modules = ModuleTable()
 modules.Add( Module("Beast") )
 modules.Add( Module("Botan") )
@@ -223,6 +238,10 @@ operations.Add( Operation("KDF_PBKDF2") )
 operations.Add( Operation("KDF_ARGON2") )
 operations.Add( Operation("KDF_SSH") )
 operations.Add( Operation("KDF_X963") )
+operations.Add( Operation("ECC_PrivateToPublic") )
+operations.Add( Operation("ECC_GenerateKeyPair") )
+operations.Add( Operation("ECDSA_Sign") )
+operations.Add( Operation("ECDSA_Verify") )
 
 ciphers = CipherTable()
 
@@ -551,7 +570,95 @@ digests.Add( Digest("WHIRLPOOL") )
 digests.Add( Digest("XXHASH32") )
 digests.Add( Digest("XXHASH64") )
 
-tables = [modules, operations, ciphers, digests]
+ecc_curves = ECC_CurveTable()
+ecc_curves.Add( ECC_Curve("brainpool160r1") )
+ecc_curves.Add( ECC_Curve("brainpool160t1") )
+ecc_curves.Add( ECC_Curve("brainpool192r1") )
+ecc_curves.Add( ECC_Curve("brainpool192t1") )
+ecc_curves.Add( ECC_Curve("brainpool224r1") )
+ecc_curves.Add( ECC_Curve("brainpool224t1") )
+ecc_curves.Add( ECC_Curve("brainpool256r1") )
+ecc_curves.Add( ECC_Curve("brainpool256t1") )
+ecc_curves.Add( ECC_Curve("brainpool320r1") )
+ecc_curves.Add( ECC_Curve("brainpool320t1") )
+ecc_curves.Add( ECC_Curve("brainpool384r1") )
+ecc_curves.Add( ECC_Curve("brainpool384t1") )
+ecc_curves.Add( ECC_Curve("brainpool512r1") )
+ecc_curves.Add( ECC_Curve("brainpool512t1") )
+ecc_curves.Add( ECC_Curve("frp256v1") )
+ecc_curves.Add( ECC_Curve("gost_256A") )
+ecc_curves.Add( ECC_Curve("gost_512A") )
+ecc_curves.Add( ECC_Curve("secp112r1") )
+ecc_curves.Add( ECC_Curve("secp112r2") )
+ecc_curves.Add( ECC_Curve("secp128r1") )
+ecc_curves.Add( ECC_Curve("secp128r2") )
+ecc_curves.Add( ECC_Curve("secp160k1") )
+ecc_curves.Add( ECC_Curve("secp160r1") )
+ecc_curves.Add( ECC_Curve("secp160r2") )
+ecc_curves.Add( ECC_Curve("secp192k1") )
+ecc_curves.Add( ECC_Curve("secp192r1") )
+ecc_curves.Add( ECC_Curve("secp224k1") )
+ecc_curves.Add( ECC_Curve("secp224r1") )
+ecc_curves.Add( ECC_Curve("secp256k1") )
+ecc_curves.Add( ECC_Curve("secp256r1") )
+ecc_curves.Add( ECC_Curve("secp384r1") )
+ecc_curves.Add( ECC_Curve("secp521r1") )
+ecc_curves.Add( ECC_Curve("sect113r1") )
+ecc_curves.Add( ECC_Curve("sect113r2") )
+ecc_curves.Add( ECC_Curve("sect131r1") )
+ecc_curves.Add( ECC_Curve("sect131r2") )
+ecc_curves.Add( ECC_Curve("sect163k1") )
+ecc_curves.Add( ECC_Curve("sect163r1") )
+ecc_curves.Add( ECC_Curve("sect163r2") )
+ecc_curves.Add( ECC_Curve("sect193r1") )
+ecc_curves.Add( ECC_Curve("sect193r2") )
+ecc_curves.Add( ECC_Curve("sect233k1") )
+ecc_curves.Add( ECC_Curve("sect233r1") )
+ecc_curves.Add( ECC_Curve("sect239k1") )
+ecc_curves.Add( ECC_Curve("sect283k1") )
+ecc_curves.Add( ECC_Curve("sect283r1") )
+ecc_curves.Add( ECC_Curve("sect409k1") )
+ecc_curves.Add( ECC_Curve("sect409r1") )
+ecc_curves.Add( ECC_Curve("sect571k1") )
+ecc_curves.Add( ECC_Curve("sect571r1") )
+ecc_curves.Add( ECC_Curve("sm2p256v1") )
+ecc_curves.Add( ECC_Curve("wap_wsg_idm_ecid_wtls1") )
+ecc_curves.Add( ECC_Curve("wap_wsg_idm_ecid_wtls10") )
+ecc_curves.Add( ECC_Curve("wap_wsg_idm_ecid_wtls11") )
+ecc_curves.Add( ECC_Curve("wap_wsg_idm_ecid_wtls12") )
+ecc_curves.Add( ECC_Curve("wap_wsg_idm_ecid_wtls3") )
+ecc_curves.Add( ECC_Curve("wap_wsg_idm_ecid_wtls4") )
+ecc_curves.Add( ECC_Curve("wap_wsg_idm_ecid_wtls5") )
+ecc_curves.Add( ECC_Curve("wap_wsg_idm_ecid_wtls6") )
+ecc_curves.Add( ECC_Curve("wap_wsg_idm_ecid_wtls7") )
+ecc_curves.Add( ECC_Curve("wap_wsg_idm_ecid_wtls8") )
+ecc_curves.Add( ECC_Curve("wap_wsg_idm_ecid_wtls9") )
+ecc_curves.Add( ECC_Curve("x25519") )
+ecc_curves.Add( ECC_Curve("x962_c2pnb163v1") )
+ecc_curves.Add( ECC_Curve("x962_c2pnb163v2") )
+ecc_curves.Add( ECC_Curve("x962_c2pnb163v3") )
+ecc_curves.Add( ECC_Curve("x962_c2pnb176v1") )
+ecc_curves.Add( ECC_Curve("x962_c2pnb208w1") )
+ecc_curves.Add( ECC_Curve("x962_c2pnb272w1") )
+ecc_curves.Add( ECC_Curve("x962_c2pnb304w1") )
+ecc_curves.Add( ECC_Curve("x962_c2pnb368w1") )
+ecc_curves.Add( ECC_Curve("x962_c2tnb191v1") )
+ecc_curves.Add( ECC_Curve("x962_c2tnb191v2") )
+ecc_curves.Add( ECC_Curve("x962_c2tnb191v3") )
+ecc_curves.Add( ECC_Curve("x962_c2tnb239v1") )
+ecc_curves.Add( ECC_Curve("x962_c2tnb239v2") )
+ecc_curves.Add( ECC_Curve("x962_c2tnb239v3") )
+ecc_curves.Add( ECC_Curve("x962_c2tnb359v1") )
+ecc_curves.Add( ECC_Curve("x962_c2tnb431r1") )
+ecc_curves.Add( ECC_Curve("x962_p192v1") )
+ecc_curves.Add( ECC_Curve("x962_p192v2") )
+ecc_curves.Add( ECC_Curve("x962_p192v3") )
+ecc_curves.Add( ECC_Curve("x962_p239v1") )
+ecc_curves.Add( ECC_Curve("x962_p239v2") )
+ecc_curves.Add( ECC_Curve("x962_p239v3") )
+ecc_curves.Add( ECC_Curve("x962_p256v1") )
+
+tables = [modules, operations, ciphers, digests, ecc_curves]
 
 with open('repository_tbl.h', 'w') as fp:
     for table in tables:

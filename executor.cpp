@@ -418,6 +418,103 @@ template<> std::optional<bool> ExecutorBase<bool, operation::Verify>::callModule
     return module->OpVerify(op);
 }
 
+/* Specialization for operation::ECC_PrivateToPublic */
+template<> void ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>::updateExtraCounters(const uint64_t moduleID, operation::ECC_PrivateToPublic& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>::postprocess(std::shared_ptr<Module> module, operation::ECC_PrivateToPublic& op, const ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::ECC_PublicKey> ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>::callModule(std::shared_ptr<Module> module, operation::ECC_PrivateToPublic& op) const {
+    const size_t size = op.priv.ToTrimmedString().size();
+
+    if ( size == 0 || size > 4096 ) {
+        return std::nullopt;
+    }
+
+    return module->OpECC_PrivateToPublic(op);
+}
+
+/* Specialization for operation::ECC_GenerateKeyPair */
+template<> void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::updateExtraCounters(const uint64_t moduleID, operation::ECC_GenerateKeyPair& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::postprocess(std::shared_ptr<Module> module, operation::ECC_GenerateKeyPair& op, const ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::ECC_KeyPair> ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::callModule(std::shared_ptr<Module> module, operation::ECC_GenerateKeyPair& op) const {
+    return module->OpECC_GenerateKeyPair(op);
+}
+
+/* Specialization for operation::ECDSA_Sign */
+template<> void ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::updateExtraCounters(const uint64_t moduleID, operation::ECDSA_Sign& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::postprocess(std::shared_ptr<Module> module, operation::ECDSA_Sign& op, const ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::ECDSA_Signature> ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::callModule(std::shared_ptr<Module> module, operation::ECDSA_Sign& op) const {
+    const size_t size = op.priv.ToTrimmedString().size();
+
+    if ( size == 0 || size > 4096 ) {
+        return std::nullopt;
+    }
+
+    return module->OpECDSA_Sign(op);
+}
+
+/* Specialization for operation::ECDSA_Verify */
+template<> void ExecutorBase<bool, operation::ECDSA_Verify>::updateExtraCounters(const uint64_t moduleID, operation::ECDSA_Verify& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<bool, operation::ECDSA_Verify>::postprocess(std::shared_ptr<Module> module, operation::ECDSA_Verify& op, const ExecutorBase<bool, operation::ECDSA_Verify>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<bool> ExecutorBase<bool, operation::ECDSA_Verify>::callModule(std::shared_ptr<Module> module, operation::ECDSA_Verify& op) const {
+    const std::vector<size_t> sizes = {
+        op.pub.first.ToTrimmedString().size(),
+        op.pub.second.ToTrimmedString().size(),
+        op.signature.first.ToTrimmedString().size(),
+        op.signature.second.ToTrimmedString().size(),
+    };
+
+    for (const auto& size : sizes) {
+        if ( size == 0 || size > 4096 ) {
+            return std::nullopt;
+        }
+    }
+
+    return module->OpECDSA_Verify(op);
+}
+
 template <class ResultType, class OperationType>
 ExecutorBase<ResultType, OperationType>::ExecutorBase(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const bool debug) :
     operationID(operationID),
@@ -444,6 +541,14 @@ typename ExecutorBase<ResultType, OperationType>::ResultSet ExecutorBase<ResultT
     }
 
     return ret;
+}
+
+/* Do not compare ECC_GenerateKeyPair results, because the result can be produced indeterministically */
+template <>
+void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::compare(const ResultSet& results, const uint8_t* data, const size_t size) const {
+    (void)results;
+    (void)data;
+    (void)size;
 }
 
 template <class ResultType, class OperationType>
@@ -650,5 +755,9 @@ template class ExecutorBase<component::Key, operation::KDF_SSH>;
 template class ExecutorBase<component::Key, operation::KDF_X963>;
 template class ExecutorBase<component::Signature, operation::Sign>;
 template class ExecutorBase<bool, operation::Verify>;
+template class ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>;
+template class ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>;
+template class ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>;
+template class ExecutorBase<bool, operation::ECDSA_Verify>;
 
 } /* namespace cryptofuzz */

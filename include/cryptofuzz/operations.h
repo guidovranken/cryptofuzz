@@ -619,5 +619,126 @@ class Verify : public Operation {
         }
 };
 
+class ECC_PrivateToPublic : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::ECC_PrivateKey priv;
+
+        ECC_PrivateToPublic(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            priv(ds)
+        { }
+        ECC_PrivateToPublic(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            priv(json["priv"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const ECC_PrivateToPublic& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (priv == rhs.priv) &&
+                (modifier == rhs.modifier);
+        }
+};
+
+class ECC_GenerateKeyPair : public Operation {
+    public:
+        const component::CurveType curveType;
+
+        ECC_GenerateKeyPair(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds)
+        { }
+
+        ECC_GenerateKeyPair(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const ECC_GenerateKeyPair& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (modifier == rhs.modifier);
+        }
+};
+
+class ECDSA_Sign : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::ECC_PrivateKey priv;
+        const component::Cleartext cleartext;
+
+        ECDSA_Sign(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            priv(ds),
+            cleartext(ds)
+        { }
+        ECDSA_Sign(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            priv(json["priv"]),
+            cleartext(json["cleartext"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const ECDSA_Sign& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (priv == rhs.priv) &&
+                (cleartext == rhs.cleartext) &&
+                (modifier == rhs.modifier);
+        }
+};
+
+class ECDSA_Verify : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::ECC_PublicKey pub;
+        const component::Cleartext cleartext;
+        const component::ECDSA_Signature signature;
+
+        ECDSA_Verify(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            pub(ds),
+            cleartext(ds),
+            signature(ds)
+        { }
+        ECDSA_Verify(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            pub(json["pub_x"], json["pub_y"]),
+            cleartext(json["cleartext"]),
+            signature(json["sig_r"], json["sig_y"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const ECDSA_Verify& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (pub == rhs.pub) &&
+                (cleartext == rhs.cleartext) &&
+                (signature == rhs.signature) &&
+                (modifier == rhs.modifier);
+        }
+};
+
 } /* namespace operation */
 } /* namespace cryptofuzz */

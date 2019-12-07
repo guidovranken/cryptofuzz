@@ -120,5 +120,13 @@ std::string CipherToString(const uint64_t id) {
     }
 }
 
+std::string ECC_CurveToString(const uint64_t id) {
+    try {
+        return ECC_CurveLUTMap.at(id).name;
+    } catch ( std::out_of_range ) {
+        return "(unknown)";
+    }
+}
+
 } /* namespace repository */
 } /* namespace cryptofuzz */
