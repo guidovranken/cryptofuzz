@@ -25,6 +25,7 @@ void test(const operation::ECC_PrivateToPublic& op, const std::optional<componen
 void test(const operation::ECC_GenerateKeyPair& op, const std::optional<component::ECC_KeyPair>& result);
 void test(const operation::ECDSA_Sign& op, const std::optional<component::ECDSA_Signature>& result);
 void test(const operation::ECDSA_Verify& op, const std::optional<bool>& result);
+void test(const operation::ECDH_Derive& op, const std::optional<component::Secret>& result);
 
 } /* namespace tests */
 } /* namespace cryptofuzz */

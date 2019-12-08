@@ -24,6 +24,7 @@ class ExecutorBase {
         ResultSet filter(const ResultSet& results) const;
         void compare(const ResultSet& results, const uint8_t* data, const size_t size) const;
         OperationType getOp(Datasource* parentDs, const uint8_t* data, const size_t size) const;
+        OperationType getOpPostprocess(Datasource* parentDs, OperationType op) const;
         std::shared_ptr<Module> getModule(Datasource& ds) const;
         void updateExtraCounters(
                 const uint64_t moduleID,
@@ -64,5 +65,6 @@ using ExecutorECC_PrivateToPublic = ExecutorBase<component::ECC_PublicKey, opera
 using ExecutorECC_GenerateKeyPair = ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>;
 using ExecutorECDSA_Sign = ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>;
 using ExecutorECDSA_Verify = ExecutorBase<bool, operation::ECDSA_Verify>;
+using ExecutorECDH_Derive = ExecutorBase<component::Secret, operation::ECDH_Derive>;
 
 } /* namespace cryptofuzz */

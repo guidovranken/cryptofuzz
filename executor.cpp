@@ -515,6 +515,24 @@ template<> std::optional<bool> ExecutorBase<bool, operation::ECDSA_Verify>::call
     return module->OpECDSA_Verify(op);
 }
 
+/* Specialization for operation::ECDH_Derive */
+template<> void ExecutorBase<component::Secret, operation::ECDH_Derive>::updateExtraCounters(const uint64_t moduleID, operation::ECDH_Derive& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::Secret, operation::ECDH_Derive>::postprocess(std::shared_ptr<Module> module, operation::ECDH_Derive& op, const ExecutorBase<component::Secret, operation::ECDH_Derive>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::Secret> ExecutorBase<component::Secret, operation::ECDH_Derive>::callModule(std::shared_ptr<Module> module, operation::ECDH_Derive& op) const {
+    return module->OpECDH_Derive(op);
+}
+
 template <class ResultType, class OperationType>
 ExecutorBase<ResultType, OperationType>::ExecutorBase(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const bool debug) :
     operationID(operationID),
@@ -605,11 +623,51 @@ void ExecutorBase<ResultType, OperationType>::abort(std::vector<std::string> mod
 }
 
 template <class ResultType, class OperationType>
+OperationType ExecutorBase<ResultType, OperationType>::getOpPostprocess(Datasource* parentDs, OperationType op) const {
+    (void)parentDs;
+    return std::move(op);
+}
+
+template <>
+operation::ECDH_Derive ExecutorBase<component::Secret, operation::ECDH_Derive>::getOpPostprocess(Datasource* parentDs, operation::ECDH_Derive op) const {
+    /* Decide whether to return the original operation, or construct a new one */
+    if ( parentDs->Get<bool>() == true) {
+        std::shared_ptr<Module> module = nullptr;
+        std::optional<component::ECC_PublicKey> pub1, pub2;
+        std::optional<component::ECC_KeyPair> keypair1, keypair2;
+
+        /* Pick random module */
+        CF_CHECK_NE(module = getModule(*parentDs), nullptr);
+
+        {
+            /* Construct two PrivateToPublic operations */
+            auto modifier1 = parentDs->GetData(0);
+            operation::ECC_PrivateToPublic op1(*parentDs, component::Modifier(modifier1.data(), modifier1.size()));
+            auto modifier2 = parentDs->GetData(0);
+            operation::ECC_PrivateToPublic op2(*parentDs, component::Modifier(modifier2.data(), modifier2.size()));
+
+            CF_CHECK_EQ(op1.curveType == op2.curveType, true);
+
+            /* Generate two public keys, using OpECC_PrivateToPublic */
+            CF_CHECK_NE(pub1 = module->OpECC_PrivateToPublic(op1), std::nullopt);
+            CF_CHECK_NE(pub2 = module->OpECC_PrivateToPublic(op2), std::nullopt);
+
+            /* Construct a new ECDH_Derive operation from these two public keys */
+            return operation::ECDH_Derive(op.modifier, op1.curveType, *pub1, *pub2);
+        }
+    }
+
+end:
+    /* Return the original operaton unmodified */
+    return op;
+}
+
+template <class ResultType, class OperationType>
 OperationType ExecutorBase<ResultType, OperationType>::getOp(Datasource* parentDs, const uint8_t* data, const size_t size) const {
     Datasource ds(data, size);
     if ( parentDs != nullptr ) {
         auto modifier = parentDs->GetData(0);
-        return std::move( OperationType(ds, component::Modifier(modifier.data(), modifier.size())) );
+        return getOpPostprocess(parentDs, std::move( OperationType(ds, component::Modifier(modifier.data(), modifier.size())) ) );
     } else {
         return std::move( OperationType(ds, component::Modifier(nullptr, 0)) );
     }
@@ -759,5 +817,6 @@ template class ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPu
 template class ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>;
 template class ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>;
 template class ExecutorBase<bool, operation::ECDSA_Verify>;
+template class ExecutorBase<component::Secret, operation::ECDH_Derive>;
 
 } /* namespace cryptofuzz */

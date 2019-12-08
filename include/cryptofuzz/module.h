@@ -96,6 +96,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::Secret> OpECDH_Derive(operation::ECDH_Derive& op) {
+            (void)op;
+            return std::nullopt;
+        }
 };
 
 } /* namespace cryptofuzz */

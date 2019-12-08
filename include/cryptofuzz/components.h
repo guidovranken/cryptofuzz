@@ -27,6 +27,7 @@ using Signature = Buffer;
 using PrivateKeyPEM = Buffer;
 using Tag = Buffer;
 using AAD = Buffer;
+using Secret = Buffer;
 
 using ECC_PrivateKey = Bignum;
 

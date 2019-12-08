@@ -459,5 +459,30 @@ nlohmann::json ECDSA_Verify::ToJSON(void) const {
     return j;
 }
 
+std::string ECDH_Derive::Name(void) const { return "ECDH_Derive"; }
+std::string ECDH_Derive::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: ECDH_Derive" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "public key 1 X: " << pub1.first.ToString() << std::endl;
+    ss << "public key 1 Y: " << pub1.second.ToString() << std::endl;
+    ss << "public key 2 X: " << pub2.first.ToString() << std::endl;
+    ss << "public key 2 Y: " << pub2.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json ECDH_Derive::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+    j["pub1_x"] = pub1.first.ToJSON();
+    j["pub1_y"] = pub1.second.ToJSON();
+    j["pub2_x"] = pub2.first.ToJSON();
+    j["pub2_y"] = pub2.second.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 } /* namespace operation */
 } /* namespace cryptofuzz */

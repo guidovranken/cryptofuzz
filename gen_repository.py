@@ -242,6 +242,7 @@ operations.Add( Operation("ECC_PrivateToPublic") )
 operations.Add( Operation("ECC_GenerateKeyPair") )
 operations.Add( Operation("ECDSA_Sign") )
 operations.Add( Operation("ECDSA_Verify") )
+operations.Add( Operation("ECDH_Derive") )
 
 ciphers = CipherTable()
 

@@ -121,5 +121,10 @@ void test(const operation::ECDSA_Verify& op, const std::optional<bool>& result) 
     (void)result;
 }
 
+void test(const operation::ECDH_Derive& op, const std::optional<component::Secret>& result) {
+    (void)op;
+    (void)result;
+}
+
 } /* namespace tests */
 } /* namespace cryptofuzz */

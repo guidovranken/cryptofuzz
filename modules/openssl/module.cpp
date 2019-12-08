@@ -3171,5 +3171,78 @@ end:
     return ret;
 }
 
+std::optional<component::Secret> OpenSSL::OpECDH_Derive(operation::ECDH_Derive& op) {
+    std::optional<component::Secret> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    CF_EC_KEY key1(ds);
+    CF_EC_KEY key2(ds);
+    EC_POINT* pub = nullptr;
+    EC_GROUP* group = nullptr;
+
+    /* Initialize */
+    {
+        std::optional<int> curveNID;
+        CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
+        CF_CHECK_NE(group = EC_GROUP_new_by_curve_name(*curveNID), nullptr);
+        CF_CHECK_EQ(EC_KEY_set_group(key1.GetPtr(), group), 1);
+        CF_CHECK_EQ(EC_KEY_set_group(key2.GetPtr(), group), 1);
+    }
+
+    /* Construct public keys */
+    for (size_t i = 0; i < 2; i++) {
+        OpenSSL_detail::Bignum pub_x(ds);
+        OpenSSL_detail::Bignum pub_y(ds);
+
+        CF_CHECK_NE(pub = EC_POINT_new(group), nullptr);
+        if ( i == 0 ) {
+            CF_CHECK_EQ(pub_x.Set(op.pub1.first.ToString(ds)), true);
+            CF_CHECK_EQ(pub_y.Set(op.pub1.second.ToString(ds)), true);
+        } else {
+            CF_CHECK_EQ(pub_x.Set(op.pub2.first.ToString(ds)), true);
+            CF_CHECK_EQ(pub_y.Set(op.pub2.second.ToString(ds)), true);
+        }
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+        CF_CHECK_NE(EC_POINT_set_affine_coordinates(group, pub, pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+#else
+        CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group, pub, pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+#endif
+        if ( i == 0 ) {
+            CF_CHECK_EQ(EC_KEY_set_public_key(key1.GetPtr(), pub), 1);
+        } else {
+            CF_CHECK_EQ(EC_KEY_set_public_key(key2.GetPtr(), pub), 1);
+        }
+
+        EC_POINT_free(pub);
+        pub = nullptr;
+    }
+
+    /* Create key */
+    {
+        /* Calculate the size of the buffer for the shared secret */
+        const int fieldSize = EC_GROUP_get_degree(EC_KEY_get0_group(key1.GetPtr()));
+        int outSize = (fieldSize + 7) /8;
+
+        uint8_t* out = util::malloc(outSize);
+
+        /* Derive the shared secret */
+        outSize = ECDH_compute_key(out, outSize, EC_KEY_get0_public_key(key2.GetPtr()), key1.GetPtr(), nullptr);
+
+        if ( outSize == -1 ) {
+            util::free(out);
+        }
+        CF_CHECK_NE(outSize, -1);
+
+        ret = component::Secret(out, outSize);
+        util::free(out);
+    }
+
+end:
+    EC_GROUP_free(group);
+    EC_POINT_free(pub);
+
+    return ret;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */
