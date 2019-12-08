@@ -2790,6 +2790,11 @@ end:
     return ret;
 }
 
+/* LibreSSL uses getentropy() in ECC operations.
+ * MemorySanitizer erroneously does not unpoison the destination buffer.
+ * https://github.com/google/sanitizers/issues/1173
+ */
+#if !defined(CRYPTOFUZZ_LIBRESSL)
 static std::optional<int> toCurveNID(const component::CurveType& curveType) {
     static const std::map<uint64_t, int> LUT = {
         { CF_ECC_CURVE("brainpool160r1"), NID_brainpoolP160r1 },
@@ -2970,11 +2975,6 @@ namespace OpenSSL_detail {
     };
 };
 
-/* LibreSSL uses getentropy() in ECC operations.
- * MemorySanitizer erroneously does not unpoison the destination buffer.
- * https://github.com/google/sanitizers/issues/1173
- */
-#if !defined(CRYPTOFUZZ_LIBRESSL)
 std::optional<component::ECC_PublicKey> OpenSSL::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
