@@ -3027,6 +3027,14 @@ end:
 }
 
 std::optional<component::ECC_KeyPair> OpenSSL::OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) {
+#if defined(CRYPTOFUZZ_LIBRESSL)
+    /* LibreSSL uses getentropy() to generate a key.
+     * MemorySanitizer erroneously does not unpoison the destination buffer.
+     * https://github.com/google/sanitizers/issues/1173
+     */
+    (void)op;
+    return std::nullopt;
+#else
     std::optional<component::ECC_KeyPair> ret = std::nullopt;
 
     EC_KEY* key = nullptr;
@@ -3084,6 +3092,7 @@ end:
     OPENSSL_free(pub_x_str);
     OPENSSL_free(pub_y_str);
     return ret;
+#endif
 }
 
 std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
