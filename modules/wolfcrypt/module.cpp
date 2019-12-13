@@ -752,6 +752,8 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
             CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
             CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
 
+            out = util::malloc(op.cleartext.GetSize());
+
             CF_CHECK_EQ(wc_Hc128_SetKey(&ctx, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr()), 0);
             CF_CHECK_EQ(wc_Hc128_Process(&ctx, out, op.cleartext.GetPtr(), op.cleartext.GetSize()), 0);
 
@@ -1115,6 +1117,8 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
 
             CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
             CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
+
+            out = util::malloc(op.ciphertext.GetSize());
 
             CF_CHECK_EQ(wc_Hc128_SetKey(&ctx, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr()), 0);
             CF_CHECK_EQ(wc_Hc128_Process(&ctx, out, op.ciphertext.GetPtr(), op.ciphertext.GetSize()), 0);
