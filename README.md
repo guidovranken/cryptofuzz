@@ -48,3 +48,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - wolfCrypt: [RC4 may dereference empty key](https://github.com/wolfSSL/wolfssl/pull/2578)
 - wolfCrypt: [SCRYPT leaves output buffer uninitialized](https://github.com/wolfSSL/wolfssl/pull/2578)
 - wolfCrypt: wc_HKDF + BLAKE2B leaves output buffer uninitialized
+- wolfCrypt: [PKCS12 PBKDF + SHA3 buffer overflow](https://github.com/wolfSSL/wolfssl/pull/2677)
