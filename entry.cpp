@@ -39,6 +39,10 @@
   #include <modules/libsodium/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_LIBTOMCRYPT)
+  #include <modules/libtomcrypt/module.h>
+#endif
+
 #if defined(CRYPTOFUZZ_CRYPTOPP)
   #include <modules/cryptopp/module.h>
 #endif
@@ -120,6 +124,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_LIBSODIUM)
     driver->LoadModule( std::make_shared<cryptofuzz::module::libsodium>() );
+#endif
+
+#if defined(CRYPTOFUZZ_LIBTOMCRYPT)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::libtomcrypt>() );
 #endif
 
 #if defined(CRYPTOFUZZ_CRYPTOPP)

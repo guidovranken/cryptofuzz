@@ -221,6 +221,7 @@ modules.Add( Module("Reference implementations") )
 modules.Add( Module("Veracrypt") )
 modules.Add( Module("libgcrypt") )
 modules.Add( Module("libsodium") )
+modules.Add( Module("libtomcrypt") )
 modules.Add( Module("mbed TLS") )
 modules.Add( Module("wolfCrypt") )
 

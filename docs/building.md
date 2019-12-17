@@ -48,6 +48,7 @@ Available library-specific build instructions:
  - [NSS](nss.md)
  - [wolfCrypt](wolfcrypt.md)
  - [mbedTLS](mbedtls.md)
+ - [libtomcrypt](libtomcrypt.md)
 
 ## 3. Building Cryptofuzz
 
