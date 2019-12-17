@@ -71,6 +71,10 @@ void test(const operation::KDF_TLS1_PRF& op, const std::optional<component::Key>
     verifyKeySize(op, result);
 }
 
+void test(const operation::KDF_PBKDF& op, const std::optional<component::Key>& result) {
+    verifyKeySize(op, result);
+}
+
 void test(const operation::KDF_PBKDF1& op, const std::optional<component::Key>& result) {
     verifyKeySize(op, result);
 }
