@@ -15,6 +15,7 @@ class wolfCrypt : public Module {
         std::optional<component::MAC> OpCMAC(operation::CMAC& op) override;
         std::optional<component::Ciphertext> OpSymmetricEncrypt(operation::SymmetricEncrypt& op) override;
         std::optional<component::Cleartext> OpSymmetricDecrypt(operation::SymmetricDecrypt& op) override;
+        std::optional<component::Key> OpKDF_PBKDF(operation::KDF_PBKDF& op) override;
         std::optional<component::Key> OpKDF_PBKDF1(operation::KDF_PBKDF1& op) override;
         std::optional<component::Key> OpKDF_PBKDF2(operation::KDF_PBKDF2& op) override;
         std::optional<component::Key> OpKDF_SCRYPT(operation::KDF_SCRYPT& op) override;

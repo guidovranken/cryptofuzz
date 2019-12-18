@@ -12,6 +12,7 @@
 #include <mbedtls/cmac.h>
 #include <mbedtls/hkdf.h>
 #include <mbedtls/pkcs5.h>
+#include <mbedtls/pkcs12.h>
 #include <mbedtls/platform.h>
 #include <mbedtls/ecp.h>
 #include <mbedtls/ecdsa.h>
@@ -600,6 +601,37 @@ std::optional<component::Key> mbedTLS::OpKDF_HKDF(operation::KDF_HKDF& op) {
 
 end:
     util::free(out);
+    return ret;
+}
+
+std::optional<component::Key> mbedTLS::OpKDF_PBKDF(operation::KDF_PBKDF& op) {
+    std::optional<component::Key> ret = std::nullopt;
+
+    mbedtls_md_type_t md_type = MBEDTLS_MD_NONE;
+    uint8_t* out = util::malloc(op.keySize);
+
+    /* Initialize */
+    {
+        CF_CHECK_NE(md_type = mbedTLS_detail::to_mbedtls_md_type_t(op.digestType), MBEDTLS_MD_NONE);
+        CF_CHECK_GT(op.password.GetSize(), 0);
+        CF_CHECK_GT(op.salt.GetSize(), 0);
+    }
+
+    CF_CHECK_EQ(mbedtls_pkcs12_derivation(
+                out,
+                op.keySize,
+                op.password.GetPtr(),
+                op.password.GetSize(),
+                op.salt.GetPtr(),
+                op.salt.GetSize(),
+                md_type,
+                MBEDTLS_PKCS12_DERIVE_KEY,
+                op.iterations), 0);
+
+    ret = component::Key(out, op.keySize);
+end:
+    util::free(out);
+
     return ret;
 }
 

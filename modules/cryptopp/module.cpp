@@ -1279,6 +1279,39 @@ end:
     };
 
     template <class Digest>
+    class KDF_PBKDF {
+        public:
+            static std::optional<component::Key> Compute(operation::KDF_PBKDF& op) {
+                std::optional<component::Key> ret = std::nullopt;
+
+                uint8_t* out = util::malloc(op.keySize);
+
+                try {
+                    ::CryptoPP::PKCS12_PBKDF<Digest> pbkdf1;
+                    pbkdf1.DeriveKey(
+                            out,
+                            op.keySize,
+                            1,
+                            op.password.GetPtr(),
+                            op.password.GetSize(),
+                            op.salt.GetPtr(),
+                            op.salt.GetSize(),
+                            op.iterations,
+                            0.0f);
+                } catch ( ... ) {
+                    goto end;
+                }
+
+                ret = component::Key(out, op.keySize);
+
+end:
+                util::free(out);
+
+                return ret;
+            }
+    };
+
+    template <class Digest>
     class KDF_PBKDF1 {
         public:
         static std::optional<component::Key> Compute(operation::KDF_PBKDF1& op) {
@@ -1318,6 +1351,10 @@ end:
             return ret;
         }
     };
+}
+
+std::optional<component::Key> CryptoPP::OpKDF_PBKDF(operation::KDF_PBKDF& op) {
+    return CryptoPP_detail::InvokeByDigest<CryptoPP_detail::KDF_PBKDF, component::Key>(op);
 }
 
 std::optional<component::Key> CryptoPP::OpKDF_PBKDF1(operation::KDF_PBKDF1& op) {

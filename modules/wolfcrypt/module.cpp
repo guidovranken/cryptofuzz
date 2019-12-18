@@ -1332,6 +1332,33 @@ end:
     return ret;
 }
 
+std::optional<component::Key> wolfCrypt::OpKDF_PBKDF(operation::KDF_PBKDF& op) {
+    std::optional<component::Key> ret = std::nullopt;
+
+    uint8_t* out = util::malloc(op.keySize);
+
+    const auto hashType = wolfCrypt_detail::toHashType(op.digestType);
+
+    CF_CHECK_NE(hashType, std::nullopt);
+
+    CF_CHECK_EQ(wc_PKCS12_PBKDF(out,
+                op.password.GetPtr(),
+                op.password.GetSize(),
+                op.salt.GetPtr(),
+                op.salt.GetSize(),
+                op.iterations,
+                op.keySize,
+                *hashType,
+                1), 0);
+
+    ret = component::Key(out, op.keySize);
+
+end:
+    util::free(out);
+
+    return ret;
+}
+
 std::optional<component::Key> wolfCrypt::OpKDF_PBKDF1(operation::KDF_PBKDF1& op) {
     std::optional<component::Key> ret = std::nullopt;
 

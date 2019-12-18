@@ -188,6 +188,31 @@ nlohmann::json KDF_TLS1_PRF::ToJSON(void) const {
     return j;
 }
 
+std::string KDF_PBKDF::Name(void) const { return "KDF_PBKDF"; }
+std::string KDF_PBKDF::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: KDF_PBKDF" << std::endl;
+    ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
+    ss << "password: " << util::HexDump(password.Get()) << std::endl;
+    ss << "salt: " << util::HexDump(salt.Get()) << std::endl;
+    ss << "iterations: " << std::to_string(iterations) << std::endl;
+    ss << "keySize: " << std::to_string(keySize) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json KDF_PBKDF::ToJSON(void) const {
+    nlohmann::json j;
+    j["digestType"] = digestType.ToJSON();
+    j["password"] = password.ToJSON();
+    j["salt"] = salt.ToJSON();
+    j["iterations"] = iterations;
+    j["keySize"] = keySize;
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string KDF_PBKDF1::Name(void) const { return "KDF_PBKDF1"; }
 std::string KDF_PBKDF1::ToString(void) const {
     std::stringstream ss;
