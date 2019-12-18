@@ -10,6 +10,7 @@ namespace module {
 
 NSS::NSS(void) :
     Module("NSS") {
+    setenv("NSS_STRICT_NOFORK", "DISABLED", 1);
     const SECStatus rv = NSS_NoDB_Init(NULL);
     if(rv != SECSuccess) {
         printf("Cannot initialize NSS\n");
