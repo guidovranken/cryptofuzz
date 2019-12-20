@@ -2794,7 +2794,7 @@ end:
  * MemorySanitizer erroneously does not unpoison the destination buffer.
  * https://github.com/google/sanitizers/issues/1173
  */
-#if !defined(CRYPTOFUZZ_LIBRESSL)
+#if !(defined(CRYPTOFUZZ_LIBRESSL) && defined(SANITIZER_MSAN))
 static std::optional<int> toCurveNID(const component::CurveType& curveType) {
     static const std::map<uint64_t, int> LUT = {
         { CF_ECC_CURVE("brainpool160r1"), NID_brainpoolP160r1 },

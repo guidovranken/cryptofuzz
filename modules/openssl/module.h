@@ -87,7 +87,7 @@ class OpenSSL : public Module {
         std::optional<component::MAC> OpCMAC(operation::CMAC& op) override;
         std::optional<component::Signature> OpSign(operation::Sign& op) override;
         std::optional<bool> OpVerify(operation::Verify& op) override;
-#if !defined(CRYPTOFUZZ_LIBRESSL)
+#if !(defined(CRYPTOFUZZ_LIBRESSL) && defined(SANITIZER_MSAN))
         std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) override;
         std::optional<component::ECC_KeyPair> OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) override;
         std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) override;
