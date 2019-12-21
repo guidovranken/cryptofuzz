@@ -1,5 +1,12 @@
 # Cryptofuzz - Differential cryptography fuzzing
 
+[![Fuzzing Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/cryptofuzz.svg)](https://oss-fuzz.com/coverage-report/job/libfuzzer_asan_cryptofuzz/latest)
+
+## Build status and coverage
+
+https://oss-fuzz.com/coverage-report/job/libfuzzer_asan_cryptofuzz/latest
+
+
 ## Documentation
 
 For building Cryptofuzz, please refer to [`docs/building.md`](docs/building.md).
