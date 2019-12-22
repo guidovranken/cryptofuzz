@@ -118,6 +118,7 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& c
 #endif
             break;
         case    4:
+#if defined(CRYPTOFUZZ_BORINGSSL)
             {
                 uint64_t v;
                 CF_CHECK_EQ(BN_get_u64(bn[0].GetPtr(), &v), 1);
@@ -125,6 +126,9 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& c
                 //CF_CHECK_EQ(BN_mod_exp_mont_word(res.GetPtr(), v, bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr(), montCtx.GetPtr()), 1);
                 CF_CHECK_EQ(BN_mod_exp_mont_word(res.GetPtr(), v, bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr(), nullptr), 1);
             }
+#else
+            goto end;
+#endif
             break;
         default:
             goto end;
@@ -295,6 +299,7 @@ bool IsPrime::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& 
     (void)ds;
     (void)ctx;
 
+#if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
     const int ret = BN_is_prime_ex(bn[0].GetPtr(), 0, nullptr, nullptr);
     if ( ret == -1 ) {
         return false;
@@ -303,17 +308,29 @@ bool IsPrime::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& 
     res.Set( std::to_string(ret) );
 
     return true;
+#else
+    (void)res;
+    (void)bn;
+    return false;
+#endif
 }
 
 bool Sqrt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;
 
+#if defined(CRYPTOFUZZ_BORINGSSL)
     CF_CHECK_EQ(BN_sqrt(res.GetPtr(), bn[0].GetPtr(), ctx.GetPtr()), 1);
 
     ret = true;
 
 end:
+#else
+    (void)res;
+    (void)bn;
+    (void)ctx;
+
+#endif
     return ret;
 }
 
@@ -330,9 +347,15 @@ bool IsEq::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx
     (void)ds;
     (void)ctx;
 
+#if defined(CRYPTOFUZZ_BORINGSSL)
     res.Set( std::to_string(BN_equal_consttime(bn[0].GetPtr(), bn[1].GetPtr())) );
 
     return true;
+#else
+    (void)res;
+    (void)bn;
+    return false;
+#endif
 }
 
 bool IsEven::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {

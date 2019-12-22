@@ -1,7 +1,9 @@
 #include <cryptofuzz/components.h>
 #include <cryptofuzz/operations.h>
 #include <openssl/bn.h>
+#if defined(CRYPTOFUZZ_BORINGSSL)
 #include <openssl/mem.h>
+#endif
 
 namespace cryptofuzz {
 namespace module {
