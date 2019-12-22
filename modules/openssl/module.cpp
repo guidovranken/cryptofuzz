@@ -3153,7 +3153,6 @@ end:
 
     return ret;
 }
-#endif
 
 std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
@@ -3248,6 +3247,8 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
 end:
     return ret;
 }
+
+#endif
 
 } /* namespace module */
 } /* namespace cryptofuzz */
