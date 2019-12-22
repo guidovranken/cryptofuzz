@@ -42,11 +42,17 @@ bool Sub::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx)
         case    0:
             CF_CHECK_EQ(BN_sub(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
             break;
+
+    /* OpenSSL and LibreSSL return a positive value for BN_usub(A,B)
+     * where A > B
+     */
+#if defined(CRYPTOFUZZ_BORINGSSL)
         case    1:
             CF_CHECK_EQ(BN_is_negative(bn[0].GetPtr()), 0);
             CF_CHECK_EQ(BN_is_negative(bn[1].GetPtr()), 0);
             CF_CHECK_EQ(BN_usub(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
             break;
+#endif
         default:
             goto end;
             break;
