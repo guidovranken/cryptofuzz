@@ -93,6 +93,7 @@ class OpenSSL : public Module {
         std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) override;
         std::optional<component::Secret> OpECDH_Derive(operation::ECDH_Derive& op) override;
 #endif
+        std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
 };
 
 } /* namespace module */

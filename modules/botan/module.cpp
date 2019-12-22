@@ -13,6 +13,7 @@
 #include <botan/ecdsa.h>
 #include <botan/pubkey.h>
 #include <botan/ber_dec.h>
+#include "bn_ops.h"
 
 namespace cryptofuzz {
 namespace module {
@@ -642,6 +643,98 @@ std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
 
         ret = verifier.verify_message(op.cleartext.Get(), sig);
     } catch ( ... ) { }
+
+end:
+    return ret;
+}
+
+std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) {
+    std::optional<component::Bignum> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    ::Botan::BigInt res("0");
+    std::vector<::Botan::BigInt> bn{
+        ::Botan::BigInt(op.bn0.ToString(ds)),
+        ::Botan::BigInt(op.bn1.ToString(ds)),
+        ::Botan::BigInt(op.bn2.ToString(ds)),
+        ::Botan::BigInt(op.bn3.ToString(ds))
+    };
+    std::unique_ptr<Botan_bignum::Operation> opRunner = nullptr;
+
+    switch ( op.calcOp.Get() ) {
+        case    CF_CALCOP("Add(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::Add>();
+            break;
+        case    CF_CALCOP("Sub(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::Sub>();
+            break;
+        case    CF_CALCOP("Mul(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::Mul>();
+            break;
+        case    CF_CALCOP("Div(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::Div>();
+            break;
+        case    CF_CALCOP("Mod(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::Mod>();
+            break;
+        case    CF_CALCOP("ExpMod(A,B,C)"):
+            opRunner = std::make_unique<Botan_bignum::ExpMod>();
+            break;
+        case    CF_CALCOP("Sqr(A)"):
+            opRunner = std::make_unique<Botan_bignum::Sqr>();
+            break;
+        case    CF_CALCOP("GCD(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::GCD>();
+            break;
+        case    CF_CALCOP("SqrMod(A,B,C)"):
+            opRunner = std::make_unique<Botan_bignum::SqrMod>();
+            break;
+        case    CF_CALCOP("InvMod(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::InvMod>();
+            break;
+        case    CF_CALCOP("Cmp(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::Cmp>();
+            break;
+        case    CF_CALCOP("LCM(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::LCM>();
+            break;
+        case    CF_CALCOP("Abs(A)"):
+            opRunner = std::make_unique<Botan_bignum::Abs>();
+            break;
+        case    CF_CALCOP("Jacobi(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::Jacobi>();
+            break;
+        case    CF_CALCOP("Neg(A)"):
+            opRunner = std::make_unique<Botan_bignum::Neg>();
+            break;
+        case    CF_CALCOP("IsPrime(A)"):
+            opRunner = std::make_unique<Botan_bignum::IsPrime>();
+            break;
+        case    CF_CALCOP("RShift(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::RShift>();
+            break;
+        case    CF_CALCOP("LShift1(A)"):
+            opRunner = std::make_unique<Botan_bignum::LShift1>();
+            break;
+        case    CF_CALCOP("IsNeg(A)"):
+            opRunner = std::make_unique<Botan_bignum::IsNeg>();
+            break;
+        case    CF_CALCOP("IsEq(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::IsEq>();
+            break;
+    }
+
+    CF_CHECK_NE(opRunner, nullptr);
+
+    try {
+        CF_CHECK_EQ(opRunner->Run(ds, res, bn), true);
+    } catch ( ... ) {
+        goto end;
+    }
+
+    ret = { res.is_negative() ?
+            ("-" + res.to_dec_string()) :
+            res.to_dec_string() };
 
 end:
     return ret;

@@ -43,6 +43,8 @@
 #include <xts.h>
 #include <memory>
 
+#include "bn_ops.h"
+
 namespace cryptofuzz {
 namespace module {
 
@@ -1462,6 +1464,106 @@ std::optional<bool> CryptoPP::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     }
 
 end:
+    return ret;
+}
+
+std::optional<component::Bignum> CryptoPP::OpBignumCalc(operation::BignumCalc& op) {
+    std::optional<component::Bignum> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    ::CryptoPP::Integer res("0");
+    std::vector<::CryptoPP::Integer> bn{
+        ::CryptoPP::Integer(op.bn0.ToString(ds).c_str()),
+        ::CryptoPP::Integer(op.bn1.ToString(ds).c_str()),
+        ::CryptoPP::Integer(op.bn2.ToString(ds).c_str()),
+        ::CryptoPP::Integer(op.bn3.ToString(ds).c_str())
+    };
+    std::unique_ptr<CryptoPP_bignum::Operation> opRunner = nullptr;
+
+    switch ( op.calcOp.Get() ) {
+        case    CF_CALCOP("Add(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::Add>();
+            break;
+        case    CF_CALCOP("Sub(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::Sub>();
+            break;
+        case    CF_CALCOP("Mul(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::Mul>();
+            break;
+        case    CF_CALCOP("Div(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::Div>();
+            break;
+        case    CF_CALCOP("ExpMod(A,B,C)"):
+            opRunner = std::make_unique<CryptoPP_bignum::ExpMod>();
+            break;
+        case    CF_CALCOP("Sqr(A)"):
+            opRunner = std::make_unique<CryptoPP_bignum::Sqr>();
+            break;
+        case    CF_CALCOP("GCD(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::GCD>();
+            break;
+        case    CF_CALCOP("SqrMod(A,B,C)"):
+            opRunner = std::make_unique<CryptoPP_bignum::SqrMod>();
+            break;
+        case    CF_CALCOP("InvMod(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::InvMod>();
+            break;
+        case    CF_CALCOP("MulMod(A,B,C)"):
+            opRunner = std::make_unique<CryptoPP_bignum::MulMod>();
+            break;
+        case    CF_CALCOP("Cmp(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::Cmp>();
+            break;
+        case    CF_CALCOP("LCM(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::LCM>();
+            break;
+        case    CF_CALCOP("Abs(A)"):
+            opRunner = std::make_unique<CryptoPP_bignum::Abs>();
+            break;
+        case    CF_CALCOP("Jacobi(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::Jacobi>();
+            break;
+        case    CF_CALCOP("Neg(A)"):
+            opRunner = std::make_unique<CryptoPP_bignum::Neg>();
+            break;
+        case    CF_CALCOP("IsNeg(A)"):
+            opRunner = std::make_unique<CryptoPP_bignum::IsNeg>();
+            break;
+        case    CF_CALCOP("IsEq(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::IsEq>();
+            break;
+        case    CF_CALCOP("IsZero(A)"):
+            opRunner = std::make_unique<CryptoPP_bignum::IsZero>();
+            break;
+        case    CF_CALCOP("And(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::And>();
+            break;
+        case    CF_CALCOP("Or(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::Or>();
+            break;
+        case    CF_CALCOP("Xor(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::Xor>();
+            break;
+        case    CF_CALCOP("IsEven(A)"):
+            opRunner = std::make_unique<CryptoPP_bignum::IsEven>();
+            break;
+        case    CF_CALCOP("IsOdd(A)"):
+            opRunner = std::make_unique<CryptoPP_bignum::IsOdd>();
+            break;
+    }
+
+    CF_CHECK_NE(opRunner, nullptr);
+
+    try {
+        CF_CHECK_EQ(opRunner->Run(ds, res, bn), true);
+    } catch ( ... ) {
+        goto end;
+    }
+
+    ret = { IntToString(res, 10) };
+
+end:
+
     return ret;
 }
 

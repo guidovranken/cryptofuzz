@@ -509,5 +509,30 @@ nlohmann::json ECDH_Derive::ToJSON(void) const {
     return j;
 }
 
+std::string BignumCalc::Name(void) const { return "BignumCalc"; }
+std::string BignumCalc::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BignumCalc" << std::endl;
+    ss << "calc operation: " << repository::CalcOpToString(calcOp.Get()) << std::endl;
+    ss << "bignum 1: " << bn0.ToString() << std::endl;
+    ss << "bignum 2: " << bn1.ToString() << std::endl;
+    ss << "bignum 3: " << bn2.ToString() << std::endl;
+    ss << "bignum 4: " << bn3.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BignumCalc::ToJSON(void) const {
+    nlohmann::json j;
+    j["calcOp"] = calcOp.ToJSON();
+    j["bn1"] = bn0.ToJSON();
+    j["bn1"] = bn1.ToJSON();
+    j["bn2"] = bn2.ToJSON();
+    j["bn3"] = bn3.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 } /* namespace operation */
 } /* namespace cryptofuzz */

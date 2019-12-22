@@ -2,7 +2,7 @@ all: module.a
 
 CXXFLAGS += -Wall -Wextra -Werror -std=c++17 -I ../../include -I ../../fuzzing-headers/include -DFUZZING_HEADERS_NO_IMPL
 
-module.a: module.o
+module.a: module.o bn_ops.o
 	test $(NSS_NSPR_PATH)
 	rm -rf module.a
 	rm -rf tmp/
@@ -26,13 +26,17 @@ module.a: module.o
 	ar x $(NSS_NSPR_PATH)/dist/Debug/lib/libhw-acc-crypto.a && \
 	ar x $(NSS_NSPR_PATH)/dist/Debug/lib/libgcm-aes-x86_c_lib.a
 
-
-	ar rcs module.a module.o tmp/*.o
+	ar rcs module.a module.o bn_ops.o tmp/*.o
 	rm -rf tmp/
 	ranlib module.a
-module.o: module.cpp module.h
+poc : poc.c
+	$(CC) $(CFLAGS) -I $(NSS_NSPR_PATH)/dist/public/nss -I $(NSS_NSPR_PATH)/dist/Debug/include/nspr -I $(NSS_NSPR_PATH)/nss/lib/freebl poc.c $(NSS_NSPR_PATH)/dist/Debug/lib/libfreebl_static.a -o poc
+bn_ops.o: bn_ops.cpp bn_ops.h
 	test $(NSS_NSPR_PATH)
-	$(CXX) $(CXXFLAGS) -I $(NSS_NSPR_PATH)/dist/public/nss -I $(NSS_NSPR_PATH)/dist/Debug/include/nspr -I $(NSS_NSPR_PATH)/nss/lib/pk11wrap -I $(NSS_NSPR_PATH)/nss/cpputil -fPIC -c module.cpp -o module.o
+	$(CXX) $(CXXFLAGS) -I $(NSS_NSPR_PATH)/dist/public/nss -I $(NSS_NSPR_PATH)/dist/Debug/include/nspr -I $(NSS_NSPR_PATH)/nss/lib/freebl -c bn_ops.cpp -o bn_ops.o
+module.o: module.cpp module.h bn_ops.h
+	test $(NSS_NSPR_PATH)
+	$(CXX) $(CXXFLAGS) -I $(NSS_NSPR_PATH)/dist/public/nss -I $(NSS_NSPR_PATH)/dist/Debug/include/nspr -I $(NSS_NSPR_PATH)/nss/lib/freebl -I $(NSS_NSPR_PATH)/nss/lib/pk11wrap -I $(NSS_NSPR_PATH)/nss/cpputil -fPIC -c module.cpp -o module.o
 
 clean:
 	rm -rf *.o module.a

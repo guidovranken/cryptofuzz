@@ -9,6 +9,7 @@
 #endif
 
 #include "module_internal.h"
+#include "bn_ops.h"
 
 namespace cryptofuzz {
 namespace module {
@@ -2888,103 +2889,16 @@ static std::optional<int> toCurveNID(const component::CurveType& curveType) {
     return LUT.at(curveType.Get());
 }
 
-namespace OpenSSL_detail {
-    class Bignum {
-        private:
-            BIGNUM* bn = nullptr;
-            Datasource& ds;
-            bool locked = false;
-        public:
-            Bignum(Datasource& ds) :
-                ds(ds)
-            { }
-
-            ~Bignum() {
-                if ( locked == false ) {
-                    BN_free(bn);
-                }
-            }
-
-            void Lock(void) {
-                locked = true;
-            }
-
-            bool New(void) {
-                if ( locked == true ) {
-                    printf("Cannot renew locked Bignum\n");
-                    abort();
-                }
-
-                BN_free(bn);
-                bn = BN_new();
-
-                return bn != nullptr;
-            }
-
-            bool Set(const std::string s) {
-                if ( locked == true ) {
-                    printf("Cannot set locked Bignum\n");
-                    abort();
-                }
-
-                bool ret = false;
-
-                CF_CHECK_NE(BN_dec2bn(&bn, s.c_str()), 0);
-
-                ret = true;
-            end:
-                return ret;
-            }
-
-            BIGNUM* GetPtr(const bool allowDup = true) {
-                if ( locked == false ) {
-                    try {
-                        {
-                            const bool changeConstness = ds.Get<bool>();
-                            if ( changeConstness == true ) {
-#if !defined(CRYPTOFUZZ_BORINGSSL)
-                                const bool constness = ds.Get<bool>();
-
-                                if ( constness == true ) {
-                                    /* noret */ BN_set_flags(bn, BN_FLG_CONSTTIME);
-                                } else {
-                                    /* noret */ BN_set_flags(bn, 0);
-                                }
-#endif
-                            }
-                        }
-
-                        {
-                            if ( allowDup == true ) {
-                                const bool dup = ds.Get<bool>();
-
-                                if ( dup == true ) {
-                                    BIGNUM* tmp = BN_dup(bn);
-                                    if ( tmp != nullptr ) {
-                                        BN_free(bn);
-                                        bn = tmp;
-                                    }
-                                }
-                            }
-                        }
-                    } catch ( ... ) { }
-                }
-
-                return bn;
-            }
-    };
-};
-
 std::optional<component::ECC_PublicKey> OpenSSL::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     CF_EC_KEY key(ds);
     EC_GROUP* group = nullptr;
-    OpenSSL_detail::Bignum prv(ds);
+    OpenSSL_bignum::Bignum prv(ds);
     EC_POINT* pub = nullptr;
-    OpenSSL_detail::Bignum pub_x(ds);
-    OpenSSL_detail::Bignum pub_y(ds);
+    OpenSSL_bignum::Bignum pub_x(ds);
+    OpenSSL_bignum::Bignum pub_y(ds);
     char* pub_x_str = nullptr;
     char* pub_y_str = nullptr;
 
@@ -3101,11 +3015,11 @@ std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     ECDSA_SIG* signature = nullptr;
 
     EC_POINT* pub = nullptr;
-    OpenSSL_detail::Bignum pub_x(ds);
-    OpenSSL_detail::Bignum pub_y(ds);
+    OpenSSL_bignum::Bignum pub_x(ds);
+    OpenSSL_bignum::Bignum pub_y(ds);
 
-    OpenSSL_detail::Bignum sig_s(ds);
-    OpenSSL_detail::Bignum sig_r(ds);
+    OpenSSL_bignum::Bignum sig_s(ds);
+    OpenSSL_bignum::Bignum sig_r(ds);
 
     /* Initialize */
     {
@@ -3187,8 +3101,8 @@ std::optional<component::Secret> OpenSSL::OpECDH_Derive(operation::ECDH_Derive& 
 
     /* Construct public keys */
     for (size_t i = 0; i < 2; i++) {
-        OpenSSL_detail::Bignum pub_x(ds);
-        OpenSSL_detail::Bignum pub_y(ds);
+        OpenSSL_bignum::Bignum pub_x(ds);
+        OpenSSL_bignum::Bignum pub_y(ds);
 
         CF_CHECK_NE(pub = EC_POINT_new(group), nullptr);
         if ( i == 0 ) {
@@ -3240,6 +3154,100 @@ end:
     return ret;
 }
 #endif
+
+std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op) {
+    std::optional<component::Bignum> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    OpenSSL_bignum::BN_CTX ctx(ds);
+    std::vector<OpenSSL_bignum::Bignum> bn{
+        OpenSSL_bignum::Bignum(ds),
+        OpenSSL_bignum::Bignum(ds),
+        OpenSSL_bignum::Bignum(ds),
+        OpenSSL_bignum::Bignum(ds) };
+    OpenSSL_bignum::Bignum res(ds);
+    std::unique_ptr<OpenSSL_bignum::Operation> opRunner = nullptr;
+
+    CF_CHECK_EQ(res.Set("0"), true);
+    CF_CHECK_EQ(bn[0].Set(op.bn0.ToString(ds)), true);
+    CF_CHECK_EQ(bn[1].Set(op.bn1.ToString(ds)), true);
+    CF_CHECK_EQ(bn[2].Set(op.bn2.ToString(ds)), true);
+    CF_CHECK_EQ(bn[3].Set(op.bn3.ToString(ds)), true);
+
+    switch ( op.calcOp.Get() ) {
+        case    CF_CALCOP("Add(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::Add>();
+            break;
+        case    CF_CALCOP("Sub(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::Sub>();
+            break;
+        case    CF_CALCOP("Mul(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::Mul>();
+            break;
+        case    CF_CALCOP("Mod(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::Mod>();
+            break;
+        case    CF_CALCOP("ExpMod(A,B,C)"):
+            opRunner = std::make_unique<OpenSSL_bignum::ExpMod>();
+            break;
+        case    CF_CALCOP("Sqr(A)"):
+            opRunner = std::make_unique<OpenSSL_bignum::Sqr>();
+            break;
+        case    CF_CALCOP("GCD(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::GCD>();
+            break;
+        case    CF_CALCOP("AddMod(A,B,C)"):
+            opRunner = std::make_unique<OpenSSL_bignum::AddMod>();
+            break;
+        case    CF_CALCOP("SubMod(A,B,C)"):
+            opRunner = std::make_unique<OpenSSL_bignum::SubMod>();
+            break;
+        case    CF_CALCOP("MulMod(A,B,C)"):
+            opRunner = std::make_unique<OpenSSL_bignum::MulMod>();
+            break;
+        case    CF_CALCOP("SqrMod(A,B,C)"):
+            opRunner = std::make_unique<OpenSSL_bignum::SqrMod>();
+            break;
+        case    CF_CALCOP("InvMod(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::InvMod>();
+            break;
+        case    CF_CALCOP("Cmp(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::Cmp>();
+            break;
+        case    CF_CALCOP("IsPrime(A)"):
+            opRunner = std::make_unique<OpenSSL_bignum::IsPrime>();
+            break;
+        case    CF_CALCOP("Sqrt(A)"):
+            opRunner = std::make_unique<OpenSSL_bignum::Sqrt>();
+            break;
+        case    CF_CALCOP("IsNeg(A)"):
+            opRunner = std::make_unique<OpenSSL_bignum::IsNeg>();
+            break;
+        case    CF_CALCOP("IsEq(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::IsEq>();
+            break;
+        case    CF_CALCOP("IsEven(A)"):
+            opRunner = std::make_unique<OpenSSL_bignum::IsEven>();
+            break;
+        case    CF_CALCOP("IsOdd(A)"):
+            opRunner = std::make_unique<OpenSSL_bignum::IsOdd>();
+            break;
+        case    CF_CALCOP("IsZero(A)"):
+            opRunner = std::make_unique<OpenSSL_bignum::IsZero>();
+            break;
+        case    CF_CALCOP("IsOne(A)"):
+            opRunner = std::make_unique<OpenSSL_bignum::IsOne>();
+            break;
+    }
+
+    CF_CHECK_NE(opRunner, nullptr);
+    CF_CHECK_EQ(opRunner->Run(ds, res, bn, ctx), true);
+
+    ret = res.ToComponentBignum();
+
+end:
+    return ret;
+}
 
 } /* namespace module */
 } /* namespace cryptofuzz */

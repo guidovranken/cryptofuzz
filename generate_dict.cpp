@@ -58,6 +58,7 @@ int main(void)
     writeMap(fp, DigestLUTMap);
     writeMap(fp, CipherLUTMap);
     writeMap(fp, ECC_CurveLUTMap);
+    writeMap(fp, CalcOpLUTMap);
 
     {
         const std::vector<uint8_t> bufferSizes = {1, 2, 4, 8, 12, 16, 32};

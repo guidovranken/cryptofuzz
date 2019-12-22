@@ -145,6 +145,10 @@ class Bignum {
             return data == rhs.data;
         }
 
+        size_t GetSize(void) const {
+            return data.GetSize();
+        }
+
         std::string ToString(void) const {
             return std::string(data.GetPtr(), data.GetPtr() + data.GetSize());
         }

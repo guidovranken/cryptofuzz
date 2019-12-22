@@ -20,6 +20,7 @@ bool IsAES(const uint64_t id);
 std::string DigestToString(const uint64_t id);
 std::string CipherToString(const uint64_t id);
 std::string ECC_CurveToString(const uint64_t id);
+std::string CalcOpToString(const uint64_t id);
 
 #include "../../repository_tbl.h"
 
@@ -99,6 +100,19 @@ constexpr uint64_t ECC_Curve(void) {
     return id;
 }
 
+template <uint64_t id>
+constexpr long calcOpIndex(void) {
+    constexpr long index = LUTCheck(id, CalcOpLUT, sizeof(CalcOpLUT) / sizeof(CalcOpLUT[0]));
+    static_assert(-1 != index, "Not a valid calculation operation");
+    return index;
+}
+
+template <uint64_t id>
+constexpr uint64_t CalcOp(void) {
+    (void)calcOpIndex<id>();
+    return id;
+}
+
 } /* namespace repository */
 } /* namespace cryptofuzz */
 
@@ -107,3 +121,4 @@ constexpr uint64_t ECC_Curve(void) {
 #define CF_MODULE(s) cryptofuzz::repository::Module<fuzzing::datasource::ID("Cryptofuzz/Module/" s)>()
 #define CF_OPERATION(s) cryptofuzz::repository::Operation<fuzzing::datasource::ID("Cryptofuzz/Operation/" s)>()
 #define CF_ECC_CURVE(s) cryptofuzz::repository::ECC_Curve<fuzzing::datasource::ID("Cryptofuzz/ECC_Curve/" s)>()
+#define CF_CALCOP(s) cryptofuzz::repository::CalcOp<fuzzing::datasource::ID("Cryptofuzz/CalcOp/" s)>()

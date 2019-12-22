@@ -13,6 +13,7 @@ using AsymmetricCipherType = Type;
 using DigestType = Type;
 using KDFType = Type;
 using CurveType = Type;
+using CalcOp = Type;
 
 using Modifier = Buffer;
 using Cleartext = Buffer;
@@ -30,6 +31,7 @@ using AAD = Buffer;
 using Secret = Buffer;
 
 using ECC_PrivateKey = Bignum;
+using Bignum = ::cryptofuzz::Bignum;
 
 class SymmetricCipher {
     public:
