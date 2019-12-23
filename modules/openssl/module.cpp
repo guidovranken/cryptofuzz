@@ -3167,6 +3167,12 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
     OpenSSL_bignum::Bignum res(ds);
     std::unique_ptr<OpenSSL_bignum::Operation> opRunner = nullptr;
 
+    CF_CHECK_EQ(res.New(), true);
+    CF_CHECK_EQ(bn[0].New(), true);
+    CF_CHECK_EQ(bn[1].New(), true);
+    CF_CHECK_EQ(bn[2].New(), true);
+    CF_CHECK_EQ(bn[3].New(), true);
+
     CF_CHECK_EQ(res.Set("0"), true);
     CF_CHECK_EQ(bn[0].Set(op.bn0.ToString(ds)), true);
     CF_CHECK_EQ(bn[1].Set(op.bn1.ToString(ds)), true);
