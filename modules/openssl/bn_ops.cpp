@@ -215,6 +215,7 @@ bool SubMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& c
         case    1:
             {
                 Bignum zero(ds);
+                CF_CHECK_EQ(zero.New(), true);
 
                 /* "... may be used if both a and b are non-negative and less than m" */
                 CF_CHECK_GTE(BN_cmp(bn[0].GetPtr(), zero.GetPtr()), 0);
