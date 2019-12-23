@@ -190,7 +190,6 @@ bool AddMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& c
                 CF_CHECK_GTE(BN_cmp(bn[1].GetPtr(), zero.GetPtr()), 0);
                 CF_CHECK_LT(BN_cmp(bn[0].GetPtr(), bn[2].GetPtr()), 0);
                 CF_CHECK_LT(BN_cmp(bn[1].GetPtr(), bn[2].GetPtr()), 0);
-                printf("OK\n");
                 CF_CHECK_EQ(BN_mod_add_quick(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr()), 1);
             }
             break;
@@ -222,7 +221,6 @@ bool SubMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& c
                 CF_CHECK_GTE(BN_cmp(bn[1].GetPtr(), zero.GetPtr()), 0);
                 CF_CHECK_LT(BN_cmp(bn[0].GetPtr(), bn[2].GetPtr()), 0);
                 CF_CHECK_LT(BN_cmp(bn[1].GetPtr(), bn[2].GetPtr()), 0);
-                printf("OK2\n");
                 CF_CHECK_EQ(BN_mod_sub_quick(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr()), 1);
             }
         default:
