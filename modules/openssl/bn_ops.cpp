@@ -9,7 +9,6 @@ namespace module {
 namespace OpenSSL_bignum {
 
 bool Add::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
-    (void)ds;
     (void)ctx;
     bool ret = false;
 
@@ -34,7 +33,6 @@ end:
 }
 
 bool Sub::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
-    (void)ds;
     (void)ctx;
     bool ret = false;
 
@@ -78,7 +76,6 @@ end:
 }
 
 bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
-    (void)ds;
     (void)ctx;
     bool ret = false;
 
@@ -102,7 +99,6 @@ end:
 }
 
 bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
-    (void)ds;
     (void)ctx;
     bool ret = false;
 
@@ -173,7 +169,6 @@ end:
 }
 
 bool AddMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
-    (void)ds;
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -205,7 +200,6 @@ end:
 }
 
 bool SubMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
-    (void)ds;
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -236,7 +230,6 @@ end:
 }
 
 bool MulMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
-    (void)ds;
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -255,7 +248,6 @@ end:
 }
 
 bool SqrMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
-    (void)ds;
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -274,7 +266,6 @@ end:
 }
 
 bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
-    (void)ds;
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
