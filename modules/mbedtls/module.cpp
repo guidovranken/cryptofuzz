@@ -16,6 +16,7 @@
 #include <mbedtls/platform.h>
 #include <mbedtls/ecp.h>
 #include <mbedtls/ecdsa.h>
+#include "bn_ops.h"
 
 namespace cryptofuzz {
 namespace module {
@@ -792,6 +793,101 @@ end:
     /* noret */ mbedtls_ecdsa_free(&ctx);
     /* noret */ mbedtls_mpi_free(&sig_r);
     /* noret */ mbedtls_mpi_free(&sig_s);
+    return ret;
+}
+
+std::optional<component::Bignum> mbedTLS::OpBignumCalc(operation::BignumCalc& op) {
+    std::optional<component::Bignum> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    std::unique_ptr<mbedTLS_bignum::Operation> opRunner = nullptr;
+
+    std::vector<mbedTLS_bignum::Bignum> bn{
+        mbedTLS_bignum::Bignum(),
+        mbedTLS_bignum::Bignum(),
+        mbedTLS_bignum::Bignum(),
+        mbedTLS_bignum::Bignum()
+    };
+    mbedTLS_bignum::Bignum res;
+
+    CF_CHECK_EQ(res.Set("0"), true);
+    CF_CHECK_EQ(bn[0].Set(op.bn0.ToString(ds)), true);
+    CF_CHECK_EQ(bn[1].Set(op.bn1.ToString(ds)), true);
+    CF_CHECK_EQ(bn[2].Set(op.bn2.ToString(ds)), true);
+    CF_CHECK_EQ(bn[3].Set(op.bn3.ToString(ds)), true);
+
+
+    switch ( op.calcOp.Get() ) {
+        case    CF_CALCOP("Add(A,B)"):
+            opRunner = std::make_unique<mbedTLS_bignum::Add>();
+            break;
+        case    CF_CALCOP("Sub(A,B)"):
+            opRunner = std::make_unique<mbedTLS_bignum::Sub>();
+            break;
+        case    CF_CALCOP("Mul(A,B)"):
+            opRunner = std::make_unique<mbedTLS_bignum::Mul>();
+            break;
+        case    CF_CALCOP("Div(A,B)"):
+            opRunner = std::make_unique<mbedTLS_bignum::Div>();
+            break;
+        case    CF_CALCOP("ExpMod(A,B,C)"):
+            opRunner = std::make_unique<mbedTLS_bignum::ExpMod>();
+            break;
+        case    CF_CALCOP("Sqr(A)"):
+            opRunner = std::make_unique<mbedTLS_bignum::Sqr>();
+            break;
+        case    CF_CALCOP("GCD(A,B)"):
+            opRunner = std::make_unique<mbedTLS_bignum::GCD>();
+            break;
+        case    CF_CALCOP("InvMod(A,B)"):
+            opRunner = std::make_unique<mbedTLS_bignum::InvMod>();
+            break;
+        case    CF_CALCOP("Cmp(A,B)"):
+            opRunner = std::make_unique<mbedTLS_bignum::Cmp>();
+            break;
+        case    CF_CALCOP("Abs(A)"):
+            opRunner = std::make_unique<mbedTLS_bignum::Abs>();
+            break;
+        case    CF_CALCOP("Neg(A)"):
+            opRunner = std::make_unique<mbedTLS_bignum::Neg>();
+            break;
+        case    CF_CALCOP("RShift(A,B)"):
+            opRunner = std::make_unique<mbedTLS_bignum::RShift>();
+            break;
+        case    CF_CALCOP("LShift1(A)"):
+            opRunner = std::make_unique<mbedTLS_bignum::LShift1>();
+            break;
+        case    CF_CALCOP("IsNeg(A)"):
+            opRunner = std::make_unique<mbedTLS_bignum::IsNeg>();
+            break;
+        case    CF_CALCOP("IsEq(A,B)"):
+            opRunner = std::make_unique<mbedTLS_bignum::IsEq>();
+            break;
+        case    CF_CALCOP("IsZero(A)"):
+            opRunner = std::make_unique<mbedTLS_bignum::IsZero>();
+            break;
+        case    CF_CALCOP("IsOne(A)"):
+            opRunner = std::make_unique<mbedTLS_bignum::IsOne>();
+            break;
+        case    CF_CALCOP("MulMod(A,B,C)"):
+            opRunner = std::make_unique<mbedTLS_bignum::MulMod>();
+            break;
+        case    CF_CALCOP("AddMod(A,B,C)"):
+            opRunner = std::make_unique<mbedTLS_bignum::AddMod>();
+            break;
+        case    CF_CALCOP("SubMod(A,B,C)"):
+            opRunner = std::make_unique<mbedTLS_bignum::SubMod>();
+            break;
+        case    CF_CALCOP("SqrMod(A,B,C)"):
+            opRunner = std::make_unique<mbedTLS_bignum::SqrMod>();
+            break;
+    }
+
+    CF_CHECK_NE(opRunner, nullptr);
+    CF_CHECK_EQ(opRunner->Run(ds, res, bn), true);
+
+    ret = res.ToComponentBignum();
+
+end:
     return ret;
 }
 
