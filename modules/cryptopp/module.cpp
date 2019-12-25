@@ -1550,6 +1550,9 @@ std::optional<component::Bignum> CryptoPP::OpBignumCalc(operation::BignumCalc& o
         case    CF_CALCOP("IsOdd(A)"):
             opRunner = std::make_unique<CryptoPP_bignum::IsOdd>();
             break;
+        case    CF_CALCOP("Bit(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::Bit>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

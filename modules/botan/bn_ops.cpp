@@ -250,6 +250,14 @@ bool MulMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     return true;
 }
 
+bool Bit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
+    res = bn[0].get_bit(bn[1].to_u32bit()) ? 1 : 0;
+
+    return true;
+}
+
 } /* namespace Botan_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

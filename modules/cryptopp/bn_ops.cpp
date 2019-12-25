@@ -202,6 +202,21 @@ bool SqrMod::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoP
     return true;
 }
 
+bool Bit::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    signed long places;
+    CF_CHECK_EQ(bn[1].IsConvertableToLong(), true);
+    places = bn[1].ConvertToLong();
+
+    res = bn[0].GetBit(places) ? 1 : 0;
+
+    ret = true;
+end:
+    return ret;
+}
+
 } /* namespace CryptoPP_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

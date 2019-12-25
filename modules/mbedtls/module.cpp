@@ -880,6 +880,9 @@ std::optional<component::Bignum> mbedTLS::OpBignumCalc(operation::BignumCalc& op
         case    CF_CALCOP("SqrMod(A,B,C)"):
             opRunner = std::make_unique<mbedTLS_bignum::SqrMod>();
             break;
+        case    CF_CALCOP("Bit(A,B)"):
+            opRunner = std::make_unique<mbedTLS_bignum::Bit>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

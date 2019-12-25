@@ -737,6 +737,9 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
         case    CF_CALCOP("MulMod(A,B,C)"):
             opRunner = std::make_unique<Botan_bignum::MulMod>();
             break;
+        case    CF_CALCOP("Bit(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::Bit>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

@@ -292,6 +292,23 @@ end:
     return ret;
 }
 
+bool Bit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    int bit;
+    const auto bn1 = bn[1].GetUint32();
+    CF_CHECK_NE(bn1, std::nullopt);
+
+    CF_CHECK_GTE(bit = mbedtls_mpi_get_bit(bn[0].GetPtr(), *bn1), 0);
+    res.Set( std::to_string(bit) );
+
+    ret = true;
+
+end:
+    return ret;
+}
+
 } /* namespace mbedTLS_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */
