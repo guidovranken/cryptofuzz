@@ -722,6 +722,21 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
         case    CF_CALCOP("IsEq(A,B)"):
             opRunner = std::make_unique<Botan_bignum::IsEq>();
             break;
+        case    CF_CALCOP("IsEven(A)"):
+            opRunner = std::make_unique<Botan_bignum::IsEven>();
+            break;
+        case    CF_CALCOP("IsOdd(A)"):
+            opRunner = std::make_unique<Botan_bignum::IsOdd>();
+            break;
+        case    CF_CALCOP("IsZero(A)"):
+            opRunner = std::make_unique<Botan_bignum::IsZero>();
+            break;
+        case    CF_CALCOP("IsOne(A)"):
+            opRunner = std::make_unique<Botan_bignum::IsOne>();
+            break;
+        case    CF_CALCOP("MulMod(A,B,C)"):
+            opRunner = std::make_unique<Botan_bignum::MulMod>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

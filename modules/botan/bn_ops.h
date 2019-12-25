@@ -112,6 +112,31 @@ class IsEq : public Operation {
         bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
 };
 
+class IsEven: public Operation {
+    public:
+        bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
+};
+
+class IsOdd: public Operation {
+    public:
+        bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
+};
+
+class IsZero : public Operation {
+    public:
+        bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
+};
+
+class IsOne : public Operation {
+    public:
+        bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
+};
+
+class MulMod : public Operation {
+    public:
+        bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
+};
+
 } /* namespace Botan_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

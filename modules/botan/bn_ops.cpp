@@ -77,8 +77,6 @@ bool GCD::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
 }
 
 bool SqrMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
-    (void)ds;
-
     if ( bn[0] == 0 ) {
         res = ::Botan::square(bn[0]);
     } else if ( bn[1].is_negative() ) {
@@ -198,6 +196,56 @@ bool IsEq::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt
     (void)ds;
 
     res = bn[0] == bn[1] ? 1 : 0;
+
+    return true;
+}
+
+bool IsEven::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
+    res = !(bn[0] % 2) ? 1 : 0;
+
+    return true;
+}
+
+bool IsOdd::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
+    res = (bn[0] % 2) ? 1 : 0;
+
+    return true;
+}
+
+bool IsZero::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
+    res = bn[0] == 0 ? 1 : 0;
+
+    return true;
+}
+
+bool IsOne::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
+    res = bn[0] == 1 ? 1 : 0;
+
+    return true;
+}
+
+bool MulMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            {
+                ::Botan::Modular_Reducer mod(bn[2]);
+                res = mod.multiply(bn[0], bn[1]);
+            }
+            break;
+        case    1:
+            res = (bn[0] * bn[1]) % bn[2];
+            break;
+        default:
+            return false;
+    }
 
     return true;
 }
