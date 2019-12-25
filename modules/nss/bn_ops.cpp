@@ -213,6 +213,24 @@ end:
     return ret;
 }
 
+bool IsEven::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    (void)res;
+
+    res.Set( std::to_string(mp_iseven(bn[0].GetPtr()) ? 1 : 0) );
+
+    return true;
+}
+
+bool IsOdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    (void)res;
+
+    res.Set( std::to_string(mp_isodd(bn[0].GetPtr()) ? 1 : 0) );
+
+    return true;
+}
+
 } /* namespace NSS_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

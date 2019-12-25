@@ -763,6 +763,12 @@ std::optional<component::Bignum> NSS::OpBignumCalc(operation::BignumCalc& op) {
         case    CF_CALCOP("Neg(A)"):
             opRunner = std::make_unique<NSS_bignum::Neg>();
             break;
+        case    CF_CALCOP("IsEven(A)"):
+            opRunner = std::make_unique<NSS_bignum::IsEven>();
+            break;
+        case    CF_CALCOP("IsOdd(A)"):
+            opRunner = std::make_unique<NSS_bignum::IsOdd>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
