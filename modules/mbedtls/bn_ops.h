@@ -195,6 +195,16 @@ class Bit : public Operation {
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
 };
 
+class CmpAbs : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class SetBit : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
 } /* namespace mbedTLS_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

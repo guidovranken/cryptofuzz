@@ -740,6 +740,12 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
         case    CF_CALCOP("Bit(A,B)"):
             opRunner = std::make_unique<Botan_bignum::Bit>();
             break;
+        case    CF_CALCOP("CmpAbs(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::CmpAbs>();
+            break;
+        case    CF_CALCOP("SetBit(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::SetBit>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

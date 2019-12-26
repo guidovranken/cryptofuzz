@@ -217,6 +217,29 @@ end:
     return ret;
 }
 
+bool CmpAbs::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const {
+    std::vector<::CryptoPP::Integer> bnAbs = {bn[0].AbsoluteValue(), bn[1].AbsoluteValue()};
+    auto cmp = std::make_unique<Cmp>();
+
+    return cmp->Run(ds, res, bnAbs);
+}
+
+bool SetBit::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    signed long places;
+    CF_CHECK_EQ(bn[1].IsConvertableToLong(), true);
+    places = bn[1].ConvertToLong();
+
+    res = bn[0];
+    res.SetBit(places);
+
+    ret = true;
+end:
+    return ret;
+}
+
 } /* namespace CryptoPP_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

@@ -1553,6 +1553,12 @@ std::optional<component::Bignum> CryptoPP::OpBignumCalc(operation::BignumCalc& o
         case    CF_CALCOP("Bit(A,B)"):
             opRunner = std::make_unique<CryptoPP_bignum::Bit>();
             break;
+        case    CF_CALCOP("CmpAbs(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::CmpAbs>();
+            break;
+        case    CF_CALCOP("SetBit(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::SetBit>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

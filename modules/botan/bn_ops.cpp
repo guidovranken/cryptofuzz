@@ -258,6 +258,22 @@ bool Bit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
     return true;
 }
 
+bool CmpAbs::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    std::vector<::Botan::BigInt> bnAbs = {bn[0].abs(), bn[1].abs()};
+    auto cmp = std::make_unique<Cmp>();
+
+    return cmp->Run(ds, res, bnAbs);
+}
+
+bool SetBit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
+    res = bn[0];
+    res.set_bit(bn[1].to_u32bit());
+
+    return true;
+}
+
 } /* namespace Botan_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

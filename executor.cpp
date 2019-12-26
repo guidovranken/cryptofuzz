@@ -575,6 +575,15 @@ template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, oper
     if ( op.bn2.GetSize() > 1000 ) return std::nullopt;
     if ( op.bn3.GetSize() > 1000 ) return std::nullopt;
 
+    switch ( op.calcOp.Get() ) {
+        case    CF_CALCOP("SetBit(A,B)"):
+            /* Don't allow setting very high bit positions (risk of memory exhaustion) */
+            if ( op.bn1.GetSize() > 4 ) {
+                return std::nullopt;
+            }
+            break;
+    }
+
     return module->OpBignumCalc(op);
 }
 

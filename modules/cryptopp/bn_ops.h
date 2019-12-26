@@ -133,6 +133,16 @@ class Bit : public Operation {
         bool Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const override;
 };
 
+class CmpAbs : public Operation {
+    public:
+        bool Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const override;
+};
+
+class SetBit : public Operation {
+    public:
+        bool Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const override;
+};
+
 } /* namespace CryptoPP_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */
