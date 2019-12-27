@@ -60,10 +60,15 @@ bool ExpMod::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoP
 
 bool MulMod::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const {
     (void)ds;
+    bool ret = false;
 
+    CF_CHECK_NE(bn[2], 0);
     res = a_times_b_mod_c(bn[0], bn[1], bn[2]);
 
-    return true;
+    ret = true;
+
+end:
+    return ret;
 }
 
 bool InvMod::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const {
