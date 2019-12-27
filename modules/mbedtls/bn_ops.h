@@ -48,7 +48,7 @@ end:
 end:
             return ret;
         }
-        
+
         std::optional<int32_t> GetInt32(void) {
             std::optional<int32_t> ret = std::nullopt;
             std::optional<uint32_t> u32 = GetUint32();
