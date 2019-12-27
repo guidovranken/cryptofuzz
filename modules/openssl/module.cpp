@@ -3244,8 +3244,8 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
             opRunner = std::make_unique<OpenSSL_bignum::IsOne>();
             break;
 #if !defined(CRYPTOFUZZ_BORINGSSL)
-        case    CF_CALCOP("Kronecker(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::Kronecker>();
+        case    CF_CALCOP("Jacobi(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::Jacobi>();
             break;
         case    CF_CALCOP("Mod_NIST_192(A)"):
             opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_192>();

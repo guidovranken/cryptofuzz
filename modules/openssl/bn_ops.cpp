@@ -392,7 +392,7 @@ bool IsOne::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ct
 }
 
 #if !defined(CRYPTOFUZZ_BORINGSSL)
-bool Kronecker::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool Jacobi::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;
 

@@ -267,7 +267,7 @@ class IsOne : public Operation {
 };
 
 #if !defined(CRYPTOFUZZ_BORINGSSL)
-class Kronecker : public Operation {
+class Jacobi : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
 };
