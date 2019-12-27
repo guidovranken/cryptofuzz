@@ -391,6 +391,83 @@ bool IsOne::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ct
     return true;
 }
 
+#if !defined(CRYPTOFUZZ_BORINGSSL)
+bool Kronecker::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+    (void)ds;
+    bool ret = false;
+
+    const int kronecker = BN_kronecker(bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr());
+    CF_CHECK_NE(kronecker, -2);
+
+    res.Set( std::to_string(kronecker) );
+
+    ret = true;
+end:
+
+    return ret;
+}
+
+bool Mod_NIST_192::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+    (void)ds;
+    bool ret = false;
+
+    CF_CHECK_EQ(BN_nist_mod_192(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Mod_NIST_224::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+    (void)ds;
+    bool ret = false;
+
+    CF_CHECK_EQ(BN_nist_mod_224(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Mod_NIST_256::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+    (void)ds;
+    bool ret = false;
+
+    CF_CHECK_EQ(BN_nist_mod_256(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Mod_NIST_384::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+    (void)ds;
+    bool ret = false;
+
+    CF_CHECK_EQ(BN_nist_mod_384(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Mod_NIST_521::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+    (void)ds;
+    bool ret = false;
+
+    CF_CHECK_EQ(BN_nist_mod_521(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+
+    ret = true;
+
+end:
+    return ret;
+}
+#endif
+
 } /* namespace OpenSSL_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

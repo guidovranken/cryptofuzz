@@ -152,6 +152,31 @@ class SetBit : public Operation {
         bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
 };
 
+class Mod_NIST_192 : public Operation {
+    public:
+        bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
+};
+
+class Mod_NIST_224 : public Operation {
+    public:
+        bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
+};
+
+class Mod_NIST_256 : public Operation {
+    public:
+        bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
+};
+
+class Mod_NIST_384 : public Operation {
+    public:
+        bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
+};
+
+class Mod_NIST_521 : public Operation {
+    public:
+        bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
+};
+
 } /* namespace Botan_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

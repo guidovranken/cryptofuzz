@@ -3243,6 +3243,26 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
         case    CF_CALCOP("IsOne(A)"):
             opRunner = std::make_unique<OpenSSL_bignum::IsOne>();
             break;
+#if !defined(CRYPTOFUZZ_BORINGSSL)
+        case    CF_CALCOP("Kronecker(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::Kronecker>();
+            break;
+        case    CF_CALCOP("Mod_NIST_192(A)"):
+            opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_192>();
+            break;
+        case    CF_CALCOP("Mod_NIST_224(A)"):
+            opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_224>();
+            break;
+        case    CF_CALCOP("Mod_NIST_256(A)"):
+            opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_256>();
+            break;
+        case    CF_CALCOP("Mod_NIST_384(A)"):
+            opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_384>();
+            break;
+        case    CF_CALCOP("Mod_NIST_521(A)"):
+            opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_521>();
+            break;
+#endif
     }
 
     CF_CHECK_NE(opRunner, nullptr);
