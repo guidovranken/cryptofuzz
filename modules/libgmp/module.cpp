@@ -52,6 +52,9 @@ std::optional<component::Bignum> libgmp::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("Jacobi(A,B)"):
             opRunner = std::make_unique<libgmp_bignum::Jacobi>();
             break;
+        case    CF_CALCOP("Cmp(A,B)"):
+            opRunner = std::make_unique<libgmp_bignum::Cmp>();
+            break;
         case    CF_CALCOP("LCM(A,B)"):
             opRunner = std::make_unique<libgmp_bignum::LCM>();
             break;
@@ -66,6 +69,48 @@ std::optional<component::Bignum> libgmp::OpBignumCalc(operation::BignumCalc& op)
             break;
         case    CF_CALCOP("Neg(A)"):
             opRunner = std::make_unique<libgmp_bignum::Neg>();
+            break;
+        case    CF_CALCOP("Sqrt(A)"):
+            opRunner = std::make_unique<libgmp_bignum::Sqrt>();
+            break;
+        case    CF_CALCOP("Sqr(A)"):
+            opRunner = std::make_unique<libgmp_bignum::Sqr>();
+            break;
+        case    CF_CALCOP("CmpAbs(A,B)"):
+            opRunner = std::make_unique<libgmp_bignum::CmpAbs>();
+            break;
+        case    CF_CALCOP("IsZero(A)"):
+            opRunner = std::make_unique<libgmp_bignum::IsZero>();
+            break;
+        case    CF_CALCOP("IsNeg(A)"):
+            opRunner = std::make_unique<libgmp_bignum::IsNeg>();
+            break;
+        case    CF_CALCOP("AddMod(A,B,C)"):
+            opRunner = std::make_unique<libgmp_bignum::AddMod>();
+            break;
+        case    CF_CALCOP("SubMod(A,B,C)"):
+            opRunner = std::make_unique<libgmp_bignum::SubMod>();
+            break;
+        case    CF_CALCOP("MulMod(A,B,C)"):
+            opRunner = std::make_unique<libgmp_bignum::MulMod>();
+            break;
+        case    CF_CALCOP("SqrMod(A,B,C)"):
+            opRunner = std::make_unique<libgmp_bignum::SqrMod>();
+            break;
+        case    CF_CALCOP("Mod_NIST_192(A)"):
+            opRunner = std::make_unique<libgmp_bignum::Mod_NIST_192>();
+            break;
+        case    CF_CALCOP("Mod_NIST_224(A)"):
+            opRunner = std::make_unique<libgmp_bignum::Mod_NIST_224>();
+            break;
+        case    CF_CALCOP("Mod_NIST_256(A)"):
+            opRunner = std::make_unique<libgmp_bignum::Mod_NIST_256>();
+            break;
+        case    CF_CALCOP("Mod_NIST_384(A)"):
+            opRunner = std::make_unique<libgmp_bignum::Mod_NIST_384>();
+            break;
+        case    CF_CALCOP("Mod_NIST_521(A)"):
+            opRunner = std::make_unique<libgmp_bignum::Mod_NIST_521>();
             break;
     }
 

@@ -85,6 +85,11 @@ class Jacobi : public Operation {
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
 };
 
+class Cmp : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
 class LCM : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
@@ -106,6 +111,76 @@ class Abs : public Operation {
 };
 
 class Neg : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class Sqrt : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class Sqr : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class CmpAbs : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class IsZero : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class IsNeg : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class AddMod : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class SubMod : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class MulMod : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class SqrMod : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class Mod_NIST_192 : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class Mod_NIST_224: public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class Mod_NIST_256 : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class Mod_NIST_384 : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class Mod_NIST_521 : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
 };
