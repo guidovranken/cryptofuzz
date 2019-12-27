@@ -686,7 +686,7 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
         case    CF_CALCOP("GCD(A,B)"):
             opRunner = std::make_unique<Botan_bignum::GCD>();
             break;
-        case    CF_CALCOP("SqrMod(A,B,C)"):
+        case    CF_CALCOP("SqrMod(A,B)"):
             opRunner = std::make_unique<Botan_bignum::SqrMod>();
             break;
         case    CF_CALCOP("InvMod(A,B)"):

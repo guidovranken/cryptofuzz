@@ -3210,7 +3210,7 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
         case    CF_CALCOP("MulMod(A,B,C)"):
             opRunner = std::make_unique<OpenSSL_bignum::MulMod>();
             break;
-        case    CF_CALCOP("SqrMod(A,B,C)"):
+        case    CF_CALCOP("SqrMod(A,B)"):
             opRunner = std::make_unique<OpenSSL_bignum::SqrMod>();
             break;
         case    CF_CALCOP("InvMod(A,B)"):

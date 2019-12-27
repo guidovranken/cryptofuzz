@@ -877,7 +877,7 @@ std::optional<component::Bignum> mbedTLS::OpBignumCalc(operation::BignumCalc& op
         case    CF_CALCOP("SubMod(A,B,C)"):
             opRunner = std::make_unique<mbedTLS_bignum::SubMod>();
             break;
-        case    CF_CALCOP("SqrMod(A,B,C)"):
+        case    CF_CALCOP("SqrMod(A,B)"):
             opRunner = std::make_unique<mbedTLS_bignum::SqrMod>();
             break;
         case    CF_CALCOP("Bit(A,B)"):

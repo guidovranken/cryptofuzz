@@ -745,7 +745,7 @@ std::optional<component::Bignum> NSS::OpBignumCalc(operation::BignumCalc& op) {
         case    CF_CALCOP("MulMod(A,B,C)"):
             opRunner = std::make_unique<NSS_bignum::MulMod>();
             break;
-        case    CF_CALCOP("SqrMod(A,B,C)"):
+        case    CF_CALCOP("SqrMod(A,B)"):
             opRunner = std::make_unique<NSS_bignum::SqrMod>();
             break;
         case    CF_CALCOP("InvMod(A,B)"):

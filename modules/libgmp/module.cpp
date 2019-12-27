@@ -94,7 +94,7 @@ std::optional<component::Bignum> libgmp::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("MulMod(A,B,C)"):
             opRunner = std::make_unique<libgmp_bignum::MulMod>();
             break;
-        case    CF_CALCOP("SqrMod(A,B,C)"):
+        case    CF_CALCOP("SqrMod(A,B)"):
             opRunner = std::make_unique<libgmp_bignum::SqrMod>();
             break;
         case    CF_CALCOP("Mod_NIST_192(A)"):

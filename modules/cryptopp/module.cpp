@@ -1502,7 +1502,7 @@ std::optional<component::Bignum> CryptoPP::OpBignumCalc(operation::BignumCalc& o
         case    CF_CALCOP("GCD(A,B)"):
             opRunner = std::make_unique<CryptoPP_bignum::GCD>();
             break;
-        case    CF_CALCOP("SqrMod(A,B,C)"):
+        case    CF_CALCOP("SqrMod(A,B)"):
             opRunner = std::make_unique<CryptoPP_bignum::SqrMod>();
             break;
         case    CF_CALCOP("InvMod(A,B)"):
