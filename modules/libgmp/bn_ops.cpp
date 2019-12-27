@@ -69,11 +69,9 @@ bool Jacobi::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
     const int jacobi = mpz_jacobi(bn[0].GetPtr(), bn[1].GetPtr());
-    res.Set( std::to_string(jacobi ? jacobi : -1) );
+    res.Set( std::to_string(jacobi) );
 
-    /* XXX */
-    //return true;
-    return false;
+    return true;
 }
 
 bool Cmp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
