@@ -75,6 +75,10 @@
   #include <modules/wolfcrypt/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_LIBGMP)
+  #include <modules/libgmp/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
@@ -160,6 +164,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_WOLFCRYPT)
     driver->LoadModule( std::make_shared<cryptofuzz::module::wolfCrypt>() );
+#endif
+
+#if defined(CRYPTOFUZZ_LIBGMP)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::libgmp>() );
 #endif
     return 0;
 }
