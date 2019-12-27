@@ -108,10 +108,15 @@ bool LCM::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::
 
 bool Jacobi::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const {
     (void)ds;
+    bool ret = false;
 
+    CF_CHECK_EQ(bn[1].IsNegative(), false);
+    CF_CHECK_EQ(bn[1].IsOdd(), true);
     res = ::CryptoPP::Jacobi(bn[0], bn[1]);
 
-    return true;
+    ret = true;
+end:
+    return ret;
 }
 
 bool Neg::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const {
