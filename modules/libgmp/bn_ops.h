@@ -33,6 +33,16 @@ end:
             return mp;
         }
 
+        std::optional<signed long> GetSignedLong(void) {
+            std::optional<signed long> ret = std::nullopt;
+
+            CF_CHECK_EQ(mpz_fits_slong_p(GetPtr()), 1);
+
+            ret = mpz_get_si(GetPtr());
+end:
+            return ret;
+        }
+
         std::optional<component::Bignum> ToComponentBignum(void) {
             std::optional<component::Bignum> ret = std::nullopt;
 

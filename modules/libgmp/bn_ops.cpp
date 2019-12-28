@@ -66,12 +66,23 @@ bool GCD::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 }
 
 bool Jacobi::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
-    (void)ds;
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            res.Set( std::to_string(mpz_jacobi(bn[0].GetPtr(), bn[1].GetPtr())) );
+            return true;
+        case    1:
+            {
+                const auto bn1 = bn[1].GetSignedLong();
+                CF_CHECK_NE(bn1, std::nullopt);
+                res.Set( std::to_string(mpz_kronecker_si(bn[0].GetPtr(), *bn1)) );
+            }
+            return true;
+        default:
+            return false;
+    }
 
-    const int jacobi = mpz_jacobi(bn[0].GetPtr(), bn[1].GetPtr());
-    res.Set( std::to_string(jacobi) );
-
-    return true;
+end:
+    return false;
 }
 
 bool Cmp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
