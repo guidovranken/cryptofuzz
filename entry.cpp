@@ -79,6 +79,10 @@
   #include <modules/libgmp/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_BN_JS)
+  #include <modules/bn.js/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
@@ -168,6 +172,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_LIBGMP)
     driver->LoadModule( std::make_shared<cryptofuzz::module::libgmp>() );
+#endif
+
+#if defined(CRYPTOFUZZ_BN_JS)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::bn_js>() );
 #endif
     return 0;
 }

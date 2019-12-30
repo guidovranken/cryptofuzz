@@ -526,7 +526,7 @@ std::string BignumCalc::ToString(void) const {
 nlohmann::json BignumCalc::ToJSON(void) const {
     nlohmann::json j;
     j["calcOp"] = calcOp.ToJSON();
-    j["bn1"] = bn0.ToJSON();
+    j["bn0"] = bn0.ToJSON();
     j["bn1"] = bn1.ToJSON();
     j["bn2"] = bn2.ToJSON();
     j["bn3"] = bn3.ToJSON();

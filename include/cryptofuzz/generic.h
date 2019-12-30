@@ -174,7 +174,7 @@ class Bignum {
         }
 
         nlohmann::json ToJSON(void) const {
-            return data.ToJSON();
+            return ToString();
         }
 };
 
