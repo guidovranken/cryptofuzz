@@ -17,6 +17,8 @@ class Reference : public Module {
         std::optional<component::Digest> XXHASH32_OneShot(operation::Digest& op) const;
         std::optional<component::Digest> XXHASH32_Streaming(operation::Digest& op, Datasource& ds) const;
         std::optional<component::Digest> XXHASH32(operation::Digest& op, Datasource& ds) const;
+        std::optional<component::Digest> BLAKE3(operation::Digest& op, Datasource& ds) const;
+        std::optional<component::MAC> BLAKE3_MAC(operation::HMAC& op, Datasource& ds) const;
     public:
         Reference(void);
         std::optional<component::Digest> OpDigest(operation::Digest& op) override;
