@@ -26,9 +26,11 @@ extern "C" {
     #include "argon2/include/argon2.h"
 }
 
+#if 0
 extern "C" {
     #include "blake3/blake3.h"
 }
+#endif
 
 namespace cryptofuzz {
 namespace module {
@@ -191,6 +193,7 @@ std::optional<component::Digest> Reference::XXHASH32(operation::Digest& op, Data
     }
 }
 
+#if 0
 std::optional<component::Digest> Reference::BLAKE3(operation::Digest& op, Datasource& ds) const {
     std::optional<component::Digest> ret = std::nullopt;
 
@@ -247,6 +250,7 @@ std::optional<component::MAC> Reference::BLAKE3_MAC(operation::HMAC& op, Datasou
 end:
     return ret;
 }
+#endif
 
 std::optional<component::Digest> Reference::OpDigest(operation::Digest& op) {
     using fuzzing::datasource::ID;
@@ -347,11 +351,13 @@ std::optional<component::Digest> Reference::OpDigest(operation::Digest& op) {
                 return XXHASH32(op, ds);
             }
             break;
+#if 0
         case CF_DIGEST("BLAKE3"):
             {
                 return BLAKE3(op, ds);
             }
             break;
+#endif
     }
 
     return ret;
@@ -422,12 +428,14 @@ std::optional<component::MAC> Reference::OpHMAC(operation::HMAC& op) {
             }
             break;
 #endif
+#if 0
         case CF_DIGEST("BLAKE3"):
             {
                 Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
                 return BLAKE3_MAC(op, ds);
             }
             break;
+#endif
     }
 
     return ret;
