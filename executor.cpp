@@ -554,6 +554,39 @@ template<> std::optional<component::Secret> ExecutorBase<component::Secret, oper
     return module->OpECDH_Derive(op);
 }
 
+/* Specialization for operation::BignumCalc */
+template<> void ExecutorBase<component::Bignum, operation::BignumCalc>::updateExtraCounters(const uint64_t moduleID, operation::BignumCalc& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::Bignum, operation::BignumCalc>::postprocess(std::shared_ptr<Module> module, operation::BignumCalc& op, const ExecutorBase<component::Bignum, operation::BignumCalc>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, operation::BignumCalc>::callModule(std::shared_ptr<Module> module, operation::BignumCalc& op) const {
+    /* Prevent timeouts */
+    if ( op.bn0.GetSize() > 1000 ) return std::nullopt;
+    if ( op.bn1.GetSize() > 1000 ) return std::nullopt;
+    if ( op.bn2.GetSize() > 1000 ) return std::nullopt;
+    if ( op.bn3.GetSize() > 1000 ) return std::nullopt;
+
+    switch ( op.calcOp.Get() ) {
+        case    CF_CALCOP("SetBit(A,B)"):
+            /* Don't allow setting very high bit positions (risk of memory exhaustion) */
+            if ( op.bn1.GetSize() > 4 ) {
+                return std::nullopt;
+            }
+            break;
+    }
+
+    return module->OpBignumCalc(op);
+}
+
 template <class ResultType, class OperationType>
 ExecutorBase<ResultType, OperationType>::ExecutorBase(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const bool debug) :
     operationID(operationID),
@@ -840,5 +873,6 @@ template class ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPa
 template class ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>;
 template class ExecutorBase<bool, operation::ECDSA_Verify>;
 template class ExecutorBase<component::Secret, operation::ECDH_Derive>;
+template class ExecutorBase<component::Bignum, operation::BignumCalc>;
 
 } /* namespace cryptofuzz */

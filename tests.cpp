@@ -130,5 +130,10 @@ void test(const operation::ECDH_Derive& op, const std::optional<component::Secre
     (void)result;
 }
 
+void test(const operation::BignumCalc& op, const std::optional<component::Bignum>& result) {
+    (void)op;
+    (void)result;
+}
+
 } /* namespace tests */
 } /* namespace cryptofuzz */

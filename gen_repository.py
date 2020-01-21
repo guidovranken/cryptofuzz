@@ -66,6 +66,10 @@ class ECC_Curve(Component):
     def __init__(self, operation):
         super(ECC_Curve, self).__init__(operation)
 
+class CalcOp(Component):
+    def __init__(self, operation):
+        super(CalcOp, self).__init__(operation)
+
 # Tables
 class Table(object):
     def __init__(self, prefix, tableDecl):
@@ -206,6 +210,17 @@ class ECC_CurveTable(Table):
 
         return tableEntry
 
+class CalcOpTable(Table):
+    def __init__(self):
+        tableDecl = [
+        ]
+
+        super(CalcOpTable, self).__init__('CalcOp', tableDecl)
+    def getTableEntryList(self, index):
+        tableEntry = []
+
+        return tableEntry
+
 modules = ModuleTable()
 modules.Add( Module("Beast") )
 modules.Add( Module("Botan") )
@@ -219,6 +234,7 @@ modules.Add( Module("OpenSSL") )
 modules.Add( Module("Public Domain") )
 modules.Add( Module("Reference implementations") )
 modules.Add( Module("Veracrypt") )
+modules.Add( Module("bn.js") )
 modules.Add( Module("libgcrypt") )
 modules.Add( Module("libsodium") )
 modules.Add( Module("libtomcrypt") )
@@ -245,6 +261,7 @@ operations.Add( Operation("ECC_GenerateKeyPair") )
 operations.Add( Operation("ECDSA_Sign") )
 operations.Add( Operation("ECDSA_Verify") )
 operations.Add( Operation("ECDH_Derive") )
+operations.Add( Operation("BignumCalc") )
 
 ciphers = CipherTable()
 
@@ -662,7 +679,48 @@ ecc_curves.Add( ECC_Curve("x962_p239v2") )
 ecc_curves.Add( ECC_Curve("x962_p239v3") )
 ecc_curves.Add( ECC_Curve("x962_p256v1") )
 
-tables = [modules, operations, ciphers, digests, ecc_curves]
+calcops = CalcOpTable()
+calcops.Add( CalcOp("Abs(A)") )
+calcops.Add( CalcOp("Add(A,B)") )
+calcops.Add( CalcOp("AddMod(A,B,C)") )
+calcops.Add( CalcOp("And(A,B)") )
+calcops.Add( CalcOp("Bit(A,B)") )
+calcops.Add( CalcOp("Cmp(A,B)") )
+calcops.Add( CalcOp("CmpAbs(A,B)") )
+calcops.Add( CalcOp("Div(A,B)") )
+calcops.Add( CalcOp("ExpMod(A,B,C)") )
+calcops.Add( CalcOp("GCD(A,B)") )
+calcops.Add( CalcOp("InvMod(A,B)") )
+calcops.Add( CalcOp("IsEq(A,B)") )
+calcops.Add( CalcOp("IsEven(A)") )
+calcops.Add( CalcOp("IsNeg(A)") )
+calcops.Add( CalcOp("IsOdd(A)") )
+calcops.Add( CalcOp("IsOne(A)") )
+calcops.Add( CalcOp("IsPrime(A)") )
+calcops.Add( CalcOp("IsZero(A)") )
+calcops.Add( CalcOp("Jacobi(A,B)") )
+calcops.Add( CalcOp("LCM(A,B)") )
+calcops.Add( CalcOp("LShift1(A)") )
+calcops.Add( CalcOp("Mod(A,B)") )
+calcops.Add( CalcOp("Mod_NIST_192(A)") )
+calcops.Add( CalcOp("Mod_NIST_224(A)") )
+calcops.Add( CalcOp("Mod_NIST_256(A)") )
+calcops.Add( CalcOp("Mod_NIST_384(A)") )
+calcops.Add( CalcOp("Mod_NIST_521(A)") )
+calcops.Add( CalcOp("Mul(A,B)") )
+calcops.Add( CalcOp("MulMod(A,B,C)") )
+calcops.Add( CalcOp("Neg(A)") )
+calcops.Add( CalcOp("Or(A,B)") )
+calcops.Add( CalcOp("RShift(A,B)") )
+calcops.Add( CalcOp("SetBit(A,B)") )
+calcops.Add( CalcOp("Sqr(A)") )
+calcops.Add( CalcOp("SqrMod(A,B)") )
+calcops.Add( CalcOp("Sqrt(A)") )
+calcops.Add( CalcOp("Sub(A,B)") )
+calcops.Add( CalcOp("SubMod(A,B,C)") )
+calcops.Add( CalcOp("Xor(A,B)") )
+
+tables = [modules, operations, ciphers, digests, ecc_curves, calcops]
 
 with open('repository_tbl.h', 'w') as fp:
     for table in tables:

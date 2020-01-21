@@ -222,6 +222,10 @@ std::string ToString(const component::ECC_KeyPair& val) {
     return ret;
 }
 
+std::string ToString(const component::Bignum& val) {
+    return val.ToString();
+}
+
 class HaveBadPointer {
     private:
         bool haveBadPointer = false;

@@ -49,6 +49,7 @@ Available library-specific build instructions:
  - [wolfCrypt](wolfcrypt.md)
  - [mbedTLS](mbedtls.md)
  - [libtomcrypt](libtomcrypt.md)
+ - [libgmp](libgmp.md)
 
 ## 3. Building Cryptofuzz
 

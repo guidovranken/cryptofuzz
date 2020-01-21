@@ -104,6 +104,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) {
+            (void)op;
+            return std::nullopt;
+        }
 };
 
 } /* namespace cryptofuzz */

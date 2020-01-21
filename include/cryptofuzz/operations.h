@@ -824,5 +824,60 @@ class ECDH_Derive : public Operation {
         }
 };
 
+class BignumCalc : public Operation {
+    public:
+        const component::CalcOp calcOp;
+        const component::Bignum bn0;
+        const component::Bignum bn1;
+        const component::Bignum bn2;
+        const component::Bignum bn3;
+
+        BignumCalc(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            calcOp(ds),
+            bn0(ds),
+            bn1(ds),
+            bn2(ds),
+            bn3(ds)
+        { }
+        BignumCalc(nlohmann::json json) :
+            Operation(json["modifier"]),
+            calcOp(json["calcOp"]),
+            bn0(json["bn1"]),
+            bn1(json["bn2"]),
+            bn2(json["bn3"]),
+            bn3(json["bn4"])
+        { }
+        BignumCalc(
+                component::Modifier modifier,
+                component::CurveType calcOp,
+                component::Bignum bn0,
+                component::Bignum bn1,
+                component::Bignum bn2,
+                component::Bignum bn3) :
+            Operation(std::move(modifier)),
+            calcOp(calcOp),
+            bn0(bn0),
+            bn1(bn1),
+            bn2(bn2),
+            bn3(bn3)
+        { }
+
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BignumCalc& rhs) const {
+            return
+                (calcOp == rhs.calcOp) &&
+                (bn0 == rhs.bn0) &&
+                (bn1 == rhs.bn1) &&
+                (bn2 == rhs.bn2) &&
+                (bn3 == rhs.bn3) &&
+                (modifier == rhs.modifier);
+        }
+};
+
 } /* namespace operation */
 } /* namespace cryptofuzz */
