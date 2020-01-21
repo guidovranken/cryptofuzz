@@ -42,7 +42,7 @@ end:
             const int radixSize = mp_radix_size(GetPtr(), 10);
             CF_CHECK_GT(radixSize, 0);
 
-            str = (char*)malloc(radixSize);
+            str = (char*)malloc(radixSize + 1);
 
             CF_CHECK_EQ(mp_toradix(GetPtr(), str, 10), MP_OKAY);
 
