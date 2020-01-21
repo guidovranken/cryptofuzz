@@ -119,19 +119,6 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& c
             goto end;
 #endif
             break;
-        case    4:
-#if defined(CRYPTOFUZZ_BORINGSSL)
-            {
-                uint64_t v;
-                CF_CHECK_EQ(BN_get_u64(bn[0].GetPtr(), &v), 1);
-                //BN_MONT_CTX montCtx(ds);
-                //CF_CHECK_EQ(BN_mod_exp_mont_word(res.GetPtr(), v, bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr(), montCtx.GetPtr()), 1);
-                CF_CHECK_EQ(BN_mod_exp_mont_word(res.GetPtr(), v, bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr(), nullptr), 1);
-            }
-#else
-            goto end;
-#endif
-            break;
         default:
             goto end;
             break;
