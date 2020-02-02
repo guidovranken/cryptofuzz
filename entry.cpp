@@ -83,6 +83,10 @@
   #include <modules/bn.js/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_SJCL)
+  #include <modules/sjcl/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
@@ -176,6 +180,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_BN_JS)
     driver->LoadModule( std::make_shared<cryptofuzz::module::bn_js>() );
+#endif
+
+#if defined(CRYPTOFUZZ_SJCL)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::sjcl>() );
 #endif
     return 0;
 }
