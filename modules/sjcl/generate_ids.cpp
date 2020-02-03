@@ -19,6 +19,14 @@ int main(void) {
         printf("var Is%s = function(id) { return id == %zu; }\n", name.c_str(), item.first);
     }
 
+    for (const auto item : CipherLUTMap ) {
+        std::string name = item.second.name;
+        if ( name.find("-") != std::string::npos ) {
+            continue;
+        }
+        printf("var Is%s = function(id) { return id == %zu; }\n", name.c_str(), item.first);
+    }
+
     for (const auto item : CalcOpLUTMap ) {
         std::string name = item.second.name;
         const auto pos = name.find_first_of("(");

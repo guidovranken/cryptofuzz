@@ -124,6 +124,141 @@ var OpHMAC = function(FuzzerInput) {
     FuzzerOutput = JSON.stringify(ret);
 }
 
+var OpSymmetricEncrypt = function(FuzzerInput) {
+    var cleartext = sjcl.codec.hex.toBits(FuzzerInput['cleartext']);
+    var cleartextSize = sjcl.bitArray.bitLength(cleartext) / 8;
+    var cipherType = parseInt(FuzzerInput['cipher']['cipherType']);
+    var key = sjcl.codec.hex.toBits(FuzzerInput['cipher']['key']);
+    var keySize = sjcl.bitArray.bitLength(key) / 8;
+    var iv = sjcl.codec.hex.toBits(FuzzerInput['cipher']['iv']);
+    var ivSize = sjcl.bitArray.bitLength(iv) / 8;
+    var aad = sjcl.codec.hex.toBits(FuzzerInput['aad']);
+    var tagSize = parseInt(FuzzerInput['tagSize']);
+
+    if ( aad.length || tagSize ) {
+        return;
+    }
+
+    var ciphertextHex;
+
+    if (
+        (IsAES_128_CCM(cipherType) && keySize == 8) ||
+        (IsAES_256_CCM(cipherType) && keySize == 16)
+    ) {
+        var cipher = new sjcl.cipher.aes(key);
+        ciphertextHex = sjcl.codec.hex.fromBits(sjcl.mode.ccm.encrypt(cipher, cleartext, iv));
+    } else if (
+        (IsAES_128_GCM(cipherType) && keySize == 16 ) ||
+        (IsAES_256_GCM(cipherType) && keySize == 32 )
+    ) {
+        var cipher = new sjcl.cipher.aes(key);
+        ciphertextHex = sjcl.codec.hex.fromBits(sjcl.mode.gcm.encrypt(cipher, cleartext, iv, aad, tagSize));
+    } else if (
+        (IsAES_128_OCB(cipherType) && keySize == 16 && ivSize == 16 ) ||
+        (IsAES_256_OCB(cipherType) && keySize == 32 && ivSize == 32 )
+    ) {
+        var cipher = new sjcl.cipher.aes(key);
+        ciphertextHex = sjcl.codec.hex.fromBits(sjcl.mode.ocb2.encrypt(cipher, cleartext, iv, aad, tagSize));
+    } else if (
+        (IsAES_128_CTR(cipherType) && keySize == 16 && ivSize == 16 ) ||
+        (IsAES_256_CTR(cipherType) && keySize == 32 && ivSize == 32 )
+    ) {
+        sjcl.beware["CTR mode is dangerous because it doesn't protect message integrity."]();
+
+        var cipher = new sjcl.cipher.aes(key);
+        ciphertextHex = sjcl.codec.hex.fromBits(sjcl.mode.ctr.encrypt(cipher, cleartext, iv));
+    } else if (
+        (IsAES_128_CBC(cipherType) && keySize == 16 && ivSize == 16 ) ||
+        (IsAES_256_CBC(cipherType) && keySize == 32 && ivSize == 32 )
+    ) {
+        /* TODO padding */
+        if ( 0 ) {
+            sjcl.beware["CBC mode is dangerous because it doesn't protect message integrity."]();
+
+            var cipher = new sjcl.cipher.aes(key);
+            ciphertextHex = sjcl.codec.hex.fromBits(sjcl.mode.cbc.encrypt(cipher, cleartext, iv));
+        } else {
+            return;
+        }
+    } else {
+        return;
+    }
+
+    ciphertextHex = ciphertextHex.substr(0, cleartextSize * 2);
+    FuzzerOutput = JSON.stringify(ciphertextHex);
+}
+
+var OpSymmetricDecrypt = function(FuzzerInput) {
+    var ciphertext = sjcl.codec.hex.toBits(FuzzerInput['ciphertext']);
+    var ciphertextSize = sjcl.bitArray.bitLength(ciphertext) / 8;
+
+    var cipherType = parseInt(FuzzerInput['cipher']['cipherType']);
+
+    var key = sjcl.codec.hex.toBits(FuzzerInput['cipher']['key']);
+    var keySize = sjcl.bitArray.bitLength(key) / 8;
+
+    var iv = sjcl.codec.hex.toBits(FuzzerInput['cipher']['iv']);
+    var ivSize = sjcl.bitArray.bitLength(iv) / 8;
+
+    var aad = sjcl.codec.hex.toBits(FuzzerInput['aad']);
+    var tag = sjcl.codec.hex.toBits(FuzzerInput['tag']);
+
+    if ( aad.length || tag.length ) {
+        return;
+    }
+
+    var cleartextHex;
+
+    try {
+        if (
+            (IsAES_128_CCM(cipherType) && keySize == 8) ||
+            (IsAES_256_CCM(cipherType) && keySize == 16)
+        ) {
+            var cipher = new sjcl.cipher.aes(key);
+            cleartextHex = sjcl.codec.hex.fromBits(sjcl.mode.ccm.decrypt(cipher, ciphertext, iv, aad, 0));
+        } else if (
+            (IsAES_128_GCM(cipherType) && keySize == 16 ) ||
+            (IsAES_256_GCM(cipherType) && keySize == 32 )
+        ) {
+            var cipher = new sjcl.cipher.aes(key);
+            cleartextHex = sjcl.codec.hex.fromBits(sjcl.mode.gcm.decrypt(cipher, ciphertext, iv, aad, 0));
+        } else if (
+            (IsAES_128_OCB(cipherType) && keySize == 16 && ivSize == 16 ) ||
+            (IsAES_256_OCB(cipherType) && keySize == 32 && ivSize == 32 )
+        ) {
+            var cipher = new sjcl.cipher.aes(key);
+            cleartextHex = sjcl.codec.hex.fromBits(sjcl.mode.ocb2.decrypt(cipher, ciphertext, iv, aad, 0));
+        } else if (
+            (IsAES_128_CTR(cipherType) && keySize == 16 && ivSize == 16 ) ||
+            (IsAES_256_CTR(cipherType) && keySize == 32 && ivSize == 32 )
+        ) {
+            sjcl.beware["CTR mode is dangerous because it doesn't protect message integrity."]();
+
+            var cipher = new sjcl.cipher.aes(key);
+            ciphertextHex = sjcl.codec.hex.fromBits(sjcl.mode.ctr.decrypt(cipher, cleartext, iv));
+        } else if (
+            (IsAES_128_CBC(cipherType) && keySize == 16 && ivSize == 16 ) ||
+            (IsAES_256_CBC(cipherType) && keySize == 32 && ivSize == 32 )
+        ) {
+            /* TODO padding */
+            if ( 0 ) {
+                sjcl.beware["CBC mode is dangerous because it doesn't protect message integrity."]();
+
+                var cipher = new sjcl.cipher.aes(key);
+                ciphertextHex = sjcl.codec.hex.fromBits(sjcl.mode.ctr.decrypt(cipher, cleartext, iv));
+            } else {
+                return;
+            }
+        } else {
+            return;
+        }
+    } catch ( e ) { return; }
+
+    cleartextHex = cleartextHex.substr(0, cleartextSize * 2);
+    FuzzerOutput = JSON.stringify(cleartextHex);
+
+}
+
 var OpKDF_HKDF = function(FuzzerInput) {
     var digestType = parseInt(FuzzerInput['digestType']);
     var password = sjcl.codec.hex.toBits(FuzzerInput['password']);
@@ -145,6 +280,7 @@ var OpKDF_HKDF = function(FuzzerInput) {
         console.log(FuzzerOutput);
     }
 }
+
 
 var OpKDF_PBKDF2 = function(FuzzerInput) {
     var digestType = parseInt(FuzzerInput['digestType']);
@@ -254,6 +390,10 @@ if ( IsDigest(operation) ) {
     OpDigest(FuzzerInput);
 } else if ( IsHMAC(operation) ) {
     OpHMAC(FuzzerInput);
+} else if ( IsSymmetricEncrypt(operation) ) {
+    OpSymmetricEncrypt(FuzzerInput);
+} else if ( IsSymmetricDecrypt(operation) ) {
+    OpSymmetricDecrypt(FuzzerInput);
 } else if ( IsKDF_HKDF(operation) ) {
     //OpKDF_HKDF(FuzzerInput);
 } else if ( IsKDF_PBKDF2(operation) ) {
