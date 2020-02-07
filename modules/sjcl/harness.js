@@ -34,9 +34,7 @@ var toParts = function(modifier, input) {
 var processMultipart = function(obj, input, modifier) {
     /* input = toParts(modifier, input); */
 
-    input.forEach(function (curInput) {
-        obj.update(curInput);
-    });
+    obj.update(input);
 
     return sjcl.codec.hex.fromBits(obj.finalize());
 }
