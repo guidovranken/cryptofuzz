@@ -1,3 +1,4 @@
+#include <string>
 #include <stdio.h>
 #include <fuzzing/datasource/id.hpp>
 #include "../../repository_map.h"
