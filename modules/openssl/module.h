@@ -94,6 +94,7 @@ class OpenSSL : public Module {
         std::optional<component::Secret> OpECDH_Derive(operation::ECDH_Derive& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
 #endif
+        std::optional<component::Key> OpRNG(operation::RNG& op) override;
 };
 
 } /* namespace module */

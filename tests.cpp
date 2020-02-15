@@ -135,5 +135,12 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
     (void)result;
 }
 
+void test(const operation::RNG& op, const std::optional<component::Key>& result) {
+    if ( result != std::nullopt && op.outSize != result->GetSize() ) {
+        /* TODO include module name in abort message */
+        util::abort({op.Name(), "invalid outSize"});
+    }
+}
+
 } /* namespace tests */
 } /* namespace cryptofuzz */

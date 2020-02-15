@@ -879,5 +879,29 @@ class BignumCalc : public Operation {
         }
 };
 
+class RNG : public Operation {
+    public:
+        const uint64_t outSize;
+
+        RNG(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            outSize(ds.Get<uint64_t>() % (1024 * 1024 * 10))
+        { }
+        RNG(nlohmann::json json) :
+            Operation(json["modifier"]),
+            outSize(json["outSize"].get<uint64_t>())
+        { }
+
+        static size_t MaxOperations(void) { return 20; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const RNG& rhs) const {
+            return
+                (outSize == rhs.outSize) &&
+                (modifier == rhs.modifier);
+        }
+};
+
 } /* namespace operation */
 } /* namespace cryptofuzz */

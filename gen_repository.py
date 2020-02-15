@@ -263,6 +263,7 @@ operations.Add( Operation("ECDSA_Sign") )
 operations.Add( Operation("ECDSA_Verify") )
 operations.Add( Operation("ECDH_Derive") )
 operations.Add( Operation("BignumCalc") )
+operations.Add( Operation("RNG") )
 
 ciphers = CipherTable()
 

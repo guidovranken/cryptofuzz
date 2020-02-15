@@ -587,6 +587,27 @@ template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, oper
     return module->OpBignumCalc(op);
 }
 
+/* Specialization for operation::RNG */
+template<> void ExecutorBase<Buffer, operation::RNG>::updateExtraCounters(const uint64_t moduleID, operation::RNG& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<Buffer, operation::RNG>::postprocess(std::shared_ptr<Module> module, operation::RNG& op, const ExecutorBase<Buffer, operation::RNG>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+
+    if ( result.second != std::nullopt ) {
+        fuzzing::memory::memory_test_msan(result.second->GetPtr(), result.second->GetSize());
+    }
+}
+
+template<> std::optional<Buffer> ExecutorBase<Buffer, operation::RNG>::callModule(std::shared_ptr<Module> module, operation::RNG& op) const {
+    return module->OpRNG(op);
+}
+
 template <class ResultType, class OperationType>
 ExecutorBase<ResultType, OperationType>::ExecutorBase(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const bool debug) :
     operationID(operationID),
@@ -618,6 +639,14 @@ typename ExecutorBase<ResultType, OperationType>::ResultSet ExecutorBase<ResultT
 /* Do not compare ECC_GenerateKeyPair results, because the result can be produced indeterministically */
 template <>
 void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::compare(const ResultSet& results, const uint8_t* data, const size_t size) const {
+    (void)results;
+    (void)data;
+    (void)size;
+}
+
+/* Do not compare RNG results, because the result is produced indeterministically */
+template <>
+void ExecutorBase<Buffer, operation::RNG>::compare(const ResultSet& results, const uint8_t* data, const size_t size) const {
     (void)results;
     (void)data;
     (void)size;
@@ -874,5 +903,6 @@ template class ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>;
 template class ExecutorBase<bool, operation::ECDSA_Verify>;
 template class ExecutorBase<component::Secret, operation::ECDH_Derive>;
 template class ExecutorBase<component::Bignum, operation::BignumCalc>;
+template class ExecutorBase<component::Key, operation::RNG>;
 
 } /* namespace cryptofuzz */

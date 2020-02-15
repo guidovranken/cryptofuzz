@@ -7,6 +7,7 @@
 #include <openssl/kdf.h>
 #include <openssl/core_names.h>
 #endif
+#include <openssl/rand.h>
 
 #include "module_internal.h"
 #include "bn_ops.h"
@@ -3275,6 +3276,32 @@ end:
 }
 
 #endif
+
+std::optional<Buffer> OpenSSL::OpRNG(operation::RNG& op) {
+    std::optional<Buffer> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    /* Choose between RAND_bytes and RAND_pseudo_bytes */
+    const auto usePseudo = ds.Get<bool>();
+
+    uint8_t* out = util::malloc(op.outSize);
+
+    if ( usePseudo == true ) {
+        const auto r = RAND_pseudo_bytes(out, op.outSize);
+        /* 0 and 1 both indicate success */
+        if ( r != 0 && r != 1 ) {
+            goto end;
+        }
+    } else {
+        CF_CHECK_EQ(RAND_bytes(out, op.outSize), 1);
+    }
+
+    ret = Buffer(out, op.outSize);
+
+end:
+    util::free(out);
+    return ret;
+}
 
 } /* namespace module */
 } /* namespace cryptofuzz */

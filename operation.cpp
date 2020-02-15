@@ -534,5 +534,22 @@ nlohmann::json BignumCalc::ToJSON(void) const {
     return j;
 }
 
+std::string RNG::Name(void) const { return "RNG"; }
+std::string RNG::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: RNG" << std::endl;
+    ss << "outSize: " << std::to_string(outSize) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json RNG::ToJSON(void) const {
+    nlohmann::json j;
+    j["outSize"] = outSize;
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 } /* namespace operation */
 } /* namespace cryptofuzz */

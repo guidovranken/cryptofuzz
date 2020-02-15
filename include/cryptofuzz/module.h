@@ -108,6 +108,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::Key> OpRNG(operation::RNG& op) {
+            (void)op;
+            return std::nullopt;
+        }
 };
 
 } /* namespace cryptofuzz */
