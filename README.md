@@ -53,3 +53,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - wolfCrypt: [PKCS12 PBKDF + SHA3 buffer overflow](https://github.com/wolfSSL/wolfssl/pull/2677)
 - NSS: mp_toradix buffer overflow (write) TBA
 - BLAKE3: [memcpy undefined behavior in C impl](https://github.com/BLAKE3-team/BLAKE3/pull/4)
+- sjcl: [scrypt wrong result with certain parameters](https://github.com/bitwiseshiftleft/sjcl/issues/409)
