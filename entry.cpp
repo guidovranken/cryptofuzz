@@ -87,6 +87,10 @@
   #include <modules/crypto-js/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_CRYPTO_BROWSERIFY)
+  #include <modules/crypto-browserify/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
@@ -184,6 +188,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_CRYPTO_JS)
     driver->LoadModule( std::make_shared<cryptofuzz::module::crypto_js>() );
+#endif
+
+#if defined(CRYPTOFUZZ_CRYPTO_BROWSERIFY)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::crypto_browserify>() );
 #endif
     return 0;
 }
