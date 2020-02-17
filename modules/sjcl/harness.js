@@ -258,6 +258,9 @@ var OpSymmetricDecrypt = function(FuzzerInput) {
 }
 
 var OpKDF_HKDF = function(FuzzerInput) {
+    /* Despite being implemented, HKDF is not exposed by sjcl for reasons unknown */
+    return;
+
     var digestType = parseInt(FuzzerInput['digestType']);
     var password = sjcl.codec.hex.toBits(FuzzerInput['password']);
     var salt = sjcl.codec.hex.toBits(FuzzerInput['salt']);
@@ -275,7 +278,6 @@ var OpKDF_HKDF = function(FuzzerInput) {
     key = sjcl.codec.hex.fromBits(key);
     if ( key.length % 2 == 0 ) {
         FuzzerOutput = JSON.stringify(sjcl.codec.hex.fromBits(key));
-        console.log(FuzzerOutput);
     }
 }
 
@@ -288,7 +290,13 @@ var OpKDF_PBKDF2 = function(FuzzerInput) {
     var salt = sjcl.codec.hex.toBits(FuzzerInput['salt']);
     var modifier = sjcl.codec.hex.toBits(FuzzerInput['modifier']);
 
+    /* PBKDF2 + SHA1/SHA512/RIPEMD160 is broken. See also https://github.com/bitwiseshiftleft/sjcl/issues/356 */
+    if ( !IsSHA256(digestType) ) {
+        return;
+    }
+
     if ( iterations == 0 ) return;
+    if ( keySize == 0 ) return;
 
     var digestFn;
     try {
@@ -308,6 +316,9 @@ var OpKDF_PBKDF2 = function(FuzzerInput) {
 }
 
 var OpKDF_SCRYPT = function(FuzzerInput) {
+    /* scrypt is broken. https://github.com/bitwiseshiftleft/sjcl/issues/409 */
+    return;
+
     var password = sjcl.codec.hex.toBits(FuzzerInput['password']);
     var salt = sjcl.codec.hex.toBits(FuzzerInput['salt']);
     var N = parseInt(FuzzerInput['N']);
@@ -393,7 +404,7 @@ if ( IsDigest(operation) ) {
 } else if ( IsSymmetricDecrypt(operation) ) {
     OpSymmetricDecrypt(FuzzerInput);
 } else if ( IsKDF_HKDF(operation) ) {
-    //OpKDF_HKDF(FuzzerInput);
+    OpKDF_HKDF(FuzzerInput);
 } else if ( IsKDF_PBKDF2(operation) ) {
     OpKDF_PBKDF2(FuzzerInput);
 } else if ( IsKDF_SCRYPT(operation) ) {
