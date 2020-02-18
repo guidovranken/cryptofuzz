@@ -7,6 +7,33 @@ var fromHexString = function(hexString) {
 
 FuzzerInput = JSON.parse(FuzzerInput);
 
+var toParts = function(modifier, input) {
+    var ret = [];
+    var modifierPos = 0;
+    var pos = 0;
+
+    while ( input.length - pos > 0 ) {
+        var curLength = input.length - pos;
+
+        if ( modifierPos + 3 <= modifier.length ) {
+            var chunk = modifier.slice(modifierPos, modifierPos+3);
+            var length = 0;
+            length += chunk[0] << 16;
+            length += chunk[1] << 8;
+            length += chunk[2];
+
+            curLength = length % (curLength+1);
+            modifierPos += 3;
+        }
+
+        var slice = input.slice(pos, pos+curLength);
+        ret.push(slice);
+        pos += curLength;
+    }
+
+    return ret;
+}
+
 var toDigestString = function(digestType) {
     if ( IsMD5(digestType) ) {
         return 'md5';
@@ -65,7 +92,10 @@ var OpDigest = function(FuzzerInput) {
         digestString = toDigestString(digestType);
     } catch ( e ) { return; }
 
-    var ret = crypto.createHash(digestString).update(cleartext).digest('hex');
+    var parts = toParts(modifier, cleartext);
+    var fn = crypto.createHash(digestString);
+    parts.forEach(part => fn.update(part));
+    var ret = fn.digest('hex');
     FuzzerOutput = JSON.stringify(ret);
 }
 
@@ -80,7 +110,10 @@ var OpHMAC = function(FuzzerInput) {
         digestString = toDigestString(digestType);
     } catch ( e ) { return; }
 
-    var ret = crypto.createHmac(digestString, key).update(cleartext).digest('hex');
+    var parts = toParts(modifier, cleartext);
+    var fn = crypto.createHmac(digestString, key);
+    parts.forEach(part => fn.update(part));
+    var ret = fn.digest('hex');
     FuzzerOutput = JSON.stringify(ret);
 }
 
