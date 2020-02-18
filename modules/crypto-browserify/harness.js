@@ -27,6 +27,34 @@ var toDigestString = function(digestType) {
     throw "Invalid digest type";
 }
 
+var toCurveString = function(curveType) {
+    if ( Issecp256k1(curveType) ) {
+        return 'secp256k1';
+    }
+    throw "Invalid curve";
+
+    /* Other curves are awfully slow */
+    if ( Issecp256k1(curveType) ) {
+        return 'secp256k1';
+    } else if ( Issecp224r1(curveType) ) {
+        return 'secp224r1';
+    } else if ( Issecp256r1(curveType) ) {
+        return 'prime256v1';
+    } else if ( Issecp192r1(curveType) ) {
+        return 'prime192v1';
+    /* TODO
+    } else if ( Ised25519(curveType) ) {
+        return 'ed25519';
+    */
+    } else if ( Issecp384r1(curveType) ) {
+        return 'secp384r1';
+    } else if ( Issecp521r1(curveType) ) {
+        return 'secp521r1';
+    }
+
+    throw "Invalid curve";
+}
+
 var OpDigest = function(FuzzerInput) {
     var digestType = parseInt(FuzzerInput['digestType']);
     var cleartext = fromHexString(FuzzerInput['cleartext']);
@@ -121,6 +149,28 @@ var OpKDF_SCRYPT = function(FuzzerInput) {
     });
 }
 
+var OpECC_PrivateToPublic = function(FuzzerInput) {
+    var curveType = parseInt(FuzzerInput['curveType']);
+
+    var curveString;
+    try {
+        curveString = toCurveString(curveType);
+    } catch ( e ) { return; }
+
+    var privBn = FuzzerInput["priv"];
+
+    try {
+        var ecdh = crypto.createECDH(curveString);
+        ecdh.setPrivateKey(privBn, 'hex');
+
+        var pub = ecdh.getPublicKey().toString('hex');
+        var pubx = pub.substring(2, (pub.length - 2) / 2 + 2);
+        var puby = pub.substring((pub.length - 2) / 2 + 2, pub.length);
+
+        FuzzerOutput = JSON.stringify([pubx, puby]);
+    } catch ( e ) { }
+}
+
 var operation = parseInt(FuzzerInput['operation']);
 
 if ( IsDigest(operation) ) {
@@ -135,4 +185,6 @@ if ( IsDigest(operation) ) {
     OpKDF_PBKDF2(FuzzerInput);
 } else if ( IsKDF_SCRYPT(operation) ) {
     OpKDF_SCRYPT(FuzzerInput);
+} else if ( IsECC_PrivateToPublic(operation) ) {
+    OpECC_PrivateToPublic(FuzzerInput);
 }

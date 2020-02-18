@@ -130,6 +130,9 @@ std::string DecToHex(const std::string s) {
         return "0";
     }
 
+    /* zero-fill */
+    if ( ret.size() % 2 != 0 ) ret = "0" + ret;
+
     return ret;
 }
 
