@@ -54,3 +54,5 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - NSS: mp_toradix buffer overflow (write) TBA
 - BLAKE3: [memcpy undefined behavior in C impl](https://github.com/BLAKE3-team/BLAKE3/pull/4)
 - sjcl: [scrypt wrong result with certain parameters](https://github.com/bitwiseshiftleft/sjcl/issues/409)
+- sjcl: [RIPEMD160 HMAC wrong result](https://github.com/bitwiseshiftleft/sjcl/issues/410)
+- sjcl: [bignum subtraction incorrect result](https://github.com/bitwiseshiftleft/sjcl/issues/411)
