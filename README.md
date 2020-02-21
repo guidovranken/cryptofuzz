@@ -8,7 +8,7 @@ For building Cryptofuzz, please refer to [`docs/building.md`](docs/building.md).
 
 For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/running.md).
 
-## Hall of Fame
+## Bugs found by Cryptofuzz
 
 - OpenSSL: [ARIA GCM ciphers memory leak after EVP_CTRL_AEAD_SET_IVLEN](https://github.com/openssl/openssl/issues/8567)
 - OpenSSL: [HMAC with SHAKE128 via EVP interface crashes on EVP_DigestSignUpdate](https://github.com/openssl/openssl/issues/8563)
