@@ -467,6 +467,20 @@ end:
 }
 #endif
 
+bool SqrtMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+    (void)ds;
+    bool ret = false;
+
+    /* Third parameter to BN_mod_sqrt must be prime */
+    CF_CHECK_EQ(BN_is_prime_ex(bn[1].GetPtr(), 64, ctx.GetPtr(), nullptr), 1);
+    CF_CHECK_NE(BN_mod_sqrt(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), nullptr);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
 } /* namespace OpenSSL_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

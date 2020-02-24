@@ -3263,6 +3263,9 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
             opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_521>();
             break;
 #endif
+        case    CF_CALCOP("SqrtMod(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::SqrtMod>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
