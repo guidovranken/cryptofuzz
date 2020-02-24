@@ -4,6 +4,13 @@
 
 #include "bn_ops.h"
 
+/* Not included in public headers */
+#if defined(CRYPTOFUZZ_BORINGSSL)
+extern "C" {
+    int bn_jacobi(const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx);
+}
+#endif
+
 namespace cryptofuzz {
 namespace module {
 namespace OpenSSL_bignum {
@@ -378,15 +385,19 @@ bool IsOne::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ct
     return true;
 }
 
-#if !defined(CRYPTOFUZZ_BORINGSSL)
 bool Jacobi::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;
 
-    const int kronecker = BN_kronecker(bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr());
-    CF_CHECK_NE(kronecker, -2);
+#if !defined(CRYPTOFUZZ_BORINGSSL)
+    const int jacobi = BN_kronecker(bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr());
+#else
+    const int jacobi = bn_jacobi(bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr());
+#endif
 
-    res.Set( std::to_string(kronecker) );
+    CF_CHECK_NE(jacobi, -2);
+
+    res.Set( std::to_string(jacobi) );
 
     ret = true;
 end:
@@ -394,6 +405,7 @@ end:
     return ret;
 }
 
+#if !defined(CRYPTOFUZZ_BORINGSSL)
 bool Mod_NIST_192::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;

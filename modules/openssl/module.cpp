@@ -3243,10 +3243,10 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
         case    CF_CALCOP("IsOne(A)"):
             opRunner = std::make_unique<OpenSSL_bignum::IsOne>();
             break;
-#if !defined(CRYPTOFUZZ_BORINGSSL)
         case    CF_CALCOP("Jacobi(A,B)"):
             opRunner = std::make_unique<OpenSSL_bignum::Jacobi>();
             break;
+#if !defined(CRYPTOFUZZ_BORINGSSL)
         case    CF_CALCOP("Mod_NIST_192(A)"):
             opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_192>();
             break;

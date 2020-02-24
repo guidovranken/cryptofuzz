@@ -266,12 +266,12 @@ class IsOne : public Operation {
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
 };
 
-#if !defined(CRYPTOFUZZ_BORINGSSL)
 class Jacobi : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
 };
 
+#if !defined(CRYPTOFUZZ_BORINGSSL)
 class Mod_NIST_192 : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
