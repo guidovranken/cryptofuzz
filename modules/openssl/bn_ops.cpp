@@ -500,6 +500,8 @@ end:
 #endif
 
 bool SqrtMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+    /* Disabled due to slowness of primality testing */
+#if 0
     (void)ds;
     bool ret = false;
 
@@ -511,6 +513,13 @@ bool SqrtMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& 
 
 end:
     return ret;
+#else
+    (void)ds;
+    (void)res;
+    (void)bn;
+    (void)ctx;
+    return false;
+#endif
 }
 
 #if defined(CRYPTOFUZZ_BORINGSSL)
