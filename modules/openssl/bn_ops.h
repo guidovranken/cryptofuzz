@@ -221,6 +221,11 @@ class Cmp : public Operation {
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
 };
 
+class Div : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+};
+
 class IsPrime : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
@@ -302,6 +307,13 @@ class SqrtMod : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
 };
+
+#if defined(CRYPTOFUZZ_BORINGSSL)
+class LCM : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+};
+#endif
 
 } /* namespace OpenSSL_bignum */
 } /* namespace module */

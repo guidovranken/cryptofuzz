@@ -8,6 +8,8 @@
 #if defined(CRYPTOFUZZ_BORINGSSL)
 extern "C" {
     int bn_jacobi(const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx);
+    int bn_div_consttime(BIGNUM *quotient, BIGNUM *remainder, const BIGNUM *numerator, const BIGNUM *divisor, BN_CTX *ctx);
+    int bn_lcm_consttime(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx);
 }
 #endif
 
@@ -94,6 +96,11 @@ bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx)
             /* "BN_mod() corresponds to BN_div() with dv set to NULL" */
             CF_CHECK_EQ(BN_div(nullptr, res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             break;
+#if defined(CRYPTOFUZZ_BORINGSSL)
+        case    2:
+            CF_CHECK_EQ(bn_div_consttime(nullptr, res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            break;
+#endif
         default:
             goto end;
             break;
@@ -284,6 +291,31 @@ bool Cmp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx)
     res.Set( std::to_string(BN_cmp(bn[0].GetPtr(), bn[1].GetPtr())) );
 
     return true;
+}
+
+bool Div::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+    (void)ds;
+    (void)ctx;
+    bool ret = false;
+
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            CF_CHECK_EQ(BN_div(res.GetPtr(), nullptr, bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            break;
+#if defined(CRYPTOFUZZ_BORINGSSL)
+        case    1:
+            CF_CHECK_EQ(bn_div_consttime(res.GetPtr(), nullptr, bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            break;
+#endif
+        default:
+            goto end;
+            break;
+    }
+
+    ret = true;
+
+end:
+    return ret;
 }
 
 bool IsPrime::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
@@ -480,6 +512,20 @@ bool SqrtMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& 
 end:
     return ret;
 }
+
+#if defined(CRYPTOFUZZ_BORINGSSL)
+bool LCM::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+    (void)ds;
+    bool ret = false;
+
+    CF_CHECK_EQ(bn_lcm_consttime(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+
+    ret = true;
+
+end:
+    return ret;
+}
+#endif
 
 } /* namespace OpenSSL_bignum */
 } /* namespace module */

@@ -3219,6 +3219,9 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
         case    CF_CALCOP("Cmp(A,B)"):
             opRunner = std::make_unique<OpenSSL_bignum::Cmp>();
             break;
+        case    CF_CALCOP("Div(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::Div>();
+            break;
         case    CF_CALCOP("IsPrime(A)"):
             opRunner = std::make_unique<OpenSSL_bignum::IsPrime>();
             break;
@@ -3266,6 +3269,11 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
         case    CF_CALCOP("SqrtMod(A,B)"):
             opRunner = std::make_unique<OpenSSL_bignum::SqrtMod>();
             break;
+#if defined(CRYPTOFUZZ_BORINGSSL)
+        case    CF_CALCOP("LCM(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::LCM>();
+            break;
+#endif
     }
 
     CF_CHECK_NE(opRunner, nullptr);
