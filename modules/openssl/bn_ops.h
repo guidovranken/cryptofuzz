@@ -315,6 +315,11 @@ class LCM : public Operation {
 };
 #endif
 
+class Exp : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+};
+
 } /* namespace OpenSSL_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

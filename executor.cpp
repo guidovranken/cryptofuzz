@@ -581,6 +581,10 @@ template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, oper
             if ( op.bn1.GetSize() > 4 ) {
                 return std::nullopt;
             }
+        case    CF_CALCOP("Exp(A,B)"):
+            if ( op.bn1.GetSize() > 5 ) {
+                return std::nullopt;
+            }
             break;
     }
 

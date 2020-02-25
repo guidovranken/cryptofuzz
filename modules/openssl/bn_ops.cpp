@@ -536,6 +536,18 @@ end:
 }
 #endif
 
+bool Exp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+    (void)ds;
+    bool ret = false;
+
+    CF_CHECK_EQ(BN_exp(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
 } /* namespace OpenSSL_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

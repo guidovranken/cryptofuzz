@@ -3274,6 +3274,9 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
             opRunner = std::make_unique<OpenSSL_bignum::LCM>();
             break;
 #endif
+        case    CF_CALCOP("Exp(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::Exp>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
