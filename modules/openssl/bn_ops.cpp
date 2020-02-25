@@ -100,6 +100,10 @@ bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx)
         case    2:
             CF_CHECK_EQ(bn_div_consttime(nullptr, res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             break;
+        case    3:
+            CF_CHECK_EQ(BN_is_pow2(bn[1].GetPtr()), 1);
+            CF_CHECK_EQ(BN_mod_pow2(res.GetPtr(), bn[0].GetPtr(), BN_num_bits(bn[1].GetPtr()) - 1), 1);
+            break;
 #endif
         default:
             goto end;
