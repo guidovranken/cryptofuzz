@@ -548,6 +548,37 @@ end:
     return ret;
 }
 
+bool Abs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+    (void)ds;
+    (void)ctx;
+    bool ret = false;
+
+    if ( BN_is_negative(bn[0].GetPtr()) ) {
+        Bignum zero(ds);
+        CF_CHECK_EQ(zero.New(), true);
+
+        switch ( ds.Get<uint8_t>() ) {
+            case    0:
+                CF_CHECK_EQ(BN_sub(res.GetPtr(), zero.GetPtr(), bn[0].GetPtr()), 1);
+                break;
+            case    1:
+                CF_CHECK_EQ(BN_sub(res.GetPtr(), bn[0].GetPtr(), bn[0].GetPtr()), 1);
+                CF_CHECK_EQ(BN_sub(res.GetPtr(), res.GetPtr(), bn[0].GetPtr()), 1);
+                break;
+            default:
+                goto end;
+                break;
+        }
+    } else {
+        CF_CHECK_NE(BN_copy(res.GetPtr(), bn[0].GetPtr()), nullptr);
+    }
+
+    ret = true;
+
+end:
+    return ret;
+}
+
 } /* namespace OpenSSL_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */
