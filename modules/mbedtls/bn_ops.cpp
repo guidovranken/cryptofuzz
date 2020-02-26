@@ -317,20 +317,33 @@ bool CmpAbs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool SetBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
-    (void)ds;
-    bool ret = false;
+namespace detail {
+    bool SetBit(Bignum& res, std::vector<Bignum>& bn, const bool value) {
+        bool ret = false;
 
-    const auto bn1 = bn[1].GetUint32();
-    CF_CHECK_NE(bn1, std::nullopt);
+        const auto bn1 = bn[1].GetUint32();
+        CF_CHECK_NE(bn1, std::nullopt);
 
-    CF_CHECK_EQ(mbedtls_mpi_copy(res.GetPtr(), bn[0].GetPtr()), 0);
-    CF_CHECK_EQ(mbedtls_mpi_set_bit(res.GetPtr(), *bn1, 1), 0);
+        CF_CHECK_EQ(mbedtls_mpi_copy(res.GetPtr(), bn[0].GetPtr()), 0);
+        CF_CHECK_EQ(mbedtls_mpi_set_bit(res.GetPtr(), *bn1, value ? 1 : 0), 0);
 
-    ret = true;
+        ret = true;
 
 end:
-    return ret;
+        return ret;
+    }
+}
+
+bool SetBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    return detail::SetBit(res, bn, true);
+}
+
+bool ClearBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    return detail::SetBit(res, bn, false);
 }
 
 } /* namespace mbedTLS_bignum */

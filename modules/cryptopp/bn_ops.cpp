@@ -234,20 +234,33 @@ bool CmpAbs::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoP
     return cmp->Run(ds, res, bnAbs);
 }
 
+namespace detail {
+    bool SetBit(::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn, const bool value) {
+        bool ret = false;
+
+        signed long places;
+        CF_CHECK_EQ(bn[1].IsConvertableToLong(), true);
+        places = bn[1].ConvertToLong();
+
+        res = bn[0];
+        res.SetBit(places, value);
+
+        ret = true;
+end:
+        return ret;
+    }
+}
+
 bool SetBit::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const {
     (void)ds;
-    bool ret = false;
 
-    signed long places;
-    CF_CHECK_EQ(bn[1].IsConvertableToLong(), true);
-    places = bn[1].ConvertToLong();
+    return detail::SetBit(res, bn, true);
+}
 
-    res = bn[0];
-    res.SetBit(places);
+bool ClearBit::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const {
+    (void)ds;
 
-    ret = true;
-end:
-    return ret;
+    return detail::SetBit(res, bn, false);
 }
 
 } /* namespace CryptoPP_bignum */

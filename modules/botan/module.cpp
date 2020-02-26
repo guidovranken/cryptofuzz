@@ -761,6 +761,9 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
         case    CF_CALCOP("Mod_NIST_521(A)"):
             opRunner = std::make_unique<Botan_bignum::Mod_NIST_521>();
             break;
+        case    CF_CALCOP("ClearBit(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::ClearBit>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

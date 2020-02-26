@@ -205,6 +205,11 @@ class SetBit : public Operation {
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
 };
 
+class ClearBit : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
 } /* namespace mbedTLS_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

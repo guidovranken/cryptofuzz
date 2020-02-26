@@ -889,6 +889,9 @@ std::optional<component::Bignum> mbedTLS::OpBignumCalc(operation::BignumCalc& op
         case    CF_CALCOP("SetBit(A,B)"):
             opRunner = std::make_unique<mbedTLS_bignum::SetBit>();
             break;
+        case    CF_CALCOP("ClearBit(A,B)"):
+            opRunner = std::make_unique<mbedTLS_bignum::ClearBit>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

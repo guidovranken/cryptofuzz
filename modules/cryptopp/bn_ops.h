@@ -143,6 +143,11 @@ class SetBit : public Operation {
         bool Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const override;
 };
 
+class ClearBit : public Operation {
+    public:
+        bool Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const override;
+};
+
 } /* namespace CryptoPP_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */
