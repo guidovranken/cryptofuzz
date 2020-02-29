@@ -67,6 +67,7 @@ end:
         }
 
         std::optional<uint64_t> AsUint64(void) const {
+#if !defined(CRYPTOFUZZ_LIBRESSL)
             std::optional<uint64_t> ret;
             uint64_t v;
 
@@ -92,6 +93,10 @@ end:
 end:
 
             return ret;
+#else
+            /* BN_bn2binpad is not supported by LibreSSL */
+            return std::nullopt;
+#endif
         }
 
         void SetUint32(const uint32_t v) {
