@@ -10,6 +10,7 @@ extern "C" {
     int bn_jacobi(const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx);
     int bn_div_consttime(BIGNUM *quotient, BIGNUM *remainder, const BIGNUM *numerator, const BIGNUM *divisor, BN_CTX *ctx);
     int bn_lcm_consttime(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx);
+    uint16_t bn_mod_u16_consttime(const BIGNUM *bn, uint16_t d);
 }
 #endif
 
@@ -103,6 +104,29 @@ bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx)
         case    3:
             CF_CHECK_EQ(BN_is_pow2(bn[1].GetPtr()), 1);
             CF_CHECK_EQ(BN_mod_pow2(res.GetPtr(), bn[0].GetPtr(), BN_num_bits(bn[1].GetPtr()) - 1), 1);
+            break;
+        case    4:
+            {
+                std::optional<uint64_t> v64;
+
+                /* Convert bn[1] to uint64_t if possible */
+                CF_CHECK_NE(v64 = bn[1].AsUint64(), std::nullopt);
+
+                /* Try to convert the uint64_t to uint16_t */
+                uint16_t v16;
+                CF_CHECK_EQ(v16 = *v64, *v64);
+
+                CF_CHECK_GT(v16, 1);
+
+                /* This condition is imposed by bn_mod_u16_consttime, which
+                 * triggers an assert failure otherwise
+                 */
+                CF_CHECK_LTE(BN_num_bits_word(v16 - 1), 16);
+
+                /* ret = bn[0] MOD v16 (which is bn[1]) */
+                const auto ret = bn_mod_u16_consttime(bn[0].GetPtr(), v16);
+                res.SetUint32(ret);
+            }
             break;
 #endif
         default:

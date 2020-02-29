@@ -56,6 +56,47 @@ end:
             return ret;
         }
 
+        std::optional<uint64_t> AsUint64(void) const {
+            std::optional<uint64_t> ret;
+            uint64_t v;
+
+            CF_CHECK_LTE(BN_num_bytes(bn), sizeof(uint64_t));
+            CF_CHECK_NE(BN_bn2binpad(bn, (unsigned char*)&v, sizeof(v)), -1);
+
+            /* Manual reversing is required because
+             * BN_bn2lebinpad is not supported by BoringSSL.
+             *
+             * TODO This must be omitted on big-endian platforms.
+             */
+            v =
+                ((v & 0xFF00000000000000) >> 56) |
+                ((v & 0x00FF000000000000) >> 40) |
+                ((v & 0x0000FF0000000000) >> 24) |
+                ((v & 0x000000FF00000000) >>  8) |
+                ((v & 0x00000000FF000000) <<  8) |
+                ((v & 0x0000000000FF0000) << 24) |
+                ((v & 0x000000000000FF00) << 40) |
+                ((v & 0x00000000000000FF) << 56);
+
+            ret = v;
+end:
+
+            return ret;
+        }
+
+        void SetUint32(const uint32_t v) {
+            /* Gnarly but it works for now */
+
+            char s[1024];
+            if ( sprintf(s, "%u", v) < 0 ) {
+                abort();
+            }
+
+            if ( Set(s) == false ) {
+                abort();
+            }
+        }
+
         BIGNUM* GetPtr(const bool allowDup = true) {
             if ( locked == false ) {
                 try {
