@@ -41,6 +41,16 @@ class Bignum {
             return bn != nullptr;
         }
 
+        bool Set(Bignum& other) {
+            bool ret = false;
+
+            CF_CHECK_NE(BN_copy(bn, other.GetPtr()), NULL);
+
+            ret = true;
+end:
+            return ret;
+        }
+
         bool Set(const std::string s) {
             if ( locked == true ) {
                 printf("Cannot set locked Bignum\n");
@@ -60,7 +70,7 @@ end:
             std::optional<uint64_t> ret;
             uint64_t v;
 
-            CF_CHECK_LTE(BN_num_bytes(bn), sizeof(uint64_t));
+            CF_CHECK_LTE(BN_num_bytes(bn), (int)sizeof(uint64_t));
             CF_CHECK_NE(BN_bn2binpad(bn, (unsigned char*)&v, sizeof(v)), -1);
 
             /* Manual reversing is required because

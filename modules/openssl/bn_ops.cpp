@@ -31,6 +31,26 @@ bool Add::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx)
             CF_CHECK_EQ(BN_is_negative(bn[1].GetPtr()), 0);
             CF_CHECK_EQ(BN_uadd(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
             break;
+        case    2:
+            {
+                std::optional<uint64_t> v64;
+
+                /* Convert bn[1] to uint64_t if possible */
+                CF_CHECK_NE(v64 = bn[1].AsUint64(), std::nullopt);
+
+                /* Cannot divide by 0 */
+                CF_CHECK_NE(*v64, 0);
+
+                /* Try to convert the uint64_t to BN_ULONG */
+                BN_ULONG vul;
+                CF_CHECK_EQ(vul = *v64, *v64);
+
+                /* bn[0] += vul (which is bn[1]) */
+                CF_CHECK_EQ(BN_add_word(bn[0].GetPtr(), vul), 1);
+
+                CF_CHECK_EQ(res.Set(bn[0]), true);
+            }
+            break;
         default:
             goto end;
             break;
@@ -61,6 +81,26 @@ bool Sub::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx)
             CF_CHECK_EQ(BN_usub(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
             break;
 #endif
+        case    2:
+            {
+                std::optional<uint64_t> v64;
+
+                /* Convert bn[1] to uint64_t if possible */
+                CF_CHECK_NE(v64 = bn[1].AsUint64(), std::nullopt);
+
+                /* Cannot divide by 0 */
+                CF_CHECK_NE(*v64, 0);
+
+                /* Try to convert the uint64_t to BN_ULONG */
+                BN_ULONG vul;
+                CF_CHECK_EQ(vul = *v64, *v64);
+
+                /* bn[0] -= vul (which is bn[1]) */
+                CF_CHECK_EQ(BN_sub_word(bn[0].GetPtr(), vul), 1);
+
+                CF_CHECK_EQ(res.Set(bn[0]), true);
+            }
+            break;
         default:
             goto end;
             break;
@@ -77,7 +117,36 @@ bool Mul::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx)
     (void)ctx;
     bool ret = false;
 
-    CF_CHECK_EQ(BN_mul(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            {
+                CF_CHECK_EQ(BN_mul(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            }
+            break;
+        case    1:
+            {
+                std::optional<uint64_t> v64;
+
+                /* Convert bn[1] to uint64_t if possible */
+                CF_CHECK_NE(v64 = bn[1].AsUint64(), std::nullopt);
+
+                /* Cannot divide by 0 */
+                CF_CHECK_NE(*v64, 0);
+
+                /* Try to convert the uint64_t to BN_ULONG */
+                BN_ULONG vul;
+                CF_CHECK_EQ(vul = *v64, *v64);
+
+                /* bn[0] *= vul (which is bn[1]) */
+                CF_CHECK_EQ(BN_mul_word(bn[0].GetPtr(), vul), 1);
+
+                CF_CHECK_EQ(res.Set(bn[0]), true);
+            }
+            break;
+        default:
+            goto end;
+            break;
+    }
 
     ret = true;
 
@@ -126,6 +195,30 @@ bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx)
                 /* ret = bn[0] MOD v16 (which is bn[1]) */
                 const auto ret = bn_mod_u16_consttime(bn[0].GetPtr(), v16);
                 res.SetUint32(ret);
+            }
+            break;
+        case    5:
+            {
+                std::optional<uint64_t> v64;
+
+                /* Convert bn[1] to uint64_t if possible */
+                CF_CHECK_NE(v64 = bn[1].AsUint64(), std::nullopt);
+
+                /* Cannot mod 0 */
+                CF_CHECK_NE(*v64, 0);
+
+                /* Try to convert the uint64_t to BN_ULONG */
+                BN_ULONG vul;
+                CF_CHECK_EQ(vul = *v64, *v64);
+
+                /* ret = bn[0] MOD vul (which is bn[1]) */
+                const auto ret = BN_mod_word(bn[0].GetPtr(), vul);
+
+                /* Try to convert the BN_ULONG to uint32_t */
+                uint32_t ret32;
+                CF_CHECK_EQ(ret32 = ret, ret);
+
+                res.SetUint32(ret32);
             }
             break;
 #endif
