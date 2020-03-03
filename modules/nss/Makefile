@@ -23,7 +23,8 @@ module.a: module.o bn_ops.o
 	ar x $(NSS_NSPR_PATH)/dist/Debug/lib/libplc4.a && \
 	ar x $(NSS_NSPR_PATH)/dist/Debug/lib/libnss_static.a && \
 	ar x $(NSS_NSPR_PATH)/dist/Debug/lib/libfreebl_static.a && \
-	ar x $(NSS_NSPR_PATH)/dist/Debug/lib/libhw-acc-crypto.a && \
+	ar x $(NSS_NSPR_PATH)/dist/Debug/lib/libhw-acc-crypto-avx.a && \
+	ar x $(NSS_NSPR_PATH)/dist/Debug/lib/libhw-acc-crypto-avx2.a && \
 	ar x $(NSS_NSPR_PATH)/dist/Debug/lib/libgcm-aes-x86_c_lib.a
 
 	ar rcs module.a module.o bn_ops.o tmp/*.o
