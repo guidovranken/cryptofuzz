@@ -197,6 +197,7 @@ bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx)
                 res.SetUint32(ret);
             }
             break;
+#endif
         case    5:
             {
                 std::optional<uint64_t> v64;
@@ -221,7 +222,6 @@ bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx)
                 res.SetUint32(ret32);
             }
             break;
-#endif
         default:
             goto end;
             break;
