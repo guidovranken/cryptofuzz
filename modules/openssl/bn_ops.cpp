@@ -14,6 +14,13 @@ extern "C" {
 }
 #endif
 
+/* Not included in public headers */
+#if defined(CRYPTOFUZZ_LIBRESSL)
+extern "C" {
+    int BN_gcd_ct(BIGNUM *r, const BIGNUM *in_a, const BIGNUM *in_b, BN_CTX *ctx);
+}
+#endif
+
 namespace cryptofuzz {
 namespace module {
 namespace OpenSSL_bignum {
@@ -282,7 +289,18 @@ bool GCD::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx)
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(BN_gcd(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            CF_CHECK_EQ(BN_gcd(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            break;
+#if defined(CRYPTOFUZZ_LIBRESSL)
+        case    1:
+            CF_CHECK_EQ(BN_gcd_ct(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            break;
+#endif
+        default:
+            goto end;
+    }
 
     ret = true;
 
