@@ -20,7 +20,7 @@ namespace module {
 
 class OpenSSL : public Module {
     private:
-        bool isAEAD(const EVP_CIPHER* ctx) const;
+        bool isAEAD(const EVP_CIPHER* ctx, const uint64_t cipherType) const;
         const EVP_MD* toEVPMD(const component::DigestType& digestType) const;
         const EVP_CIPHER* toEVPCIPHER(const component::SymmetricCipherType cipherType) const;
 #if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)

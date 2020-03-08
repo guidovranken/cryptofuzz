@@ -60,8 +60,21 @@ OpenSSL::OpenSSL(void) :
 }
 
 
-bool OpenSSL::isAEAD(const EVP_CIPHER* ctx) const {
-    return EVP_CIPHER_flags(ctx) & EVP_CIPH_FLAG_AEAD_CIPHER;
+bool OpenSSL::isAEAD(const EVP_CIPHER* ctx, const uint64_t cipherType) const {
+    bool ret = false;
+
+    /* Special TLS AEAD ciphers that should not be attempted to use with aad/tag or
+     * non-default iv/key sizes */
+    CF_CHECK_NE(cipherType, CF_CIPHER("RC4_HMAC_MD5"));
+    CF_CHECK_NE(cipherType, CF_CIPHER("AES_128_CBC_HMAC_SHA1"));
+    CF_CHECK_NE(cipherType, CF_CIPHER("AES_256_CBC_HMAC_SHA1"));
+    CF_CHECK_NE(cipherType, CF_CIPHER("AES_128_CBC_HMAC_SHA256"));
+    CF_CHECK_NE(cipherType, CF_CIPHER("AES_256_CBC_HMAC_SHA256"));
+
+    ret = EVP_CIPHER_flags(ctx) & EVP_CIPH_FLAG_AEAD_CIPHER;
+
+end:
+    return ret;
 }
 
 const EVP_MD* OpenSSL::toEVPMD(const component::DigestType& digestType) const {
@@ -1312,7 +1325,7 @@ bool OpenSSL::checkSetIVLength(const uint64_t cipherType, const EVP_CIPHER* ciph
             ret = true;
         }
 #else
-        if ( isAEAD(cipher) == true ) {
+        if ( isAEAD(cipher, cipherType) == true ) {
             CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, inputIvLength, nullptr), 1);
             ret = true;
         }
@@ -1446,14 +1459,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
              * leads to all kinds of gnarly memory bugs in OpenSSL.
              * It is quite arguably misuse of the OpenSSL API, so don't do this.
              */
-            CF_CHECK_EQ(isAEAD(cipher), true);
-
-            /* Special TLS AEAD ciphers that should not be attempted to use with aad/tag */
-            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("RC4_HMAC_MD5"));
-            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_128_CBC_HMAC_SHA1"));
-            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_256_CBC_HMAC_SHA1"));
-            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_128_CBC_HMAC_SHA256"));
-            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_256_CBC_HMAC_SHA256"));
+            CF_CHECK_EQ(isAEAD(cipher, op.cipher.cipherType.Get()), true);
         }
 
         CF_CHECK_EQ(EVP_EncryptInit_ex(ctx.GetPtr(), cipher, nullptr, nullptr, nullptr), 1);
@@ -1862,14 +1868,7 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
              * leads to all kinds of gnarly memory bugs in OpenSSL.
              * It is quite arguably misuse of the OpenSSL API, so don't do this.
              */
-            CF_CHECK_EQ(isAEAD(cipher), true);
-
-            /* Special TLS AEAD ciphers that should not be attempted to use with aad/tag */
-            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("RC4_HMAC_MD5"));
-            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_128_CBC_HMAC_SHA1"));
-            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_256_CBC_HMAC_SHA1"));
-            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_128_CBC_HMAC_SHA256"));
-            CF_CHECK_NE(op.cipher.cipherType.Get(), CF_CIPHER("AES_256_CBC_HMAC_SHA256"));
+            CF_CHECK_EQ(isAEAD(cipher, op.cipher.cipherType.Get()), true);
         }
         CF_CHECK_EQ(EVP_DecryptInit_ex(ctx.GetPtr(), cipher, nullptr, nullptr, nullptr), 1);
 
