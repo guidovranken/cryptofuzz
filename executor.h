@@ -22,7 +22,8 @@ class ExecutorBase {
         using ResultSet = std::vector<ResultPair>;
 
         ResultSet filter(const ResultSet& results) const;
-        void compare(const ResultSet& results, const uint8_t* data, const size_t size) const;
+        bool dontCompare(const OperationType& operation) const;
+        void compare(const std::vector< std::pair<std::shared_ptr<Module>, OperationType> >& operations, const ResultSet& results, const uint8_t* data, const size_t size) const;
         OperationType getOp(Datasource* parentDs, const uint8_t* data, const size_t size) const;
         OperationType getOpPostprocess(Datasource* parentDs, OperationType op) const;
         std::shared_ptr<Module> getModule(Datasource& ds) const;

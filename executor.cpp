@@ -621,14 +621,51 @@ typename ExecutorBase<ResultType, OperationType>::ResultSet ExecutorBase<ResultT
 
 /* Do not compare ECC_GenerateKeyPair results, because the result can be produced indeterministically */
 template <>
-void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::compare(const ResultSet& results, const uint8_t* data, const size_t size) const {
+void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::compare(const std::vector< std::pair<std::shared_ptr<Module>, operation::ECC_GenerateKeyPair> >& operations, const ResultSet& results, const uint8_t* data, const size_t size) const {
+    (void)operations;
     (void)results;
     (void)data;
     (void)size;
 }
 
 template <class ResultType, class OperationType>
-void ExecutorBase<ResultType, OperationType>::compare(const ResultSet& results, const uint8_t* data, const size_t size) const {
+bool ExecutorBase<ResultType, OperationType>::dontCompare(const OperationType& operation) const {
+    (void)operation;
+
+    return false;
+}
+
+/* OpenSSL DES_EDE3_WRAP randomizes the IV, result is different each time */
+template <>
+bool ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>::dontCompare(const operation::SymmetricEncrypt& operation) const {
+    if ( operation.cipher.cipherType.Get() == CF_CIPHER("DES_EDE3_WRAP") ) { return true; }
+
+    return false;
+}
+
+template <>
+bool ExecutorBase<component::Cleartext, operation::SymmetricDecrypt>::dontCompare(const operation::SymmetricDecrypt& operation) const {
+    if ( operation.cipher.cipherType.Get() == CF_CIPHER("DES_EDE3_WRAP") ) return true;
+
+    return false;
+}
+
+template <>
+bool ExecutorBase<component::MAC, operation::CMAC>::dontCompare(const operation::CMAC& operation) const {
+    if ( operation.cipher.cipherType.Get() == CF_CIPHER("DES_EDE3_WRAP") ) return true;
+
+    return false;
+}
+
+template <>
+bool ExecutorBase<component::MAC, operation::HMAC>::dontCompare(const operation::HMAC& operation) const {
+    if ( operation.cipher.cipherType.Get() == CF_CIPHER("DES_EDE3_WRAP") ) return true;
+
+    return false;
+}
+
+template <class ResultType, class OperationType>
+void ExecutorBase<ResultType, OperationType>::compare(const std::vector< std::pair<std::shared_ptr<Module>, OperationType> >& operations, const ResultSet& results, const uint8_t* data, const size_t size) const {
     if ( results.size() < 2 ) {
         /* Nothing to compare. Don't even bother filtering. */
         return;
@@ -638,6 +675,10 @@ void ExecutorBase<ResultType, OperationType>::compare(const ResultSet& results, 
 
     if ( filtered.size() < 2 ) {
         /* Nothing to compare */
+        return;
+    }
+
+    if ( dontCompare(operations[0].second) == true ) {
         return;
     }
 
@@ -852,7 +893,7 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
         postprocess(module, op, result);
     }
 
-    compare(results, data, size);
+    compare(operations, results, data, size);
 }
 
 /* Explicit template instantiation */
