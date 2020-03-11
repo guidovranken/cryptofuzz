@@ -45,6 +45,10 @@ class Type {
         inline bool operator==(const Type& rhs) const {
             return type == rhs.type;
         }
+
+        void Serialize(Datasource& ds) const {
+            ds.Put<>(type);
+        }
 };
 
 class Buffer {
@@ -106,6 +110,10 @@ class Buffer {
             j = asHex;
             return j;
         }
+
+        void Serialize(Datasource& ds) const {
+            ds.PutData(data);
+        }
 };
 
 class Bignum {
@@ -127,9 +135,8 @@ class Bignum {
         }
 
         Bignum(nlohmann::json json) :
-            data(json)
+            Bignum(json.get<std::string>())
         {
-            transform();
         }
 
         Bignum(const std::string s) :
@@ -175,6 +182,10 @@ class Bignum {
 
         nlohmann::json ToJSON(void) const {
             return ToString();
+        }
+
+        void Serialize(Datasource& ds) const {
+            data.Serialize(ds);
         }
 };
 

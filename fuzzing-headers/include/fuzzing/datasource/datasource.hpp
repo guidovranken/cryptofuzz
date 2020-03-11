@@ -1,5 +1,4 @@
-#ifndef FUZZING_DATASOURCE_DATASOURCE_HPP
-#define FUZZING_DATASOURCE_DATASOURCE_HPP
+#pragma once
 
 #include <fuzzing/exception.hpp>
 #include <fuzzing/types.hpp>
@@ -17,14 +16,24 @@ class Base
 {
     protected:
         virtual std::vector<uint8_t> get(const size_t min, const size_t max, const uint64_t id = 0) = 0;
+        virtual void put(const void* p, const size_t size, const uint64_t id = 0) = 0;
+        std::vector<uint8_t> out;
     public:
         Base(void) = default;
         virtual ~Base(void) = default;
 
         template<class T> T Get(const uint64_t id = 0);
+        template<class T> void Put(const T& v, const uint64_t id = 0);
+
         uint16_t GetChoice(const uint64_t id = 0);
+
         std::vector<uint8_t> GetData(const uint64_t id, const size_t min = 0, const size_t max = 0);
+        void PutData(const std::vector<uint8_t>& data, const uint64_t id = 0);
+
         template <class T> std::vector<T> GetVector(const uint64_t id = 0);
+        const std::vector<uint8_t>& GetOut(void) const { return out; }
+
+        virtual size_t Left(void) const = 0;
 
         class OutOfData : public fuzzing::exception::FlowException {
             public:
@@ -46,12 +55,23 @@ template<class T> T Base::Get(const uint64_t id)
     return ret;
 }
 
+template<class T> void Base::Put(const T& v, const uint64_t id)
+{
+    put(&v, sizeof(v), id);
+}
+
 template <> bool Base::Get<bool>(const uint64_t id)
 {
     uint8_t ret;
     const auto v = get(sizeof(ret), sizeof(ret), id);
     memcpy(&ret, v.data(), sizeof(ret));
     return (ret % 2) ? true : false;
+}
+
+template <> void Base::Put<bool>(const bool& v, const uint64_t id)
+{
+    const uint8_t _v = v ? 1 : 0;
+    put(&_v, sizeof(_v), id);
 }
 
 template <> std::string Base::Get<std::string>(const uint64_t id)
@@ -83,6 +103,10 @@ std::vector<uint8_t> Base::GetData(const uint64_t id, const size_t min, const si
     return get(min, max, id);
 }
 
+void Base::PutData(const std::vector<uint8_t>& data, const uint64_t id)
+{
+    return put(data.data(), data.size(), id);
+}
 
 template <> types::String<> Base::Get<types::String<>>(const uint64_t id) {
     const auto data = GetData(id);
@@ -116,8 +140,10 @@ class Datasource : public Base
         size_t idx;
         size_t left;
         std::vector<uint8_t> get(const size_t min, const size_t max, const uint64_t id = 0) override;
+        void put(const void* p, const size_t size, const uint64_t id = 0) override;
     public:
         Datasource(const uint8_t* _data, const size_t _size);
+        size_t Left(void) const override;
 };
 
 #ifndef FUZZING_HEADERS_NO_IMPL
@@ -158,9 +184,27 @@ std::vector<uint8_t> Datasource::get(const size_t min, const size_t max, const u
 
     return ret;
 }
+
+void Datasource::put(const void* p, const size_t size, const uint64_t id) {
+    (void)id;
+    {
+        const uint32_t _size = size;
+        const auto oldSize = out.size();
+        out.resize(oldSize + sizeof(_size) );
+        memcpy(out.data() + oldSize, &_size, sizeof(_size));
+    }
+
+    {
+        const auto oldSize = out.size();
+        out.resize(oldSize + size);
+        memcpy(out.data() + oldSize, p, size);
+    }
+}
+
+size_t Datasource::Left(void) const {
+    return left;
+}
 #endif
 
 } /* namespace datasource */
 } /* namespace fuzzing */
-
-#endif

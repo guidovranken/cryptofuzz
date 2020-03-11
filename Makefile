@@ -1,4 +1,4 @@
-all : cryptofuzz generate_dict generate_corpus
+all : cryptofuzz generate_dict generate_corpus serialization_fuzzer create_ops
 
 CXXFLAGS += -Wall -Wextra -std=c++17 -I include/ -I . -I fuzzing-headers/include -DFUZZING_HEADERS_NO_IMPL
 
@@ -34,6 +34,10 @@ generate_dict: generate_dict.cpp
 
 generate_corpus: generate_corpus.cpp
 	$(CXX) $(CXXFLAGS) generate_corpus.cpp -o generate_corpus
+serialization_fuzzer : serialization_fuzzer.cpp datasource.o
+	$(CXX) $(CXXFLAGS) serialization_fuzzer.cpp datasource.o util.o operation.o repository.o $(LIBFUZZER_LINK) third_party/cpu_features/build/libcpu_features.a -o serialization_fuzzer
+create_ops : create_ops.cpp datasource.o
+	$(CXX) $(CXXFLAGS) create_ops.cpp datasource.o util.o operation.o repository.o third_party/cpu_features/build/libcpu_features.a -o create_ops
 
 clean:
 	rm -rf driver.o executor.o util.o entry.o operation.o tests.o datasource.o repository.o repository_tbl.h cryptofuzz generate_dict generate_corpus

@@ -61,6 +61,10 @@ class Digest : public Operation {
                 (digestType == rhs.digestType) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            cleartext.Serialize(ds);
+            digestType.Serialize(ds);
+        }
 };
 
 class HMAC : public Operation {
@@ -95,6 +99,11 @@ class HMAC : public Operation {
                 (digestType == rhs.digestType) &&
                 (cipher == rhs.cipher) &&
                 (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            cleartext.Serialize(ds);
+            digestType.Serialize(ds);
+            cipher.Serialize(ds);
         }
 };
 
@@ -150,6 +159,23 @@ class SymmetricEncrypt : public Operation {
                 (tagSize == rhs.tagSize) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            cleartext.Serialize(ds);
+            cipher.Serialize(ds);
+            if ( aad == std::nullopt ) {
+                ds.Put<bool>(true);
+            } else {
+                ds.Put<bool>(false);
+                aad->Serialize(ds);
+            }
+            ds.Put<>(ciphertextSize);
+            if ( tagSize == std::nullopt ) {
+                ds.Put<bool>(true);
+            } else {
+                ds.Put<bool>(false);
+                ds.Put<>(*tagSize);
+            }
+        }
 };
 
 class SymmetricDecrypt : public Operation {
@@ -203,6 +229,23 @@ class SymmetricDecrypt : public Operation {
                 (cleartextSize == rhs.cleartextSize) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            ciphertext.Serialize(ds);
+            cipher.Serialize(ds);
+            if ( tag == std::nullopt ) {
+                ds.Put<bool>(true);
+            } else {
+                ds.Put<bool>(false);
+                tag->Serialize(ds);
+            }
+            if ( aad == std::nullopt ) {
+                ds.Put<bool>(true);
+            } else {
+                ds.Put<bool>(false);
+                aad->Serialize(ds);
+            }
+            ds.Put<>(cleartextSize);
+        }
 };
 
 class KDF_SCRYPT : public Operation {
@@ -248,6 +291,14 @@ class KDF_SCRYPT : public Operation {
                 (keySize == rhs.keySize) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            password.Serialize(ds);
+            salt.Serialize(ds);
+            ds.Put<>(N);
+            ds.Put<>(r);
+            ds.Put<>(p);
+            ds.Put<>(keySize);
+        }
 };
 
 class KDF_HKDF : public Operation {
@@ -289,6 +340,13 @@ class KDF_HKDF : public Operation {
                 (keySize == rhs.keySize) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            digestType.Serialize(ds);
+            password.Serialize(ds);
+            salt.Serialize(ds);
+            info.Serialize(ds);
+            ds.Put<>(keySize);
+        }
 };
 
 class KDF_TLS1_PRF : public Operation {
@@ -324,6 +382,12 @@ class KDF_TLS1_PRF : public Operation {
                 (secret == rhs.secret) &&
                 (seed == rhs.seed) &&
                 (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            digestType.Serialize(ds);
+            secret.Serialize(ds);
+            seed.Serialize(ds);
+            ds.Put<>(keySize);
         }
 };
 
@@ -366,6 +430,13 @@ class KDF_PBKDF : public Operation {
                 (keySize == rhs.keySize) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            digestType.Serialize(ds);
+            password.Serialize(ds);
+            salt.Serialize(ds);
+            ds.Put<>(iterations);
+            ds.Put<>(keySize);
+        }
 };
 
 class KDF_PBKDF1 : public Operation {
@@ -407,6 +478,13 @@ class KDF_PBKDF1 : public Operation {
                 (keySize == rhs.keySize) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            digestType.Serialize(ds);
+            password.Serialize(ds);
+            salt.Serialize(ds);
+            ds.Put<>(iterations);
+            ds.Put<>(keySize);
+        }
 };
 
 class KDF_PBKDF2 : public Operation {
@@ -447,6 +525,13 @@ class KDF_PBKDF2 : public Operation {
                 (iterations == rhs.iterations) &&
                 (keySize == rhs.keySize) &&
                 (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            digestType.Serialize(ds);
+            password.Serialize(ds);
+            salt.Serialize(ds);
+            ds.Put<>(iterations);
+            ds.Put<>(keySize);
         }
 };
 
@@ -496,6 +581,15 @@ class KDF_ARGON2 : public Operation {
                 (keySize == rhs.keySize) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            password.Serialize(ds);
+            salt.Serialize(ds);
+            ds.Put<>(type);
+            ds.Put<>(threads);
+            ds.Put<>(memory);
+            ds.Put<>(iterations);
+            ds.Put<>(keySize);
+        }
 };
 
 class KDF_SSH : public Operation {
@@ -540,6 +634,14 @@ class KDF_SSH : public Operation {
                 (keySize == rhs.keySize) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            digestType.Serialize(ds);
+            key.Serialize(ds);
+            xcghash.Serialize(ds);
+            session_id.Serialize(ds);
+            type.Serialize(ds);
+            ds.Put<>(keySize);
+        }
 };
 
 class KDF_X963 : public Operation {
@@ -576,6 +678,12 @@ class KDF_X963 : public Operation {
                 (keySize == rhs.keySize) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            digestType.Serialize(ds);
+            secret.Serialize(ds);
+            info.Serialize(ds);
+            ds.Put<>(keySize);
+        }
 };
 
 class CMAC : public Operation {
@@ -603,6 +711,10 @@ class CMAC : public Operation {
                 (cleartext == rhs.cleartext) &&
                 (cipher == rhs.cipher) &&
                 (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            cleartext.Serialize(ds);
+            cipher.Serialize(ds);
         }
 };
 
@@ -686,6 +798,10 @@ class ECC_PrivateToPublic : public Operation {
                 (priv == rhs.priv) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            priv.Serialize(ds);
+        }
 };
 
 class ECC_GenerateKeyPair : public Operation {
@@ -710,6 +826,9 @@ class ECC_GenerateKeyPair : public Operation {
             return
                 (curveType == rhs.curveType) &&
                 (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
         }
 };
 
@@ -743,6 +862,11 @@ class ECDSA_Sign : public Operation {
                 (cleartext == rhs.cleartext) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            priv.Serialize(ds);
+            cleartext.Serialize(ds);
+        }
 };
 
 class ECDSA_Verify : public Operation {
@@ -764,7 +888,7 @@ class ECDSA_Verify : public Operation {
             curveType(json["curveType"]),
             pub(json["pub_x"], json["pub_y"]),
             cleartext(json["cleartext"]),
-            signature(json["sig_r"], json["sig_y"])
+            signature(json["sig_x"], json["sig_y"])
         { }
 
         static size_t MaxOperations(void) { return 5; }
@@ -778,6 +902,12 @@ class ECDSA_Verify : public Operation {
                 (cleartext == rhs.cleartext) &&
                 (signature == rhs.signature) &&
                 (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            pub.Serialize(ds);
+            cleartext.Serialize(ds);
+            signature.Serialize(ds);
         }
 };
 
@@ -818,9 +948,14 @@ class ECDH_Derive : public Operation {
         inline bool operator==(const ECDH_Derive& rhs) const {
             return
                 (curveType == rhs.curveType) &&
-                (pub1 == rhs.pub2) &&
+                (pub1 == rhs.pub1) &&
                 (pub2 == rhs.pub2) &&
                 (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            pub1.Serialize(ds);
+            pub2.Serialize(ds);
         }
 };
 
@@ -876,6 +1011,13 @@ class BignumCalc : public Operation {
                 (bn2 == rhs.bn2) &&
                 (bn3 == rhs.bn3) &&
                 (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            calcOp.Serialize(ds);
+            bn0.Serialize(ds);
+            bn1.Serialize(ds);
+            bn2.Serialize(ds);
+            bn3.Serialize(ds);
         }
 };
 
