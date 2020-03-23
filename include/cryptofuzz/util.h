@@ -38,6 +38,8 @@ uint8_t* realloc(void* ptr, const size_t n);
 void free(void* ptr);
 bool HaveSSE42(void);
 void abort(const std::vector<std::string> components);
+std::string HexToDec(std::string s);
+std::string DecToHex(std::string s);
 
 } /* namespace util */
 } /* namespace cryptofuzz */

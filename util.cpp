@@ -8,6 +8,7 @@
 #include <vector>
 #include <cstdlib>
 #include <boost/algorithm/string/join.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 #include "third_party/cpu_features/include/cpuinfo_x86.h"
 
 namespace cryptofuzz {
@@ -284,6 +285,70 @@ void abort(const std::vector<std::string> components) {
     printf("Assertion failure: %s\n", joined.c_str());
     fflush(stdout);
     ::abort();
+}
+
+static int HexCharToDec(const char c) {
+    if ( c >= '0' && c <= '9' ) {
+        return c - '0';
+    } else if ( c >= 'a' && c <= 'f' ) {
+        return c - 'a' + 10;
+    } else if ( c >= 'A' && c <= 'F' ) {
+        return c - 'A' + 10;
+    } else {
+        assert(0);
+    }
+}
+
+std::string HexToDec(std::string s) {
+    std::string ret;
+    bool negative = false;
+
+    if ( s.empty() ) {
+        return ret;
+    }
+
+    if ( s.size() >= 2 && s[0] == '0' && s[1] == 'x' ) {
+        s = s.substr(2);
+    }
+
+    if ( s.size() >= 1 && s[0] == '-' ) {
+        s = s.substr(1);
+        negative = true;
+    }
+
+    boost::multiprecision::cpp_int total;
+
+    for (long i = s.size() - 1; i >= 0; i--) {
+        total += boost::multiprecision::cpp_int(HexCharToDec(s[i])) << ((s.size()-i-1)*4);
+    }
+
+    std::stringstream ss;
+    if ( negative ) ss << "-";
+    ss << total;
+
+    if ( ss.str().empty() ) {
+        return "0";
+    } else {
+        return ss.str();
+    }
+}
+
+std::string DecToHex(std::string s) {
+    s.erase(0, s.find_first_not_of('0'));
+    boost::multiprecision::cpp_int i(s);
+    bool negative;
+    if ( i < 0 ) {
+        negative = true;
+        i -= (i*2);
+    } else {
+        negative = false;
+    }
+    std::stringstream ss;
+    if ( negative == true ) {
+        ss << "-";
+    }
+    ss << std::hex << i;
+    return ss.str();
 }
 
 } /* namespace util */
