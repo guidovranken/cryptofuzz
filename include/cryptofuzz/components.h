@@ -107,6 +107,12 @@ class BignumPair {
             second(second)
         { }
 
+        BignumPair(nlohmann::json json) :
+            first(json[0].get<std::string>()),
+            second(json[1].get<std::string>())
+        { }
+
+
         inline bool operator==(const BignumPair& rhs) const {
             return
                 (first == rhs.first) &&

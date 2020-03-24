@@ -103,8 +103,7 @@ std::optional<component::ECC_PublicKey> Golang::OpECC_PrivateToPublic(operation:
     auto jsonStr = op.ToJSON().dump();
     Golang_Cryptofuzz_OpECC_PrivateToPublic(toGoSlice(jsonStr));
 
-    return std::nullopt;
-    //return getResultAs<component::ECC_PublicKey>();
+    return getResultAs<component::ECC_PublicKey>();
 }
 
 std::optional<bool> Golang::OpECDSA_Verify(operation::ECDSA_Verify& op) {

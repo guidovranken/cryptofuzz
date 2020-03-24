@@ -465,10 +465,14 @@ func decodeBignum(s string) *big.Int {
 }
 
 func toCurve(curveType uint64) (elliptic.Curve, error) {
-    if issecp224k1(curveType) {
+    if issecp224r1(curveType) {
         return elliptic.P224(), nil
-    } else if issecp256k1(curveType) {
+    } else if isx962_p256v1(curveType) {
         return elliptic.P256(), nil
+    } else if issecp384r1(curveType) {
+        return elliptic.P384(), nil
+    } else if issecp521r1(curveType) {
+        return elliptic.P521(), nil
     } else {
         return nil, fmt.Errorf("Unsupported digest ID")
     }
@@ -487,14 +491,19 @@ func Golang_Cryptofuzz_OpECC_PrivateToPublic(in []byte) {
         return
     }
 
-    privateKey := new(ecdsa.PrivateKey)
-    privBN := decodeBignum(op.Priv)
-    privateKey.D = privBN
-    privateKey.PublicKey.Curve = curve
+    priv := decodeBignum(op.Priv)
+    x, y := curve.ScalarBaseMult(priv.Bytes())
 
-    privateKey.PublicKey.X, privateKey.PublicKey.Y = privateKey.PublicKey.Curve.ScalarBaseMult(privBN.Bytes())
+    res := make([]string, 2)
+    res[0] = x.String()
+    res[1] = y.String()
 
-    /* TODO set result */
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
 }
 
 //export Golang_Cryptofuzz_OpECDSA_Verify
