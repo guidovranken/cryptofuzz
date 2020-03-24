@@ -507,6 +507,95 @@ end:
     return ret;
 }
 
+namespace libgcrypt_detail {
+    std::optional<std::string> toCurveString(const component::CurveType& curveType) {
+        static const std::map<uint64_t, std::string> LUT = {
+#if 0
+            { CF_ECC_CURVE(""), "Curve25519" },
+            { CF_ECC_CURVE(""), "Ed25519" },
+            { CF_ECC_CURVE(""), "GOST2001-CryptoPro-A" },
+            { CF_ECC_CURVE(""), "GOST2001-CryptoPro-B" },
+            { CF_ECC_CURVE(""), "GOST2001-CryptoPro-C" },
+            { CF_ECC_CURVE(""), "GOST2001-test" },
+            { CF_ECC_CURVE(""), "NIST P-192" },
+            { CF_ECC_CURVE(""), "NIST P-224" },
+            { CF_ECC_CURVE(""), "NIST P-256" },
+            { CF_ECC_CURVE(""), "NIST P-384" },
+            { CF_ECC_CURVE(""), "NIST P-521" },
+            { CF_ECC_CURVE(""), "X448" },
+#endif
+            { CF_ECC_CURVE("gost_256A"), "GOST2012-256-tc26-A" },
+            { CF_ECC_CURVE("gost_512A"), "GOST2012-512-tc26-A" },
+            { CF_ECC_CURVE("brainpool160r1"), "brainpoolP160r1" },
+            { CF_ECC_CURVE("brainpool192r1"), "brainpoolP192r1" },
+            { CF_ECC_CURVE("brainpool224r1"), "brainpoolP224r1" },
+            { CF_ECC_CURVE("brainpool256r1"), "brainpoolP256r1" },
+            { CF_ECC_CURVE("brainpool320r1"), "brainpoolP320r1" },
+            { CF_ECC_CURVE("brainpool384r1"), "brainpoolP384r1" },
+            { CF_ECC_CURVE("brainpool512r1"), "brainpoolP512r1" },
+            { CF_ECC_CURVE("secp256k1"), "secp256k1" },
+            { CF_ECC_CURVE("sm2p256v1"), "sm2p256v1" },
+        };
+
+        if ( LUT.find(curveType.Get()) == LUT.end() ) {
+            return std::nullopt;;
+        }
+
+        return LUT.at(curveType.Get());
+    }
+} /* namespace libgcrypt_detail */
+
+std::optional<component::ECC_PublicKey> libgcrypt::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
+    std::optional<component::ECC_PublicKey> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    std::optional<std::string> curveStr = std::nullopt;
+
+    gcry_ctx_t ctx = nullptr;
+    gcry_mpi_point_t Q = nullptr;
+    gcry_mpi_point_t G = nullptr;
+
+    libgcrypt_bignum::Bignum priv;
+    libgcrypt_bignum::Bignum x;
+    libgcrypt_bignum::Bignum y;
+    CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
+    CF_CHECK_EQ(x.Set("0"), true);
+    CF_CHECK_EQ(y.Set("0"), true);
+
+    /* Initialize */
+    {
+        CF_CHECK_NE(curveStr = libgcrypt_detail::toCurveString(op.curveType), std::nullopt);
+        CF_CHECK_EQ(gcry_mpi_ec_new(&ctx, nullptr, curveStr->c_str()), 0);
+    }
+
+    /* Process */
+    {
+        CF_CHECK_NE(G = gcry_mpi_ec_get_point("g", ctx, 1), nullptr);
+        CF_CHECK_NE(Q = gcry_mpi_point_new(0), nullptr);
+        /* noret */ gcry_mpi_ec_mul(Q, priv.GetPtr(), G, ctx);
+    }
+
+    /* Finalize */
+    {
+        CF_CHECK_EQ(gcry_mpi_ec_get_affine(x.GetPtr(), y.GetPtr(), Q, ctx), 0);
+
+        std::optional<std::string> x_str;
+        std::optional<std::string> y_str;
+
+        CF_CHECK_NE(x_str = x.ToString(), std::nullopt);
+        CF_CHECK_NE(y_str = y.ToString(), std::nullopt);
+
+        ret = { *x_str, *y_str };
+    }
+
+end:
+    gcry_ctx_release(ctx);
+    gcry_mpi_point_release(Q);
+    gcry_mpi_point_release(G);
+
+    return ret;
+}
+
 std::optional<component::Bignum> libgcrypt::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
