@@ -127,9 +127,8 @@ class Bignum {
         }
 
         Bignum(nlohmann::json json) :
-            data(json)
+            Bignum(json.get<std::string>())
         {
-            transform();
         }
 
         Bignum(const std::string s) :

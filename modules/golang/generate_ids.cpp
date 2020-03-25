@@ -28,5 +28,10 @@ int main(void)
         curveStr = std::regex_replace(curveStr, std::regex("[.-]"), "_");
         fprintf(fp, "func is%s(id uint64) bool { return id == %s }\n", curveStr.c_str(), std::to_string(curve.first).c_str());
     }
+    for (const auto bnOp : CalcOpLUTMap ) {
+        auto bnOpStr = std::string(bnOp.second.name);
+        bnOpStr = std::regex_replace(bnOpStr, std::regex("\\(.*"), "");
+        fprintf(fp, "func is%s(id uint64) bool { return id == %s }\n", bnOpStr.c_str(), std::to_string(bnOp.first).c_str());
+    }
     fclose(fp);
 }

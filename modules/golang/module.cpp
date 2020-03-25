@@ -114,5 +114,12 @@ std::optional<bool> Golang::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     //return getResultAs<component::bool>();
 }
 
+std::optional<component::Bignum> Golang::OpBignumCalc(operation::BignumCalc& op) {
+    auto jsonStr = op.ToJSON().dump();
+    Golang_Cryptofuzz_OpBignumCalc(toGoSlice(jsonStr));
+
+    return getResultAs<component::Bignum>();
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */

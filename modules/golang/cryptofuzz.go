@@ -133,6 +133,15 @@ type OpECDSA_Verify struct {
     Sig_S string
 }
 
+type OpBignumCalc struct {
+    Modifier ByteSlice
+    CalcOp uint64
+    BN0 string
+    BN1 string
+    BN2 string
+    BN3 string
+}
+
 var result []byte
 
 func resetResult() {
@@ -457,6 +466,10 @@ func Golang_Cryptofuzz_OpKDF_ARGON2(in []byte) {
 }
 
 func decodeBignum(s string) *big.Int {
+    if s == "" {
+        s = "0"
+    }
+
     bn, ok := new(big.Int).SetString(s, 10)
     if ok == false {
         panic("Cannot decode bignum")
@@ -530,6 +543,447 @@ func Golang_Cryptofuzz_OpECDSA_Verify(in []byte) {
     ecdsa.Verify(pubKey, op.Cleartext, sigR, sigS)
 
     /* TODO set result */
+}
+
+func op_ADD(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if direct {
+        res.Add(BN0, BN1)
+    } else {
+        tmp := big.NewInt(0)
+        tmp.Add(BN0, BN1)
+        res.Set(tmp)
+    }
+    return true
+}
+
+func op_SUB(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if direct {
+        res.Sub(BN0, BN1)
+    } else {
+        tmp := big.NewInt(0)
+        tmp.Sub(BN0, BN1)
+        res.Set(tmp)
+    }
+    return true
+}
+
+func op_MUL(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if direct {
+        res.Mul(BN0, BN1)
+    } else {
+        tmp := big.NewInt(0)
+        tmp.Mul(BN0, BN1)
+        res.Set(tmp)
+    }
+    return true
+}
+
+func op_DIV(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if ( BN1.Cmp(big.NewInt(0)) != 0 ) {
+        if direct {
+            res.Div(BN0, BN1)
+        } else {
+            tmp := big.NewInt(0)
+            tmp.Div(BN0, BN1)
+            res.Set(tmp)
+        }
+    } else {
+        return false
+    }
+    return true
+}
+
+func op_MOD(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if BN0.Cmp(big.NewInt(0)) >= 0 && BN1.Cmp(big.NewInt(0)) > 0 {
+        if direct {
+            res.Mod(BN0, BN1)
+        } else {
+            tmp := big.NewInt(0)
+            tmp.Mod(BN0, BN1)
+            res.Set(tmp)
+        }
+        return true
+    } else {
+        return false
+    }
+}
+
+func op_EXP_MOD(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if BN0.Cmp(big.NewInt(0)) > 0 && BN1.Cmp(big.NewInt(0)) > 0 && BN2.Cmp(big.NewInt(0)) != 0 {
+        if direct {
+            res.Exp(BN0, BN1, BN2)
+        } else {
+            tmp := big.NewInt(0)
+            tmp.Exp(BN0, BN1, BN2)
+            res.Set(tmp)
+        }
+        return true
+    } else {
+        return false
+    }
+}
+
+func op_LSHIFT(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if direct {
+        res.Lsh(BN0, 1)
+    } else {
+        tmp := big.NewInt(0)
+        tmp.Lsh(BN0, 1)
+        res.Set(tmp)
+    }
+    return true
+}
+
+func op_RSHIFT(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    res.Set(BN0)
+    if res.Cmp(big.NewInt(0)) < 0 && res.Bit(0) == 1 {
+        res.Add(res, big.NewInt(1))
+    }
+
+    if direct {
+        res.Rsh(res, 1)
+    } else {
+        tmp := big.NewInt(0)
+        tmp.Rsh(res, 1)
+        res.Set(tmp)
+    }
+    return true
+}
+
+func op_GCD(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if BN0.Cmp(big.NewInt(0)) > 0 && BN1.Cmp(big.NewInt(0)) > 0 {
+        if direct {
+            res.GCD(nil, nil, BN0, BN1)
+        } else {
+            tmp := big.NewInt(0)
+            tmp.GCD(nil, nil, BN0, BN1)
+            res.Set(tmp)
+        }
+        return true
+    } else {
+        return false
+    }
+}
+
+func op_MOD_ADD(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if BN2.Cmp(big.NewInt(0)) != 0 {
+        if direct {
+            res.Add(BN0, BN1)
+            res.Mod(res, BN2)
+        } else {
+            tmp := big.NewInt(0)
+            tmp.Add(BN0, BN1)
+            tmp.Mod(tmp, BN2)
+            res.Set(tmp)
+        }
+        return true
+    } else {
+        return false
+    }
+}
+
+func op_EXP(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    thousand := big.NewInt(1000)
+    if BN0.Cmp(big.NewInt(0)) > 0 && BN0.Cmp(thousand) < 0 && BN1.Cmp(big.NewInt(0)) > 0 && BN1.Cmp(thousand) < 0 {
+        if direct {
+            res.Exp(BN0, BN1, nil)
+            return true
+        } else {
+            tmp := big.NewInt(0)
+            tmp.Exp(BN0, BN1, nil)
+            res.Set(tmp)
+            return true
+        }
+    } else {
+        return false
+    }
+}
+
+
+func op_SQR(res *big.Int, BN1 *big.Int, BN2 *big.Int, BN3 *big.Int, direct bool) bool {
+    if direct {
+        res.Exp(BN1, big.NewInt(2), nil)
+    } else {
+        tmp := big.NewInt(0)
+        tmp.Exp(BN1, big.NewInt(2), nil)
+        res.Set(tmp)
+    }
+    return true
+}
+
+func op_NEG(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if direct {
+        res.Neg(BN0)
+    } else {
+        tmp := big.NewInt(0)
+        tmp.Neg(BN0)
+        res.Set(tmp)
+    }
+    return true
+}
+
+func op_ABS(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if direct {
+        res.Abs(BN0)
+    } else {
+        tmp := big.NewInt(0)
+        tmp.Abs(BN0)
+        res.Set(tmp)
+    }
+    return true
+}
+
+func op_IS_PRIME(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    /* "ProbablyPrime is 100% accurate for inputs less than 2⁶⁴."
+     * https://golang.org/pkg/math/big/#Int.ProbablyPrime
+    */
+    max64 := big.NewInt(0).Lsh( big.NewInt(1), 64 )
+    max64.Sub(max64, big.NewInt(1))
+    if BN0.Cmp(big.NewInt(0)) > 0 && BN0.Cmp(max64) < 0 {
+        is_prime := false
+        if direct {
+            is_prime = BN0.ProbablyPrime(1)
+        } else {
+            tmp := big.NewInt(0).Set(BN0)
+            is_prime = tmp.ProbablyPrime(1)
+        }
+        if is_prime {
+            res = big.NewInt(1)
+        } else {
+            res = big.NewInt(0)
+        }
+        return true
+    } else {
+        return false
+    }
+}
+
+func op_MOD_SUB(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if BN2.Cmp(big.NewInt(0)) != 0 {
+        if direct {
+            res.Sub(BN0, BN1)
+            res.Mod(res, BN2)
+        } else {
+            tmp := big.NewInt(0)
+            tmp.Sub(BN0, BN1)
+            tmp.Mod(tmp, BN2)
+            res.Set(tmp)
+        }
+        return true
+    } else {
+        return false
+    }
+}
+
+func op_SWAP(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    tmp := new(big.Int).Set(res)
+    res.Set(BN0)
+    BN0.Set(tmp)
+    return true
+}
+
+func op_MOD_MUL(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if BN2.Cmp(big.NewInt(0)) != 0 {
+        if direct {
+            res.Mul(BN0, BN1)
+            res.Mod(res, BN2)
+        } else {
+            tmp := big.NewInt(0)
+            tmp.Mul(BN0, BN1)
+            tmp.Mod(tmp, BN2)
+            res.Set(tmp)
+        }
+        return true
+    } else {
+        return false
+    }
+}
+
+func op_SET_BIT(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if BN0.Cmp(big.NewInt(0)) >= 0 && BN0.Cmp(big.NewInt(1000)) <= 0 && BN0.Cmp(big.NewInt(0)) >= 0 {
+        pos := BN0.Int64()
+
+        if direct {
+            res.SetBit(res, int(pos), 1)
+        } else {
+            tmp := res
+            tmp.SetBit(res, int(pos), 1)
+            res.Set(tmp)
+        }
+
+        return true
+    } else {
+        return false
+    }
+}
+
+func op_INV_MOD(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if direct {
+        if res.ModInverse(BN0, BN1) == nil {
+            return false
+        }
+    } else {
+        tmp := big.NewInt(0)
+        if tmp.ModInverse(BN0, BN1) == nil {
+            return false
+        }
+        res.Set(tmp)
+    }
+    return true
+}
+
+func op_MOD_SQRT(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    /* XXX requires primality check of BN1 */
+    return false;
+    /* BN1 must be odd */
+    if BN1.Bit(0) == 1 {
+        if direct {
+            if res.ModSqrt(BN0, BN1) == nil {
+                return false
+            }
+        } else {
+            tmp := big.NewInt(0)
+            if tmp.ModSqrt(BN0, BN1) == nil {
+                return false
+            }
+            res.Set(tmp)
+        }
+        return true
+    } else {
+        return false
+    }
+}
+
+func op_SQRT(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if BN0.Cmp(big.NewInt(0)) >= 0 {
+        if direct {
+            res.Sqrt(BN0)
+        } else {
+            tmp := big.NewInt(0)
+            tmp.Sqrt(BN0)
+            res.Set(tmp)
+        }
+        return true
+    } else {
+        return false
+    }
+}
+
+func op_AND(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if direct {
+        res.And(BN0, BN1)
+    } else {
+        tmp := big.NewInt(0)
+        tmp.And(BN0, BN1)
+        res.Set(tmp)
+    }
+    return true
+}
+
+func op_OR(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if direct {
+        res.Or(BN0, BN1)
+    } else {
+        tmp := big.NewInt(0)
+        tmp.Or(BN0, BN1)
+        res.Set(tmp)
+    }
+    return true
+}
+
+func op_XOR(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if direct {
+        res.Xor(BN0, BN1)
+    } else {
+        tmp := big.NewInt(0)
+        tmp.Xor(BN0, BN1)
+        res.Set(tmp)
+    }
+    return true
+}
+
+//export Golang_Cryptofuzz_OpBignumCalc
+func Golang_Cryptofuzz_OpBignumCalc(in []byte) {
+    resetResult()
+
+    var op OpBignumCalc
+    unmarshal(in, &op)
+
+    bn := make([]*big.Int, 4)
+    bn[0] = decodeBignum(op.BN0)
+    bn[1] = decodeBignum(op.BN1)
+    bn[2] = decodeBignum(op.BN2)
+    bn[3] = decodeBignum(op.BN3)
+
+    res := new(big.Int)
+
+    success := false
+    direct := false
+
+    if len(op.Modifier) >= 1 {
+        if op.Modifier[0] & 1 == 1 {
+            direct = true
+        }
+    }
+
+    if false {
+    } else if isAdd(op.CalcOp) {
+        success = op_ADD(res, bn[0], bn[1], bn[2], direct)
+    } else if isSub(op.CalcOp) {
+        success = op_SUB(res, bn[0], bn[1], bn[2], direct)
+    } else if isMul(op.CalcOp) {
+        success = op_MUL(res, bn[0], bn[1], bn[2], direct)
+    } else if isDiv(op.CalcOp) {
+        success = op_DIV(res, bn[0], bn[1], bn[2], direct)
+    } else if isMod(op.CalcOp) {
+        success = op_MOD(res, bn[0], bn[1], bn[2], direct)
+    } else if isExpMod(op.CalcOp) {
+        success = op_EXP_MOD(res, bn[0], bn[1], bn[2], direct)
+    } else if isRShift(op.CalcOp) {
+        success = op_RSHIFT(res, bn[0], bn[1], bn[2], direct)
+    } else if isGCD(op.CalcOp) {
+        success = op_GCD(res, bn[0], bn[1], bn[2], direct)
+    } else if isAddMod(op.CalcOp) {
+        success = op_MOD_ADD(res, bn[0], bn[1], bn[2], direct)
+    } else if isExp(op.CalcOp) {
+        success = op_EXP(res, bn[0], bn[1], bn[2], direct)
+    } else if isSqr(op.CalcOp) {
+        success = op_SQR(res, bn[0], bn[1], bn[2], direct)
+    } else if isNeg(op.CalcOp) {
+        success = op_NEG(res, bn[0], bn[1], bn[2], direct)
+    } else if isAbs(op.CalcOp) {
+        success = op_ABS(res, bn[0], bn[1], bn[2], direct)
+    } else if isSubMod(op.CalcOp) {
+        success = op_MOD_SUB(res, bn[0], bn[1], bn[2], direct)
+    } else if isMulMod(op.CalcOp) {
+        success = op_MOD_MUL(res, bn[0], bn[1], bn[2], direct)
+    } else if isInvMod(op.CalcOp) {
+        success = op_INV_MOD(res, bn[0], bn[1], bn[2], direct)
+    } else if isSqrtMod(op.CalcOp) {
+        success = op_MOD_SQRT(res, bn[0], bn[1], bn[2], direct)
+    } else if isSqrt(op.CalcOp) {
+        success = op_SQRT(res, bn[0], bn[1], bn[2], direct)
+    } else if isAnd(op.CalcOp) {
+        success = op_AND(res, bn[0], bn[1], bn[2], direct)
+    } else if isOr(op.CalcOp) {
+        success = op_OR(res, bn[0], bn[1], bn[2], direct)
+    } else if isXor(op.CalcOp) {
+        success = op_XOR(res, bn[0], bn[1], bn[2], direct)
+    } else if isSetBit(op.CalcOp) {
+        success = op_SET_BIT(res, bn[0], bn[1], bn[2], direct)
+    }
+
+    if success == false {
+        return
+    }
+
+    resStr := res.String()
+    r2, err := json.Marshal(&resStr)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
 }
 
 /*
