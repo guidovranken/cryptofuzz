@@ -20,6 +20,8 @@
 #include <idea.h>
 #include <kalyna.h>
 #include <keccak.h>
+#include <lea.h>
+#include <hight.h>
 #include <md2.h>
 #include <md4.h>
 #include <md5.h>
@@ -29,12 +31,14 @@
 #include <panama.h>
 #include <pwdbased.h>
 #include <rc2.h>
+#include <rc6.h>
 #include <ripemd.h>
 #include <scrypt.h>
 #include <seed.h>
 #include <serpent.h>
 #include <sha.h>
 #include <shake.h>
+#include <skipjack.h>
 #include <sm3.h>
 #include <sm4.h>
 #include <tiger.h>
@@ -604,6 +608,26 @@ end:
                         }
                     }
                     break;
+                case    CF_CIPHER("HIGHT_CFB"):
+                    {
+                        ret = CryptoPP_detail::CryptCFB< ::CryptoPP::HIGHT>(op);
+                    }
+                    break;
+                case    CF_CIPHER("LEA_CFB"):
+                    {
+                        ret = CryptoPP_detail::CryptCFB< ::CryptoPP::LEA>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SKIPJACK_CFB"):
+                    {
+                        ret = CryptoPP_detail::CryptCFB< ::CryptoPP::SKIPJACK>(op);
+                    }
+                    break;
+                case    CF_CIPHER("RC6_CFB"):
+                    {
+                        ret = CryptoPP_detail::CryptCFB< ::CryptoPP::RC6>(op);
+                    }
+                    break;
 
                     /* CBC */
                 case    CF_CIPHER("KALYNA128_CBC"):
@@ -742,6 +766,26 @@ end:
                         }
                     }
                     break;
+                case    CF_CIPHER("HIGHT_CBC"):
+                    {
+                        ret = CryptoPP_detail::CryptCBC< ::CryptoPP::HIGHT>(op);
+                    }
+                    break;
+                case    CF_CIPHER("LEA_CBC"):
+                    {
+                        ret = CryptoPP_detail::CryptCBC< ::CryptoPP::LEA>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SKIPJACK_CBC"):
+                    {
+                        ret = CryptoPP_detail::CryptCBC< ::CryptoPP::SKIPJACK>(op);
+                    }
+                    break;
+                case    CF_CIPHER("RC6_CBC"):
+                    {
+                        ret = CryptoPP_detail::CryptCBC< ::CryptoPP::RC6>(op);
+                    }
+                    break;
 
                     /* ECB */
                 case    CF_CIPHER("KALYNA128_ECB"):
@@ -863,6 +907,26 @@ end:
                         }
                     }
                     break;
+                case    CF_CIPHER("HIGHT_ECB"):
+                    {
+                        ret = CryptoPP_detail::CryptECB< ::CryptoPP::HIGHT>(op);
+                    }
+                    break;
+                case    CF_CIPHER("LEA_ECB"):
+                    {
+                        ret = CryptoPP_detail::CryptECB< ::CryptoPP::LEA>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SKIPJACK_ECB"):
+                    {
+                        ret = CryptoPP_detail::CryptECB< ::CryptoPP::SKIPJACK>(op);
+                    }
+                    break;
+                case    CF_CIPHER("RC6_ECB"):
+                    {
+                        ret = CryptoPP_detail::CryptECB< ::CryptoPP::RC6>(op);
+                    }
+                    break;
 
                     /* CTR */
                 case    CF_CIPHER("KALYNA128_CTR"):
@@ -952,6 +1016,26 @@ end:
                         if ( op.cipher.key.GetSize() == 256 / 8) {
                             ret = CryptoPP_detail::CryptCTR< ::CryptoPP::ARIA >(op);
                         }
+                    }
+                    break;
+                case    CF_CIPHER("HIGHT_CTR"):
+                    {
+                        ret = CryptoPP_detail::CryptCTR< ::CryptoPP::HIGHT>(op);
+                    }
+                    break;
+                case    CF_CIPHER("LEA_CTR"):
+                    {
+                        ret = CryptoPP_detail::CryptCTR< ::CryptoPP::LEA>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SKIPJACK_CTR"):
+                    {
+                        ret = CryptoPP_detail::CryptCTR< ::CryptoPP::SKIPJACK>(op);
+                    }
+                    break;
+                case    CF_CIPHER("RC6_CTR"):
+                    {
+                        ret = CryptoPP_detail::CryptCTR< ::CryptoPP::RC6>(op);
                     }
                     break;
 
@@ -1085,6 +1169,26 @@ end:
                         if ( op.cipher.key.GetSize() == 256 / 8) {
                             ret = CryptoPP_detail::CryptOFB< ::CryptoPP::ARIA >(op);
                         }
+                    }
+                    break;
+                case    CF_CIPHER("HIGHT_OFB"):
+                    {
+                        ret = CryptoPP_detail::CryptOFB< ::CryptoPP::HIGHT>(op);
+                    }
+                    break;
+                case    CF_CIPHER("LEA_OFB"):
+                    {
+                        ret = CryptoPP_detail::CryptOFB< ::CryptoPP::LEA>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SKIPJACK_OFB"):
+                    {
+                        ret = CryptoPP_detail::CryptOFB< ::CryptoPP::SKIPJACK>(op);
+                    }
+                    break;
+                case    CF_CIPHER("RC6_OFB"):
+                    {
+                        ret = CryptoPP_detail::CryptOFB< ::CryptoPP::RC6>(op);
                     }
                     break;
 
