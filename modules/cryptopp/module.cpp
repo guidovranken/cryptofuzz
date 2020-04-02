@@ -8,6 +8,7 @@
 #include <blowfish.h>
 #include <camellia.h>
 #include <cast.h>
+#include <cham.h>
 #include <crc.h>
 #include <cryptlib.h>
 #include <des.h>
@@ -34,13 +35,19 @@
 #include <rc6.h>
 #include <ripemd.h>
 #include <scrypt.h>
+#include <safer.h>
 #include <seed.h>
 #include <serpent.h>
 #include <sha.h>
 #include <shake.h>
+#include <shark.h>
+#include <simeck.h>
+#include <simon.h>
 #include <skipjack.h>
 #include <sm3.h>
 #include <sm4.h>
+#include <speck.h>
+#include <square.h>
 #include <tiger.h>
 #include <twofish.h>
 #include <whrlpool.h>
@@ -512,6 +519,61 @@ end:
                         }
                     }
                     break;
+                case    CF_CIPHER("SIMON64_CFB"):
+                    {
+                        ret = CryptoPP_detail::CryptCFB< ::CryptoPP::SIMON64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SIMON128_CFB"):
+                    {
+                        ret = CryptoPP_detail::CryptCFB< ::CryptoPP::SIMON128>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SPECK64_CFB"):
+                    {
+                        ret = CryptoPP_detail::CryptCFB< ::CryptoPP::SPECK64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SPECK128_CFB"):
+                    {
+                        ret = CryptoPP_detail::CryptCFB< ::CryptoPP::SPECK128>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SQUARE_CFB"):
+                    {
+                        ret = CryptoPP_detail::CryptCFB< ::CryptoPP::Square>(op);
+                    }
+                    break;
+                case    CF_CIPHER("CHAM64_CFB"):
+                    {
+                        ret = CryptoPP_detail::CryptCFB< ::CryptoPP::CHAM64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("CHAM128_CFB"):
+                    {
+                        ret = CryptoPP_detail::CryptCFB< ::CryptoPP::CHAM128>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SIMECK32_CFB"):
+                    {
+                        ret = CryptoPP_detail::CryptCFB< ::CryptoPP::SIMECK32>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SIMECK64_CFB"):
+                    {
+                        ret = CryptoPP_detail::CryptCFB< ::CryptoPP::SIMECK64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SAFER_K_CFB"):
+                    {
+                        ret = CryptoPP_detail::CryptCFB< ::CryptoPP::SAFER_K>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SAFER_SK_CFB"):
+                    {
+                        ret = CryptoPP_detail::CryptCFB< ::CryptoPP::SAFER_SK>(op);
+                    }
+                    break;
 
                     /* CFB8 */
                 case    CF_CIPHER("KALYNA128_CFB8"):
@@ -626,6 +688,11 @@ end:
                 case    CF_CIPHER("RC6_CFB"):
                     {
                         ret = CryptoPP_detail::CryptCFB< ::CryptoPP::RC6>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SHARK_CFB"):
+                    {
+                        ret = CryptoPP_detail::CryptCFB< ::CryptoPP::SHARK>(op);
                     }
                     break;
 
@@ -786,6 +853,66 @@ end:
                         ret = CryptoPP_detail::CryptCBC< ::CryptoPP::RC6>(op);
                     }
                     break;
+                case    CF_CIPHER("SIMON64_CBC"):
+                    {
+                        ret = CryptoPP_detail::CryptCBC< ::CryptoPP::SIMON64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SIMON128_CBC"):
+                    {
+                        ret = CryptoPP_detail::CryptCBC< ::CryptoPP::SIMON128>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SPECK64_CBC"):
+                    {
+                        ret = CryptoPP_detail::CryptCBC< ::CryptoPP::SPECK64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SPECK128_CBC"):
+                    {
+                        ret = CryptoPP_detail::CryptCBC< ::CryptoPP::SPECK128>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SQUARE_CBC"):
+                    {
+                        ret = CryptoPP_detail::CryptCBC< ::CryptoPP::Square>(op);
+                    }
+                    break;
+                case    CF_CIPHER("CHAM64_CBC"):
+                    {
+                        ret = CryptoPP_detail::CryptCBC< ::CryptoPP::CHAM64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("CHAM128_CBC"):
+                    {
+                        ret = CryptoPP_detail::CryptCBC< ::CryptoPP::CHAM128>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SIMECK32_CBC"):
+                    {
+                        ret = CryptoPP_detail::CryptCBC< ::CryptoPP::SIMECK32>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SIMECK64_CBC"):
+                    {
+                        ret = CryptoPP_detail::CryptCBC< ::CryptoPP::SIMECK64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SHARK_CBC"):
+                    {
+                        ret = CryptoPP_detail::CryptCBC< ::CryptoPP::SHARK>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SAFER_K_CBC"):
+                    {
+                        ret = CryptoPP_detail::CryptCBC< ::CryptoPP::SAFER_K>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SAFER_SK_CBC"):
+                    {
+                        ret = CryptoPP_detail::CryptCBC< ::CryptoPP::SAFER_SK>(op);
+                    }
+                    break;
 
                     /* ECB */
                 case    CF_CIPHER("KALYNA128_ECB"):
@@ -927,6 +1054,66 @@ end:
                         ret = CryptoPP_detail::CryptECB< ::CryptoPP::RC6>(op);
                     }
                     break;
+                case    CF_CIPHER("SIMON64_ECB"):
+                    {
+                        ret = CryptoPP_detail::CryptECB< ::CryptoPP::SIMON64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SIMON128_ECB"):
+                    {
+                        ret = CryptoPP_detail::CryptECB< ::CryptoPP::SIMON128>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SPECK64_ECB"):
+                    {
+                        ret = CryptoPP_detail::CryptECB< ::CryptoPP::SPECK64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SPECK128_ECB"):
+                    {
+                        ret = CryptoPP_detail::CryptECB< ::CryptoPP::SPECK128>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SQUARE_ECB"):
+                    {
+                        ret = CryptoPP_detail::CryptECB< ::CryptoPP::Square>(op);
+                    }
+                    break;
+                case    CF_CIPHER("CHAM64_ECB"):
+                    {
+                        ret = CryptoPP_detail::CryptECB< ::CryptoPP::CHAM64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("CHAM128_ECB"):
+                    {
+                        ret = CryptoPP_detail::CryptECB< ::CryptoPP::CHAM128>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SIMECK32_ECB"):
+                    {
+                        ret = CryptoPP_detail::CryptECB< ::CryptoPP::SIMECK32>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SIMECK64_ECB"):
+                    {
+                        ret = CryptoPP_detail::CryptECB< ::CryptoPP::SIMECK64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SHARK_ECB"):
+                    {
+                        ret = CryptoPP_detail::CryptECB< ::CryptoPP::SHARK>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SAFER_K_ECB"):
+                    {
+                        ret = CryptoPP_detail::CryptECB< ::CryptoPP::SAFER_K>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SAFER_SK_ECB"):
+                    {
+                        ret = CryptoPP_detail::CryptECB< ::CryptoPP::SAFER_SK>(op);
+                    }
+                    break;
 
                     /* CTR */
                 case    CF_CIPHER("KALYNA128_CTR"):
@@ -1036,6 +1223,66 @@ end:
                 case    CF_CIPHER("RC6_CTR"):
                     {
                         ret = CryptoPP_detail::CryptCTR< ::CryptoPP::RC6>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SIMON64_CTR"):
+                    {
+                        ret = CryptoPP_detail::CryptCTR< ::CryptoPP::SIMON64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SIMON128_CTR"):
+                    {
+                        ret = CryptoPP_detail::CryptCTR< ::CryptoPP::SIMON128>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SPECK64_CTR"):
+                    {
+                        ret = CryptoPP_detail::CryptCTR< ::CryptoPP::SPECK64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SPECK128_CTR"):
+                    {
+                        ret = CryptoPP_detail::CryptCTR< ::CryptoPP::SPECK128>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SQUARE_CTR"):
+                    {
+                        ret = CryptoPP_detail::CryptCTR< ::CryptoPP::Square>(op);
+                    }
+                    break;
+                case    CF_CIPHER("CHAM64_CTR"):
+                    {
+                        ret = CryptoPP_detail::CryptCTR< ::CryptoPP::CHAM64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("CHAM128_CTR"):
+                    {
+                        ret = CryptoPP_detail::CryptCTR< ::CryptoPP::CHAM128>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SIMECK32_CTR"):
+                    {
+                        ret = CryptoPP_detail::CryptCTR< ::CryptoPP::SIMECK32>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SIMECK64_CTR"):
+                    {
+                        ret = CryptoPP_detail::CryptCTR< ::CryptoPP::SIMECK64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SHARK_CTR"):
+                    {
+                        ret = CryptoPP_detail::CryptCTR< ::CryptoPP::SHARK>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SAFER_K_CTR"):
+                    {
+                        ret = CryptoPP_detail::CryptCTR< ::CryptoPP::SAFER_K>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SAFER_SK_CTR"):
+                    {
+                        ret = CryptoPP_detail::CryptCTR< ::CryptoPP::SAFER_SK>(op);
                     }
                     break;
 
@@ -1189,6 +1436,66 @@ end:
                 case    CF_CIPHER("RC6_OFB"):
                     {
                         ret = CryptoPP_detail::CryptOFB< ::CryptoPP::RC6>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SIMON64_OFB"):
+                    {
+                        ret = CryptoPP_detail::CryptOFB< ::CryptoPP::SIMON64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SIMON128_OFB"):
+                    {
+                        ret = CryptoPP_detail::CryptOFB< ::CryptoPP::SIMON128>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SPECK64_OFB"):
+                    {
+                        ret = CryptoPP_detail::CryptOFB< ::CryptoPP::SPECK64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SPECK128_OFB"):
+                    {
+                        ret = CryptoPP_detail::CryptOFB< ::CryptoPP::SPECK128>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SQUARE_OFB"):
+                    {
+                        ret = CryptoPP_detail::CryptOFB< ::CryptoPP::Square>(op);
+                    }
+                    break;
+                case    CF_CIPHER("CHAM64_OFB"):
+                    {
+                        ret = CryptoPP_detail::CryptOFB< ::CryptoPP::CHAM64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("CHAM128_OFB"):
+                    {
+                        ret = CryptoPP_detail::CryptOFB< ::CryptoPP::CHAM128>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SIMECK32_OFB"):
+                    {
+                        ret = CryptoPP_detail::CryptOFB< ::CryptoPP::SIMECK32>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SIMECK64_OFB"):
+                    {
+                        ret = CryptoPP_detail::CryptOFB< ::CryptoPP::SIMECK64>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SHARK_OFB"):
+                    {
+                        ret = CryptoPP_detail::CryptOFB< ::CryptoPP::SHARK>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SAFER_K_OFB"):
+                    {
+                        ret = CryptoPP_detail::CryptOFB< ::CryptoPP::SAFER_K>(op);
+                    }
+                    break;
+                case    CF_CIPHER("SAFER_SK_OFB"):
+                    {
+                        ret = CryptoPP_detail::CryptOFB< ::CryptoPP::SAFER_SK>(op);
                     }
                     break;
 
