@@ -670,5 +670,30 @@ end:
     return ret;
 }
 
+std::optional<component::Key> libsodium::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
+    std::optional<component::Key> ret = std::nullopt;
+
+    const size_t outSize = op.keySize;
+    uint8_t* out = util::malloc(outSize);
+
+    CF_CHECK_EQ(crypto_pwhash_scryptsalsa208sha256_ll(
+        op.password.GetPtr(),
+        op.password.GetSize(),
+        op.salt.GetPtr(),
+        op.salt.GetSize(),
+        op.N,
+        op.r,
+        op.p,
+        out,
+        outSize), 0);
+
+    ret = component::Key(out, outSize);
+
+end:
+    util::free(out);
+
+    return ret;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */
