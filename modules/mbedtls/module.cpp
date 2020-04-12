@@ -507,7 +507,7 @@ std::optional<component::Cleartext> mbedTLS::OpSymmetricDecrypt(operation::Symme
             /* XTS input may not be chunked */
 
             parts = { { op.ciphertext.GetPtr(), op.ciphertext.GetSize()} };
-        } else if ( repository::IsGCM( op.cipher.cipherType.Get() ) ) {
+        } else if ( repository::IsGCM( op.cipher.cipherType.Get() ) || repository::IsECB( op.cipher.cipherType.Get() ) ) {
             /* mbed TLS documentation:
              *
              * If the underlying cipher is used in GCM mode, all calls
@@ -516,16 +516,37 @@ std::optional<component::Cleartext> mbedTLS::OpSymmetricDecrypt(operation::Symme
              * multiple of the block size of the cipher.
              */
 
+            /* Ciphertexts encrypted using ECB fail to decrypt if it is
+             * not passed in chunks of 1 block size (even if the total size
+             * of the ciphertext is a multiple of the blocksize).
+             *
+             * So if a cipher's block size is 8, then passing 16 bytes to
+             * mbedtls_cipher_update will fail.
+             *
+             * Hence, follow the same procedure for ECB: divide the ciphertext
+             * into chunks of 1 block size.
+             */
+
             const size_t blockSize = mbedtls_cipher_get_block_size(&cipher_ctx);
             const size_t numBlocks = op.ciphertext.GetSize() / blockSize;
             const size_t remainder = op.ciphertext.GetSize() % blockSize;
+
+            /* ECB can only process ciphertexts which are a multiple of the block size. */
+            if (repository::IsECB( op.cipher.cipherType.Get() ) && remainder ) {
+                goto end;
+            }
 
             size_t i = 0;
             for (i = 0; i < numBlocks; i++) {
                 parts.push_back( {op.ciphertext.GetPtr() + (i * blockSize), blockSize} );
             }
 
-            parts.push_back( {op.ciphertext.GetPtr() + (i * blockSize), remainder} );
+            /* Do not add a chunk of size 0 in ECB mode (this will cause decryption to
+             * fail).
+             */
+            if ( !repository::IsECB( op.cipher.cipherType.Get() ) ) {
+                parts.push_back( {op.ciphertext.GetPtr() + (i * blockSize), remainder} );
+            }
         } else {
             parts = util::ToParts(ds, op.ciphertext);
         }
