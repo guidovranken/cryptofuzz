@@ -360,7 +360,7 @@ std::optional<component::Ciphertext> mbedTLS::OpSymmetricEncrypt(operation::Symm
             /* XTS input may not be chunked */
 
             parts = { { op.cleartext.GetPtr(), op.cleartext.GetSize()} };
-        } else if ( repository::IsGCM( op.cipher.cipherType.Get() ) ) {
+        } else if ( repository::IsGCM( op.cipher.cipherType.Get() ) || repository::IsECB( op.cipher.cipherType.Get() ) ) {
             /* mbed TLS documentation:
              *
              * If the underlying cipher is used in GCM mode, all calls
@@ -373,12 +373,22 @@ std::optional<component::Ciphertext> mbedTLS::OpSymmetricEncrypt(operation::Symm
             const size_t numBlocks = op.cleartext.GetSize() / blockSize;
             const size_t remainder = op.cleartext.GetSize() % blockSize;
 
+            /* ECB can only process cleartexts which are a multiple of the block size. */
+            if (repository::IsECB( op.cipher.cipherType.Get() ) && remainder ) {
+                goto end;
+            }
+
             size_t i = 0;
             for (i = 0; i < numBlocks; i++) {
                 parts.push_back( {op.cleartext.GetPtr() + (i * blockSize), blockSize} );
             }
 
-            parts.push_back( {op.cleartext.GetPtr() + (i * blockSize), remainder} );
+            /* Do not add a chunk of size 0 in ECB mode (this will cause decryption to
+             * fail).
+             */
+            if ( !repository::IsECB( op.cipher.cipherType.Get() ) ) {
+                parts.push_back( {op.cleartext.GetPtr() + (i * blockSize), remainder} );
+            }
         } else {
             parts = util::ToParts(ds, op.cleartext);
         }
