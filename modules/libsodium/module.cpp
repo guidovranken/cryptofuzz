@@ -561,6 +561,8 @@ static class : public AEAD<
 } /* namespace libsodium_detail */
 
 std::optional<component::Ciphertext> libsodium::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
+    uint8_t* out = nullptr;
+
     switch ( op.cipher.cipherType.Get() ) {
         case    CF_CIPHER("AES_256_GCM"):
             {
@@ -593,12 +595,30 @@ std::optional<component::Ciphertext> libsodium::OpSymmetricEncrypt(operation::Sy
                 return libsodium_detail::xchacha20_poly1305.Encrypt(op);
             }
             break;
+        case    CF_CIPHER("CHACHA20"):
+            {
+                CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize());
+                CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_stream_chacha20_ietf_KEYBYTES);
+                CF_CHECK_EQ(op.cipher.iv.GetSize(), crypto_stream_chacha20_ietf_NONCEBYTES);
+                out = util::malloc(op.ciphertextSize);
+                CF_CHECK_EQ(crypto_stream_chacha20_ietf_xor_ic(out, op.cleartext.GetPtr(), op.cleartext.GetSize(), op.cipher.iv.GetPtr(), 0, op.cipher.key.GetPtr()), 0);
+                auto ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
+                util::free(out);
+                return ret;
+            }
+            break;
         default:
             return std::nullopt;
     }
+
+end:
+    util::free(out);
+    return std::nullopt;
 }
 
 std::optional<component::Cleartext> libsodium::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
+    uint8_t* out = nullptr;
+
     switch ( op.cipher.cipherType.Get() ) {
         case    CF_CIPHER("AES_256_GCM"):
             {
@@ -631,9 +651,25 @@ std::optional<component::Cleartext> libsodium::OpSymmetricDecrypt(operation::Sym
                 return libsodium_detail::xchacha20_poly1305.Decrypt(op);
             }
             break;
+        case    CF_CIPHER("CHACHA20"):
+            {
+                CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
+                CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_stream_chacha20_ietf_KEYBYTES);
+                CF_CHECK_EQ(op.cipher.iv.GetSize(), crypto_stream_chacha20_ietf_NONCEBYTES);
+                out = util::malloc(op.cleartextSize);
+                CF_CHECK_EQ(crypto_stream_chacha20_ietf_xor_ic(out, op.ciphertext.GetPtr(), op.ciphertext.GetSize(), op.cipher.iv.GetPtr(), 0, op.cipher.key.GetPtr()), 0);
+                auto ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+                util::free(out);
+                return ret;
+            }
+            break;
         default:
             return std::nullopt;
     }
+
+end:
+    util::free(out);
+    return std::nullopt;
 }
 
 std::optional<component::Key> libsodium::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
