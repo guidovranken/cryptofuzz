@@ -311,7 +311,7 @@ namespace libgcrypt_detail {
 
                 CF_CHECK_EQ(gcry_cipher_get_algo_keylen(cipherModePair.first), cipher.key.GetSize());
                 if ( cipher.cipherType.Get() == CF_CIPHER("CHACHA20") ) {
-                    CF_CHECK_EQ(16, cipher.iv.GetSize());
+                    CF_CHECK_EQ(12, cipher.iv.GetSize());
                 } else {
                     CF_CHECK_EQ(gcry_cipher_get_algo_blklen(cipherModePair.first), cipher.iv.GetSize());
                 }
@@ -325,7 +325,11 @@ namespace libgcrypt_detail {
                 hOpen = true;
 
                 CF_CHECK_EQ(gcry_cipher_setkey(h, cipher.key.GetPtr(), cipher.key.GetSize()), GPG_ERR_NO_ERROR);
-                CF_CHECK_EQ(gcry_cipher_setiv(h, cipher.iv.GetPtr(), cipher.iv.GetSize()), GPG_ERR_NO_ERROR);
+                if ( cipher.cipherType.Get() == CF_CIPHER("CHACHA20") ) {
+                    CF_CHECK_EQ(gcry_cipher_setiv(h, cipher.iv.GetPtr(), cipher.iv.GetSize()), GPG_ERR_NO_ERROR);
+                } else {
+                    CF_CHECK_EQ(gcry_cipher_setiv(h, cipher.iv.GetPtr(), cipher.iv.GetSize()), GPG_ERR_NO_ERROR);
+                }
 
                 switch ( cipherModePair.second ) {
                     case GCRY_CIPHER_MODE_STREAM:

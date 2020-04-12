@@ -327,6 +327,10 @@ std::optional<component::Ciphertext> mbedTLS::OpSymmetricEncrypt(operation::Symm
         }
     }
 
+    if ( op.cipher.cipherType.Get() == CF_CIPHER("CHACHA20") && op.cipher.iv.GetSize() != 12 ) {
+        return std::nullopt;
+    }
+
     if ( op.tagSize != std::nullopt || op.aad != std::nullopt ) {
         return mbedTLS_detail::encrypt_AEAD(op);
     }
@@ -426,11 +430,6 @@ end:
         mbedtls_cipher_free(&cipher_ctx);
     }
 
-    if ( op.cipher.cipherType.Get() == CF_CIPHER("CHACHA20") ) {
-        /* Currently mismatches with OpenSSL, needs researching */
-        return std::nullopt;
-    }
-
     return ret;
 }
 
@@ -486,6 +485,10 @@ std::optional<component::Cleartext> mbedTLS::OpSymmetricDecrypt(operation::Symme
 
     if ( op.aad != std::nullopt || op.tag != std::nullopt ) {
         return mbedTLS_detail::decrypt_AEAD(op);
+    }
+
+    if ( op.cipher.cipherType.Get() == CF_CIPHER("CHACHA20") && op.cipher.iv.GetSize() != 12 ) {
+        return std::nullopt;
     }
 
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -591,11 +594,6 @@ end:
 
     if ( ctxInited == true ) {
         mbedtls_cipher_free(&cipher_ctx);
-    }
-
-    if ( op.cipher.cipherType.Get() == CF_CIPHER("CHACHA20") ) {
-        /* Currently mismatches with OpenSSL, needs researching */
-        return std::nullopt;
     }
 
     return ret;

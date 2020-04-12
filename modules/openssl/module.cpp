@@ -1482,10 +1482,22 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
             }
         }
 
-        CF_CHECK_EQ(checkSetIVLength(op.cipher.cipherType.Get(), cipher, ctx.GetPtr(), op.cipher.iv.GetSize()), true);
+        if ( op.cipher.cipherType.Get() != CF_CIPHER("CHACHA20") ) {
+            CF_CHECK_EQ(checkSetIVLength(op.cipher.cipherType.Get(), cipher, ctx.GetPtr(), op.cipher.iv.GetSize()), true);
+        } else {
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 12);
+        }
         CF_CHECK_EQ(checkSetKeyLength(cipher, ctx.GetPtr(), op.cipher.key.GetSize()), true);
 
-        CF_CHECK_EQ(EVP_EncryptInit_ex(ctx.GetPtr(), nullptr, nullptr, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr()), 1);
+        if ( op.cipher.cipherType.Get() != CF_CIPHER("CHACHA20") ) {
+            CF_CHECK_EQ(EVP_EncryptInit_ex(ctx.GetPtr(), nullptr, nullptr, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr()), 1);
+        } else {
+            /* Prepend the 32 bit counter (which is 0) to the iv */
+            uint8_t cc20IV[16];
+            memset(cc20IV, 0, 4);
+            memcpy(cc20IV + 4, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize());
+            CF_CHECK_EQ(EVP_EncryptInit_ex(ctx.GetPtr(), nullptr, nullptr, op.cipher.key.GetPtr(), cc20IV), 1);
+        }
 
         /* Disable ECB padding for consistency with mbed TLS */
         if ( repository::IsECB(op.cipher.cipherType.Get()) ) {
@@ -1889,7 +1901,11 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
             }
         }
 
-        CF_CHECK_EQ(checkSetIVLength(op.cipher.cipherType.Get(), cipher, ctx.GetPtr(), op.cipher.iv.GetSize()), true);
+        if ( op.cipher.cipherType.Get() != CF_CIPHER("CHACHA20") ) {
+            CF_CHECK_EQ(checkSetIVLength(op.cipher.cipherType.Get(), cipher, ctx.GetPtr(), op.cipher.iv.GetSize()), true);
+        } else {
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 12);
+        }
         CF_CHECK_EQ(checkSetKeyLength(cipher, ctx.GetPtr(), op.cipher.key.GetSize()), true);
 
 #if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
@@ -1906,8 +1922,15 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
             CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx.GetPtr(), EVP_CTRL_AEAD_SET_TAG, op.tag->GetSize(), (void*)op.tag->GetPtr()), 1);
         }
 #endif
-
-        CF_CHECK_EQ(EVP_DecryptInit_ex(ctx.GetPtr(), nullptr, nullptr, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr()), 1);
+        if ( op.cipher.cipherType.Get() != CF_CIPHER("CHACHA20") ) {
+            CF_CHECK_EQ(EVP_DecryptInit_ex(ctx.GetPtr(), nullptr, nullptr, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr()), 1);
+        } else {
+            /* Prepend the 32 bit counter (which is 0) to the iv */
+            uint8_t cc20IV[16];
+            memset(cc20IV, 0, 4);
+            memcpy(cc20IV + 4, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize());
+            CF_CHECK_EQ(EVP_DecryptInit_ex(ctx.GetPtr(), nullptr, nullptr, op.cipher.key.GetPtr(), cc20IV), 1);
+        }
 
         /* Disable ECB padding for consistency with mbed TLS */
         if ( repository::IsECB(op.cipher.cipherType.Get()) ) {
