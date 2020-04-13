@@ -853,6 +853,9 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
     }
     */
 
+    if ( debug == true && !operations.empty() ) {
+        printf("Running:\n%s\n", operations[0].second.ToString().c_str());
+    }
     for (size_t i = 0; i < operations.size(); i++) {
         auto& operation = operations[i];
 
@@ -877,10 +880,6 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
             }
         }
 
-        if ( debug == true ) {
-            printf("Running:\n%s\n", op.ToString().c_str());
-        }
-
         results.push_back( {module, std::move(callModule(module, op))} );
 
         const auto& result = results.back();
@@ -891,6 +890,13 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
 
         tests::test(op, result.second);
 
+        if ( debug == true ) {
+            printf("Module %s result:\n\n%s\n\n",
+                    result.first->name.c_str(),
+                    result.second == std::nullopt ?
+                        "(empty)" :
+                        util::ToString(*result.second).c_str());
+        }
         postprocess(module, op, result);
     }
 
