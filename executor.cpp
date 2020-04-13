@@ -92,27 +92,32 @@ template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>
 
         bool tryDecrypt = true;
 
-        switch ( op.cipher.cipherType.Get() ) {
-            case    ID("Cryptofuzz/Cipher/AES_128_OCB"):
-            case    ID("Cryptofuzz/Cipher/AES_256_OCB"):
-
-            case    ID("Cryptofuzz/Cipher/AES_128_GCM"):
-            case    ID("Cryptofuzz/Cipher/AES_192_GCM"):
-            case    ID("Cryptofuzz/Cipher/AES_256_GCM"):
-
-            case    ID("Cryptofuzz/Cipher/AES_128_CCM"):
-            case    ID("Cryptofuzz/Cipher/AES_192_CCM"):
-            case    ID("Cryptofuzz/Cipher/AES_256_CCM"):
-
-            case    ID("Cryptofuzz/Cipher/ARIA_128_CCM"):
-            case    ID("Cryptofuzz/Cipher/ARIA_192_CCM"):
-            case    ID("Cryptofuzz/Cipher/ARIA_256_CCM"):
-
-            case    ID("Cryptofuzz/Cipher/ARIA_128_GCM"):
-            case    ID("Cryptofuzz/Cipher/ARIA_192_GCM"):
-            case    ID("Cryptofuzz/Cipher/ARIA_256_GCM"):
-                tryDecrypt = false;
-                break;
+        if ( module->ID == CF_MODULE("OpenSSL") ) {
+            switch ( op.cipher.cipherType.Get() ) {
+                case    ID("Cryptofuzz/Cipher/AES_128_OCB"):
+                case    ID("Cryptofuzz/Cipher/AES_256_OCB"):
+                    tryDecrypt = false;
+                    break;
+                case    ID("Cryptofuzz/Cipher/AES_128_GCM"):
+                case    ID("Cryptofuzz/Cipher/AES_192_GCM"):
+                case    ID("Cryptofuzz/Cipher/AES_256_GCM"):
+                case    ID("Cryptofuzz/Cipher/AES_128_CCM"):
+                case    ID("Cryptofuzz/Cipher/AES_192_CCM"):
+                case    ID("Cryptofuzz/Cipher/AES_256_CCM"):
+                case    ID("Cryptofuzz/Cipher/ARIA_128_CCM"):
+                case    ID("Cryptofuzz/Cipher/ARIA_192_CCM"):
+                case    ID("Cryptofuzz/Cipher/ARIA_256_CCM"):
+                case    ID("Cryptofuzz/Cipher/ARIA_128_GCM"):
+                case    ID("Cryptofuzz/Cipher/ARIA_192_GCM"):
+                case    ID("Cryptofuzz/Cipher/ARIA_256_GCM"):
+                    if ( op.tagSize == std::nullopt ) {
+                        /* OpenSSL fails to decrypt its own CCM and GCM ciphertexts if
+                         * a tag is not included
+                         */
+                        tryDecrypt = false;
+                    }
+                    break;
+            }
         }
 
         if ( tryDecrypt == true ) {
