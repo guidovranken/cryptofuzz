@@ -45,8 +45,73 @@ static void test_ChaCha20_Poly1305_IV(const operation::SymmetricEncrypt& op, con
     }
 }
 
+static void test_AES_CCM_Wycheproof(const operation::SymmetricEncrypt& op, const std::optional<component::Ciphertext>& result) {
+    bool fail = false;
+
+    if ( result == std::nullopt ) {
+        return;
+    }
+
+    switch ( op.cipher.cipherType.Get() ) {
+        case CF_CIPHER("AES_128_CCM"):
+        case CF_CIPHER("AES_192_CCM"):
+        case CF_CIPHER("AES_256_CCM"):
+            break;
+        default:
+            return;
+    }
+
+    if ( op.cipher.iv.GetSize() < 7 || op.cipher.iv.GetSize() > 13 ) {
+        printf("AES CCM: Invalid IV size\n");
+        fail = true;
+    }
+
+    if ( result->tag != std::nullopt ) {
+        static const std::vector<size_t> validTagSizes = {4, 6, 8, 10, 12, 14, 16};
+
+        if ( std::find(validTagSizes.begin(), validTagSizes.end(), result->tag->GetSize()) == validTagSizes.end() ) {
+            printf("AES CCM: Invalid tag size\n");
+            fail = true;
+        }
+    }
+
+    if ( fail == true ) {
+        printf("AES CCM tests based on Wycheproof: https://github.com/google/wycheproof/blob/4672ff74d68766e7785c2cac4c597effccef2c5c/testvectors/aes_ccm_test.json#L11\n");
+        abort();
+    }
+}
+
+static void test_AES_GCM_Wycheproof(const operation::SymmetricEncrypt& op, const std::optional<component::Ciphertext>& result) {
+    bool fail = false;
+
+    if ( result == std::nullopt ) {
+        return;
+    }
+
+    switch ( op.cipher.cipherType.Get() ) {
+        case CF_CIPHER("AES_128_GCM"):
+        case CF_CIPHER("AES_192_GCM"):
+        case CF_CIPHER("AES_256_GCM"):
+            break;
+        default:
+            return;
+    }
+
+    if ( op.cipher.iv.GetSize() == 0 ) {
+        printf("AES GCM: Invalid IV size\n");
+        fail = true;
+    }
+
+    if ( fail == true ) {
+        printf("AES GCM tests based on Wycheproof: https://github.com/google/wycheproof/blob/4672ff74d68766e7785c2cac4c597effccef2c5c/testvectors/aes_gcm_test.json#L13\n");
+        abort();
+    }
+}
+
 void test(const operation::SymmetricEncrypt& op, const std::optional<component::Ciphertext>& result) {
     test_ChaCha20_Poly1305_IV(op, result);
+    test_AES_CCM_Wycheproof(op, result);
+    test_AES_GCM_Wycheproof(op, result);
 }
 
 void test(const operation::SymmetricDecrypt& op, const std::optional<component::Cleartext>& result) {
