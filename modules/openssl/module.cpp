@@ -1313,8 +1313,21 @@ bool OpenSSL::checkSetIVLength(const uint64_t cipherType, const EVP_CIPHER* ciph
     (void)ctx;
 
     bool ret = false;
+    size_t ivLength;
 
-    const size_t ivLength = EVP_CIPHER_iv_length(cipher);
+    if ( repository::IsCCM( cipherType ) ) {
+        /* EVP_CIPHER_iv_length may return the wrong default IV length for CCM ciphers.
+         * Eg. EVP_CIPHER_iv_length returns 12 for EVP_aes_128_ccm() even though the
+         * IV length is actually.
+         *
+         * Hence, with CCM ciphers set the desired IV length always.
+         */
+        CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_SET_IVLEN, inputIvLength, nullptr), 1);
+        ret = true;
+        goto end;
+    }
+
+    ivLength = EVP_CIPHER_iv_length(cipher);
     if ( ivLength != inputIvLength ) {
 #if defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_OPENSSL_102)
         if ( repository::IsCCM( cipherType ) ) {
@@ -1507,15 +1520,16 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
 
     /* Process */
     {
+        /* If the cipher is CCM, the total cleartext size needs to be indicated explicitly
+         * https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption
+         */
+        if ( repository::IsCCM(op.cipher.cipherType.Get()) == true ) {
+            int len;
+            CF_CHECK_EQ(EVP_EncryptUpdate(ctx.GetPtr(), nullptr, &len, nullptr, op.cleartext.GetSize()), 1);
+        }
+
         /* Set AAD */
         if ( op.aad != std::nullopt ) {
-            /* If the cipher is CCM, the total cleartext size needs to be indicated explicitly
-             * https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption
-             */
-            if ( repository::IsCCM(op.cipher.cipherType.Get()) == true ) {
-                int len;
-                CF_CHECK_EQ(EVP_EncryptUpdate(ctx.GetPtr(), nullptr, &len, nullptr, op.cleartext.GetSize()), 1);
-            }
 
             for (const auto& part : partsAAD) {
                 int len;
@@ -1940,17 +1954,16 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
 
     /* Process */
     {
+        /* If the cipher is CCM, the total cleartext size needs to be indicated explicitly
+         * https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption
+         */
+        if ( repository::IsCCM(op.cipher.cipherType.Get()) == true ) {
+            int len;
+            CF_CHECK_EQ(EVP_DecryptUpdate(ctx.GetPtr(), nullptr, &len, nullptr, op.ciphertext.GetSize()), 1);
+        }
+
         /* Set AAD */
         if ( op.aad != std::nullopt ) {
-
-            /* If the cipher is CCM, the total cleartext size needs to be indicated explicitly
-             * https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption
-             */
-            if ( repository::IsCCM(op.cipher.cipherType.Get()) == true ) {
-                int len;
-                CF_CHECK_EQ(EVP_DecryptUpdate(ctx.GetPtr(), nullptr, &len, nullptr, op.ciphertext.GetSize()), 1);
-            }
-
             for (const auto& part : partsAAD) {
                 int len;
                 CF_CHECK_EQ(EVP_DecryptUpdate(ctx.GetPtr(), nullptr, &len, part.first, part.second), 1);
