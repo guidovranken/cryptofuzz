@@ -120,7 +120,7 @@ bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     bool ret = false;
 
     CF_CHECK_NE(gcry_mpi_cmp_ui(bn[1].GetPtr(), 0), 0);
-    /* ignore return value */ gcry_mpi_invm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+    CF_CHECK_EQ(gcry_mpi_invm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
 
     ret = true;
 
