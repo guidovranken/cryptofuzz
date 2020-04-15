@@ -1309,45 +1309,47 @@ std::optional<component::MAC> OpenSSL::OpHMAC(operation::HMAC& op) {
 
 
 bool OpenSSL::checkSetIVLength(const uint64_t cipherType, const EVP_CIPHER* cipher, EVP_CIPHER_CTX* ctx, const size_t inputIvLength) const {
-    (void)cipherType;
-    (void)ctx;
-
     bool ret = false;
-    size_t ivLength;
 
-    if ( repository::IsCCM( cipherType ) ) {
-        /* EVP_CIPHER_iv_length may return the wrong default IV length for CCM ciphers.
-         * Eg. EVP_CIPHER_iv_length returns 12 for EVP_aes_128_ccm() even though the
-         * IV length is actually.
-         *
-         * Hence, with CCM ciphers set the desired IV length always.
-         */
-        CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_SET_IVLEN, inputIvLength, nullptr), 1);
-        ret = true;
-        goto end;
+    const size_t ivLength = EVP_CIPHER_iv_length(cipher);
+    const bool ivLengthMismatch = ivLength != inputIvLength;
+
+    if ( isAEAD(cipher, cipherType) == false ) {
+        /* Return true (success) if input IV length is expected IV length */
+        return !ivLengthMismatch;
     }
 
-    ivLength = EVP_CIPHER_iv_length(cipher);
-    if ( ivLength != inputIvLength ) {
+    const bool isCCM = repository::IsCCM( cipherType );
 #if defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_OPENSSL_102)
-        if ( repository::IsCCM( cipherType ) ) {
+    const bool isGCM = repository::IsGCM( cipherType );
+#endif
+
+    /* Only AEAD ciphers past this point */
+
+    /* EVP_CIPHER_iv_length may return the wrong default IV length for CCM ciphers.
+     * Eg. EVP_CIPHER_iv_length returns 12 for EVP_aes_128_ccm() even though the
+     * IV length is actually.
+     *
+     * Hence, with CCM ciphers set the desired IV length always.
+     */
+
+    if ( isCCM || ivLengthMismatch ) {
+#if defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_OPENSSL_102)
+        if ( isCCM == true ) {
             CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_SET_IVLEN, inputIvLength, nullptr), 1);
-            ret = true;
-        } else if ( repository::IsGCM( cipherType ) ) {
+        } else if ( isGCM == true ) {
             CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, inputIvLength, nullptr), 1);
-            ret = true;
+        } else {
+            return false;
         }
 #else
-        if ( isAEAD(cipher, cipherType) == true ) {
-            CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, inputIvLength, nullptr), 1);
-            ret = true;
-        }
+        CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, inputIvLength, nullptr), 1);
 #endif
-    } else {
-        return true;
     }
 
+    ret = true;
 end:
+
     return ret;
 }
 
