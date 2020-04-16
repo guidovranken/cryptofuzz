@@ -893,8 +893,6 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
             updateExtraCounters(module->ID, op);
         }
 
-        tests::test(op, result.second);
-
         if ( debug == true ) {
             printf("Module %s result:\n\n%s\n\n",
                     result.first->name.c_str(),
@@ -902,6 +900,9 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
                         "(empty)" :
                         util::ToString(*result.second).c_str());
         }
+
+        tests::test(op, result.second);
+
         postprocess(module, op, result);
     }
 
