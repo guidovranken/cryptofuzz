@@ -90,6 +90,7 @@ const EVP_MD* OpenSSL::toEVPMD(const component::DigestType& digestType) const {
         { CF_DIGEST("MD4"), EVP_md4() },
         { CF_DIGEST("MD5"), EVP_md5() },
         { CF_DIGEST("MD5_SHA1"), EVP_md5_sha1() },
+        { CF_DIGEST("SHA512-256"), EVP_sha512_256() },
 #elif defined(CRYPTOFUZZ_LIBRESSL)
         { CF_DIGEST("SHA1"), EVP_sha1() },
         { CF_DIGEST("SHA224"), EVP_sha224() },
