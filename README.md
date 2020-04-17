@@ -58,3 +58,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - sjcl: [bignum subtraction incorrect result](https://github.com/bitwiseshiftleft/sjcl/issues/411)
 - NSS: TBA
 - libgcrypt: [gcry_mpi_invm indicates multiplicative inverse exists when it does not](https://lists.gnupg.org/pipermail/gcrypt-devel/2020-April/004947.html)
+- wolfCrypt: [AES GCM allows IV of size 0](https://github.com/wolfSSL/wolfssl/pull/2910])
