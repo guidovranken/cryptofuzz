@@ -1046,10 +1046,10 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
                         op.ciphertext.GetSize(),
                         op.cipher.iv.GetPtr(),
                         op.cipher.iv.GetSize(),
-                        op.aad->GetPtr(),
-                        op.aad->GetSize(),
                         op.tag->GetPtr(),
-                        op.tag->GetSize()), 0);
+                        op.tag->GetSize(),
+                        op.aad->GetPtr(),
+                        op.aad->GetSize()), 0);
 
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
         }
