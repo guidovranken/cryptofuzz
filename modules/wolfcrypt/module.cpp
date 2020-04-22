@@ -622,6 +622,18 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
         {
             Aes ctx;
 
+            switch ( op.cipher.cipherType.Get() ) {
+                case CF_CIPHER("AES_128_GCM"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
+                    break;
+                case CF_CIPHER("AES_192_GCM"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 24);
+                    break;
+                case CF_CIPHER("AES_256_GCM"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
+                    break;
+            }
+
             CF_CHECK_NE(op.tagSize, std::nullopt);
             CF_CHECK_NE(op.aad, std::nullopt);
 
@@ -993,6 +1005,7 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
             }
 
             CF_CHECK_NE(op.aad, std::nullopt);
+            CF_CHECK_NE(op.tag, std::nullopt);
 
             out = util::malloc(op.ciphertext.GetSize());
 
@@ -1005,10 +1018,10 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
                         op.ciphertext.GetSize(),
                         op.cipher.iv.GetPtr(),
                         op.cipher.iv.GetSize(),
+                        op.tag->GetPtr(),
+                        op.tag->GetSize(),
                         op.aad->GetPtr(),
-                        op.aad->GetSize(),
-                        op.ciphertext.GetPtr(),
-                        op.ciphertext.GetSize()), 0);
+                        op.aad->GetSize()), 0);
 
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
         }
