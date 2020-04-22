@@ -128,8 +128,37 @@ void test(const operation::KDF_SCRYPT& op, const std::optional<component::Key>& 
     verifyKeySize(op, result);
 }
 
+static void test_HKDF_OutputSize(const operation::KDF_HKDF& op, const std::optional<component::Key>& result) {
+    if ( result == std::nullopt ) {
+        return;
+    }
+
+    size_t maxOutputSize = 0;
+
+    switch ( op.digestType.Get() ) {
+        case    CF_DIGEST("SHA1"):
+            maxOutputSize = 255 * 20;
+            break;
+        case    CF_DIGEST("SHA256"):
+            maxOutputSize = 255 * 32;
+            break;
+        case    CF_DIGEST("SHA512"):
+            maxOutputSize = 255 * 64;
+            break;
+        default:
+            return;
+    }
+
+    if ( result->GetSize() > maxOutputSize ) {
+        printf("The output size of HKDF (%zu) is more than 255 * the size of the hash digest (%zu)\n", result->GetSize(), maxOutputSize);
+        abort();
+    }
+}
+
 void test(const operation::KDF_HKDF& op, const std::optional<component::Key>& result) {
     verifyKeySize(op, result);
+
+    test_HKDF_OutputSize(op, result);
 }
 
 void test(const operation::KDF_TLS1_PRF& op, const std::optional<component::Key>& result) {
