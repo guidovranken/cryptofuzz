@@ -385,6 +385,27 @@ template<> std::optional<component::Key> ExecutorBase<component::Key, operation:
     return module->OpKDF_X963(op);
 }
 
+/* Specialization for operation::KDF_BCRYPT */
+template<> void ExecutorBase<component::Key, operation::KDF_BCRYPT>::updateExtraCounters(const uint64_t moduleID, operation::KDF_BCRYPT& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::Key, operation::KDF_BCRYPT>::postprocess(std::shared_ptr<Module> module, operation::KDF_BCRYPT& op, const ExecutorBase<component::Key, operation::KDF_BCRYPT>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+
+    if ( result.second != std::nullopt ) {
+        fuzzing::memory::memory_test_msan(result.second->GetPtr(), result.second->GetSize());
+    }
+}
+
+template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_BCRYPT>::callModule(std::shared_ptr<Module> module, operation::KDF_BCRYPT& op) const {
+    return module->OpKDF_BCRYPT(op);
+}
+
 /* Specialization for operation::Sign */
 template<> void ExecutorBase<component::Signature, operation::Sign>::updateExtraCounters(const uint64_t moduleID, operation::Sign& op) const {
     using fuzzing::datasource::ID;
@@ -924,6 +945,7 @@ template class ExecutorBase<component::Key, operation::KDF_PBKDF2>;
 template class ExecutorBase<component::Key, operation::KDF_ARGON2>;
 template class ExecutorBase<component::Key, operation::KDF_SSH>;
 template class ExecutorBase<component::Key, operation::KDF_X963>;
+template class ExecutorBase<component::Key, operation::KDF_BCRYPT>;
 template class ExecutorBase<component::Signature, operation::Sign>;
 template class ExecutorBase<bool, operation::Verify>;
 template class ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>;

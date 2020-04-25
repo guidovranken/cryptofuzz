@@ -578,6 +578,46 @@ class KDF_X963 : public Operation {
         }
 };
 
+class KDF_BCRYPT : public Operation {
+    public:
+        const component::DigestType digestType;
+        const component::Cleartext secret;
+        const component::Cleartext salt;
+        const uint32_t iterations;
+        const uint64_t keySize;
+
+        KDF_BCRYPT(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            digestType(ds),
+            secret(ds),
+            salt(ds),
+            iterations(ds.Get<uint32_t>() % 3),
+            keySize(ds.Get<uint64_t>() % 1024)
+        { }
+        KDF_BCRYPT(nlohmann::json json) :
+            Operation(json["modifier"]),
+            digestType(json["digestType"]),
+            secret(json["secret"]),
+            salt(json["salt"]),
+            iterations(json["iterations"].get<uint32_t>()),
+            keySize(json["keySize"].get<uint64_t>())
+        { }
+
+        static size_t MaxOperations(void) { return 20; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const KDF_BCRYPT& rhs) const {
+            return
+                (digestType == rhs.digestType) &&
+                (secret == rhs.secret) &&
+                (salt == rhs.salt) &&
+                (iterations == rhs.iterations) &&
+                (keySize == rhs.keySize) &&
+                (modifier == rhs.modifier);
+        }
+};
+
 class CMAC : public Operation {
     public:
         const component::Cleartext cleartext;

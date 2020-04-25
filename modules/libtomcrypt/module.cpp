@@ -388,5 +388,38 @@ end:
     return ret;
 }
 
+std::optional<component::Key> libtomcrypt::OpKDF_BCRYPT(operation::KDF_BCRYPT& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    std::optional<int> hashIdx = std::nullopt;
+    uint8_t* out = util::malloc(op.keySize);
+
+    CF_CHECK_NE(out, nullptr);
+    CF_CHECK_NE(op.iterations, 0);
+    CF_CHECK_NE(op.secret.GetPtr(), nullptr);
+    CF_CHECK_NE(op.salt.GetPtr(), nullptr);
+
+    CF_CHECK_NE(hashIdx = libtomcrypt_detail::ToHashIdx(op.digestType.Get()), std::nullopt);
+
+    {
+        unsigned long outLen = op.keySize;
+        CF_CHECK_EQ(bcrypt_pbkdf_openbsd(
+                    op.secret.GetPtr(),
+                    op.secret.GetSize(),
+                    op.salt.GetPtr(),
+                    op.salt.GetSize(),
+                    op.iterations,
+                    *hashIdx,
+                    out,
+                    &outLen), CRYPT_OK);
+
+        ret = component::Key(out, outLen);
+    }
+
+end:
+    util::free(out);
+
+    return ret;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */

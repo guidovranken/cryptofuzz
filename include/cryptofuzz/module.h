@@ -72,6 +72,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::Key> OpKDF_BCRYPT(operation::KDF_BCRYPT& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::MAC> OpCMAC(operation::CMAC& op) {
             (void)op;
             return std::nullopt;
