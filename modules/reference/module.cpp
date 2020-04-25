@@ -32,6 +32,10 @@ extern "C" {
 }
 #endif
 
+extern "C" {
+    #include "skein/skein.h"
+}
+
 namespace cryptofuzz {
 namespace module {
 
@@ -358,7 +362,78 @@ std::optional<component::Digest> Reference::OpDigest(operation::Digest& op) {
             }
             break;
 #endif
+        case CF_DIGEST("SKEIN_256"):
+            {
+                uint8_t out[32];
+                util::Multipart parts = util::ToParts(ds, op.cleartext);
+                Skein_256_Ctxt_t ctx;
+
+                /* Initialize */
+                {
+                    CF_CHECK_EQ(Skein_256_Init(&ctx, 256), SKEIN_SUCCESS);
+                }
+
+                /* Process */
+                for (const auto& part : parts) {
+                    CF_CHECK_EQ(Skein_256_Update(&ctx, part.first, part.second), SKEIN_SUCCESS);
+                }
+
+                /* Finalize */
+                {
+                    CF_CHECK_EQ(Skein_256_Final(&ctx, out), SKEIN_SUCCESS);
+                    ret = component::Digest(out, sizeof(out));
+                }
+            }
+            break;
+        case CF_DIGEST("SKEIN_512"):
+            {
+                uint8_t out[64];
+                util::Multipart parts = util::ToParts(ds, op.cleartext);
+                Skein_512_Ctxt_t ctx;
+
+                /* Initialize */
+                {
+                    CF_CHECK_EQ(Skein_512_Init(&ctx, 512), SKEIN_SUCCESS);
+                }
+
+                /* Process */
+                for (const auto& part : parts) {
+                    CF_CHECK_EQ(Skein_512_Update(&ctx, part.first, part.second), SKEIN_SUCCESS);
+                }
+
+                /* Finalize */
+                {
+                    CF_CHECK_EQ(Skein_512_Final(&ctx, out), SKEIN_SUCCESS);
+                    ret = component::Digest(out, sizeof(out));
+                }
+            }
+            break;
+        case CF_DIGEST("SKEIN_1024"):
+            {
+                uint8_t out[128];
+                util::Multipart parts = util::ToParts(ds, op.cleartext);
+                Skein1024_Ctxt_t ctx;
+
+                /* Initialize */
+                {
+                    CF_CHECK_EQ(Skein1024_Init(&ctx, 1024), SKEIN_SUCCESS);
+                }
+
+                /* Process */
+                for (const auto& part : parts) {
+                    CF_CHECK_EQ(Skein1024_Update(&ctx, part.first, part.second), SKEIN_SUCCESS);
+                }
+
+                /* Finalize */
+                {
+                    CF_CHECK_EQ(Skein1024_Final(&ctx, out), SKEIN_SUCCESS);
+                    ret = component::Digest(out, sizeof(out));
+                }
+            }
+            break;
     }
+
+end:
 
     return ret;
 }

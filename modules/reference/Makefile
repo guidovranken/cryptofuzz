@@ -2,10 +2,12 @@ all: module.a
 
 CXXFLAGS += -Wall -Wextra -std=c++17 -I ../../include -I ../../fuzzing-headers/include -DFUZZING_HEADERS_NO_IMPL
 
-module.a: module.o xxhash.o groestl.o groestl-cryptofuzz.o whirlpool.o argon2/libargon2.a
+module.a: module.o xxhash.o groestl.o groestl-cryptofuzz.o whirlpool.o argon2/libargon2.a skein/libskein.a
 	mkdir tmpargon2 && cd tmpargon2 && ar x ../argon2/libargon2.a
-	ar rcs module.a module.o xxhash.o groestl.o groestl-cryptofuzz.o whirlpool.o tmpargon2/*.o $(if $(CRYPTOFUZZ_REFERENCE_CITY_O_PATH),$(CRYPTOFUZZ_REFERENCE_CITY_O_PATH),$())
+	mkdir tmpskein && cd tmpskein && ar x ../skein/libskein.a
+	ar rcs module.a module.o xxhash.o groestl.o groestl-cryptofuzz.o whirlpool.o tmpargon2/*.o tmpskein/*.o $(if $(CRYPTOFUZZ_REFERENCE_CITY_O_PATH),$(CRYPTOFUZZ_REFERENCE_CITY_O_PATH),$())
 	rm -rf tmpargon2/
+	rm -rf tmpskein/
 	ranlib module.a
 
 xxhash.o : xxhash/xxhash.c xxhash/xxhash.h
@@ -22,6 +24,9 @@ whirlpool.o : whirlpool/Whirlpool.c whirlpool/nessie.h
 
 argon2/libargon2.a :
 	cd argon2 && make
+
+skein/libskein.a :
+	cd skein && make
 
 module.o: module.cpp module.h whirlpool/nessie.h groestl/groestl-cryptofuzz.h
 	$(CXX) $(CXXFLAGS) -I -fPIC -c module.cpp $(if $(CRYPTOFUZZ_REFERENCE_CITY_O_PATH),"-DCRYPTOFUZZ_REFERENCE_CITY_O_PATH=\"$(CRYPTOFUZZ_REFERENCE_CITY_O_PATH)\"","") -o module.o
