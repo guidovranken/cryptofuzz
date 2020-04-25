@@ -70,12 +70,12 @@ end:
     class Digest : public Operation<operation::Digest, component::Digest, CTXType> {
         private:
             int (*init)(CTXType*);
-            int (*update)(CTXType*, const uint8_t*, size_t);
+            int (*update)(CTXType*, const uint8_t*, unsigned long);
             int (*digest)(CTXType*, uint8_t*);
         public:
             Digest(
                 int (*init)(CTXType*),
-                int (*update)(CTXType*, const uint8_t*, size_t),
+                int (*update)(CTXType*, const uint8_t*, unsigned long),
                 int (*digest)(CTXType*, uint8_t*)
             ) :
                 Operation<operation::Digest, component::Digest, CTXType>(),
