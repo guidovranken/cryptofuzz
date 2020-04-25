@@ -50,6 +50,7 @@ Available library-specific build instructions:
  - [mbedTLS](mbedtls.md)
  - [libtomcrypt](libtomcrypt.md)
  - [libgmp](libgmp.md)
+ - [mpdecimal](mpdecimal.md)
 
 ## 3. Building Cryptofuzz
 

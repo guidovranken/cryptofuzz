@@ -91,6 +91,10 @@
   #include <modules/bignumber.js/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_MPDECIMAL)
+  #include <modules/mpdecimal/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
@@ -192,6 +196,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_BIGNUMBER_JS)
     driver->LoadModule( std::make_shared<cryptofuzz::module::bignumber_js>() );
+#endif
+
+#if defined(CRYPTOFUZZ_MPDECIMAL)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::mpdecimal>() );
 #endif
     return 0;
 }

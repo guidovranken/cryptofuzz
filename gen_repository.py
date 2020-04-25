@@ -241,6 +241,7 @@ modules.Add( Module("libgcrypt") )
 modules.Add( Module("libsodium") )
 modules.Add( Module("libtomcrypt") )
 modules.Add( Module("mbed TLS") )
+modules.Add( Module("mpdecimal") )
 modules.Add( Module("wolfCrypt") )
 
 operations = OperationTable()
