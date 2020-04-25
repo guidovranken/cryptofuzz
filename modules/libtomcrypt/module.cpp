@@ -215,9 +215,10 @@ end:
             case CF_DIGEST("SHA1"):
                 return find_hash("sha1");
                 break;
-            case CF_DIGEST("SHA224"):
-                return find_hash("sha224");
-                break;
+            /* Currently disabled because of invalid output */
+            //case CF_DIGEST("SHA224"):
+            //  return find_hash("sha224");
+            //  break;
             case CF_DIGEST("SHA256"):
                 return find_hash("sha256");
                 break;
@@ -330,6 +331,10 @@ std::optional<component::Digest> libtomcrypt::OpDigest(operation::Digest& op) {
 
 std::optional<component::MAC> libtomcrypt::OpHMAC(operation::HMAC& op) {
     std::optional<component::MAC> ret = std::nullopt;
+
+    /* Currently disabled because of invalid output */
+    return ret;
+
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     hmac_state ctx;
@@ -390,6 +395,10 @@ end:
 
 std::optional<component::Key> libtomcrypt::OpKDF_BCRYPT(operation::KDF_BCRYPT& op) {
     std::optional<component::Key> ret = std::nullopt;
+
+    /* bcrypt currently disabled because it leads to OOMs */
+    return ret;
+
     std::optional<int> hashIdx = std::nullopt;
     uint8_t* out = util::malloc(op.keySize);
 
