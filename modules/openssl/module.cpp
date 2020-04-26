@@ -1313,6 +1313,7 @@ namespace OpenSSL_detail {
 
         return ret;
 #elif defined(CRYPTOFUZZ_LIBRESSL)
+        (void)op;
 #else
         Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
