@@ -3,6 +3,9 @@
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
 #include <openssl/aes.h>
+#if defined(CRYPTOFUZZ_BORINGSSL)
+#include <openssl/siphash.h>
+#endif
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110)
 #include <openssl/kdf.h>
 #include <openssl/core_names.h>
@@ -1284,8 +1287,92 @@ end:
 }
 #endif
 
+namespace OpenSSL_detail {
+    std::optional<component::MAC> SipHash(operation::HMAC& op) {
+        std::optional<component::MAC> ret = std::nullopt;
+#if defined(CRYPTOFUZZ_BORINGSSL)
+        if ( op.digestType.Get() != CF_DIGEST("SIPHASH64") ) {
+            return ret;
+        }
+        if ( op.cipher.key.GetSize() != 16 ) {
+            return ret;
+        }
+
+        uint64_t key[2];
+        memcpy(&key[0], op.cipher.key.GetPtr(), 8);
+        memcpy(&key[1], op.cipher.key.GetPtr() + 8, 8);
+
+        const auto ret_uint64_t = SIPHASH_24(key, op.cleartext.GetPtr(), op.cleartext.GetSize());
+
+        uint8_t ret_uint8_t[8];
+        static_assert(sizeof(ret_uint8_t) == sizeof(ret_uint64_t));
+
+        memcpy(ret_uint8_t, &ret_uint64_t, sizeof(ret_uint8_t));
+
+        ret = component::MAC(ret_uint8_t, sizeof(ret_uint8_t));
+
+        return ret;
+#elif defined(CRYPTOFUZZ_LIBRESSL)
+#else
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+        size_t macSize;
+        util::Multipart parts;
+        uint8_t* out = nullptr;
+
+        EVP_MAC* siphash = nullptr;
+        EVP_MAC_CTX *ctx = nullptr;
+        OSSL_PARAM params[3], *p = params;
+
+        /* Initialize */
+        {
+            macSize = op.digestType.Get() == CF_DIGEST("SIPHASH64") ? 8 : 16;
+            parts = util::ToParts(ds, op.cleartext);
+            siphash = EVP_MAC_fetch(nullptr, "SIPHASH", nullptr);
+            ctx = EVP_MAC_CTX_new(siphash);
+            CF_CHECK_EQ(EVP_MAC_init(ctx), 1);
+
+            auto keyCopy = op.cipher.key.Get();
+            *p++ = OSSL_PARAM_construct_octet_string(
+                    OSSL_MAC_PARAM_KEY,
+                    keyCopy.data(),
+                    keyCopy.size());
+
+            unsigned int macSize_ui = macSize;
+            *p++ = OSSL_PARAM_construct_uint(OSSL_MAC_PARAM_SIZE, &macSize_ui);
+
+            *p = OSSL_PARAM_construct_end();
+            CF_CHECK_EQ(EVP_MAC_CTX_set_params(ctx, params), 1);
+            out = util::malloc(macSize);
+        }
+
+        /* Process */
+        for (const auto& part : parts) {
+            CF_CHECK_EQ(EVP_MAC_update(ctx, part.first, part.second), 1);
+        }
+
+        /* Finalize */
+        CF_CHECK_EQ(EVP_MAC_final(ctx, out, &macSize, macSize), 1);
+        ret = component::MAC(out, macSize);
+end:
+        util::free(out);
+
+        EVP_MAC_CTX_free(ctx);
+        EVP_MAC_free(siphash);
+
+#endif
+        return ret;
+    }
+}
+
 std::optional<component::MAC> OpenSSL::OpHMAC(operation::HMAC& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    if (    op.digestType.Get() == CF_DIGEST("SIPHASH64") ||
+            op.digestType.Get() == CF_DIGEST("SIPHASH128") ) {
+        /* Not HMAC but invoking SipHash here anyway due to convenience. */
+        return OpenSSL_detail::SipHash(op);
+    }
 
     bool useEVP = true;
     try {
