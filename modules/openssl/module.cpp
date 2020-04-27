@@ -66,6 +66,11 @@ OpenSSL::OpenSSL(void) :
 bool OpenSSL::isAEAD(const EVP_CIPHER* ctx, const uint64_t cipherType) const {
     bool ret = false;
 
+#if defined(CRYPTOFUZZ_LIBRESSL)
+    /* LibreSSL doesn't have the EVP_CIPH_FLAG_AEAD_CIPHER flag set for CCM */
+    if ( repository::IsCCM(cipherType) ) return true;
+#endif
+
     /* Special TLS AEAD ciphers that should not be attempted to use with aad/tag or
      * non-default iv/key sizes */
     CF_CHECK_NE(cipherType, CF_CIPHER("RC4_HMAC_MD5"));
@@ -1648,13 +1653,18 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
         outIdx += len;
 
         if ( op.tagSize != std::nullopt ) {
-#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
-            /* Get tag.
-             *
-             * See comments around EVP_CTRL_AEAD_SET_TAG in OpSymmetricDecrypt_EVP for reasons
-             * as to why this is disabled for LibreSSL.
-             */
+#if !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_LIBRESSL)
             CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx.GetPtr(), EVP_CTRL_AEAD_GET_TAG, *op.tagSize, outTag), 1);
+#else
+            if ( repository::IsGCM(op.cipher.cipherType.Get()) ) {
+                CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx.GetPtr(), EVP_CTRL_GCM_GET_TAG, *op.tagSize, outTag), 1);
+            } else if ( repository::IsCCM(op.cipher.cipherType.Get()) ) {
+                CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx.GetPtr(), EVP_CTRL_CCM_GET_TAG, *op.tagSize, outTag), 1);
+            } else {
+                goto end;
+            }
+#endif
             ret = component::Ciphertext(Buffer(out, outIdx), Buffer(outTag, *op.tagSize));
 #endif
         } else {
@@ -1845,9 +1855,9 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt(operation::Symm
 #if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
     if ( toEVPAEAD(op.cipher.cipherType) != nullptr ) {
         bool do_AEAD_Encrypt = true;
-        if ( op.tagSize != std::nullopt ) {
+        if ( op.tagSize == std::nullopt ) {
             do_AEAD_Encrypt = false;
-        } else if ( op.aad != std::nullopt ) {
+        } else if ( op.aad == std::nullopt ) {
             do_AEAD_Encrypt = false;
         }
 
@@ -2013,18 +2023,19 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
         }
         CF_CHECK_EQ(checkSetKeyLength(cipher, ctx.GetPtr(), op.cipher.key.GetSize()), true);
 
-#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
-        /* Set tag.
-         *
-         * LibreSSL supports setting the tag via the EVP interface with EVP_CTRL_GCM_SET_TAG for GCM,
-         * and EVP_CTRL_CCM_SET_TAG for CCM, but does not provide a generic setter like EVP_CTRL_AEAD_SET_TAG
-         * that also sets the tag for chacha20-poly1305.
-         * At the moment, LibreSSL should never arrive here if tag is not nullopt; it is direct to AEAD_Decrypt
-         * in that case.
-         * Later, this can be changed to use the EVP interface for GCM and CCM ciphers.
-         */
+#if !defined(CRYPTOFUZZ_OPENSSL_102)
         if ( op.tag != std::nullopt ) {
+#if !defined(CRYPTOFUZZ_LIBRESSL)
             CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx.GetPtr(), EVP_CTRL_AEAD_SET_TAG, op.tag->GetSize(), (void*)op.tag->GetPtr()), 1);
+#else
+            if ( repository::IsGCM(op.cipher.cipherType.Get()) ) {
+                CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx.GetPtr(), EVP_CTRL_GCM_SET_TAG, op.tag->GetSize(), (void*)op.tag->GetPtr()), 1);
+            } else if ( repository::IsCCM(op.cipher.cipherType.Get()) ) {
+                CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx.GetPtr(), EVP_CTRL_CCM_SET_TAG, op.tag->GetSize(), (void*)op.tag->GetPtr()), 1);
+            } else {
+                goto end;
+            }
+#endif
         }
 #endif
         if ( op.cipher.cipherType.Get() != CF_CIPHER("CHACHA20") ) {
@@ -2252,9 +2263,28 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt(operation::Symme
 
 #if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
     if ( toEVPAEAD(op.cipher.cipherType) != nullptr ) {
-        if ( op.tag != std::nullopt || op.aad != std::nullopt ) {
-            /* See comment at OpSymmetricEncrypt */
+        bool do_AEAD_Decrypt = true;
+        if ( op.tag == std::nullopt ) {
+            do_AEAD_Decrypt = false;
+        } else if ( op.aad == std::nullopt ) {
+            do_AEAD_Decrypt = false;
+        }
+
+#if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
+        if ( do_AEAD_Decrypt == true ) {
+            if ( op.cipher.cipherType.Get() != CF_CIPHER("CHACHA20_POLY1305") &&
+                    op.cipher.cipherType.Get() != CF_CIPHER("XCHACHA20_POLY1305") ) {
+                try {
+                    do_AEAD_Decrypt = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            }
+        }
+#endif
+
+        if ( do_AEAD_Decrypt == true ) {
             return AEAD_Decrypt(op, ds);
+        } else {
+            /* Fall through to OpSymmetricDecrypt_EVP/OpSymmetricDecrypt_BIO */
         }
     }
 #endif

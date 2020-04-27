@@ -101,6 +101,19 @@ template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>
                 case    ID("Cryptofuzz/Cipher/AES_128_GCM"):
                 case    ID("Cryptofuzz/Cipher/AES_192_GCM"):
                 case    ID("Cryptofuzz/Cipher/AES_256_GCM"):
+#if defined(CRYPTOFUZZ_LIBRESSL)
+                    /* LibreSSL will not decrypt AES GCM with empty IV */
+                    if ( op.cipher.iv.GetSize() == 0 ) {
+                        tryDecrypt = false;
+                        break;
+                    }
+
+                    /* LibreSSL will not decrypt AES GCM with tag size of 0*/
+                    if ( op.tagSize != std::nullopt && *op.tagSize == 0 ) {
+                        tryDecrypt = false;
+                        break;
+                    }
+#endif
                 case    ID("Cryptofuzz/Cipher/AES_128_CCM"):
                 case    ID("Cryptofuzz/Cipher/AES_192_CCM"):
                 case    ID("Cryptofuzz/Cipher/AES_256_CCM"):
