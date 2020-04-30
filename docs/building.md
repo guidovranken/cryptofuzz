@@ -51,6 +51,7 @@ Available library-specific build instructions:
  - [libtomcrypt](libtomcrypt.md)
  - [libgmp](libgmp.md)
  - [mpdecimal](mpdecimal.md)
+ - [libsodium](libsodium.md)
 
 ## 3. Building Cryptofuzz
 
