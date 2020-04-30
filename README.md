@@ -56,7 +56,7 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - sjcl: [scrypt wrong result with certain parameters](https://github.com/bitwiseshiftleft/sjcl/issues/409)
 - sjcl: [RIPEMD160 HMAC wrong result](https://github.com/bitwiseshiftleft/sjcl/issues/410)
 - sjcl: [bignum subtraction incorrect result](https://github.com/bitwiseshiftleft/sjcl/issues/411)
-- NSS: SEEK ECB leaves output buffer uninitialized when encrypting more than 1 block
+- NSS: [SEEK ECB leaves output buffer uninitialized when encrypting more than 1 block](https://hg.mozilla.org/projects/nss/rev/d67517e92371ba798751720f7d21968ab2e25c52)
 - libgcrypt: [gcry_mpi_invm indicates multiplicative inverse exists when it does not](https://lists.gnupg.org/pipermail/gcrypt-devel/2020-April/004947.html)
 - wolfCrypt: [AES GCM allows IV of size 0](https://github.com/wolfSSL/wolfssl/pull/2910)
 - wolfCrypt: AES CCM allows invalid tag sizes
