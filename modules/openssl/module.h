@@ -61,6 +61,7 @@ class OpenSSL : public Module {
 #endif
     public:
         OpenSSL(void);
+        ~OpenSSL();
         std::optional<component::Digest> OpDigest(operation::Digest& op) override;
         std::optional<component::MAC> OpHMAC(operation::HMAC& op) override;
         std::optional<component::Ciphertext> OpSymmetricEncrypt(operation::SymmetricEncrypt& op) override;

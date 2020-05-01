@@ -7,10 +7,11 @@
 From the OpenSSL root directory:
 
 ```sh
-./config enable-md2 enable-rc5
+./config enable-md2 enable-rc5 enable-legacy -static
 make
-export OPENSSL_INCLUDE_PATH=`realpath include/`
-export OPENSSL_LIBCRYPTO_A_PATH=`realpath libcrypto.a`
+export OPENSSL_INCLUDE_PATH=$(realpath include/)
+export OPENSSL_LIBCRYPTO_A_PATH=$(realpath libcrypto.a)
+export OPENSSL_LIBLEGACY_A_PATH=$(realpath providers/liblegacy.a)
 ```
 
 Add the parameter ```no-asm``` to the ```./config``` command to build without assembly language optimizations.

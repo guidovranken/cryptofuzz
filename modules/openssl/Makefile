@@ -1,6 +1,7 @@
 all: module.a
 
 CXXFLAGS += -Wall -Wextra -Wno-deprecated-declarations -Werror -std=c++17 -I ../../include -I ../../fuzzing-headers/include -I ../../fuzzing-headers/include -DFUZZING_HEADERS_NO_IMPL
+SHELL:=/bin/bash
 
 ifneq (,$(findstring fsanitize=memory,$(CFLAGS)))
 	CXXFLAGS += -DSANITIZER_MSAN
@@ -12,6 +13,9 @@ module.a: module.o bn_ops.o
 	rm -rf tmp/
 	mkdir tmp/
 	cd tmp && ar x $(OPENSSL_LIBCRYPTO_A_PATH)
+	if [[ "$(CXXFLAGS)" != *DCRYPTOFUZZ_BORINGSSL* && "$(CXXFLAGS)" != *DCRYPTOFUZZ_LIBRESSL* ]]; then \
+		cd tmp && ar x $(OPENSSL_LIBLEGACY_A_PATH); \
+	fi
 	ar rcs module.a module.o bn_ops.o tmp/*
 	ranlib module.a
 bn_ops.o : bn_ops.cpp bn_ops.h

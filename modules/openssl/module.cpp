@@ -9,6 +9,7 @@
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110)
 #include <openssl/kdf.h>
 #include <openssl/core_names.h>
+#include <openssl/provider.h>
 #endif
 
 #include "module_internal.h"
@@ -42,6 +43,12 @@ static void OPENSSL_custom_free(void* ptr, const char* file, int line) {
 #endif
 #endif
 
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL)
+namespace OpenSSL_detail {
+    static OSSL_PROVIDER* legacy_provider = nullptr;
+} /* namespace OpenSSL_detail */
+#endif
+
 OpenSSL::OpenSSL(void) :
     Module("OpenSSL") {
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
@@ -60,8 +67,17 @@ OpenSSL::OpenSSL(void) :
 #else
      OpenSSL_add_all_algorithms();
 #endif
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL)
+     OpenSSL_detail::legacy_provider = OSSL_PROVIDER_load(nullptr, "legacy");
+#endif
 }
 
+
+OpenSSL::~OpenSSL() {
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL)
+    OSSL_PROVIDER_unload(OpenSSL_detail::legacy_provider);
+#endif
+}
 
 bool OpenSSL::isAEAD(const EVP_CIPHER* ctx, const uint64_t cipherType) const {
     bool ret = false;
