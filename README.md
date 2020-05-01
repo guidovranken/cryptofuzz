@@ -59,5 +59,7 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - NSS: [SEEK ECB leaves output buffer uninitialized when encrypting more than 1 block](https://hg.mozilla.org/projects/nss/rev/d67517e92371ba798751720f7d21968ab2e25c52)
 - libgcrypt: [gcry_mpi_invm indicates multiplicative inverse exists when it does not](https://lists.gnupg.org/pipermail/gcrypt-devel/2020-April/004947.html)
 - wolfCrypt: [AES GCM allows IV of size 0](https://github.com/wolfSSL/wolfssl/pull/2910)
-- wolfCrypt: AES CCM allows invalid tag sizes
+- wolfCrypt: [AES CCM allows invalid tag sizes](https://github.com/wolfSSL/wolfssl/pull/2930)
 - LibreSSL: [AES GCM allows IV of size 0](https://github.com/openbsd/src/commit/539125b0baa78c5c019ab9e3bbeca4fa822d1bf7)
+- OpenSSL: [CAST5 invalid output](https://github.com/openssl/openssl/issues/11459)
+- Crypto++: [SPECK64 different output if input is passed in chunks](https://github.com/weidai11/cryptopp/issues/945)
