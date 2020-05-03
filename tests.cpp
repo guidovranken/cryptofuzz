@@ -15,13 +15,37 @@ void verifyKeySize(const OperationType& op, const ResultType& result) {
 }
 
 void test(const operation::Digest& op, const std::optional<component::Digest>& result) {
-    (void)op;
-    (void)result;
+    if ( result == std::nullopt ) {
+        return;
+    }
+
+    const auto expectedSize = repository::DigestSize(op.digestType.Get());
+
+    if ( expectedSize == std::nullopt ) {
+        return;
+    }
+
+    if ( result->GetSize() != *expectedSize ) {
+        printf("Expected vs actual digest size: %zu / %zu\n", *expectedSize, result->GetSize());
+        abort();
+    }
 }
 
 void test(const operation::HMAC& op, const std::optional<component::MAC>& result) {
-    (void)op;
-    (void)result;
+    if ( result == std::nullopt ) {
+        return;
+    }
+
+    const auto expectedSize = repository::DigestSize(op.digestType.Get());
+
+    if ( expectedSize == std::nullopt ) {
+        return;
+    }
+
+    if ( result->GetSize() != *expectedSize ) {
+        printf("Expected vs actual digest size: %zu / %zu\n", *expectedSize, result->GetSize());
+        abort();
+    }
 }
 
 static void test_ChaCha20_Poly1305_IV(const operation::SymmetricEncrypt& op, const std::optional<component::Ciphertext>& result) {
@@ -133,21 +157,13 @@ static void test_HKDF_OutputSize(const operation::KDF_HKDF& op, const std::optio
         return;
     }
 
-    size_t maxOutputSize = 0;
+    const auto expectedSize = repository::DigestSize(op.digestType.Get());
 
-    switch ( op.digestType.Get() ) {
-        case    CF_DIGEST("SHA1"):
-            maxOutputSize = 255 * 20;
-            break;
-        case    CF_DIGEST("SHA256"):
-            maxOutputSize = 255 * 32;
-            break;
-        case    CF_DIGEST("SHA512"):
-            maxOutputSize = 255 * 64;
-            break;
-        default:
-            return;
+    if ( expectedSize == std::nullopt ) {
+        return;
     }
+
+    const size_t maxOutputSize = 255 * *expectedSize;
 
     if ( result->GetSize() > maxOutputSize ) {
         printf("The output size of HKDF (%zu) is more than 255 * the size of the hash digest (%zu)\n", result->GetSize(), maxOutputSize);

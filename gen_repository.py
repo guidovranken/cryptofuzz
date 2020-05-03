@@ -59,8 +59,13 @@ class Cipher(Component):
         self.isAES = bool(re.search(r'^AES_', cipher))
 
 class Digest(Component):
-    def __init__(self, digest):
+    def __init__(self, digest, size = None):
         super(Digest, self).__init__( digest)
+
+        if size == None:
+            self.size = "std::nullopt"
+        else:
+            self.size = str(size)
 
 class ECC_Curve(Component):
     def __init__(self, operation):
@@ -169,11 +174,14 @@ class CipherTable(Table):
 class DigestTable(Table):
     def __init__(self):
         tableDecl = [
+                "std::optional<size_t> size",
         ]
 
         super(DigestTable, self).__init__('Digest', tableDecl)
     def getTableEntryList(self, index):
         tableEntry = []
+
+        tableEntry += [ self.table[index].size ]
         
         return tableEntry
 
@@ -602,15 +610,17 @@ ciphers.Add( Cipher("NULL_SHA1_TLS", True) )
 
 digests = DigestTable()
 
+
+
 digests.Add( Digest("ADLER32") )
 digests.Add( Digest("BLAKE2B160") )
 digests.Add( Digest("BLAKE2B256") )
 digests.Add( Digest("BLAKE2B384") )
-digests.Add( Digest("BLAKE2B512") )
+digests.Add( Digest("BLAKE2B512", 64) )
 digests.Add( Digest("BLAKE2S128") )
 digests.Add( Digest("BLAKE2S160") )
 digests.Add( Digest("BLAKE2S224") )
-digests.Add( Digest("BLAKE2S256") )
+digests.Add( Digest("BLAKE2S256", 32) )
 digests.Add( Digest("BLAKE3") )
 digests.Add( Digest("CITYHASH128") )
 digests.Add( Digest("CITYHASH128SEED16") )
@@ -640,40 +650,40 @@ digests.Add( Digest("KECCAK_256") )
 digests.Add( Digest("KECCAK_384") )
 digests.Add( Digest("KECCAK_512") )
 digests.Add( Digest("MD2") )
-digests.Add( Digest("MD4") )
-digests.Add( Digest("MD5") )
-digests.Add( Digest("MD5_SHA1") )
+digests.Add( Digest("MD4", 16) )
+digests.Add( Digest("MD5", 16) )
+digests.Add( Digest("MD5_SHA1", 36) )
 digests.Add( Digest("MDC2") )
 digests.Add( Digest("PANAMA") )
 digests.Add( Digest("RIPEMD128") )
-digests.Add( Digest("RIPEMD160") )
+digests.Add( Digest("RIPEMD160", 20) )
 digests.Add( Digest("RIPEMD256") )
 digests.Add( Digest("RIPEMD320") )
-digests.Add( Digest("SHA1") )
-digests.Add( Digest("SHA224") )
-digests.Add( Digest("SHA256") )
-digests.Add( Digest("SHA3-224") )
-digests.Add( Digest("SHA3-256") )
-digests.Add( Digest("SHA3-384") )
-digests.Add( Digest("SHA3-512") )
-digests.Add( Digest("SHA384") )
-digests.Add( Digest("SHA512") )
-digests.Add( Digest("SHA512-224") )
-digests.Add( Digest("SHA512-256") )
-digests.Add( Digest("SHAKE128") )
-digests.Add( Digest("SHAKE256") )
+digests.Add( Digest("SHA1", 20) )
+digests.Add( Digest("SHA224", 28) )
+digests.Add( Digest("SHA256", 32) )
+digests.Add( Digest("SHA3-224", 28) )
+digests.Add( Digest("SHA3-256", 32) )
+digests.Add( Digest("SHA3-384", 48) )
+digests.Add( Digest("SHA3-512", 64) )
+digests.Add( Digest("SHA384", 48) )
+digests.Add( Digest("SHA512", 64) )
+digests.Add( Digest("SHA512-224", 28) )
+digests.Add( Digest("SHA512-256", 32) )
+digests.Add( Digest("SHAKE128", 16) )
+digests.Add( Digest("SHAKE256", 32) )
 digests.Add( Digest("SIPHASH64") )
 digests.Add( Digest("SIPHASH128") )
 digests.Add( Digest("SKEIN_1024") )
 digests.Add( Digest("SKEIN_256") )
 digests.Add( Digest("SKEIN_512") )
-digests.Add( Digest("SM3") )
+digests.Add( Digest("SM3", 32) )
 digests.Add( Digest("STREEBOG-256") )
 digests.Add( Digest("STREEBOG-512") )
 digests.Add( Digest("T1HA-128") )
 digests.Add( Digest("T1HA-64") )
 digests.Add( Digest("TIGER") )
-digests.Add( Digest("WHIRLPOOL") )
+digests.Add( Digest("WHIRLPOOL", 64) )
 digests.Add( Digest("XXHASH32") )
 digests.Add( Digest("XXHASH64") )
 

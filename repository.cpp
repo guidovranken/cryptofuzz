@@ -136,5 +136,13 @@ std::string CalcOpToString(const uint64_t id) {
     }
 }
 
+std::optional<size_t> DigestSize(const uint64_t id) {
+    try {
+        return DigestLUTMap.at(id).size;
+    } catch ( std::out_of_range ) {
+        return std::nullopt;
+    }
+}
+
 } /* namespace repository */
 } /* namespace cryptofuzz */
