@@ -257,6 +257,56 @@ end:
     return ret;
 }
 
+std::optional<component::MAC> libsodium::SIPHASH64(operation::HMAC& op) const {
+    std::optional<component::MAC> ret = std::nullopt;
+    uint8_t out[crypto_shorthash_BYTES];
+
+    /* Initialize */
+    {
+        CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_shorthash_KEYBYTES);
+    }
+
+    /* Process */
+    {
+        CF_CHECK_EQ(crypto_shorthash(out, op.cleartext.GetPtr(), op.cleartext.GetSize(), op.cipher.key.GetPtr()), 0);
+    }
+
+    /* Finalize */
+    {
+        ret = component::MAC(out, crypto_shorthash_BYTES);
+    }
+
+end:
+
+    return ret;
+}
+
+std::optional<component::MAC> libsodium::SIPHASH128(operation::HMAC& op) const {
+    std::optional<component::MAC> ret = std::nullopt;
+    uint8_t out[crypto_shorthash_siphashx24_BYTES];
+
+    /* Initialize */
+    {
+        CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_shorthash_siphashx24_KEYBYTES);
+    }
+
+    /* Process */
+    {
+        CF_CHECK_EQ(crypto_shorthash_siphashx24(out, op.cleartext.GetPtr(), op.cleartext.GetSize(), op.cipher.key.GetPtr()), 0);
+    }
+
+    /* Finalize */
+    {
+        ret = component::MAC(out, crypto_shorthash_siphashx24_BYTES);
+    }
+
+end:
+
+    return ret;
+}
+
+
+
 std::optional<component::MAC> libsodium::OpHMAC(operation::HMAC& op) {
     switch ( op.digestType.Get() ) {
         case CF_DIGEST("SHA256"):
@@ -265,6 +315,10 @@ std::optional<component::MAC> libsodium::OpHMAC(operation::HMAC& op) {
             return HMAC_SHA512(op);
         case CF_DIGEST("SHA512-256"):
             return HMAC_SHA512256(op);
+        case CF_DIGEST("SIPHASH64"):
+            return SIPHASH64(op);
+        case CF_DIGEST("SIPHASH128"):
+            return SIPHASH128(op);
         default:
             return std::nullopt;
     }

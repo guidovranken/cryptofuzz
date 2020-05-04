@@ -7,7 +7,13 @@
 static void test_digests(void) {
 #include "digest_string_lut.h"
     for (auto it = LUT.begin(); it != LUT.end(); it++) {
+        /* SipHash is not an actual digest function, so skip */
+        if ( it->second == "SipHash" ) {
+            continue;
+        }
+
         const auto hash = ::Botan::HashFunction::create(it->second);
+
         if ( hash == nullptr ) {
             printf("Cannot instantiate digest: %s\n", it->second.c_str());
         }

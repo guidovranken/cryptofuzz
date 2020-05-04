@@ -33,12 +33,18 @@ namespace Botan_detail {
         return parent + pOpen + child + pClose;
     }
 
-    std::optional<std::string> DigestIDToString(const uint64_t digestType, const bool altShake = false) {
+    std::optional<std::string> DigestIDToString(const uint64_t digestType, const bool altShake = false, const bool isHmac = false) {
 #include "digest_string_lut.h"
         std::optional<std::string> ret = std::nullopt;
 
         CF_CHECK_NE(LUT.find(digestType), LUT.end());
 
+        if ( isHmac == false ) {
+            if (    digestType == CF_DIGEST("SIPHASH64") ||
+                    digestType == CF_DIGEST("SIPHASH128") ) {
+                return std::nullopt;
+            }
+        }
         if ( altShake == true && digestType == CF_DIGEST("SHAKE128") ) {
             ret = "SHAKE-128(256)";
         } else if ( altShake == true && digestType == CF_DIGEST("SHAKE256") ) {
@@ -108,10 +114,13 @@ std::optional<component::MAC> Botan::OpHMAC(operation::HMAC& op) {
     try {
         /* Initialize */
         {
-            std::optional<std::string> algoString;
-            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get(), true), std::nullopt);
 
-            const std::string hmacString = Botan_detail::parenthesize("HMAC", *algoString);
+            std::optional<std::string> algoString;
+            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get(), true, true), std::nullopt);
+
+            const bool isSipHash = op.digestType.Get() == CF_DIGEST("SIPHASH64");
+
+            const std::string hmacString = isSipHash ? *algoString : Botan_detail::parenthesize("HMAC", *algoString);
             CF_CHECK_NE(hmac = ::Botan::MessageAuthenticationCode::create(hmacString), nullptr);
 
             try {

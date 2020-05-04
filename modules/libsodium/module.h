@@ -13,6 +13,8 @@ class libsodium : public Module {
         std::optional<component::MAC> HMAC_SHA256(operation::HMAC& op) const;
         std::optional<component::MAC> HMAC_SHA512(operation::HMAC& op) const;
         std::optional<component::MAC> HMAC_SHA512256(operation::HMAC& op) const;
+        std::optional<component::MAC> SIPHASH64(operation::HMAC& op) const;
+        std::optional<component::MAC> SIPHASH128(operation::HMAC& op) const;
     public:
         libsodium(void);
         std::optional<component::Digest> OpDigest(operation::Digest& op) override;

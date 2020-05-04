@@ -63,3 +63,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - LibreSSL: [AES GCM allows IV of size 0](https://github.com/openbsd/src/commit/539125b0baa78c5c019ab9e3bbeca4fa822d1bf7)
 - OpenSSL: [CAST5 invalid output](https://github.com/openssl/openssl/issues/11459)
 - Crypto++: [SPECK64 different output if input is passed in chunks](https://github.com/weidai11/cryptopp/issues/945)
+- Crypto++: [Undersized SipHash key leads to buffer out-of-bounds read](https://github.com/weidai11/cryptopp/issues/947)

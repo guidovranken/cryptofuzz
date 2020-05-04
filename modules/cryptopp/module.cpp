@@ -43,6 +43,7 @@
 #include <shark.h>
 #include <simeck.h>
 #include <simon.h>
+#include <siphash.h>
 #include <skipjack.h>
 #include <sm3.h>
 #include <sm4.h>
@@ -188,10 +189,50 @@ namespace CryptoPP_detail {
                 return ret;
             }
     };
+
+    template <bool Is128Bit>
+    std::optional<component::MAC> SipHash(operation::HMAC& op) {
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+        std::optional<component::MAC> ret = std::nullopt;
+
+        /* TODO remove this check once https://github.com/weidai11/cryptopp/issues/947 has been resolved */
+        if ( op.cipher.key.GetSize() != 16 ) {
+            return ret;
+        }
+
+        ::CryptoPP::SipHash<2, 4, Is128Bit> siphash(op.cipher.key.GetPtr(), op.cipher.key.GetSize());
+        util::Multipart parts = util::ToParts(ds, op.cleartext);
+
+        /* Process */
+        for (const auto& part : parts) {
+            siphash.Update(part.first, part.second);
+        }
+
+        /* Finalize */
+        {
+            uint8_t out[::CryptoPP::SipHash<2, 4, Is128Bit>::DIGESTSIZE];
+            siphash.Final(out);
+
+            ret = component::MAC(out, ::CryptoPP::SipHash<2, 4, Is128Bit>::DIGESTSIZE);
+        }
+
+        return ret;
+    }
 }
 
 std::optional<component::MAC> CryptoPP::OpHMAC(operation::HMAC& op) {
-    return CryptoPP_detail::InvokeByDigest<CryptoPP_detail::HMAC, component::MAC>(op);
+    switch ( op.digestType.Get() ) {
+        case CF_DIGEST("SIPHASH64"):
+            {
+                return CryptoPP_detail::SipHash<false>(op);
+            }
+        case CF_DIGEST("SIPHASH128"):
+            {
+                return CryptoPP_detail::SipHash<true>(op);
+            }
+        default:
+            return CryptoPP_detail::InvokeByDigest<CryptoPP_detail::HMAC, component::MAC>(op);
+    }
 }
 
 namespace CryptoPP_detail {

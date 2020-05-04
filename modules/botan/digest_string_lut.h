@@ -32,4 +32,5 @@ static const std::map<uint64_t, std::string> LUT = {
     { CF_DIGEST("KECCAK_256"), "Keccak-1600(256)" },
     { CF_DIGEST("KECCAK_384"), "Keccak-1600(384)" },
     { CF_DIGEST("KECCAK_512"), "Keccak-1600(512)" },
+    { CF_DIGEST("SIPHASH64"), "SipHash" },
 };
