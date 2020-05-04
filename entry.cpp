@@ -95,6 +95,10 @@
   #include <modules/mpdecimal/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_LINUX)
+  #include <modules/linux/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
@@ -200,6 +204,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_MPDECIMAL)
     driver->LoadModule( std::make_shared<cryptofuzz::module::mpdecimal>() );
+#endif
+
+#if defined(CRYPTOFUZZ_LINUX)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::Linux>() );
 #endif
     return 0;
 }

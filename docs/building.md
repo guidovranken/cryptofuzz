@@ -53,6 +53,7 @@ Available library-specific build instructions:
  - [mpdecimal](mpdecimal.md)
  - [libsodium](libsodium.md)
  - [libgcrypt](libgcrypt.md)
+ - [Linux crypto api](linux.md)
 
 ## 3. Building Cryptofuzz
 
