@@ -195,11 +195,6 @@ namespace CryptoPP_detail {
         Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
         std::optional<component::MAC> ret = std::nullopt;
 
-        /* TODO remove this check once https://github.com/weidai11/cryptopp/issues/947 has been resolved */
-        if ( op.cipher.key.GetSize() != 16 ) {
-            return ret;
-        }
-
         ::CryptoPP::SipHash<2, 4, Is128Bit> siphash(op.cipher.key.GetPtr(), op.cipher.key.GetSize());
         util::Multipart parts = util::ToParts(ds, op.cleartext);
 
