@@ -927,6 +927,11 @@ end:
                         ret = CryptoPP_detail::CryptCBC< ::CryptoPP::SAFER_SK>(op);
                     }
                     break;
+                case    CF_CIPHER("GOST-28147-89_CBC"):
+                    {
+                        ret = CryptoPP_detail::CryptCBC< ::CryptoPP::GOST >(op);
+                    }
+                    break;
 
                     /* ECB */
                 case    CF_CIPHER("KALYNA128_ECB"):
@@ -1555,11 +1560,6 @@ end:
                 case    CF_CIPHER("TWOFISH"):
                     {
                         ret = CryptoPP_detail::CryptRaw< ::CryptoPP::Twofish >(op);
-                    }
-                    break;
-                case    CF_CIPHER("GOST-28147-89"):
-                    {
-                        ret = CryptoPP_detail::CryptRaw< ::CryptoPP::GOST >(op);
                     }
                     break;
 #endif
