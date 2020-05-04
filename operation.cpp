@@ -31,6 +31,7 @@ std::string HMAC::ToString(void) const {
 
     ss << "operation name: HMAC" << std::endl;
     ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
+    ss << "key: " << util::HexDump(cipher.key.Get()) << std::endl;
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
 
     return ss.str();
