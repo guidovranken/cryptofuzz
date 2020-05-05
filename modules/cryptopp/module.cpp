@@ -195,21 +195,23 @@ namespace CryptoPP_detail {
         Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
         std::optional<component::MAC> ret = std::nullopt;
 
-        ::CryptoPP::SipHash<2, 4, Is128Bit> siphash(op.cipher.key.GetPtr(), op.cipher.key.GetSize());
-        util::Multipart parts = util::ToParts(ds, op.cleartext);
+        try {
+            ::CryptoPP::SipHash<2, 4, Is128Bit> siphash(op.cipher.key.GetPtr(), op.cipher.key.GetSize());
+            util::Multipart parts = util::ToParts(ds, op.cleartext);
 
-        /* Process */
-        for (const auto& part : parts) {
-            siphash.Update(part.first, part.second);
-        }
+            /* Process */
+            for (const auto& part : parts) {
+                siphash.Update(part.first, part.second);
+            }
 
-        /* Finalize */
-        {
-            uint8_t out[::CryptoPP::SipHash<2, 4, Is128Bit>::DIGESTSIZE];
-            siphash.Final(out);
+            /* Finalize */
+            {
+                uint8_t out[::CryptoPP::SipHash<2, 4, Is128Bit>::DIGESTSIZE];
+                siphash.Final(out);
 
-            ret = component::MAC(out, ::CryptoPP::SipHash<2, 4, Is128Bit>::DIGESTSIZE);
-        }
+                ret = component::MAC(out, ::CryptoPP::SipHash<2, 4, Is128Bit>::DIGESTSIZE);
+            }
+        } catch ( ... ) { }
 
         return ret;
     }
