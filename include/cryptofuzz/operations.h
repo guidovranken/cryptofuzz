@@ -265,7 +265,7 @@ class KDF_HKDF : public Operation {
             password(ds),
             salt(ds),
             info(ds),
-            keySize(ds.Get<uint64_t>() % 1024)
+            keySize(ds.Get<uint64_t>() % 17000)
         { }
         KDF_HKDF(nlohmann::json json) :
             Operation(json["modifier"]),
