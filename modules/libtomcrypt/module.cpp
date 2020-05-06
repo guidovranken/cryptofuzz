@@ -393,6 +393,74 @@ end:
     return ret;
 }
 
+std::optional<component::Key> libtomcrypt::OpKDF_PBKDF1(operation::KDF_PBKDF1& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    std::optional<int> hashIdx = std::nullopt;
+    uint8_t* out = util::malloc(op.keySize);
+
+    CF_CHECK_NE(out, nullptr);
+    CF_CHECK_NE(op.password.GetPtr(), nullptr);
+    CF_CHECK_NE(op.salt.GetPtr(), nullptr);
+    /* TODO report: iterations = 0 hangs */
+    CF_CHECK_GT(op.iterations, 0);
+
+    CF_CHECK_NE(hashIdx = libtomcrypt_detail::ToHashIdx(op.digestType.Get()), std::nullopt);
+
+    {
+        unsigned long outLen = op.keySize;
+        CF_CHECK_EQ(op.salt.GetSize(), 8);
+        CF_CHECK_EQ(pkcs_5_alg1(
+                    op.password.GetPtr(),
+                    op.password.GetSize(),
+                    op.salt.GetPtr(),
+                    op.iterations,
+                    *hashIdx,
+                    out,
+                    &outLen), CRYPT_OK);
+
+        CF_CHECK_EQ(outLen, op.keySize);
+        ret = component::Key(out, outLen);
+    }
+
+end:
+    util::free(out);
+
+    return ret;
+}
+
+std::optional<component::Key> libtomcrypt::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    std::optional<int> hashIdx = std::nullopt;
+    uint8_t* out = util::malloc(op.keySize);
+
+    CF_CHECK_NE(out, nullptr);
+    CF_CHECK_NE(op.password.GetPtr(), nullptr);
+    CF_CHECK_NE(op.salt.GetPtr(), nullptr);
+
+    CF_CHECK_NE(hashIdx = libtomcrypt_detail::ToHashIdx(op.digestType.Get()), std::nullopt);
+
+    {
+        unsigned long outLen = op.keySize;
+
+        CF_CHECK_EQ(pkcs_5_alg2(
+                    op.password.GetPtr(),
+                    op.password.GetSize(),
+                    op.salt.GetPtr(),
+                    op.salt.GetSize(),
+                    op.iterations,
+                    *hashIdx,
+                    out,
+                    &outLen), CRYPT_OK);
+
+        ret = component::Key(out, outLen);
+    }
+
+end:
+    util::free(out);
+
+    return ret;
+}
+
 std::optional<component::Key> libtomcrypt::OpKDF_BCRYPT(operation::KDF_BCRYPT& op) {
     std::optional<component::Key> ret = std::nullopt;
 
