@@ -442,7 +442,6 @@ namespace libgcrypt_detail {
 } /* namespace libgcrypt_detail */
 
 std::optional<component::Ciphertext> libgcrypt::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
-    if ( op.cipher.key.GetSize() != 32 ) return std::nullopt;
     libgcrypt_detail::Crypt crypt(op);
     return crypt.Encrypt(op);
 }
