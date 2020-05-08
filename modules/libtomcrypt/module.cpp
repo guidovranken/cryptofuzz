@@ -23,6 +23,8 @@ libtomcrypt::libtomcrypt(void) :
     CF_CHECK_NE(register_hash(&sha512_desc), -1);
     CF_CHECK_NE(register_hash(&tiger_desc), -1);
 
+    CF_CHECK_NE(register_all_ciphers(), -1);
+
     return;
 
 end:
@@ -362,6 +364,320 @@ std::optional<component::MAC> libtomcrypt::OpHMAC(operation::HMAC& op) {
     ret = component::MAC(out, outlen);
 end:
     return ret;
+}
+
+namespace libtomcrypt_detail {
+    static int ToCipherIdx(const uint64_t cipherType) {
+        switch ( cipherType ) {
+            case CF_CIPHER("AES_128_GCM"):
+            case CF_CIPHER("AES_192_GCM"):
+            case CF_CIPHER("AES_256_GCM"):
+            case CF_CIPHER("AES_128_CCM"):
+            case CF_CIPHER("AES_192_CCM"):
+            case CF_CIPHER("AES_256_CCM"):
+                return find_cipher("aes");
+            case CF_CIPHER("CAMELLIA_128_GCM"):
+            case CF_CIPHER("CAMELLIA_192_GCM"):
+            case CF_CIPHER("CAMELLIA_256_GCM"):
+            case CF_CIPHER("CAMELLIA_128_CCM"):
+            case CF_CIPHER("CAMELLIA_192_CCM"):
+            case CF_CIPHER("CAMELLIA_256_CCM"):
+                return find_cipher("camellia");
+            default:
+                return -1;
+        }
+    }
+
+    std::optional<component::Ciphertext> GcmEncrypt(operation::SymmetricEncrypt& op) {
+        std::optional<component::Ciphertext> ret = std::nullopt;
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+        util::Multipart parts;
+        gcm_state gcm;
+        std::optional<int> cipherIdx;
+
+        int err = 0;
+        uint8_t* tag = util::malloc(*op.tagSize);
+        uint8_t* out = util::malloc(op.ciphertextSize);
+        size_t outPos = 0;
+        size_t left = op.ciphertextSize;
+
+        parts = util::ToParts(ds, op.cleartext);
+        CF_CHECK_NE(op.tagSize, std::nullopt);
+
+        CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
+        CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), std::nullopt);
+        CF_CHECK_EQ((err = gcm_init(&gcm, *cipherIdx, op.cipher.key.GetPtr(), op.cipher.key.GetSize())), CRYPT_OK);
+
+        CF_CHECK_EQ(gcm_add_iv(&gcm, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize()), CRYPT_OK);
+
+        if ( op.aad != std::nullopt ) {
+            CF_CHECK_EQ(gcm_add_aad(&gcm, op.aad->GetPtr(), op.aad->GetSize()), CRYPT_OK);
+        }
+
+        for (const auto& part : parts) {
+            CF_CHECK_GTE(left, part.second);
+            std::vector<uint8_t> in(part.first, part.first + part.second);
+            CF_CHECK_EQ(gcm_process(&gcm, in.data(), in.size(), out + outPos, GCM_ENCRYPT), CRYPT_OK);
+            outPos += part.second;
+            left -= part.second;
+        }
+
+        {
+            unsigned long tag_len = *op.tagSize;
+            CF_CHECK_NE(tag, nullptr);
+            CF_CHECK_EQ(gcm_done(&gcm, tag, &tag_len), CRYPT_OK);
+            ret = component::Ciphertext(Buffer(out, outPos), Buffer(tag, tag_len));
+        }
+
+    end:
+        util::free(out);
+        util::free(tag);
+
+        return ret;
+    }
+
+    std::optional<component::Cleartext> GcmDecrypt(operation::SymmetricDecrypt& op) {
+        std::optional<component::Cleartext> ret = std::nullopt;
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+        util::Multipart parts;
+        gcm_state gcm;
+        std::optional<int> cipherIdx;
+
+        int err = 0;
+        if ( op.tag == std::nullopt ) {
+            return ret;
+        }
+        uint8_t* tag = util::malloc(op.tag->GetSize());
+        uint8_t* out = util::malloc(op.cleartextSize);
+        size_t outPos = 0;
+        size_t left = op.cleartextSize;
+
+        parts = util::ToParts(ds, op.ciphertext);
+
+        CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
+        CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), std::nullopt);
+        CF_CHECK_EQ((err = gcm_init(&gcm, *cipherIdx, op.cipher.key.GetPtr(), op.cipher.key.GetSize())), CRYPT_OK);
+
+        CF_CHECK_EQ(gcm_add_iv(&gcm, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize()), CRYPT_OK);
+
+        if ( op.aad != std::nullopt ) {
+            CF_CHECK_EQ(gcm_add_aad(&gcm, op.aad->GetPtr(), op.aad->GetSize()), CRYPT_OK);
+        }
+
+        for (const auto& part : parts) {
+            CF_CHECK_GTE(left, part.second);
+            std::vector<uint8_t> in(part.first, part.first + part.second);
+            CF_CHECK_EQ(gcm_process(&gcm, out + outPos, in.size(), in.data(), GCM_DECRYPT), CRYPT_OK);
+            outPos += part.second;
+            left -= part.second;
+        }
+
+        {
+            unsigned long tag_len = op.tag->GetSize();
+            CF_CHECK_NE(tag, nullptr);
+            CF_CHECK_EQ(gcm_done(&gcm, tag, &tag_len), CRYPT_OK);
+
+            /* Verify tag */
+            CF_CHECK_EQ(tag_len, op.tag->GetSize());
+            CF_CHECK_EQ(memcmp(tag, op.tag->GetPtr(), op.tag->GetSize()), 0);
+
+            ret = component::Cleartext(Buffer(out, outPos));
+        }
+
+    end:
+        util::free(out);
+        util::free(tag);
+
+        return ret;
+    }
+
+    std::optional<component::Ciphertext> CcmEncrypt(operation::SymmetricEncrypt& op) {
+        std::optional<component::Ciphertext> ret = std::nullopt;
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+        if ( op.tagSize == std::nullopt ) {
+            return ret;
+        }
+
+        /* Prevent Wycheproof CCM test in tests.cpp failing.
+         * There is a libtomcrypt PR for this, but not yet merged:
+         * https://github.com/libtom/libtomcrypt/pull/452
+         */
+        if ( op.cipher.iv.GetSize() < 7 || op.cipher.iv.GetSize() > 13 ) {
+            return ret;
+        }
+
+        const auto oneshot = ds.Get<bool>();
+
+        uint8_t* tag = util::malloc(*op.tagSize);
+        uint8_t* out = util::malloc(op.ciphertextSize);
+        std::optional<int> cipherIdx;
+
+        CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize());
+        CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), std::nullopt);
+
+        {
+            unsigned long tag_len = *op.tagSize;
+            auto in = op.cleartext.Get();
+            CF_CHECK_NE(tag, nullptr);
+            CF_CHECK_NE(in.data(), nullptr);
+            CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
+            CF_CHECK_NE(op.cipher.iv.GetPtr(), nullptr);
+            if ( oneshot == true ) {
+                /* One-shot */
+
+                CF_CHECK_EQ(ccm_memory(
+                            *cipherIdx,
+                            op.cipher.key.GetPtr(),
+                            op.cipher.key.GetSize(),
+                            nullptr,
+                            op.cipher.iv.GetPtr(),
+                            op.cipher.iv.GetSize(),
+                            op.aad != std::nullopt ? op.aad->GetPtr() : nullptr,
+                            op.aad != std::nullopt ? op.aad->GetSize() : 0,
+                            in.data(),
+                            in.size(),
+                            out,
+                            tag,
+                            &tag_len,
+                            CCM_ENCRYPT), CRYPT_OK);
+            } else {
+                /* Multi-step */
+
+                ccm_state ccm;
+                CF_CHECK_EQ(ccm_init(
+                            &ccm,
+                            *cipherIdx,
+                            op.cipher.key.GetPtr(),
+                            op.cipher.key.GetSize(),
+                            in.size(),
+                            tag_len,
+                            op.aad != std::nullopt ? op.aad->GetSize() : 0), CRYPT_OK);
+                CF_CHECK_EQ(ccm_add_nonce(&ccm, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize()), CRYPT_OK);
+                if ( op.aad != std::nullopt && op.aad->GetPtr() != nullptr ) {
+                    CF_CHECK_EQ(ccm_add_aad(
+                                &ccm,
+                                op.aad != std::nullopt ? op.aad->GetPtr() : nullptr,
+                                op.aad != std::nullopt ? op.aad->GetSize() : 0), CRYPT_OK);
+                }
+                CF_CHECK_EQ(ccm_process(&ccm, in.data(), in.size(), out, CCM_ENCRYPT), CRYPT_OK);
+                CF_CHECK_EQ(ccm_done(&ccm, tag, &tag_len), CRYPT_OK);
+            }
+
+            ret = component::Ciphertext(Buffer(out, in.size()), Buffer(tag, tag_len));
+        }
+
+    end:
+        util::free(out);
+        util::free(tag);
+
+        return ret;
+    }
+
+    std::optional<component::Cleartext> CcmDecrypt(operation::SymmetricDecrypt& op) {
+        std::optional<component::Cleartext> ret = std::nullopt;
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+        if ( op.tag == std::nullopt ) {
+            return ret;
+        }
+
+        /* See CcmEncrypt */
+        if ( op.cipher.iv.GetSize() < 7 || op.cipher.iv.GetSize() > 13 ) {
+            return ret;
+        }
+
+        const auto oneshot = ds.Get<bool>();
+
+        uint8_t* tag = util::malloc(op.tag->GetSize());
+        uint8_t* out = util::malloc(op.cleartextSize);
+        std::optional<int> cipherIdx;
+
+        CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
+        CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), std::nullopt);
+
+        {
+            unsigned long tag_len = op.tag->GetSize();
+            auto in = op.ciphertext.Get();
+            auto tag = op.tag->Get();
+            CF_CHECK_NE(tag.data(), nullptr);
+            CF_CHECK_NE(in.data(), nullptr);
+            CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
+            CF_CHECK_NE(op.cipher.iv.GetPtr(), nullptr);
+
+            if ( oneshot == true ) {
+                /* One-shot */
+
+                CF_CHECK_EQ(ccm_memory(
+                            *cipherIdx,
+                            op.cipher.key.GetPtr(),
+                            op.cipher.key.GetSize(),
+                            nullptr,
+                            op.cipher.iv.GetPtr(),
+                            op.cipher.iv.GetSize(),
+                            op.aad != std::nullopt ? op.aad->GetPtr() : nullptr,
+                            op.aad != std::nullopt ? op.aad->GetSize() : 0,
+                            out,
+                            in.size(),
+                            in.data(),
+                            tag.data(),
+                            &tag_len,
+                            CCM_DECRYPT), CRYPT_OK);
+            } else {
+                /* Multi-step */
+
+                ccm_state ccm;
+                CF_CHECK_EQ(ccm_init(
+                            &ccm,
+                            *cipherIdx,
+                            op.cipher.key.GetPtr(),
+                            op.cipher.key.GetSize(),
+                            in.size(),
+                            tag_len,
+                            op.aad != std::nullopt ? op.aad->GetSize() : 0), CRYPT_OK);
+                CF_CHECK_EQ(ccm_add_nonce(&ccm, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize()), CRYPT_OK);
+                if ( op.aad != std::nullopt && op.aad->GetPtr() != nullptr ) {
+                    CF_CHECK_EQ(ccm_add_aad(
+                                &ccm,
+                                op.aad != std::nullopt ? op.aad->GetPtr() : nullptr,
+                                op.aad != std::nullopt ? op.aad->GetSize() : 0), CRYPT_OK);
+                }
+                CF_CHECK_EQ(ccm_process(&ccm, out, in.size(), in.data(), CCM_DECRYPT), CRYPT_OK);
+                CF_CHECK_EQ(ccm_done(&ccm, tag.data(), &tag_len), CRYPT_OK);
+            }
+
+            ret = component::Cleartext(Buffer(out, in.size()));
+        }
+
+    end:
+        util::free(out);
+        util::free(tag);
+
+        return ret;
+    }
+
+} /* namespace libtomcrypt_detail */
+
+std::optional<component::Ciphertext> libtomcrypt::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
+    if ( repository::IsGCM(op.cipher.cipherType.Get()) ) {
+        return libtomcrypt_detail::GcmEncrypt(op);
+    } else if ( repository::IsCCM(op.cipher.cipherType.Get()) ) {
+        return libtomcrypt_detail::CcmEncrypt(op);
+    }
+
+    return std::nullopt;
+}
+
+std::optional<component::Cleartext> libtomcrypt::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
+    if ( repository::IsGCM(op.cipher.cipherType.Get()) ) {
+        return libtomcrypt_detail::GcmDecrypt(op);
+    } else if ( repository::IsCCM(op.cipher.cipherType.Get()) ) {
+        return libtomcrypt_detail::CcmDecrypt(op);
+    }
+
+    return std::nullopt;
 }
 
 std::optional<component::Key> libtomcrypt::OpKDF_HKDF(operation::KDF_HKDF& op) {
