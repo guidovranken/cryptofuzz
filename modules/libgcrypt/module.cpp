@@ -247,8 +247,6 @@ namespace libgcrypt_detail {
         { CF_CIPHER("RC2_CFB"), {GCRY_CIPHER_RFC2268_128, GCRY_CIPHER_MODE_CFB} },
         { CF_CIPHER("DES_EDE3_CFB"), {GCRY_CIPHER_3DES, GCRY_CIPHER_MODE_CFB} },
 
-        /* Wrong results */
-#if 0
         { CF_CIPHER("AES_128_CTR"), {GCRY_CIPHER_AES128, GCRY_CIPHER_MODE_CTR} },
         { CF_CIPHER("AES_192_CTR"), {GCRY_CIPHER_AES192, GCRY_CIPHER_MODE_CTR} },
         { CF_CIPHER("AES_256_CTR"), {GCRY_CIPHER_AES256, GCRY_CIPHER_MODE_CTR} },
@@ -256,7 +254,6 @@ namespace libgcrypt_detail {
         { CF_CIPHER("CAMELLIA_128_CTR"), {GCRY_CIPHER_CAMELLIA128, GCRY_CIPHER_MODE_CTR} },
         { CF_CIPHER("CAMELLIA_192_CTR"), {GCRY_CIPHER_CAMELLIA192, GCRY_CIPHER_MODE_CTR} },
         { CF_CIPHER("CAMELLIA_256_CTR"), {GCRY_CIPHER_CAMELLIA256, GCRY_CIPHER_MODE_CTR} },
-#endif
 
         { CF_CIPHER("AES_128_GCM"), {GCRY_CIPHER_AES128, GCRY_CIPHER_MODE_GCM} },
         { CF_CIPHER("AES_192_GCM"), {GCRY_CIPHER_AES192, GCRY_CIPHER_MODE_GCM} },
@@ -301,9 +298,6 @@ namespace libgcrypt_detail {
                 CF_CHECK_NE(outputBufferSize, 0);
                 CF_CHECK_NE(SymmetricCipherLUT.find(cipher.cipherType.Get()), SymmetricCipherLUT.end());
 
-                /* CTR is broken */
-                //CF_CHECK_EQ(repository::IsCTR(cipher.cipherType.Get()), false);
-
                 /* CFB is broken */
                 //CF_CHECK_EQ(repository::IsCFB(cipher.cipherType.Get()), false);
 
@@ -327,6 +321,8 @@ namespace libgcrypt_detail {
                 CF_CHECK_EQ(gcry_cipher_setkey(h, cipher.key.GetPtr(), cipher.key.GetSize()), GPG_ERR_NO_ERROR);
                 if ( cipher.cipherType.Get() == CF_CIPHER("CHACHA20") ) {
                     CF_CHECK_EQ(gcry_cipher_setiv(h, cipher.iv.GetPtr(), cipher.iv.GetSize()), GPG_ERR_NO_ERROR);
+                } else if ( repository::IsCTR(cipher.cipherType.Get()) ) {
+                    CF_CHECK_EQ(gcry_cipher_setctr(h, cipher.iv.GetPtr(), cipher.iv.GetSize()), GPG_ERR_NO_ERROR);
                 } else {
                     CF_CHECK_EQ(gcry_cipher_setiv(h, cipher.iv.GetPtr(), cipher.iv.GetSize()), GPG_ERR_NO_ERROR);
                 }
