@@ -226,6 +226,8 @@ namespace nss_detail {
             { CF_CIPHER("CAMELLIA_128_ECB"), CKM_CAMELLIA_ECB },
             { CF_CIPHER("SEED_ECB"), CKM_SEED_ECB },
             { CF_CIPHER("AES_128_GCM"), CKM_AES_GCM },
+            { CF_CIPHER("AES_192_GCM"), CKM_AES_GCM },
+            { CF_CIPHER("AES_256_GCM"), CKM_AES_GCM },
             { CF_CIPHER("CHACHA20_POLY1305"), CKM_NSS_CHACHA20_POLY1305},
 #if 1
             { 30, CKM_CAST3_CBC },
@@ -420,7 +422,7 @@ namespace nss_detail {
         PK11SlotInfo* slot = nullptr;
         SECItem* param = nullptr;
         PK11Context* ctx = nullptr;
-        CK_GCM_PARAMS* gcm_params = nullptr;
+        CK_NSS_GCM_PARAMS* gcm_params = nullptr;
 
         size_t outIdx = 0;
         util::Multipart parts;
@@ -472,21 +474,9 @@ namespace nss_detail {
                 SECItem ivItem = {siBuffer, ivvec.data(), (unsigned int)ivvec.size()};
                 CF_CHECK_NE(param = PK11_ParamFromIV(*ckm, &ivItem), nullptr);
             } else {
-
-                /* Adapted from Firefox */
-                if ( 1 )
-                {
-                    const size_t mTagLength = GetTagSize(op) * 8;
-                    if ((mTagLength > 128) ||
-                            !(mTagLength == 32 || mTagLength == 64 ||
-                                (mTagLength >= 96 && mTagLength % 8 == 0))) {
-                        goto end;
-                    }
-                }
-
                 CF_CHECK_NE(param = (SECItem *)PORT_Alloc(sizeof(SECItem)), nullptr);
-                CF_CHECK_NE(gcm_params = (CK_GCM_PARAMS *)PORT_Alloc(sizeof(CK_GCM_PARAMS)), nullptr);
-                memset(gcm_params, 0, sizeof(*gcm_params)); /* XXX necessary ? */
+                CF_CHECK_NE(gcm_params = (CK_NSS_GCM_PARAMS*)PORT_Alloc(sizeof(CK_NSS_GCM_PARAMS)), nullptr);
+
                 gcm_params->pIv = ivvec.data();
                 gcm_params->ulIvLen = ivvec.size();
                 gcm_params->pAAD = aadvec.data();
@@ -510,7 +500,6 @@ namespace nss_detail {
                 parts = ToParts(ds, op);
             }
         }
-
 
         if ( useOneShot == true ) {
             unsigned int outLen;
