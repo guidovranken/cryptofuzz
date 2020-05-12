@@ -67,3 +67,7 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - libkcapi: [PBKDF2 with iteration count = 0 zeroes output buffer](https://github.com/smuellerDD/libkcapi/issues/93)
 - wolfCrypt: [HKDF allows key sizes > 255 * digest size TBA](https://github.com/wolfSSL/wolfssl/pull/2956)
 - Botan: [HKDF clamps output to 255 * requested key size](https://github.com/randombit/botan/issues/2347)
+- SymCrypt: [Signed overshift and other undefined behavior](https://github.com/microsoft/SymCrypt/issues/8)
+- SymCrypt: TBA
+- NSS: TBA
+- NSS: TBA
