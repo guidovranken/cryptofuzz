@@ -70,11 +70,6 @@ class Buffer {
 
         Buffer(void) { }
 
-        /* Copy constructor */
-        Buffer(const Buffer& other) {
-            data = other.data;
-        }
-
         std::vector<uint8_t> Get(void) const {
             return data;
         }
@@ -135,10 +130,6 @@ class Bignum {
             data((const uint8_t*)s.data(), s.size())
         { }
 
-        /* Copy constructor */
-        Bignum(const Bignum& other) {
-            data = other.data;
-        }
 
         inline bool operator==(const Bignum& rhs) const {
             return data == rhs.data;
