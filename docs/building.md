@@ -54,6 +54,7 @@ Available library-specific build instructions:
  - [libsodium](libsodium.md)
  - [libgcrypt](libgcrypt.md)
  - [Linux crypto api](linux.md)
+ - [SymCrypt](symcrypt.md)
 
 ## 3. Building Cryptofuzz
 

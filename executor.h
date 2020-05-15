@@ -62,6 +62,7 @@ using ExecutorKDF_ARGON2 = ExecutorBase<component::Key, operation::KDF_ARGON2>;
 using ExecutorKDF_SSH = ExecutorBase<component::Key, operation::KDF_SSH>;
 using ExecutorKDF_X963 = ExecutorBase<component::Key, operation::KDF_X963>;
 using ExecutorKDF_BCRYPT = ExecutorBase<component::Key, operation::KDF_BCRYPT>;
+using ExecutorKDF_SP_800_108 = ExecutorBase<component::Key, operation::KDF_SP_800_108>;
 using ExecutorSign = ExecutorBase<component::Signature, operation::Sign>;
 using ExecutorVerify = ExecutorBase<bool, operation::Verify>;
 using ExecutorECC_PrivateToPublic = ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>;

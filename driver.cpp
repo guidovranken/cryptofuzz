@@ -30,6 +30,7 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorKDF_SSH executorKDF_SSH(ID("Cryptofuzz/Operation/KDF_SSH"), modules, debug);
     static ExecutorKDF_X963 executorKDF_X963(CF_OPERATION("KDF_X963"), modules, debug);
     static ExecutorKDF_BCRYPT executorKDF_BCRYPT(CF_OPERATION("KDF_BCRYPT"), modules, debug);
+    static ExecutorKDF_SP_800_108 executorKDF_SP_800_108(CF_OPERATION("KDF_SP_800_108"), modules, debug);
     static ExecutorECC_PrivateToPublic executorECC_PrivateToPublic(CF_OPERATION("ECC_PrivateToPublic"), modules, debug);
     static ExecutorECC_GenerateKeyPair executorECC_GenerateKeyPair(CF_OPERATION("ECC_GenerateKeyPair"), modules, debug);
     static ExecutorECDSA_Sign executorECDSA_Sign(CF_OPERATION("ECDSA_Sign"), modules, debug);
@@ -89,6 +90,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("KDF_BCRYPT"):
                 executorKDF_BCRYPT.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("KDF_SP_800_108"):
+                executorKDF_SP_800_108.Run(ds, payload.data(), payload.size());
                 break;
 #if 0
             case    ID("Cryptofuzz/Operation/Sign"):

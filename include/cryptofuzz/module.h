@@ -76,6 +76,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::Key> OpKDF_SP_800_108(operation::KDF_SP_800_108& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::MAC> OpCMAC(operation::CMAC& op) {
             (void)op;
             return std::nullopt;

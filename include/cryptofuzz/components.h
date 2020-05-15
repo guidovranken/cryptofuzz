@@ -146,5 +146,34 @@ class ECC_KeyPair {
 
 using ECDSA_Signature = BignumPair;
 
+class MACType {
+    public:
+        bool mode;
+        Type type;
+
+        MACType(Datasource& ds) :
+            mode(ds.Get<bool>()),
+            type(ds)
+        { }
+
+        MACType(nlohmann::json json) :
+            mode(json["mode"].get<bool>()),
+            type(json["type"])
+        { }
+
+        nlohmann::json ToJSON(void) const {
+            nlohmann::json j;
+            j["mode"] = mode;
+            j["type"] = type.ToJSON();
+            return j;
+        }
+
+        inline bool operator==(const MACType& rhs) const {
+            return
+                (mode == rhs.mode) &&
+                (type == rhs.type);
+        }
+};
+
 } /* namespace component */
 } /* namespace cryptofuzz */

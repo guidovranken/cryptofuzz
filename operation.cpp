@@ -367,6 +367,37 @@ nlohmann::json KDF_BCRYPT::ToJSON(void) const {
     return j;
 }
 
+std::string KDF_SP_800_108::Name(void) const { return "KDF_SP_800_108"; }
+std::string KDF_SP_800_108::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: KDF_SP_800_108" << std::endl;
+    ss << "hmac/cmac: " << (mech.mode ? "HMAC" : "CMAC") << std::endl;
+    if ( mech.mode == true ) {
+        ss << "digest: " << repository::DigestToString(mech.type.Get()) << std::endl;
+    } else {
+        ss << "cipher: " << repository::CipherToString(mech.type.Get()) << std::endl;
+    }
+    ss << "secret: " << util::HexDump(secret.Get()) << std::endl;
+    ss << "salt: " << util::HexDump(salt.Get()) << std::endl;
+    ss << "label: " << util::HexDump(label.Get()) << std::endl;
+    ss << "mode: " << std::to_string(mode) << std::endl;
+    ss << "keySize: " << std::to_string(keySize) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json KDF_SP_800_108::ToJSON(void) const {
+    nlohmann::json j;
+    j["mech"] = mech.ToJSON();
+    j["secret"] = secret.ToJSON();
+    j["salt"] = salt.ToJSON();
+    j["label"] = label.ToJSON();
+    j["mode"] = mode;
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string CMAC::Name(void) const { return "CMAC"; }
 std::string CMAC::ToString(void) const {
     std::stringstream ss;

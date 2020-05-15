@@ -618,6 +618,50 @@ class KDF_BCRYPT : public Operation {
         }
 };
 
+class KDF_SP_800_108 : public Operation {
+    public:
+        const component::MACType mech;
+        const component::Cleartext secret;
+        const component::Cleartext salt;
+        const component::Cleartext label;
+        const uint8_t mode;
+        const uint64_t keySize;
+
+        KDF_SP_800_108(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            mech(ds),
+            secret(ds),
+            salt(ds),
+            label(ds),
+            mode(ds.Get<uint8_t>()),
+            keySize(ds.Get<uint64_t>() % 17000)
+        { }
+        KDF_SP_800_108(nlohmann::json json) :
+            Operation(json["modifier"]),
+            mech(json["mech"]),
+            secret(json["secret"]),
+            salt(json["salt"]),
+            label(json["label"]),
+            mode(json["mode"].get<uint8_t>()),
+            keySize(json["keySize"].get<uint64_t>())
+        { }
+
+        static size_t MaxOperations(void) { return 20; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const KDF_SP_800_108& rhs) const {
+            return
+                (mech == rhs.mech) &&
+                (secret == rhs.secret) &&
+                (salt == rhs.salt) &&
+                (label == rhs.label) &&
+                (mode == rhs.mode) &&
+                (keySize == rhs.keySize) &&
+                (modifier == rhs.modifier);
+        }
+};
+
 class CMAC : public Operation {
     public:
         const component::Cleartext cleartext;

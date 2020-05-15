@@ -99,6 +99,10 @@
   #include <modules/linux/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_SYMCRYPT)
+  #include <modules/symcrypt/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
@@ -208,6 +212,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_LINUX)
     driver->LoadModule( std::make_shared<cryptofuzz::module::Linux>() );
+#endif
+
+#if defined(CRYPTOFUZZ_SYMCRYPT)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::SymCrypt>() );
 #endif
     return 0;
 }
