@@ -1566,6 +1566,9 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
             CF_CHECK_EQ(isAEAD(cipher, op.cipher.cipherType.Get()), true);
         }
 
+        if ( repository::IsWRAP(op.cipher.cipherType.Get()) ) {
+            /* noret */ EVP_CIPHER_CTX_set_flags(ctx.GetPtr(), EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
+        }
         CF_CHECK_EQ(EVP_EncryptInit_ex(ctx.GetPtr(), cipher, nullptr, nullptr, nullptr), 1);
 
         /* Must be a multiple of the block size of this cipher */
