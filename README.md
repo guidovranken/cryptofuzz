@@ -68,6 +68,7 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - wolfCrypt: [HKDF allows key sizes > 255 * digest size TBA](https://github.com/wolfSSL/wolfssl/pull/2956)
 - Botan: [HKDF clamps output to 255 * requested key size](https://github.com/randombit/botan/issues/2347)
 - SymCrypt: [Signed overshift and other undefined behavior](https://github.com/microsoft/SymCrypt/issues/8)
-- SymCrypt: TBA
 - NSS: TBA
 - NSS: TBA
+- OpenSSL: [AES key wrap ciphers out-of-bounds write](https://github.com/openssl/openssl/issues/12014)
+- LibreSSL: AES key wrap ciphers use-after-free TBA
