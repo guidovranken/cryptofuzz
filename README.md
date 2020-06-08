@@ -73,3 +73,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - OpenSSL: [AES key wrap ciphers out-of-bounds write](https://github.com/openssl/openssl/issues/12014)
 - LibreSSL: [AES key wrap ciphers use-after-free](https://github.com/openbsd/src/commit/f72711c6fb8692f12b01b3a3b7f54687729f6f9b)
 - OpenSSL: [AES key wrap ciphers use-after-free](https://github.com/openssl/openssl/issues/12073)
+- Crypto++: [AES GCM encryption with large tag size results in incorrect output, out-of-bounds reads](https://github.com/weidai11/cryptopp/issues/954)
