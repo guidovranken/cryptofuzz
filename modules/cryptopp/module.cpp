@@ -9,6 +9,7 @@
 #include <camellia.h>
 #include <cast.h>
 #include <ccm.h>
+#include <chachapoly.h>
 #include <cham.h>
 #include <crc.h>
 #include <cryptlib.h>
@@ -438,6 +439,67 @@ end:
             return std::nullopt;
         }
         return Decrypt<::CryptoPP::ECB_Mode<Cipher>, Cipher::BLOCKSIZE, false, false>(op);
+    }
+
+    template <class Cipher>
+    std::optional<component::Ciphertext> CHACHA20_POLY1305_Encrypt(operation::SymmetricEncrypt& op) {
+        std::optional<component::Ciphertext> ret = std::nullopt;
+
+        CF_CHECK_NE(op.tagSize, std::nullopt);
+        CF_CHECK_NE(op.aad, std::nullopt);
+
+        try {
+            std::vector<uint8_t> out(op.cleartext.GetSize());
+            std::vector<uint8_t> tag(*op.tagSize);
+
+            typename Cipher::Encryption enc;
+
+            enc.SetKeyWithIV(op.cipher.key.GetPtr(), op.cipher.key.GetSize(), op.cipher.iv.GetPtr(), op.cipher.iv.GetSize());
+            enc.EncryptAndAuthenticate(
+                    out.data(),
+                    tag.data(),
+                    tag.size(),
+                    op.cipher.iv.GetPtr(),
+                    op.cipher.iv.GetSize(),
+                    op.aad->GetPtr(),
+                    op.aad->GetSize(),
+                    op.cleartext.GetPtr(),
+                    op.cleartext.GetSize());
+
+            ret = component::Ciphertext(Buffer(out), Buffer(tag));
+        } catch ( ... ) { }
+end:
+        return ret;
+    }
+
+    template <class Cipher>
+    std::optional<component::Cleartext> CHACHA20_POLY1305_Decrypt(operation::SymmetricDecrypt& op) {
+        std::optional<component::Cleartext> ret = std::nullopt;
+
+        CF_CHECK_NE(op.aad, std::nullopt);
+        CF_CHECK_NE(op.tag, std::nullopt);
+
+        try {
+            std::vector<uint8_t> out(op.ciphertext.GetSize());
+
+            typename Cipher::Decryption dec;
+            dec.SetKeyWithIV(op.cipher.key.GetPtr(), op.cipher.key.GetSize(), op.cipher.iv.GetPtr(), op.cipher.iv.GetSize());
+
+            dec.DecryptAndVerify(
+                    out.data(),
+                    op.tag->GetPtr(),
+                    op.tag->GetSize(),
+                    op.cipher.iv.GetPtr(),
+                    op.cipher.iv.GetSize(),
+                    op.aad->GetPtr(),
+                    op.aad->GetSize(),
+                    op.ciphertext.GetPtr(),
+                    op.ciphertext.GetSize());
+
+            ret = component::Cleartext(Buffer(out));
+        } catch ( ... ) { }
+end:
+        return ret;
     }
 
     std::optional<component::Ciphertext> AES_GCM_Encrypt(operation::SymmetricEncrypt& op) {
@@ -1729,6 +1791,10 @@ std::optional<component::Ciphertext> CryptoPP::OpSymmetricEncrypt(operation::Sym
     std::optional<component::Ciphertext> ret = std::nullopt;
 
     switch ( op.cipher.cipherType.Get() ) {
+        case    CF_CIPHER("CHACHA20_POLY1305"):
+            return CryptoPP_detail::CHACHA20_POLY1305_Encrypt<::CryptoPP::ChaCha20Poly1305>(op);
+        case    CF_CIPHER("XCHACHA20_POLY1305"):
+            return CryptoPP_detail::CHACHA20_POLY1305_Encrypt<::CryptoPP::XChaCha20Poly1305>(op);
         case    CF_CIPHER("AES_128_GCM"):
         case    CF_CIPHER("AES_192_GCM"):
         case    CF_CIPHER("AES_256_GCM"):
@@ -1777,6 +1843,10 @@ std::optional<component::Cleartext> CryptoPP::OpSymmetricDecrypt(operation::Symm
     std::optional<component::Cleartext> ret = std::nullopt;
 
     switch ( op.cipher.cipherType.Get() ) {
+        case    CF_CIPHER("CHACHA20_POLY1305"):
+            return CryptoPP_detail::CHACHA20_POLY1305_Decrypt<::CryptoPP::ChaCha20Poly1305>(op);
+        case    CF_CIPHER("XCHACHA20_POLY1305"):
+            return CryptoPP_detail::CHACHA20_POLY1305_Decrypt<::CryptoPP::XChaCha20Poly1305>(op);
         case    CF_CIPHER("AES_128_GCM"):
         case    CF_CIPHER("AES_192_GCM"):
         case    CF_CIPHER("AES_256_GCM"):
