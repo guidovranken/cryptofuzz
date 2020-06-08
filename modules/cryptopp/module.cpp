@@ -8,6 +8,7 @@
 #include <blowfish.h>
 #include <camellia.h>
 #include <cast.h>
+#include <ccm.h>
 #include <cham.h>
 #include <crc.h>
 #include <cryptlib.h>
@@ -15,6 +16,7 @@
 #include <eccrypto.h>
 #include <ecp.h>
 #include <filters.h>
+#include <gcm.h>
 #include <gost.h>
 #include <hkdf.h>
 #include <hmac.h>
@@ -436,6 +438,123 @@ end:
             return std::nullopt;
         }
         return Decrypt<::CryptoPP::ECB_Mode<Cipher>, Cipher::BLOCKSIZE, false, false>(op);
+    }
+
+    std::optional<component::Ciphertext> AES_GCM_Encrypt(operation::SymmetricEncrypt& op) {
+        std::optional<component::Ciphertext> ret = std::nullopt;
+
+        CF_CHECK_NE(op.tagSize, std::nullopt);
+        CF_CHECK_NE(op.aad, std::nullopt);
+
+        try {
+            std::vector<uint8_t> out;
+
+            ::CryptoPP::GCM<::CryptoPP::AES>::Encryption e;
+            e.SetKeyWithIV(op.cipher.key.GetPtr(), op.cipher.key.GetSize(), op.cipher.iv.GetPtr(), op.cipher.iv.GetSize());
+
+            ::CryptoPP::AuthenticatedEncryptionFilter ef(e, new ::CryptoPP::VectorSink(out), false, *op.tagSize);
+
+            ef.ChannelPut(::CryptoPP::AAD_CHANNEL, op.aad->GetPtr(), op.aad->GetSize());
+            ef.ChannelMessageEnd(::CryptoPP::AAD_CHANNEL);
+
+            ef.ChannelPut(::CryptoPP::DEFAULT_CHANNEL, op.cleartext.GetPtr(), op.cleartext.GetSize());
+            ef.ChannelMessageEnd(::CryptoPP::DEFAULT_CHANNEL);
+
+            ret = component::Ciphertext(Buffer(out.data(), op.cleartext.GetSize()), Buffer(out.data() + op.cleartext.GetSize(), *op.tagSize));
+        } catch ( ... ) { }
+end:
+        return ret;
+    }
+
+    template <size_t TagSize>
+    std::optional<component::Ciphertext> AES_CCM_Encrypt(operation::SymmetricEncrypt& op) {
+        std::optional<component::Ciphertext> ret = std::nullopt;
+
+        CF_CHECK_NE(op.aad, std::nullopt);
+
+        try {
+            std::vector<uint8_t> out;
+
+            typename ::CryptoPP::CCM<::CryptoPP::AES, TagSize>::Encryption e;
+            e.SetKeyWithIV(op.cipher.key.GetPtr(), op.cipher.key.GetSize(), op.cipher.iv.GetPtr(), op.cipher.iv.GetSize());
+            e.SpecifyDataLengths(op.aad->GetSize(), op.cleartext.GetSize(), 0);
+
+            ::CryptoPP::AuthenticatedEncryptionFilter ef(e, new ::CryptoPP::VectorSink(out));
+
+            ef.ChannelPut(::CryptoPP::AAD_CHANNEL, op.aad->GetPtr(), op.aad->GetSize());
+            ef.ChannelMessageEnd(::CryptoPP::AAD_CHANNEL);
+
+            ef.ChannelPut(::CryptoPP::DEFAULT_CHANNEL, op.cleartext.GetPtr(), op.cleartext.GetSize());
+            ef.ChannelMessageEnd(::CryptoPP::DEFAULT_CHANNEL);
+
+            ret = component::Ciphertext(Buffer(out.data(), op.cleartext.GetSize()), Buffer(out.data() + op.cleartext.GetSize(), *op.tagSize));
+        } catch ( ... ) { }
+end:
+        return ret;
+    }
+
+    std::optional<component::Cleartext> AES_GCM_Decrypt(operation::SymmetricDecrypt& op) {
+        std::optional<component::Cleartext> ret = std::nullopt;
+
+        CF_CHECK_NE(op.aad, std::nullopt);
+        CF_CHECK_NE(op.tag, std::nullopt);
+
+        try {
+            ::CryptoPP::GCM<::CryptoPP::AES>::Decryption d;
+            d.SetKeyWithIV(op.cipher.key.GetPtr(), op.cipher.key.GetSize(), op.cipher.iv.GetPtr(), op.cipher.iv.GetSize());
+
+            ::CryptoPP::AuthenticatedDecryptionFilter df(d, NULL, ::CryptoPP::AuthenticatedDecryptionFilter::MAC_AT_BEGIN | ::CryptoPP::AuthenticatedDecryptionFilter::THROW_EXCEPTION, op.tag->GetSize());
+
+            df.ChannelPut(::CryptoPP::DEFAULT_CHANNEL, op.tag->GetPtr(), op.tag->GetSize() );
+            df.ChannelPut(::CryptoPP::AAD_CHANNEL, op.aad->GetPtr(), op.aad->GetSize());
+            df.ChannelPut(::CryptoPP::DEFAULT_CHANNEL, op.ciphertext.GetPtr(), op.ciphertext.GetSize());
+
+            df.ChannelMessageEnd(::CryptoPP::AAD_CHANNEL);
+            df.ChannelMessageEnd(::CryptoPP::DEFAULT_CHANNEL);
+
+            df.SetRetrievalChannel(::CryptoPP::DEFAULT_CHANNEL);
+            const size_t outSize = df.MaxRetrievable();
+            std::vector<uint8_t> out(outSize);
+            df.Get(out.data(), outSize);
+
+            ret = component::Cleartext(Buffer(out.data(), outSize));
+
+        } catch ( ... ) { }
+end:
+        return ret;
+    }
+
+    template <size_t TagSize>
+    std::optional<component::Cleartext> AES_CCM_Decrypt(operation::SymmetricDecrypt& op) {
+        std::optional<component::Cleartext> ret = std::nullopt;
+
+        CF_CHECK_NE(op.aad, std::nullopt);
+        CF_CHECK_NE(op.tag, std::nullopt);
+
+        try {
+            typename ::CryptoPP::CCM<::CryptoPP::AES, TagSize>::Decryption d;
+            d.SetKeyWithIV(op.cipher.key.GetPtr(), op.cipher.key.GetSize(), op.cipher.iv.GetPtr(), op.cipher.iv.GetSize());
+            d.SpecifyDataLengths(op.aad->GetSize(), op.ciphertext.GetSize(), 0);
+
+            ::CryptoPP::AuthenticatedDecryptionFilter df(d, NULL, ::CryptoPP::AuthenticatedDecryptionFilter::MAC_AT_BEGIN | ::CryptoPP::AuthenticatedDecryptionFilter::THROW_EXCEPTION);
+
+            df.ChannelPut(::CryptoPP::DEFAULT_CHANNEL, op.tag->GetPtr(), op.tag->GetSize() );
+            df.ChannelPut(::CryptoPP::AAD_CHANNEL, op.aad->GetPtr(), op.aad->GetSize());
+            df.ChannelPut(::CryptoPP::DEFAULT_CHANNEL, op.ciphertext.GetPtr(), op.ciphertext.GetSize());
+
+            df.ChannelMessageEnd(::CryptoPP::AAD_CHANNEL);
+            df.ChannelMessageEnd(::CryptoPP::DEFAULT_CHANNEL);
+
+            df.SetRetrievalChannel(::CryptoPP::DEFAULT_CHANNEL);
+            const size_t outSize = df.MaxRetrievable();
+            std::vector<uint8_t> out(outSize);
+            df.Get(out.data(), outSize);
+
+            ret = component::Cleartext(Buffer(out.data(), outSize));
+
+        } catch ( ... ) { }
+end:
+        return ret;
     }
 
     template <class Operation, class ReturnType>
@@ -1609,7 +1728,40 @@ end:
 std::optional<component::Ciphertext> CryptoPP::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
     std::optional<component::Ciphertext> ret = std::nullopt;
 
-    /* AEAD currently not supported */
+    switch ( op.cipher.cipherType.Get() ) {
+        case    CF_CIPHER("AES_128_GCM"):
+        case    CF_CIPHER("AES_192_GCM"):
+        case    CF_CIPHER("AES_256_GCM"):
+            return CryptoPP_detail::AES_GCM_Encrypt(op);
+        case    CF_CIPHER("AES_128_CCM"):
+        case    CF_CIPHER("AES_192_CCM"):
+        case    CF_CIPHER("AES_256_CCM"):
+            {
+                if ( op.tagSize == std::nullopt ) {
+                    return std::nullopt;
+                }
+                switch ( *op.tagSize ) {
+                    case    4:
+                        return CryptoPP_detail::AES_CCM_Encrypt<4>(op);
+                    case    6:
+                        return CryptoPP_detail::AES_CCM_Encrypt<6>(op);
+                    case    8:
+                        return CryptoPP_detail::AES_CCM_Encrypt<8>(op);
+                    case    10:
+                        return CryptoPP_detail::AES_CCM_Encrypt<10>(op);
+                    case    12:
+                        return CryptoPP_detail::AES_CCM_Encrypt<12>(op);
+                    case    14:
+                        return CryptoPP_detail::AES_CCM_Encrypt<14>(op);
+                    case    16:
+                        return CryptoPP_detail::AES_CCM_Encrypt<16>(op);
+                    default:
+                        return std::nullopt;
+                }
+            }
+    }
+
+    /* Other AEAD currently not supported */
     if ( op.tagSize != std::nullopt ) {
         return ret;
     } else if ( op.aad != std::nullopt ) {
@@ -1624,7 +1776,41 @@ std::optional<component::Ciphertext> CryptoPP::OpSymmetricEncrypt(operation::Sym
 std::optional<component::Cleartext> CryptoPP::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
     std::optional<component::Cleartext> ret = std::nullopt;
 
-    /* AEAD currently not supported */
+    switch ( op.cipher.cipherType.Get() ) {
+        case    CF_CIPHER("AES_128_GCM"):
+        case    CF_CIPHER("AES_192_GCM"):
+        case    CF_CIPHER("AES_256_GCM"):
+            return CryptoPP_detail::AES_GCM_Decrypt(op);
+        case    CF_CIPHER("AES_128_CCM"):
+        case    CF_CIPHER("AES_192_CCM"):
+        case    CF_CIPHER("AES_256_CCM"):
+            {
+                if ( op.tag == std::nullopt ) {
+                    return std::nullopt;
+                }
+
+                switch ( op.tag->GetSize() ) {
+                    case    4:
+                        return CryptoPP_detail::AES_CCM_Decrypt<4>(op);
+                    case    6:
+                        return CryptoPP_detail::AES_CCM_Decrypt<6>(op);
+                    case    8:
+                        return CryptoPP_detail::AES_CCM_Decrypt<8>(op);
+                    case    10:
+                        return CryptoPP_detail::AES_CCM_Decrypt<10>(op);
+                    case    12:
+                        return CryptoPP_detail::AES_CCM_Decrypt<12>(op);
+                    case    14:
+                        return CryptoPP_detail::AES_CCM_Decrypt<14>(op);
+                    case    16:
+                        return CryptoPP_detail::AES_CCM_Decrypt<16>(op);
+                    default:
+                        return std::nullopt;
+                }
+            }
+    }
+
+    /* Other AEAD currently not supported */
     if ( op.tag != std::nullopt ) {
         return ret;
     } else if ( op.aad != std::nullopt ) {
