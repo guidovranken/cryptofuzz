@@ -580,7 +580,7 @@ namespace libgcrypt_detail {
         };
 
         if ( LUT.find(curveType.Get()) == LUT.end() ) {
-            return std::nullopt;;
+            return std::nullopt;
         }
 
         return LUT.at(curveType.Get());

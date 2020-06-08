@@ -729,7 +729,7 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
             } else {
                 ChaChaPoly_Aead aead;
 
-                CF_CHECK_EQ(wc_ChaCha20Poly1305_Init(&aead, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr(), 1), 0);;
+                CF_CHECK_EQ(wc_ChaCha20Poly1305_Init(&aead, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr(), 1), 0);
 
                 {
                     const auto partsAAD = util::ToParts(ds, *op.aad);
