@@ -1330,7 +1330,7 @@ namespace OpenSSL_detail {
             macSize = op.digestType.Get() == CF_DIGEST("SIPHASH64") ? 8 : 16;
             parts = util::ToParts(ds, op.cleartext);
             siphash = EVP_MAC_fetch(nullptr, "SIPHASH", nullptr);
-            ctx = EVP_MAC_CTX_new(siphash);
+            ctx = EVP_MAC_new_ctx(siphash);
             CF_CHECK_EQ(EVP_MAC_init(ctx), 1);
 
             auto keyCopy = op.cipher.key.Get();
@@ -1343,7 +1343,7 @@ namespace OpenSSL_detail {
             *p++ = OSSL_PARAM_construct_uint(OSSL_MAC_PARAM_SIZE, &macSize_ui);
 
             *p = OSSL_PARAM_construct_end();
-            CF_CHECK_EQ(EVP_MAC_CTX_set_params(ctx, params), 1);
+            CF_CHECK_EQ(EVP_MAC_set_ctx_params(ctx, params), 1);
             out = util::malloc(macSize);
         }
 
@@ -1358,7 +1358,7 @@ namespace OpenSSL_detail {
 end:
         util::free(out);
 
-        EVP_MAC_CTX_free(ctx);
+        EVP_MAC_free_ctx(ctx);
         EVP_MAC_free(siphash);
 
 #endif
@@ -2346,12 +2346,12 @@ std::optional<component::Key> OpenSSL::OpKDF_SCRYPT_EVP_KDF(operation::KDF_SCRYP
         {
             EVP_KDF* kdf = EVP_KDF_fetch(nullptr, OSSL_KDF_NAME_SCRYPT, nullptr);
             CF_CHECK_NE(kdf, nullptr);
-            kctx = EVP_KDF_CTX_new(kdf);
+            kctx = EVP_KDF_new_ctx(kdf);
             EVP_KDF_free(kdf);
             CF_CHECK_NE(kctx, nullptr);
         }
 
-        CF_CHECK_EQ(EVP_KDF_CTX_set_params(kctx, params), 1);
+        CF_CHECK_EQ(EVP_KDF_set_ctx_params(kctx, params), 1);
     }
 
     /* Process */
@@ -2365,7 +2365,7 @@ std::optional<component::Key> OpenSSL::OpKDF_SCRYPT_EVP_KDF(operation::KDF_SCRYP
     }
 
 end:
-    EVP_KDF_CTX_free(kctx);
+    EVP_KDF_free_ctx(kctx);
 
     util::free(out);
     return ret;
@@ -2583,12 +2583,12 @@ end:
         {
             EVP_KDF* kdf = EVP_KDF_fetch(nullptr, OSSL_KDF_NAME_PBKDF2, nullptr);
             CF_CHECK_NE(kdf, nullptr);
-            kctx = EVP_KDF_CTX_new(kdf);
+            kctx = EVP_KDF_new_ctx(kdf);
             EVP_KDF_free(kdf);
             CF_CHECK_NE(kctx, nullptr);
         }
 
-        CF_CHECK_EQ(EVP_KDF_CTX_set_params(kctx, params), 1);
+        CF_CHECK_EQ(EVP_KDF_set_ctx_params(kctx, params), 1);
     }
 
     /* Process */
@@ -2602,7 +2602,7 @@ end:
     }
 
 end:
-    EVP_KDF_CTX_free(kctx);
+    EVP_KDF_free_ctx(kctx);
 
     util::free(out);
 
@@ -2638,7 +2638,7 @@ std::optional<component::Key> OpenSSL::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
         }
         CF_CHECK_GTE(op.keySize, 64);
         CF_CHECK_EQ(op.threads, 1);
-        CF_CHECK_NE(kctx = EVP_KDF_CTX_new_id(type), nullptr);
+        CF_CHECK_NE(kctx = EVP_KDF_new_ctx_id(type), nullptr);
         CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_PASS, op.password.GetPtr(), op.password.GetSize()), 1);
         CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_SALT, op.salt.GetPtr(), op.salt.GetSize()), 1);
         CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_ITER, op.iterations), 1);
@@ -2654,7 +2654,7 @@ std::optional<component::Key> OpenSSL::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
     }
 
 end:
-    EVP_KDF_CTX_free(kctx);
+    EVP_KDF_free_ctx(kctx);
 
     util::free(out);
 
@@ -2706,12 +2706,12 @@ std::optional<component::Key> OpenSSL::OpKDF_SSH(operation::KDF_SSH& op) {
         {
             EVP_KDF* kdf = EVP_KDF_fetch(nullptr, OSSL_KDF_NAME_SSHKDF, nullptr);
             CF_CHECK_NE(kdf, nullptr);
-            kctx = EVP_KDF_CTX_new(kdf);
+            kctx = EVP_KDF_new_ctx(kdf);
             EVP_KDF_free(kdf);
             CF_CHECK_NE(kctx, nullptr);
         }
 
-        CF_CHECK_EQ(EVP_KDF_CTX_set_params(kctx, params), 1);
+        CF_CHECK_EQ(EVP_KDF_set_ctx_params(kctx, params), 1);
     }
 
     /* Process */
@@ -2725,7 +2725,7 @@ std::optional<component::Key> OpenSSL::OpKDF_SSH(operation::KDF_SSH& op) {
     }
 
 end:
-    EVP_KDF_CTX_free(kctx);
+    EVP_KDF_free_ctx(kctx);
 
     util::free(out);
 
@@ -2763,12 +2763,12 @@ std::optional<component::Key> OpenSSL::OpKDF_X963(operation::KDF_X963& op) {
         {
             EVP_KDF* kdf = EVP_KDF_fetch(nullptr, "X963KDF", nullptr);
             CF_CHECK_NE(kdf, nullptr);
-            kctx = EVP_KDF_CTX_new(kdf);
+            kctx = EVP_KDF_new_ctx(kdf);
             EVP_KDF_free(kdf);
             CF_CHECK_NE(kctx, nullptr);
         }
 
-        CF_CHECK_EQ(EVP_KDF_CTX_set_params(kctx, params), 1);
+        CF_CHECK_EQ(EVP_KDF_set_ctx_params(kctx, params), 1);
     }
 
     /* Process */
@@ -2782,7 +2782,7 @@ std::optional<component::Key> OpenSSL::OpKDF_X963(operation::KDF_X963& op) {
     }
 
 end:
-    EVP_KDF_CTX_free(kctx);
+    EVP_KDF_free_ctx(kctx);
 
     util::free(out);
 
