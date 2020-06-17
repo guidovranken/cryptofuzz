@@ -8,7 +8,7 @@ mkdir nettle-install/
 cd nettle/
 bash .bootstrap
 ./configure --disable-documentation --prefix=`realpath ../nettle-install`
-make
+make -j$(nproc)
 make install
 export LIBNETTLE_A_PATH=`realpath ../nettle-install/lib/libnettle.a`
 export NETTLE_INCLUDE_PATH=`realpath ../nettle-install/include`

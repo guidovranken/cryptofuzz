@@ -4,11 +4,11 @@
 
 ### OpenSSL master, 1.1.0, 1.0.2
 
-From the OpenSSL root directory:
-
 ```sh
+git clone --depth 1 https://github.com/openssl/openssl.git
+cd openssl/
 ./config enable-md2 enable-rc5
-make
+make -j$(nproc)
 export OPENSSL_INCLUDE_PATH=`realpath include/`
 export OPENSSL_LIBCRYPTO_A_PATH=`realpath libcrypto.a`
 ```
@@ -36,7 +36,8 @@ cd libressl
 mkdir build/
 cd build/
 cmake -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_CXX_FLAGS="$CXXFLAGS" -DCMAKE_C_FLAGS="$CFLAGS" ..
-make crypto
+make crypto -j$(nproc)
+cd ../
 export CXXFLAGS="$CXXFLAGS -DCRYPTOFUZZ_LIBRESSL"
 export OPENSSL_INCLUDE_PATH=`realpath include/`
 export OPENSSL_LIBCRYPTO_A_PATH=`realpath build/crypto/libcrypto.a`
@@ -50,7 +51,7 @@ cd boringssl/
 mkdir build/
 cd build/
 cmake -DCMAKE_CXX_FLAGS="$CXXFLAGS" -DCMAKE_C_FLAGS="$CFLAGS" -DBORINGSSL_ALLOW_CXX_RUNTIME=1 ..
-make crypto
+make crypto -j$(nproc)
 cd ../
 export CXXFLAGS="$CXXFLAGS -DCRYPTOFUZZ_BORINGSSL"
 export OPENSSL_INCLUDE_PATH=`realpath include/`
