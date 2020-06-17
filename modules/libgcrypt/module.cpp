@@ -283,6 +283,9 @@ namespace libgcrypt_detail {
         { CF_CIPHER("SEED_CFB"), {GCRY_CIPHER_SEED, GCRY_CIPHER_MODE_CFB} },
         { CF_CIPHER("SEED_ECB"), {GCRY_CIPHER_SEED, GCRY_CIPHER_MODE_ECB} },
         { CF_CIPHER("SEED_OFB"), {GCRY_CIPHER_SEED, GCRY_CIPHER_MODE_OFB} },
+        { CF_CIPHER("SM4_CFB"), {GCRY_CIPHER_SM4, GCRY_CIPHER_MODE_CFB} },
+        { CF_CIPHER("SM4_ECB"), {GCRY_CIPHER_SM4, GCRY_CIPHER_MODE_ECB} },
+        { CF_CIPHER("SM4_OFB"), {GCRY_CIPHER_SM4, GCRY_CIPHER_MODE_OFB} },
     };
 
     std::optional<size_t> Blocksize(const uint64_t cipher) {
