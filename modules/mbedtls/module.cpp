@@ -21,7 +21,47 @@
 namespace cryptofuzz {
 namespace module {
 
+namespace mbedTLS_detail {
+#if defined(CRYPTOFUZZ_MBEDTLS_ALLOCATION_FAILURES)
+    Datasource* ds;
+#endif
+
+    inline void SetGlobalDs(Datasource* ds) {
+#if defined(CRYPTOFUZZ_MBEDTLS_ALLOCATION_FAILURES)
+        mbedTLS_detail::ds = ds;
+#else
+        (void)ds;
+#endif
+    }
+
+    inline void UnsetGlobalDs(void) {
+#if defined(CRYPTOFUZZ_MBEDTLS_ALLOCATION_FAILURES)
+        mbedTLS_detail::ds = nullptr;
+#endif
+    }
+
+    inline bool AllocationFailure(void) {
+#if defined(CRYPTOFUZZ_MBEDTLS_ALLOCATION_FAILURES)
+        bool fail = false;
+        if ( ds == nullptr ) {
+            return fail;
+        }
+        try {
+            fail = ds->Get<bool>();
+        } catch ( ... ) { }
+
+        return fail;
+#else
+        return false;
+#endif
+    }
+}
+
 static void* mbedTLS_custom_calloc(size_t A, size_t B) {
+    if ( mbedTLS_detail::AllocationFailure() == true ) {
+        return nullptr;
+    }
+
     /* TODO detect overflows */
     const size_t size = A*B;
     void* p = util::malloc(size);
@@ -162,6 +202,7 @@ namespace mbedTLS_detail {
 std::optional<component::Digest> mbedTLS::OpDigest(operation::Digest& op) {
     std::optional<component::Digest> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    mbedTLS_detail::SetGlobalDs(&ds);
 
     util::Multipart parts;
 
@@ -196,12 +237,15 @@ std::optional<component::Digest> mbedTLS::OpDigest(operation::Digest& op) {
 end:
     mbedtls_md_free(&md_ctx);
 
+    mbedTLS_detail::UnsetGlobalDs();
+
     return ret;
 }
 
 std::optional<component::MAC> mbedTLS::OpHMAC(operation::HMAC& op) {
     std::optional<component::MAC> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    mbedTLS_detail::SetGlobalDs(&ds);
 
     util::Multipart parts;
 
@@ -237,11 +281,15 @@ std::optional<component::MAC> mbedTLS::OpHMAC(operation::HMAC& op) {
 end:
     mbedtls_md_free(&md_ctx);
 
+    mbedTLS_detail::UnsetGlobalDs();
+
     return ret;
 }
 
 std::optional<component::MAC> mbedTLS::OpCMAC(operation::CMAC& op) {
     std::optional<component::MAC> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    mbedTLS_detail::SetGlobalDs(&ds);
 
     const mbedtls_cipher_info_t *cipher_info = nullptr;
     uint8_t* out = nullptr;
@@ -262,6 +310,8 @@ end:
 
     util::free(out);
 
+    mbedTLS_detail::UnsetGlobalDs();
+
     return ret;
 }
 
@@ -276,6 +326,8 @@ namespace mbedTLS_detail {
         if ( op.tagSize == std::nullopt ) {
             return ret;
         }
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+        mbedTLS_detail::SetGlobalDs(&ds);
 
         uint8_t* out = util::malloc(op.ciphertextSize);
         uint8_t* tag = util::malloc(*op.tagSize);
@@ -313,6 +365,8 @@ end:
             mbedtls_cipher_free(&cipher_ctx);
         }
 
+        mbedTLS_detail::UnsetGlobalDs();
+
         return ret;
     }
 }
@@ -336,6 +390,7 @@ std::optional<component::Ciphertext> mbedTLS::OpSymmetricEncrypt(operation::Symm
     }
 
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    mbedTLS_detail::SetGlobalDs(&ds);
 
     util::Multipart parts;
 
@@ -430,12 +485,16 @@ end:
         mbedtls_cipher_free(&cipher_ctx);
     }
 
+    mbedTLS_detail::UnsetGlobalDs();
+
     return ret;
 }
 
 namespace mbedTLS_detail {
     std::optional<component::Cleartext> decrypt_AEAD(operation::SymmetricDecrypt& op) {
         std::optional<component::Cleartext> ret = std::nullopt;
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+        mbedTLS_detail::SetGlobalDs(&ds);
 
         mbedtls_cipher_context_t cipher_ctx;
         const mbedtls_cipher_info_t *cipher_info = nullptr;
@@ -476,6 +535,8 @@ end:
             mbedtls_cipher_free(&cipher_ctx);
         }
 
+        mbedTLS_detail::UnsetGlobalDs();
+
         return ret;
     }
 }
@@ -492,6 +553,7 @@ std::optional<component::Cleartext> mbedTLS::OpSymmetricDecrypt(operation::Symme
     }
 
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    mbedTLS_detail::SetGlobalDs(&ds);
 
     util::Multipart parts;
 
@@ -596,11 +658,15 @@ end:
         mbedtls_cipher_free(&cipher_ctx);
     }
 
+    mbedTLS_detail::UnsetGlobalDs();
+
     return ret;
 }
 
 std::optional<component::Key> mbedTLS::OpKDF_HKDF(operation::KDF_HKDF& op) {
     std::optional<component::Key> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    mbedTLS_detail::SetGlobalDs(&ds);
 
     mbedtls_md_type_t md_type = MBEDTLS_MD_NONE;
     mbedtls_md_info_t const* md_info = nullptr;
@@ -631,11 +697,16 @@ std::optional<component::Key> mbedTLS::OpKDF_HKDF(operation::KDF_HKDF& op) {
 
 end:
     util::free(out);
+
+    mbedTLS_detail::UnsetGlobalDs();
+
     return ret;
 }
 
 std::optional<component::Key> mbedTLS::OpKDF_PBKDF(operation::KDF_PBKDF& op) {
     std::optional<component::Key> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    mbedTLS_detail::SetGlobalDs(&ds);
 
     mbedtls_md_type_t md_type = MBEDTLS_MD_NONE;
     uint8_t* out = util::malloc(op.keySize);
@@ -667,6 +738,8 @@ end:
 
 std::optional<component::Key> mbedTLS::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
     std::optional<component::Key> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    mbedTLS_detail::SetGlobalDs(&ds);
 
     mbedtls_md_type_t md_type = MBEDTLS_MD_NONE;
     mbedtls_md_info_t const* md_info = nullptr;
@@ -697,6 +770,8 @@ std::optional<component::Key> mbedTLS::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
 end:
     mbedtls_md_free(&md_ctx);
     util::free(out);
+
+    mbedTLS_detail::UnsetGlobalDs();
 
     return ret;
 }
@@ -745,6 +820,7 @@ end:
 std::optional<component::ECC_PublicKey> mbedTLS::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    mbedTLS_detail::SetGlobalDs(&ds);
 
     mbedtls_ecp_keypair keypair;
     const mbedtls_ecp_curve_info* curve_info = nullptr;
@@ -777,12 +853,15 @@ std::optional<component::ECC_PublicKey> mbedTLS::OpECC_PrivateToPublic(operation
 end:
     /* noret */ mbedtls_ecp_keypair_free(&keypair);
 
+    mbedTLS_detail::UnsetGlobalDs();
+
     return ret;
 }
 
 std::optional<bool> mbedTLS::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    mbedTLS_detail::SetGlobalDs(&ds);
 
     mbedtls_ecdsa_context ctx;
     mbedtls_mpi sig_r, sig_s;
@@ -822,12 +901,16 @@ end:
     /* noret */ mbedtls_ecdsa_free(&ctx);
     /* noret */ mbedtls_mpi_free(&sig_r);
     /* noret */ mbedtls_mpi_free(&sig_s);
+
+    mbedTLS_detail::UnsetGlobalDs();
+
     return ret;
 }
 
 std::optional<component::Bignum> mbedTLS::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    mbedTLS_detail::SetGlobalDs(&ds);
     std::unique_ptr<mbedTLS_bignum::Operation> opRunner = nullptr;
 
     std::vector<mbedTLS_bignum::Bignum> bn{
@@ -929,6 +1012,9 @@ std::optional<component::Bignum> mbedTLS::OpBignumCalc(operation::BignumCalc& op
     ret = res.ToComponentBignum();
 
 end:
+
+    mbedTLS_detail::UnsetGlobalDs();
+
     return ret;
 }
 
