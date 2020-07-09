@@ -522,6 +522,46 @@ end:
     return ret;
 }
 
+std::optional<component::Key> Botan::OpKDF_SP_800_108(operation::KDF_SP_800_108& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    uint8_t* out = util::malloc(op.keySize);
+    std::unique_ptr<::Botan::KDF> sp_800_108 = nullptr;
+
+    try {
+        std::optional<std::string> algoString;
+        CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.mech.type.Get(), true), std::nullopt);
+
+        const std::string hmacString = Botan_detail::parenthesize("HMAC", *algoString);
+        std::string sp_800_108_string;
+        switch ( op.mode ) {
+            case    0:
+                sp_800_108_string = Botan_detail::parenthesize("SP800-108-Counter", hmacString);
+                break;
+            case    1:
+                sp_800_108_string = Botan_detail::parenthesize("SP800-108-Feedback", hmacString);
+                break;
+            case    2:
+                sp_800_108_string = Botan_detail::parenthesize("SP800-108-Pipeline", hmacString);
+                break;
+            default:
+                goto end;
+        }
+
+        sp_800_108 = ::Botan::KDF::create(sp_800_108_string);
+
+        {
+            auto derived = sp_800_108->derive_key(op.keySize, op.secret.Get(), op.salt.Get(), op.label.Get());
+
+            ret = component::Key(derived.data(), derived.size());
+        }
+    } catch ( ... ) { }
+
+end:
+
+    util::free(out);
+    return ret;
+}
+
 namespace Botan_detail {
     std::optional<std::string> CurveIDToString(const uint64_t curveID) {
 #include "curve_string_lut.h"
