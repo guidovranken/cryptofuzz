@@ -2788,6 +2788,94 @@ end:
 
     return ret;
 }
+
+std::optional<component::Key> OpenSSL::OpKDF_SP_800_108(operation::KDF_SP_800_108& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    EVP_KDF_CTX* kctx = nullptr;
+    const EVP_MD* md = nullptr;
+    OSSL_PARAM params[7], *p = params;
+    uint8_t* out = util::malloc(op.keySize);
+
+    std::string hmacStr = "HMAC";
+    std::string counterStr = "COUNTER";
+    std::string feedbackStr = "FEEDBACK";
+
+    /* Initialize */
+    {
+        if ( op.mode != 0 && op.mode != 1 ) {
+            goto end;
+        }
+
+        if ( op.mode == 1 ) {
+            /* XXX Salt is ignored in feedback mode */
+            CF_CHECK_EQ(op.salt.GetSize(), 0);
+        }
+
+        CF_CHECK_EQ(op.mech.mode, true); /* Currently only HMAC supported, not CMAC */
+
+        CF_CHECK_NE(op.secret.GetSize(), 0); /* Crashes if secret is empty. https://github.com/openssl/openssl/issues/12409 */
+        CF_CHECK_NE(md = toEVPMD(op.mech.type), nullptr);
+
+        std::string mdName(EVP_MD_name(md));
+        *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST, mdName.data(), 0);
+        *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_MAC, hmacStr.data(), 0);
+
+        if ( op.mode == 0 ) {
+            *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_MODE, counterStr.data(), 0);
+        } else if ( op.mode == 1 ) {
+            *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_MODE, feedbackStr.data(), 0);
+        } else {
+            abort();
+        }
+
+        auto secretCopy = op.secret.Get();
+        *p++ = OSSL_PARAM_construct_octet_string(
+                OSSL_KDF_PARAM_KEY,
+                secretCopy.data(),
+                secretCopy.size());
+
+        auto labelCopy = op.label.Get();
+        *p++ = OSSL_PARAM_construct_octet_string(
+                OSSL_KDF_PARAM_SALT,
+                labelCopy.data(),
+                labelCopy.size());
+
+        auto saltCopy = op.salt.Get();
+        *p++ = OSSL_PARAM_construct_octet_string(
+                OSSL_KDF_PARAM_INFO,
+                saltCopy.data(),
+                saltCopy.size());
+
+        *p = OSSL_PARAM_construct_end();
+
+        {
+            EVP_KDF* kdf = EVP_KDF_fetch(nullptr, "KBKDF", nullptr);
+            CF_CHECK_NE(kdf, nullptr);
+            kctx = EVP_KDF_new_ctx(kdf);
+            EVP_KDF_free(kdf);
+            CF_CHECK_NE(kctx, nullptr);
+        }
+
+        CF_CHECK_EQ(EVP_KDF_set_ctx_params(kctx, params), 1);
+    }
+
+    /* Process */
+    {
+        CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize), 0);
+    }
+
+    /* Finalize */
+    {
+        ret = component::Key(out, op.keySize);
+    }
+
+end:
+    EVP_KDF_free_ctx(kctx);
+
+    util::free(out);
+
+    return ret;
+}
 #endif
 
 std::optional<component::MAC> OpenSSL::OpCMAC(operation::CMAC& op) {
