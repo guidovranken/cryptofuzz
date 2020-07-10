@@ -3,6 +3,16 @@
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
 
+#if defined(CRYPTOFUZZ_WOLFCRYPT_MMAP_FIXED)
+ #if UINTPTR_MAX != 0xFFFFFFFF
+  #error "CRYPTOFUZZ_WOLFCRYPT_MMAP_FIXED only supported on 32 bit"
+ #endif
+#endif
+
+#if defined(CRYPTOFUZZ_WOLFCRYPT_MMAP_FIXED)
+#include <sys/mman.h>
+#endif
+
 extern "C" {
 #include <wolfssl/options.h>
 #include <wolfssl/wolfcrypt/md2.h>
@@ -37,12 +47,17 @@ namespace cryptofuzz {
 namespace module {
 
 namespace wolfCrypt_detail {
-#if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
+#if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES) || defined(CRYPTOFUZZ_WOLFCRYPT_MMAP_FIXED)
     Datasource* ds;
 #endif
 
+    std::vector<std::pair<void*, size_t>> fixed_allocs;
+
     inline void SetGlobalDs(Datasource* ds) {
-#if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
+#if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES) || defined(CRYPTOFUZZ_WOLFCRYPT_MMAP_FIXED)
+#if defined(CRYPTOFUZZ_WOLFCRYPT_MMAP_FIXED)
+        fixed_allocs.clear();
+#endif
         wolfCrypt_detail::ds = ds;
 #else
         (void)ds;
@@ -50,7 +65,7 @@ namespace wolfCrypt_detail {
     }
 
     inline void UnsetGlobalDs(void) {
-#if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
+#if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES) || defined(CRYPTOFUZZ_WOLFCRYPT_MMAP_FIXED)
         wolfCrypt_detail::ds = nullptr;
 #endif
     }
@@ -70,17 +85,111 @@ namespace wolfCrypt_detail {
         return false;
 #endif
     }
+
+#if defined(CRYPTOFUZZ_WOLFCRYPT_MMAP_FIXED)
+    bool isFixedAlloc(const void* ptr) {
+        for (const auto& p : fixed_allocs) {
+            if ( p.first == ptr ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void* fixed_alloc(const size_t n) {
+        constexpr uint32_t top = 0xFFFFE000;
+        const uint32_t preferred = (top - n) & 0xFFFFF000;
+
+        for (const auto& p : fixed_allocs) {
+            /* If an existing pointer overlaps with the preferred pointer, revert to normal mallo */
+            if ( (void*)preferred >= p.first && (void*)preferred <= ((uint8_t*)p.first + p.second)) {
+                return util::malloc(n);
+            }
+        }
+
+        void* p = mmap(
+                (void*)preferred,
+                n,
+                PROT_READ | PROT_WRITE,
+                MAP_SHARED | MAP_FIXED | MAP_ANONYMOUS,
+                -1,
+                0);
+
+        if ( p == (void*)0xFFFFFFFF ) {
+            /* mmap failed, revert to normal malloc */
+            return util::malloc(n);
+        }
+
+        fixed_allocs.push_back({p, n});
+
+        return p;
+    }
+
+    void* malloc(const size_t n) {
+        bool doFixedMmap = false;
+        if ( ds == nullptr ) {
+            goto end;
+        }
+        try {
+            doFixedMmap = ds->Get<bool>();
+        } catch ( ... ) { }
+end:
+        return doFixedMmap ? fixed_alloc(n) : util::malloc(n);
+    }
+
+    void* realloc(void* ptr, const size_t n) {
+        if ( isFixedAlloc(ptr) ) {
+            /* realloc currently not supported for mmap'ed regions */
+            return nullptr;
+        } else {
+            return util::realloc(ptr, n);
+        }
+    }
+
+    void free(void* ptr) {
+        /* Find pointer in list */
+        for (size_t i = 0; i < fixed_allocs.size(); i++) {
+            if ( fixed_allocs[i].first == ptr ) {
+                if ( munmap(ptr, fixed_allocs[i].second) != 0 ) {
+                    abort();
+                }
+
+                /* Erase pointer from list */
+                fixed_allocs.erase(fixed_allocs.begin() + i);
+
+                return;
+            }
+        }
+
+        util::free(ptr);
+    }
+#else
+    void* malloc(const size_t n) {
+        return util::malloc(n);
+    }
+    void* realloc(void* ptr, const size_t n) {
+        return util::realloc(ptr, n);
+    }
+    void free(void* ptr) {
+        util::free(ptr);
+    }
+#endif
 }
+
 static void* wolfCrypt_custom_malloc(size_t n) {
-    return wolfCrypt_detail::AllocationFailure() ? nullptr : util::malloc(n);
+    return wolfCrypt_detail::AllocationFailure() ?
+        nullptr :
+        wolfCrypt_detail::malloc(n);
 }
 
 static void* wolfCrypt_custom_realloc(void* ptr, size_t n) {
-    return wolfCrypt_detail::AllocationFailure() ? nullptr : util::realloc(ptr, n);
+    return wolfCrypt_detail::AllocationFailure() ?
+        nullptr :
+        wolfCrypt_detail::realloc(ptr, n);
 }
 
 static void wolfCrypt_custom_free(void* ptr) {
-    util::free(ptr);
+    wolfCrypt_detail::free(ptr);
 }
 
 wolfCrypt::wolfCrypt(void) :
