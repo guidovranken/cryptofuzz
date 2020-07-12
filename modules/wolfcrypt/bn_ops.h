@@ -1,8 +1,11 @@
 #include <cryptofuzz/components.h>
 #include <cryptofuzz/operations.h>
+
+extern "C" {
 #include <wolfssl/options.h>
 #include <wolfssl/wolfcrypt/integer.h>
 #include <wolfssl/wolfcrypt/ecc.h>
+}
 
 namespace cryptofuzz {
 namespace module {
@@ -16,38 +19,49 @@ class Bignum {
         Bignum(void) {
             mp = (mp_int*)util::malloc(sizeof(mp_int));
             if ( mp_init(mp) != MP_OKAY ) {
-                abort();
+                util::free(mp);
+                throw std::exception();
             }
         }
 
         ~Bignum() {
+            /* noret */ mp_clear(mp);
             util::free(mp);
         }
 
         Bignum(const Bignum& other) {
             mp = (mp_int*)util::malloc(sizeof(mp_int));
             if ( mp_init(mp) != MP_OKAY ) {
-                abort();
+                util::free(mp);
+                throw std::exception();
             }
             if ( mp_copy(other.mp, mp) != MP_OKAY ) {
-                abort();
+                util::free(mp);
+                throw std::exception();
             }
         }
 
         Bignum(const Bignum&& other) {
             mp = (mp_int*)util::malloc(sizeof(mp_int));
             if ( mp_init(mp) != MP_OKAY ) {
-                abort();
+                util::free(mp);
+                throw std::exception();
             }
             if ( mp_copy(other.mp, mp) != MP_OKAY ) {
-                abort();
+                util::free(mp);
+                throw std::exception();
             }
         }
 
         bool Set(const std::string s) {
             bool ret = false;
 
+#if defined(WOLFSSL_SP_MATH)
+            const auto asDec = util::DecToHex(s);
+            CF_CHECK_EQ(mp_read_radix(mp, asDec.c_str(), 16), MP_OKAY);
+#else
             CF_CHECK_EQ(mp_read_radix(mp, s.c_str(), 10), MP_OKAY);
+#endif
 
             ret = true;
 end:
@@ -58,14 +72,60 @@ end:
             return mp;
         }
 
+        std::optional<uint64_t> AsUint64(void) const {
+            std::optional<uint64_t> ret = std::nullopt;
+            uint64_t v = 0;
+
+#if !defined(WOLFSSL_SP_MATH)
+            CF_CHECK_EQ(mp_isneg(mp), 0);
+#endif
+            CF_CHECK_LTE(mp_count_bits(mp), (int)(sizeof(v) * 8));
+            CF_CHECK_EQ(mp_to_unsigned_bin_len(mp, (uint8_t*)&v, sizeof(v)), MP_OKAY);
+            v =
+                ((v & 0xFF00000000000000) >> 56) |
+                ((v & 0x00FF000000000000) >> 40) |
+                ((v & 0x0000FF0000000000) >> 24) |
+                ((v & 0x000000FF00000000) >>  8) |
+                ((v & 0x00000000FF000000) <<  8) |
+                ((v & 0x0000000000FF0000) << 24) |
+                ((v & 0x000000000000FF00) << 40) |
+                ((v & 0x00000000000000FF) << 56);
+
+            ret = v;
+end:
+            return ret;
+        }
+
+        template <class T>
+        std::optional<T> AsUnsigned(void) const {
+            std::optional<T> ret = std::nullopt;
+            T v2;
+
+            auto v = AsUint64();
+            CF_CHECK_NE(v, std::nullopt);
+
+            v2 = *v;
+            CF_CHECK_EQ(v2, *v);
+
+            ret = v2;
+
+end:
+            return ret;
+        }
+
+
         std::optional<component::Bignum> ToComponentBignum(void) {
             std::optional<component::Bignum> ret = std::nullopt;
             char* str = nullptr;
 
             str = (char*)malloc(8192);
+#if defined(WOLFSSL_SP_MATH)
+            CF_CHECK_EQ(mp_tohex(mp, str), MP_OKAY);
+            ret = { util::HexToDec(str) };
+#else
             CF_CHECK_EQ(mp_toradix(mp, str, 10), MP_OKAY);
-
             ret = { std::string(str) };
+#endif
 end:
             free(str);
 
@@ -199,11 +259,6 @@ class SetBit : public Operation {
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
 };
 
-class ClearBit : public Operation {
-    public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
-};
-
 class LCM : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
@@ -220,6 +275,21 @@ class IsEven : public Operation {
 };
 
 class IsOdd : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class MSB : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class NumBits : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class Set : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
 };

@@ -1927,6 +1927,16 @@ std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& 
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     wolfCrypt_detail::SetGlobalDs(&ds);
+
+#if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
+    /* If allocation failures are induced, it is expected
+     * that the Bignum class will throw if initialization
+     * of the mp_int variable fails. Catch these exceptions
+     * and silently proceed.
+     */
+    try {
+#endif
+
     std::unique_ptr<wolfCrypt_bignum::Operation> opRunner = nullptr;
 
     std::vector<wolfCrypt_bignum::Bignum> bn{
@@ -2017,9 +2027,6 @@ std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& 
         case    CF_CALCOP("SetBit(A,B)"):
             opRunner = std::make_unique<wolfCrypt_bignum::SetBit>();
             break;
-        case    CF_CALCOP("ClearBit(A,B)"):
-            opRunner = std::make_unique<wolfCrypt_bignum::ClearBit>();
-            break;
         case    CF_CALCOP("LCM(A,B)"):
             opRunner = std::make_unique<wolfCrypt_bignum::LCM>();
             break;
@@ -2032,12 +2039,24 @@ std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& 
         case    CF_CALCOP("IsOdd(A)"):
             opRunner = std::make_unique<wolfCrypt_bignum::IsOdd>();
             break;
+        case    CF_CALCOP("MSB(A)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::MSB>();
+            break;
+        case    CF_CALCOP("NumBits(A)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::NumBits>();
+            break;
+        case    CF_CALCOP("Set(A)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::Set>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
     CF_CHECK_EQ(opRunner->Run(ds, res, bn), true);
 
     ret = res.ToComponentBignum();
+#if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
+    } catch ( std::exception ) { }
+#endif
 
 end:
 
