@@ -1923,6 +1923,106 @@ end:
     return ret;
 }
 
+namespace wolfCrypt_detail {
+    std::optional<int> toCurveID(const component::CurveType& curveType) {
+        static const std::map<uint64_t, int> LUT = {
+            /* Reference: wolfssl/wolfcrypt/ecc.h */
+
+            /* NIST */
+            { CF_ECC_CURVE("secp192r1"), ECC_SECP192R1 },
+            { CF_ECC_CURVE("secp256r1"), ECC_SECP256R1 },
+
+            /* SECP */
+            { CF_ECC_CURVE("secp112r1"), ECC_SECP112R1 },
+            { CF_ECC_CURVE("secp112r2"), ECC_SECP112R2 },
+            { CF_ECC_CURVE("secp128r1"), ECC_SECP128R1 },
+            { CF_ECC_CURVE("secp128r2"), ECC_SECP128R2 },
+            { CF_ECC_CURVE("secp160r1"), ECC_SECP160R1 },
+            { CF_ECC_CURVE("secp160r2"), ECC_SECP160R2 },
+            { CF_ECC_CURVE("secp224r1"), ECC_SECP224R1 },
+            { CF_ECC_CURVE("secp384r1"), ECC_SECP384R1 },
+            { CF_ECC_CURVE("secp521r1"), ECC_SECP521R1 },
+
+            /* Koblitz */
+            { CF_ECC_CURVE("secp160k1"), ECC_SECP160K1 },
+            { CF_ECC_CURVE("secp192k1"), ECC_SECP192K1 },
+            { CF_ECC_CURVE("secp224k1"), ECC_SECP224K1 },
+            { CF_ECC_CURVE("secp256k1"), ECC_SECP256K1 },
+
+            /* Brainpool */
+            { CF_ECC_CURVE("brainpool160r1"), ECC_BRAINPOOLP160R1 },
+            { CF_ECC_CURVE("brainpool192r1"), ECC_BRAINPOOLP192R1 },
+            { CF_ECC_CURVE("brainpool224r1"), ECC_BRAINPOOLP224R1 },
+            { CF_ECC_CURVE("brainpool256r1"), ECC_BRAINPOOLP256R1 },
+            { CF_ECC_CURVE("brainpool320r1"), ECC_BRAINPOOLP320R1 },
+            { CF_ECC_CURVE("brainpool384r1"), ECC_BRAINPOOLP384R1 },
+            { CF_ECC_CURVE("brainpool512r1"), ECC_BRAINPOOLP512R1 },
+
+            /* Twisted Edwards */
+            { CF_ECC_CURVE("x25519"), ECC_X25519 },
+            { CF_ECC_CURVE("x448"), ECC_X448 },
+        };
+
+        if ( LUT.find(curveType.Get()) == LUT.end() ) {
+            return std::nullopt;
+        }
+
+        return LUT.at(curveType.Get());
+    }
+}
+
+std::optional<component::ECC_PublicKey> wolfCrypt::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
+    std::optional<component::ECC_PublicKey> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    wolfCrypt_bignum::Bignum priv;
+    ecc_key* key = nullptr;
+    ecc_point* pub = nullptr;
+    char* s = nullptr;
+
+    /* Initialize */
+    {
+        std::optional<int> curveID;
+        CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
+
+        CF_CHECK_NE(key = wc_ecc_key_new(nullptr), nullptr);
+        CF_CHECK_NE(pub = wc_ecc_new_point_h(nullptr), nullptr);
+
+        CF_CHECK_EQ(wc_ecc_set_curve(key, 0, *curveID), MP_OKAY);
+        CF_CHECK_EQ(mp_read_radix(&key->k, op.priv.ToString(ds).c_str(), 10), MP_OKAY);
+    }
+
+    /* Process */
+    CF_CHECK_EQ(wc_ecc_make_pub(key, pub), MP_OKAY);
+
+    /* Finalize */
+    {
+        std::string pub_x_str;
+        std::string pub_y_str;
+
+        s = (char*)util::malloc(8192);
+
+        CF_CHECK_EQ(mp_toradix(pub->x, s, 10), MP_OKAY);
+        pub_x_str = std::string(s);
+
+        CF_CHECK_EQ(mp_toradix(pub->y, s, 10), MP_OKAY);
+        pub_y_str = std::string(s);
+
+        ret = { pub_x_str, pub_y_str };
+    }
+
+end:
+    /* noret */ wc_ecc_key_free(key);
+    /* noret */ wc_ecc_del_point(pub);
+
+    util::free(s);
+
+    wolfCrypt_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
 std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
