@@ -49,6 +49,8 @@ namespace cryptofuzz {
 namespace module {
 
 namespace wolfCrypt_detail {
+    static WC_RNG rng;
+
 #if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES) || defined(CRYPTOFUZZ_WOLFCRYPT_MMAP_FIXED)
     Datasource* ds;
 #endif
@@ -196,6 +198,11 @@ static void wolfCrypt_custom_free(void* ptr) {
 
 wolfCrypt::wolfCrypt(void) :
     Module("wolfCrypt") {
+
+    if ( wc_InitRng(&wolfCrypt_detail::rng) != 0 ) {
+        printf("Cannot initialize wolfCrypt RNG\n");
+        abort();
+    }
 
     wolfCrypt_detail::SetGlobalDs(nullptr);
     if ( wolfSSL_SetAllocators(wolfCrypt_custom_malloc, wolfCrypt_custom_free, wolfCrypt_custom_realloc) != 0 ) {
@@ -2015,6 +2022,56 @@ std::optional<component::ECC_PublicKey> wolfCrypt::OpECC_PrivateToPublic(operati
 end:
     /* noret */ wc_ecc_key_free(key);
     /* noret */ wc_ecc_del_point(pub);
+
+    util::free(s);
+
+    wolfCrypt_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
+std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) {
+    std::optional<component::ECC_KeyPair> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    std::optional<int> curveID;
+    ecc_key* key = nullptr;
+    char* s = nullptr;
+    std::string priv_str, pub_x_str, pub_y_str;
+
+    /* Initialize */
+    {
+        CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
+
+        CF_CHECK_NE(key = wc_ecc_key_new(nullptr), nullptr);
+
+        s = (char*)malloc(8192);
+    }
+
+    /* Process */
+    {
+        CF_CHECK_EQ(wc_ecc_make_key_ex(&wolfCrypt_detail::rng, 0, key, *curveID), 0);
+
+        CF_CHECK_EQ(mp_toradix(&key->k, s, 10), MP_OKAY);
+        priv_str = s;
+
+        CF_CHECK_EQ(mp_toradix(key->pubkey.x, s, 10), MP_OKAY);
+        pub_x_str = s;
+
+        CF_CHECK_EQ(mp_toradix(key->pubkey.y, s, 10), MP_OKAY);
+        pub_y_str = s;
+    }
+
+    /* Finalize */
+    {
+        ret = {
+            std::string(priv_str),
+            { std::string(pub_x_str), std::string(pub_y_str) }
+        };
+    }
+end:
+    /* noret */ wc_ecc_key_free(key);
 
     util::free(s);
 
