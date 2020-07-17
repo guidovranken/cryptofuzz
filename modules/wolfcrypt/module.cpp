@@ -588,6 +588,31 @@ end:
         return LUT.at(digestType.Get());
     }
 
+    std::optional<component::Digest> DigestOneShot(operation::Digest& op) {
+        std::optional<component::Digest> ret = std::nullopt;
+
+        std::optional<wc_HashType> hashType;
+        size_t hashSize;
+        uint8_t* out = nullptr;
+
+        CF_CHECK_NE(hashType = wolfCrypt_detail::toHashType(op.digestType), std::nullopt);
+
+        hashSize = wc_HashGetDigestSize(*hashType);
+        out = util::malloc(hashSize);
+
+        CF_CHECK_EQ(wc_Hash(
+                    *hashType,
+                    op.cleartext.GetPtr(),
+                    op.cleartext.GetSize(),
+                    out,
+                    hashSize), 0);
+
+        ret = component::Digest(out, hashSize);
+end:
+        util::free(out);
+
+        return ret;
+    }
 } /* namespace wolfCrypt_detail */
 
 std::optional<component::Digest> wolfCrypt::OpDigest(operation::Digest& op) {
@@ -595,52 +620,61 @@ std::optional<component::Digest> wolfCrypt::OpDigest(operation::Digest& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     wolfCrypt_detail::SetGlobalDs(&ds);
 
-    switch ( op.digestType.Get() ) {
-        case CF_DIGEST("MD2"):
-            ret = wolfCrypt_detail::md2.Run(op, ds);
-            break;
-        case CF_DIGEST("MD4"):
-            ret = wolfCrypt_detail::md4.Run(op, ds);
-            break;
-        case CF_DIGEST("MD5"):
-            ret = wolfCrypt_detail::md5.Run(op, ds);
-            break;
-        case CF_DIGEST("RIPEMD160"):
-            ret = wolfCrypt_detail::ripemd160.Run(op, ds);
-            break;
-        case CF_DIGEST("SHA1"):
-            ret = wolfCrypt_detail::sha1.Run(op, ds);
-            break;
-        case CF_DIGEST("SHA224"):
-            ret = wolfCrypt_detail::sha224.Run(op, ds);
-            break;
-        case CF_DIGEST("SHA256"):
-            ret = wolfCrypt_detail::sha256.Run(op, ds);
-            break;
-        case CF_DIGEST("SHA384"):
-            ret = wolfCrypt_detail::sha384.Run(op, ds);
-            break;
-        case CF_DIGEST("SHA512"):
-            ret = wolfCrypt_detail::sha512.Run(op, ds);
-            break;
-        case CF_DIGEST("SHA3-224"):
-            ret = wolfCrypt_detail::sha3_224.Run(op, ds);
-            break;
-        case CF_DIGEST("SHA3-256"):
-            ret = wolfCrypt_detail::sha3_256.Run(op, ds);
-            break;
-        case CF_DIGEST("SHA3-384"):
-            ret = wolfCrypt_detail::sha3_384.Run(op, ds);
-            break;
-        case CF_DIGEST("SHA3-512"):
-            ret = wolfCrypt_detail::sha3_512.Run(op, ds);
-            break;
-        case CF_DIGEST("BLAKE2B512"):
-            ret = wolfCrypt_detail::blake2b512.Run(op, ds);
-            break;
-        case CF_DIGEST("BLAKE2S256"):
-            ret = wolfCrypt_detail::blake2s256.Run(op, ds);
-            break;
+    bool useOneShot = false;
+    try {
+        useOneShot = ds.Get<bool>();
+    } catch ( ... ) { }
+
+    if ( useOneShot == true ) {
+        ret = wolfCrypt_detail::DigestOneShot(op);
+    } else {
+        switch ( op.digestType.Get() ) {
+            case CF_DIGEST("MD2"):
+                ret = wolfCrypt_detail::md2.Run(op, ds);
+                break;
+            case CF_DIGEST("MD4"):
+                ret = wolfCrypt_detail::md4.Run(op, ds);
+                break;
+            case CF_DIGEST("MD5"):
+                ret = wolfCrypt_detail::md5.Run(op, ds);
+                break;
+            case CF_DIGEST("RIPEMD160"):
+                ret = wolfCrypt_detail::ripemd160.Run(op, ds);
+                break;
+            case CF_DIGEST("SHA1"):
+                ret = wolfCrypt_detail::sha1.Run(op, ds);
+                break;
+            case CF_DIGEST("SHA224"):
+                ret = wolfCrypt_detail::sha224.Run(op, ds);
+                break;
+            case CF_DIGEST("SHA256"):
+                ret = wolfCrypt_detail::sha256.Run(op, ds);
+                break;
+            case CF_DIGEST("SHA384"):
+                ret = wolfCrypt_detail::sha384.Run(op, ds);
+                break;
+            case CF_DIGEST("SHA512"):
+                ret = wolfCrypt_detail::sha512.Run(op, ds);
+                break;
+            case CF_DIGEST("SHA3-224"):
+                ret = wolfCrypt_detail::sha3_224.Run(op, ds);
+                break;
+            case CF_DIGEST("SHA3-256"):
+                ret = wolfCrypt_detail::sha3_256.Run(op, ds);
+                break;
+            case CF_DIGEST("SHA3-384"):
+                ret = wolfCrypt_detail::sha3_384.Run(op, ds);
+                break;
+            case CF_DIGEST("SHA3-512"):
+                ret = wolfCrypt_detail::sha3_512.Run(op, ds);
+                break;
+            case CF_DIGEST("BLAKE2B512"):
+                ret = wolfCrypt_detail::blake2b512.Run(op, ds);
+                break;
+            case CF_DIGEST("BLAKE2S256"):
+                ret = wolfCrypt_detail::blake2s256.Run(op, ds);
+                break;
+        }
     }
 
     wolfCrypt_detail::UnsetGlobalDs();
