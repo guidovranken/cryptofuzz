@@ -14,6 +14,7 @@ namespace wolfCrypt_bignum {
 class Bignum {
     private:
         mp_int* mp = nullptr;
+        const bool noFree = false;
     public:
 
         Bignum(void) {
@@ -24,9 +25,16 @@ class Bignum {
             }
         }
 
+        Bignum(mp_int* mp) :
+            mp(mp),
+            noFree(true)
+        { }
+
         ~Bignum() {
-            /* noret */ mp_clear(mp);
-            util::free(mp);
+            if ( noFree == false ) {
+                /* noret */ mp_clear(mp);
+                util::free(mp);
+            }
         }
 
         Bignum(const Bignum& other) {
@@ -113,9 +121,8 @@ end:
             return ret;
         }
 
-
-        std::optional<component::Bignum> ToComponentBignum(void) {
-            std::optional<component::Bignum> ret = std::nullopt;
+        std::optional<std::string> ToDecString(void) {
+            std::optional<std::string> ret = std::nullopt;
             char* str = nullptr;
 
             str = (char*)malloc(8192);
@@ -124,11 +131,21 @@ end:
             ret = { util::HexToDec(str) };
 #else
             CF_CHECK_EQ(mp_toradix(mp, str, 10), MP_OKAY);
-            ret = { std::string(str) };
+            ret = std::string(str);
 #endif
 end:
             free(str);
 
+            return ret;
+        }
+
+        std::optional<component::Bignum> ToComponentBignum(void) {
+            std::optional<component::Bignum> ret = std::nullopt;
+
+            auto str = ToDecString();
+            CF_CHECK_NE(str, std::nullopt);
+            ret = { str };
+end:
             return ret;
         }
 };
