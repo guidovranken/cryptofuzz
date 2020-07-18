@@ -99,6 +99,34 @@ end:
 #endif
         }
 
+        std::optional<int> AsInt(void) const {
+            std::optional<int> ret = std::nullopt;
+            const auto u64 = AsUint64();
+
+            CF_CHECK_NE(u64, std::nullopt);
+            CF_CHECK_LTE(*u64, 2147483647);
+
+            ret = *u64;
+end:
+            return ret;
+        }
+
+        std::optional<BN_ULONG> AsBN_ULONG(void) const {
+            std::optional<BN_ULONG> ret;
+            std::optional<uint64_t> v64;
+
+            /* Convert bn[1] to uint64_t if possible */
+            CF_CHECK_NE(v64 = AsUint64(), std::nullopt);
+
+            /* Try to convert the uint64_t to BN_ULONG */
+            BN_ULONG vul;
+            CF_CHECK_EQ(vul = *v64, *v64);
+
+            ret = vul;
+end:
+            return ret;
+        }
+
         void SetUint32(const uint32_t v) {
             /* Gnarly but it works for now */
 
@@ -287,11 +315,6 @@ class IsPrime : public Operation {
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
 };
 
-class LShift1 : public Operation {
-    public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
-};
-
 class Sqrt : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
@@ -377,6 +400,46 @@ class Exp : public Operation {
 };
 
 class Abs : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+};
+
+class RShift : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+};
+
+class LShift1 : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+};
+
+class SetBit : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+};
+
+class ClearBit : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+};
+
+class Bit : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+};
+
+class CmpAbs : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+};
+
+class ModLShift : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+};
+
+class IsPow2 : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
 };

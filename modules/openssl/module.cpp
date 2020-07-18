@@ -3495,6 +3495,30 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
         case    CF_CALCOP("Abs(A)"):
             opRunner = std::make_unique<OpenSSL_bignum::Abs>();
             break;
+        case    CF_CALCOP("RShift(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::RShift>();
+            break;
+        case    CF_CALCOP("LShift1(A)"):
+            opRunner = std::make_unique<OpenSSL_bignum::LShift1>();
+            break;
+        case    CF_CALCOP("SetBit(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::SetBit>();
+            break;
+        case    CF_CALCOP("ClearBit(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::ClearBit>();
+            break;
+        case    CF_CALCOP("Bit(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::Bit>();
+            break;
+        case    CF_CALCOP("CmpAbs(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::CmpAbs>();
+            break;
+        case    CF_CALCOP("ModLShift(A,B,C)"):
+            opRunner = std::make_unique<OpenSSL_bignum::ModLShift>();
+            break;
+        case    CF_CALCOP("IsPow2(A)"):
+            opRunner = std::make_unique<OpenSSL_bignum::IsPow2>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
