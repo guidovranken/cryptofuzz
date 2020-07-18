@@ -388,7 +388,7 @@ bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& c
                 int out_no_inverse;
                 CF_CHECK_LT(BN_cmp(bn[0].GetPtr(), bn[1].GetPtr()), 0);
                 CF_CHECK_EQ(BN_is_odd(bn[1].GetPtr()), 1);
-                CF_CHECK_NE(BN_mod_inverse_odd(res.GetPtr(), &out_no_inverse, bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+                CF_CHECK_EQ(BN_mod_inverse_odd(res.GetPtr(), &out_no_inverse, bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             }
             break;
 #endif
