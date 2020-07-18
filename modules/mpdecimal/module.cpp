@@ -52,7 +52,7 @@ std::optional<component::Bignum> mpdecimal::OpBignumCalc(operation::BignumCalc& 
             opRunner = std::make_unique<mpdecimal_bignum::Abs>();
             break;
         case    CF_CALCOP("Xor(A,B)"):
-            opRunner = std::make_unique<mpdecimal_bignum::Abs>();
+            opRunner = std::make_unique<mpdecimal_bignum::Xor>();
             break;
         case    CF_CALCOP("Cmp(A,B)"):
             opRunner = std::make_unique<mpdecimal_bignum::Cmp>();
