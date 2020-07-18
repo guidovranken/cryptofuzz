@@ -57,6 +57,9 @@ std::optional<component::Bignum> mpdecimal::OpBignumCalc(operation::BignumCalc& 
         case    CF_CALCOP("Cmp(A,B)"):
             opRunner = std::make_unique<mpdecimal_bignum::Cmp>();
             break;
+        case    CF_CALCOP("ExpMod(A,B,C)"):
+            opRunner = std::make_unique<mpdecimal_bignum::ExpMod>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

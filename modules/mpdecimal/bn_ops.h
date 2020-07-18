@@ -142,6 +142,11 @@ class Cmp : public Operation {
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, mpd_context_t* ctx) const override;
 };
 
+class ExpMod : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, mpd_context_t* ctx) const override;
+};
+
 } /* namespace mpdecimal_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

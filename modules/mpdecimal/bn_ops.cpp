@@ -143,6 +143,21 @@ end:
     return ret;
 }
 
+bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, mpd_context_t* ctx) const {
+    (void)ds;
+
+    bool ret = false;
+    uint32_t status = 0;
+
+    mpd_qpowmod(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx, &status);
+
+    CF_CHECK_EQ(status, 0);
+    ret = true;
+
+end:
+    return ret;
+}
+
 } /* namespace mpdecimal_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */
