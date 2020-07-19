@@ -54,6 +54,8 @@ end:
         }
 };
 
+void Initialize(void);
+
 class Operation {
     public:
         virtual bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const = 0;
@@ -151,6 +153,26 @@ class IsEven : public Operation {
 };
 
 class IsOdd : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class Exp : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class Mod_NIST_256 : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class Mod_NIST_384: public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class Mod_NIST_521 : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
 };

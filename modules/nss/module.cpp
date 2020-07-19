@@ -17,6 +17,8 @@ NSS::NSS(void) :
         printf("Cannot initialize NSS\n");
         abort();
     }
+
+    NSS_bignum::Initialize();
 }
 
 NSS::~NSS(void) {
@@ -757,6 +759,18 @@ std::optional<component::Bignum> NSS::OpBignumCalc(operation::BignumCalc& op) {
             break;
         case    CF_CALCOP("IsOdd(A)"):
             opRunner = std::make_unique<NSS_bignum::IsOdd>();
+            break;
+        case    CF_CALCOP("Exp(A,B)"):
+            opRunner = std::make_unique<NSS_bignum::Exp>();
+            break;
+        case    CF_CALCOP("Mod_NIST_256(A)"):
+            opRunner = std::make_unique<NSS_bignum::Mod_NIST_256>();
+            break;
+        case    CF_CALCOP("Mod_NIST_384(A)"):
+            opRunner = std::make_unique<NSS_bignum::Mod_NIST_384>();
+            break;
+        case    CF_CALCOP("Mod_NIST_521(A)"):
+            opRunner = std::make_unique<NSS_bignum::Mod_NIST_521>();
             break;
     }
 

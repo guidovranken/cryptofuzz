@@ -3,10 +3,33 @@
 #include <fuzzing/datasource/id.hpp>
 
 #include "bn_ops.h"
+extern "C" {
+#include <ecl/ecl-priv.h>
+}
 
 namespace cryptofuzz {
 namespace module {
 namespace NSS_bignum {
+
+ECGroup* nist_p256 = nullptr;
+ECGroup* nist_p384 = nullptr;
+ECGroup* nist_p521 = nullptr;
+
+void Initialize(void) {
+    bool ok = false;
+
+    CF_CHECK_NE(nist_p256 = ECGroup_fromName(ECCurve_NIST_P256), nullptr);
+    CF_CHECK_NE(nist_p384 = ECGroup_fromName(ECCurve_NIST_P384), nullptr);
+    CF_CHECK_NE(nist_p521 = ECGroup_fromName(ECCurve_NIST_P521), nullptr);
+
+    ok = true;
+
+end:
+    if ( ok != true ) {
+        printf("Cannot initialize NSS bignum submodule\n");
+        abort();
+    }
+}
 
 bool Add::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
@@ -229,6 +252,54 @@ bool IsOdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     res.Set( std::to_string(mp_isodd(bn[0].GetPtr()) ? 1 : 0) );
 
     return true;
+}
+
+bool Exp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    CF_CHECK_EQ(mp_expt(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Mod_NIST_256::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    CF_CHECK_EQ(nist_p256->meth->field_mod(bn[0].GetPtr(), res.GetPtr(), nist_p256->meth), MP_OKAY);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Mod_NIST_384::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    CF_CHECK_EQ(nist_p384->meth->field_mod(bn[0].GetPtr(), res.GetPtr(), nist_p384->meth), MP_OKAY);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Mod_NIST_521::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    CF_CHECK_EQ(nist_p521->meth->field_mod(bn[0].GetPtr(), res.GetPtr(), nist_p521->meth), MP_OKAY);
+
+    ret = true;
+
+end:
+    return ret;
 }
 
 } /* namespace NSS_bignum */

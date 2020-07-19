@@ -34,7 +34,7 @@ poc : poc.c
 	$(CC) $(CFLAGS) -I $(NSS_NSPR_PATH)/dist/public/nss -I $(NSS_NSPR_PATH)/dist/Debug/include/nspr -I $(NSS_NSPR_PATH)/nss/lib/freebl poc.c $(NSS_NSPR_PATH)/dist/Debug/lib/libfreebl_static.a -o poc
 bn_ops.o: bn_ops.cpp bn_ops.h
 	test $(NSS_NSPR_PATH)
-	$(CXX) $(CXXFLAGS) -I $(NSS_NSPR_PATH)/dist/public/nss -I $(NSS_NSPR_PATH)/dist/Debug/include/nspr -I $(NSS_NSPR_PATH)/nss/lib/freebl -c bn_ops.cpp -o bn_ops.o
+	$(CXX) $(CXXFLAGS) -I $(NSS_NSPR_PATH)/dist/public/nss -I $(NSS_NSPR_PATH)/dist/Debug/include/nspr -I $(NSS_NSPR_PATH)/nss/lib/freebl -I $(NSS_NSPR_PATH)/nss/lib/freebl/mpi -c bn_ops.cpp -o bn_ops.o
 module.o: module.cpp module.h bn_ops.h
 	test $(NSS_NSPR_PATH)
 	$(CXX) $(CXXFLAGS) -I $(NSS_NSPR_PATH)/dist/public/nss -I $(NSS_NSPR_PATH)/dist/Debug/include/nspr -I $(NSS_NSPR_PATH)/nss/lib/freebl -I $(NSS_NSPR_PATH)/nss/lib/pk11wrap -I $(NSS_NSPR_PATH)/nss/cpputil -fPIC -c module.cpp -o module.o
