@@ -51,6 +51,11 @@ bool Mod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
 bool ExpMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
     (void)ds;
 
+    /* Exponent and modulus must be positive, according to the documentation */
+    if ( bn[1] <= 0 || bn[2] <= 0 ) {
+        return false;
+    }
+
     res = ::Botan::power_mod(bn[0], bn[1], bn[2]);
 
     return true;
