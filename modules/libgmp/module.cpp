@@ -112,6 +112,27 @@ std::optional<component::Bignum> libgmp::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("Mod_NIST_521(A)"):
             opRunner = std::make_unique<libgmp_bignum::Mod_NIST_521>();
             break;
+        case    CF_CALCOP("SetBit(A,B)"):
+            opRunner = std::make_unique<libgmp_bignum::SetBit>();
+            break;
+        case    CF_CALCOP("ClearBit(A,B)"):
+            opRunner = std::make_unique<libgmp_bignum::ClearBit>();
+            break;
+        case    CF_CALCOP("Bit(A,B)"):
+            opRunner = std::make_unique<libgmp_bignum::Bit>();
+            break;
+        case    CF_CALCOP("InvMod(A,B)"):
+            opRunner = std::make_unique<libgmp_bignum::InvMod>();
+            break;
+        case    CF_CALCOP("IsOdd(A)"):
+            opRunner = std::make_unique<libgmp_bignum::IsOdd>();
+            break;
+        case    CF_CALCOP("IsEven(A)"):
+            opRunner = std::make_unique<libgmp_bignum::IsEven>();
+            break;
+        case    CF_CALCOP("IsPow2(A)"):
+            opRunner = std::make_unique<libgmp_bignum::IsPow2>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

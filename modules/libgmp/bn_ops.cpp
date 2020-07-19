@@ -304,6 +304,100 @@ bool Mod_NIST_521::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) con
     return true;
 }
 
+bool SetBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    const auto position_sl = bn[1].GetSignedLong();
+    CF_CHECK_NE(position_sl, std::nullopt);
+
+    /* noret */ mpz_setbit(bn[0].GetPtr(), *position_sl);
+    /* noret */ mpz_set(res.GetPtr(), bn[0].GetPtr());
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool ClearBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    const auto position_sl = bn[1].GetSignedLong();
+    CF_CHECK_NE(position_sl, std::nullopt);
+
+    /* noret */ mpz_clrbit(bn[0].GetPtr(), *position_sl);
+    /* noret */ mpz_set(res.GetPtr(), bn[0].GetPtr());
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Bit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    const auto position_sl = bn[1].GetSignedLong();
+    CF_CHECK_NE(position_sl, std::nullopt);
+
+    res.Set( std::to_string(mpz_tstbit(bn[0].GetPtr(), *position_sl)) );
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    /* "The behaviour of this function is undefined when op2 is zero." */
+    CF_CHECK_NE(mpz_sgn(bn[1].GetPtr()), 0);
+
+    CF_CHECK_NE(mpz_invert(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool IsOdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    /* "These macros evaluate their argument more than once." */
+    const auto ptr = bn[0].GetPtr();
+    res.Set( std::to_string(mpz_odd_p(ptr)) );
+
+    return true;
+}
+
+bool IsEven::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    /* "These macros evaluate their argument more than once." */
+    const auto ptr = bn[0].GetPtr();
+    res.Set( std::to_string(mpz_even_p(ptr)) );
+
+    return true;
+}
+
+bool IsPow2::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    if ( mpz_popcount(bn[0].GetPtr()) == 1 ) {
+        res.Set("1");
+    } else {
+        res.Set("0");
+    }
+
+    return true;
+}
+
 } /* namespace libgmp_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

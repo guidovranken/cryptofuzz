@@ -195,6 +195,41 @@ class Mod_NIST_521 : public Operation {
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
 };
 
+class SetBit : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class ClearBit : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class Bit : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class InvMod : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class IsOdd : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class IsEven : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class IsPow2 : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
 } /* namespace libgmp_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */
