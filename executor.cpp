@@ -635,6 +635,11 @@ template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, oper
                 return std::nullopt;
             }
             break;
+        case    CF_CALCOP("ModLShift(A,B,C)"):
+            if ( op.bn1.GetSize() > 4 ) {
+                return std::nullopt;
+            }
+            break;
     }
 
     return module->OpBignumCalc(op);
