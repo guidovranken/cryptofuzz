@@ -5,14 +5,46 @@
 #include <mpdecimal.h>
 #include "bn_ops.h"
 
+extern "C" {
+extern void *(* mpd_mallocfunc)(size_t size);
+extern void *(* mpd_callocfunc)(size_t nmemb, size_t size);
+extern void *(* mpd_reallocfunc)(void *ptr, size_t size);
+extern void (* mpd_free)(void *ptr);
+}
+
 namespace cryptofuzz {
 namespace module {
+
+static void* mpdecimal_custom_malloc(size_t size) {
+    return util::malloc(size);
+}
+
+static void* mpdecimal_custom_calloc(size_t A, size_t B) {
+    const size_t size = A*B;
+    void* p = util::malloc(size);
+    if ( size ) {
+        memset(p, 0x00, size);
+    }
+    return p;
+}
+
+static void* mpdecimal_custom_realloc(void* ptr, size_t size) {
+    return util::realloc(ptr, size);
+}
+
+static void mpdecimal_custom_free(void* ptr) {
+    util::free(ptr);
+}
 
 mpd_context_t ctx;
 
 mpdecimal::mpdecimal(void) :
     Module("mpdecimal") {
-    mpd_init(&ctx, 100000);
+        mpd_mallocfunc = mpdecimal_custom_malloc;
+        mpd_callocfunc = mpdecimal_custom_calloc;
+        mpd_reallocfunc = mpdecimal_custom_realloc;
+        mpd_free = mpdecimal_custom_free;
+        mpd_init(&ctx, 100000);
 }
 
 std::optional<component::Bignum> mpdecimal::OpBignumCalc(operation::BignumCalc& op) {
