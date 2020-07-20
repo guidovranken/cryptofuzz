@@ -2,6 +2,7 @@
 #include <fuzzing/datasource/id.hpp>
 #include <cryptofuzz/repository.h>
 #include <cryptofuzz/util.h>
+#include <iostream>
 
 namespace cryptofuzz {
 namespace tests {
@@ -248,9 +249,169 @@ void test(const operation::ECDH_Derive& op, const std::optional<component::Secre
     (void)result;
 }
 
+namespace BignumCalc {
+    static void Abort(const std::string& message, const std::string& opStr) {
+        std::cout << "BignumCalc ( " << opStr << " ): " << message << std::endl;
+        ::abort();
+    }
+    static void AssertBinary(const component::Bignum& result, const std::string& opStr) {
+        const auto resultStr = result.ToTrimmedString();
+        if ( !(resultStr == "0" || resultStr == "1") ) {
+            Abort("Result must be 0 or 1", opStr);
+        }
+    }
+    static void AssertTertiary(const component::Bignum& result, const std::string& opStr) {
+        const auto resultStr = result.ToTrimmedString();
+        if ( !(resultStr == "0" || resultStr == "1" || resultStr == "-1") ) {
+            Abort("Result must be 0 or 1 or -1", opStr);
+        }
+    }
+    static bool IsZero(const component::Bignum& A) {
+        return A.ToTrimmedString() == "0";
+    }
+    static bool SmallerThan(const component::Bignum& A, const component::Bignum& B) {
+        return A.ToTrimmedString().size() < B.ToTrimmedString().size();
+    }
+    static bool LargerThan(const component::Bignum& A, const component::Bignum& B) {
+        return A.ToTrimmedString().size() > B.ToTrimmedString().size();
+    }
+    static void AssertModResult(const component::Bignum& result, const component::Bignum& mod, const std::string& opStr) {
+        if ( LargerThan(result, mod) ) {
+            Abort("Result is larger than modulo", opStr);
+        }
+    }
+    static void AssertNotSmallerThan(const component::Bignum& result, const component::Bignum& A, const std::string& opStr) {
+        if ( SmallerThan(result, A) ) {
+            Abort("Result is larger than the input", opStr);
+        }
+    }
+    static void AssertNotLargerThan(const component::Bignum& result, const component::Bignum& A, const std::string& opStr) {
+        if ( LargerThan(result, A) ) {
+            Abort("Result is larger than the input", opStr);
+        }
+    }
+}
+
 void test(const operation::BignumCalc& op, const std::optional<component::Bignum>& result) {
-    (void)op;
-    (void)result;
+    if ( result == std::nullopt ) {
+        return;
+    }
+
+    using namespace BignumCalc;
+
+    const auto calcOp = op.calcOp.Get();
+
+    switch ( calcOp ) {
+        case    CF_CALCOP("Add(A,B)"):
+            if (    SmallerThan(*result, op.bn0) ||
+                    SmallerThan(*result, op.bn1) ) {
+                Abort("Result is smaller than its operands", repository::CalcOpToString(calcOp));
+            }
+            break;
+        case    CF_CALCOP("Div(A,B)"):
+            if ( IsZero(op.bn1) ) {
+                Abort("Division by zero should not produce a result", repository::CalcOpToString(calcOp));
+            }
+
+            if ( LargerThan(*result, op.bn0) ) {
+                Abort("Result is larger than the dividend", repository::CalcOpToString(calcOp));
+            }
+            break;
+        case    CF_CALCOP("Mul(A,B)"):
+            if ( IsZero(op.bn0) || IsZero(op.bn1) ) {
+                if ( !IsZero(*result) ) {
+                    Abort("Result of Mul with zero operand is not zero", repository::CalcOpToString(calcOp));
+                }
+            }
+            break;
+        case    CF_CALCOP("Mod(A,B)"):
+            BignumCalc::AssertModResult(*result, op.bn1, "Mod");
+            break;
+        case    CF_CALCOP("ExpMod(A,B,C)"):
+            BignumCalc::AssertModResult(*result, op.bn2, "ExpMod");
+            break;
+        case    CF_CALCOP("AddMod(A,B,C)"):
+            BignumCalc::AssertModResult(*result, op.bn2, "AddMod");
+            break;
+        case    CF_CALCOP("SubMod(A,B,C)"):
+            BignumCalc::AssertModResult(*result, op.bn2, "SubMod");
+            break;
+        case    CF_CALCOP("MulMod(A,B,C)"):
+            BignumCalc::AssertModResult(*result, op.bn2, "MulMod");
+            break;
+        case    CF_CALCOP("SqrMod(A,B)"):
+            BignumCalc::AssertModResult(*result, op.bn1, "SqrMod");
+            break;
+        case    CF_CALCOP("SqrtMod(A,B)"):
+            BignumCalc::AssertModResult(*result, op.bn1, "SqrtMod");
+            break;
+        case    CF_CALCOP("ModLShift(A,B,C)"):
+            BignumCalc::AssertModResult(*result, op.bn2, "ModLShift");
+            break;
+        case    CF_CALCOP("Bit(A,B)"):
+            BignumCalc::AssertBinary(*result, "Bit");
+            break;
+        case    CF_CALCOP("IsEq(A,B)"):
+            BignumCalc::AssertBinary(*result, "IsEq");
+            break;
+        case    CF_CALCOP("IsEven(A)"):
+            BignumCalc::AssertBinary(*result, "IsEven");
+            break;
+        case    CF_CALCOP("IsOdd(A)"):
+            BignumCalc::AssertBinary(*result, "IsOdd");
+            break;
+        case    CF_CALCOP("IsOne(A)"):
+            BignumCalc::AssertBinary(*result, "IsOne");
+            break;
+        case    CF_CALCOP("IsPow2(A)"):
+            BignumCalc::AssertBinary(*result, "IsPow2");
+            break;
+        case    CF_CALCOP("IsPrime(A)"):
+            BignumCalc::AssertBinary(*result, "IsPrime");
+            break;
+        case    CF_CALCOP("IsZero(A)"):
+            BignumCalc::AssertBinary(*result, "IsZero");
+            break;
+        case    CF_CALCOP("Cmp(A,B)"):
+            BignumCalc::AssertTertiary(*result, "Cmp");
+            break;
+        case    CF_CALCOP("CmpAbs(A,B)"):
+            BignumCalc::AssertTertiary(*result, "CmpAbs");
+            break;
+        case    CF_CALCOP("Jacobi(A,B)"):
+            BignumCalc::AssertTertiary(*result, "Jacobi");
+            break;
+        case    CF_CALCOP("Sqr(A)"):
+            AssertNotSmallerThan(*result, op.bn0, repository::CalcOpToString(calcOp));
+            break;
+        case    CF_CALCOP("RShift(A,B)"):
+            if ( IsZero(op.bn0) || IsZero(op.bn1) ) {
+                if ( op.bn0.ToTrimmedString() != result->ToTrimmedString() ) {
+                    Abort("Zero operand should not alter input", repository::CalcOpToString(calcOp));
+                }
+            }
+
+            AssertNotLargerThan(*result, op.bn0, repository::CalcOpToString(calcOp));
+            break;
+        case    CF_CALCOP("LShift1(A)"):
+            if ( IsZero(op.bn0) ) {
+                if ( op.bn0.ToTrimmedString() != result->ToTrimmedString() ) {
+                    Abort("Zero input should remain zero", repository::CalcOpToString(calcOp));
+                }
+            }
+
+            AssertNotSmallerThan(*result, op.bn0, repository::CalcOpToString(calcOp));
+            break;
+        case    CF_CALCOP("SetBit(A,B)"):
+            AssertNotSmallerThan(*result, op.bn0, repository::CalcOpToString(calcOp));
+            break;
+        case    CF_CALCOP("ClearBit(A,B)"):
+            AssertNotLargerThan(*result, op.bn0, repository::CalcOpToString(calcOp));
+            break;
+        case    CF_CALCOP("Sqrt(A)"):
+            AssertNotLargerThan(*result, op.bn0, repository::CalcOpToString(calcOp));
+            break;
+    }
 }
 
 } /* namespace tests */
