@@ -147,7 +147,11 @@ class Bignum {
             auto s = ToString();
             trim_left_if(s, boost::is_any_of("0"));
 
-            return s;
+            if ( s == "" ) {
+                return "0";
+            } else {
+                return s;
+            }
         }
 
         /* Prefix the string with a pseudo-random amount of zeroes */
