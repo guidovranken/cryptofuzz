@@ -3,6 +3,10 @@
 #include <memory>
 #include "driver.h"
 
+#if defined(CRYPTOFUZZ_LIBTOMMATH) && defined(CRYPTOFUZZ_NSS)
+#error "libtommath and NSS cannot be used together due to symbol collisions"
+#endif
+
 #if !defined(CRYPTOFUZZ_NO_OPENSSL)
   #include <modules/openssl/module.h>
 #endif
@@ -101,6 +105,10 @@
 
 #if defined(CRYPTOFUZZ_SYMCRYPT)
   #include <modules/symcrypt/module.h>
+#endif
+
+#if defined(CRYPTOFUZZ_LIBTOMMATH)
+  #include <modules/libtommath/module.h>
 #endif
 
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
@@ -216,6 +224,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_SYMCRYPT)
     driver->LoadModule( std::make_shared<cryptofuzz::module::SymCrypt>() );
+#endif
+
+#if defined(CRYPTOFUZZ_LIBTOMMATH)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::libtommath>() );
 #endif
     return 0;
 }
