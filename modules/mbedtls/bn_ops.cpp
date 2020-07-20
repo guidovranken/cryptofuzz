@@ -346,6 +346,17 @@ bool ClearBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return detail::SetBit(res, bn, false);
 }
 
+bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    CF_CHECK_EQ(mbedtls_mpi_mod_mpi(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
+
+    ret = true;
+end:
+    return ret;
+}
+
 } /* namespace mbedTLS_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */
