@@ -328,6 +328,14 @@ bool ClearBit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::Bi
     return true;
 }
 
+bool MulAdd::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
+    res = ::Botan::mul_add(bn[0], bn[1], bn[2]);
+
+    return true;
+}
+
 } /* namespace Botan_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */
