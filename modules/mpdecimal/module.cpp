@@ -83,6 +83,12 @@ std::optional<component::Bignum> mpdecimal::OpBignumCalc(operation::BignumCalc& 
         case    CF_CALCOP("Abs(A)"):
             opRunner = std::make_unique<mpdecimal_bignum::Abs>();
             break;
+        case    CF_CALCOP("And(A,B)"):
+            opRunner = std::make_unique<mpdecimal_bignum::And>();
+            break;
+        case    CF_CALCOP("Or(A,B)"):
+            opRunner = std::make_unique<mpdecimal_bignum::Or>();
+            break;
         case    CF_CALCOP("Xor(A,B)"):
             opRunner = std::make_unique<mpdecimal_bignum::Xor>();
             break;
