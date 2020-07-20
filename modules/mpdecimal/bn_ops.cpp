@@ -92,7 +92,11 @@ bool And::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, mpd_context_
     mpd_qand(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx, &status);
 
     CF_CHECK_EQ(status, 0);
-    ret = true;
+
+    /* mpd_qor interprets the input string as binary instead of decimal, so the result will
+     * not be equal to that of other implementations.
+     */
+    //ret = true;
 
 end:
     return ret;
@@ -107,7 +111,11 @@ bool Or::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, mpd_context_t
     mpd_qor(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx, &status);
 
     CF_CHECK_EQ(status, 0);
-    ret = true;
+
+    /* mpd_qor interprets the input string as binary instead of decimal, so the result will
+     * not be equal to that of other implementations.
+     */
+    //ret = true;
 
 end:
     return ret;
@@ -122,7 +130,11 @@ bool Xor::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, mpd_context_
     mpd_qxor(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx, &status);
 
     CF_CHECK_EQ(status, 0);
-    ret = true;
+
+    /* mpd_qor interprets the input string as binary instead of decimal, so the result will
+     * not be equal to that of other implementations.
+     */
+    //ret = true;
 
 end:
     return ret;
@@ -150,6 +162,81 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, mpd_conte
     uint32_t status = 0;
 
     mpd_qpowmod(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx, &status);
+
+    CF_CHECK_EQ(status, 0);
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Sqrt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, mpd_context_t* ctx) const {
+    (void)ds;
+
+    bool ret = false;
+    uint32_t status = 0;
+
+    mpd_qsqrt(res.GetPtr(), bn[0].GetPtr(), ctx, &status);
+
+    CF_CHECK_EQ(status, 0);
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool MulAdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, mpd_context_t* ctx) const {
+    (void)ds;
+
+    bool ret = false;
+    uint32_t status = 0;
+
+    mpd_qfma(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx, &status);
+
+    CF_CHECK_EQ(status, 0);
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Max::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, mpd_context_t* ctx) const {
+    (void)ds;
+
+    bool ret = false;
+    uint32_t status = 0;
+
+    mpd_qmax(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx, &status);
+
+    CF_CHECK_EQ(status, 0);
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Min::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, mpd_context_t* ctx) const {
+    (void)ds;
+
+    bool ret = false;
+    uint32_t status = 0;
+
+    mpd_qmin(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx, &status);
+
+    CF_CHECK_EQ(status, 0);
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Log10::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, mpd_context_t* ctx) const {
+    (void)ds;
+
+    bool ret = false;
+    uint32_t status = 0;
+
+    mpd_qlog10(res.GetPtr(), bn[0].GetPtr(), ctx, &status);
 
     CF_CHECK_EQ(status, 0);
     ret = true;

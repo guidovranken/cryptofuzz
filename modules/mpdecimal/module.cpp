@@ -98,6 +98,27 @@ std::optional<component::Bignum> mpdecimal::OpBignumCalc(operation::BignumCalc& 
         case    CF_CALCOP("ExpMod(A,B,C)"):
             opRunner = std::make_unique<mpdecimal_bignum::ExpMod>();
             break;
+        case    CF_CALCOP("Sqrt(A)"):
+            /* Disabled for now because mpdecimal's sqrt is ridiculously slow */
+            /*
+            opRunner = std::make_unique<mpdecimal_bignum::Sqrt>();
+            */
+            break;
+        case    CF_CALCOP("MulAdd(A,B,C)"):
+            opRunner = std::make_unique<mpdecimal_bignum::MulAdd>();
+            break;
+        case    CF_CALCOP("Min(A,B)"):
+            opRunner = std::make_unique<mpdecimal_bignum::Min>();
+            break;
+        case    CF_CALCOP("Max(A,B)"):
+            opRunner = std::make_unique<mpdecimal_bignum::Max>();
+            break;
+        case    CF_CALCOP("Log10(A)"):
+            /* Disabled for now because mpdecimal's log10 is ridiculously slow */
+            /*
+            opRunner = std::make_unique<mpdecimal_bignum::Log10>();
+            */
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

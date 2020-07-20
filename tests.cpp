@@ -266,6 +266,9 @@ namespace BignumCalc {
             Abort("Result must be 0 or 1 or -1", opStr);
         }
     }
+    static bool IsEqual(const component::Bignum& A, const component::Bignum& B) {
+        return A.ToTrimmedString() == B.ToTrimmedString();
+    }
     static bool IsZero(const component::Bignum& A) {
         return A.ToTrimmedString() == "0";
     }
@@ -410,6 +413,15 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
             break;
         case    CF_CALCOP("Sqrt(A)"):
             AssertNotLargerThan(*result, op.bn0, repository::CalcOpToString(calcOp));
+            break;
+        case    CF_CALCOP("MulAdd(A,B,C)"):
+            AssertNotSmallerThan(*result, op.bn2, repository::CalcOpToString(calcOp));
+            break;
+        case    CF_CALCOP("Min(A,B)"):
+        case    CF_CALCOP("Max(A,B)"):
+            if ( !IsEqual(*result, op.bn0) && !IsEqual(*result, op.bn1) ) {
+                Abort("Result is not an operand", repository::CalcOpToString(calcOp));
+            }
             break;
     }
 }
