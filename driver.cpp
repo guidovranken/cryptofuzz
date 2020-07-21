@@ -4,6 +4,7 @@
 #include "executor.h"
 #include <cryptofuzz/util.h>
 #include <set>
+#include <algorithm>
 #include <unistd.h>
 
 namespace cryptofuzz {
@@ -15,34 +16,44 @@ void Driver::LoadModule(std::shared_ptr<Module> module) {
 void Driver::Run(const uint8_t* data, const size_t size) const {
     using fuzzing::datasource::ID;
 
-    static ExecutorDigest executorDigest(CF_OPERATION("Digest"), modules, debug);
-    static ExecutorHMAC executorHMAC(CF_OPERATION("HMAC"), modules, debug);
-    static ExecutorCMAC executorCMAC(CF_OPERATION("CMAC"), modules, debug);
-    static ExecutorSymmetricEncrypt executorSymmetricEncrypt(CF_OPERATION("SymmetricEncrypt"), modules, debug);
-    static ExecutorSymmetricDecrypt executorSymmetricDecrypt(CF_OPERATION("SymmetricDecrypt"), modules, debug);
-    static ExecutorKDF_SCRYPT executorKDF_SCRYPT(CF_OPERATION("KDF_SCRYPT"), modules, debug);
-    static ExecutorKDF_HKDF executorKDF_HKDF(CF_OPERATION("KDF_HKDF"), modules, debug);
-    static ExecutorKDF_TLS1_PRF executorKDF_TLS1_PRF(CF_OPERATION("KDF_TLS1_PRF"), modules, debug);
-    static ExecutorKDF_PBKDF executorKDF_PBKDF(CF_OPERATION("KDF_PBKDF"), modules, debug);
-    static ExecutorKDF_PBKDF1 executorKDF_PBKDF1(CF_OPERATION("KDF_PBKDF1"), modules, debug);
-    static ExecutorKDF_PBKDF2 executorKDF_PBKDF2(CF_OPERATION("KDF_PBKDF2"), modules, debug);
-    static ExecutorKDF_ARGON2 executorKDF_ARGON2(CF_OPERATION("KDF_ARGON2"), modules, debug);
-    static ExecutorKDF_SSH executorKDF_SSH(ID("Cryptofuzz/Operation/KDF_SSH"), modules, debug);
-    static ExecutorKDF_X963 executorKDF_X963(CF_OPERATION("KDF_X963"), modules, debug);
-    static ExecutorKDF_BCRYPT executorKDF_BCRYPT(CF_OPERATION("KDF_BCRYPT"), modules, debug);
-    static ExecutorKDF_SP_800_108 executorKDF_SP_800_108(CF_OPERATION("KDF_SP_800_108"), modules, debug);
-    static ExecutorECC_PrivateToPublic executorECC_PrivateToPublic(CF_OPERATION("ECC_PrivateToPublic"), modules, debug);
-    static ExecutorECC_GenerateKeyPair executorECC_GenerateKeyPair(CF_OPERATION("ECC_GenerateKeyPair"), modules, debug);
-    static ExecutorECDSA_Sign executorECDSA_Sign(CF_OPERATION("ECDSA_Sign"), modules, debug);
-    static ExecutorECDSA_Verify executorECDSA_Verify(CF_OPERATION("ECDSA_Verify"), modules, debug);
-    static ExecutorECDH_Derive executorECDH_Derive(CF_OPERATION("ECDH_Derive"), modules, debug);
-    static ExecutorBignumCalc executorBignumCalc(CF_OPERATION("BignumCalc"), modules, debug);
+    static ExecutorDigest executorDigest(CF_OPERATION("Digest"), modules, options);
+    static ExecutorHMAC executorHMAC(CF_OPERATION("HMAC"), modules, options);
+    static ExecutorCMAC executorCMAC(CF_OPERATION("CMAC"), modules, options);
+    static ExecutorSymmetricEncrypt executorSymmetricEncrypt(CF_OPERATION("SymmetricEncrypt"), modules, options);
+    static ExecutorSymmetricDecrypt executorSymmetricDecrypt(CF_OPERATION("SymmetricDecrypt"), modules, options);
+    static ExecutorKDF_SCRYPT executorKDF_SCRYPT(CF_OPERATION("KDF_SCRYPT"), modules, options);
+    static ExecutorKDF_HKDF executorKDF_HKDF(CF_OPERATION("KDF_HKDF"), modules, options);
+    static ExecutorKDF_TLS1_PRF executorKDF_TLS1_PRF(CF_OPERATION("KDF_TLS1_PRF"), modules, options);
+    static ExecutorKDF_PBKDF executorKDF_PBKDF(CF_OPERATION("KDF_PBKDF"), modules, options);
+    static ExecutorKDF_PBKDF1 executorKDF_PBKDF1(CF_OPERATION("KDF_PBKDF1"), modules, options);
+    static ExecutorKDF_PBKDF2 executorKDF_PBKDF2(CF_OPERATION("KDF_PBKDF2"), modules, options);
+    static ExecutorKDF_ARGON2 executorKDF_ARGON2(CF_OPERATION("KDF_ARGON2"), modules, options);
+    static ExecutorKDF_SSH executorKDF_SSH(ID("Cryptofuzz/Operation/KDF_SSH"), modules, options);
+    static ExecutorKDF_X963 executorKDF_X963(CF_OPERATION("KDF_X963"), modules, options);
+    static ExecutorKDF_BCRYPT executorKDF_BCRYPT(CF_OPERATION("KDF_BCRYPT"), modules, options);
+    static ExecutorKDF_SP_800_108 executorKDF_SP_800_108(CF_OPERATION("KDF_SP_800_108"), modules, options);
+    static ExecutorECC_PrivateToPublic executorECC_PrivateToPublic(CF_OPERATION("ECC_PrivateToPublic"), modules, options);
+    static ExecutorECC_GenerateKeyPair executorECC_GenerateKeyPair(CF_OPERATION("ECC_GenerateKeyPair"), modules, options);
+    static ExecutorECDSA_Sign executorECDSA_Sign(CF_OPERATION("ECDSA_Sign"), modules, options);
+    static ExecutorECDSA_Verify executorECDSA_Verify(CF_OPERATION("ECDSA_Verify"), modules, options);
+    static ExecutorECDH_Derive executorECDH_Derive(CF_OPERATION("ECDH_Derive"), modules, options);
+    static ExecutorBignumCalc executorBignumCalc(CF_OPERATION("BignumCalc"), modules, options);
 
     try {
 
         Datasource ds(data, size);
 
         const auto operation = ds.Get<uint64_t>();
+
+        /* Only run whitelisted operations, if specified */
+        if ( options.operations != std::nullopt ) {
+            if ( std::find(
+                    options.operations->begin(),
+                    options.operations->end(),
+                    operation) == options.operations->end() ) {
+                return;
+            }
+        }
         const auto payload = ds.GetData(0, 1);
 
         switch ( operation ) {
@@ -125,8 +136,8 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     }
 };
 
-Driver::Driver(const bool debug) :
-    debug(debug)
+Driver::Driver(const Options options) :
+    options(options)
 { }
 
 } /* namespace cryptofuzz */

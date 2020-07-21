@@ -1,6 +1,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <cryptofuzz/options.h>
 #include "driver.h"
 
 #if defined(CRYPTOFUZZ_LIBTOMMATH) && defined(CRYPTOFUZZ_NSS)
@@ -114,17 +115,9 @@
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
-    bool debug = false;
+    const cryptofuzz::Options options(*argc, *argv);
 
-    for (int i = 1; i < *argc; i++) {
-        const std::string arg((*argv)[i]);
-
-        if ( arg == "--debug") {
-            debug = true;
-        }
-    }
-
-    driver = std::make_shared<cryptofuzz::Driver>(debug);
+    driver = std::make_shared<cryptofuzz::Driver>(options);
 
 #if !defined(CRYPTOFUZZ_NO_OPENSSL)
     driver->LoadModule( std::make_shared<cryptofuzz::module::OpenSSL>() );
@@ -229,6 +222,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 #if defined(CRYPTOFUZZ_LIBTOMMATH)
     driver->LoadModule( std::make_shared<cryptofuzz::module::libtommath>() );
 #endif
+
+    /* TODO check if options.forceModule (if set) refers to a module that is
+     * actually loaded, warn otherwise.
+     */
     return 0;
 }
 

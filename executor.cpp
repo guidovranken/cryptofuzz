@@ -646,10 +646,10 @@ template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, oper
 }
 
 template <class ResultType, class OperationType>
-ExecutorBase<ResultType, OperationType>::ExecutorBase(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const bool debug) :
+ExecutorBase<ResultType, OperationType>::ExecutorBase(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
     operationID(operationID),
     modules(modules),
-    debug(debug)
+    options(options)
 {
 }
 
@@ -828,7 +828,12 @@ OperationType ExecutorBase<ResultType, OperationType>::getOp(Datasource* parentD
 
 template <class ResultType, class OperationType>
 std::shared_ptr<Module> ExecutorBase<ResultType, OperationType>::getModule(Datasource& ds) const {
-    const auto moduleID = ds.Get<uint64_t>();
+    auto moduleID = ds.Get<uint64_t>();
+
+    /* Override the extracted module ID with the preferred one, if specified */
+    if ( options.forceModule != std::nullopt ) {
+        moduleID = *options.forceModule;
+    }
 
     if ( modules.find(moduleID) == modules.end() ) {
         return nullptr;
@@ -906,7 +911,7 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
     }
     */
 
-    if ( debug == true && !operations.empty() ) {
+    if ( options.debug == true && !operations.empty() ) {
         printf("Running:\n%s\n", operations[0].second.ToString().c_str());
     }
     for (size_t i = 0; i < operations.size(); i++) {
@@ -941,7 +946,7 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
             updateExtraCounters(module->ID, op);
         }
 
-        if ( debug == true ) {
+        if ( options.debug == true ) {
             printf("Module %s result:\n\n%s\n\n",
                     result.first->name.c_str(),
                     result.second == std::nullopt ?

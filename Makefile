@@ -20,14 +20,16 @@ repository_tbl.h : gen_repository.py
 	python gen_repository.py
 repository.o : repository.cpp repository_tbl.h
 	$(CXX) $(CXXFLAGS) repository.cpp -c -o repository.o
+options.o : options.cpp
+	$(CXX) $(CXXFLAGS) options.cpp -c -o options.o
 
 third_party/cpu_features/build/libcpu_features.a :
 	cd third_party/cpu_features && rm -rf build && mkdir build && cd build && cmake .. && make
 
-cryptofuzz : driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o third_party/cpu_features/build/libcpu_features.a
+cryptofuzz : driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o options.o third_party/cpu_features/build/libcpu_features.a
 	test $(LIBFUZZER_LINK)
 	#$(CXX) $(CXXFLAGS) driver.o executor.o util.o entry.o tests.o operation.o datasource.o modules/openssl/module.a modules/mbedtls/module.a modules/boost/module.a modules/publicdomain/module.a modules/cppcrypto/module.a modules/monero/module.a Fuzzer/libFuzzer.a -o cryptofuzz
-	$(CXX) $(CXXFLAGS) driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o $(shell find modules -type f -name module.a) $(LIBFUZZER_LINK) third_party/cpu_features/build/libcpu_features.a $(LINK_FLAGS) -o cryptofuzz
+	$(CXX) $(CXXFLAGS) driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o options.o $(shell find modules -type f -name module.a) $(LIBFUZZER_LINK) third_party/cpu_features/build/libcpu_features.a $(LINK_FLAGS) -o cryptofuzz
 
 generate_dict: generate_dict.cpp
 	$(CXX) $(CXXFLAGS) generate_dict.cpp -o generate_dict
