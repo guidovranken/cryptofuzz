@@ -615,6 +615,10 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
         /* Initialize */
         {
             std::optional<std::string> curveString;
+
+            /* Botan appears to generate a new key if the input key is 0, so don't do this */
+            CF_CHECK_NE(op.priv.ToTrimmedString(), "0");
+
             CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
             ::Botan::EC_Group group(*curveString);
 
