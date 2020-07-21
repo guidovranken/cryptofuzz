@@ -635,19 +635,7 @@ func op_LSHIFT(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bo
 }
 
 func op_RSHIFT(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
-    res.Set(BN0)
-    if res.Cmp(big.NewInt(0)) < 0 && res.Bit(0) == 1 {
-        res.Add(res, big.NewInt(1))
-    }
-
-    if direct {
-        res.Rsh(res, 1)
-    } else {
-        tmp := big.NewInt(0)
-        tmp.Rsh(res, 1)
-        res.Set(tmp)
-    }
-    return true
+    return false;
 }
 
 func op_GCD(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
