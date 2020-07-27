@@ -1,13 +1,29 @@
 #pragma once
 
+#include <openssl/ec.h>
+#include <openssl/evp.h>
+#include <openssl/hmac.h>
+#include <openssl/cmac.h>
+#include <fuzzing/datasource/datasource.hpp>
+#include <memory>
+#include <exception>
+#include <cryptofuzz/components.h>
+
 namespace cryptofuzz {
 namespace module {
+
+namespace OpenSSL_detail {
+const EVP_CIPHER* toEVPCIPHER(const component::SymmetricCipherType cipherType);
+bool isAEAD(const EVP_CIPHER* ctx, const uint64_t cipherType);
+bool checkSetIVLength(const uint64_t cipherType, const EVP_CIPHER* cipher, EVP_CIPHER_CTX* ctx, const size_t inputIvLength);
+bool checkSetKeyLength(const EVP_CIPHER* cipher, EVP_CIPHER_CTX* ctx, const size_t inputKeyLength);
+} /* namespace OpenSSL_detail */
 
 template <class T>
 class CTX_Copier {
     private:
         T* ctx = nullptr;
-        Datasource& ds;
+        fuzzing::datasource::Datasource& ds;
 
         T* newCTX(void) const;
         int copyCTX(T* dest, T* src) const;
@@ -38,7 +54,7 @@ class CTX_Copier {
         }
 
     public:
-        CTX_Copier(Datasource& ds) :
+        CTX_Copier(fuzzing::datasource::Datasource& ds) :
             ds(ds) {
             ctx = newCTX();
             if ( ctx == nullptr ) {
@@ -60,7 +76,7 @@ class EC_GROUP_Copier {
         bool locked = false;
         const int curveNID;
         EC_GROUP* group = nullptr;
-        Datasource& ds;
+        fuzzing::datasource::Datasource& ds;
 
         EC_GROUP* newGroup(void) {
             return EC_GROUP_new_by_curve_name(curveNID);
@@ -102,7 +118,7 @@ class EC_GROUP_Copier {
         }
 
     public:
-        EC_GROUP_Copier(Datasource& ds, const int curveNID) :
+        EC_GROUP_Copier(fuzzing::datasource::Datasource& ds, const int curveNID) :
             curveNID(curveNID), ds(ds) {
             group = newGroup();
         }
@@ -128,7 +144,7 @@ class EC_POINT_Copier {
     private:
         std::shared_ptr<EC_GROUP_Copier> group;
         EC_POINT* point = nullptr;
-        Datasource& ds;
+        fuzzing::datasource::Datasource& ds;
 
         EC_POINT* newPoint(void) {
             return EC_POINT_new(group->GetPtr());
@@ -166,7 +182,7 @@ class EC_POINT_Copier {
         }
 
     public:
-        EC_POINT_Copier(Datasource& ds, std::shared_ptr<EC_GROUP_Copier> group) :
+        EC_POINT_Copier(fuzzing::datasource::Datasource& ds, std::shared_ptr<EC_GROUP_Copier> group) :
             group(group), ds(ds) {
             point = newPoint();
             if ( point == nullptr ) {
@@ -234,5 +250,14 @@ using CF_CMAC_CTX = CTX_Copier<CMAC_CTX>;
 using CF_EC_KEY = CTX_Copier<EC_KEY>;
 using CF_EC_POINT = EC_POINT_Copier;
 using CF_EC_GROUP = EC_GROUP_Copier;
+
+struct Reinitialize : public std::exception
+{
+    const char * what () const throw ()
+    {
+        return "Reinitialize";
+    }
+};
+
 } /* namespace module */
 } /* namespace cryptofuzz */
