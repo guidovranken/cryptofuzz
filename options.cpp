@@ -71,6 +71,48 @@ Options::Options(const int argc, char** argv) {
             }
 
             this->forceModule = forceModule;
+        } else if ( !parts.empty() && parts[0] == "--disable-modules" ) {
+            if ( parts.size() != 2 ) {
+                std::cout << "Expected argument after --disable-modules=" << std::endl;
+                exit(1);
+            }
+
+            std::vector<std::string> moduleStrings;
+            boost::split(moduleStrings, parts[1], boost::is_any_of(","));
+
+            std::vector<uint64_t> moduleIDs;
+
+            for (const auto& curModStr : moduleStrings) {
+                bool found = false;
+                for (size_t i = 0; i < (sizeof(repository::ModuleLUT) / sizeof(repository::ModuleLUT[0])); i++) {
+                    if ( boost::iequals(curModStr, std::string(repository::ModuleLUT[i].name)) ) {
+                        moduleIDs.push_back(repository::ModuleLUT[i].id);
+                        found = true;
+                        break;
+                    }
+                }
+
+                if ( found == false ) {
+                    std::cout << "Undefined module: " << curModStr << std::endl;
+                    exit(1);
+                }
+            }
+
+            this->disableModules = moduleIDs;
+        } else if ( !parts.empty() && parts[0] == "--min-modules" ) {
+            if ( parts.size() != 2 ) {
+                std::cout << "Expected argument after --min-modules=" << std::endl;
+                exit(1);
+            }
+
+            const auto& moduleStr = parts[1];
+            const int minModules = stoi(moduleStr);
+            if ( minModules < 1 ) {
+                std::cout << "min-modules must be >= 1" << std::endl;
+                exit(1);
+            }
+
+            this->minModules = static_cast<size_t>(minModules);
         }
     }
 }

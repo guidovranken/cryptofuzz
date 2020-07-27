@@ -835,6 +835,16 @@ std::shared_ptr<Module> ExecutorBase<ResultType, OperationType>::getModule(Datas
         moduleID = *options.forceModule;
     }
 
+    /* Skip if this is a disabled module */
+    if ( options.disableModules != std::nullopt ) {
+        if ( std::find(
+                    options.disableModules->begin(),
+                    options.disableModules->end(),
+                    moduleID) != options.disableModules->end() ) {
+            return nullptr;
+        }
+    }
+
     if ( modules.find(moduleID) == modules.end() ) {
         return nullptr;
     }
@@ -886,7 +896,18 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
     {
         std::set<uint64_t> moduleIDs;
         for (const auto& m : modules ) {
-            moduleIDs.insert(m.first);
+            const auto moduleID = m.first;
+
+            /* Skip if this is a disabled module */
+            if ( options.disableModules != std::nullopt ) {
+                if ( std::find(
+                            options.disableModules->begin(),
+                            options.disableModules->end(),
+                            moduleID) != options.disableModules->end() ) {
+                    continue;
+                }
+            }
+            moduleIDs.insert(moduleID);
         }
 
         std::set<uint64_t> operationModuleIDs;
@@ -904,12 +925,9 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
     }
 #endif
 
-    /*
-     * Enable this to test results of min. 2 modules always
-    if ( operations.size() < 2 ) {
+    if ( operations.size() < options.minModules ) {
         return;
     }
-    */
 
     if ( options.debug == true && !operations.empty() ) {
         printf("Running:\n%s\n", operations[0].second.ToString().c_str());
