@@ -49,7 +49,7 @@ Options::Options(const int argc, char** argv) {
             this->operations = operationIDs;
         } else if ( !parts.empty() && parts[0] == "--force-module" ) {
             if ( parts.size() != 2 ) {
-                std::cout << "Expected argument after --operations=" << std::endl;
+                std::cout << "Expected argument after --force-module=" << std::endl;
                 exit(1);
             }
 
