@@ -424,6 +424,7 @@ namespace nss_detail {
         PK11SlotInfo* slot = nullptr;
         SECItem* param = nullptr;
         PK11Context* ctx = nullptr;
+        CK_NSS_AEAD_PARAMS* aead_params = nullptr;
         CK_NSS_GCM_PARAMS* gcm_params = nullptr;
 
         size_t outIdx = 0;
@@ -477,17 +478,31 @@ namespace nss_detail {
                 CF_CHECK_NE(param = PK11_ParamFromIV(*ckm, &ivItem), nullptr);
             } else {
                 CF_CHECK_NE(param = (SECItem *)PORT_Alloc(sizeof(SECItem)), nullptr);
-                CF_CHECK_NE(gcm_params = (CK_NSS_GCM_PARAMS*)PORT_Alloc(sizeof(CK_NSS_GCM_PARAMS)), nullptr);
 
-                gcm_params->pIv = ivvec.data();
-                gcm_params->ulIvLen = ivvec.size();
-                gcm_params->pAAD = aadvec.data();
-                gcm_params->ulAADLen = aadvec.size();
-                gcm_params->ulTagBits = GetTagSize(op) * 8;
+                if ( repository::IsGCM(op.cipher.cipherType.Get()) ) {
+                    CF_CHECK_NE(gcm_params = (CK_NSS_GCM_PARAMS*)PORT_Alloc(sizeof(CK_NSS_GCM_PARAMS)), nullptr);
 
-                param->type = siBuffer;
-                param->data = (unsigned char *)gcm_params;
-                param->len = sizeof(*gcm_params);
+                    gcm_params->pIv = ivvec.data();
+                    gcm_params->ulIvLen = ivvec.size();
+                    gcm_params->pAAD = aadvec.data();
+                    gcm_params->ulAADLen = aadvec.size();
+                    gcm_params->ulTagBits = GetTagSize(op) * 8;
+
+                    param->type = siBuffer;
+                    param->data = (unsigned char *)gcm_params;
+                    param->len = sizeof(*gcm_params);
+                } else {
+                    CF_CHECK_NE(aead_params = (CK_NSS_AEAD_PARAMS*)PORT_Alloc(sizeof(CK_NSS_AEAD_PARAMS)), nullptr);
+                    aead_params->pNonce = ivvec.data();
+                    aead_params->ulNonceLen = ivvec.size();
+                    aead_params->pAAD = aadvec.data();
+                    aead_params->ulAADLen = aadvec.size();
+                    aead_params->ulTagLen = GetTagSize(op);
+
+                    param->type = siBuffer;
+                    param->data = (unsigned char *)aead_params;
+                    param->len = sizeof(*aead_params);
+                }
             }
 
             if ( repository::IsAEAD(op.cipher.cipherType.Get()) == false ) {
