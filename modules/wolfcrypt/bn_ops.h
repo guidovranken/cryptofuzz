@@ -14,10 +14,12 @@ namespace wolfCrypt_bignum {
 class Bignum {
     private:
         mp_int* mp = nullptr;
+        Datasource& ds;
         const bool noFree = false;
     public:
 
-        Bignum(void) {
+        Bignum(Datasource& ds) :
+            ds(ds) {
             mp = (mp_int*)util::malloc(sizeof(mp_int));
             if ( mp_init(mp) != MP_OKAY ) {
                 util::free(mp);
@@ -25,8 +27,9 @@ class Bignum {
             }
         }
 
-        Bignum(mp_int* mp) :
+        Bignum(mp_int* mp, Datasource& ds) :
             mp(mp),
+            ds(ds),
             noFree(true)
         { }
 
@@ -37,7 +40,8 @@ class Bignum {
             }
         }
 
-        Bignum(const Bignum& other) {
+        Bignum(const Bignum& other) :
+            ds(other.ds) {
             mp = (mp_int*)util::malloc(sizeof(mp_int));
             if ( mp_init(mp) != MP_OKAY ) {
                 util::free(mp);
@@ -49,7 +53,8 @@ class Bignum {
             }
         }
 
-        Bignum(const Bignum&& other) {
+        Bignum(const Bignum&& other) :
+            ds(other.ds) {
             mp = (mp_int*)util::malloc(sizeof(mp_int));
             if ( mp_init(mp) != MP_OKAY ) {
                 util::free(mp);
@@ -64,12 +69,21 @@ class Bignum {
         bool Set(const std::string s) {
             bool ret = false;
 
+            bool hex = false;
+            try {
+                hex = ds.Get<bool>();
+            } catch ( ... ) { }
+
 #if defined(WOLFSSL_SP_MATH)
-            const auto asDec = util::DecToHex(s);
-            CF_CHECK_EQ(mp_read_radix(mp, asDec.c_str(), 16), MP_OKAY);
-#else
-            CF_CHECK_EQ(mp_read_radix(mp, s.c_str(), 10), MP_OKAY);
+            hex = true;
 #endif
+
+            if ( hex == true ) {
+                const auto asDec = util::DecToHex(s);
+                CF_CHECK_EQ(mp_read_radix(mp, asDec.c_str(), 16), MP_OKAY);
+            } else {
+                CF_CHECK_EQ(mp_read_radix(mp, s.c_str(), 10), MP_OKAY);
+            }
 
             ret = true;
 end:
@@ -126,13 +140,25 @@ end:
             char* str = nullptr;
 
             str = (char*)malloc(8192);
+
 #if defined(WOLFSSL_SP_MATH)
             CF_CHECK_EQ(mp_tohex(mp, str), MP_OKAY);
             ret = { util::HexToDec(str) };
 #else
-            CF_CHECK_EQ(mp_toradix(mp, str, 10), MP_OKAY);
-            ret = std::string(str);
+            bool hex = false;
+            try {
+                hex = ds.Get<bool>();
+            } catch ( ... ) { }
+
+            if ( hex == true ) {
+                CF_CHECK_EQ(mp_tohex(mp, str), MP_OKAY);
+                ret = { util::HexToDec(str) };
+            } else {
+                CF_CHECK_EQ(mp_toradix(mp, str, 10), MP_OKAY);
+                ret = std::string(str);
+            }
 #endif
+
 end:
             free(str);
 

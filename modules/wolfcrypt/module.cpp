@@ -1985,7 +1985,7 @@ std::optional<component::ECC_PublicKey> wolfCrypt::OpECC_PrivateToPublic(operati
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     wolfCrypt_detail::SetGlobalDs(&ds);
 
-    wolfCrypt_bignum::Bignum priv;
+    wolfCrypt_bignum::Bignum priv(ds);
     ecc_key* key = nullptr;
     ecc_point* pub = nullptr;
 
@@ -1999,7 +1999,7 @@ std::optional<component::ECC_PublicKey> wolfCrypt::OpECC_PrivateToPublic(operati
 
         CF_CHECK_EQ(wc_ecc_set_curve(key, 0, *curveID), MP_OKAY);
         {
-            wolfCrypt_bignum::Bignum priv(&key->k);
+            wolfCrypt_bignum::Bignum priv(&key->k, ds);
             CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
         }
     }
@@ -2009,8 +2009,8 @@ std::optional<component::ECC_PublicKey> wolfCrypt::OpECC_PrivateToPublic(operati
 
     /* Finalize */
     {
-        wolfCrypt_bignum::Bignum pub_x(pub->x);
-        wolfCrypt_bignum::Bignum pub_y(pub->y);
+        wolfCrypt_bignum::Bignum pub_x(pub->x, ds);
+        wolfCrypt_bignum::Bignum pub_y(pub->y, ds);
 
         std::optional<std::string> pub_x_str, pub_y_str;
         CF_CHECK_NE(pub_x_str = pub_x.ToDecString(), std::nullopt);
@@ -2049,9 +2049,9 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
         CF_CHECK_EQ(wc_ecc_make_key_ex(&wolfCrypt_detail::rng, 0, key, *curveID), 0);
 
         {
-            wolfCrypt_bignum::Bignum priv(&key->k);
-            wolfCrypt_bignum::Bignum pub_x(key->pubkey.x);
-            wolfCrypt_bignum::Bignum pub_y(key->pubkey.y);
+            wolfCrypt_bignum::Bignum priv(&key->k, ds);
+            wolfCrypt_bignum::Bignum pub_x(key->pubkey.x, ds);
+            wolfCrypt_bignum::Bignum pub_y(key->pubkey.y, ds);
 
             CF_CHECK_NE(priv_str = priv.ToDecString(), std::nullopt);
             CF_CHECK_NE(pub_x_str = pub_x.ToDecString(), std::nullopt);
@@ -2091,19 +2091,18 @@ std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& 
     std::unique_ptr<wolfCrypt_bignum::Operation> opRunner = nullptr;
 
     std::vector<wolfCrypt_bignum::Bignum> bn{
-        std::move(wolfCrypt_bignum::Bignum()),
-        std::move(wolfCrypt_bignum::Bignum()),
-        std::move(wolfCrypt_bignum::Bignum()),
-        std::move(wolfCrypt_bignum::Bignum())
+        std::move(wolfCrypt_bignum::Bignum(ds)),
+        std::move(wolfCrypt_bignum::Bignum(ds)),
+        std::move(wolfCrypt_bignum::Bignum(ds)),
+        std::move(wolfCrypt_bignum::Bignum(ds))
     };
-    wolfCrypt_bignum::Bignum res;
+    wolfCrypt_bignum::Bignum res(ds);
 
     CF_CHECK_EQ(res.Set("0"), true);
     CF_CHECK_EQ(bn[0].Set(op.bn0.ToString(ds)), true);
     CF_CHECK_EQ(bn[1].Set(op.bn1.ToString(ds)), true);
     CF_CHECK_EQ(bn[2].Set(op.bn2.ToString(ds)), true);
     CF_CHECK_EQ(bn[3].Set(op.bn3.ToString(ds)), true);
-
 
     switch ( op.calcOp.Get() ) {
         case    CF_CALCOP("Add(A,B)"):
