@@ -433,6 +433,7 @@ bool Bit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 #else
     std::optional<uint64_t> _bitPos;
     mp_digit bitPos;
+    int isBitSet;
 
     CF_CHECK_NE(_bitPos = bn[1].AsUint64(), std::nullopt);
 
@@ -440,7 +441,8 @@ bool Bit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     /* Ensure no truncation has occurred */
     CF_CHECK_EQ(bitPos, *_bitPos);
 
-    CF_CHECK_EQ( res.Set( std::to_string(mp_is_bit_set(bn[0].GetPtr(), bitPos) ? 1 : 0) ), true);
+    CF_CHECK_GTE(isBitSet = mp_is_bit_set(bn[0].GetPtr(), bitPos), 0);
+    CF_CHECK_EQ( res.Set(isBitSet ? "1" : "0"), true);
 
     ret = true;
 
