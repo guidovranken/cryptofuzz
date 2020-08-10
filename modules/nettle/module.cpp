@@ -345,6 +345,30 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
         }
         break;
 
+        case CF_CIPHER("AES_192_GCM"):
+        {
+            struct gcm_aes192_ctx ctx;
+
+            CF_CHECK_NE(op.cipher.iv.GetSize(), 0);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 192 / 8);
+            CF_CHECK_NE(op.tagSize, std::nullopt);
+            CF_CHECK_LTE(*op.tagSize, GCM_DIGEST_SIZE);
+
+            out = util::malloc(op.cleartext.GetSize());
+            outTag = util::malloc(*op.tagSize);
+
+            /* noret */ gcm_aes192_set_key(&ctx, op.cipher.key.GetPtr());
+            /* noret */ gcm_aes192_set_iv(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr());
+            if ( op.aad != std::nullopt ) {
+                /* noret */ gcm_aes192_update(&ctx, op.aad->GetSize(), op.aad->GetPtr());
+            }
+            /* noret */ gcm_aes192_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr());
+            /* noret */ gcm_aes192_digest(&ctx, *op.tagSize, outTag);
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
+        }
+        break;
+
         case CF_CIPHER("AES_256_GCM"):
         {
             struct gcm_aes256_ctx ctx;
@@ -419,6 +443,36 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
             }
             /* noret */ ccm_aes128_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr());
             /* noret */ ccm_aes128_digest(&ctx, *op.tagSize, outTag);
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
+        }
+        break;
+
+        case CF_CIPHER("AES_192_CCM"):
+        {
+            struct ccm_aes192_ctx ctx;
+
+            CF_CHECK_GTE(op.cipher.iv.GetSize(), 7);
+            CF_CHECK_LTE(op.cipher.iv.GetSize(), 13);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 192 / 8);
+            CF_CHECK_NE(op.tagSize, std::nullopt);
+            {
+                static const std::vector<size_t> validTagSizes = {4, 6, 8, 10, 12, 14, 16};
+                if ( std::find(validTagSizes.begin(), validTagSizes.end(), *op.tagSize) == validTagSizes.end() ) {
+                    goto end;
+                }
+            }
+
+            out = util::malloc(op.cleartext.GetSize());
+            outTag = util::malloc(*op.tagSize);
+
+            /* noret */ ccm_aes192_set_key(&ctx, op.cipher.key.GetPtr());
+            /* noret */ ccm_aes192_set_nonce(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr(), op.aad == std::nullopt ? 0 : op.aad->GetSize(), op.cleartext.GetSize(), *op.tagSize);
+            if ( op.aad != std::nullopt ) {
+                /* noret */ ccm_aes192_update(&ctx, op.aad->GetSize(), op.aad->GetPtr());
+            }
+            /* noret */ ccm_aes192_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr());
+            /* noret */ ccm_aes192_digest(&ctx, *op.tagSize, outTag);
 
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
         }
@@ -524,7 +578,6 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
             /* noret */ xts_aes256_set_encrypt_key(&ctx, op.cipher.key.GetPtr());
             /* noret */ xts_aes256_encrypt_message(&ctx, op.cipher.iv.GetPtr(), op.cleartext.GetSize(), out, op.cleartext.GetPtr());
 
-            if ( op.cleartext.GetSize() ) out[0]++;
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
         }
         break;
@@ -580,6 +633,32 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
             }
             /* noret */ gcm_aes128_decrypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr());
             /* noret */ gcm_aes128_digest(&ctx, op.tag->GetSize(), outTag);
+
+            CF_CHECK_EQ(memcmp(op.tag->GetPtr(), outTag, op.tag->GetSize()), 0);
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("AES_192_GCM"):
+        {
+            struct gcm_aes192_ctx ctx;
+
+            CF_CHECK_NE(op.cipher.iv.GetSize(), 0);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 192 / 8);
+            CF_CHECK_NE(op.tag, std::nullopt);
+            CF_CHECK_LTE(op.tag->GetSize(), GCM_DIGEST_SIZE);
+
+            out = util::malloc(op.ciphertext.GetSize());
+            outTag = util::malloc(op.tag->GetSize());
+
+            /* noret */ gcm_aes192_set_key(&ctx, op.cipher.key.GetPtr());
+            /* noret */ gcm_aes192_set_iv(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr());
+            if ( op.aad != std::nullopt ) {
+                /* noret */ gcm_aes192_update(&ctx, op.aad->GetSize(), op.aad->GetPtr());
+            }
+            /* noret */ gcm_aes192_decrypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr());
+            /* noret */ gcm_aes192_digest(&ctx, op.tag->GetSize(), outTag);
 
             CF_CHECK_EQ(memcmp(op.tag->GetPtr(), outTag, op.tag->GetSize()), 0);
 
@@ -665,6 +744,38 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
             }
             /* noret */ ccm_aes128_decrypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr());
             /* noret */ ccm_aes128_digest(&ctx, op.tag->GetSize(), outTag);
+
+            CF_CHECK_EQ(memcmp(op.tag->GetPtr(), outTag, op.tag->GetSize()), 0);
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("AES_192_CCM"):
+        {
+            struct ccm_aes192_ctx ctx;
+
+            CF_CHECK_GTE(op.cipher.iv.GetSize(), 7);
+            CF_CHECK_LTE(op.cipher.iv.GetSize(), 13);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 192 / 8);
+            CF_CHECK_NE(op.tag, std::nullopt);
+            {
+                static const std::vector<size_t> validTagSizes = {4, 6, 8, 10, 12, 14, 16};
+                if ( std::find(validTagSizes.begin(), validTagSizes.end(), op.tag->GetSize()) == validTagSizes.end() ) {
+                    goto end;
+                }
+            }
+
+            out = util::malloc(op.ciphertext.GetSize());
+            outTag = util::malloc(op.tag->GetSize());
+
+            /* noret */ ccm_aes192_set_key(&ctx, op.cipher.key.GetPtr());
+            /* noret */ ccm_aes192_set_nonce(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr(), op.aad == std::nullopt ? 0 : op.aad->GetSize(), op.ciphertext.GetSize(), op.tag->GetSize());
+            if ( op.aad != std::nullopt ) {
+                /* noret */ ccm_aes192_update(&ctx, op.aad->GetSize(), op.aad->GetPtr());
+            }
+            /* noret */ ccm_aes192_decrypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr());
+            /* noret */ ccm_aes192_digest(&ctx, op.tag->GetSize(), outTag);
 
             CF_CHECK_EQ(memcmp(op.tag->GetPtr(), outTag, op.tag->GetSize()), 0);
 
