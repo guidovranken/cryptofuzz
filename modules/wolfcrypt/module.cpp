@@ -1982,6 +1982,9 @@ namespace wolfCrypt_detail {
 
 std::optional<component::ECC_PublicKey> wolfCrypt::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
+    /* Disabled until ZD 10749 is resolved */
+    (void)op;
+#if 0
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     wolfCrypt_detail::SetGlobalDs(&ds);
 
@@ -2025,6 +2028,7 @@ end:
 
     wolfCrypt_detail::UnsetGlobalDs();
 
+#endif
     return ret;
 }
 
