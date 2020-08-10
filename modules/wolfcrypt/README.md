@@ -10,6 +10,8 @@ The module hooks wolfCrypt's memory allocator (using `wolfSSL_SetAllocators`) an
 
 This feature found several bugs: https://github.com/wolfSSL/wolfssl/pull/3113
 
+This feature is now enabled by default.
+
 # Detecting address space overflows
 
 Compile the module with `CRYPTOFUZZ_WOLFCRYPT_MMAP_FIXED` defined.

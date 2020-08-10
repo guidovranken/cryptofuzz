@@ -1,0 +1,628 @@
+#include <cryptofuzz/util.h>
+#include <cryptofuzz/repository.h>
+#include <fuzzing/datasource/id.hpp>
+
+#include "bn_ops.h"
+
+namespace cryptofuzz {
+namespace module {
+namespace wolfCrypt_bignum {
+
+namespace wolfCrypt_bignum_detail {
+    static int compare(Bignum& A, Bignum& B) {
+        return mp_cmp(A.GetPtr(), B.GetPtr());
+    }
+}
+
+bool Add::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    bool ret = false;
+
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            CF_CHECK_EQ(mp_add(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+            ret = true;
+            break;
+        case    1:
+            {
+                const auto op = bn[1].AsUnsigned<mp_digit>();
+                CF_CHECK_NE(op, std::nullopt);
+                CF_CHECK_EQ(mp_add_d(bn[0].GetPtr(), *op, res.GetPtr()), MP_OKAY);
+                ret = true;
+            }
+            break;
+    }
+
+end:
+    return ret;
+}
+
+bool Sub::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    bool ret = false;
+
+#if defined(WOLFSSL_SP_MATH)
+    /* SP math cannot represent negative numbers, so ensure the result
+     * of the subtracton is always >= 0.
+     *
+     * Still run the subtraction operation to see if this can cause
+     * memory errors, but don't return the result.
+     */
+    bool negative = false;
+    if ( wolfCrypt_bignum_detail::compare(bn[0], bn[1]) == MP_LT) {
+        negative = true;
+    }
+#endif
+
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            CF_CHECK_EQ(mp_sub(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+            ret = true;
+            break;
+        case    1:
+            {
+                const auto op = bn[1].AsUnsigned<mp_digit>();
+                CF_CHECK_NE(op, std::nullopt);
+                CF_CHECK_EQ(mp_sub_d(bn[0].GetPtr(), *op, res.GetPtr()), MP_OKAY);
+                ret = true;
+            }
+            break;
+    }
+
+end:
+#if defined(WOLFSSL_SP_MATH)
+    if ( negative == true ) {
+        return false;
+    }
+#endif
+    return ret;
+}
+
+bool Mul::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    bool ret = false;
+
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            CF_CHECK_EQ(mp_mul(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+            ret = true;
+            break;
+        case    1:
+            {
+                const auto op = bn[1].AsUnsigned<mp_digit>();
+                CF_CHECK_NE(op, std::nullopt);
+                CF_CHECK_EQ(mp_mul_d(bn[0].GetPtr(), *op, res.GetPtr()), MP_OKAY);
+                ret = true;
+            }
+            break;
+    }
+
+end:
+    return ret;
+}
+
+bool Div::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+#if defined(WOLFSSL_SP_MATH)
+    (void)res;
+    (void)bn;
+#else
+
+    CF_CHECK_EQ(mp_div(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr(), nullptr), MP_OKAY);
+
+    ret = true;
+
+end:
+#endif
+    return ret;
+}
+
+bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    CF_CHECK_EQ(mp_exptmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+
+#if defined(WOLFSSL_SP_MATH)
+    ret = true;
+#else
+    if (
+            !mp_iszero(bn[1].GetPtr()) &&
+            !mp_isneg(bn[0].GetPtr()) &&
+            !mp_isneg(bn[1].GetPtr()) &&
+            !mp_isneg(bn[2].GetPtr()) ) {
+            ret = true;
+    }
+#endif
+
+end:
+    return ret;
+}
+
+bool Sqr::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+#if defined(WOLFSSL_SP_MATH)
+    (void)res;
+    (void)bn;
+#else
+    CF_CHECK_EQ(mp_sqr(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+
+    ret = true;
+
+end:
+#endif
+    return ret;
+}
+
+bool GCD::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    (void)res;
+    (void)bn;
+
+    bool ret = false;
+
+    CF_CHECK_EQ(mp_gcd(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+    CF_CHECK_EQ(mp_invmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Cmp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    bool ret = false;
+
+    int cmpRes = 0;
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            cmpRes = wolfCrypt_bignum_detail::compare(bn[0], bn[1]);
+            break;
+        case    1:
+            {
+                const auto op = bn[1].AsUnsigned<mp_digit>();
+                CF_CHECK_NE(op, std::nullopt);
+                cmpRes = mp_cmp_d(bn[0].GetPtr(), *op);
+            }
+            break;
+        default:
+            goto end;
+    }
+
+    switch ( cmpRes ) {
+        case    MP_GT:
+            CF_CHECK_EQ( res.Set("1"), true);
+            break;
+        case    MP_LT:
+            CF_CHECK_EQ( res.Set("-1"), true);
+            break;
+        case    MP_EQ:
+            CF_CHECK_EQ( res.Set("0"), true);
+            break;
+        default:
+            /* Invalid return value */
+            abort();
+    }
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Abs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+    CF_CHECK_EQ(mp_abs(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Neg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    (void)res;
+    (void)bn;
+
+    /* TODO */
+
+    bool ret = false;
+
+    return ret;
+}
+
+bool RShift::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    bool ret = false;
+
+    std::optional<uint64_t> _numBits;
+    int numBits;
+
+    CF_CHECK_NE(_numBits = bn[1].AsUint64(), std::nullopt);
+    CF_CHECK_LTE(_numBits, 2147483647);
+
+    numBits = *_numBits;
+
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            CF_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+            /* noret */ mp_rshb(res.GetPtr(), numBits);
+            ret = true;
+            break;
+#if !defined(WOLFSSL_SP_MATH)
+        case    1:
+            CF_CHECK_EQ(mp_div_2d(bn[0].GetPtr(), numBits, res.GetPtr(), nullptr), MP_OKAY);
+            ret = true;
+            break;
+#endif
+    }
+
+end:
+
+    return ret;
+}
+
+bool LShift1::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+#if defined(WOLFSSL_SP_MATH)
+    (void)res;
+    (void)bn;
+#else
+    CF_CHECK_EQ(mp_mul_2d(bn[0].GetPtr(), 1, res.GetPtr()), MP_OKAY);
+
+    ret = true;
+
+end:
+#endif
+
+    return ret;
+}
+
+bool IsNeg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+#if defined(WOLFSSL_SP_MATH)
+    (void)res;
+    (void)bn;
+#else
+    CF_CHECK_EQ( res.Set( std::to_string(mp_isneg(bn[0].GetPtr()) ? 1 : 0) ), true);
+
+    ret = true;
+
+end:
+#endif
+    return ret;
+}
+
+bool IsEq::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+    const bool isEq = mp_cmp(bn[0].GetPtr(), bn[1].GetPtr()) == MP_EQ;
+    CF_CHECK_EQ( res.Set( std::to_string(isEq ? 1 : 0) ), true);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool IsZero::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+    CF_CHECK_EQ( res.Set( std::to_string(mp_iszero(bn[0].GetPtr()) ? 1 : 0) ), true);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool IsOne::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+    CF_CHECK_EQ( res.Set( std::to_string(mp_isone(bn[0].GetPtr()) ? 1 : 0) ), true);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool MulMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+    CF_CHECK_EQ(mp_mulmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool AddMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+#if defined(WOLFSSL_SP_MATH)
+    (void)res;
+    (void)bn;
+#else
+    CF_CHECK_EQ(mp_addmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+
+    ret = true;
+
+end:
+#endif
+    return ret;
+}
+
+bool SubMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+#if defined(WOLFSSL_SP_MATH)
+    (void)res;
+    (void)bn;
+#else
+    CF_CHECK_EQ(mp_submod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+
+    ret = true;
+
+end:
+#endif
+    return ret;
+}
+
+bool SqrMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+#if defined(WOLFSSL_SP_MATH)
+    (void)res;
+    (void)bn;
+#else
+    CF_CHECK_EQ(mp_sqrmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+
+    ret = true;
+
+end:
+#endif
+    return ret;
+}
+
+bool Bit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+#if defined(WOLFSSL_SP_MATH)
+    (void)res;
+    (void)bn;
+#else
+    std::optional<uint64_t> _bitPos;
+    mp_digit bitPos;
+    int isBitSet;
+
+    CF_CHECK_NE(_bitPos = bn[1].AsUint64(), std::nullopt);
+
+    bitPos = *_bitPos;
+    /* Ensure no truncation has occurred */
+    CF_CHECK_EQ(bitPos, *_bitPos);
+
+    CF_CHECK_GTE(isBitSet = mp_is_bit_set(bn[0].GetPtr(), bitPos), 0);
+    CF_CHECK_EQ( res.Set(isBitSet ? "1" : "0"), true);
+
+    ret = true;
+
+end:
+#endif
+    return ret;
+}
+
+bool CmpAbs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    (void)res;
+    (void)bn;
+
+    /* TODO */
+
+    bool ret = false;
+
+    return ret;
+}
+
+bool SetBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    std::optional<uint64_t> _bitPos;
+    mp_digit bitPos;
+
+    CF_CHECK_NE(_bitPos = bn[1].AsUint64(), std::nullopt);
+
+    bitPos = *_bitPos;
+    /* Ensure no truncation has occurred */
+    CF_CHECK_EQ(bitPos, *_bitPos);
+
+    CF_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+    CF_CHECK_EQ(mp_set_bit(res.GetPtr(), bitPos), MP_OKAY);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool LCM::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+    CF_CHECK_EQ(mp_lcm(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    bool ret = false;
+
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            CF_CHECK_EQ(mp_mod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+            ret = true;
+            break;
+#if !defined(WOLFSSL_SP_MATH)
+        case    1:
+            {
+                const auto op = bn[1].AsUnsigned<mp_digit>();
+                CF_CHECK_NE(op, std::nullopt);
+                mp_digit modResult;
+                CF_CHECK_EQ(mp_mod_d(bn[0].GetPtr(), *op, &modResult), MP_OKAY);
+                CF_CHECK_EQ(res.Set(std::to_string(modResult)), true);
+                ret = true;
+            }
+            break;
+#endif
+    }
+
+end:
+    return ret;
+}
+
+bool IsEven::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+    CF_CHECK_EQ(mp_iszero(bn[0].GetPtr()), false);
+
+    CF_CHECK_EQ( res.Set( std::to_string(mp_iseven(bn[0].GetPtr()) ? 1 : 0) ), true);
+
+    ret = true;
+
+end:
+
+    return ret;
+}
+
+bool IsOdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+    CF_CHECK_EQ( res.Set( std::to_string(mp_isodd(bn[0].GetPtr()) ? 1 : 0) ), true);
+
+    ret = true;
+
+end:
+
+    return ret;
+}
+
+bool MSB::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+    const int bit = mp_leading_bit(bn[0].GetPtr());
+
+    /* Must be 0 or 1 */
+    if ( bit != 0 && bit != 1 ) {
+        abort();
+    }
+
+    CF_CHECK_EQ( res.Set( std::to_string(bit) ), true);
+
+    ret = true;
+
+end:
+
+    return ret;
+}
+
+bool NumBits::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+    const auto numBits = mp_count_bits(bn[0].GetPtr());
+
+    /* Basic sanity check */
+    if ( numBits < 0 ) {
+        abort();
+    }
+
+    CF_CHECK_EQ( res.Set( std::to_string(numBits) ), true);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Set::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    bool ret = false;
+
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            CF_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+            ret = true;
+            break;
+        case    1:
+            {
+                const auto op = bn[0].AsUnsigned<mp_digit>();
+                CF_CHECK_NE(op, std::nullopt);
+                CF_CHECK_EQ(mp_set(res.GetPtr(), *op), MP_OKAY);
+                ret = true;
+            }
+            break;
+        case    2:
+            {
+                /* noret */ mp_exch(res.GetPtr(), bn[0].GetPtr());
+                ret = true;
+            }
+            break;
+    }
+
+end:
+    return ret;
+}
+
+} /* namespace wolfCrypt_bignum */
+} /* namespace module */
+} /* namespace cryptofuzz */

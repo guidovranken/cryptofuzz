@@ -22,6 +22,9 @@ class wolfCrypt : public Module {
         std::optional<component::Key> OpKDF_HKDF(operation::KDF_HKDF& op) override;
         std::optional<component::Key> OpKDF_TLS1_PRF(operation::KDF_TLS1_PRF& op) override;
         std::optional<component::Key> OpKDF_X963(operation::KDF_X963& op) override;
+        std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) override;
+        std::optional<component::ECC_KeyPair> OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) override;
+        std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
 };
 
 } /* namespace module */

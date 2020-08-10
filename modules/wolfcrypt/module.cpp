@@ -43,10 +43,14 @@ extern "C" {
 #include <wolfssl/wolfcrypt/ecc.h>
 }
 
+#include "bn_ops.h"
+
 namespace cryptofuzz {
 namespace module {
 
 namespace wolfCrypt_detail {
+    static WC_RNG rng;
+
 #if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES) || defined(CRYPTOFUZZ_WOLFCRYPT_MMAP_FIXED)
     Datasource* ds;
 #endif
@@ -194,6 +198,11 @@ static void wolfCrypt_custom_free(void* ptr) {
 
 wolfCrypt::wolfCrypt(void) :
     Module("wolfCrypt") {
+
+    if ( wc_InitRng(&wolfCrypt_detail::rng) != 0 ) {
+        printf("Cannot initialize wolfCrypt RNG\n");
+        abort();
+    }
 
     wolfCrypt_detail::SetGlobalDs(nullptr);
     if ( wolfSSL_SetAllocators(wolfCrypt_custom_malloc, wolfCrypt_custom_free, wolfCrypt_custom_realloc) != 0 ) {
@@ -1949,6 +1958,295 @@ std::optional<component::Key> wolfCrypt::OpKDF_X963(operation::KDF_X963& op) {
 
 end:
     util::free(out);
+
+    wolfCrypt_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
+namespace wolfCrypt_detail {
+    std::optional<int> toCurveID(const component::CurveType& curveType) {
+        static const std::map<uint64_t, int> LUT = {
+            /* Reference: wolfssl/wolfcrypt/ecc.h */
+
+            /* NIST */
+            { CF_ECC_CURVE("secp192r1"), ECC_SECP192R1 },
+            { CF_ECC_CURVE("secp256r1"), ECC_SECP256R1 },
+
+            /* SECP */
+            { CF_ECC_CURVE("secp112r1"), ECC_SECP112R1 },
+            { CF_ECC_CURVE("secp112r2"), ECC_SECP112R2 },
+            { CF_ECC_CURVE("secp128r1"), ECC_SECP128R1 },
+            { CF_ECC_CURVE("secp128r2"), ECC_SECP128R2 },
+            { CF_ECC_CURVE("secp160r1"), ECC_SECP160R1 },
+            { CF_ECC_CURVE("secp160r2"), ECC_SECP160R2 },
+            { CF_ECC_CURVE("secp224r1"), ECC_SECP224R1 },
+            { CF_ECC_CURVE("secp384r1"), ECC_SECP384R1 },
+            { CF_ECC_CURVE("secp521r1"), ECC_SECP521R1 },
+
+            /* Koblitz */
+            { CF_ECC_CURVE("secp160k1"), ECC_SECP160K1 },
+            { CF_ECC_CURVE("secp192k1"), ECC_SECP192K1 },
+            { CF_ECC_CURVE("secp224k1"), ECC_SECP224K1 },
+            { CF_ECC_CURVE("secp256k1"), ECC_SECP256K1 },
+
+            /* Brainpool */
+            { CF_ECC_CURVE("brainpool160r1"), ECC_BRAINPOOLP160R1 },
+            { CF_ECC_CURVE("brainpool192r1"), ECC_BRAINPOOLP192R1 },
+            { CF_ECC_CURVE("brainpool224r1"), ECC_BRAINPOOLP224R1 },
+            { CF_ECC_CURVE("brainpool256r1"), ECC_BRAINPOOLP256R1 },
+            { CF_ECC_CURVE("brainpool320r1"), ECC_BRAINPOOLP320R1 },
+            { CF_ECC_CURVE("brainpool384r1"), ECC_BRAINPOOLP384R1 },
+            { CF_ECC_CURVE("brainpool512r1"), ECC_BRAINPOOLP512R1 },
+
+#if 0
+            /* Twisted Edwards */
+            { CF_ECC_CURVE("x25519"), ECC_X25519 },
+            { CF_ECC_CURVE("x448"), ECC_X448 },
+#endif
+        };
+
+        if ( LUT.find(curveType.Get()) == LUT.end() ) {
+            return std::nullopt;
+        }
+
+        return LUT.at(curveType.Get());
+    }
+}
+
+std::optional<component::ECC_PublicKey> wolfCrypt::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
+    std::optional<component::ECC_PublicKey> ret = std::nullopt;
+    /* Disabled until ZD 10749 is resolved */
+    (void)op;
+#if 0
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    wolfCrypt_bignum::Bignum priv(ds);
+    ecc_key* key = nullptr;
+    ecc_point* pub = nullptr;
+
+    /* Initialize */
+    {
+        std::optional<int> curveID;
+        CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
+
+        CF_CHECK_NE(key = wc_ecc_key_new(nullptr), nullptr);
+        CF_CHECK_NE(pub = wc_ecc_new_point_h(nullptr), nullptr);
+
+        CF_CHECK_EQ(wc_ecc_set_curve(key, 0, *curveID), MP_OKAY);
+        {
+            wolfCrypt_bignum::Bignum priv(&key->k, ds);
+            CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
+        }
+    }
+
+    /* Process */
+    CF_CHECK_EQ(wc_ecc_make_pub(key, pub), MP_OKAY);
+
+    /* Finalize */
+    {
+        wolfCrypt_bignum::Bignum pub_x(pub->x, ds);
+        wolfCrypt_bignum::Bignum pub_y(pub->y, ds);
+
+        std::optional<std::string> pub_x_str, pub_y_str;
+        CF_CHECK_NE(pub_x_str = pub_x.ToDecString(), std::nullopt);
+        CF_CHECK_NE(pub_y_str = pub_y.ToDecString(), std::nullopt);
+
+        ret = { *pub_x_str, *pub_y_str };
+    }
+
+end:
+    /* noret */ wc_ecc_key_free(key);
+    /* noret */ wc_ecc_del_point(pub);
+
+    wolfCrypt_detail::UnsetGlobalDs();
+
+#endif
+    return ret;
+}
+
+std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) {
+    std::optional<component::ECC_KeyPair> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    std::optional<int> curveID;
+    ecc_key* key = nullptr;
+    std::optional<std::string> priv_str, pub_x_str, pub_y_str;
+
+    /* Initialize */
+    {
+        CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
+
+        CF_CHECK_NE(key = wc_ecc_key_new(nullptr), nullptr);
+    }
+
+    /* Process */
+    {
+        CF_CHECK_EQ(wc_ecc_make_key_ex(&wolfCrypt_detail::rng, 0, key, *curveID), 0);
+
+        {
+            wolfCrypt_bignum::Bignum priv(&key->k, ds);
+            wolfCrypt_bignum::Bignum pub_x(key->pubkey.x, ds);
+            wolfCrypt_bignum::Bignum pub_y(key->pubkey.y, ds);
+
+            CF_CHECK_NE(priv_str = priv.ToDecString(), std::nullopt);
+            CF_CHECK_NE(pub_x_str = pub_x.ToDecString(), std::nullopt);
+            CF_CHECK_NE(pub_y_str = pub_y.ToDecString(), std::nullopt);
+        }
+    }
+
+    /* Finalize */
+    {
+        ret = {
+            std::string(*priv_str),
+            { std::string(*pub_x_str), std::string(*pub_y_str) }
+        };
+    }
+end:
+    /* noret */ wc_ecc_key_free(key);
+
+    wolfCrypt_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
+std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& op) {
+    std::optional<component::Bignum> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+#if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
+    /* If allocation failures are induced, it is expected
+     * that the Bignum class will throw if initialization
+     * of the mp_int variable fails. Catch these exceptions
+     * and silently proceed.
+     */
+    try {
+#endif
+
+    std::unique_ptr<wolfCrypt_bignum::Operation> opRunner = nullptr;
+
+    std::vector<wolfCrypt_bignum::Bignum> bn{
+        std::move(wolfCrypt_bignum::Bignum(ds)),
+        std::move(wolfCrypt_bignum::Bignum(ds)),
+        std::move(wolfCrypt_bignum::Bignum(ds)),
+        std::move(wolfCrypt_bignum::Bignum(ds))
+    };
+    wolfCrypt_bignum::Bignum res(ds);
+
+    CF_CHECK_EQ(res.Set("0"), true);
+    CF_CHECK_EQ(bn[0].Set(op.bn0.ToString(ds)), true);
+    CF_CHECK_EQ(bn[1].Set(op.bn1.ToString(ds)), true);
+    CF_CHECK_EQ(bn[2].Set(op.bn2.ToString(ds)), true);
+    CF_CHECK_EQ(bn[3].Set(op.bn3.ToString(ds)), true);
+
+    switch ( op.calcOp.Get() ) {
+        case    CF_CALCOP("Add(A,B)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::Add>();
+            break;
+        case    CF_CALCOP("Sub(A,B)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::Sub>();
+            break;
+        case    CF_CALCOP("Mul(A,B)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::Mul>();
+            break;
+        case    CF_CALCOP("Div(A,B)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::Div>();
+            break;
+        case    CF_CALCOP("ExpMod(A,B,C)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::ExpMod>();
+            break;
+        case    CF_CALCOP("Sqr(A)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::Sqr>();
+            break;
+        case    CF_CALCOP("GCD(A,B)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::GCD>();
+            break;
+        case    CF_CALCOP("InvMod(A,B)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::InvMod>();
+            break;
+        case    CF_CALCOP("Cmp(A,B)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::Cmp>();
+            break;
+        case    CF_CALCOP("Abs(A)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::Abs>();
+            break;
+        case    CF_CALCOP("Neg(A)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::Neg>();
+            break;
+        case    CF_CALCOP("RShift(A,B)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::RShift>();
+            break;
+        case    CF_CALCOP("LShift1(A)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::LShift1>();
+            break;
+        case    CF_CALCOP("IsNeg(A)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::IsNeg>();
+            break;
+        case    CF_CALCOP("IsEq(A,B)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::IsEq>();
+            break;
+        case    CF_CALCOP("IsZero(A)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::IsZero>();
+            break;
+        case    CF_CALCOP("IsOne(A)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::IsOne>();
+            break;
+        case    CF_CALCOP("MulMod(A,B,C)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::MulMod>();
+            break;
+        case    CF_CALCOP("AddMod(A,B,C)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::AddMod>();
+            break;
+        case    CF_CALCOP("SubMod(A,B,C)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::SubMod>();
+            break;
+        case    CF_CALCOP("SqrMod(A,B)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::SqrMod>();
+            break;
+        case    CF_CALCOP("Bit(A,B)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::Bit>();
+            break;
+        case    CF_CALCOP("CmpAbs(A,B)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::CmpAbs>();
+            break;
+        case    CF_CALCOP("SetBit(A,B)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::SetBit>();
+            break;
+        case    CF_CALCOP("LCM(A,B)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::LCM>();
+            break;
+        case    CF_CALCOP("Mod(A,B)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::Mod>();
+            break;
+        case    CF_CALCOP("IsEven(A)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::IsEven>();
+            break;
+        case    CF_CALCOP("IsOdd(A)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::IsOdd>();
+            break;
+        case    CF_CALCOP("MSB(A)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::MSB>();
+            break;
+        case    CF_CALCOP("NumBits(A)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::NumBits>();
+            break;
+        case    CF_CALCOP("Set(A)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::Set>();
+            break;
+    }
+
+    CF_CHECK_NE(opRunner, nullptr);
+    CF_CHECK_EQ(opRunner->Run(ds, res, bn), true);
+
+    ret = res.ToComponentBignum();
+#if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
+    } catch ( std::exception ) { }
+#endif
+
+end:
 
     wolfCrypt_detail::UnsetGlobalDs();
 
