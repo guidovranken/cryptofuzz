@@ -2285,7 +2285,7 @@ std::optional<component::Key> OpenSSL::OpKDF_SCRYPT_EVP_PKEY(operation::KDF_SCRY
     {
         CF_CHECK_NE(pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_SCRYPT, nullptr), nullptr);
         CF_CHECK_EQ(EVP_PKEY_derive_init(pctx), 1);
-        CF_CHECK_EQ(EVP_PKEY_CTX_set1_pbe_pass(pctx, op.password.GetPtr(), op.password.GetSize()), 1);
+        CF_CHECK_EQ(EVP_PKEY_CTX_set1_pbe_pass(pctx, (const char*)op.password.GetPtr(), op.password.GetSize()), 1);
         CF_CHECK_EQ(EVP_PKEY_CTX_set1_scrypt_salt(pctx, op.salt.GetPtr(), op.salt.GetSize()), 1);
         CF_CHECK_EQ(EVP_PKEY_CTX_set_scrypt_N(pctx, op.N) , 1);
         CF_CHECK_EQ(EVP_PKEY_CTX_set_scrypt_r(pctx, op.r) , 1);
