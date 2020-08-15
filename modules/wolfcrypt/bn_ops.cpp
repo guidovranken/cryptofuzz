@@ -625,6 +625,14 @@ bool Set::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
                 ret = true;
             }
             break;
+        case    3:
+            {
+                const auto op = bn[0].AsUnsigned<unsigned long>();
+                CF_CHECK_NE(op, std::nullopt);
+                CF_CHECK_EQ(mp_set_int(res.GetPtr(), *op), MP_OKAY);
+                ret = true;
+            }
+            break;
     }
 
 end:
