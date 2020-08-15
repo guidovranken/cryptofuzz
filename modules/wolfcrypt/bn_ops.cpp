@@ -613,7 +613,15 @@ bool Set::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
             break;
         case    2:
             {
+                /* mp_exch only returns a value when wolfCrypt is compiled
+                 * with fast math; it does not return a value when compiled
+                 * with --disable-fastmath or SP math.
+                 */
+#if defined(USE_FAST_MATH)
+                CF_CHECK_EQ(mp_exch(res.GetPtr(), bn[0].GetPtr()), MP_OKAY);
+#else
                 /* noret */ mp_exch(res.GetPtr(), bn[0].GetPtr());
+#endif
                 ret = true;
             }
             break;
