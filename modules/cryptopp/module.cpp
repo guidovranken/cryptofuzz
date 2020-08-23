@@ -19,16 +19,17 @@
 #include <filters.h>
 #include <gcm.h>
 #include <gost.h>
+#include <hight.h>
 #include <hkdf.h>
 #include <hmac.h>
 #include <idea.h>
 #include <kalyna.h>
 #include <keccak.h>
 #include <lea.h>
-#include <hight.h>
 #include <md2.h>
 #include <md4.h>
 #include <md5.h>
+#include <memory>
 #include <modes.h>
 #include <oids.h>
 #include <osrng.h>
@@ -37,8 +38,8 @@
 #include <rc2.h>
 #include <rc6.h>
 #include <ripemd.h>
-#include <scrypt.h>
 #include <safer.h>
+#include <scrypt.h>
 #include <seed.h>
 #include <serpent.h>
 #include <sha.h>
@@ -55,8 +56,8 @@
 #include <tiger.h>
 #include <twofish.h>
 #include <whrlpool.h>
+#include <xed25519.h>
 #include <xts.h>
-#include <memory>
 
 #include "bn_ops.h"
 
@@ -2130,19 +2131,35 @@ std::optional<component::ECC_PublicKey> CryptoPP::OpECC_PrivateToPublic(operatio
 
     const ::CryptoPP::Integer privStr(op.priv.ToString(ds).c_str());
 
-    try {
-        const ::CryptoPP::DL_GroupParameters_EC<::CryptoPP::ECP>& curve = CryptoPP_detail::ResolveCurve(op.curveType);
-        privateKey.Initialize(curve, privStr);
-    } catch ( ... ) {
-        goto end;
+    if ( op.curveType.Get() == CF_ECC_CURVE("x25519") ) {
+        ::CryptoPP::AutoSeededRandomPool prng;
+
+        ::CryptoPP::SecByteBlock priv(::CryptoPP::x25519::SECRET_KEYLENGTH);
+        ::CryptoPP::Integer privBn(privStr);
+        privBn.Encode(priv.data(), priv.size());
+
+        ::CryptoPP::SecByteBlock pub(::CryptoPP::x25519::PUBLIC_KEYLENGTH);
+        ::CryptoPP::x25519 key;
+        key.GeneratePublicKey(prng, priv, pub);
+
+        ::CryptoPP::Integer pubBn(pub, ::CryptoPP::x25519::PUBLIC_KEYLENGTH);
+
+        ret = {::CryptoPP::IntToString<>(pubBn, 10), "0"};
+    } else {
+        try {
+            const ::CryptoPP::DL_GroupParameters_EC<::CryptoPP::ECP>& curve = CryptoPP_detail::ResolveCurve(op.curveType);
+            privateKey.Initialize(curve, privStr);
+        } catch ( ... ) {
+            goto end;
+        }
+
+        privateKey.MakePublicKey(publicKey);
+
+        ret = {
+            ::CryptoPP::IntToString<>(publicKey.GetPublicElement().x, 10),
+            ::CryptoPP::IntToString<>(publicKey.GetPublicElement().y, 10),
+        };
     }
-
-    privateKey.MakePublicKey(publicKey);
-
-    ret = {
-        ::CryptoPP::IntToString<>(publicKey.GetPublicElement().x, 10),
-        ::CryptoPP::IntToString<>(publicKey.GetPublicElement().y, 10),
-    };
 
 end:
     return ret;

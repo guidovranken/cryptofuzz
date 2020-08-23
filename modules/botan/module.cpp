@@ -13,6 +13,7 @@
 #include <botan/ecdsa.h>
 #include <botan/pubkey.h>
 #include <botan/ber_dec.h>
+#include <botan/curve25519.h>
 #include "bn_ops.h"
 
 namespace cryptofuzz {
@@ -585,16 +586,34 @@ std::optional<component::ECC_PublicKey> Botan::OpECC_PrivateToPublic(operation::
         /* Botan appears to generate a new key if the input key is 0, so don't do this */
         CF_CHECK_NE(op.priv.ToTrimmedString(), "0");
 
-        CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
-        ::Botan::EC_Group group(*curveString);
+        if ( op.curveType.Get() == CF_ECC_CURVE("x25519") ) {
+            uint8_t priv_bytes[32];
 
-        const ::Botan::BigInt priv_bn(op.priv.ToString(ds));
-        auto priv = std::make_unique<::Botan::ECDSA_PrivateKey>(::Botan::ECDSA_PrivateKey(rng, group, priv_bn));
+            ::Botan::BigInt priv_bigint(op.priv.ToString(ds));
+            priv_bigint.binary_encode(priv_bytes, sizeof(priv_bytes));
+            priv_bytes[0] &= 248;
+            priv_bytes[31] &= 127;
+            priv_bytes[31] |= 64;
+            const ::Botan::secure_vector<uint8_t> priv_vec(priv_bytes, priv_bytes + sizeof(priv_bytes));
 
-        const auto pub_x = priv->public_point().get_affine_x();
-        const auto pub_y = priv->public_point().get_affine_y();
+            auto priv = ::Botan::X25519_PrivateKey(priv_vec);
 
-        ret = { pub_x.to_dec_string(), pub_y.to_dec_string() };
+            ::Botan::BigInt pub;
+            pub.binary_decode(priv.public_value());
+
+            ret = { pub.to_dec_string(), "0" };
+        } else {
+            CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
+            ::Botan::EC_Group group(*curveString);
+
+            const ::Botan::BigInt priv_bn(op.priv.ToString(ds));
+            auto priv = std::make_unique<::Botan::ECDSA_PrivateKey>(::Botan::ECDSA_PrivateKey(rng, group, priv_bn));
+
+            const auto pub_x = priv->public_point().get_affine_x();
+            const auto pub_y = priv->public_point().get_affine_y();
+
+            ret = { pub_x.to_dec_string(), pub_y.to_dec_string() };
+        }
     } catch ( ... ) { }
 
 end:
