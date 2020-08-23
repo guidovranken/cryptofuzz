@@ -2238,6 +2238,9 @@ std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& 
         case    CF_CALCOP("Set(A)"):
             opRunner = std::make_unique<wolfCrypt_bignum::Set>();
             break;
+        case    CF_CALCOP("Jacobi(A,B)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::Jacobi>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
