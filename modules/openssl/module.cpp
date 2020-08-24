@@ -5,11 +5,20 @@
 #include <openssl/aes.h>
 #if defined(CRYPTOFUZZ_BORINGSSL)
 #include <openssl/siphash.h>
-#include <openssl/curve25519.h>
 #endif
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110)
 #include <openssl/kdf.h>
 #include <openssl/core_names.h>
+#endif
+
+#if defined(CRYPTOFUZZ_BORINGSSL)
+#include <openssl/curve25519.h>
+#elif defined(CRYPTOFUZZ_LIBRESSL)
+extern "C" { void x25519_public_from_private(uint8_t out_public_value[32], const uint8_t private_key[32]); }
+#define X25519_public_from_private x25519_public_from_private
+#else
+/* OpenSSL */
+extern "C" { void X25519_public_from_private(uint8_t out_public_value[32], const uint8_t private_key[32]); }
 #endif
 
 #include "module_internal.h"
@@ -3107,6 +3116,62 @@ static std::optional<int> toCurveNID(const component::CurveType& curveType) {
     return LUT.at(curveType.Get());
 }
 
+#if defined(CRYPTOFUZZ_LIBRESSL)
+/* Taken from OpenSSL. LibreSSL doesn't implement BN_bn2binpad */
+
+static
+int bn2binpad(const BIGNUM *a, unsigned char *to, int tolen)
+{
+    int n;
+    size_t i, lasti, j, atop, mask;
+    BN_ULONG l;
+
+    /*
+     * In case |a| is fixed-top, BN_num_bytes can return bogus length,
+     * but it's assumed that fixed-top inputs ought to be "nominated"
+     * even for padded output, so it works out...
+     */
+    n = BN_num_bytes(a);
+    if (tolen == -1) {
+        tolen = n;
+    } else if (tolen < n) {     /* uncommon/unlike case */
+        BIGNUM temp = *a;
+
+        //bn_correct_top(&temp);
+        n = BN_num_bytes(&temp);
+        if (tolen < n)
+            return -1;
+    }
+
+    /* Swipe through whole available data and don't give away padded zero. */
+    atop = a->dmax * BN_BYTES;
+    if (atop == 0) {
+        OPENSSL_cleanse(to, tolen);
+        return tolen;
+    }
+
+    lasti = atop - 1;
+    atop = a->top * BN_BYTES;
+    to += tolen; /* start from the end of the buffer */
+    for (i = 0, j = 0; j < (size_t)tolen; j++) {
+        unsigned char val;
+        l = a->d[i / BN_BYTES];
+        mask = 0 - ((j - atop) >> (8 * sizeof(i) - 1));
+        val = (unsigned char)(l >> (8 * (i % BN_BYTES)) & mask);
+        *--to = val;
+        i += (i - lasti) >> (8 * sizeof(i) - 1); /* stay on last limb */
+    }
+
+    return tolen;
+}
+int BN_bn2binpad(const BIGNUM *a, unsigned char *to, int tolen)
+{
+    if (tolen < 0)
+        return -1;
+    return bn2binpad(a, to, tolen);
+}
+#endif
+
 std::optional<component::ECC_PublicKey> OpenSSL::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -3114,7 +3179,6 @@ std::optional<component::ECC_PublicKey> OpenSSL::OpECC_PrivateToPublic(operation
     char* pub_y_str = nullptr;
 
     if ( op.curveType.Get() == CF_ECC_CURVE("x25519") ) {
-#if defined(CRYPTOFUZZ_BORINGSSL)
         uint8_t priv_bytes[32];
         uint8_t pub_bytes[32];
         OpenSSL_bignum::Bignum priv(ds), pub(ds);
@@ -3135,7 +3199,6 @@ std::optional<component::ECC_PublicKey> OpenSSL::OpECC_PrivateToPublic(operation
 
         /* Save bignum x/y */
         ret = { std::string(pub_x_str), "0" };
-#endif
     } else {
         CF_EC_KEY key(ds);
         std::shared_ptr<CF_EC_GROUP> group = nullptr;
