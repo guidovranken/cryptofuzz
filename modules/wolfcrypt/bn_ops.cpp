@@ -120,7 +120,16 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(mp_exptmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            CF_CHECK_EQ(mp_exptmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+            break;
+        case    1:
+            CF_CHECK_EQ(mp_exptmod_nct(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+            break;
+        default:
+            goto end;
+    }
 
 #if defined(WOLFSSL_SP_MATH)
     ret = true;
@@ -676,6 +685,51 @@ bool Jacobi::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
             /* Invalid return value */
             abort();
     }
+
+    ret = true;
+
+end:
+#endif
+
+    return ret;
+}
+
+bool Exp2::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+    const auto exponent = bn[0].AsUnsigned<unsigned int>();
+    CF_CHECK_NE(exponent, std::nullopt);
+#if defined(USE_FAST_MATH) && !defined(WOLFSSL_SP_MATH)
+    CF_CHECK_LT(*exponent / DIGIT_BIT, FP_SIZE);
+#endif
+    CF_CHECK_EQ(mp_2expt(res.GetPtr(), *exponent), MP_OKAY);
+
+    ret = true;
+
+end:
+
+    return ret;
+}
+
+bool NumLSZeroBits::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+#if defined(USE_FAST_MATH) && !defined(HAVE_COMP_KEY)
+    (void)res;
+    (void)bn;
+#else
+    const auto numBits = mp_cnt_lsb(bn[0].GetPtr());
+
+    /* Basic sanity check */
+    if ( numBits < 0 ) {
+        abort();
+    }
+
+    CF_CHECK_EQ( res.Set( std::to_string(numBits) ), true);
 
     ret = true;
 

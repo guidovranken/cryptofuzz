@@ -828,6 +828,12 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
         case    CF_CALCOP("MulAdd(A,B,C)"):
             opRunner = std::make_unique<Botan_bignum::MulAdd>();
             break;
+        case    CF_CALCOP("Exp2(A)"):
+            opRunner = std::make_unique<Botan_bignum::Exp2>();
+            break;
+        case    CF_CALCOP("NumLSZeroBits(A)"):
+            opRunner = std::make_unique<Botan_bignum::NumLSZeroBits>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

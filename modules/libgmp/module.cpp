@@ -133,6 +133,9 @@ std::optional<component::Bignum> libgmp::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("IsPow2(A)"):
             opRunner = std::make_unique<libgmp_bignum::IsPow2>();
             break;
+        case    CF_CALCOP("NumLSZeroBits(A)"):
+            opRunner = std::make_unique<libgmp_bignum::NumLSZeroBits>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

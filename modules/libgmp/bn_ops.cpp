@@ -398,6 +398,18 @@ bool IsPow2::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
+bool NumLSZeroBits::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    auto numBits = mpz_scan1(bn[0].GetPtr(), 0);
+    if ( numBits == (mp_bitcnt_t)-1 ) {
+        numBits = 0;
+    }
+    res.Set( std::to_string(numBits) );
+
+    return true;
+}
+
 } /* namespace libgmp_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

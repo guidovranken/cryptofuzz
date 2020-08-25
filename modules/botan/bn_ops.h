@@ -187,6 +187,16 @@ class MulAdd : public Operation {
         bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
 };
 
+class Exp2 : public Operation {
+    public:
+        bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
+};
+
+class NumLSZeroBits : public Operation {
+    public:
+        bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
+};
+
 } /* namespace Botan_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

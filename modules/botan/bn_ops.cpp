@@ -336,6 +336,29 @@ bool MulAdd::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     return true;
 }
 
+bool Exp2::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
+    if ( bn[0] < 1 ) {
+        return false;
+    }
+
+    const size_t exponent = bn[0].word_at(0) - 1;
+
+    res = ::Botan::BigInt(2) << exponent;
+
+    return true;
+}
+
+bool NumLSZeroBits::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
+    res = ::Botan::low_zero_bits(bn[0]);
+
+    return true;
+}
+
+
 } /* namespace Botan_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */
