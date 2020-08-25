@@ -19,6 +19,7 @@ extern "C" { void x25519_public_from_private(uint8_t out_public_value[32], const
 #else
 /* OpenSSL */
 extern "C" { void X25519_public_from_private(uint8_t out_public_value[32], const uint8_t private_key[32]); }
+extern "C" { void X448_public_from_private(uint8_t out_public_value[56], const uint8_t private_key[56]); }
 #endif
 
 #include "module_internal.h"
@@ -3199,6 +3200,29 @@ std::optional<component::ECC_PublicKey> OpenSSL::OpECC_PrivateToPublic(operation
 
         /* Save bignum x/y */
         ret = { std::string(pub_x_str), "0" };
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL)
+    } else if ( op.curveType.Get() == CF_ECC_CURVE("x448") ) {
+        uint8_t priv_bytes[56];
+        uint8_t pub_bytes[56];
+        OpenSSL_bignum::Bignum priv(ds), pub(ds);
+        CF_CHECK_EQ(pub.New(), true);
+
+        CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
+
+        /* Load private key */
+        CF_CHECK_NE(BN_bn2binpad(priv.GetPtr(), priv_bytes, sizeof(priv_bytes)), -1);
+
+        /* Private -> public */
+        /* noret */ X448_public_from_private(pub_bytes, priv_bytes);
+
+        /* Convert public key */
+        CF_CHECK_NE(BN_bin2bn(pub_bytes, sizeof(pub_bytes), pub.GetPtr()), nullptr);
+
+        CF_CHECK_NE(pub_x_str = BN_bn2dec(pub.GetPtr()), nullptr);
+
+        /* Save bignum x/y */
+        ret = { std::string(pub_x_str), "0" };
+#endif
     } else {
         CF_EC_KEY key(ds);
         std::shared_ptr<CF_EC_GROUP> group = nullptr;
