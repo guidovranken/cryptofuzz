@@ -127,6 +127,11 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
         case    1:
             CF_CHECK_EQ(mp_exptmod_nct(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
+#if !defined(WOLFSSL_SP_MATH)
+        case    2:
+            CF_CHECK_EQ(mp_exptmod_ex(bn[0].GetPtr(), bn[1].GetPtr(), bn[1].GetPtr()->used, bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+            break;
+#endif
         default:
             goto end;
     }
