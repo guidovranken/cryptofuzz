@@ -2615,37 +2615,60 @@ end:
 std::optional<component::Key> OpenSSL::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
     (void)op;
     std::optional<component::Key> ret = std::nullopt;
-    /* Pending https://github.com/openssl/openssl/pull/9444 */
+
+    /* Pending https://github.com/openssl/openssl/pull/12256 */
 #if 0
     uint8_t* out = util::malloc(op.keySize);
     EVP_KDF_CTX *kctx = nullptr;
+    OSSL_PARAM params[7], *p = params;
 
     /* Initialize */
     {
-        int type = -1;
+        const char* type = nullptr;
         switch ( op.type ) {
             case    0:
-                type = EVP_KDF_ARGON2D;
+                type = SN_argon2d;
                 break;
             case    1:
-                type = EVP_KDF_ARGON2I;
+                type = SN_argon2i;
                 break;
             case    2:
-                type = EVP_KDF_ARGON2ID;
+                type = SN_argon2id;
                 break;
             default:
                 goto end;
         }
+
         CF_CHECK_GTE(op.keySize, 64);
         CF_CHECK_EQ(op.threads, 1);
-        CF_CHECK_NE(kctx = EVP_KDF_new_ctx_id(type), nullptr);
-        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_PASS, op.password.GetPtr(), op.password.GetSize()), 1);
-        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_SALT, op.salt.GetPtr(), op.salt.GetSize()), 1);
-        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_ITER, op.iterations), 1);
-        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_ARGON2_THREADS, op.threads), 1);
-        CF_CHECK_EQ(EVP_KDF_ctrl(kctx, EVP_KDF_CTRL_SET_ARGON2_MEM_COST, op.memory), 1);
-    }
 
+        {
+            EVP_KDF* kdf = EVP_KDF_fetch(nullptr, type, nullptr);
+            CF_CHECK_NE(kdf, nullptr);
+            kctx = EVP_KDF_CTX_new(kdf);
+            EVP_KDF_free(kdf);
+            CF_CHECK_NE(kctx, nullptr);
+        }
+
+        {
+            int threads = 1;
+            int m_cost = op.memory;
+            unsigned int iterations = op.iterations;
+
+            auto passwordCopy = op.password.Get();
+            p[0] = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_PASSWORD, passwordCopy.data(), passwordCopy.size());
+
+            auto saltCopy = op.salt.Get();
+            p[1] = OSSL_PARAM_construct_octet_string(OSSL_KDF_PARAM_SALT, saltCopy.data(), saltCopy.size());
+
+            p[2] = OSSL_PARAM_construct_int(OSSL_KDF_PARAM_ARGON2_LANES, &threads);
+            p[3] = OSSL_PARAM_construct_int(OSSL_KDF_PARAM_THREADS, &threads);
+            p[4] = OSSL_PARAM_construct_int(OSSL_KDF_PARAM_ARGON2_MEMCOST, &m_cost);
+            p[5] = OSSL_PARAM_construct_uint(OSSL_KDF_PARAM_ITER, &iterations);
+            p[6] = OSSL_PARAM_construct_end();
+            CF_CHECK_EQ(EVP_KDF_CTX_set_params(kctx, params), 1);
+        }
+    }
     /* Process/finalize */
     {
         CF_CHECK_EQ(EVP_KDF_derive(kctx, out, op.keySize), 1);
@@ -2657,8 +2680,8 @@ end:
     EVP_KDF_CTX_free(kctx);
 
     util::free(out);
-
 #endif
+
     return ret;
 }
 #endif
