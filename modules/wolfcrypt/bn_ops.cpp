@@ -672,26 +672,28 @@ bool Jacobi::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)res;
     (void)bn;
 #else
-    int jacobi;
-    CF_CHECK_EQ(mp_jacobi(bn[0].GetPtr(), bn[1].GetPtr(), &jacobi), MP_OKAY);
+    if ( mp_isodd(bn[1].GetPtr()) ) {
+        int jacobi;
+        CF_CHECK_EQ(mp_jacobi(bn[0].GetPtr(), bn[1].GetPtr(), &jacobi), MP_OKAY);
 
-    switch ( jacobi ) {
-        case    1:
-            CF_CHECK_EQ( res.Set("1"), true);
-            break;
-        case    -1:
-            CF_CHECK_EQ( res.Set("-1"), true);
-            break;
-        case    0:
-            CF_CHECK_EQ( res.Set("0"), true);
-            break;
-        default:
-            printf("Error: mp_jacobi returned %d\n", jacobi);
-            /* Invalid return value */
-            abort();
+        switch ( jacobi ) {
+            case    1:
+                CF_CHECK_EQ( res.Set("1"), true);
+                break;
+            case    -1:
+                CF_CHECK_EQ( res.Set("-1"), true);
+                break;
+            case    0:
+                CF_CHECK_EQ( res.Set("0"), true);
+                break;
+            default:
+                printf("Error: mp_jacobi returned %d\n", jacobi);
+                /* Invalid return value */
+                abort();
+        }
+
+        ret = true;
     }
-
-    ret = true;
 
 end:
 #endif
