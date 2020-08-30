@@ -16,6 +16,7 @@
 #include <mbedtls/platform.h>
 #include <mbedtls/ecp.h>
 #include <mbedtls/ecdsa.h>
+#include <mbedtls/x509_crt.h>
 #include "bn_ops.h"
 
 namespace cryptofuzz {
@@ -1017,6 +1018,59 @@ std::optional<component::Bignum> mbedTLS::OpBignumCalc(operation::BignumCalc& op
 end:
 
     mbedTLS_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
+std::optional<component::X509> mbedTLS::OpX509Parse(operation::X509Parse& op) {
+    std::optional<component::X509> ret = std::nullopt;
+
+    mbedtls_x509_crt cert;
+    /* noret */ mbedtls_x509_crt_init(&cert);
+    CF_CHECK_EQ(mbedtls_x509_crt_parse(&cert, op.x509.GetPtr(), op.x509.GetSize()), 0);
+
+    {
+        component::X509 _ret;
+
+        _ret.version = cert.version;
+
+        if ( cert.serial.len == 0 || !(cert.serial.p[0] & 0x80) ) {
+            _ret.serial = util::TrimX509SerialNumber({cert.serial.p, cert.serial.p + cert.serial.len});
+        }
+
+
+        {
+#if 0
+            if ( cert.valid_from.year >= 1970 ) {
+                struct tm t;
+                t.tm_year = cert.valid_from.year - 1900;
+                t.tm_mon = cert.valid_from.mon - 1;
+                t.tm_mday = cert.valid_from.day;
+                t.tm_hour = cert.valid_from.hour;
+                t.tm_min = cert.valid_from.min;
+                t.tm_sec = cert.valid_from.sec;
+                t.tm_isdst = -1;
+                _ret.notBefore = mktime(&t) + 3600;
+            }
+
+            if ( cert.valid_to.year >= 1970 ) {
+                struct tm t;
+                t.tm_year = cert.valid_to.year - 1900;
+                t.tm_mon = cert.valid_to.mon - 1;
+                t.tm_mday = cert.valid_to.day;
+                t.tm_hour = cert.valid_to.hour;
+                t.tm_min = cert.valid_to.min;
+                t.tm_sec = cert.valid_to.sec;
+                t.tm_isdst = -1;
+                _ret.notAfter = mktime(&t) + 3600;
+            }
+#endif
+        }
+
+        ret = _ret;
+    }
+end:
+    /* noret */ mbedtls_x509_crt_free(&cert);
 
     return ret;
 }

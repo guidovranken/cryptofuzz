@@ -16,6 +16,7 @@ cd build/
 cmake .. -DENABLE_PROGRAMS=0 -DENABLE_TESTING=0
 make -j$(nproc)
 export MBEDTLS_LIBMBEDCRYPTO_A_PATH=$(realpath library/libmbedcrypto.a)
+export MBEDTLS_LIBMBEDX509_A_PATH=$(realpath library/libmbedx509.a)
 export MBEDTLS_INCLUDE_PATH=$(realpath ../include)
 export CXXFLAGS="$CXXFLAGS -DCRYPTOFUZZ_MBEDTLS"
 ```

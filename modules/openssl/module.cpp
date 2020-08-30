@@ -3532,5 +3532,150 @@ end:
 
 #endif
 
+namespace OpenSSL_detail {
+    static std::optional<uint64_t> ASN1_TIME_to_epoch(const ASN1_TIME* t) {
+        std::optional<uint64_t> ret = std::nullopt;
+
+        if ( t != nullptr ) {
+            auto epoch = ASN1_TIME_new();
+            if ( !ASN1_TIME_set_string(epoch, "700101000000") ) {
+                return ret;
+                //abort();
+            }
+
+            int day, sec;
+            if ( ASN1_TIME_diff(&day, &sec, epoch, t) ) {
+                ret = (uint64_t)day * (24*60*60) + (uint64_t)sec;
+            }
+
+            ASN1_STRING_free(epoch);
+        }
+
+        return ret;
+    }
+} /* namespace OpenSSL_detail */
+
+#if 0
+std::optional<component::X509> OpenSSL::OpX509Parse(operation::X509Parse& op) {
+    std::optional<component::X509> ret = std::nullopt;
+
+    const uint8_t* p = op.x509.GetPtr();
+    X509 *x509 = d2i_X509(NULL, &p, op.x509.GetSize());
+
+    if ( x509 != NULL ) {
+        component::X509 _ret;
+        _ret.version = X509_get_version(x509) + 1;
+        _ret.notBefore = OpenSSL_detail::ASN1_TIME_to_epoch(X509_get_notBefore(x509));
+        _ret.notAfter = OpenSSL_detail::ASN1_TIME_to_epoch(X509_get_notAfter(x509));
+
+        {
+            const auto serialAsn1Data = X509_get_serialNumber(x509);
+            if ( serialAsn1Data != nullptr ) {
+                const auto p = ASN1_STRING_get0_data(serialAsn1Data);
+                const auto size = ASN1_STRING_length(serialAsn1Data);
+                _ret.serial = util::TrimX509SerialNumber({p, p + size});
+            }
+        }
+
+        {
+            X509_NAME *name = X509_get_subject_name(x509);
+            if ( name != NULL ) {
+                int i = -1;
+                i = X509_NAME_get_index_by_NID(name, NID_commonName, i);
+
+                if (i != -1) {
+                    X509_NAME_ENTRY *entry = X509_NAME_get_entry(name, i);
+                    if ( entry != NULL ) {
+                        ASN1_STRING *common_name = X509_NAME_ENTRY_get_data(entry);
+                        if ( common_name != NULL ) {
+                            unsigned char *idval;
+                            int idlen = ASN1_STRING_to_UTF8(&idval, common_name);
+                            if (idlen > 0) {
+                                _ret.commonName = util::FilterNonPrintable({idval, idval + idlen});
+                                OPENSSL_free(idval);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+#if 0
+            {
+                const auto pathLengh = X509_get_pathlen(x509);
+                if ( pathLengh != -1 ) {
+                    _ret.pathLength = pathLength;
+                }
+            }
+#endif
+            ret = _ret;
+        }
+
+    X509_free(x509);
+
+    return ret;
+}
+#endif
+
+std::optional<component::X509> OpenSSL::OpX509Parse(operation::X509Parse& op) {
+    std::optional<component::X509> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    std::shared_ptr<CF_X509> x509 = nullptr;
+    CF_CHECK_NE(x509 = CF_X509::d2i_X509(ds, op.x509.GetPtr(), op.x509.GetSize()), nullptr);
+
+    {
+        component::X509 _ret;
+        _ret.version = X509_get_version(x509->GetPtr()) + 1;
+        _ret.notBefore = OpenSSL_detail::ASN1_TIME_to_epoch(X509_get_notBefore(x509->GetPtr()));
+        _ret.notAfter = OpenSSL_detail::ASN1_TIME_to_epoch(X509_get_notAfter(x509->GetPtr()));
+
+        {
+            const auto serialAsn1Data = X509_get_serialNumber(x509->GetPtr());
+            if ( serialAsn1Data != nullptr ) {
+                const auto p = ASN1_STRING_get0_data(serialAsn1Data);
+                const auto size = ASN1_STRING_length(serialAsn1Data);
+                _ret.serial = util::TrimX509SerialNumber({p, p + size});
+            }
+        }
+
+        {
+            X509_NAME *name = X509_get_subject_name(x509->GetPtr());
+            if ( name != NULL ) {
+                int i = -1;
+                i = X509_NAME_get_index_by_NID(name, NID_commonName, i);
+
+                if (i != -1) {
+                    X509_NAME_ENTRY *entry = X509_NAME_get_entry(name, i);
+                    if ( entry != NULL ) {
+                        ASN1_STRING *common_name = X509_NAME_ENTRY_get_data(entry);
+                        if ( common_name != NULL ) {
+                            unsigned char *idval;
+                            int idlen = ASN1_STRING_to_UTF8(&idval, common_name);
+                            if (idlen > 0) {
+                                //_ret.commonName = util::FilterNonPrintable({idval, idval + idlen});
+                                OPENSSL_free(idval);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+#if 0
+            {
+                const auto pathLengh = X509_get_pathlen(x509->GetPtr());
+                if ( pathLengh != -1 ) {
+                    _ret.pathLength = pathLength;
+                }
+            }
+#endif
+            ret = _ret;
+        }
+
+end:
+    return ret;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */

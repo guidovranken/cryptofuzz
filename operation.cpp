@@ -591,5 +591,22 @@ nlohmann::json BignumCalc::ToJSON(void) const {
     return j;
 }
 
+std::string X509Parse::Name(void) const { return "X509Parse"; }
+std::string X509Parse::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: X509Parse" << std::endl;
+    ss << "data: " << util::HexDump(x509.Get()) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json X509Parse::ToJSON(void) const {
+    nlohmann::json j;
+    j["data"] = x509.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 } /* namespace operation */
 } /* namespace cryptofuzz */

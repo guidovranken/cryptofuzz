@@ -25,6 +25,7 @@ class Botan : public Module {
         std::optional<component::ECDSA_Signature> OpECDSA_Sign(operation::ECDSA_Sign& op) override;
         std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
+        std::optional<component::X509> OpX509Parse(operation::X509Parse& op) override;
 };
 
 } /* namespace module */

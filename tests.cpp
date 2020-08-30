@@ -426,5 +426,10 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
     }
 }
 
+void test(const operation::X509Parse& op, const std::optional<component::X509>& result) {
+    (void)op;
+    (void)result;
+}
+
 } /* namespace tests */
 } /* namespace cryptofuzz */

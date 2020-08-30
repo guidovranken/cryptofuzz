@@ -72,5 +72,6 @@ using ExecutorECDSA_Sign = ExecutorBase<component::ECDSA_Signature, operation::E
 using ExecutorECDSA_Verify = ExecutorBase<bool, operation::ECDSA_Verify>;
 using ExecutorECDH_Derive = ExecutorBase<component::Secret, operation::ECDH_Derive>;
 using ExecutorBignumCalc = ExecutorBase<component::Bignum, operation::BignumCalc>;
+using ExecutorX509Parse = ExecutorBase<component::X509, operation::X509Parse>;
 
 } /* namespace cryptofuzz */

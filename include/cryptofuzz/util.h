@@ -32,6 +32,7 @@ std::string ToString(const component::Ciphertext& val);
 std::string ToString(const component::ECC_PublicKey& val);
 std::string ToString(const component::ECC_KeyPair& val);
 std::string ToString(const component::Bignum& val);
+std::string ToString(const component::X509& val);
 uint8_t* GetNullPtr(void);
 uint8_t* malloc(const size_t n);
 uint8_t* realloc(void* ptr, const size_t n);
@@ -40,6 +41,8 @@ bool HaveSSE42(void);
 void abort(const std::vector<std::string> components);
 std::string HexToDec(std::string s);
 std::string DecToHex(std::string s);
+std::vector<uint8_t> TrimX509SerialNumber(std::vector<uint8_t> sn);
+std::optional<std::vector<uint8_t>> FilterNonPrintable(const std::vector<uint8_t>& v);
 
 } /* namespace util */
 } /* namespace cryptofuzz */

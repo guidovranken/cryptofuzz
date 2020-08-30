@@ -650,6 +650,24 @@ template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, oper
     return module->OpBignumCalc(op);
 }
 
+/* Specialization for operation::X509Parse */
+template<> void ExecutorBase<component::X509, operation::X509Parse>::updateExtraCounters(const uint64_t moduleID, operation::X509Parse& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::X509, operation::X509Parse>::postprocess(std::shared_ptr<Module> module, operation::X509Parse& op, const ExecutorBase<component::X509, operation::X509Parse>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::X509> ExecutorBase<component::X509, operation::X509Parse>::callModule(std::shared_ptr<Module> module, operation::X509Parse& op) const {
+    return module->OpX509Parse(op);
+}
+
 template <class ResultType, class OperationType>
 ExecutorBase<ResultType, OperationType>::ExecutorBase(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
     operationID(operationID),
@@ -1010,5 +1028,6 @@ template class ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>;
 template class ExecutorBase<bool, operation::ECDSA_Verify>;
 template class ExecutorBase<component::Secret, operation::ECDH_Derive>;
 template class ExecutorBase<component::Bignum, operation::BignumCalc>;
+template class ExecutorBase<component::X509, operation::X509Parse>;
 
 } /* namespace cryptofuzz */

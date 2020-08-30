@@ -29,6 +29,7 @@ using PrivateKeyPEM = Buffer;
 using Tag = Buffer;
 using AAD = Buffer;
 using Secret = Buffer;
+using CodedX509 = Buffer;
 
 using ECC_PrivateKey = Bignum;
 using Bignum = ::cryptofuzz::Bignum;
@@ -173,6 +174,45 @@ class MACType {
                 (mode == rhs.mode) &&
                 (type == rhs.type);
         }
+};
+
+template <class T>
+inline bool compareOptional(const std::optional<T> A, const std::optional<T> B) {
+    if ( !A || !B ) return true;
+    return A == B;
+}
+
+class X509 {
+    public:
+        std::optional<long> version;
+        std::optional<std::vector<uint8_t>> commonName;
+        std::optional<std::vector<uint8_t>> serial;
+        std::optional<uint64_t> notBefore;
+        std::optional<uint64_t> notAfter;
+        std::optional<uint64_t> pathLength;
+        std::optional<std::vector<uint8_t>> crlDistributionPoint;
+
+        X509(void) { }
+
+        inline bool operator==(const X509& rhs) const {
+            return
+                compareOptional(version, rhs.version) &&
+                compareOptional(commonName, rhs.commonName) &&
+                compareOptional(serial, rhs.serial) &&
+                compareOptional(notBefore, rhs.notBefore) &&
+                compareOptional(notAfter, rhs.notAfter) &&
+                compareOptional(pathLength, rhs.pathLength) &&
+                compareOptional(crlDistributionPoint, rhs.crlDistributionPoint);
+        }
+#if 0
+        inline bool operator==(const X509& rhs) const {
+            return
+                (version == rhs.version) &&
+                (subjectName == rhs.subjectName) &&
+                (subjectAltName == rhs.subjectAltName) &&
+                (serial == rhs.serial);
+        }
+#endif
 };
 
 } /* namespace component */

@@ -4,10 +4,12 @@ CXXFLAGS += -Wall -Wextra -Werror -std=c++17 -I ../../include -I ../../fuzzing-h
 
 module.a: module.o bn_ops.o
 	test $(MBEDTLS_LIBMBEDCRYPTO_A_PATH)
+	test $(MBEDTLS_LIBMBEDX509_A_PATH)
 	rm -rf module.a
 	rm -rf tmp/
 	mkdir tmp/
 	cd tmp && ar x $(MBEDTLS_LIBMBEDCRYPTO_A_PATH)
+	cd tmp && ar x $(MBEDTLS_LIBMBEDX509_A_PATH)
 	ar rcs module.a module.o bn_ops.o tmp/*
 	ranlib module.a
 bn_ops.o : bn_ops.cpp bn_ops.h

@@ -116,6 +116,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::X509> OpX509Parse(operation::X509Parse& op) {
+            (void)op;
+            return std::nullopt;
+        }
 };
 
 } /* namespace cryptofuzz */

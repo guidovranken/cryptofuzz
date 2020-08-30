@@ -7,6 +7,7 @@
 #include <sstream>
 #include <vector>
 #include <cstdlib>
+#include <cctype>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
 #include "third_party/cpu_features/include/cpuinfo_x86.h"
@@ -227,6 +228,56 @@ std::string ToString(const component::Bignum& val) {
     return val.ToString();
 }
 
+std::string ToString(const component::X509& val) {
+    std::string ret;
+
+    if ( val.commonName != std::nullopt ) {
+        ret += util::HexDump(val.commonName->data(), val.commonName->size(), "Common name");
+    } else {
+        ret += "(common name is nullopt)";
+    }
+    ret += "\n";
+
+    if ( val.version != std::nullopt ) {
+        ret += "Version: " + std::to_string(*val.version);
+    } else {
+        ret += "(version is nullopt)";
+    }
+    ret += "\n";
+
+    /* TODO */
+
+    if ( val.serial != std::nullopt ) {
+        ret += util::HexDump(val.serial->data(), val.serial->size(), "serial");
+    } else {
+        ret += "(serial is nullopt)";
+    }
+    ret += "\n";
+
+    if ( val.notBefore != std::nullopt ) {
+        ret += "Not before: " + std::to_string(*val.notBefore);
+    } else {
+        ret += "(Not before is nullopt)";
+    }
+    ret += "\n";
+
+    if ( val.crlDistributionPoint != std::nullopt ) {
+        ret += util::HexDump(val.crlDistributionPoint->data(), val.crlDistributionPoint->size(), "CRL distribution point");
+    } else {
+        ret += "(CRL distribution point is nullopt)";
+    }
+    ret += "\n";
+
+    if ( val.pathLength != std::nullopt ) {
+        ret += "Path length: " + std::to_string(*val.pathLength);
+    } else {
+        ret += "(Path length is nullopt)";
+    }
+    ret += "\n";
+
+    return ret;
+}
+
 class HaveBadPointer {
     private:
         bool haveBadPointer = false;
@@ -349,6 +400,30 @@ std::string DecToHex(std::string s) {
     }
     ss << std::hex << i;
     return ss.str();
+}
+
+std::vector<uint8_t> TrimX509SerialNumber(std::vector<uint8_t> sn) {
+    size_t i;
+    for (i = 0; i < sn.size(); i++) {
+        if ( sn[i] != 0x00 ) {
+            break;
+        }
+    }
+    if ( i == sn.size() ) {
+        return {};
+    }
+    sn.erase(sn.begin(), sn.begin() + i);
+    return sn;
+}
+
+std::optional<std::vector<uint8_t>> FilterNonPrintable(const std::vector<uint8_t>& v) {
+    for (size_t i = 0; i < v.size(); i++) {
+        if ( !isprint(v[i]) ) {
+            return std::nullopt;
+        }
+    }
+
+    return v;
 }
 
 } /* namespace util */

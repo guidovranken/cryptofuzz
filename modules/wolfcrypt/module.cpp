@@ -41,6 +41,7 @@ extern "C" {
 
 #include <wolfssl/wolfcrypt/pwdbased.h>
 #include <wolfssl/wolfcrypt/ecc.h>
+#include <wolfssl/wolfcrypt/asn.h>
 }
 
 #include "bn_ops.h"
@@ -2261,6 +2262,64 @@ end:
 
     wolfCrypt_detail::UnsetGlobalDs();
 
+    return ret;
+}
+        
+std::optional<component::X509> wolfCrypt::OpX509Parse(operation::X509Parse& op) {
+    std::optional<component::X509> ret = std::nullopt;
+    DecodedCert cert;
+    InitDecodedCert(&cert, op.x509.GetPtr(), op.x509.GetSize(), NULL);
+    if (ParseCertRelative(&cert, CERT_TYPE, 0, NULL) == 0) {
+        component::X509 _ret;
+
+        _ret.version = cert.version + 1;
+
+        if ( cert.serialSz ) {
+            if ( !(cert.serial[0] & 0x80) ) {
+                _ret.serial = util::TrimX509SerialNumber({cert.serial, cert.serial + cert.serialSz});
+            }
+        }
+
+        if (cert.beforeDateLen >= 2) {
+            struct tm t;
+            const size_t len = cert.beforeDate[1];
+            /* XXX */
+            if ( wc_GetDateAsCalendarTime(cert.beforeDate + 2, len, cert.beforeDate[0], &t) == 0 ) {
+                _ret.notBefore = mktime(&t) + 3600;
+            }
+        }
+
+        if (cert.afterDateLen >= 2) {
+            struct tm t;
+            const size_t len = cert.afterDate[1];
+            /* XXX */
+            if ( wc_GetDateAsCalendarTime(cert.afterDate + 2, len, cert.afterDate[0], &t) == 0 ) {
+                _ret.notAfter = mktime(&t) + 3600;
+            }
+        }
+
+        //if ( cert.pathLength ) {
+            //_ret.pathLength = cert.pathLength;
+        //}
+        if ( cert.maxPathLen ) {
+            //printf("%d\n", cert.maxPathLen);
+            //_ret.pathLength = cert.maxPathLen;
+            //ret.pathLength = cert.maxPathLen +1;
+            //_ret.pathLength = cert.pathLength +1;
+        }
+
+        if ( cert.subjectCNLen ) {
+            _ret.commonName = util::FilterNonPrintable({cert.subjectCN, cert.subjectCN + cert.subjectCNLen});
+        }
+
+        if ( cert.extCrlInfoSz ) {
+            _ret.crlDistributionPoint = util::FilterNonPrintable({cert.extCrlInfo, cert.extCrlInfo + cert.extCrlInfoSz});
+            //_ret.crlDistributionPoint = std::string(cert.extCrlInfo, cert.extCrlInfo + cert.extCrlInfoSz) + "X";
+        }
+
+        ret = _ret;
+    }
+    FreeDecodedCert(&cert);
     return ret;
 }
 

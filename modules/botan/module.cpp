@@ -13,6 +13,8 @@
 #include <botan/ecdsa.h>
 #include <botan/pubkey.h>
 #include <botan/ber_dec.h>
+#include <botan/x509cert.h>
+#include <botan/x509_dn.h>
 #include "bn_ops.h"
 
 namespace cryptofuzz {
@@ -851,6 +853,44 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
 end:
     return ret;
 }
+
+std::optional<component::X509> Botan::OpX509Parse(operation::X509Parse& op) {
+    std::optional<component::X509> ret = std::nullopt;
+    try {
+        component::X509 _ret;
+
+        ::Botan::X509_Certificate cert(op.x509.Get());
+
+        _ret.version = cert.x509_version();
+        _ret.serial = cert.serial_number();
+        _ret.notBefore = cert.not_before().time_since_epoch();
+        _ret.notAfter = cert.not_after().time_since_epoch();
+        if ( cert.path_limit() ) {
+            _ret.pathLength = cert.path_limit();
+        }
+
+        {
+            const auto commonNames = cert.subject_info("X520.CommonName");
+            if ( commonNames.size() == 1 ) {
+                _ret.commonName = std::vector<uint8_t>(commonNames[0].data(), commonNames[0].data() + commonNames[0].size());
+            }
+        }
+
+        {
+#if 0
+            const auto crlDistributionPoint = cert.crl_distribution_point();
+            if ( !crlDistributionPoint.empty() ) {
+                _ret.crlDistributionPoint = crlDistributionPoint;
+            }
+#endif
+            //v3_extensions
+        }
+
+        ret = _ret;
+    } catch ( ... ) { }
+    return ret;
+}
+
 
 } /* namespace module */
 } /* namespace cryptofuzz */

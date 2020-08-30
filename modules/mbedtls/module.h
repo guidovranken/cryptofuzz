@@ -21,6 +21,7 @@ class mbedTLS : public Module {
         std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) override;
         std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
+        std::optional<component::X509> OpX509Parse(operation::X509Parse& op) override;
 };
 
 } /* namespace module */

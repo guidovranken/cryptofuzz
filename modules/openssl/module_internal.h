@@ -193,6 +193,98 @@ template<> EVP_MD_CTX* CTX_Copier<EVP_MD_CTX>::newCTX(void) const {
 }
 #endif
 
+
+class X509_Copier {
+    private:
+        Datasource& ds;
+        X509* x509 = nullptr;
+
+        X509* newX509(void) {
+            return X509_new();
+        }
+
+        X509* dupX509(X509* src) {
+            return X509_dup(src);
+        }
+        void freeX509(X509* x509) {
+            /* noret */ X509_free(x509);
+        }
+
+        X509* copy(void) {
+            bool doCopyPoint = true;
+            try {
+                doCopyPoint = ds.Get<bool>();
+            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+            if ( doCopyPoint == true ) {
+                X509* tmpX509 = dupX509(x509);
+                if ( tmpX509 != nullptr ) {
+                    freeX509(x509);
+
+                    x509 = tmpX509;
+                }
+            }
+
+            bool doI2dTransform = true;
+            try {
+                doI2dTransform = ds.Get<bool>();
+            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+            if ( doI2dTransform == true ) {
+                uint8_t* buf = NULL;
+                const auto len = i2d_X509(x509, &buf);
+                if ( len >= 0 ) {
+                    X509* tmpX509 = nullptr;
+                    const uint8_t* p = buf;
+                    if ( (tmpX509 = ::d2i_X509(nullptr, &p, len)) != nullptr ) {
+                        freeX509(x509);
+
+                        x509 = tmpX509;
+                    }
+
+                    OPENSSL_free(buf);
+                }
+            }
+
+            return x509;
+        }
+
+    public:
+        X509_Copier(Datasource& ds) :
+            ds(ds) {
+            x509 = newX509();
+            if ( x509 == nullptr ) {
+                abort();
+            }
+        }
+
+        X509_Copier(Datasource& ds, X509* x509) :
+            ds(ds),
+            x509(x509) {
+            if ( x509 == nullptr ) {
+                abort();
+            }
+        }
+
+        static std::shared_ptr<X509_Copier> d2i_X509(Datasource& ds, const uint8_t* data, const size_t size) {
+            const uint8_t* p = data;
+            X509 *x509 = ::d2i_X509(NULL, &p, size);
+            if ( x509 == nullptr ) {
+                return nullptr;
+            }
+
+            return std::make_shared<X509_Copier>(ds, x509);
+        }
+
+        X509* GetPtr(void) {
+            return copy();
+        }
+
+        ~X509_Copier() {
+            freeX509(x509);
+        }
+};
+
 template<> int CTX_Copier<EVP_MD_CTX>::copyCTX(EVP_MD_CTX* dest, EVP_MD_CTX* src) const { return EVP_MD_CTX_copy(dest, src); }
 
 #if !defined(CRYPTOFUZZ_OPENSSL_102)
@@ -234,5 +326,6 @@ using CF_CMAC_CTX = CTX_Copier<CMAC_CTX>;
 using CF_EC_KEY = CTX_Copier<EC_KEY>;
 using CF_EC_POINT = EC_POINT_Copier;
 using CF_EC_GROUP = EC_GROUP_Copier;
+using CF_X509 = X509_Copier;
 } /* namespace module */
 } /* namespace cryptofuzz */

@@ -963,5 +963,29 @@ class BignumCalc : public Operation {
         }
 };
 
+class X509Parse : public Operation {
+    public:
+        const component::CodedX509 x509;
+
+        X509Parse(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            x509(ds)
+        { }
+        X509Parse(nlohmann::json json) :
+            Operation(json["modifier"]),
+            x509(json["x509"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const X509Parse& rhs) const {
+            return
+                (x509 == rhs.x509) &&
+                (modifier == rhs.modifier);
+        }
+};
+
 } /* namespace operation */
 } /* namespace cryptofuzz */
