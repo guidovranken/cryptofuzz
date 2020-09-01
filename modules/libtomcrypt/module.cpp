@@ -392,6 +392,10 @@ namespace libtomcrypt_detail {
         std::optional<component::Ciphertext> ret = std::nullopt;
         Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
+        if ( op.tagSize == std::nullopt ) {
+            return ret;
+        }
+
         util::Multipart parts;
         gcm_state gcm;
         std::optional<int> cipherIdx;
@@ -403,7 +407,6 @@ namespace libtomcrypt_detail {
         size_t left = op.ciphertextSize;
 
         parts = util::ToParts(ds, op.cleartext);
-        CF_CHECK_NE(op.tagSize, std::nullopt);
 
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), std::nullopt);
