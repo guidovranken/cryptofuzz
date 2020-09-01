@@ -70,6 +70,15 @@ template<> void ExecutorBase<component::MAC, operation::CMAC>::postprocess(std::
 }
 
 template<> std::optional<component::MAC> ExecutorBase<component::MAC, operation::CMAC>::callModule(std::shared_ptr<Module> module, operation::CMAC& op) const {
+    /* Only run whitelisted ciphers, if specified */
+    if ( options.ciphers != std::nullopt ) {
+        if ( std::find(
+                    options.ciphers->begin(),
+                    options.ciphers->end(),
+                    op.cipher.cipherType.Get()) == options.ciphers->end() ) {
+            return std::nullopt;
+        }
+    }
     return module->OpCMAC(op);
 }
 
@@ -174,6 +183,15 @@ template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>
 }
 
 template<> std::optional<component::Ciphertext> ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>::callModule(std::shared_ptr<Module> module, operation::SymmetricEncrypt& op) const {
+    /* Only run whitelisted ciphers, if specified */
+    if ( options.ciphers != std::nullopt ) {
+        if ( std::find(
+                    options.ciphers->begin(),
+                    options.ciphers->end(),
+                    op.cipher.cipherType.Get()) == options.ciphers->end() ) {
+            return std::nullopt;
+        }
+    }
     return module->OpSymmetricEncrypt(op);
 }
 
@@ -193,6 +211,15 @@ template<> void ExecutorBase<component::MAC, operation::SymmetricDecrypt>::postp
 }
 
 template<> std::optional<component::MAC> ExecutorBase<component::MAC, operation::SymmetricDecrypt>::callModule(std::shared_ptr<Module> module, operation::SymmetricDecrypt& op) const {
+    /* Only run whitelisted ciphers, if specified */
+    if ( options.ciphers != std::nullopt ) {
+        if ( std::find(
+                    options.ciphers->begin(),
+                    options.ciphers->end(),
+                    op.cipher.cipherType.Get()) == options.ciphers->end() ) {
+            return std::nullopt;
+        }
+    }
     return module->OpSymmetricDecrypt(op);
 }
 

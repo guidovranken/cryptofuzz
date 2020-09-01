@@ -47,6 +47,34 @@ Options::Options(const int argc, char** argv) {
             }
 
             this->operations = operationIDs;
+        } else if ( !parts.empty() && parts[0] == "--ciphers" ) {
+            if ( parts.size() != 2 ) {
+                std::cout << "Expected argument after --ciphers=" << std::endl;
+                exit(1);
+            }
+
+            std::vector<std::string> cipherStrings;
+            boost::split(cipherStrings, parts[1], boost::is_any_of(","));
+
+            std::vector<uint64_t> cipherIDs;
+
+            for (const auto& curOpStr : cipherStrings) {
+                bool found = false;
+                for (size_t i = 0; i < (sizeof(repository::CipherLUT) / sizeof(repository::CipherLUT[0])); i++) {
+                    if ( boost::iequals(curOpStr, std::string(repository::CipherLUT[i].name)) ) {
+                        cipherIDs.push_back(repository::CipherLUT[i].id);
+                        found = true;
+                        break;
+                    }
+                }
+
+                if ( found == false ) {
+                    std::cout << "Undefined cipher: " << curOpStr << std::endl;
+                    exit(1);
+                }
+            }
+
+            this->ciphers = cipherIDs;
         } else if ( !parts.empty() && parts[0] == "--force-module" ) {
             if ( parts.size() != 2 ) {
                 std::cout << "Expected argument after --force-module=" << std::endl;

@@ -14,6 +14,7 @@ class Options {
         Options(const int argc, char** argv);
 
         std::optional<std::vector<uint64_t>> operations = std::nullopt;
+        std::optional<std::vector<uint64_t>> ciphers = std::nullopt;
         std::optional<uint64_t> forceModule = std::nullopt;
         std::optional<std::vector<uint64_t>> disableModules = std::nullopt;
         size_t minModules = 1;
