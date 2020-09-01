@@ -431,5 +431,10 @@ void test(const operation::X509Parse& op, const std::optional<component::X509>& 
     (void)result;
 }
 
+void test(const operation::X509Verify& op, const std::optional<bool>& result) {
+    (void)op;
+    (void)result;
+}
+
 } /* namespace tests */
 } /* namespace cryptofuzz */

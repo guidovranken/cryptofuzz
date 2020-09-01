@@ -196,6 +196,7 @@ template<> EVP_MD_CTX* CTX_Copier<EVP_MD_CTX>::newCTX(void) const {
 
 class X509_Copier {
     private:
+        size_t numPrints = 0;
         Datasource& ds;
         X509* x509 = nullptr;
 
@@ -211,38 +212,88 @@ class X509_Copier {
         }
 
         X509* copy(void) {
-            bool doCopyPoint = true;
-            try {
-                doCopyPoint = ds.Get<bool>();
-            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            {
+                bool doCopy = true;
+                try {
+                    doCopy = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
-            if ( doCopyPoint == true ) {
-                X509* tmpX509 = dupX509(x509);
-                if ( tmpX509 != nullptr ) {
-                    freeX509(x509);
-
-                    x509 = tmpX509;
-                }
-            }
-
-            bool doI2dTransform = true;
-            try {
-                doI2dTransform = ds.Get<bool>();
-            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
-
-            if ( doI2dTransform == true ) {
-                uint8_t* buf = NULL;
-                const auto len = i2d_X509(x509, &buf);
-                if ( len >= 0 ) {
-                    X509* tmpX509 = nullptr;
-                    const uint8_t* p = buf;
-                    if ( (tmpX509 = ::d2i_X509(nullptr, &p, len)) != nullptr ) {
+                if ( doCopy == true ) {
+                    X509* tmpX509 = dupX509(x509);
+                    if ( tmpX509 != nullptr ) {
                         freeX509(x509);
 
                         x509 = tmpX509;
                     }
+                }
+            }
 
-                    OPENSSL_free(buf);
+            {
+                bool doI2dTransform = true;
+                try {
+                    doI2dTransform = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                if ( doI2dTransform == true ) {
+                    uint8_t* buf = NULL;
+                    const auto len = i2d_X509(x509, &buf);
+                    if ( len >= 0 ) {
+                        X509* tmpX509 = nullptr;
+                        const uint8_t* p = buf;
+                        if ( (tmpX509 = ::d2i_X509(nullptr, &p, len)) != nullptr ) {
+                            freeX509(x509);
+
+                            x509 = tmpX509;
+                        }
+
+                        OPENSSL_free(buf);
+                    }
+                }
+            }
+
+            {
+                bool convertToPEM = true;
+
+                try {
+                    convertToPEM = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                if ( convertToPEM == true ) {
+                    BIO *bio = BIO_new(BIO_s_mem());
+                    if ( bio == nullptr ) {
+                        abort();
+                    }
+
+                    if ( PEM_write_bio_X509(bio, x509) == 1 ) {
+                        X509* tmpX509 = nullptr;
+                        if ( PEM_read_bio_X509(bio, &tmpX509, nullptr, nullptr) != nullptr ) {
+                            freeX509(x509);
+
+                            x509 = tmpX509;
+                        } else {
+                            /* noret */ X509_free(tmpX509);
+                        }
+                    }
+
+                    BIO_free(bio);
+                }
+            }
+
+            {
+                bool doPrint = true;
+
+                try {
+                    doPrint = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                if ( doPrint == true && numPrints < 2 ) {
+                    BIO *bio = BIO_new(BIO_s_mem());
+                    if ( bio == nullptr ) {
+                        abort();
+                    }
+                    X509_print(bio, x509);
+                    BIO_free(bio);
+                    numPrints++;
                 }
             }
 
@@ -266,14 +317,39 @@ class X509_Copier {
             }
         }
 
-        static std::shared_ptr<X509_Copier> d2i_X509(Datasource& ds, const uint8_t* data, const size_t size) {
-            const uint8_t* p = data;
-            X509 *x509 = ::d2i_X509(NULL, &p, size);
-            if ( x509 == nullptr ) {
+        static std::shared_ptr<X509_Copier> Parse(Datasource& ds, const uint8_t* data, const size_t size, const uint8_t type) {
+            if ( type == 0 ) {
+                const uint8_t* p = data;
+                X509 *x509 = ::d2i_X509(NULL, &p, size);
+                if ( x509 == nullptr ) {
+                    return nullptr;
+                }
+
+                return std::make_shared<X509_Copier>(ds, x509);
+            } else if ( type == 1 ) {
+                if ( size == 0 ) {
+                    return nullptr;
+                }
+                BIO *bio = BIO_new(BIO_s_mem());
+                if ( bio == nullptr ) {
+                    abort();
+                }
+                if ( (size_t)BIO_write(bio, data, size) != size ) {
+                    abort();
+                }
+
+                X509* x509 = nullptr;
+                if ( PEM_read_bio_X509(bio, &x509, nullptr, nullptr) == nullptr ) {
+                    /* noret */ X509_free(x509);
+                    BIO_free(bio);
+                    return nullptr;
+                }
+                BIO_free(bio);
+
+                return std::make_shared<X509_Copier>(ds, x509);
+            } else {
                 return nullptr;
             }
-
-            return std::make_shared<X509_Copier>(ds, x509);
         }
 
         X509* GetPtr(void) {

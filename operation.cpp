@@ -596,14 +596,33 @@ std::string X509Parse::ToString(void) const {
     std::stringstream ss;
 
     ss << "operation name: X509Parse" << std::endl;
-    ss << "data: " << util::HexDump(x509.Get()) << std::endl;
+    ss << "data: " << util::HexDump(cert.data.Get()) << std::endl;
 
     return ss.str();
 }
 
 nlohmann::json X509Parse::ToJSON(void) const {
     nlohmann::json j;
-    j["data"] = x509.ToJSON();
+    j["ca"] = cert.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string X509Verify::Name(void) const { return "X509Verify"; }
+std::string X509Verify::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: X509Verify" << std::endl;
+    ss << "cert: " << util::HexDump(cert.data.Get()) << std::endl;
+    ss << "ca: " << util::HexDump(ca.data.Get()) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json X509Verify::ToJSON(void) const {
+    nlohmann::json j;
+    j["cert"] = cert.ToJSON();
+    j["ca"] = cert.ToJSON();
     j["modifier"] = modifier.ToJSON();
     return j;
 }

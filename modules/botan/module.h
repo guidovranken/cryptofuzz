@@ -26,6 +26,7 @@ class Botan : public Module {
         std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
         std::optional<component::X509> OpX509Parse(operation::X509Parse& op) override;
+        std::optional<bool> OpX509Verify(operation::X509Verify& op) override;
 };
 
 } /* namespace module */

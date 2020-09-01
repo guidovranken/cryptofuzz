@@ -282,6 +282,7 @@ operations.Add( Operation("KDF_X963") )
 operations.Add( Operation("SymmetricDecrypt") )
 operations.Add( Operation("SymmetricEncrypt") )
 operations.Add( Operation("X509Parse") )
+operations.Add( Operation("X509Verify") )
 
 ciphers = CipherTable()
 

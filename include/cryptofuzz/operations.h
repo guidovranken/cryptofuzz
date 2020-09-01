@@ -965,15 +965,15 @@ class BignumCalc : public Operation {
 
 class X509Parse : public Operation {
     public:
-        const component::CodedX509 x509;
+        const component::CodedX509 cert;
 
         X509Parse(Datasource& ds, component::Modifier modifier) :
             Operation(std::move(modifier)),
-            x509(ds)
+            cert(ds)
         { }
         X509Parse(nlohmann::json json) :
             Operation(json["modifier"]),
-            x509(json["x509"])
+            cert(json["cert"])
         { }
 
         static size_t MaxOperations(void) { return 5; }
@@ -982,7 +982,35 @@ class X509Parse : public Operation {
         nlohmann::json ToJSON(void) const override;
         inline bool operator==(const X509Parse& rhs) const {
             return
-                (x509 == rhs.x509) &&
+                (cert == rhs.cert) &&
+                (modifier == rhs.modifier);
+        }
+};
+
+class X509Verify : public Operation {
+    public:
+        const component::CodedX509 cert;
+        const component::CodedX509 ca;
+
+        X509Verify(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            cert(ds),
+            ca(ds)
+        { }
+        X509Verify(nlohmann::json json) :
+            Operation(json["modifier"]),
+            cert(json["cert"]),
+            ca(json["ca"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const X509Verify& rhs) const {
+            return
+                (cert == rhs.cert) &&
+                (ca == rhs.ca) &&
                 (modifier == rhs.modifier);
         }
 };

@@ -39,6 +39,7 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorECDH_Derive executorECDH_Derive(CF_OPERATION("ECDH_Derive"), modules, options);
     static ExecutorBignumCalc executorBignumCalc(CF_OPERATION("BignumCalc"), modules, options);
     static ExecutorX509Parse executorX509Parse(CF_OPERATION("X509Parse"), modules, options);
+    static ExecutorX509Verify executorX509Verify(CF_OPERATION("X509Verify"), modules, options);
 
     try {
 
@@ -134,6 +135,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("X509Parse"):
                 executorX509Parse.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("X509Verify"):
+                executorX509Verify.Run(ds, payload.data(), payload.size());
                 break;
         }
     } catch ( Datasource::OutOfData ) {

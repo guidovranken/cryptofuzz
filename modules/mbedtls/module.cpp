@@ -1025,9 +1025,13 @@ end:
 std::optional<component::X509> mbedTLS::OpX509Parse(operation::X509Parse& op) {
     std::optional<component::X509> ret = std::nullopt;
 
+    if ( op.cert.type != 0 && op.cert.type != 1 ) {
+        return std::nullopt;
+    }
+
     mbedtls_x509_crt cert;
     /* noret */ mbedtls_x509_crt_init(&cert);
-    CF_CHECK_EQ(mbedtls_x509_crt_parse(&cert, op.x509.GetPtr(), op.x509.GetSize()), 0);
+    CF_CHECK_EQ(mbedtls_x509_crt_parse(&cert, op.cert.data.GetPtr(), op.cert.data.GetSize()), 0);
 
     {
         component::X509 _ret;
@@ -1071,6 +1075,38 @@ std::optional<component::X509> mbedTLS::OpX509Parse(operation::X509Parse& op) {
     }
 end:
     /* noret */ mbedtls_x509_crt_free(&cert);
+
+    return ret;
+}
+
+std::optional<bool> mbedTLS::OpX509Verify(operation::X509Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+
+    if ( op.cert.type != 0 && op.cert.type != 1 ) {
+        return std::nullopt;
+    }
+
+    if ( op.ca.type != 0 && op.ca.type != 1 ) {
+        return std::nullopt;
+    }
+
+    mbedtls_x509_crt cert;
+    mbedtls_x509_crt ca;
+
+    /* noret */ mbedtls_x509_crt_init(&cert);
+    /* noret */ mbedtls_x509_crt_init(&ca);
+
+    CF_CHECK_EQ(mbedtls_x509_crt_parse(&cert, op.cert.data.GetPtr(), op.cert.data.GetSize()), 0);
+    CF_CHECK_EQ(mbedtls_x509_crt_parse(&ca, op.ca.data.GetPtr(), op.ca.data.GetSize()), 0);
+
+    {
+        uint32_t flags;
+        ret = mbedtls_x509_crt_verify(&cert, &ca, nullptr, nullptr, &flags, nullptr, nullptr) == 0;
+    }
+
+end:
+    /* noret */ mbedtls_x509_crt_free(&cert);
+    /* noret */ mbedtls_x509_crt_free(&ca);
 
     return ret;
 }

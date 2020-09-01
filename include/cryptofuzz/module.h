@@ -120,6 +120,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<bool> OpX509Verify(operation::X509Verify& op) {
+            (void)op;
+            return std::nullopt;
+        }
 };
 
 } /* namespace cryptofuzz */

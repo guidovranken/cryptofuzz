@@ -3,6 +3,7 @@
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
 #include <openssl/aes.h>
+#include <openssl/err.h>
 #if defined(CRYPTOFUZZ_BORINGSSL)
 #include <openssl/siphash.h>
 #endif
@@ -3539,8 +3540,8 @@ namespace OpenSSL_detail {
         if ( t != nullptr ) {
             auto epoch = ASN1_TIME_new();
             if ( !ASN1_TIME_set_string(epoch, "700101000000") ) {
+                ASN1_STRING_free(epoch);
                 return ret;
-                //abort();
             }
 
             int day, sec;
@@ -3621,17 +3622,17 @@ std::optional<component::X509> OpenSSL::OpX509Parse(operation::X509Parse& op) {
     std::optional<component::X509> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    std::shared_ptr<CF_X509> x509 = nullptr;
-    CF_CHECK_NE(x509 = CF_X509::d2i_X509(ds, op.x509.GetPtr(), op.x509.GetSize()), nullptr);
+    std::shared_ptr<CF_X509> cert = nullptr;
+    CF_CHECK_NE(cert = CF_X509::Parse(ds, op.cert.data.GetPtr(), op.cert.data.GetSize(), op.cert.type), nullptr);
 
     {
         component::X509 _ret;
-        _ret.version = X509_get_version(x509->GetPtr()) + 1;
-        _ret.notBefore = OpenSSL_detail::ASN1_TIME_to_epoch(X509_get_notBefore(x509->GetPtr()));
-        _ret.notAfter = OpenSSL_detail::ASN1_TIME_to_epoch(X509_get_notAfter(x509->GetPtr()));
+        _ret.version = X509_get_version(cert->GetPtr()) + 1;
+        _ret.notBefore = OpenSSL_detail::ASN1_TIME_to_epoch(X509_get_notBefore(cert->GetPtr()));
+        _ret.notAfter = OpenSSL_detail::ASN1_TIME_to_epoch(X509_get_notAfter(cert->GetPtr()));
 
         {
-            const auto serialAsn1Data = X509_get_serialNumber(x509->GetPtr());
+            const auto serialAsn1Data = X509_get_serialNumber(cert->GetPtr());
             if ( serialAsn1Data != nullptr ) {
                 const auto p = ASN1_STRING_get0_data(serialAsn1Data);
                 const auto size = ASN1_STRING_length(serialAsn1Data);
@@ -3640,7 +3641,7 @@ std::optional<component::X509> OpenSSL::OpX509Parse(operation::X509Parse& op) {
         }
 
         {
-            X509_NAME *name = X509_get_subject_name(x509->GetPtr());
+            X509_NAME *name = X509_get_subject_name(cert->GetPtr());
             if ( name != NULL ) {
                 int i = -1;
                 i = X509_NAME_get_index_by_NID(name, NID_commonName, i);
@@ -3664,7 +3665,7 @@ std::optional<component::X509> OpenSSL::OpX509Parse(operation::X509Parse& op) {
 
 #if 0
             {
-                const auto pathLengh = X509_get_pathlen(x509->GetPtr());
+                const auto pathLengh = X509_get_pathlen(cert->GetPtr());
                 if ( pathLengh != -1 ) {
                     _ret.pathLength = pathLength;
                 }
@@ -3674,6 +3675,36 @@ std::optional<component::X509> OpenSSL::OpX509Parse(operation::X509Parse& op) {
         }
 
 end:
+    ERR_clear_error();
+    return ret;
+}
+
+std::optional<bool> OpenSSL::OpX509Verify(operation::X509Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    std::shared_ptr<CF_X509> cert = nullptr;
+    std::shared_ptr<CF_X509> ca = nullptr;
+    X509_STORE* store = nullptr;
+    X509_STORE_CTX* storeCtx = nullptr;
+
+    CF_CHECK_NE(cert = CF_X509::Parse(ds, op.cert.data.GetPtr(), op.cert.data.GetSize(), op.cert.type), nullptr);
+    CF_CHECK_NE(ca = CF_X509::Parse(ds, op.ca.data.GetPtr(), op.ca.data.GetSize(), op.cert.type), nullptr);
+
+    CF_CHECK_NE(store = X509_STORE_new(), nullptr);
+    CF_CHECK_EQ(X509_STORE_add_cert(store, ca->GetPtr()), 1);
+
+    CF_CHECK_NE(storeCtx = X509_STORE_CTX_new(), nullptr);
+    CF_CHECK_EQ(X509_STORE_CTX_init(storeCtx, store, cert->GetPtr(), nullptr), 1);
+    /* noret */ X509_STORE_CTX_set_flags(storeCtx, X509_V_FLAG_CB_ISSUER_CHECK);
+
+    ret = X509_verify_cert(storeCtx) == 1;
+
+end:
+    X509_STORE_CTX_free(storeCtx);
+    X509_STORE_free(store);
+    ERR_clear_error();
+
     return ret;
 }
 

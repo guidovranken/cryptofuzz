@@ -29,7 +29,6 @@ using PrivateKeyPEM = Buffer;
 using Tag = Buffer;
 using AAD = Buffer;
 using Secret = Buffer;
-using CodedX509 = Buffer;
 
 using ECC_PrivateKey = Bignum;
 using Bignum = ::cryptofuzz::Bignum;
@@ -172,6 +171,35 @@ class MACType {
         inline bool operator==(const MACType& rhs) const {
             return
                 (mode == rhs.mode) &&
+                (type == rhs.type);
+        }
+};
+
+class CodedX509 {
+    public:
+        Buffer data;
+        uint8_t type;
+
+        CodedX509(Datasource& ds) :
+            data(ds),
+            type(ds.Get<uint8_t>())
+        { }
+
+        CodedX509(nlohmann::json json) :
+            data(json["data"]),
+            type(json["type"])
+        { }
+
+        nlohmann::json ToJSON(void) const {
+            nlohmann::json j;
+            j["data"] = data.ToJSON();
+            j["type"] = type;
+            return j;
+        }
+
+        inline bool operator==(const CodedX509& rhs) const {
+            return
+                (data == rhs.data) &&
                 (type == rhs.type);
         }
 };

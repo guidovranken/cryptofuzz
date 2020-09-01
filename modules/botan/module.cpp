@@ -15,6 +15,8 @@
 #include <botan/ber_dec.h>
 #include <botan/x509cert.h>
 #include <botan/x509_dn.h>
+#include <botan/x509_ca.h>
+#include <botan/x509path.h>
 #include "bn_ops.h"
 
 namespace cryptofuzz {
@@ -856,10 +858,15 @@ end:
 
 std::optional<component::X509> Botan::OpX509Parse(operation::X509Parse& op) {
     std::optional<component::X509> ret = std::nullopt;
+
+    if ( op.cert.type != 0 ) {
+        return std::nullopt;
+    }
+
     try {
         component::X509 _ret;
 
-        ::Botan::X509_Certificate cert(op.x509.Get());
+        ::Botan::X509_Certificate cert(op.cert.data.Get());
 
         _ret.version = cert.x509_version();
         _ret.serial = cert.serial_number();
@@ -891,6 +898,33 @@ std::optional<component::X509> Botan::OpX509Parse(operation::X509Parse& op) {
     return ret;
 }
 
+std::optional<bool> Botan::OpX509Verify(operation::X509Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+
+    if ( op.cert.type != 0 || op.ca.type != 0 ) {
+        return std::nullopt;
+    }
+
+    try {
+        ::Botan::X509_Certificate cert(op.cert.data.Get());
+        ::Botan::X509_Certificate ca(op.ca.data.Get());
+
+        ::Botan::Certificate_Store_In_Memory trusted;
+
+        trusted.add_certificate(ca);
+
+        ::Botan::Path_Validation_Restrictions restrictions;
+
+        ::Botan::Path_Validation_Result result =
+            ::Botan::x509_path_validate(cert,
+                    restrictions,
+                    trusted);
+
+        ret = result.successful_validation();
+    } catch ( ... ) { }
+
+    return ret;
+}
 
 } /* namespace module */
 } /* namespace cryptofuzz */
