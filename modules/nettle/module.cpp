@@ -597,6 +597,54 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
         }
         break;
+
+        case CF_CIPHER("CAMELLIA_128_GCM"):
+        {
+            struct gcm_camellia128_ctx ctx;
+
+            CF_CHECK_NE(op.cipher.iv.GetSize(), 0);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 128 / 8);
+            CF_CHECK_NE(op.tagSize, std::nullopt);
+            CF_CHECK_LTE(*op.tagSize, GCM_DIGEST_SIZE);
+
+            out = util::malloc(op.cleartext.GetSize());
+            outTag = util::malloc(*op.tagSize);
+
+            /* noret */ gcm_camellia128_set_key(&ctx, op.cipher.key.GetPtr());
+            /* noret */ gcm_camellia128_set_iv(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr());
+            if ( op.aad != std::nullopt ) {
+                /* noret */ gcm_camellia128_update(&ctx, op.aad->GetSize(), op.aad->GetPtr());
+            }
+            /* noret */ gcm_camellia128_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr());
+            /* noret */ gcm_camellia128_digest(&ctx, *op.tagSize, outTag);
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
+        }
+        break;
+
+        case CF_CIPHER("CAMELLIA_256_GCM"):
+        {
+            struct gcm_camellia256_ctx ctx;
+
+            CF_CHECK_NE(op.cipher.iv.GetSize(), 0);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 256 / 8);
+            CF_CHECK_NE(op.tagSize, std::nullopt);
+            CF_CHECK_LTE(*op.tagSize, GCM_DIGEST_SIZE);
+
+            out = util::malloc(op.cleartext.GetSize());
+            outTag = util::malloc(*op.tagSize);
+
+            /* noret */ gcm_camellia256_set_key(&ctx, op.cipher.key.GetPtr());
+            /* noret */ gcm_camellia256_set_iv(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr());
+            if ( op.aad != std::nullopt ) {
+                /* noret */ gcm_camellia256_update(&ctx, op.aad->GetSize(), op.aad->GetPtr());
+            }
+            /* noret */ gcm_camellia256_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr());
+            /* noret */ gcm_camellia256_digest(&ctx, *op.tagSize, outTag);
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
+        }
+        break;
     }
 
 end:
@@ -901,6 +949,58 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
 
             /* noret */ arcfour_set_key(&ctx, op.cipher.key.GetSize(), op.cipher.key.GetPtr());
             /* noret */ arcfour_crypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr());
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("CAMELLIA_128_GCM"):
+        {
+            struct gcm_camellia128_ctx ctx;
+
+            CF_CHECK_NE(op.cipher.iv.GetSize(), 0);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 128 / 8);
+            CF_CHECK_NE(op.tag, std::nullopt);
+            CF_CHECK_LTE(op.tag->GetSize(), GCM_DIGEST_SIZE);
+
+            out = util::malloc(op.ciphertext.GetSize());
+            outTag = util::malloc(op.tag->GetSize());
+
+            /* noret */ gcm_camellia128_set_key(&ctx, op.cipher.key.GetPtr());
+            /* noret */ gcm_camellia128_set_iv(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr());
+            if ( op.aad != std::nullopt ) {
+                /* noret */ gcm_camellia128_update(&ctx, op.aad->GetSize(), op.aad->GetPtr());
+            }
+            /* noret */ gcm_camellia128_decrypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr());
+            /* noret */ gcm_camellia128_digest(&ctx, op.tag->GetSize(), outTag);
+
+            CF_CHECK_EQ(memcmp(op.tag->GetPtr(), outTag, op.tag->GetSize()), 0);
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("CAMELLIA_256_GCM"):
+        {
+            struct gcm_camellia256_ctx ctx;
+
+            CF_CHECK_NE(op.cipher.iv.GetSize(), 0);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 256 / 8);
+            CF_CHECK_NE(op.tag, std::nullopt);
+            CF_CHECK_LTE(op.tag->GetSize(), GCM_DIGEST_SIZE);
+
+            out = util::malloc(op.ciphertext.GetSize());
+            outTag = util::malloc(op.tag->GetSize());
+
+            /* noret */ gcm_camellia256_set_key(&ctx, op.cipher.key.GetPtr());
+            /* noret */ gcm_camellia256_set_iv(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr());
+            if ( op.aad != std::nullopt ) {
+                /* noret */ gcm_camellia256_update(&ctx, op.aad->GetSize(), op.aad->GetPtr());
+            }
+            /* noret */ gcm_camellia256_decrypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr());
+            /* noret */ gcm_camellia256_digest(&ctx, op.tag->GetSize(), outTag);
+
+            CF_CHECK_EQ(memcmp(op.tag->GetPtr(), outTag, op.tag->GetSize()), 0);
 
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
         }
