@@ -661,6 +661,32 @@ namespace libtomcrypt_detail {
         return ret;
     }
 
+    std::optional<Buffer> Salsa20Crypt(const Buffer& in, const component::SymmetricCipher& cipher, const size_t keySize, const size_t rounds) {
+        std::optional<Buffer> ret = std::nullopt;
+
+        if ( cipher.iv.GetSize() != 8 ) {
+            return ret;
+        }
+
+        if ( cipher.key.GetSize() != keySize ) {
+            return ret;
+        }
+
+        salsa20_state state;
+
+        uint8_t* out = util::malloc(in.GetSize());
+
+        CF_CHECK_EQ(salsa20_setup(&state, cipher.key.GetPtr(), cipher.key.GetSize(), rounds), CRYPT_OK);
+        CF_CHECK_EQ(salsa20_ivctr64(&state, cipher.iv.GetPtr(), cipher.iv.GetSize(), 0), CRYPT_OK);
+        CF_CHECK_EQ(salsa20_crypt(&state, in.GetPtr(), in.GetSize(), out), CRYPT_OK);
+
+        ret = Buffer(out, in.GetSize());
+
+end:
+        util::free(out);
+        return ret;
+    }
+
 } /* namespace libtomcrypt_detail */
 
 std::optional<component::Ciphertext> libtomcrypt::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
@@ -668,6 +694,14 @@ std::optional<component::Ciphertext> libtomcrypt::OpSymmetricEncrypt(operation::
         return libtomcrypt_detail::GcmEncrypt(op);
     } else if ( repository::IsCCM(op.cipher.cipherType.Get()) ) {
         return libtomcrypt_detail::CcmEncrypt(op);
+    } else if ( CF_CIPHER("SALSA20_128") ) {
+        return libtomcrypt_detail::Salsa20Crypt(op.cleartext, op.cipher, 16, 20);
+    } else if ( CF_CIPHER("SALSA20_12_128") ) {
+        return libtomcrypt_detail::Salsa20Crypt(op.cleartext, op.cipher, 16, 12);
+    } else if ( CF_CIPHER("SALSA20_256") ) {
+        return libtomcrypt_detail::Salsa20Crypt(op.cleartext, op.cipher, 32, 20);
+    } else if ( CF_CIPHER("SALSA20_12_256") ) {
+        return libtomcrypt_detail::Salsa20Crypt(op.cleartext, op.cipher, 32, 12);
     }
 
     return std::nullopt;
@@ -678,6 +712,14 @@ std::optional<component::Cleartext> libtomcrypt::OpSymmetricDecrypt(operation::S
         return libtomcrypt_detail::GcmDecrypt(op);
     } else if ( repository::IsCCM(op.cipher.cipherType.Get()) ) {
         return libtomcrypt_detail::CcmDecrypt(op);
+    } else if ( CF_CIPHER("SALSA20_128") ) {
+        return libtomcrypt_detail::Salsa20Crypt(op.ciphertext, op.cipher, 16, 20);
+    } else if ( CF_CIPHER("SALSA20_12_128") ) {
+        return libtomcrypt_detail::Salsa20Crypt(op.ciphertext, op.cipher, 16, 12);
+    } else if ( CF_CIPHER("SALSA20_256") ) {
+        return libtomcrypt_detail::Salsa20Crypt(op.ciphertext, op.cipher, 32, 20);
+    } else if ( CF_CIPHER("SALSA20_12_256") ) {
+        return libtomcrypt_detail::Salsa20Crypt(op.ciphertext, op.cipher, 32, 12);
     }
 
     return std::nullopt;

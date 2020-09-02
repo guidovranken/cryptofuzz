@@ -63,4 +63,6 @@ static const std::map<uint64_t, std::pair<std::string, std::string>> LUT = {
     { CF_CIPHER("XTEA_OFB"), {"XTEA/OFB", "XTEA"} },
     { CF_CIPHER("XTEA_XTS"), {"XTEA/XTS", "XTEA"} },
     { CF_CIPHER("GOST-28147-89_CBC"), {"GOST-28147-89/CBC", "GOST-28147-89"} },
+    { CF_CIPHER("SALSA20_128"), {"Salsa20(128)", "Salsa20(128)"} },
+    { CF_CIPHER("SALSA20_256"), {"Salsa20(256)", "Salsa20(256)"} },
 };

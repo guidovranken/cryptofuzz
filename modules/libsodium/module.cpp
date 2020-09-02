@@ -661,6 +661,23 @@ std::optional<component::Ciphertext> libsodium::OpSymmetricEncrypt(operation::Sy
                 return ret;
             }
             break;
+        case    CF_CIPHER("SALSA20_256"):
+        case    CF_CIPHER("SALSA20_12_256"):
+            {
+                CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize());
+                CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_stream_salsa20_KEYBYTES);
+                CF_CHECK_EQ(op.cipher.iv.GetSize(), crypto_stream_salsa20_NONCEBYTES);
+                out = util::malloc(op.ciphertextSize);
+                if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_256") ) {
+                    CF_CHECK_EQ(crypto_stream_salsa20_xor(out, op.cleartext.GetPtr(), op.cleartext.GetSize(), op.cipher.iv.GetPtr(), op.cipher.key.GetPtr()), 0);
+                } else {
+                    CF_CHECK_EQ(crypto_stream_salsa2012_xor(out, op.cleartext.GetPtr(), op.cleartext.GetSize(), op.cipher.iv.GetPtr(), op.cipher.key.GetPtr()), 0);
+                }
+                auto ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
+                util::free(out);
+                return ret;
+            }
+            break;
         default:
             return std::nullopt;
     }
@@ -712,6 +729,23 @@ std::optional<component::Cleartext> libsodium::OpSymmetricDecrypt(operation::Sym
                 CF_CHECK_EQ(op.cipher.iv.GetSize(), crypto_stream_chacha20_ietf_NONCEBYTES);
                 out = util::malloc(op.cleartextSize);
                 CF_CHECK_EQ(crypto_stream_chacha20_ietf_xor_ic(out, op.ciphertext.GetPtr(), op.ciphertext.GetSize(), op.cipher.iv.GetPtr(), 0, op.cipher.key.GetPtr()), 0);
+                auto ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+                util::free(out);
+                return ret;
+            }
+            break;
+        case    CF_CIPHER("SALSA20_256"):
+        case    CF_CIPHER("SALSA20_12_256"):
+            {
+                CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
+                CF_CHECK_EQ(op.cipher.key.GetSize(), crypto_stream_salsa20_KEYBYTES);
+                CF_CHECK_EQ(op.cipher.iv.GetSize(), crypto_stream_salsa20_NONCEBYTES);
+                out = util::malloc(op.cleartextSize);
+                if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_256") ) {
+                    CF_CHECK_EQ(crypto_stream_salsa20_xor(out, op.ciphertext.GetPtr(), op.ciphertext.GetSize(), op.cipher.iv.GetPtr(), op.cipher.key.GetPtr()), 0);
+                } else {
+                    CF_CHECK_EQ(crypto_stream_salsa2012_xor(out, op.ciphertext.GetPtr(), op.ciphertext.GetSize(), op.cipher.iv.GetPtr(), op.cipher.key.GetPtr()), 0);
+                }
                 auto ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
                 util::free(out);
                 return ret;

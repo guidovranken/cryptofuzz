@@ -15,6 +15,7 @@
 #include <nettle/md5.h>
 #include <nettle/pbkdf2.h>
 #include <nettle/ripemd160.h>
+#include <nettle/salsa20.h>
 #include <nettle/sha.h>
 #include <nettle/sha3.h>
 #include <nettle/streebog.h>
@@ -314,8 +315,73 @@ std::optional<component::MAC> Nettle::OpCMAC(operation::CMAC& op) {
     return ret;
 }
 
+namespace Nettle_detail {
+    bool Salsa20_CheckParts(const util::Multipart& parts) {
+        if ( parts.empty() ) {
+            return true;
+        }
+
+        /* all but the last call must use a length that is a multiple of SALSA20_BLOCK_SIZE */
+        if ( parts.back().second > 0 && (parts.back().second % SALSA20_BLOCK_SIZE) == 0 ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    std::optional<Buffer> Salsa20Crypt(Datasource& ds, const Buffer& in, const component::SymmetricCipher& cipher, const size_t keySize, const bool rounds20) {
+        std::optional<Buffer> ret = std::nullopt;
+
+        if ( cipher.iv.GetSize() != SALSA20_NONCE_SIZE ) {
+            return ret;
+        }
+
+        if ( cipher.key.GetSize() != keySize ) {
+            return ret;
+        }
+
+        uint8_t* out = util::malloc(in.GetSize());
+        struct salsa20_ctx ctx;
+        size_t outIdx = 0;
+
+#if 0
+        auto parts = util::ToParts(ds, in);
+        if ( Salsa20_CheckParts(parts) == false ) {
+            CF_CHECK_GTE(in.GetSize(), SALSA20_BLOCK_SIZE);
+            parts = {
+                {in.GetPtr(), in.GetSize() - SALSA20_BLOCK_SIZE},
+                {in.GetPtr() + in.GetSize() - SALSA20_BLOCK_SIZE, SALSA20_BLOCK_SIZE}
+            };
+        }
+#else
+        /* Streaming Salsa20 is broken */
+        (void)ds;
+        util::Multipart parts = { {in.GetPtr(), in.GetSize()} };
+#endif
+
+        /* noret */ salsa20_set_key(&ctx, cipher.key.GetSize(), cipher.key.GetPtr());
+        /* noret */ salsa20_set_iv(&ctx, cipher.iv.GetPtr());
+
+        for (const auto& part : parts) {
+            if ( rounds20 == true ) {
+                /* noret */ salsa20_crypt(&ctx, part.second, out + outIdx, part.first);
+            } else {
+                /* noret */ salsa20r12_crypt(&ctx, part.second, out + outIdx, part.first);
+            }
+            outIdx += part.second;
+        }
+
+        ret = Buffer(out, in.GetSize());
+
+//end:
+        util::free(out);
+        return ret;
+    }
+}
+
 std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
     std::optional<component::Ciphertext> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     uint8_t* out = nullptr;
     uint8_t* outTag = nullptr;
@@ -645,6 +711,30 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
         }
         break;
+
+        case CF_CIPHER("SALSA20_128"):
+        {
+            ret = Nettle_detail::Salsa20Crypt(ds, op.cleartext, op.cipher, SALSA20_128_KEY_SIZE, true);
+        }
+        break;
+
+        case CF_CIPHER("SALSA20_12_128"):
+        {
+            ret = Nettle_detail::Salsa20Crypt(ds, op.cleartext, op.cipher, SALSA20_128_KEY_SIZE, false);
+        }
+        break;
+
+        case CF_CIPHER("SALSA20_256"):
+        {
+            ret = Nettle_detail::Salsa20Crypt(ds, op.cleartext, op.cipher, SALSA20_256_KEY_SIZE, true);
+        }
+        break;
+
+        case CF_CIPHER("SALSA20_12_256"):
+        {
+            ret = Nettle_detail::Salsa20Crypt(ds, op.cleartext, op.cipher, SALSA20_256_KEY_SIZE, false);
+        }
+        break;
     }
 
 end:
@@ -657,6 +747,7 @@ end:
 
 std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
     std::optional<component::Cleartext> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     uint8_t* out = nullptr;
     uint8_t* outTag = nullptr;
@@ -1003,6 +1094,30 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
             CF_CHECK_EQ(memcmp(op.tag->GetPtr(), outTag, op.tag->GetSize()), 0);
 
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("SALSA20_128"):
+        {
+            ret = Nettle_detail::Salsa20Crypt(ds, op.ciphertext, op.cipher, SALSA20_128_KEY_SIZE, true);
+        }
+        break;
+
+        case CF_CIPHER("SALSA20_12_128"):
+        {
+            ret = Nettle_detail::Salsa20Crypt(ds, op.ciphertext, op.cipher, SALSA20_128_KEY_SIZE, false);
+        }
+        break;
+
+        case CF_CIPHER("SALSA20_256"):
+        {
+            ret = Nettle_detail::Salsa20Crypt(ds, op.ciphertext, op.cipher, SALSA20_256_KEY_SIZE, true);
+        }
+        break;
+
+        case CF_CIPHER("SALSA20_12_256"):
+        {
+            ret = Nettle_detail::Salsa20Crypt(ds, op.ciphertext, op.cipher, SALSA20_256_KEY_SIZE, false);
         }
         break;
     }
