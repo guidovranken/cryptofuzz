@@ -2130,19 +2130,19 @@ std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& 
 
     std::unique_ptr<wolfCrypt_bignum::Operation> opRunner = nullptr;
 
-    std::vector<wolfCrypt_bignum::Bignum> bn{
+    wolfCrypt_bignum::BignumCluster bn(ds,
         std::move(wolfCrypt_bignum::Bignum(ds)),
         std::move(wolfCrypt_bignum::Bignum(ds)),
         std::move(wolfCrypt_bignum::Bignum(ds)),
         std::move(wolfCrypt_bignum::Bignum(ds))
-    };
+    );
     wolfCrypt_bignum::Bignum res(ds);
 
     CF_CHECK_EQ(res.Set("0"), true);
-    CF_CHECK_EQ(bn[0].Set(op.bn0.ToString(ds)), true);
-    CF_CHECK_EQ(bn[1].Set(op.bn1.ToString(ds)), true);
-    CF_CHECK_EQ(bn[2].Set(op.bn2.ToString(ds)), true);
-    CF_CHECK_EQ(bn[3].Set(op.bn3.ToString(ds)), true);
+    CF_CHECK_EQ(bn.Set(0, op.bn0.ToString(ds)), true);
+    CF_CHECK_EQ(bn.Set(1, op.bn1.ToString(ds)), true);
+    CF_CHECK_EQ(bn.Set(2, op.bn2.ToString(ds)), true);
+    CF_CHECK_EQ(bn.Set(3, op.bn3.ToString(ds)), true);
 
     switch ( op.calcOp.Get() ) {
         case    CF_CALCOP("Add(A,B)"):

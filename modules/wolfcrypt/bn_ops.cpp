@@ -14,7 +14,7 @@ namespace wolfCrypt_bignum_detail {
     }
 }
 
-bool Add::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -36,7 +36,7 @@ end:
     return ret;
 }
 
-bool Sub::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
 #if defined(WOLFSSL_SP_MATH)
@@ -76,7 +76,7 @@ end:
     return ret;
 }
 
-bool Mul::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -98,7 +98,7 @@ end:
     return ret;
 }
 
-bool Div::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
@@ -116,7 +116,7 @@ end:
     return ret;
 }
 
-bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
@@ -152,7 +152,7 @@ end:
     return ret;
 }
 
-bool Sqr::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Sqr::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -170,7 +170,7 @@ end:
     return ret;
 }
 
-bool GCD::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool GCD::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     (void)res;
     (void)bn;
@@ -185,7 +185,7 @@ end:
     return ret;
 }
 
-bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -198,7 +198,7 @@ end:
     return ret;
 }
 
-bool Cmp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Cmp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     int cmpRes = 0;
@@ -238,7 +238,7 @@ end:
     return ret;
 }
 
-bool Abs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Abs::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -251,7 +251,7 @@ end:
     return ret;
 }
 
-bool Neg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Neg::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     (void)res;
     (void)bn;
@@ -263,7 +263,7 @@ bool Neg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return ret;
 }
 
-bool RShift::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     std::optional<uint64_t> _numBits;
@@ -293,7 +293,7 @@ end:
     return ret;
 }
 
-bool LShift1::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool LShift1::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -312,7 +312,7 @@ end:
     return ret;
 }
 
-bool IsNeg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsNeg::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -330,7 +330,7 @@ end:
     return ret;
 }
 
-bool IsEq::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsEq::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -344,7 +344,7 @@ end:
     return ret;
 }
 
-bool IsZero::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsZero::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -357,7 +357,7 @@ end:
     return ret;
 }
 
-bool IsOne::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsOne::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -370,7 +370,7 @@ end:
     return ret;
 }
 
-bool MulMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -383,7 +383,7 @@ end:
     return ret;
 }
 
-bool AddMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool AddMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -401,7 +401,7 @@ end:
     return ret;
 }
 
-bool SubMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool SubMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -419,7 +419,7 @@ end:
     return ret;
 }
 
-bool SqrMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool SqrMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -437,7 +437,7 @@ end:
     return ret;
 }
 
-bool Bit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Bit::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
@@ -465,7 +465,7 @@ end:
     return ret;
 }
 
-bool CmpAbs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool CmpAbs::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     (void)res;
     (void)bn;
@@ -477,7 +477,7 @@ bool CmpAbs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return ret;
 }
 
-bool SetBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool SetBit::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
@@ -499,7 +499,7 @@ end:
     return ret;
 }
 
-bool LCM::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool LCM::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -512,7 +512,7 @@ end:
     return ret;
 }
 
-bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -538,7 +538,7 @@ end:
     return ret;
 }
 
-bool IsEven::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsEven::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -554,7 +554,7 @@ end:
     return ret;
 }
 
-bool IsOdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsOdd::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -568,7 +568,7 @@ end:
     return ret;
 }
 
-bool MSB::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool MSB::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -589,7 +589,7 @@ end:
     return ret;
 }
 
-bool NumBits::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool NumBits::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -609,7 +609,7 @@ end:
     return ret;
 }
 
-bool Set::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Set::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -663,7 +663,7 @@ int mp_jacobi(mp_int* a, mp_int* n, int* c);
 }
 #endif
 
-bool Jacobi::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Jacobi::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     (void)ds;
@@ -701,7 +701,7 @@ end:
     return ret;
 }
 
-bool Exp2::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Exp2::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -720,7 +720,7 @@ end:
     return ret;
 }
 
-bool NumLSZeroBits::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool NumLSZeroBits::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
