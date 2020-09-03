@@ -788,8 +788,10 @@ func op_MOD_MUL(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct b
 }
 
 func op_SET_BIT(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
-    if BN0.Cmp(big.NewInt(0)) >= 0 && BN0.Cmp(big.NewInt(1000)) <= 0 && BN0.Cmp(big.NewInt(0)) >= 0 {
-        pos := BN0.Int64()
+    if BN0.Cmp(big.NewInt(0)) >= 0 && BN1.Cmp(big.NewInt(9999)) <= 0 && BN1.Cmp(big.NewInt(0)) >= 0 {
+        pos := BN1.Int64()
+
+        res.Set(BN0)
 
         if direct {
             res.SetBit(res, int(pos), 1)
