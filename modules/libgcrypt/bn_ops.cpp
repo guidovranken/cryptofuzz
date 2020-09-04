@@ -8,7 +8,7 @@ namespace cryptofuzz {
 namespace module {
 namespace libgcrypt_bignum {
 
-bool Add::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     switch ( ds.Get<uint8_t>() ) {
         case    0:
             /* noret */ gcry_mpi_add(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
@@ -27,7 +27,7 @@ end:
     return false;
 }
 
-bool Sub::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     switch ( ds.Get<uint8_t>() ) {
         case    0:
             /* noret */ gcry_mpi_sub(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
@@ -46,7 +46,7 @@ end:
     return false;
 }
 
-bool Mul::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     switch ( ds.Get<uint8_t>() ) {
         case    0:
             /* noret */ gcry_mpi_mul(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
@@ -71,7 +71,7 @@ end:
     return false;
 }
 
-bool Div::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -86,7 +86,7 @@ end:
     return ret;
 }
 
-bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -101,7 +101,7 @@ end:
     return ret;
 }
 
-bool GCD::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool GCD::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
@@ -115,7 +115,7 @@ end:
     return ret;
 }
 
-bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
@@ -128,7 +128,7 @@ end:
     return ret;
 }
 
-bool Cmp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Cmp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     switch ( ds.Get<uint8_t>() ) {
         case    0:
             {
@@ -162,7 +162,7 @@ end:
     return false;
 }
 
-bool Abs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Abs::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     /* ignore return value */ gcry_mpi_set(res.GetPtr(), bn[0].GetPtr());
@@ -171,7 +171,7 @@ bool Abs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool Neg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Neg::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     /* noret */ gcry_mpi_neg(res.GetPtr(), bn[0].GetPtr());
@@ -179,7 +179,7 @@ bool Neg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool RShift::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -192,7 +192,7 @@ end:
     return ret;
 }
 
-bool LShift1::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool LShift1::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     /* noret */ gcry_mpi_lshift(res.GetPtr(), bn[0].GetPtr(), 1);
@@ -200,7 +200,7 @@ bool LShift1::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool IsNeg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsNeg::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     res.Set( std::to_string(gcry_mpi_is_neg(bn[0].GetPtr())) );
@@ -208,7 +208,7 @@ bool IsNeg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool IsEq::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsEq::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     res.Set( std::to_string(gcry_mpi_cmp(bn[0].GetPtr(), bn[1].GetPtr()) == 0 ? 1 : 0) );
@@ -216,7 +216,7 @@ bool IsEq::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool IsZero::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsZero::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     res.Set( std::to_string(gcry_mpi_cmp_ui(bn[0].GetPtr(), 0) == 0 ? 1 : 0) );
@@ -224,7 +224,7 @@ bool IsZero::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool IsOne::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsOne::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     res.Set( std::to_string(gcry_mpi_cmp_ui(bn[0].GetPtr(), 1) == 0 ? 1 : 0) );
@@ -232,7 +232,7 @@ bool IsOne::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool MulMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -247,7 +247,7 @@ end:
     return ret;
 }
 
-bool AddMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool AddMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -262,7 +262,7 @@ end:
     return ret;
 }
 
-bool SubMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool SubMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -277,7 +277,7 @@ end:
     return ret;
 }
 
-bool Bit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Bit::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -292,7 +292,7 @@ end:
     return ret;
 }
 
-bool SetBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool SetBit::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
@@ -308,7 +308,7 @@ end:
     return ret;
 }
 
-bool ClearBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool ClearBit::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;

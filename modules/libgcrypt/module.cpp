@@ -646,19 +646,19 @@ std::optional<component::Bignum> libgcrypt::OpBignumCalc(operation::BignumCalc& 
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     std::unique_ptr<libgcrypt_bignum::Operation> opRunner = nullptr;
 
-    std::vector<libgcrypt_bignum::Bignum> bn{
+    libgcrypt_bignum::BignumCluster bn{ds,
         libgcrypt_bignum::Bignum(),
         libgcrypt_bignum::Bignum(),
         libgcrypt_bignum::Bignum(),
-        libgcrypt_bignum::Bignum(),
+        libgcrypt_bignum::Bignum()
     };
     libgcrypt_bignum::Bignum res;
 
     CF_CHECK_EQ(res.Set("0"), true);
-    CF_CHECK_EQ(bn[0].Set(op.bn0.ToString(ds)), true);
-    CF_CHECK_EQ(bn[1].Set(op.bn1.ToString(ds)), true);
-    CF_CHECK_EQ(bn[2].Set(op.bn2.ToString(ds)), true);
-    CF_CHECK_EQ(bn[3].Set(op.bn3.ToString(ds)), true);
+    CF_CHECK_EQ(bn.Set(0, op.bn0.ToString(ds)), true);
+    CF_CHECK_EQ(bn.Set(1, op.bn1.ToString(ds)), true);
+    CF_CHECK_EQ(bn.Set(2, op.bn2.ToString(ds)), true);
+    CF_CHECK_EQ(bn.Set(3, op.bn3.ToString(ds)), true);
 
     switch ( op.calcOp.Get() ) {
         case    CF_CALCOP("Add(A,B)"):
