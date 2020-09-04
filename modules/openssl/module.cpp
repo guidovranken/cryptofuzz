@@ -3166,9 +3166,9 @@ std::optional<component::ECC_PublicKey> OpenSSL::OpECC_PrivateToPublic(operation
     CF_CHECK_EQ(pub_y.New(), true);
 
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
-    CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), pub->GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+    CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), pub->GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
 #else
-    CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group->GetPtr(), pub->GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+    CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group->GetPtr(), pub->GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
 #endif
 
     /* Convert bignum x/y to strings */
@@ -3283,10 +3283,11 @@ std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         signature->r = sig_r.GetPtr(false);
         signature->s = sig_s.GetPtr(false);
 #else
-        CF_CHECK_EQ(ECDSA_SIG_set0(signature, sig_r.GetPtr(false), sig_s.GetPtr(false)), 1);
+        CF_CHECK_EQ(ECDSA_SIG_set0(signature, sig_r.GetDestPtr(false), sig_s.GetDestPtr(false)), 1);
 #endif
-        sig_r.Lock();
-        sig_s.Lock();
+        /* 'signature' now has ownership, and the BIGNUMs will be freed by ECDSA_SIG_free */
+        sig_r.ReleaseOwnership();
+        sig_s.ReleaseOwnership();
 
         /* Construct key */
         CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
@@ -3397,25 +3398,25 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     OpenSSL_bignum::BN_CTX ctx(ds);
-    std::vector<OpenSSL_bignum::Bignum> bn{
+    OpenSSL_bignum::BignumCluster bn(ds,
         OpenSSL_bignum::Bignum(ds),
         OpenSSL_bignum::Bignum(ds),
         OpenSSL_bignum::Bignum(ds),
-        OpenSSL_bignum::Bignum(ds) };
+        OpenSSL_bignum::Bignum(ds));
     OpenSSL_bignum::Bignum res(ds);
     std::unique_ptr<OpenSSL_bignum::Operation> opRunner = nullptr;
 
     CF_CHECK_EQ(res.New(), true);
-    CF_CHECK_EQ(bn[0].New(), true);
-    CF_CHECK_EQ(bn[1].New(), true);
-    CF_CHECK_EQ(bn[2].New(), true);
-    CF_CHECK_EQ(bn[3].New(), true);
+    CF_CHECK_EQ(bn.New(0), true);
+    CF_CHECK_EQ(bn.New(1), true);
+    CF_CHECK_EQ(bn.New(2), true);
+    CF_CHECK_EQ(bn.New(3), true);
 
     CF_CHECK_EQ(res.Set("0"), true);
-    CF_CHECK_EQ(bn[0].Set(op.bn0.ToString(ds)), true);
-    CF_CHECK_EQ(bn[1].Set(op.bn1.ToString(ds)), true);
-    CF_CHECK_EQ(bn[2].Set(op.bn2.ToString(ds)), true);
-    CF_CHECK_EQ(bn[3].Set(op.bn3.ToString(ds)), true);
+    CF_CHECK_EQ(bn.Set(0, op.bn0.ToString(ds)), true);
+    CF_CHECK_EQ(bn.Set(1, op.bn1.ToString(ds)), true);
+    CF_CHECK_EQ(bn.Set(2, op.bn2.ToString(ds)), true);
+    CF_CHECK_EQ(bn.Set(3, op.bn3.ToString(ds)), true);
 
     switch ( op.calcOp.Get() ) {
         case    CF_CALCOP("Add(A,B)"):

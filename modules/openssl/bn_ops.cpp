@@ -26,25 +26,25 @@ namespace cryptofuzz {
 namespace module {
 namespace OpenSSL_bignum {
 
-bool Add::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ctx;
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(BN_add(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
+            CF_CHECK_EQ(BN_add(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
             break;
         case    1:
             CF_CHECK_EQ(BN_is_negative(bn[0].GetPtr()), 0);
             CF_CHECK_EQ(BN_is_negative(bn[1].GetPtr()), 0);
-            CF_CHECK_EQ(BN_uadd(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
+            CF_CHECK_EQ(BN_uadd(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
             break;
         case    2:
             {
                 const auto val = bn[1].AsBN_ULONG();
                 CF_CHECK_NE(val, std::nullopt);
 
-                CF_CHECK_EQ(BN_add_word(bn[0].GetPtr(), *val), 1);
+                CF_CHECK_EQ(BN_add_word(bn.GetDestPtr(0), *val), 1);
 
                 CF_CHECK_EQ(res.Set(bn[0]), true);
             }
@@ -60,13 +60,13 @@ end:
     return ret;
 }
 
-bool Sub::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ctx;
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(BN_sub(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
+            CF_CHECK_EQ(BN_sub(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
             break;
 
     /* OpenSSL and LibreSSL return a positive value for BN_usub(A,B)
@@ -76,7 +76,7 @@ bool Sub::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx)
         case    1:
             CF_CHECK_EQ(BN_is_negative(bn[0].GetPtr()), 0);
             CF_CHECK_EQ(BN_is_negative(bn[1].GetPtr()), 0);
-            CF_CHECK_EQ(BN_usub(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
+            CF_CHECK_EQ(BN_usub(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
             break;
 #endif
         case    2:
@@ -84,7 +84,7 @@ bool Sub::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx)
                 const auto val = bn[1].AsBN_ULONG();
                 CF_CHECK_NE(val, std::nullopt);
 
-                CF_CHECK_EQ(BN_sub_word(bn[0].GetPtr(), *val), 1);
+                CF_CHECK_EQ(BN_sub_word(bn.GetDestPtr(0), *val), 1);
 
                 CF_CHECK_EQ(res.Set(bn[0]), true);
             }
@@ -94,7 +94,7 @@ bool Sub::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx)
             CF_CHECK_EQ(BN_is_negative(bn[0].GetPtr()), 0);
             CF_CHECK_EQ(BN_is_negative(bn[1].GetPtr()), 0);
             CF_CHECK_GTE(BN_cmp(bn[0].GetPtr(), bn[1].GetPtr()), 0);
-            CF_CHECK_EQ(bn_abs_sub_consttime(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            CF_CHECK_EQ(bn_abs_sub_consttime(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             break;
 #endif
         default:
@@ -108,7 +108,7 @@ end:
     return ret;
 }
 
-bool Mul::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     (void)ctx;
     bool ret = false;
@@ -116,7 +116,7 @@ bool Mul::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx)
     switch ( ds.Get<uint8_t>() ) {
         case    0:
             {
-                CF_CHECK_EQ(BN_mul(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+                CF_CHECK_EQ(BN_mul(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             }
             break;
         case    1:
@@ -124,7 +124,7 @@ bool Mul::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx)
                 const auto val = bn[1].AsBN_ULONG();
                 CF_CHECK_NE(val, std::nullopt);
 
-                CF_CHECK_EQ(BN_mul_word(bn[0].GetPtr(), *val), 1);
+                CF_CHECK_EQ(BN_mul_word(bn.GetDestPtr(0), *val), 1);
 
                 CF_CHECK_EQ(res.Set(bn[0]), true);
             }
@@ -140,25 +140,25 @@ end:
     return ret;
 }
 
-bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ctx;
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(BN_mod(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            CF_CHECK_EQ(BN_mod(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             break;
         case    1:
             /* "BN_mod() corresponds to BN_div() with dv set to NULL" */
-            CF_CHECK_EQ(BN_div(nullptr, res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            CF_CHECK_EQ(BN_div(nullptr, res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             break;
 #if defined(CRYPTOFUZZ_BORINGSSL)
         case    2:
-            CF_CHECK_EQ(bn_div_consttime(nullptr, res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            CF_CHECK_EQ(bn_div_consttime(nullptr, res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             break;
         case    3:
             CF_CHECK_EQ(BN_is_pow2(bn[1].GetPtr()), 1);
-            CF_CHECK_EQ(BN_mod_pow2(res.GetPtr(), bn[0].GetPtr(), BN_num_bits(bn[1].GetPtr()) - 1), 1);
+            CF_CHECK_EQ(BN_mod_pow2(res.GetDestPtr(), bn[0].GetPtr(), BN_num_bits(bn[1].GetPtr()) - 1), 1);
             break;
         case    4:
             {
@@ -210,23 +210,23 @@ end:
     return ret;
 }
 
-bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ctx;
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(BN_mod_exp_mont_consttime(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr(), nullptr), 1);
+            CF_CHECK_EQ(BN_mod_exp_mont_consttime(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr(), nullptr), 1);
             break;
         case    1:
-            CF_CHECK_EQ(BN_mod_exp_mont(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr(), nullptr), 1);
+            CF_CHECK_EQ(BN_mod_exp_mont(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr(), nullptr), 1);
             break;
         case    2:
-            CF_CHECK_EQ(BN_mod_exp(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
+            CF_CHECK_EQ(BN_mod_exp(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
             break;
         case    3:
 #if !defined(CRYPTOFUZZ_BORINGSSL)
-            CF_CHECK_EQ(BN_mod_exp_simple(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
+            CF_CHECK_EQ(BN_mod_exp_simple(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
 #else
             goto end;
 #endif
@@ -243,11 +243,11 @@ end:
     return ret;
 }
 
-bool Sqr::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool Sqr::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(BN_sqr(res.GetPtr(), bn[0].GetPtr(), ctx.GetPtr()), 1);
+    CF_CHECK_EQ(BN_sqr(res.GetDestPtr(), bn[0].GetPtr(), ctx.GetPtr()), 1);
 
     ret = true;
 
@@ -255,17 +255,17 @@ end:
     return ret;
 }
 
-bool GCD::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool GCD::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(BN_gcd(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            CF_CHECK_EQ(BN_gcd(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             break;
 #if defined(CRYPTOFUZZ_LIBRESSL)
         case    1:
-            CF_CHECK_EQ(BN_gcd_ct(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            CF_CHECK_EQ(BN_gcd_ct(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             break;
 #endif
         default:
@@ -278,12 +278,12 @@ end:
     return ret;
 }
 
-bool AddMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool AddMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(BN_mod_add(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
+            CF_CHECK_EQ(BN_mod_add(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
             break;
         case    1:
             {
@@ -295,7 +295,7 @@ bool AddMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& c
                 CF_CHECK_GTE(BN_cmp(bn[1].GetPtr(), zero.GetPtr()), 0);
                 CF_CHECK_LT(BN_cmp(bn[0].GetPtr(), bn[2].GetPtr()), 0);
                 CF_CHECK_LT(BN_cmp(bn[1].GetPtr(), bn[2].GetPtr()), 0);
-                CF_CHECK_EQ(BN_mod_add_quick(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr()), 1);
+                CF_CHECK_EQ(BN_mod_add_quick(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr()), 1);
             }
             break;
         default:
@@ -309,12 +309,12 @@ end:
     return ret;
 }
 
-bool SubMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool SubMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(BN_mod_sub(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
+            CF_CHECK_EQ(BN_mod_sub(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
             break;
         case    1:
             {
@@ -326,7 +326,7 @@ bool SubMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& c
                 CF_CHECK_GTE(BN_cmp(bn[1].GetPtr(), zero.GetPtr()), 0);
                 CF_CHECK_LT(BN_cmp(bn[0].GetPtr(), bn[2].GetPtr()), 0);
                 CF_CHECK_LT(BN_cmp(bn[1].GetPtr(), bn[2].GetPtr()), 0);
-                CF_CHECK_EQ(BN_mod_sub_quick(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr()), 1);
+                CF_CHECK_EQ(BN_mod_sub_quick(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr()), 1);
             }
         default:
             goto end;
@@ -339,12 +339,12 @@ end:
     return ret;
 }
 
-bool MulMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(BN_mod_mul(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
+            CF_CHECK_EQ(BN_mod_mul(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
             break;
         default:
             goto end;
@@ -357,12 +357,12 @@ end:
     return ret;
 }
 
-bool SqrMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool SqrMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(BN_mod_sqr(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            CF_CHECK_EQ(BN_mod_sqr(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             break;
         default:
             goto end;
@@ -375,12 +375,12 @@ end:
     return ret;
 }
 
-bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_NE(BN_mod_inverse(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), nullptr);
+            CF_CHECK_NE(BN_mod_inverse(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), nullptr);
             break;
 #if defined(CRYPTOFUZZ_BORINGSSL)
         case    1:
@@ -388,7 +388,7 @@ bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& c
                 int out_no_inverse;
                 CF_CHECK_LT(BN_cmp(bn[0].GetPtr(), bn[1].GetPtr()), 0);
                 CF_CHECK_EQ(BN_is_odd(bn[1].GetPtr()), 1);
-                CF_CHECK_EQ(BN_mod_inverse_odd(res.GetPtr(), &out_no_inverse, bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+                CF_CHECK_EQ(BN_mod_inverse_odd(res.GetDestPtr(), &out_no_inverse, bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             }
             break;
 #endif
@@ -403,7 +403,7 @@ end:
     return ret;
 }
 
-bool Cmp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool Cmp::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     (void)ctx;
     bool ret = false;
@@ -447,18 +447,18 @@ end:
     return ret;
 }
 
-bool Div::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     (void)ctx;
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(BN_div(res.GetPtr(), nullptr, bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            CF_CHECK_EQ(BN_div(res.GetDestPtr(), nullptr, bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             break;
 #if defined(CRYPTOFUZZ_BORINGSSL)
         case    1:
-            CF_CHECK_EQ(bn_div_consttime(res.GetPtr(), nullptr, bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            CF_CHECK_EQ(bn_div_consttime(res.GetDestPtr(), nullptr, bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             break;
 #endif
         case    2:
@@ -466,7 +466,7 @@ bool Div::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx)
                 const auto val = bn[1].AsBN_ULONG();
                 CF_CHECK_NE(val, std::nullopt);
 
-                CF_CHECK_NE(BN_div_word(bn[0].GetPtr(), *val), (BN_ULONG)-1);
+                CF_CHECK_NE(BN_div_word(bn.GetDestPtr(0), *val), (BN_ULONG)-1);
                 CF_CHECK_EQ(res.Set(bn[0]), true);
             }
             break;
@@ -481,7 +481,7 @@ end:
     return ret;
 }
 
-bool IsPrime::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool IsPrime::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     (void)ctx;
 
@@ -501,12 +501,12 @@ bool IsPrime::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& 
 #endif
 }
 
-bool Sqrt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool Sqrt::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;
 
 #if defined(CRYPTOFUZZ_BORINGSSL)
-    CF_CHECK_EQ(BN_sqrt(res.GetPtr(), bn[0].GetPtr(), ctx.GetPtr()), 1);
+    CF_CHECK_EQ(BN_sqrt(res.GetDestPtr(), bn[0].GetPtr(), ctx.GetPtr()), 1);
 
     ret = true;
 
@@ -520,7 +520,7 @@ end:
     return ret;
 }
 
-bool IsNeg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool IsNeg::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     (void)ctx;
 
@@ -529,7 +529,7 @@ bool IsNeg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ct
     return true;
 }
 
-bool IsEq::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool IsEq::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     (void)ctx;
 
@@ -563,7 +563,7 @@ end:
 #endif
 }
 
-bool IsEven::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool IsEven::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     (void)ctx;
 
@@ -572,7 +572,7 @@ bool IsEven::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& c
     return true;
 }
 
-bool IsOdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool IsOdd::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     (void)ctx;
 
@@ -581,7 +581,7 @@ bool IsOdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ct
     return true;
 }
 
-bool IsZero::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool IsZero::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     (void)ctx;
 
@@ -590,7 +590,7 @@ bool IsZero::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& c
     return true;
 }
 
-bool IsOne::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool IsOne::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     (void)ctx;
 
@@ -599,7 +599,7 @@ bool IsOne::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ct
     return true;
 }
 
-bool Jacobi::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool Jacobi::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;
 
@@ -620,11 +620,11 @@ end:
 }
 
 #if !defined(CRYPTOFUZZ_BORINGSSL)
-bool Mod_NIST_192::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool Mod_NIST_192::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(BN_nist_mod_192(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+    CF_CHECK_EQ(BN_nist_mod_192(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
 
     ret = true;
 
@@ -632,11 +632,11 @@ end:
     return ret;
 }
 
-bool Mod_NIST_224::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool Mod_NIST_224::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(BN_nist_mod_224(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+    CF_CHECK_EQ(BN_nist_mod_224(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
 
     ret = true;
 
@@ -644,11 +644,11 @@ end:
     return ret;
 }
 
-bool Mod_NIST_256::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool Mod_NIST_256::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(BN_nist_mod_256(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+    CF_CHECK_EQ(BN_nist_mod_256(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
 
     ret = true;
 
@@ -656,11 +656,11 @@ end:
     return ret;
 }
 
-bool Mod_NIST_384::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool Mod_NIST_384::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(BN_nist_mod_384(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+    CF_CHECK_EQ(BN_nist_mod_384(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
 
     ret = true;
 
@@ -668,11 +668,11 @@ end:
     return ret;
 }
 
-bool Mod_NIST_521::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool Mod_NIST_521::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(BN_nist_mod_521(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+    CF_CHECK_EQ(BN_nist_mod_521(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
 
     ret = true;
 
@@ -681,7 +681,7 @@ end:
 }
 #endif
 
-bool SqrtMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool SqrtMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     /* Disabled due to slowness of primality testing */
 #if 0
     (void)ds;
@@ -689,7 +689,7 @@ bool SqrtMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& 
 
     /* Third parameter to BN_mod_sqrt must be prime */
     CF_CHECK_EQ(BN_is_prime_ex(bn[1].GetPtr(), 64, ctx.GetPtr(), nullptr), 1);
-    CF_CHECK_NE(BN_mod_sqrt(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), nullptr);
+    CF_CHECK_NE(BN_mod_sqrt(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), nullptr);
 
     ret = true;
 
@@ -705,11 +705,11 @@ end:
 }
 
 #if defined(CRYPTOFUZZ_BORINGSSL)
-bool LCM::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool LCM::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(bn_lcm_consttime(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+    CF_CHECK_EQ(bn_lcm_consttime(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
 
     ret = true;
 
@@ -718,11 +718,11 @@ end:
 }
 #endif
 
-bool Exp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool Exp::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(BN_exp(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+    CF_CHECK_EQ(BN_exp(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
 
     ret = true;
 
@@ -730,7 +730,7 @@ end:
     return ret;
 }
 
-bool Abs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool Abs::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     (void)ctx;
     bool ret = false;
@@ -741,18 +741,18 @@ bool Abs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx)
 
         switch ( ds.Get<uint8_t>() ) {
             case    0:
-                CF_CHECK_EQ(BN_sub(res.GetPtr(), zero.GetPtr(), bn[0].GetPtr()), 1);
+                CF_CHECK_EQ(BN_sub(res.GetDestPtr(), zero.GetPtr(), bn[0].GetPtr()), 1);
                 break;
             case    1:
-                CF_CHECK_EQ(BN_sub(res.GetPtr(), bn[0].GetPtr(), bn[0].GetPtr()), 1);
-                CF_CHECK_EQ(BN_sub(res.GetPtr(), res.GetPtr(), bn[0].GetPtr()), 1);
+                CF_CHECK_EQ(BN_sub(res.GetDestPtr(), bn[0].GetPtr(), bn[0].GetPtr()), 1);
+                CF_CHECK_EQ(BN_sub(res.GetDestPtr(), res.GetDestPtr(), bn[0].GetPtr()), 1);
                 break;
             default:
                 goto end;
                 break;
         }
     } else {
-        CF_CHECK_NE(BN_copy(res.GetPtr(), bn[0].GetPtr()), nullptr);
+        CF_CHECK_NE(BN_copy(res.GetDestPtr(), bn[0].GetPtr()), nullptr);
     }
 
     ret = true;
@@ -761,7 +761,7 @@ end:
     return ret;
 }
 
-bool RShift::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ctx;
     bool ret = false;
     std::optional<int> places;
@@ -770,13 +770,13 @@ bool RShift::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& c
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(BN_rshift(res.GetPtr(), bn[0].GetPtr(), *places), 1);
+            CF_CHECK_EQ(BN_rshift(res.GetDestPtr(), bn[0].GetPtr(), *places), 1);
             break;
         case    1:
             if ( *places != 1 ) {
                 goto end;
             }
-            CF_CHECK_EQ(BN_rshift1(res.GetPtr(), bn[0].GetPtr()), 1);
+            CF_CHECK_EQ(BN_rshift1(res.GetDestPtr(), bn[0].GetPtr()), 1);
             break;
         default:
             goto end;
@@ -788,12 +788,12 @@ end:
     return ret;
 }
 
-bool LShift1::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool LShift1::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ctx;
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(BN_lshift1(res.GetPtr(), bn[0].GetPtr()), 1);
+    CF_CHECK_EQ(BN_lshift1(res.GetDestPtr(), bn[0].GetPtr()), 1);
 
     ret = true;
 
@@ -801,7 +801,7 @@ end:
     return ret;
 }
 
-bool SetBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool SetBit::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ctx;
     (void)ds;
     bool ret = false;
@@ -809,8 +809,8 @@ bool SetBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& c
 
     CF_CHECK_NE(pos = bn[1].AsInt(), std::nullopt);
 
-    CF_CHECK_EQ(BN_set_bit(bn[0].GetPtr(), *pos), 1);
-    CF_CHECK_NE(BN_copy(res.GetPtr(), bn[0].GetPtr()), nullptr);
+    CF_CHECK_EQ(BN_set_bit(bn.GetDestPtr(0), *pos), 1);
+    CF_CHECK_NE(BN_copy(res.GetDestPtr(), bn[0].GetPtr()), nullptr);
 
     ret = true;
 
@@ -818,7 +818,7 @@ end:
     return ret;
 }
 
-bool ClearBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool ClearBit::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ctx;
     (void)ds;
     bool ret = false;
@@ -826,8 +826,8 @@ bool ClearBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX&
 
     CF_CHECK_NE(pos = bn[1].AsInt(), std::nullopt);
 
-    CF_CHECK_EQ(BN_clear_bit(bn[0].GetPtr(), *pos), 1);
-    CF_CHECK_NE(BN_copy(res.GetPtr(), bn[0].GetPtr()), nullptr);
+    CF_CHECK_EQ(BN_clear_bit(bn.GetDestPtr(0), *pos), 1);
+    CF_CHECK_NE(BN_copy(res.GetDestPtr(), bn[0].GetPtr()), nullptr);
 
     ret = true;
 
@@ -835,7 +835,7 @@ end:
     return ret;
 }
 
-bool Bit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool Bit::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ctx;
     (void)ds;
     bool ret = false;
@@ -851,7 +851,7 @@ end:
     return ret;
 }
 
-bool CmpAbs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool CmpAbs::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ctx;
     (void)ds;
 
@@ -868,7 +868,7 @@ bool CmpAbs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& c
     return true;
 }
 
-bool ModLShift::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool ModLShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ctx;
     (void)ds;
     bool ret = false;
@@ -878,24 +878,24 @@ bool ModLShift::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(BN_mod_lshift(res.GetPtr(), bn[0].GetPtr(), *places, bn[2].GetPtr(), ctx.GetPtr()), 1);
+            CF_CHECK_EQ(BN_mod_lshift(res.GetDestPtr(), bn[0].GetPtr(), *places, bn[2].GetPtr(), ctx.GetPtr()), 1);
             break;
         case    1:
             /* BN_mod_lshift_quick acts like BN_mod_lshift but requires that a be non-negative and less than m. */
             CF_CHECK_EQ(BN_is_negative(bn[0].GetPtr()), 0);
             CF_CHECK_LT(BN_cmp(bn[0].GetPtr(), bn[2].GetPtr()), 0);
-            CF_CHECK_EQ(BN_mod_lshift_quick(res.GetPtr(), bn[0].GetPtr(), *places, bn[2].GetPtr()), 1);
+            CF_CHECK_EQ(BN_mod_lshift_quick(res.GetDestPtr(), bn[0].GetPtr(), *places, bn[2].GetPtr()), 1);
             break;
         case    2:
             CF_CHECK_EQ(*places, 1);
-            CF_CHECK_EQ(BN_mod_lshift1(res.GetPtr(), bn[0].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
+            CF_CHECK_EQ(BN_mod_lshift1(res.GetDestPtr(), bn[0].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
             break;
         case    3:
             CF_CHECK_EQ(*places, 1);
             /* BN_mod_lshift1_quick acts like BN_mod_lshift1 but requires that a be non-negative and less than m. */
             CF_CHECK_EQ(BN_is_negative(bn[0].GetPtr()), 0);
             CF_CHECK_LT(BN_cmp(bn[0].GetPtr(), bn[2].GetPtr()), 0);
-            CF_CHECK_EQ(BN_mod_lshift1_quick(res.GetPtr(), bn[0].GetPtr(), bn[2].GetPtr()), 1);
+            CF_CHECK_EQ(BN_mod_lshift1_quick(res.GetDestPtr(), bn[0].GetPtr(), bn[2].GetPtr()), 1);
             break;
         default:
             goto end;
@@ -907,7 +907,7 @@ end:
     return ret;
 }
 
-bool IsPow2::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const {
+bool IsPow2::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ctx;
     (void)ds;
 

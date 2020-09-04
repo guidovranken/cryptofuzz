@@ -4,6 +4,7 @@
 #if defined(CRYPTOFUZZ_BORINGSSL)
 #include <openssl/mem.h>
 #endif
+#include <array>
 
 namespace cryptofuzz {
 namespace module {
@@ -14,19 +15,29 @@ class Bignum {
         BIGNUM* bn = nullptr;
         Datasource& ds;
         bool locked = false;
+        bool noFree = false;
     public:
         Bignum(Datasource& ds) :
             ds(ds)
     { }
 
         ~Bignum() {
-            if ( locked == false ) {
+            if ( noFree == false ) {
                 BN_free(bn);
             }
         }
 
         void Lock(void) {
             locked = true;
+        }
+
+        void DisableFree(void) {
+            noFree = true;
+        }
+
+        void ReleaseOwnership(void) {
+            Lock();
+            DisableFree();
         }
 
         bool New(void) {
@@ -140,7 +151,7 @@ end:
             }
         }
 
-        BIGNUM* GetPtr(const bool allowDup = true) {
+        BIGNUM* GetDestPtr(const bool allowDup = true) {
             if ( locked == false ) {
                 try {
                     {
@@ -177,6 +188,14 @@ end:
             return bn;
         }
 
+        BIGNUM* GetPtrConst(void) const {
+            return bn;
+        }
+
+        const BIGNUM* GetPtr(const bool allowDup = true) {
+            return GetDestPtr(allowDup);
+        }
+
         std::optional<component::Bignum> ToComponentBignum(void) {
             std::optional<component::Bignum> ret = std::nullopt;
 
@@ -188,6 +207,78 @@ end:
             OPENSSL_free(str);
 
             return ret;
+        }
+
+        inline bool operator==(const Bignum& rhs) const {
+            return BN_cmp(GetPtrConst(), rhs.GetPtrConst()) == 0;
+        }
+};
+
+class BignumCluster {
+    private:
+        Datasource& ds;
+        std::array<Bignum, 4> bn;
+    public:
+        BignumCluster(Datasource& ds, Bignum bn0, Bignum bn1, Bignum bn2, Bignum bn3) :
+            ds(ds),
+            bn({bn0, bn1, bn2, bn3})
+        { }
+
+        Bignum& operator[](const size_t index) {
+            if ( index >= bn.size() ) {
+                abort();
+            }
+
+            try {
+                /* Rewire? */
+                if ( ds.Get<bool>() == true ) {
+                    /* Pick a random bignum */
+                    const size_t newIndex = ds.Get<uint8_t>() % 4;
+
+                    /* Same value? */
+                    if ( bn[newIndex] == bn[index] ) {
+                        /* Then return reference to other bignum */
+
+                        if ( newIndex != index ) {
+                            bn[newIndex].Lock();
+                        }
+
+                        return bn[newIndex];
+                    }
+
+                    /* Fall through */
+                }
+            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+            return bn[index];
+        }
+
+        Bignum& Get(const size_t index) {
+            if ( index >= bn.size() ) {
+                abort();
+            }
+
+            return bn[index];
+        }
+
+        BIGNUM* GetDestPtr(const size_t index) {
+            return Get(index).GetDestPtr();
+        }
+
+        bool New(const size_t index) {
+            if ( index >= bn.size() ) {
+                abort();
+            }
+
+            return bn[index].New();
+        }
+
+        bool Set(const size_t index, const std::string s) {
+            if ( index >= bn.size() ) {
+                abort();
+            }
+
+            return bn[index].Set(s);
         }
 };
 
@@ -236,212 +327,212 @@ class BN_MONT_CTX {
 
 class Operation {
     public:
-        virtual bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const = 0;
+        virtual bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const = 0;
         virtual ~Operation() { }
 };
 
 class Add : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class Sub : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class Mul : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class Mod : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class ExpMod : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class Sqr : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class GCD : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class AddMod : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class SubMod : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class MulMod : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class SqrMod : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class InvMod : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class Cmp : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class Div : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class IsPrime : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class Sqrt : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class IsNeg : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class IsEq : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class IsEven : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class IsOdd : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class IsZero : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class IsOne : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class Jacobi : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 #if !defined(CRYPTOFUZZ_BORINGSSL)
 class Mod_NIST_192 : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class Mod_NIST_224 : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class Mod_NIST_256 : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class Mod_NIST_384 : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class Mod_NIST_521 : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 #endif
 
 class SqrtMod : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 #if defined(CRYPTOFUZZ_BORINGSSL)
 class LCM : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 #endif
 
 class Exp : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class Abs : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class RShift : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class LShift1 : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class SetBit : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class ClearBit : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class Bit : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class CmpAbs : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class ModLShift : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 class IsPow2 : public Operation {
     public:
-        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, BN_CTX& ctx) const override;
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
 } /* namespace OpenSSL_bignum */
