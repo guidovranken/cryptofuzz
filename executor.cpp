@@ -1004,7 +1004,9 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
                         util::ToString(*result.second).c_str());
         }
 
-        tests::test(op, result.second);
+        if ( options.disableTests == false ) {
+            tests::test(op, result.second);
+        }
 
         postprocess(module, op, result);
     }

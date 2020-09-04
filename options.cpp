@@ -141,6 +141,12 @@ Options::Options(const int argc, char** argv) {
             }
 
             this->minModules = static_cast<size_t>(minModules);
+        } else if ( !parts.empty() && parts[0] == "--disable-tests" ) {
+            if ( parts.size() != 1 ) {
+                std::cout << "Expected no argument after --disable-tests=" << std::endl;
+                exit(1);
+            }
+            this->disableTests = true;
         }
     }
 }

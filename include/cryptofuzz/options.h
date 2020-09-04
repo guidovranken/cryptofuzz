@@ -19,6 +19,7 @@ class Options {
         std::optional<std::vector<uint64_t>> disableModules = std::nullopt;
         size_t minModules = 1;
         bool debug = false;
+        bool disableTests = false;
 };
 
 } /* namespace cryptofuzz */
