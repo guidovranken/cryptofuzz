@@ -913,7 +913,7 @@ std::optional<component::Bignum> mbedTLS::OpBignumCalc(operation::BignumCalc& op
     mbedTLS_detail::SetGlobalDs(&ds);
     std::unique_ptr<mbedTLS_bignum::Operation> opRunner = nullptr;
 
-    std::vector<mbedTLS_bignum::Bignum> bn{
+    mbedTLS_bignum::BignumCluster bn{ds,
         mbedTLS_bignum::Bignum(),
         mbedTLS_bignum::Bignum(),
         mbedTLS_bignum::Bignum(),
@@ -922,10 +922,10 @@ std::optional<component::Bignum> mbedTLS::OpBignumCalc(operation::BignumCalc& op
     mbedTLS_bignum::Bignum res;
 
     CF_CHECK_EQ(res.Set("0"), true);
-    CF_CHECK_EQ(bn[0].Set(op.bn0.ToString(ds)), true);
-    CF_CHECK_EQ(bn[1].Set(op.bn1.ToString(ds)), true);
-    CF_CHECK_EQ(bn[2].Set(op.bn2.ToString(ds)), true);
-    CF_CHECK_EQ(bn[3].Set(op.bn3.ToString(ds)), true);
+    CF_CHECK_EQ(bn.Set(0, op.bn0.ToString(ds)), true);
+    CF_CHECK_EQ(bn.Set(1, op.bn1.ToString(ds)), true);
+    CF_CHECK_EQ(bn.Set(2, op.bn2.ToString(ds)), true);
+    CF_CHECK_EQ(bn.Set(3, op.bn3.ToString(ds)), true);
 
 
     switch ( op.calcOp.Get() ) {
