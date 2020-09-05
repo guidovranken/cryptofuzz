@@ -694,13 +694,13 @@ std::optional<component::Ciphertext> libtomcrypt::OpSymmetricEncrypt(operation::
         return libtomcrypt_detail::GcmEncrypt(op);
     } else if ( repository::IsCCM(op.cipher.cipherType.Get()) ) {
         return libtomcrypt_detail::CcmEncrypt(op);
-    } else if ( CF_CIPHER("SALSA20_128") ) {
+    } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_128") ) {
         return libtomcrypt_detail::Salsa20Crypt(op.cleartext, op.cipher, 16, 20);
-    } else if ( CF_CIPHER("SALSA20_12_128") ) {
+    } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_12_128") ) {
         return libtomcrypt_detail::Salsa20Crypt(op.cleartext, op.cipher, 16, 12);
-    } else if ( CF_CIPHER("SALSA20_256") ) {
+    } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_256") ) {
         return libtomcrypt_detail::Salsa20Crypt(op.cleartext, op.cipher, 32, 20);
-    } else if ( CF_CIPHER("SALSA20_12_256") ) {
+    } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_12_256") ) {
         return libtomcrypt_detail::Salsa20Crypt(op.cleartext, op.cipher, 32, 12);
     }
 
@@ -712,13 +712,13 @@ std::optional<component::Cleartext> libtomcrypt::OpSymmetricDecrypt(operation::S
         return libtomcrypt_detail::GcmDecrypt(op);
     } else if ( repository::IsCCM(op.cipher.cipherType.Get()) ) {
         return libtomcrypt_detail::CcmDecrypt(op);
-    } else if ( CF_CIPHER("SALSA20_128") ) {
+    } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_128") ) {
         return libtomcrypt_detail::Salsa20Crypt(op.ciphertext, op.cipher, 16, 20);
-    } else if ( CF_CIPHER("SALSA20_12_128") ) {
+    } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_12_128") ) {
         return libtomcrypt_detail::Salsa20Crypt(op.ciphertext, op.cipher, 16, 12);
-    } else if ( CF_CIPHER("SALSA20_256") ) {
+    } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_256") ) {
         return libtomcrypt_detail::Salsa20Crypt(op.ciphertext, op.cipher, 32, 20);
-    } else if ( CF_CIPHER("SALSA20_12_256") ) {
+    } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_12_256") ) {
         return libtomcrypt_detail::Salsa20Crypt(op.ciphertext, op.cipher, 32, 12);
     }
 
