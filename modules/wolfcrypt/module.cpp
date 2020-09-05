@@ -41,6 +41,10 @@ extern "C" {
 
 #include <wolfssl/wolfcrypt/pwdbased.h>
 #include <wolfssl/wolfcrypt/ecc.h>
+#include <wolfssl/wolfcrypt/curve25519.h>
+#include <wolfssl/wolfcrypt/curve448.h>
+#include <wolfssl/wolfcrypt/ed448.h>
+#include <wolfssl/wolfcrypt/ed25519.h>
 }
 
 #include "bn_ops.h"
@@ -2004,12 +2008,6 @@ namespace wolfCrypt_detail {
             { CF_ECC_CURVE("brainpool320r1"), ECC_BRAINPOOLP320R1 },
             { CF_ECC_CURVE("brainpool384r1"), ECC_BRAINPOOLP384R1 },
             { CF_ECC_CURVE("brainpool512r1"), ECC_BRAINPOOLP512R1 },
-
-#if 0
-            /* Twisted Edwards */
-            { CF_ECC_CURVE("x25519"), ECC_X25519 },
-            { CF_ECC_CURVE("x448"), ECC_X448 },
-#endif
         };
 
         if ( LUT.find(curveType.Get()) == LUT.end() ) {
@@ -2020,48 +2018,190 @@ namespace wolfCrypt_detail {
     }
 }
 
+namespace wolfCrypt_detail {
+
+static std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Curve25519(operation::ECC_PrivateToPublic& op, Datasource& ds) {
+    std::optional<component::ECC_PublicKey> ret = std::nullopt;
+
+    wolfCrypt_bignum::Bignum priv(ds), pub(ds);
+    uint8_t pub_bytes[CURVE25519_KEYSIZE];
+    uint8_t priv_bytes[CURVE25519_KEYSIZE];
+
+    /* Load private key */
+    {
+        CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
+        CF_CHECK_EQ(mp_to_unsigned_bin_len(priv.GetPtr(), priv_bytes, sizeof(priv_bytes)), MP_OKAY);
+        priv_bytes[0] &= 248;
+        priv_bytes[31] &= 127;
+        priv_bytes[31] |= 64;
+    }
+
+    /* Convert to public key */
+    {
+        CF_CHECK_EQ(wc_curve25519_make_pub(sizeof(pub_bytes), pub_bytes, sizeof(priv_bytes), priv_bytes), MP_OKAY);
+    }
+
+    /* Convert public key */
+    {
+        std::optional<std::string> pub_x_str;
+        CF_CHECK_EQ(mp_read_unsigned_bin(pub.GetPtr(), pub_bytes, sizeof(pub_bytes)), MP_OKAY);
+        CF_CHECK_NE(pub_x_str = pub.ToDecString(), std::nullopt);
+        ret = { *pub_x_str, "0" };
+    }
+
+end:
+    return ret;
+}
+
+static std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Curve448(operation::ECC_PrivateToPublic& op, Datasource& ds) {
+    static const uint8_t basepoint[CURVE448_KEY_SIZE] = {5};
+    std::optional<component::ECC_PublicKey> ret = std::nullopt;
+
+    wolfCrypt_bignum::Bignum priv(ds), pub(ds);
+    uint8_t pub_bytes[CURVE448_KEY_SIZE];
+    uint8_t priv_bytes[CURVE448_KEY_SIZE];
+
+    /* Load private key */
+    {
+        CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
+        CF_CHECK_EQ(mp_to_unsigned_bin_len(priv.GetPtr(), priv_bytes, sizeof(priv_bytes)), MP_OKAY);
+        priv_bytes[0] &= 0xFC;
+        priv_bytes[55] |= 0x80;
+    }
+
+    /* Convert to public key */
+    {
+        CF_CHECK_EQ(curve448(pub_bytes, priv_bytes, basepoint), MP_OKAY);
+    }
+
+    /* Convert public key */
+    {
+        std::optional<std::string> pub_x_str;
+        CF_CHECK_EQ(mp_read_unsigned_bin(pub.GetPtr(), pub_bytes, sizeof(pub_bytes)), MP_OKAY);
+        CF_CHECK_NE(pub_x_str = pub.ToDecString(), std::nullopt);
+        ret = { *pub_x_str, "0" };
+    }
+
+end:
+    return ret;
+}
+
+static std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Ed448(operation::ECC_PrivateToPublic& op, Datasource& ds) {
+    std::optional<component::ECC_PublicKey> ret = std::nullopt;
+
+    wolfCrypt_bignum::Bignum priv(ds), pub(ds);
+    uint8_t pub_bytes[ED448_PUB_KEY_SIZE];
+
+    ed448_key key;
+
+    /* Load private key */
+    {
+        CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
+        CF_CHECK_EQ(mp_to_unsigned_bin_len(priv.GetPtr(), key.k, sizeof(key.k)), MP_OKAY);
+    }
+
+    /* Convert to public key */
+    {
+        CF_CHECK_EQ(wc_ed448_make_public(&key, pub_bytes, sizeof(pub_bytes)), MP_OKAY);
+    }
+
+    /* Convert public key */
+    {
+        std::optional<std::string> pub_x_str;
+        CF_CHECK_EQ(mp_read_unsigned_bin(pub.GetPtr(), pub_bytes, sizeof(pub_bytes)), MP_OKAY);
+        CF_CHECK_NE(pub_x_str = pub.ToDecString(), std::nullopt);
+        ret = { *pub_x_str, "0" };
+    }
+
+end:
+    return ret;
+}
+
+static std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Ed25519(operation::ECC_PrivateToPublic& op, Datasource& ds) {
+    std::optional<component::ECC_PublicKey> ret = std::nullopt;
+
+    wolfCrypt_bignum::Bignum priv(ds), pub(ds);
+    uint8_t pub_bytes[ED25519_PUB_KEY_SIZE];
+
+    ed25519_key key;
+
+    /* Load private key */
+    {
+        CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
+        CF_CHECK_EQ(mp_to_unsigned_bin_len(priv.GetPtr(), key.k, sizeof(key.k)), MP_OKAY);
+    }
+
+    /* Convert to public key */
+    {
+        CF_CHECK_EQ(wc_ed25519_make_public(&key, pub_bytes, sizeof(pub_bytes)), MP_OKAY);
+    }
+
+    /* Convert public key */
+    {
+        std::optional<std::string> pub_x_str;
+        CF_CHECK_EQ(mp_read_unsigned_bin(pub.GetPtr(), pub_bytes, sizeof(pub_bytes)), MP_OKAY);
+        CF_CHECK_NE(pub_x_str = pub.ToDecString(), std::nullopt);
+        ret = { *pub_x_str, "0" };
+    }
+
+end:
+    return ret;
+}
+
+} /* namespace wolfCrypt_detail */
+
 std::optional<component::ECC_PublicKey> wolfCrypt::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     wolfCrypt_detail::SetGlobalDs(&ds);
 
-    wolfCrypt_bignum::Bignum priv(ds);
-    ecc_key* key = nullptr;
-    ecc_point* pub = nullptr;
+    if ( op.curveType.Get() == CF_ECC_CURVE("x25519") ) {
+        ret = wolfCrypt_detail::OpECC_PrivateToPublic_Curve25519(op, ds);
+    } else if ( op.curveType.Get() == CF_ECC_CURVE("x448") ) {
+        ret = wolfCrypt_detail::OpECC_PrivateToPublic_Curve448(op, ds);
+    } else if ( op.curveType.Get() == CF_ECC_CURVE("ed25519") ) {
+        ret = wolfCrypt_detail::OpECC_PrivateToPublic_Ed25519(op, ds);
+    } else if ( op.curveType.Get() == CF_ECC_CURVE("ed448") ) {
+        ret = wolfCrypt_detail::OpECC_PrivateToPublic_Ed448(op, ds);
+    } else {
+        wolfCrypt_bignum::Bignum priv(ds);
+        ecc_key* key = nullptr;
+        ecc_point* pub = nullptr;
 
-    /* Initialize */
-    {
-        std::optional<int> curveID;
-        CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
-
-        CF_CHECK_NE(key = wc_ecc_key_new(nullptr), nullptr);
-        CF_CHECK_NE(pub = wc_ecc_new_point_h(nullptr), nullptr);
-
-        CF_CHECK_EQ(wc_ecc_set_curve(key, 0, *curveID), MP_OKAY);
+        /* Initialize */
         {
-            wolfCrypt_bignum::Bignum priv(&key->k, ds);
-            CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
+            std::optional<int> curveID;
+            CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
+
+            CF_CHECK_NE(key = wc_ecc_key_new(nullptr), nullptr);
+            CF_CHECK_NE(pub = wc_ecc_new_point_h(nullptr), nullptr);
+
+            CF_CHECK_EQ(wc_ecc_set_curve(key, 0, *curveID), MP_OKAY);
+            {
+                wolfCrypt_bignum::Bignum priv(&key->k, ds);
+                CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
+            }
         }
-    }
 
-    /* Process */
-    CF_CHECK_EQ(wc_ecc_make_pub(key, pub), MP_OKAY);
+        /* Process */
+        CF_CHECK_EQ(wc_ecc_make_pub(key, pub), MP_OKAY);
 
-    /* Finalize */
-    {
-        wolfCrypt_bignum::Bignum pub_x(pub->x, ds);
-        wolfCrypt_bignum::Bignum pub_y(pub->y, ds);
+        /* Finalize */
+        {
+            wolfCrypt_bignum::Bignum pub_x(pub->x, ds);
+            wolfCrypt_bignum::Bignum pub_y(pub->y, ds);
 
-        std::optional<std::string> pub_x_str, pub_y_str;
-        CF_CHECK_NE(pub_x_str = pub_x.ToDecString(), std::nullopt);
-        CF_CHECK_NE(pub_y_str = pub_y.ToDecString(), std::nullopt);
+            std::optional<std::string> pub_x_str, pub_y_str;
+            CF_CHECK_NE(pub_x_str = pub_x.ToDecString(), std::nullopt);
+            CF_CHECK_NE(pub_y_str = pub_y.ToDecString(), std::nullopt);
 
-        ret = { *pub_x_str, *pub_y_str };
-    }
+            ret = { *pub_x_str, *pub_y_str };
+        }
 
 end:
-    /* noret */ wc_ecc_key_free(key);
-    /* noret */ wc_ecc_del_point(pub);
+        /* noret */ wc_ecc_key_free(key);
+        /* noret */ wc_ecc_del_point(pub);
+    }
 
     wolfCrypt_detail::UnsetGlobalDs();
 

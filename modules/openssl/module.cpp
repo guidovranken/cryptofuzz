@@ -11,6 +11,17 @@
 #include <openssl/core_names.h>
 #endif
 
+#if defined(CRYPTOFUZZ_BORINGSSL)
+#include <openssl/curve25519.h>
+#elif defined(CRYPTOFUZZ_LIBRESSL)
+extern "C" { void x25519_public_from_private(uint8_t out_public_value[32], const uint8_t private_key[32]); }
+#define X25519_public_from_private x25519_public_from_private
+#else
+/* OpenSSL */
+extern "C" { void X25519_public_from_private(uint8_t out_public_value[32], const uint8_t private_key[32]); }
+extern "C" { void X448_public_from_private(uint8_t out_public_value[56], const uint8_t private_key[56]); }
+#endif
+
 #include "module_internal.h"
 #include "bn_ops.h"
 
@@ -3129,41 +3140,142 @@ static std::optional<int> toCurveNID(const component::CurveType& curveType) {
     return LUT.at(curveType.Get());
 }
 
+#if defined(CRYPTOFUZZ_LIBRESSL)
+/* Taken from OpenSSL. LibreSSL doesn't implement BN_bn2binpad */
+
+static
+int bn2binpad(const BIGNUM *a, unsigned char *to, int tolen)
+{
+    int n;
+    size_t i, lasti, j, atop, mask;
+    BN_ULONG l;
+
+    /*
+     * In case |a| is fixed-top, BN_num_bytes can return bogus length,
+     * but it's assumed that fixed-top inputs ought to be "nominated"
+     * even for padded output, so it works out...
+     */
+    n = BN_num_bytes(a);
+    if (tolen == -1) {
+        tolen = n;
+    } else if (tolen < n) {     /* uncommon/unlike case */
+        BIGNUM temp = *a;
+
+        //bn_correct_top(&temp);
+        n = BN_num_bytes(&temp);
+        if (tolen < n)
+            return -1;
+    }
+
+    /* Swipe through whole available data and don't give away padded zero. */
+    atop = a->dmax * BN_BYTES;
+    if (atop == 0) {
+        OPENSSL_cleanse(to, tolen);
+        return tolen;
+    }
+
+    lasti = atop - 1;
+    atop = a->top * BN_BYTES;
+    to += tolen; /* start from the end of the buffer */
+    for (i = 0, j = 0; j < (size_t)tolen; j++) {
+        unsigned char val;
+        l = a->d[i / BN_BYTES];
+        mask = 0 - ((j - atop) >> (8 * sizeof(i) - 1));
+        val = (unsigned char)(l >> (8 * (i % BN_BYTES)) & mask);
+        *--to = val;
+        i += (i - lasti) >> (8 * sizeof(i) - 1); /* stay on last limb */
+    }
+
+    return tolen;
+}
+int BN_bn2binpad(const BIGNUM *a, unsigned char *to, int tolen)
+{
+    if (tolen < 0)
+        return -1;
+    return bn2binpad(a, to, tolen);
+}
+#endif
+
 std::optional<component::ECC_PublicKey> OpenSSL::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
-
-    CF_EC_KEY key(ds);
-    std::shared_ptr<CF_EC_GROUP> group = nullptr;
-    OpenSSL_bignum::Bignum prv(ds);
-    std::unique_ptr<CF_EC_POINT> pub = nullptr;
-    OpenSSL_bignum::Bignum pub_x(ds);
-    OpenSSL_bignum::Bignum pub_y(ds);
     char* pub_x_str = nullptr;
     char* pub_y_str = nullptr;
 
-    {
-        std::optional<int> curveNID;
-        CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
-        CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
-        group->Lock();
-        CF_CHECK_NE(group->GetPtr(), nullptr);
-    }
+    if ( op.curveType.Get() == CF_ECC_CURVE("x25519") ) {
+        uint8_t priv_bytes[32];
+        uint8_t pub_bytes[32];
+        OpenSSL_bignum::Bignum priv(ds), pub(ds);
+        CF_CHECK_EQ(pub.New(), true);
 
-    CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group->GetPtr()), 1);
+        CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
 
-    /* Load private key */
-    CF_CHECK_EQ(prv.Set(op.priv.ToString(ds)), true);
+        /* Load private key */
+        CF_CHECK_NE(BN_bn2binpad(priv.GetPtr(), priv_bytes, sizeof(priv_bytes)), -1);
 
-    /* Set private key */
-    CF_CHECK_EQ(EC_KEY_set_private_key(key.GetPtr(), prv.GetPtr()), 1);
+        /* Private -> public */
+        /* noret */ X25519_public_from_private(pub_bytes, priv_bytes);
 
-    /* Compute public key */
-    CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
-    CF_CHECK_EQ(EC_POINT_mul(group->GetPtr(), pub->GetPtr(), prv.GetPtr(), nullptr, nullptr, nullptr), 1);
+        /* Convert public key */
+        CF_CHECK_NE(BN_bin2bn(pub_bytes, sizeof(pub_bytes), pub.GetDestPtr()), nullptr);
 
-    CF_CHECK_EQ(pub_x.New(), true);
-    CF_CHECK_EQ(pub_y.New(), true);
+        CF_CHECK_NE(pub_x_str = BN_bn2dec(pub.GetPtr()), nullptr);
+
+        /* Save bignum x/y */
+        ret = { std::string(pub_x_str), "0" };
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL)
+    } else if ( op.curveType.Get() == CF_ECC_CURVE("x448") ) {
+        uint8_t priv_bytes[56];
+        uint8_t pub_bytes[56];
+        OpenSSL_bignum::Bignum priv(ds), pub(ds);
+        CF_CHECK_EQ(pub.New(), true);
+
+        CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
+
+        /* Load private key */
+        CF_CHECK_NE(BN_bn2binpad(priv.GetPtr(), priv_bytes, sizeof(priv_bytes)), -1);
+
+        /* Private -> public */
+        /* noret */ X448_public_from_private(pub_bytes, priv_bytes);
+
+        /* Convert public key */
+        CF_CHECK_NE(BN_bin2bn(pub_bytes, sizeof(pub_bytes), pub.GetDestPtr()), nullptr);
+
+        CF_CHECK_NE(pub_x_str = BN_bn2dec(pub.GetPtr()), nullptr);
+
+        /* Save bignum x/y */
+        ret = { std::string(pub_x_str), "0" };
+#endif
+    } else {
+        CF_EC_KEY key(ds);
+        std::shared_ptr<CF_EC_GROUP> group = nullptr;
+        OpenSSL_bignum::Bignum prv(ds);
+        std::unique_ptr<CF_EC_POINT> pub = nullptr;
+        OpenSSL_bignum::Bignum pub_x(ds);
+        OpenSSL_bignum::Bignum pub_y(ds);
+
+        {
+            std::optional<int> curveNID;
+            CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
+            CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
+            group->Lock();
+            CF_CHECK_NE(group->GetPtr(), nullptr);
+        }
+
+        CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group->GetPtr()), 1);
+
+        /* Load private key */
+        CF_CHECK_EQ(prv.Set(op.priv.ToString(ds)), true);
+
+        /* Set private key */
+        CF_CHECK_EQ(EC_KEY_set_private_key(key.GetPtr(), prv.GetPtr()), 1);
+
+        /* Compute public key */
+        CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+        CF_CHECK_EQ(EC_POINT_mul(group->GetPtr(), pub->GetPtr(), prv.GetPtr(), nullptr, nullptr, nullptr), 1);
+
+        CF_CHECK_EQ(pub_x.New(), true);
+        CF_CHECK_EQ(pub_y.New(), true);
 
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
     CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), pub->GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
@@ -3171,12 +3283,13 @@ std::optional<component::ECC_PublicKey> OpenSSL::OpECC_PrivateToPublic(operation
     CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group->GetPtr(), pub->GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
 #endif
 
-    /* Convert bignum x/y to strings */
-    CF_CHECK_NE(pub_x_str = BN_bn2dec(pub_x.GetPtr()), nullptr);
-    CF_CHECK_NE(pub_y_str = BN_bn2dec(pub_y.GetPtr()), nullptr);
+        /* Convert bignum x/y to strings */
+        CF_CHECK_NE(pub_x_str = BN_bn2dec(pub_x.GetPtr()), nullptr);
+        CF_CHECK_NE(pub_y_str = BN_bn2dec(pub_y.GetPtr()), nullptr);
 
-    /* Save bignum x/y */
-    ret = { std::string(pub_x_str), std::string(pub_y_str) };
+        /* Save bignum x/y */
+        ret = { std::string(pub_x_str), std::string(pub_y_str) };
+    }
 
 end:
     OPENSSL_free(pub_x_str);
