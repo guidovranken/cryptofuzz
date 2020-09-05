@@ -3131,6 +3131,24 @@ static std::optional<int> toCurveNID(const component::CurveType& curveType) {
         { CF_ECC_CURVE("x962_p239v2"), NID_X9_62_prime239v2 },
         { CF_ECC_CURVE("x962_p239v3"), NID_X9_62_prime239v3 },
         { CF_ECC_CURVE("x962_p256v1"), NID_X9_62_prime256v1 },
+#if defined(CRYPTOFUZZ_LIBRESSL)
+        { CF_ECC_CURVE("ipsec3"), NID_ipsec3 },
+        { CF_ECC_CURVE("ipsec4"), NID_ipsec4 },
+        { CF_ECC_CURVE("gostr3410_2001_test"), NID_id_GostR3410_2001_TestParamSet },
+        { CF_ECC_CURVE("gostr3410_2001_cryptopro_a"), NID_id_GostR3410_2001_CryptoPro_A_ParamSet },
+        { CF_ECC_CURVE("gostr3410_2001_cryptopro_b"), NID_id_GostR3410_2001_CryptoPro_B_ParamSet },
+        { CF_ECC_CURVE("gostr3410_2001_cryptopro_c"), NID_id_GostR3410_2001_CryptoPro_C_ParamSet },
+        { CF_ECC_CURVE("gostr3410_2001_cryptopro_xcha"), NID_id_GostR3410_2001_CryptoPro_XchA_ParamSet },
+        { CF_ECC_CURVE("gostr3410_2001_cryptopro_xchb"), NID_id_GostR3410_2001_CryptoPro_XchB_ParamSet },
+        { CF_ECC_CURVE("tc26_gost_3410_12_256_a"), NID_id_tc26_gost_3410_12_256_paramSetA },
+        { CF_ECC_CURVE("tc26_gost_3410_12_256_b"), NID_id_tc26_gost_3410_12_256_paramSetB },
+        { CF_ECC_CURVE("tc26_gost_3410_12_256_c"), NID_id_tc26_gost_3410_12_256_paramSetC },
+        { CF_ECC_CURVE("tc26_gost_3410_12_256_d"), NID_id_tc26_gost_3410_12_256_paramSetD },
+        { CF_ECC_CURVE("tc26_gost_3410_12_512_test"), NID_id_tc26_gost_3410_12_512_paramSetTest },
+        { CF_ECC_CURVE("tc26_gost_3410_12_512_a"), NID_id_tc26_gost_3410_12_512_paramSetA },
+        { CF_ECC_CURVE("tc26_gost_3410_12_512_b"), NID_id_tc26_gost_3410_12_512_paramSetB },
+        { CF_ECC_CURVE("tc26_gost_3410_12_512_c"), NID_id_tc26_gost_3410_12_512_paramSetC },
+#endif
     };
 
     if ( LUT.find(curveType.Get()) == LUT.end() ) {
