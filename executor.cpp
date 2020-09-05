@@ -529,6 +529,16 @@ template<> void ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToP
 }
 
 template<> std::optional<component::ECC_PublicKey> ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>::callModule(std::shared_ptr<Module> module, operation::ECC_PrivateToPublic& op) const {
+    /* Only run whitelisted curves, if specified */
+    if ( options.curves != std::nullopt ) {
+        if ( std::find(
+                    options.curves->begin(),
+                    options.curves->end(),
+                    op.curveType.Get()) == options.curves->end() ) {
+            return std::nullopt;
+        }
+    }
+
     const size_t size = op.priv.ToTrimmedString().size();
 
     if ( size == 0 || size > 4096 ) {
@@ -553,6 +563,15 @@ template<> void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyP
 }
 
 template<> std::optional<component::ECC_KeyPair> ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::callModule(std::shared_ptr<Module> module, operation::ECC_GenerateKeyPair& op) const {
+    /* Only run whitelisted curves, if specified */
+    if ( options.curves != std::nullopt ) {
+        if ( std::find(
+                    options.curves->begin(),
+                    options.curves->end(),
+                    op.curveType.Get()) == options.curves->end() ) {
+            return std::nullopt;
+        }
+    }
     return module->OpECC_GenerateKeyPair(op);
 }
 
@@ -571,6 +590,15 @@ template<> void ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>:
 }
 
 template<> std::optional<component::ECDSA_Signature> ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::callModule(std::shared_ptr<Module> module, operation::ECDSA_Sign& op) const {
+    /* Only run whitelisted curves, if specified */
+    if ( options.curves != std::nullopt ) {
+        if ( std::find(
+                    options.curves->begin(),
+                    options.curves->end(),
+                    op.curveType.Get()) == options.curves->end() ) {
+            return std::nullopt;
+        }
+    }
     const size_t size = op.priv.ToTrimmedString().size();
 
     if ( size == 0 || size > 4096 ) {
@@ -595,6 +623,15 @@ template<> void ExecutorBase<bool, operation::ECDSA_Verify>::postprocess(std::sh
 }
 
 template<> std::optional<bool> ExecutorBase<bool, operation::ECDSA_Verify>::callModule(std::shared_ptr<Module> module, operation::ECDSA_Verify& op) const {
+    /* Only run whitelisted curves, if specified */
+    if ( options.curves != std::nullopt ) {
+        if ( std::find(
+                    options.curves->begin(),
+                    options.curves->end(),
+                    op.curveType.Get()) == options.curves->end() ) {
+            return std::nullopt;
+        }
+    }
     const std::vector<size_t> sizes = {
         op.pub.first.ToTrimmedString().size(),
         op.pub.second.ToTrimmedString().size(),
@@ -626,6 +663,15 @@ template<> void ExecutorBase<component::Secret, operation::ECDH_Derive>::postpro
 }
 
 template<> std::optional<component::Secret> ExecutorBase<component::Secret, operation::ECDH_Derive>::callModule(std::shared_ptr<Module> module, operation::ECDH_Derive& op) const {
+    /* Only run whitelisted curves, if specified */
+    if ( options.curves != std::nullopt ) {
+        if ( std::find(
+                    options.curves->begin(),
+                    options.curves->end(),
+                    op.curveType.Get()) == options.curves->end() ) {
+            return std::nullopt;
+        }
+    }
     return module->OpECDH_Derive(op);
 }
 

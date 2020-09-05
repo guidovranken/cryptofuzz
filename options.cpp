@@ -75,6 +75,34 @@ Options::Options(const int argc, char** argv) {
             }
 
             this->ciphers = cipherIDs;
+        } else if ( !parts.empty() && parts[0] == "--curves" ) {
+            if ( parts.size() != 2 ) {
+                std::cout << "Expected argument after --curves=" << std::endl;
+                exit(1);
+            }
+
+            std::vector<std::string> curveStrings;
+            boost::split(curveStrings, parts[1], boost::is_any_of(","));
+
+            std::vector<uint64_t> curveIDs;
+
+            for (const auto& curOpStr : curveStrings) {
+                bool found = false;
+                for (size_t i = 0; i < (sizeof(repository::ECC_CurveLUT) / sizeof(repository::ECC_CurveLUT[0])); i++) {
+                    if ( boost::iequals(curOpStr, std::string(repository::ECC_CurveLUT[i].name)) ) {
+                        curveIDs.push_back(repository::ECC_CurveLUT[i].id);
+                        found = true;
+                        break;
+                    }
+                }
+
+                if ( found == false ) {
+                    std::cout << "Undefined curve: " << curOpStr << std::endl;
+                    exit(1);
+                }
+            }
+
+            this->curves = curveIDs;
         } else if ( !parts.empty() && parts[0] == "--force-module" ) {
             if ( parts.size() != 2 ) {
                 std::cout << "Expected argument after --force-module=" << std::endl;
