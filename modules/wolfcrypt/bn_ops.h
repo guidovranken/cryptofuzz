@@ -6,6 +6,9 @@ extern "C" {
 #include <wolfssl/options.h>
 #include <wolfssl/wolfcrypt/integer.h>
 #include <wolfssl/wolfcrypt/ecc.h>
+#if defined(WOLFSSL_SP_MATH)
+ #include <wolfssl/wolfcrypt/sp.h>
+#endif
 }
 
 namespace cryptofuzz {
