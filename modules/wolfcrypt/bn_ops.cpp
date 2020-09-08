@@ -725,7 +725,7 @@ bool NumLSZeroBits::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-#if defined(USE_FAST_MATH) && !defined(HAVE_COMP_KEY)
+#if defined(WOLFSSL_SP_MATH) || (defined(USE_FAST_MATH) && !defined(HAVE_COMP_KEY))
     (void)res;
     (void)bn;
 #else
