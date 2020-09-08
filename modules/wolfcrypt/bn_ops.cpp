@@ -107,7 +107,17 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)bn;
 #else
 
-    CF_CHECK_EQ(mp_div(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr(), nullptr), MP_OKAY);
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            CF_CHECK_EQ(mp_div(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr(), nullptr), MP_OKAY);
+            break;
+        case    1:
+            CF_CHECK_EQ(mp_cmp_d(bn[1].GetPtr(), 2), 0);
+            CF_CHECK_EQ(mp_div_2(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+            break;
+        default:
+            goto end;
+    }
 
     ret = true;
 
