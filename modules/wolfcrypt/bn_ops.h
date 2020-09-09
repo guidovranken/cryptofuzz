@@ -235,6 +235,10 @@ class BignumCluster {
 
             return bn[index].Set(s);
         }
+
+        mp_int* GetDestPtr(const size_t index) {
+            return bn[index].GetPtr();
+        }
 };
 
 class Operation {

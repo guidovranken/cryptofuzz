@@ -92,6 +92,13 @@ bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 ret = true;
             }
             break;
+#if !defined(USE_FAST_MATH)
+        case    2:
+            CF_CHECK_EQ(mp_cmp_d(bn[1].GetPtr(), 2), MP_EQ);
+            CF_CHECK_EQ(mp_mul_2(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+            ret = true;
+            break;
+#endif
     }
 
 end:
@@ -112,9 +119,15 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             CF_CHECK_EQ(mp_div(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr(), nullptr), MP_OKAY);
             break;
         case    1:
-            CF_CHECK_EQ(mp_cmp_d(bn[1].GetPtr(), 2), 0);
+            CF_CHECK_EQ(mp_cmp_d(bn[1].GetPtr(), 2), MP_EQ);
             CF_CHECK_EQ(mp_div_2(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
+#if !defined(USE_FAST_MATH)
+        case    2:
+            CF_CHECK_EQ(mp_cmp_d(bn[1].GetPtr(), 3), MP_EQ);
+            CF_CHECK_EQ(mp_div_3(bn[0].GetPtr(), res.GetPtr(), nullptr), MP_OKAY);
+            break;
+#endif
         default:
             goto end;
     }
@@ -280,12 +293,19 @@ end:
 
 bool Neg::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
+    bool ret = false;
+
+#if defined(WOLFSSL_SP_MATH)
     (void)res;
     (void)bn;
+#else
+    CF_CHECK_EQ(res.Set("0"), true);
+    CF_CHECK_EQ(mp_sub(res.GetPtr(), bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
 
-    /* TODO */
+    ret = true;
 
-    bool ret = false;
+end:
+#endif
 
     return ret;
 }
@@ -419,7 +439,18 @@ bool AddMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)res;
     (void)bn;
 #else
-    CF_CHECK_EQ(mp_addmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            CF_CHECK_EQ(mp_addmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+            break;
+        case    1:
+            CF_CHECK_EQ(mp_cmp(bn[0].GetPtr(), bn[1].GetPtr()), MP_LT);
+            CF_CHECK_EQ(mp_cmp(bn[1].GetPtr(), bn[2].GetPtr()), MP_LT);
+            CF_CHECK_EQ(mp_addmod_ct(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+            break;
+        default:
+            goto end;
+    }
 
     ret = true;
 
@@ -437,7 +468,18 @@ bool SubMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)res;
     (void)bn;
 #else
-    CF_CHECK_EQ(mp_submod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            CF_CHECK_EQ(mp_submod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+            break;
+        case    1:
+            CF_CHECK_EQ(mp_cmp(bn[0].GetPtr(), bn[1].GetPtr()), MP_LT);
+            CF_CHECK_EQ(mp_cmp(bn[1].GetPtr(), bn[2].GetPtr()), MP_LT);
+            CF_CHECK_EQ(mp_submod_ct(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+            break;
+        default:
+            goto end;
+    }
 
     ret = true;
 
@@ -545,7 +587,6 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     switch ( ds.Get<uint8_t>() ) {
         case    0:
             CF_CHECK_EQ(mp_mod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
-            ret = true;
             break;
 #if !defined(WOLFSSL_SP_MATH)
         case    1:
@@ -555,11 +596,23 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 mp_digit modResult;
                 CF_CHECK_EQ(mp_mod_d(bn[0].GetPtr(), *op, &modResult), MP_OKAY);
                 CF_CHECK_EQ(res.Set(std::to_string(modResult)), true);
-                ret = true;
+            }
+            break;
+        case    2:
+            {
+                /* bn[0] *= 2 */
+                CF_CHECK_EQ(mp_mul_d(bn[0].GetPtr(), 2, bn.GetDestPtr(0)), MP_OKAY);
+
+                CF_CHECK_EQ(mp_cmp(bn[0].GetPtr(), bn[1].GetPtr()), MP_LT);
+                CF_CHECK_EQ(mp_div_2_mod_ct(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             }
             break;
 #endif
+        default:
+            goto end;
     }
+
+    ret = true;
 
 end:
     return ret;
