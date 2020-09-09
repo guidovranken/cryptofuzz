@@ -14,6 +14,9 @@
 
 #include "crypto/aes.cpp"
 
+#include "crypto/siphash.cpp"
+#include "uint256.cpp"
+
 namespace cryptofuzz {
 namespace module {
 
@@ -95,6 +98,93 @@ std::optional<component::MAC> Bitcoin::hmac(operation::HMAC& op, Datasource& ds)
     return ret;
 }
 
+namespace Bitcoin_detail {
+    static std::optional<component::Digest> SipHash64(operation::HMAC& op, Datasource& ds) {
+        std::optional<component::Digest> ret = std::nullopt;
+
+        util::Multipart parts;
+        std::unique_ptr<CSipHasher> alg = nullptr;
+
+        /* Initialize */
+        {
+            if ( op.cipher.key.GetSize() != 16 ) {
+                return ret;
+            }
+
+            uint64_t key[2];
+            memcpy(&key[0], op.cipher.key.GetPtr(), 8);
+            memcpy(&key[1], op.cipher.key.GetPtr() + 8, 8);
+
+            if ( op.cleartext.GetSize() == 32 || op.cleartext.GetSize() == 36 ) {
+                bool oneShot = false;
+                try {
+                    oneShot = ds.Get<bool>();
+                } catch ( ... ) { }
+
+                if ( oneShot == true ) {
+                    uint64_t out;
+
+                    if ( op.cleartext.GetSize() == 32 ) {
+                        out = SipHashUint256(key[0], key[1], uint256(op.cleartext.Get()));
+                    } else if ( op.cleartext.GetSize() == 36 ) {
+                        uint8_t in[32];
+                        uint32_t extra;
+
+                        memcpy(in, op.cleartext.GetPtr(), sizeof(in));
+                        memcpy(&extra, op.cleartext.GetPtr() + 32, sizeof(extra));
+
+                        out = SipHashUint256Extra(
+                                key[0],
+                                key[1],
+                                uint256(std::vector<uint8_t>(in, in + sizeof(in))),
+                                extra);
+                    } else {
+                        abort();
+                    }
+
+                    ret = component::Digest((const uint8_t*)&out, sizeof(out));
+
+                    return ret;
+                }
+            }
+
+            alg = std::make_unique<CSipHasher>(key[0], key[1]);
+
+            //if ( op.cleartext.GetSize() > 0 && (op.cleartext.GetSize() % 8) == 0 && ds.Get<bool>() == true ) {
+            if ( (op.cleartext.GetSize() % 8) == 0 && ds.Get<bool>() == true ) {
+                for (size_t i = 0; i < op.cleartext.GetSize(); i += 8) {
+                    uint64_t v;
+                    memcpy(&v, op.cleartext.GetPtr() + i, sizeof(v));
+                    alg->Write(v);
+                }
+
+                const auto out = alg->Finalize();
+                ret = component::Digest((const uint8_t*)&out, sizeof(out));
+
+                return ret;
+            }
+
+
+            parts = util::ToParts(ds, op.cleartext);
+        }
+
+        /* Process */
+        {
+            for (const auto& part : parts) {
+                alg->Write(part.first, part.second);
+            }
+        }
+
+        /* Finalize */
+        {
+            const auto out = alg->Finalize();
+            ret = component::Digest((const uint8_t*)&out, sizeof(out));
+        }
+
+        return ret;
+    }
+}
+
 std::optional<component::MAC> Bitcoin::OpHMAC(operation::HMAC& op) {
     std::optional<component::MAC> ret = std::nullopt;
 
@@ -105,6 +195,8 @@ std::optional<component::MAC> Bitcoin::OpHMAC(operation::HMAC& op) {
             return hmac<CHMAC_SHA256>(op, ds);
         case CF_DIGEST("SHA512"):
             return hmac<CHMAC_SHA512>(op, ds);
+        case CF_DIGEST("SIPHASH64"):
+            return Bitcoin_detail::SipHash64(op, ds);
     }
 
     return ret;
