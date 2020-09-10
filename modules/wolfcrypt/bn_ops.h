@@ -160,7 +160,7 @@ end:
 
             if ( hex == true ) {
                 CF_CHECK_EQ(mp_radix_size(mp, 16, &size), MP_OKAY);
-                str = (char*)util::malloc(size+1/*XXX ZD 10901*/);
+                str = (char*)util::malloc(size);
 
                 CF_CHECK_EQ(mp_tohex(mp, str), MP_OKAY);
                 ret = { util::HexToDec(str) };
