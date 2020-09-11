@@ -1251,22 +1251,12 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
             Gmac ctx;
             CF_CHECK_EQ(wc_AesInit(&ctx.aes, NULL, INVALID_DEVID), 0);
             CF_CHECK_EQ(wc_GmacSetKey(&ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), 0);
-            for (const auto& part : partsAAD) {
-                CF_CHECK_EQ(wc_GmacUpdate(&ctx,
-                            op.cipher.iv.GetPtr(),
-                            op.cipher.iv.GetSize(),
-                            part.first,
-                            part.second,
-                            outTag, *op.tagSize), 0);
-            }
-#if 0
             CF_CHECK_EQ(wc_GmacUpdate(&ctx,
                         op.cipher.iv.GetPtr(),
                         op.cipher.iv.GetSize(),
                         op.aad->GetPtr(),
                         op.aad->GetSize(),
                         outTag, *op.tagSize), 0);
-#endif
             wc_AesFree(&ctx.aes);
 
             ret = component::Ciphertext(
@@ -1769,34 +1759,18 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
         case CF_CIPHER("GMAC_192"):
         case CF_CIPHER("GMAC_256"):
         {
-
             CF_CHECK_NE(op.tag, std::nullopt);
             CF_CHECK_NE(op.aad, std::nullopt);
 
-            out = util::malloc(op.tag->GetSize());
-            const auto partsAAD = util::ToParts(ds, *op.aad);
-
-            Gmac ctx;
-            CF_CHECK_EQ(wc_AesInit(&ctx.aes, NULL, INVALID_DEVID), 0);
-            CF_CHECK_EQ(wc_GmacSetKey(&ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), 0);
-            for (const auto& part : partsAAD) {
-                CF_CHECK_EQ(wc_GmacUpdate(&ctx,
-                            op.cipher.iv.GetPtr(),
-                            op.cipher.iv.GetSize(),
-                            part.first,
-                            part.second,
-                            out, op.tag->GetSize()), 0);
-            }
-#if 0
-            CF_CHECK_EQ(wc_GmacUpdate(&ctx,
+            CF_CHECK_EQ(wc_GmacVerify(
+                        op.cipher.key.GetPtr(),
+                        op.cipher.key.GetSize(),
                         op.cipher.iv.GetPtr(),
                         op.cipher.iv.GetSize(),
                         op.aad->GetPtr(),
                         op.aad->GetSize(),
-#endif
-            wc_AesFree(&ctx.aes);
-
-            CF_CHECK_EQ(memcmp(op.tag->GetPtr(), out, op.tag->GetSize()), 0);
+                        op.tag->GetPtr(),
+                        op.tag->GetSize()), 0);
 
             ret = component::Cleartext(Buffer(op.ciphertext.GetPtr(), op.ciphertext.GetSize()));
         }
