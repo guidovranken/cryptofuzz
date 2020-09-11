@@ -1085,6 +1085,68 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
         }
         break;
 
+        case CF_CIPHER("AES_128_CFB1"):
+        case CF_CIPHER("AES_192_CFB1"):
+        case CF_CIPHER("AES_256_CFB1"):
+        {
+            Aes ctx;
+
+            switch ( op.cipher.cipherType.Get() ) {
+                case CF_CIPHER("AES_128_CFB1"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
+                    break;
+                case CF_CIPHER("AES_192_CFB1"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 24);
+                    break;
+                case CF_CIPHER("AES_256_CFB1"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
+                    break;
+            }
+
+            CF_CHECK_EQ(op.cleartext.GetSize() % 16, 0);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
+
+            out = util::malloc(op.cleartext.GetSize());
+
+            CF_CHECK_EQ(wc_AesInit(&ctx, nullptr, INVALID_DEVID), 0);
+            CF_CHECK_EQ(wc_AesSetKeyDirect(&ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), op.cipher.iv.GetPtr(), AES_ENCRYPTION), 0);
+            CF_CHECK_EQ(wc_AesCfb1Encrypt(&ctx, out, op.cleartext.GetPtr(), op.cleartext.GetSize() * 8), 0);
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("AES_128_CFB8"):
+        case CF_CIPHER("AES_192_CFB8"):
+        case CF_CIPHER("AES_256_CFB8"):
+        {
+            Aes ctx;
+
+            switch ( op.cipher.cipherType.Get() ) {
+                case CF_CIPHER("AES_128_CFB8"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
+                    break;
+                case CF_CIPHER("AES_192_CFB8"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 24);
+                    break;
+                case CF_CIPHER("AES_256_CFB8"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
+                    break;
+            }
+
+            CF_CHECK_EQ(op.cleartext.GetSize() % 16, 0);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
+
+            out = util::malloc(op.cleartext.GetSize());
+
+            CF_CHECK_EQ(wc_AesInit(&ctx, nullptr, INVALID_DEVID), 0);
+            CF_CHECK_EQ(wc_AesSetKeyDirect(&ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), op.cipher.iv.GetPtr(), AES_ENCRYPTION), 0);
+            CF_CHECK_EQ(wc_AesCfb8Encrypt(&ctx, out, op.cleartext.GetPtr(), op.cleartext.GetSize()), 0);
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
+        }
+        break;
+
         case CF_CIPHER("AES_128_OFB"):
         case CF_CIPHER("AES_192_OFB"):
         case CF_CIPHER("AES_256_OFB"):
@@ -1594,6 +1656,70 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
             CF_CHECK_EQ(wc_AesInit(&ctx, nullptr, INVALID_DEVID), 0);
             CF_CHECK_EQ(wc_AesSetKeyDirect(&ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), op.cipher.iv.GetPtr(), AES_ENCRYPTION), 0);
             CF_CHECK_EQ(wc_AesCfbDecrypt(&ctx, out, op.ciphertext.GetPtr(), op.ciphertext.GetSize()), 0);
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("AES_128_CFB1"):
+        case CF_CIPHER("AES_192_CFB1"):
+        case CF_CIPHER("AES_256_CFB1"):
+        {
+            Aes ctx;
+
+            switch ( op.cipher.cipherType.Get() ) {
+                case CF_CIPHER("AES_128_CFB1"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
+                    break;
+                case CF_CIPHER("AES_192_CFB1"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 24);
+                    break;
+                case CF_CIPHER("AES_256_CFB1"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
+                    break;
+            }
+
+            CF_CHECK_EQ(op.ciphertext.GetSize() % 16, 0);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
+            CF_CHECK_GT(op.cipher.key.GetSize(), 0);
+
+            out = util::malloc(op.ciphertext.GetSize());
+
+            CF_CHECK_EQ(wc_AesInit(&ctx, nullptr, INVALID_DEVID), 0);
+            CF_CHECK_EQ(wc_AesSetKeyDirect(&ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), op.cipher.iv.GetPtr(), AES_ENCRYPTION), 0);
+            CF_CHECK_EQ(wc_AesCfb1Decrypt(&ctx, out, op.ciphertext.GetPtr(), op.ciphertext.GetSize() * 8), 0);
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("AES_128_CFB8"):
+        case CF_CIPHER("AES_192_CFB8"):
+        case CF_CIPHER("AES_256_CFB8"):
+        {
+            Aes ctx;
+
+            switch ( op.cipher.cipherType.Get() ) {
+                case CF_CIPHER("AES_128_CFB8"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
+                    break;
+                case CF_CIPHER("AES_192_CFB8"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 24);
+                    break;
+                case CF_CIPHER("AES_256_CFB8"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
+                    break;
+            }
+
+            CF_CHECK_EQ(op.ciphertext.GetSize() % 16, 0);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
+            CF_CHECK_GT(op.cipher.key.GetSize(), 0);
+
+            out = util::malloc(op.ciphertext.GetSize());
+
+            CF_CHECK_EQ(wc_AesInit(&ctx, nullptr, INVALID_DEVID), 0);
+            CF_CHECK_EQ(wc_AesSetKeyDirect(&ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), op.cipher.iv.GetPtr(), AES_ENCRYPTION), 0);
+            CF_CHECK_EQ(wc_AesCfb8Decrypt(&ctx, out, op.ciphertext.GetPtr(), op.ciphertext.GetSize()), 0);
 
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
         }
