@@ -1199,6 +1199,25 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
             ret = component::Ciphertext(Buffer(out, cleartext.size()));
         }
         break;
+
+        case CF_CIPHER("AES_128_WRAP"):
+        case CF_CIPHER("AES_192_WRAP"):
+        case CF_CIPHER("AES_256_WRAP"):
+        {
+            int outSize;
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), KEYWRAP_BLOCK_SIZE);
+
+            out = util::malloc(op.ciphertextSize);
+
+            CF_CHECK_GTE(outSize = wc_AesKeyWrap(
+                        op.cipher.key.GetPtr(), op.cipher.key.GetSize(),
+                        op.cleartext.GetPtr(), op.cleartext.GetSize(),
+                        out, op.ciphertextSize,
+                        op.cipher.iv.GetPtr()), 0);
+
+            ret = component::Ciphertext(Buffer(out, outSize));
+        }
+        break;
     }
 
 end:
@@ -1668,6 +1687,25 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
             const auto unpaddedCleartext = util::Pkcs7Unpad( std::vector<uint8_t>(out, out + op.ciphertext.GetSize()), IDEA_BLOCK_SIZE );
             CF_CHECK_NE(unpaddedCleartext, std::nullopt);
             ret = component::Cleartext(Buffer(*unpaddedCleartext));
+        }
+        break;
+
+        case CF_CIPHER("AES_128_WRAP"):
+        case CF_CIPHER("AES_192_WRAP"):
+        case CF_CIPHER("AES_256_WRAP"):
+        {
+            int outSize;
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), KEYWRAP_BLOCK_SIZE);
+
+            out = util::malloc(op.cleartextSize);
+
+            CF_CHECK_GTE(outSize = wc_AesKeyUnWrap(
+                        op.cipher.key.GetPtr(), op.cipher.key.GetSize(),
+                        op.ciphertext.GetPtr(), op.ciphertext.GetSize(),
+                        out, op.cleartextSize,
+                        op.cipher.iv.GetPtr()), 0);
+
+            ret = component::Cleartext(Buffer(out, outSize));
         }
         break;
     }
