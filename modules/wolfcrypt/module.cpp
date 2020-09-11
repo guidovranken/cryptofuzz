@@ -454,18 +454,36 @@ end:
             UpdateType update;
             FinalizeType finalize;
             void (*freeCTX)(CTXType*);
+            int (*copy)(CTXType*, CTXType*);
+            CTXType* getCtx(void) {
+                bool doCopy = false;
+                try {
+                    doCopy = ds->Get<bool>();
+                } catch ( ... ) { }
+                if ( doCopy ) {
+                    if ( copy != nullptr ) {
+                        CTXType dest;
+                        if ( copy(&this->ctx, &dest) == 0 ) {
+                            memcpy(&this->ctx, &dest, sizeof(CTXType));
+                        }
+                    }
+                }
+                return &this->ctx;
+            }
         public:
             Digest(
                 typename InitType::FnType initFn,
                 typename UpdateType::FnType updateFn,
                 typename FinalizeType::FnType finalizeFn,
-                void (*freeCTX)(CTXType*) = nullptr
+                void (*freeCTX)(CTXType*) = nullptr,
+                int (*copy)(CTXType*, CTXType*) = nullptr
             ) :
                 Operation<operation::Digest, component::Digest, CTXType>(),
                 init(initFn),
                 update(updateFn),
                 finalize(finalizeFn),
-                freeCTX(freeCTX)
+                freeCTX(freeCTX),
+                copy(copy)
             { }
 
             bool runInit(operation::Digest& op) override {
@@ -475,7 +493,7 @@ end:
 
             bool runUpdate(util::Multipart& parts) override {
                 for (const auto& part : parts) {
-                    if ( update.Update(&this->ctx, part.first, part.second) == false ) {
+                    if ( update.Update(getCtx(), part.first, part.second) == false ) {
                         return false;
                     }
                 }
@@ -486,7 +504,7 @@ end:
             std::optional<component::Digest> runFinalize(void) override {
                 std::vector<uint8_t> ret(DigestSize);
 
-                if ( finalize.Finalize(&this->ctx, ret.data()) == false ) {
+                if ( finalize.Finalize(getCtx(), ret.data()) == false ) {
                     return std::nullopt;
                 }
 
@@ -508,37 +526,37 @@ end:
         md4(wc_InitMd4, wc_Md4Update, wc_Md4Final);
 
     Digest<Md5, MD5_DIGEST_SIZE, Init_IntParams<Md5>, DigestUpdate_Int<Md5>, DigestFinalize_Int<Md5>>
-        md5(wc_InitMd5_ex, wc_Md5Update, wc_Md5Final, wc_Md5Free);
+        md5(wc_InitMd5_ex, wc_Md5Update, wc_Md5Final, wc_Md5Free, wc_Md5Copy);
 
     Digest<RipeMd, RIPEMD_DIGEST_SIZE, Init_Int<RipeMd>, DigestUpdate_Int<RipeMd>, DigestFinalize_Int<RipeMd>>
         ripemd160(wc_InitRipeMd, wc_RipeMdUpdate, wc_RipeMdFinal);
 
     Digest<Sha, WC_SHA_DIGEST_SIZE, Init_Int<Sha>, DigestUpdate_Int<Sha>, DigestFinalize_Int<Sha>>
-        sha1(wc_InitSha, wc_ShaUpdate, wc_ShaFinal, wc_ShaFree);
+        sha1(wc_InitSha, wc_ShaUpdate, wc_ShaFinal, wc_ShaFree, wc_ShaCopy);
 
     Digest<Sha224, WC_SHA224_DIGEST_SIZE, Init_Int<Sha224>, DigestUpdate_Int<Sha224>, DigestFinalize_Int<Sha224>>
-        sha224(wc_InitSha224, wc_Sha224Update, wc_Sha224Final, wc_Sha224Free);
+        sha224(wc_InitSha224, wc_Sha224Update, wc_Sha224Final, wc_Sha224Free, wc_Sha224Copy);
 
     Digest<Sha256, WC_SHA256_DIGEST_SIZE, Init_Int<Sha256>, DigestUpdate_Int<Sha256>, DigestFinalize_Int<Sha256>>
-        sha256(wc_InitSha256, wc_Sha256Update, wc_Sha256Final, wc_Sha256Free);
+        sha256(wc_InitSha256, wc_Sha256Update, wc_Sha256Final, wc_Sha256Free, wc_Sha256Copy);
 
     Digest<Sha384, WC_SHA384_DIGEST_SIZE, Init_Int<Sha384>, DigestUpdate_Int<Sha384>, DigestFinalize_Int<Sha384>>
-        sha384(wc_InitSha384, wc_Sha384Update, wc_Sha384Final, wc_Sha384Free);
+        sha384(wc_InitSha384, wc_Sha384Update, wc_Sha384Final, wc_Sha384Free, wc_Sha384Copy);
 
     Digest<Sha512, WC_SHA512_DIGEST_SIZE, Init_Int<Sha512>, DigestUpdate_Int<Sha512>, DigestFinalize_Int<Sha512>>
-        sha512(wc_InitSha512, wc_Sha512Update, wc_Sha512Final, wc_Sha512Free);
+        sha512(wc_InitSha512, wc_Sha512Update, wc_Sha512Final, wc_Sha512Free, wc_Sha512Copy);
 
     Digest<Sha3, WC_SHA3_224_DIGEST_SIZE, Init_IntParams<Sha3>, DigestUpdate_Int<Sha3>, DigestFinalize_Int<Sha3>>
-        sha3_224(wc_InitSha3_224, wc_Sha3_224_Update, wc_Sha3_224_Final, wc_Sha3_224_Free);
+        sha3_224(wc_InitSha3_224, wc_Sha3_224_Update, wc_Sha3_224_Final, wc_Sha3_224_Free, wc_Sha3_224_Copy);
 
     Digest<Sha3, WC_SHA3_256_DIGEST_SIZE, Init_IntParams<Sha3>, DigestUpdate_Int<Sha3>, DigestFinalize_Int<Sha3>>
-        sha3_256(wc_InitSha3_256, wc_Sha3_256_Update, wc_Sha3_256_Final, wc_Sha3_256_Free);
+        sha3_256(wc_InitSha3_256, wc_Sha3_256_Update, wc_Sha3_256_Final, wc_Sha3_256_Free, wc_Sha3_256_Copy);
 
     Digest<Sha3, WC_SHA3_384_DIGEST_SIZE, Init_IntParams<Sha3>, DigestUpdate_Int<Sha3>, DigestFinalize_Int<Sha3>>
-        sha3_384(wc_InitSha3_384, wc_Sha3_384_Update, wc_Sha3_384_Final, wc_Sha3_384_Free);
+        sha3_384(wc_InitSha3_384, wc_Sha3_384_Update, wc_Sha3_384_Final, wc_Sha3_384_Free, wc_Sha3_384_Copy);
 
     Digest<Sha3, WC_SHA3_512_DIGEST_SIZE, Init_IntParams<Sha3>, DigestUpdate_Int<Sha3>, DigestFinalize_Int<Sha3>>
-        sha3_512(wc_InitSha3_512, wc_Sha3_512_Update, wc_Sha3_512_Final, wc_Sha3_512_Free);
+        sha3_512(wc_InitSha3_512, wc_Sha3_512_Update, wc_Sha3_512_Final, wc_Sha3_512_Free, wc_Sha3_512_Copy);
 
     Digest<Blake2b, 64, Init_IntFixedParam<Blake2b, 64>, DigestUpdate_Int<Blake2b>, DigestFinalize_IntFixedParam<Blake2b, 64>>
         blake2b512(wc_InitBlake2b, wc_Blake2bUpdate, wc_Blake2bFinal);
@@ -547,7 +565,7 @@ end:
         blake2s256(wc_InitBlake2s, wc_Blake2sUpdate, wc_Blake2sFinal);
 
     Digest<wc_Shake, 32, Init_IntParams<wc_Shake>, DigestUpdate_Int<wc_Shake>, DigestFinalize_IntFixedParam<wc_Shake, 32>>
-        shake512(wc_InitShake256, wc_Shake256_Update, wc_Shake256_Final, wc_Shake256_Free);
+        shake512(wc_InitShake256, wc_Shake256_Update, wc_Shake256_Final, wc_Shake256_Free, wc_Shake256_Copy);
 
     std::optional<wc_HashType> toHashType(const component::DigestType& digestType) {
         using fuzzing::datasource::ID;
