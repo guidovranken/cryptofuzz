@@ -1062,6 +1062,7 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
             out = util::malloc(op.cleartext.GetSize());
 
             CF_CHECK_EQ(wc_Hc128_SetKey(&ctx, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr()), 0);
+
             CF_CHECK_EQ(wc_Hc128_Process(&ctx, out, op.cleartext.GetPtr(), op.cleartext.GetSize()), 0);
 
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
@@ -1216,6 +1217,8 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
         case CF_CIPHER("AES_256_OFB"):
         {
             Aes ctx;
+            util::Multipart parts;
+            size_t outIdx = 0;
 
             switch ( op.cipher.cipherType.Get() ) {
                 case CF_CIPHER("AES_128_OFB"):
@@ -1236,7 +1239,12 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
 
             CF_CHECK_EQ(wc_AesInit(&ctx, nullptr, INVALID_DEVID), 0);
             CF_CHECK_EQ(wc_AesSetKeyDirect(&ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), op.cipher.iv.GetPtr(), AES_ENCRYPTION), 0);
-            CF_CHECK_EQ(wc_AesOfbEncrypt(&ctx, out, op.cleartext.GetPtr(), op.cleartext.GetSize()), 0);
+
+            parts = util::ToParts(ds, op.cleartext);
+            for (const auto& part : parts) {
+                CF_CHECK_EQ(wc_AesOfbEncrypt(&ctx, out + outIdx, part.first, part.second), 0);
+                outIdx += part.second;
+            }
 
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
         }
@@ -1272,6 +1280,7 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
                         &ctx,
                         op.cipher.key.GetPtr(),
                         op.cipher.iv.GetPtr()), 0);
+
             CF_CHECK_EQ(wc_RabbitProcess(&ctx, out, op.cleartext.GetPtr(), op.cleartext.GetSize()), 0);
 
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
@@ -1281,6 +1290,8 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
         case CF_CIPHER("CHACHA20"):
         {
             ChaCha ctx;
+            util::Multipart parts;
+            size_t outIdx = 0;
 
             CF_CHECK_EQ(op.cipher.iv.GetSize(), CHACHA_IV_BYTES);
 
@@ -1288,7 +1299,12 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
 
             CF_CHECK_EQ(wc_Chacha_SetKey(&ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), 0);
             CF_CHECK_EQ(wc_Chacha_SetIV(&ctx, op.cipher.iv.GetPtr(), 0), 0);
-            CF_CHECK_EQ(wc_Chacha_Process(&ctx, out, op.cleartext.GetPtr(), op.cleartext.GetSize()), 0);
+
+            parts = util::ToParts(ds, op.cleartext);
+            for (const auto& part : parts) {
+                CF_CHECK_EQ(wc_Chacha_Process(&ctx, out + outIdx, part.first, part.second), 0);
+                outIdx += part.second;
+            }
 
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
         }
@@ -1858,6 +1874,8 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
         case CF_CIPHER("AES_256_OFB"):
         {
             Aes ctx;
+            util::Multipart parts;
+            size_t outIdx = 0;
 
             switch ( op.cipher.cipherType.Get() ) {
                 case CF_CIPHER("AES_128_OFB"):
@@ -1879,7 +1897,12 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
 
             CF_CHECK_EQ(wc_AesInit(&ctx, nullptr, INVALID_DEVID), 0);
             CF_CHECK_EQ(wc_AesSetKeyDirect(&ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), op.cipher.iv.GetPtr(), AES_ENCRYPTION), 0);
-            CF_CHECK_EQ(wc_AesOfbDecrypt(&ctx, out, op.ciphertext.GetPtr(), op.ciphertext.GetSize()), 0);
+
+            parts = util::ToParts(ds, op.ciphertext);
+            for (const auto& part : parts) {
+                CF_CHECK_EQ(wc_AesOfbDecrypt(&ctx, out + outIdx, part.first, part.second), 0);
+                outIdx += part.second;
+            }
 
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
         }
@@ -1924,6 +1947,8 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
         case CF_CIPHER("CHACHA20"):
         {
             ChaCha ctx;
+            util::Multipart parts;
+            size_t outIdx = 0;
 
             CF_CHECK_EQ(op.cipher.iv.GetSize(), CHACHA_IV_BYTES);
 
@@ -1931,7 +1956,12 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
 
             CF_CHECK_EQ(wc_Chacha_SetKey(&ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), 0);
             CF_CHECK_EQ(wc_Chacha_SetIV(&ctx, op.cipher.iv.GetPtr(), 0), 0);
-            CF_CHECK_EQ(wc_Chacha_Process(&ctx, out, op.ciphertext.GetPtr(), op.ciphertext.GetSize()), 0);
+
+            parts = util::ToParts(ds, op.ciphertext);
+            for (const auto& part : parts) {
+                CF_CHECK_EQ(wc_Chacha_Process(&ctx, out + outIdx, part.first, part.second), 0);
+                outIdx += part.second;
+            }
 
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
         }
