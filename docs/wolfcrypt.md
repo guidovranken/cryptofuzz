@@ -3,6 +3,7 @@
 ## Library compilation
 
 ```sh
+export CFLAGS="$CFLAGS -DHAVE_AES_ECB -DWOLFSSL_DES_ECB"
 git clone --depth 1 https://github.com/wolfSSL/wolfssl.git
 cd wolfssl/
 autoreconf -ivf
