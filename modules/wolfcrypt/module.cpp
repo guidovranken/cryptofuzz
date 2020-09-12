@@ -1016,6 +1016,42 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
         }
         break;
 
+        case CF_CIPHER("AES_128_ECB"):
+        case CF_CIPHER("AES_192_ECB"):
+        case CF_CIPHER("AES_256_ECB"):
+        {
+#if defined(HAVE_AES_ECB)
+            Aes ctx;
+
+            switch ( op.cipher.cipherType.Get() ) {
+                case CF_CIPHER("AES_128_ECB"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
+                    break;
+                case CF_CIPHER("AES_192_ECB"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 24);
+                    break;
+                case CF_CIPHER("AES_256_ECB"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
+                    break;
+            }
+
+            CF_CHECK_EQ(op.cleartext.GetSize() % 16, 0);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
+            CF_CHECK_GT(op.cipher.key.GetSize(), 0);
+
+            out = util::malloc(op.cleartext.GetSize());
+
+            CF_CHECK_EQ(wc_AesInit(&ctx, nullptr, INVALID_DEVID), 0);
+            CF_CHECK_EQ(wc_AesSetKeyDirect(&ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), op.cipher.iv.GetPtr(), AES_ENCRYPTION), 0);
+
+            /* Note: wc_AesEcbEncrypt does not support streaming */
+            CF_CHECK_EQ(wc_AesEcbEncrypt(&ctx, out, op.cleartext.GetPtr(), op.cleartext.GetSize()), 0);
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
+#endif
+        }
+        break;
+
         case CF_CIPHER("HC128"):
         {
             HC128 ctx;
@@ -1616,6 +1652,42 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
             }
 
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("AES_128_ECB"):
+        case CF_CIPHER("AES_192_ECB"):
+        case CF_CIPHER("AES_256_ECB"):
+        {
+#if defined(HAVE_AES_ECB)
+            Aes ctx;
+
+            switch ( op.cipher.cipherType.Get() ) {
+                case CF_CIPHER("AES_128_ECB"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
+                    break;
+                case CF_CIPHER("AES_192_ECB"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 24);
+                    break;
+                case CF_CIPHER("AES_256_ECB"):
+                    CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
+                    break;
+            }
+
+            CF_CHECK_EQ(op.ciphertext.GetSize() % 16, 0);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
+            CF_CHECK_GT(op.cipher.key.GetSize(), 0);
+
+            out = util::malloc(op.ciphertext.GetSize());
+
+            CF_CHECK_EQ(wc_AesInit(&ctx, nullptr, INVALID_DEVID), 0);
+            CF_CHECK_EQ(wc_AesSetKeyDirect(&ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), op.cipher.iv.GetPtr(), AES_DECRYPTION), 0);
+
+            /* Note: wc_AesEcbDecrypt does not support streaming */
+            CF_CHECK_EQ(wc_AesEcbDecrypt(&ctx, out, op.ciphertext.GetPtr(), op.ciphertext.GetSize()), 0);
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+#endif
         }
         break;
 
