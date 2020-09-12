@@ -227,24 +227,35 @@ namespace wolfCrypt_detail {
             virtual bool runUpdate(util::Multipart& parts) = 0;
             virtual std::optional<ReturnType> runFinalize(void) = 0;
             virtual void runFree(void) = 0;
+            virtual std::optional<ReturnType> runOneShot(const Buffer& in) = 0;
 
             std::optional<ReturnType> Run(OperationType& op, Datasource& ds) {
                 std::optional<ReturnType> ret = std::nullopt;
-                //Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
                 util::Multipart parts;
 
-                if ( runInit(op) == false ) {
-                    return std::nullopt;
+                bool doOneShot = false;
+                try {
+                    doOneShot = ds.Get<bool>();
+                } catch ( ... ) { }
+
+                if ( doOneShot == true ) {
+                    ret = runOneShot(op.cleartext);
+                } else {
+                    if ( runInit(op) == false ) {
+                        return std::nullopt;
+                    }
+
+                    parts = util::ToParts(ds, op.cleartext);
+
+                    CF_CHECK_EQ(runUpdate(parts), true);
+
+                    ret = runFinalize();
                 }
 
-                parts = util::ToParts(ds, op.cleartext);
-
-                CF_CHECK_EQ(runUpdate(parts), true);
-
-                ret = runFinalize();
-
 end:
-                runFree();
+                if ( doOneShot == false ) {
+                    runFree();
+                }
                 return ret;
             }
     };
@@ -455,6 +466,7 @@ end:
             FinalizeType finalize;
             void (*freeCTX)(CTXType*);
             int (*copy)(CTXType*, CTXType*);
+            int (*oneShot)(const byte*, word32, byte*);
             CTXType* getCtx(void) {
                 bool doCopy = false;
                 try {
@@ -476,14 +488,16 @@ end:
                 typename UpdateType::FnType updateFn,
                 typename FinalizeType::FnType finalizeFn,
                 void (*freeCTX)(CTXType*) = nullptr,
-                int (*copy)(CTXType*, CTXType*) = nullptr
+                int (*copy)(CTXType*, CTXType*) = nullptr,
+                int (*oneShot)(const byte*, word32, byte*) = nullptr
             ) :
                 Operation<operation::Digest, component::Digest, CTXType>(),
                 init(initFn),
                 update(updateFn),
                 finalize(finalizeFn),
                 freeCTX(freeCTX),
-                copy(copy)
+                copy(copy),
+                oneShot(oneShot)
             { }
 
             bool runInit(operation::Digest& op) override {
@@ -516,47 +530,60 @@ end:
                     freeCTX(&this->ctx);
                 }
             }
+
+            std::optional<component::Digest> runOneShot(const Buffer& in) override {
+                std::optional<component::Digest> ret = std::nullopt;
+                std::vector<uint8_t> out(DigestSize);
+
+                CF_CHECK_NE(oneShot, nullptr);
+
+                CF_CHECK_EQ(oneShot(in.GetPtr(), in.GetSize() ,out.data()), 0);
+
+                ret = component::Digest(out.data(), out.size());
+end:
+                return ret;
+            }
     };
 
 
     Digest<Md2, MD2_DIGEST_SIZE, Init_Void<Md2>, DigestUpdate_Void<Md2>, DigestFinalize_Void<Md2>>
-        md2(wc_InitMd2, wc_Md2Update, wc_Md2Final);
+        md2(wc_InitMd2, wc_Md2Update, wc_Md2Final, nullptr, nullptr, wc_Md2Hash);
 
     Digest<Md4, MD4_DIGEST_SIZE, Init_Void<Md4>, DigestUpdate_Void<Md4>, DigestFinalize_Void<Md4>>
         md4(wc_InitMd4, wc_Md4Update, wc_Md4Final);
 
     Digest<Md5, MD5_DIGEST_SIZE, Init_IntParams<Md5>, DigestUpdate_Int<Md5>, DigestFinalize_Int<Md5>>
-        md5(wc_InitMd5_ex, wc_Md5Update, wc_Md5Final, wc_Md5Free, wc_Md5Copy);
+        md5(wc_InitMd5_ex, wc_Md5Update, wc_Md5Final, wc_Md5Free, wc_Md5Copy, wc_Md5Hash);
 
     Digest<RipeMd, RIPEMD_DIGEST_SIZE, Init_Int<RipeMd>, DigestUpdate_Int<RipeMd>, DigestFinalize_Int<RipeMd>>
         ripemd160(wc_InitRipeMd, wc_RipeMdUpdate, wc_RipeMdFinal);
 
     Digest<Sha, WC_SHA_DIGEST_SIZE, Init_Int<Sha>, DigestUpdate_Int<Sha>, DigestFinalize_Int<Sha>>
-        sha1(wc_InitSha, wc_ShaUpdate, wc_ShaFinal, wc_ShaFree, wc_ShaCopy);
+        sha1(wc_InitSha, wc_ShaUpdate, wc_ShaFinal, wc_ShaFree, wc_ShaCopy, wc_ShaHash);
 
     Digest<Sha224, WC_SHA224_DIGEST_SIZE, Init_Int<Sha224>, DigestUpdate_Int<Sha224>, DigestFinalize_Int<Sha224>>
-        sha224(wc_InitSha224, wc_Sha224Update, wc_Sha224Final, wc_Sha224Free, wc_Sha224Copy);
+        sha224(wc_InitSha224, wc_Sha224Update, wc_Sha224Final, wc_Sha224Free, wc_Sha224Copy, wc_Sha224Hash);
 
     Digest<Sha256, WC_SHA256_DIGEST_SIZE, Init_Int<Sha256>, DigestUpdate_Int<Sha256>, DigestFinalize_Int<Sha256>>
-        sha256(wc_InitSha256, wc_Sha256Update, wc_Sha256Final, wc_Sha256Free, wc_Sha256Copy);
+        sha256(wc_InitSha256, wc_Sha256Update, wc_Sha256Final, wc_Sha256Free, wc_Sha256Copy, wc_Sha256Hash);
 
     Digest<Sha384, WC_SHA384_DIGEST_SIZE, Init_Int<Sha384>, DigestUpdate_Int<Sha384>, DigestFinalize_Int<Sha384>>
-        sha384(wc_InitSha384, wc_Sha384Update, wc_Sha384Final, wc_Sha384Free, wc_Sha384Copy);
+        sha384(wc_InitSha384, wc_Sha384Update, wc_Sha384Final, wc_Sha384Free, wc_Sha384Copy, wc_Sha384Hash);
 
     Digest<Sha512, WC_SHA512_DIGEST_SIZE, Init_Int<Sha512>, DigestUpdate_Int<Sha512>, DigestFinalize_Int<Sha512>>
-        sha512(wc_InitSha512, wc_Sha512Update, wc_Sha512Final, wc_Sha512Free, wc_Sha512Copy);
+        sha512(wc_InitSha512, wc_Sha512Update, wc_Sha512Final, wc_Sha512Free, wc_Sha512Copy, wc_Sha512Hash);
 
     Digest<Sha3, WC_SHA3_224_DIGEST_SIZE, Init_IntParams<Sha3>, DigestUpdate_Int<Sha3>, DigestFinalize_Int<Sha3>>
-        sha3_224(wc_InitSha3_224, wc_Sha3_224_Update, wc_Sha3_224_Final, wc_Sha3_224_Free, wc_Sha3_224_Copy);
+        sha3_224(wc_InitSha3_224, wc_Sha3_224_Update, wc_Sha3_224_Final, wc_Sha3_224_Free, wc_Sha3_224_Copy, wc_Sha3_224Hash);
 
     Digest<Sha3, WC_SHA3_256_DIGEST_SIZE, Init_IntParams<Sha3>, DigestUpdate_Int<Sha3>, DigestFinalize_Int<Sha3>>
-        sha3_256(wc_InitSha3_256, wc_Sha3_256_Update, wc_Sha3_256_Final, wc_Sha3_256_Free, wc_Sha3_256_Copy);
+        sha3_256(wc_InitSha3_256, wc_Sha3_256_Update, wc_Sha3_256_Final, wc_Sha3_256_Free, wc_Sha3_256_Copy, wc_Sha3_256Hash);
 
     Digest<Sha3, WC_SHA3_384_DIGEST_SIZE, Init_IntParams<Sha3>, DigestUpdate_Int<Sha3>, DigestFinalize_Int<Sha3>>
-        sha3_384(wc_InitSha3_384, wc_Sha3_384_Update, wc_Sha3_384_Final, wc_Sha3_384_Free, wc_Sha3_384_Copy);
+        sha3_384(wc_InitSha3_384, wc_Sha3_384_Update, wc_Sha3_384_Final, wc_Sha3_384_Free, wc_Sha3_384_Copy, wc_Sha3_384Hash);
 
     Digest<Sha3, WC_SHA3_512_DIGEST_SIZE, Init_IntParams<Sha3>, DigestUpdate_Int<Sha3>, DigestFinalize_Int<Sha3>>
-        sha3_512(wc_InitSha3_512, wc_Sha3_512_Update, wc_Sha3_512_Final, wc_Sha3_512_Free, wc_Sha3_512_Copy);
+        sha3_512(wc_InitSha3_512, wc_Sha3_512_Update, wc_Sha3_512_Final, wc_Sha3_512_Free, wc_Sha3_512_Copy, wc_Sha3_512Hash);
 
     Digest<Blake2b, 64, Init_IntFixedParam<Blake2b, 64>, DigestUpdate_Int<Blake2b>, DigestFinalize_IntFixedParam<Blake2b, 64>>
         blake2b512(wc_InitBlake2b, wc_Blake2bUpdate, wc_Blake2bFinal);
