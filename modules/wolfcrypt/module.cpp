@@ -1360,6 +1360,25 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
         }
         break;
 
+        case CF_CIPHER("DES_ECB"):
+        {
+#if defined(WOLFSSL_DES_ECB)
+            Des ctx;
+
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 8);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 8);
+            CF_CHECK_EQ(op.cleartext.GetSize() % 8, 0);
+
+            out = util::malloc(op.cleartext.GetSize());
+
+            CF_CHECK_EQ(wc_Des_SetKey(&ctx, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr(), DES_ENCRYPTION), 0);
+            CF_CHECK_EQ(wc_Des_EcbEncrypt(&ctx, out, op.cleartext.GetPtr(), op.cleartext.GetSize()), 0);
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
+#endif
+        }
+        break;
+
         case CF_CIPHER("AES_128_WRAP"):
         case CF_CIPHER("AES_192_WRAP"):
         case CF_CIPHER("AES_256_WRAP"):
@@ -2017,6 +2036,25 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
             const auto unpaddedCleartext = util::Pkcs7Unpad( std::vector<uint8_t>(out, out + op.ciphertext.GetSize()), IDEA_BLOCK_SIZE );
             CF_CHECK_NE(unpaddedCleartext, std::nullopt);
             ret = component::Cleartext(Buffer(*unpaddedCleartext));
+        }
+        break;
+
+        case CF_CIPHER("DES_ECB"):
+        {
+#if defined(WOLFSSL_DES_ECB)
+            Des ctx;
+
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 8);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 8);
+            CF_CHECK_EQ(op.ciphertext.GetSize() % 8, 0);
+
+            out = util::malloc(op.ciphertext.GetSize());
+
+            CF_CHECK_EQ(wc_Des_SetKey(&ctx, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr(), DES_DECRYPTION), 0);
+            CF_CHECK_EQ(wc_Des_EcbDecrypt(&ctx, out, op.ciphertext.GetPtr(), op.ciphertext.GetSize()), 0);
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+#endif
         }
         break;
 
