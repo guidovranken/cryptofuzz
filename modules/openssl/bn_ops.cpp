@@ -923,6 +923,23 @@ bool IsPow2::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
 #endif
 }
 
+bool Mask::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
+    (void)ctx;
+    (void)ds;
+    bool ret = false;
+
+    std::optional<uint64_t> places;
+
+    CF_CHECK_NE(places = bn[1].AsInt(), std::nullopt);
+    CF_CHECK_EQ(BN_mask_bits(bn[0].GetDestPtr(), *places), 1);
+    CF_CHECK_EQ(res.Set(bn[0]), true);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
 } /* namespace OpenSSL_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

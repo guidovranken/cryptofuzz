@@ -423,6 +423,11 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
                 Abort("Result is not an operand", repository::CalcOpToString(calcOp));
             }
             break;
+        case    CF_CALCOP("Mask(A,B)"):
+            if ( LargerThan(*result, op.bn0) ) {
+                Abort("Result is larger than input", repository::CalcOpToString(calcOp));
+            }
+            break;
     }
 }
 

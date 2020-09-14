@@ -3674,6 +3674,9 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
         case    CF_CALCOP("IsPow2(A)"):
             opRunner = std::make_unique<OpenSSL_bignum::IsPow2>();
             break;
+        case    CF_CALCOP("Mask(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::Mask>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
