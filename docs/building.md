@@ -58,6 +58,7 @@ Available library-specific build instructions:
  - [bn.js](bn.js.md)
  - [bignumber.js](bignumber.js.md)
  - [crypto-js](crypto-js.md)
+ - [sjcl](sjcl.md)
 
 ## 3. Building Cryptofuzz
 

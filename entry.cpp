@@ -112,6 +112,10 @@
   #include <modules/libtommath/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_SJCL)
+  #include <modules/sjcl/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
@@ -221,6 +225,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_LIBTOMMATH)
     driver->LoadModule( std::make_shared<cryptofuzz::module::libtommath>() );
+#endif
+
+#if defined(CRYPTOFUZZ_SJCL)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::sjcl>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
