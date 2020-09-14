@@ -80,7 +80,9 @@ try {
     } else if ( IsAddMod(calcOp) ) {
         FuzzerOutput = String(bn[0].add(bn[1]).mod(bn[2]));
     } else if ( IsSubMod(calcOp) ) {
-        FuzzerOutput = String(bn[0].sub(bn[1]).mod(bn[2]));
+        if ( bn[0].gte(bn[1]) ) {
+            FuzzerOutput = String(bn[0].sub(bn[1]).mod(bn[2]));
+        }
     } else if ( IsSqrMod(calcOp) ) {
         FuzzerOutput = String(bn[0].sqr().mod(bn[1]));
     } else if ( IsMulMod(calcOp) ) {

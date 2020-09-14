@@ -46,6 +46,9 @@ var OpBignumCalc = function(FuzzerInput) {
     } else if ( IsAddMod(calcOp) ) {
         ret = bn[0].plus(bn[1]).modulo(bn[2]);
     } else if ( IsSubMod(calcOp) ) {
+        if ( !bn[0].isGreaterThanOrEqualTo(bn[1]) ) {
+            return;
+        }
         ret = bn[0].minus(bn[1]).modulo(bn[2]);
     } else if ( IsSqrMod(calcOp) ) {
         ret = bn[0].exponentiatedBy(2).modulo(bn[1]);
@@ -65,7 +68,7 @@ var OpBignumCalc = function(FuzzerInput) {
         return;
     }
 
-    if ( !ret.isNaN() ) {
+    if ( !ret.isNaN() && ret.isFinite() ) {
         FuzzerOutput = ret.toString();
     }
 }
