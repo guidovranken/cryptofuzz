@@ -9,7 +9,7 @@ var toInt = function(s) {
 FuzzerInput = JSON.parse(FuzzerInput);
 
 var BigNumber = module.exports.BigNumber;
-BigNumber.config({ EXPONENTIAL_AT: 10000 })
+BigNumber.config({ EXPONENTIAL_AT: 10000, ROUNDING_MODE: 1 })
 
 var OpBignumCalc = function(FuzzerInput) {
     var bn = [
