@@ -1,6 +1,7 @@
 #include <cryptofuzz/components.h>
 #include <cryptofuzz/operations.h>
 #include <openssl/bn.h>
+#include <openssl/asn1.h>
 #if defined(CRYPTOFUZZ_BORINGSSL)
 #include <openssl/mem.h>
 #endif
@@ -178,6 +179,48 @@ end:
                                 if ( tmp != nullptr ) {
                                     BN_free(bn);
                                     bn = tmp;
+                                }
+                            }
+                        }
+                    }
+
+                    {
+                        if ( allowDup == true ) {
+                            const bool asn1Convert = ds.Get<bool>();
+
+                            if ( asn1Convert == true ) {
+                                ASN1_INTEGER* asn1 = BN_to_ASN1_INTEGER(bn, nullptr);
+
+                                if ( asn1 != nullptr ) {
+                                    BIGNUM* tmp = ASN1_INTEGER_to_BN(asn1, nullptr);
+
+                                    if ( tmp != nullptr ) {
+                                        BN_free(bn);
+                                        bn = tmp;
+                                    }
+
+                                    ASN1_INTEGER_free(asn1);
+                                }
+                            }
+                        }
+                    }
+
+                    {
+                        if ( allowDup == true ) {
+                            const bool asn1Convert = ds.Get<bool>();
+
+                            if ( asn1Convert == true ) {
+                                ASN1_ENUMERATED* asn1 = BN_to_ASN1_ENUMERATED(bn, nullptr);
+
+                                if ( asn1 != nullptr ) {
+                                    BIGNUM* tmp = ASN1_ENUMERATED_to_BN(asn1, nullptr);
+
+                                    if ( tmp != nullptr ) {
+                                        BN_free(bn);
+                                        bn = tmp;
+                                    }
+
+                                    ASN1_ENUMERATED_free(asn1);
                                 }
                             }
                         }
