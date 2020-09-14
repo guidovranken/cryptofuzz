@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string>
 #include <fuzzing/datasource/id.hpp>
 #include "../../repository_map.h"
 
