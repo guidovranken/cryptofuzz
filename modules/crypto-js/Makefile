@@ -27,8 +27,6 @@ crypto-js.bytecode : header.js harness.js ids.js
 		$(CRYPTO_JS_PATH)/src/hmac.js \
 		$(CRYPTO_JS_PATH)/src/pbkdf2.js \
 		ids.js harness.js >combined.js
-	# Workaround for buffer overflow in QuickJS
-	/bin/echo -en "\x00" >>combined.js
 	$(LIBFUZZER_JS_PATH)/to_bytecode combined.js crypto-js.bytecode
 crypto-js.bytecode.h : crypto-js.bytecode
 	xxd -i crypto-js.bytecode >crypto-js.bytecode.h

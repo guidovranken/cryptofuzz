@@ -47,8 +47,6 @@ sjcl.bytecode : header.js harness.js ids.js
 		$(SJCL_PATH)/core/srp.js \
 		$(SJCL_PATH)/core/random.js \
 		ids.js harness.js >combined.js
-	# Workaround for buffer overflow in QuickJS
-	/bin/echo -en "\x00" >>combined.js
 	$(LIBFUZZER_JS_PATH)/to_bytecode combined.js sjcl.bytecode
 sjcl.bytecode.h : sjcl.bytecode
 	xxd -i sjcl.bytecode >sjcl.bytecode.h

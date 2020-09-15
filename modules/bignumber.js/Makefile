@@ -14,8 +14,6 @@ bignumber.js.bytecode : header.js harness.js calc_ops.js
 	test $(BIGNUMBER_JS_PATH)
 	rm -rf bignumber.js.bytecode
 	cat header.js $(BIGNUMBER_JS_PATH) calc_ops.js harness.js >combined.js
-	# Workaround for buffer overflow in QuickJS
-	/bin/echo -en "\x00" >>combined.js
 	$(LIBFUZZER_JS_PATH)/to_bytecode combined.js bignumber.js.bytecode
 bignumber.js.bytecode.h : bignumber.js.bytecode
 	xxd -i bignumber.js.bytecode >bignumber.js.bytecode.h
