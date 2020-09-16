@@ -680,7 +680,7 @@ std::optional<component::Bignum> libgcrypt::OpBignumCalc(operation::BignumCalc& 
             opRunner = std::make_unique<libgcrypt_bignum::GCD>();
             break;
         case    CF_CALCOP("InvMod(A,B)"):
-            opRunner = std::make_unique<libgcrypt_bignum::InvMod>();
+            //opRunner = std::make_unique<libgcrypt_bignum::InvMod>();
             break;
         case    CF_CALCOP("Cmp(A,B)"):
             opRunner = std::make_unique<libgcrypt_bignum::Cmp>();
