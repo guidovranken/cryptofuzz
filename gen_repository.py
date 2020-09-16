@@ -258,6 +258,7 @@ modules.Add( Module("mbed TLS") )
 modules.Add( Module("mpdecimal") )
 modules.Add( Module("sjcl") )
 modules.Add( Module("wolfCrypt") )
+modules.Add( Module("wolfCrypt-OpenSSL") )
 
 operations = OperationTable()
 operations.Add( Operation("BignumCalc") )

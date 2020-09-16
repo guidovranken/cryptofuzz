@@ -116,6 +116,10 @@
   #include <modules/sjcl/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
+  #include <modules/wolfcrypt-openssl/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
@@ -229,6 +233,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_SJCL)
     driver->LoadModule( std::make_shared<cryptofuzz::module::sjcl>() );
+#endif
+
+#if defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::wolfCrypt_OpenSSL>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
