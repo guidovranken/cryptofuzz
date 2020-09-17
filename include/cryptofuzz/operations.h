@@ -61,6 +61,10 @@ class Digest : public Operation {
                 (digestType == rhs.digestType) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            cleartext.Serialize(ds);
+            digestType.Serialize(ds);
+        }
 };
 
 class HMAC : public Operation {
@@ -123,7 +127,7 @@ class SymmetricEncrypt : public Operation {
             cipher(json["cipher"]),
             aad(
                     json["aad_enabled"].get<bool>() ?
-                        std::optional<component::AAD>(json["aad"].get<uint64_t>()) :
+                        std::optional<component::AAD>(json["aad"]) :
                         std::optional<component::AAD>(std::nullopt)
             ),
             ciphertextSize(json["ciphertextSize"].get<uint64_t>()),
@@ -149,6 +153,23 @@ class SymmetricEncrypt : public Operation {
                 (ciphertextSize == rhs.ciphertextSize) &&
                 (tagSize == rhs.tagSize) &&
                 (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            cleartext.Serialize(ds);
+            cipher.Serialize(ds);
+            if ( aad == std::nullopt ) {
+                ds.Put<bool>(true);
+            } else {
+                ds.Put<bool>(false);
+                aad->Serialize(ds);
+            }
+            ds.Put<>(ciphertextSize);
+            if ( tagSize == std::nullopt ) {
+                ds.Put<bool>(true);
+            } else {
+                ds.Put<bool>(false);
+                ds.Put<>(*tagSize);
+            }
         }
 };
 
@@ -960,6 +981,13 @@ class BignumCalc : public Operation {
                 (bn2 == rhs.bn2) &&
                 (bn3 == rhs.bn3) &&
                 (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            calcOp.Serialize(ds);
+            bn0.Serialize(ds);
+            bn1.Serialize(ds);
+            bn2.Serialize(ds);
+            bn3.Serialize(ds);
         }
 };
 

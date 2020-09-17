@@ -61,6 +61,11 @@ class SymmetricCipher {
                 (key == rhs.key) &&
                 (cipherType == rhs.cipherType);
         }
+        void Serialize(Datasource& ds) const {
+            iv.Serialize(ds);
+            key.Serialize(ds);
+            cipherType.Serialize(ds);
+        }
 };
 
 class AsymmetricCipher {
@@ -91,6 +96,15 @@ class Ciphertext {
         inline bool operator==(const Ciphertext& rhs) const {
             return (ciphertext == rhs.ciphertext) && (tag == rhs.tag);
         }
+        void Serialize(Datasource& ds) const {
+            ciphertext.Serialize(ds);
+            if ( tag == std::nullopt ) {
+                ds.Put<bool>(true);
+            } else {
+                ds.Put<bool>(false);
+                tag->Serialize(ds);
+            }
+        }
 };
 
 class BignumPair {
@@ -118,6 +132,10 @@ class BignumPair {
                 (first == rhs.first) &&
                 (second == rhs.second);
         }
+        void Serialize(Datasource& ds) const {
+            first.Serialize(ds);
+            second.Serialize(ds);
+        }
 };
 
 using ECC_PublicKey = BignumPair;
@@ -141,6 +159,10 @@ class ECC_KeyPair {
             return
                 (priv == rhs.priv) &&
                 (pub == rhs.pub);
+        }
+        void Serialize(Datasource& ds) const {
+            priv.Serialize(ds);
+            pub.Serialize(ds);
         }
 };
 
