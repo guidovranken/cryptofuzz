@@ -56,7 +56,7 @@ class Buffer {
         std::vector<uint8_t> data;
     public:
         Buffer(Datasource& ds) :
-            data( ds.GetData(0, 0, 32000) )
+            data( ds.GetData(0, 0, (10*1024*1024)) )
         { }
 
         Buffer(nlohmann::json json) {
