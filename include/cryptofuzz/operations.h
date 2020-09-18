@@ -383,6 +383,12 @@ class KDF_TLS1_PRF : public Operation {
                 (seed == rhs.seed) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            digestType.Serialize(ds);
+            secret.Serialize(ds);
+            seed.Serialize(ds);
+            ds.Put<>(keySize);
+        }
 };
 
 class KDF_PBKDF : public Operation {
@@ -628,6 +634,14 @@ class KDF_SSH : public Operation {
                 (keySize == rhs.keySize) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            digestType.Serialize(ds);
+            key.Serialize(ds);
+            xcghash.Serialize(ds);
+            session_id.Serialize(ds);
+            type.Serialize(ds);
+            ds.Put<>(keySize);
+        }
 };
 
 class KDF_X963 : public Operation {
@@ -663,6 +677,12 @@ class KDF_X963 : public Operation {
                 (info == rhs.info) &&
                 (keySize == rhs.keySize) &&
                 (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            digestType.Serialize(ds);
+            secret.Serialize(ds);
+            info.Serialize(ds);
+            ds.Put<>(keySize);
         }
 };
 

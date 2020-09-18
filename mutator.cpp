@@ -311,6 +311,26 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     op.Serialize(dsOut2);
                 }
                 break;
+            case    CF_OPERATION("KDF_TLS1_PRF"):
+                {
+                    size_t numParts = 0;
+
+                    numParts++; /* modifier */
+                    numParts++; /* secret */
+                    numParts++; /* seed */
+
+                    const auto lengths = SplitLength(maxSize - 64, numParts);
+
+                    parameters["modifier"] = getBuffer(lengths[0]);
+                    parameters["secret"] = getBuffer(lengths[1]);
+                    parameters["seed"] = getBuffer(lengths[2]);
+                    parameters["keySize"] = PRNG() % 1024;
+                    parameters["digestType"] = DigestLUT[ PRNG() % (sizeof(DigestLUT) / sizeof(DigestLUT[0])) ].id;
+
+                    cryptofuzz::operation::KDF_TLS1_PRF op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
             case    CF_OPERATION("KDF_PBKDF"):
                 {
                     size_t numParts = 0;
@@ -394,6 +414,49 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["keySize"] = PRNG() % 1024;
 
                     cryptofuzz::operation::KDF_ARGON2 op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("KDF_SSH"):
+                {
+                    size_t numParts = 0;
+
+                    numParts++; /* modifier */
+                    numParts++; /* key */
+                    numParts++; /* xcghash */
+                    numParts++; /* session_id */
+
+                    const auto lengths = SplitLength(maxSize - 64, numParts);
+
+                    parameters["modifier"] = getBuffer(lengths[0]);
+                    parameters["key"] = getBuffer(lengths[1]);
+                    parameters["xcghash"] = getBuffer(lengths[2]);
+                    parameters["session_id"] = getBuffer(lengths[3]);
+                    parameters["type"] = getBuffer(1);
+                    parameters["keySize"] = PRNG() % 1024;
+                    parameters["digestType"] = DigestLUT[ PRNG() % (sizeof(DigestLUT) / sizeof(DigestLUT[0])) ].id;
+
+                    cryptofuzz::operation::KDF_SSH op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("KDF_X963"):
+                {
+                    size_t numParts = 0;
+
+                    numParts++; /* modifier */
+                    numParts++; /* secret */
+                    numParts++; /* info */
+
+                    const auto lengths = SplitLength(maxSize - 64, numParts);
+
+                    parameters["modifier"] = getBuffer(lengths[0]);
+                    parameters["secret"] = getBuffer(lengths[1]);
+                    parameters["info"] = getBuffer(lengths[2]);
+                    parameters["keySize"] = PRNG() % 1024;
+                    parameters["digestType"] = DigestLUT[ PRNG() % (sizeof(DigestLUT) / sizeof(DigestLUT[0])) ].id;
+
+                    cryptofuzz::operation::KDF_X963 op(parameters);
                     op.Serialize(dsOut2);
                 }
                 break;
