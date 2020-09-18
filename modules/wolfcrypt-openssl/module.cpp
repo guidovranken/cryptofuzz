@@ -3,12 +3,275 @@
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
 #include "bn_ops.h"
+#include <wolfssl/openssl/hmac.h>
+#include "module_internal.h"
 
 namespace cryptofuzz {
 namespace module {
 
 wolfCrypt_OpenSSL::wolfCrypt_OpenSSL(void) :
     Module("wolfCrypt-OpenSSL") {
+}
+
+namespace wolfCrypt_OpenSSL_detail {
+    const EVP_MD* toEVPMD(const component::DigestType& digestType) {
+        using fuzzing::datasource::ID;
+
+        static const std::map<uint64_t, const EVP_MD*> LUT = {
+#if defined(CRYPTOFUZZ_BORINGSSL)
+            { CF_DIGEST("SHA1"), EVP_sha1() },
+            { CF_DIGEST("SHA224"), EVP_sha224() },
+            { CF_DIGEST("SHA256"), EVP_sha256() },
+            { CF_DIGEST("SHA384"), EVP_sha384() },
+            { CF_DIGEST("SHA512"), EVP_sha512() },
+            { CF_DIGEST("MD4"), EVP_md4() },
+            { CF_DIGEST("MD5"), EVP_md5() },
+            { CF_DIGEST("MD5_SHA1"), EVP_md5_sha1() },
+            { CF_DIGEST("SHA512-256"), EVP_sha512_256() },
+#elif defined(CRYPTOFUZZ_LIBRESSL)
+            { CF_DIGEST("SHA1"), EVP_sha1() },
+            { CF_DIGEST("SHA224"), EVP_sha224() },
+            { CF_DIGEST("SHA256"), EVP_sha256() },
+            { CF_DIGEST("SHA384"), EVP_sha384() },
+            { CF_DIGEST("SHA512"), EVP_sha512() },
+            { CF_DIGEST("MD4"), EVP_md4() },
+            { CF_DIGEST("MD5"), EVP_md5() },
+            { CF_DIGEST("MD5_SHA1"), EVP_md5_sha1() },
+            { CF_DIGEST("RIPEMD160"), EVP_ripemd160() },
+            { CF_DIGEST("WHIRLPOOL"), EVP_whirlpool() },
+            { CF_DIGEST("SM3"), EVP_sm3() },
+            { CF_DIGEST("GOST-R-34.11-94"), EVP_gostr341194() },
+            { CF_DIGEST("GOST-28147-89"), EVP_gost2814789imit() },
+            { CF_DIGEST("STREEBOG-256"), EVP_streebog256() },
+            { CF_DIGEST("STREEBOG-512"), EVP_streebog512() },
+#elif defined(CRYPTOFUZZ_OPENSSL_102)
+            { CF_DIGEST("SHA1"), EVP_sha1() },
+            { CF_DIGEST("SHA224"), EVP_sha224() },
+            { CF_DIGEST("SHA256"), EVP_sha256() },
+            { CF_DIGEST("SHA384"), EVP_sha384() },
+            { CF_DIGEST("SHA512"), EVP_sha512() },
+            { CF_DIGEST("MD2"), EVP_md2() },
+            { CF_DIGEST("MD4"), EVP_md4() },
+            { CF_DIGEST("MD5"), EVP_md5() },
+            { CF_DIGEST("MDC2"), EVP_mdc2() },
+            { CF_DIGEST("RIPEMD160"), EVP_ripemd160() },
+            { CF_DIGEST("WHIRLPOOL"), EVP_whirlpool() },
+#elif defined(CRYPTOFUZZ_OPENSSL_110)
+            { CF_DIGEST("SHA1"), EVP_sha1() },
+            { CF_DIGEST("SHA224"), EVP_sha224() },
+            { CF_DIGEST("SHA256"), EVP_sha256() },
+            { CF_DIGEST("SHA384"), EVP_sha384() },
+            { CF_DIGEST("SHA512"), EVP_sha512() },
+            { CF_DIGEST("MD2"), EVP_md2() },
+            { CF_DIGEST("MD4"), EVP_md4() },
+            { CF_DIGEST("MD5"), EVP_md5() },
+            { CF_DIGEST("MD5_SHA1"), EVP_md5_sha1() },
+            { CF_DIGEST("MDC2"), EVP_mdc2() },
+            { CF_DIGEST("RIPEMD160"), EVP_ripemd160() },
+            { CF_DIGEST("WHIRLPOOL"), EVP_whirlpool() },
+            { CF_DIGEST("BLAKE2B512"), EVP_blake2b512() },
+            { CF_DIGEST("BLAKE2S256"), EVP_blake2s256() },
+#elif defined(CRYPTOFUZZ_WOLFCRYPT)
+            { CF_DIGEST("SHA1"), EVP_sha1() },
+            { CF_DIGEST("MDC2"), EVP_mdc2() },
+            { CF_DIGEST("MD4"), EVP_md4() },
+            { CF_DIGEST("MD5"), EVP_md5() },
+            { CF_DIGEST("SHA224"), EVP_sha224() },
+            { CF_DIGEST("SHA256"), EVP_sha256() },
+            { CF_DIGEST("SHA384"), EVP_sha384() },
+            { CF_DIGEST("SHA512"), EVP_sha512() },
+            { CF_DIGEST("RIPEMD160"), EVP_ripemd160() },
+#if 0
+            { CF_DIGEST("MDC2"), EVP_mdc2() },
+            { CF_DIGEST("MD4"), EVP_md4() },
+            { CF_DIGEST("MD5"), EVP_md5() },
+            { CF_DIGEST("SHA1"), EVP_sha1() },
+            { CF_DIGEST("SHA224"), EVP_sha224() },
+            { CF_DIGEST("SHA256"), EVP_sha256() },
+            { CF_DIGEST("SHA384"), EVP_sha384() },
+            { CF_DIGEST("SHA512"), EVP_sha512() },
+            { CF_DIGEST("RIPEMD160"), EVP_ripemd160() },
+            { CF_DIGEST("SHA3-224"), EVP_sha3_224() },
+            { CF_DIGEST("SHA3-256"), EVP_sha3_256() },
+            { CF_DIGEST("SHA3-384"), EVP_sha3_384() },
+            { CF_DIGEST("SHA3-512"), EVP_sha3_512() },
+#endif
+#else
+            { CF_DIGEST("SHA1"), EVP_sha1() },
+            { CF_DIGEST("SHA224"), EVP_sha224() },
+            { CF_DIGEST("SHA256"), EVP_sha256() },
+            { CF_DIGEST("SHA384"), EVP_sha384() },
+            { CF_DIGEST("SHA512"), EVP_sha512() },
+            { CF_DIGEST("MD2"), EVP_md2() },
+            { CF_DIGEST("MD4"), EVP_md4() },
+            { CF_DIGEST("MD5"), EVP_md5() },
+            { CF_DIGEST("MD5_SHA1"), EVP_md5_sha1() },
+            { CF_DIGEST("MDC2"), EVP_mdc2() },
+            { CF_DIGEST("RIPEMD160"), EVP_ripemd160() },
+            { CF_DIGEST("WHIRLPOOL"), EVP_whirlpool() },
+            { CF_DIGEST("SM3"), EVP_sm3() },
+            { CF_DIGEST("BLAKE2B512"), EVP_blake2b512() },
+            { CF_DIGEST("BLAKE2S256"), EVP_blake2s256() },
+            { CF_DIGEST("SHAKE128"), EVP_shake128() },
+            { CF_DIGEST("SHAKE256"), EVP_shake256() },
+            { CF_DIGEST("SHA3-224"), EVP_sha3_224() },
+            { CF_DIGEST("SHA3-256"), EVP_sha3_256() },
+            { CF_DIGEST("SHA3-384"), EVP_sha3_384() },
+            { CF_DIGEST("SHA3-512"), EVP_sha3_512() },
+            { CF_DIGEST("SHA512-224"), EVP_sha512_224() },
+            { CF_DIGEST("SHA512-256"), EVP_sha512_256() },
+#endif
+        };
+
+        if ( LUT.find(digestType.Get()) == LUT.end() ) {
+            return nullptr;
+        }
+
+        return LUT.at(digestType.Get());
+    }
+}
+
+std::optional<component::Digest> wolfCrypt_OpenSSL::OpDigest(operation::Digest& op) {
+    std::optional<component::Digest> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    util::Multipart parts;
+
+    CF_EVP_MD_CTX ctx(ds);
+    const EVP_MD* md = nullptr;
+
+    /* Initialize */
+    {
+        parts = util::ToParts(ds, op.cleartext);
+        CF_CHECK_NE(md = wolfCrypt_OpenSSL_detail::toEVPMD(op.digestType), nullptr);
+        CF_CHECK_EQ(EVP_DigestInit_ex(ctx.GetPtr(), md, nullptr), 1);
+    }
+
+    /* Process */
+    for (const auto& part : parts) {
+        CF_CHECK_EQ(EVP_DigestUpdate(ctx.GetPtr(), part.first, part.second), 1);
+    }
+
+    /* Finalize */
+    {
+        unsigned int len = -1;
+        unsigned char md[EVP_MAX_MD_SIZE];
+        CF_CHECK_EQ(EVP_DigestFinal_ex(ctx.GetPtr(), md, &len), 1);
+
+        ret = component::Digest(md, len);
+    }
+
+end:
+    return ret;
+}
+
+namespace wolfCrypt_OpenSSL_detail {
+std::optional<component::MAC> OpHMAC_EVP(operation::HMAC& op, Datasource& ds) {
+    std::optional<component::MAC> ret = std::nullopt;
+
+    util::Multipart parts;
+
+    CF_EVP_MD_CTX ctx(ds);
+    const EVP_MD* md = nullptr;
+    EVP_PKEY *pkey = nullptr;
+
+    /* Initialize */
+    {
+        parts = util::ToParts(ds, op.cleartext);
+
+        CF_CHECK_NE(md = wolfCrypt_OpenSSL_detail::toEVPMD(op.digestType), nullptr);
+        CF_CHECK_NE(pkey = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, nullptr, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), nullptr);
+        CF_CHECK_EQ(EVP_DigestSignInit(ctx.GetPtr(), nullptr, md, nullptr, pkey), 1);
+    }
+
+    /* Process */
+    for (const auto& part : parts) {
+        CF_CHECK_EQ(EVP_DigestSignUpdate(ctx.GetPtr(), part.first, part.second), 1);
+    }
+
+    /* Finalize */
+    {
+        size_t len = -1;
+        uint8_t out[EVP_MAX_MD_SIZE];
+        CF_CHECK_EQ(EVP_DigestSignFinal(ctx.GetPtr(), out, &len), 1);
+
+        ret = component::MAC(out, len);
+    }
+
+end:
+    EVP_PKEY_free(pkey);
+
+    return ret;
+}
+
+std::optional<component::MAC> OpHMAC_HMAC(operation::HMAC& op, Datasource& ds) {
+    std::optional<component::MAC> ret = std::nullopt;
+
+    util::Multipart parts;
+
+    CF_HMAC_CTX ctx(ds);
+    const EVP_MD* md = nullptr;
+
+    /* Initialize */
+    {
+        parts = util::ToParts(ds, op.cleartext);
+        /* TODO remove ? */
+        HMAC_CTX_reset(ctx.GetPtr());
+        CF_CHECK_NE(md = toEVPMD(op.digestType), nullptr);
+        CF_CHECK_EQ(HMAC_Init_ex(ctx.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), md, nullptr), 1);
+    }
+
+    /* Process */
+    for (const auto& part : parts) {
+        CF_CHECK_EQ(HMAC_Update(ctx.GetPtr(), part.first, part.second), 1);
+    }
+
+    /* Finalize */
+    {
+        unsigned int len = -1;
+        uint8_t out[EVP_MAX_MD_SIZE];
+        CF_CHECK_EQ(HMAC_Final(ctx.GetPtr(), out, &len), 1);
+
+        ret = component::MAC(out, len);
+    }
+
+end:
+    return ret;
+}
+}
+
+std::optional<component::MAC> wolfCrypt_OpenSSL::OpHMAC(operation::HMAC& op) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+    if (    op.digestType.Get() == CF_DIGEST("SIPHASH64") ||
+            op.digestType.Get() == CF_DIGEST("SIPHASH128") ) {
+        /* Not HMAC but invoking SipHash here anyway due to convenience. */
+        return OpenSSL_detail::SipHash(op);
+    }
+#endif
+
+    bool useEVP = true;
+    try {
+        useEVP = ds.Get<bool>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    }
+
+    if ( useEVP == true ) {
+#if !defined(CRYPTOFUZZ_BORINGSSL)
+        return wolfCrypt_OpenSSL_detail::OpHMAC_EVP(op, ds);
+#else
+        return wolfCrypt_OpenSSL_detail::OpHMAC_HMAC(op, ds);
+#endif
+    } else {
+#if !defined(CRYPTOFUZZ_OPENSSL_102)
+        return wolfCrypt_OpenSSL_detail::OpHMAC_HMAC(op, ds);
+#else
+        return wolfCrypt_OpenSSL_detail::OpHMAC_EVP(op, ds);
+#endif
+    }
+
+    return {};
 }
 
 std::optional<component::Bignum> wolfCrypt_OpenSSL::OpBignumCalc(operation::BignumCalc& op) {
