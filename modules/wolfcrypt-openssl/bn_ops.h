@@ -1,8 +1,10 @@
 #include <cryptofuzz/components.h>
 #include <cryptofuzz/operations.h>
+extern "C" {
 #include <wolfssl/options.h>
 #include <wolfssl/openssl/bn.h>
 #include <wolfssl/openssl/asn1.h>
+}
 #if defined(CRYPTOFUZZ_BORINGSSL)
 #include <openssl/mem.h>
 #endif
@@ -222,7 +224,6 @@ end:
                             const bool asn1Convert = ds.Get<bool>();
 
                             if ( asn1Convert == true ) {
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
                                 ASN1_INTEGER* asn1 = BN_to_ASN1_INTEGER(bn, nullptr);
 
                                 if ( asn1 != nullptr ) {
@@ -235,7 +236,6 @@ end:
 
                                     ASN1_INTEGER_free(asn1);
                                 }
-#endif
                             }
                         }
                     }

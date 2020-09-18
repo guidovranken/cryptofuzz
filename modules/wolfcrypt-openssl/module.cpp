@@ -3,7 +3,9 @@
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
 #include "bn_ops.h"
+extern "C" {
 #include <wolfssl/openssl/hmac.h>
+}
 #include "module_internal.h"
 
 namespace cryptofuzz {
@@ -449,14 +451,6 @@ std::optional<component::Bignum> wolfCrypt_OpenSSL::OpBignumCalc(operation::Bign
     CF_CHECK_EQ(opRunner->Run(ds, res, bn, ctx), true);
 
     ret = res.ToComponentBignum();
-
-#if defined(CRYPTOFUZZ_WOLFCRYPT)
-    switch ( op.calcOp.Get() ) {
-        /* Wrong results */
-        case    CF_CALCOP("Cmp(A,B)"):
-            return std::nullopt;
-    }
-#endif
 
 end:
     return ret;
