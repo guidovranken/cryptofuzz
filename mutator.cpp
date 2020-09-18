@@ -4,6 +4,7 @@
 #include <fuzzing/datasource/id.hpp>
 #include <cryptofuzz/operations.h>
 #include <cryptofuzz/repository.h>
+#include <cryptofuzz/options.h>
 #include "repository_tbl.h"
 #include "numbers.h"
 #include "third_party/json/json.hpp"
@@ -58,6 +59,8 @@ static std::string getBuffer(size_t size, const bool alternativeSize = false) {
 
 extern "C" size_t LLVMFuzzerMutate(uint8_t* data, size_t size, size_t maxSize);
 
+extern cryptofuzz::Options* cryptofuzz_options;
+
 extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t maxSize, unsigned int seed) {
     (void)seed;
 
@@ -66,7 +69,13 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
     }
 
     {
-        const uint64_t operation = OperationLUT[ PRNG() % (sizeof(OperationLUT) / sizeof(OperationLUT[0])) ].id;
+        uint64_t operation;
+
+        if ( cryptofuzz_options && cryptofuzz_options->operations != std::nullopt ) {
+            operation = (*cryptofuzz_options->operations)[PRNG() % cryptofuzz_options->operations->size()];
+        } else {
+            operation = OperationLUT[ PRNG() % (sizeof(OperationLUT) / sizeof(OperationLUT[0])) ].id;
+        }
 
         fuzzing::datasource::Datasource dsOut2(nullptr, 0);
 

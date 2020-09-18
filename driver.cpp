@@ -140,4 +140,8 @@ Driver::Driver(const Options options) :
     options(options)
 { }
 
+const Options* Driver::GetOptionsPtr(void) const {
+    return &options;
+}
+
 } /* namespace cryptofuzz */

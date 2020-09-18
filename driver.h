@@ -20,6 +20,7 @@ class Driver {
         void LoadModule(std::shared_ptr<Module> module);
         void Run(const uint8_t* data, const size_t size) const;
         Driver(const Options options);
+        const Options* GetOptionsPtr(void) const;
 };
 
 } /* namespace cryptofuzz */

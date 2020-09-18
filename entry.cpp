@@ -122,10 +122,13 @@
 
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
+const cryptofuzz::Options* cryptofuzz_options = nullptr;
+
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
     const cryptofuzz::Options options(*argc, *argv);
 
     driver = std::make_shared<cryptofuzz::Driver>(options);
+    cryptofuzz_options = driver->GetOptionsPtr();
 
 #if !defined(CRYPTOFUZZ_NO_OPENSSL)
     driver->LoadModule( std::make_shared<cryptofuzz::module::OpenSSL>() );
