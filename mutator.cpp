@@ -61,6 +61,14 @@ extern "C" size_t LLVMFuzzerMutate(uint8_t* data, size_t size, size_t maxSize);
 
 extern cryptofuzz::Options* cryptofuzz_options;
 
+uint64_t getRandomCipher(void) {
+    if ( cryptofuzz_options && cryptofuzz_options->ciphers != std::nullopt ) {
+        return (*cryptofuzz_options->ciphers)[PRNG() % cryptofuzz_options->ciphers->size()];
+    } else {
+        return CipherLUT[ PRNG() % (sizeof(CipherLUT) / sizeof(CipherLUT[0])) ].id;
+    }
+}
+
 extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t maxSize, unsigned int seed) {
     (void)seed;
 
@@ -114,7 +122,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["cleartext"] = getBuffer(lengths[1]);
                     parameters["cipher"]["iv"] = getBuffer(lengths[2], true);
                     parameters["cipher"]["key"] = getBuffer(lengths[3], true);
-                    parameters["cipher"]["cipherType"] = CipherLUT[ PRNG() % (sizeof(CipherLUT) / sizeof(CipherLUT[0])) ].id;
+                    parameters["cipher"]["cipherType"] = getRandomCipher();
                     parameters["digestType"] = DigestLUT[ PRNG() % (sizeof(DigestLUT) / sizeof(DigestLUT[0])) ].id;
 
                     cryptofuzz::operation::HMAC op(parameters);
@@ -136,7 +144,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["cleartext"] = getBuffer(lengths[1]);
                     parameters["cipher"]["iv"] = getBuffer(lengths[2], true);
                     parameters["cipher"]["key"] = getBuffer(lengths[3], true);
-                    parameters["cipher"]["cipherType"] = CipherLUT[ PRNG() % (sizeof(CipherLUT) / sizeof(CipherLUT[0])) ].id;
+                    parameters["cipher"]["cipherType"] = getRandomCipher();
 
                     cryptofuzz::operation::CMAC op(parameters);
                     op.Serialize(dsOut2);
@@ -191,7 +199,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         parameters["tagSize_enabled"] = false;
                     }
 
-                    parameters["cipher"]["cipherType"] = CipherLUT[ PRNG() % (sizeof(CipherLUT) / sizeof(CipherLUT[0])) ].id;
+                    parameters["cipher"]["cipherType"] = getRandomCipher();
                     parameters["ciphertextSize"] = PRNG() % (lengths[1] + 9);
 
                     cryptofuzz::operation::SymmetricEncrypt op(parameters);
@@ -246,7 +254,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         parameters["tag_enabled"] = false;
                     }
 
-                    parameters["cipher"]["cipherType"] = CipherLUT[ PRNG() % (sizeof(CipherLUT) / sizeof(CipherLUT[0])) ].id;
+                    parameters["cipher"]["cipherType"] = getRandomCipher();
                     parameters["cleartextSize"] = PRNG() % (lengths[1] + 9);
 
                     cryptofuzz::operation::SymmetricDecrypt op(parameters);
