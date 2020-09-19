@@ -462,6 +462,12 @@ bool Cmp::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
         cmpRes = -1;
     }
 
+#if defined(CRYPTOFUZZ_WOLFCRYPT)
+    /* wolfCrypt's OpenSSL API cannot set negative numbers */
+    if ( cmpRes == -1 ) {
+        goto end;
+    }
+#endif
     res.Set( std::to_string(cmpRes) );
 
     ret = true;
@@ -764,6 +770,8 @@ end:
 #endif
 }
 
+/* BN_copy doesn't work in wolfCrypt's OpenSSL API */
+#if !defined(CRYPTOFUZZ_WOLFCRYPT)
 bool Abs::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     (void)ctx;
@@ -794,6 +802,7 @@ bool Abs::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
 end:
     return ret;
 }
+#endif
 
 bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ctx;
@@ -892,11 +901,11 @@ end:
     return ret;
 }
 
+#if !defined(CRYPTOFUZZ_WOLFCRYPT)
 bool CmpAbs::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ctx;
     (void)ds;
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
     int cmpRes = BN_ucmp(bn[0].GetPtr(), bn[1].GetPtr());
 
     if ( cmpRes > 0 ) {
@@ -908,12 +917,8 @@ bool CmpAbs::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
     res.Set( std::to_string(cmpRes) );
 
     return true;
-#else
-    (void)res;
-    (void)bn;
-    return false;
-#endif
 }
+#endif
 
 #if !defined(CRYPTOFUZZ_WOLFCRYPT)
 bool ModLShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {

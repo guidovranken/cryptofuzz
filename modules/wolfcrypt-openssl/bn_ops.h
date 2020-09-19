@@ -591,10 +591,12 @@ class Exp : public Operation {
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
+#if defined(CRYPTOFUZZ_BORINGSSL)
 class Abs : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
+#endif
 
 class RShift : public Operation {
     public:
@@ -621,10 +623,12 @@ class Bit : public Operation {
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
+#if !defined(CRYPTOFUZZ_WOLFCRYPT)
 class CmpAbs : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
+#endif
 
 #if !defined(CRYPTOFUZZ_WOLFCRYPT)
 class ModLShift : public Operation {
