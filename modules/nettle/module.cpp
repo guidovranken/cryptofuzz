@@ -9,8 +9,10 @@
 #include <nettle/cmac.h>
 #include <nettle/des.h>
 #include <nettle/eax.h>
+#if 0
 #include <nettle/ecc-curve.h>
 #include <nettle/ecc.h>
+#endif
 #include <nettle/gcm.h>
 #include <nettle/gosthash94.h>
 #include <nettle/hkdf.h>
