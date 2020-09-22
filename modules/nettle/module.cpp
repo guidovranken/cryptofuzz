@@ -6,6 +6,8 @@
 #include <nettle/chacha.h>
 #include <nettle/cmac.h>
 #include <nettle/eax.h>
+#include <nettle/ecc-curve.h>
+#include <nettle/ecc.h>
 #include <nettle/gcm.h>
 #include <nettle/gosthash94.h>
 #include <nettle/hkdf.h>
@@ -1218,6 +1220,79 @@ std::optional<component::Key> Nettle::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
 
 end:
     util::free(out);
+
+    return ret;
+}
+
+
+#if 0
+namespace Nettle_detail {
+    const struct ecc_curve* to_ecc_curve(const uint64_t curveID) {
+        switch ( curveID ) {
+            case    CF_ECC_CURVE("secp192r1"):
+                return nettle_get_secp_192r1();
+            case    CF_ECC_CURVE("secp224r1"):
+                return nettle_get_secp_224r1();
+            case    CF_ECC_CURVE("secp256r1"):
+                return nettle_get_secp_256r1();
+            case    CF_ECC_CURVE("secp384r1"):
+                return nettle_get_secp_384r1();
+            case    CF_ECC_CURVE("secp521r1"):
+                return nettle_get_secp_521r1();
+            default:
+                return nullptr;
+        }
+    }
+}
+#endif
+
+std::optional<component::ECC_PublicKey> Nettle::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
+    std::optional<component::ECC_PublicKey> ret = std::nullopt;
+
+#if 1
+    /* Need to link against libhogweed.a in OSS-Fuzz before this can be enabled */
+    (void)op;
+#else
+    mpz_t priv_mpz, pub_x, pub_y;
+    struct ecc_scalar priv_scalar;
+    struct ecc_point pub;
+    char* pub_x_str = nullptr, *pub_y_str = nullptr;
+    const struct ecc_curve* curve = nullptr;
+    bool initialized = false;
+
+    CF_CHECK_NE(curve = Nettle_detail::to_ecc_curve(op.curveType.Get()), nullptr);
+
+    /* noret */ ecc_point_init(&pub, curve);
+    /* noret */ ecc_scalar_init(&priv_scalar, curve);
+    /* noret */ mpz_init(priv_mpz);
+    /* noret */ mpz_init(pub_x);
+    /* noret */ mpz_init(pub_y);
+
+    initialized = true;
+
+    /* XXX wrong result is ToString instead of ToTrimmedString is used */
+    CF_CHECK_EQ(mpz_init_set_str(priv_mpz, op.priv.ToTrimmedString().c_str(), 0), 0);
+    CF_CHECK_EQ(ecc_scalar_set(&priv_scalar, priv_mpz), 1);
+
+    /* noret */ ecc_point_mul_g(&pub, &priv_scalar);
+    /* noret */ ecc_point_get(&pub, pub_x, pub_y);
+
+    pub_x_str = mpz_get_str(nullptr, 10, pub_x);
+    pub_y_str = mpz_get_str(nullptr, 10, pub_y);
+
+    ret = { {pub_x_str, pub_y_str} };
+
+end:
+    if ( initialized == true ) {
+        /* noret */ ecc_point_clear(&pub);
+        /* noret */ ecc_scalar_clear(&priv_scalar);
+        /* noret */ mpz_clear(priv_mpz);
+        /* noret */ mpz_clear(pub_x);
+        /* noret */ mpz_clear(pub_y);
+        free(pub_x_str);
+        free(pub_y_str);
+    }
+#endif
 
     return ret;
 }
