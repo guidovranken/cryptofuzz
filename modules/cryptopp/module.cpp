@@ -758,21 +758,25 @@ end:
                         ret = CryptoPP_detail::CryptCFB< ::CryptoPP::SIMON64>(op);
                     }
                     break;
+#if 0
                 case    CF_CIPHER("SIMON128_CFB"):
                     {
                         ret = CryptoPP_detail::CryptCFB< ::CryptoPP::SIMON128>(op);
                     }
                     break;
+#endif
                 case    CF_CIPHER("SPECK64_CFB"):
                     {
                         ret = CryptoPP_detail::CryptCFB< ::CryptoPP::SPECK64>(op);
                     }
                     break;
+#if 0
                 case    CF_CIPHER("SPECK128_CFB"):
                     {
                         ret = CryptoPP_detail::CryptCFB< ::CryptoPP::SPECK128>(op);
                     }
                     break;
+#endif
                 case    CF_CIPHER("SQUARE_CFB"):
                     {
                         ret = CryptoPP_detail::CryptCFB< ::CryptoPP::Square>(op);
@@ -1684,21 +1688,27 @@ end:
                         ret = CryptoPP_detail::CryptOFB< ::CryptoPP::SIMON64>(op);
                     }
                     break;
+#if 0
                 case    CF_CIPHER("SIMON128_OFB"):
                     {
                         ret = CryptoPP_detail::CryptOFB< ::CryptoPP::SIMON128>(op);
                     }
                     break;
+#endif
+#if 0
                 case    CF_CIPHER("SPECK64_OFB"):
                     {
                         ret = CryptoPP_detail::CryptOFB< ::CryptoPP::SPECK64>(op);
                     }
                     break;
+#endif
+#if 0
                 case    CF_CIPHER("SPECK128_OFB"):
                     {
                         ret = CryptoPP_detail::CryptOFB< ::CryptoPP::SPECK128>(op);
                     }
                     break;
+#endif
                 case    CF_CIPHER("SQUARE_OFB"):
                     {
                         ret = CryptoPP_detail::CryptOFB< ::CryptoPP::Square>(op);
