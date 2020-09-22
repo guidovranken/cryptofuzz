@@ -1587,7 +1587,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
 
         /* Convert cleartext to parts */
         partsCleartext = util::CipherInputTransform(ds, op.cipher.cipherType, out, out_size, op.cleartext.GetPtr(), op.cleartext.GetSize());
-        partsCleartext = { { op.cleartext.GetPtr(), op.cleartext.GetSize()} };
+        //partsCleartext = { { op.cleartext.GetPtr(), op.cleartext.GetSize()} };
 
         if ( op.aad != std::nullopt ) {
             if ( repository::IsCCM( op.cipher.cipherType.Get() ) ) {
