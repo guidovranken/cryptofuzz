@@ -5,6 +5,7 @@
 #include <nettle/chacha-poly1305.h>
 #include <nettle/chacha.h>
 #include <nettle/cmac.h>
+#include <nettle/des.h>
 #include <nettle/eax.h>
 #include <nettle/ecc-curve.h>
 #include <nettle/ecc.h>
@@ -18,9 +19,11 @@
 #include <nettle/pbkdf2.h>
 #include <nettle/ripemd160.h>
 #include <nettle/salsa20.h>
+#include <nettle/serpent.h>
 #include <nettle/sha.h>
 #include <nettle/sha3.h>
 #include <nettle/streebog.h>
+#include <nettle/twofish.h>
 #include <nettle/xts.h>
 
 namespace cryptofuzz {
@@ -737,6 +740,56 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
             ret = Nettle_detail::Salsa20Crypt(ds, op.cleartext, op.cipher, SALSA20_256_KEY_SIZE, false);
         }
         break;
+
+        case CF_CIPHER("DES_ECB"):
+        {
+            struct des_ctx ctx;
+
+            CF_CHECK_EQ(op.cleartext.GetSize() % DES_BLOCK_SIZE, 0);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), DES_KEY_SIZE);
+
+            out = util::malloc(op.cleartext.GetSize());
+
+            /* ignore return value */ des_set_key(&ctx, op.cipher.key.GetPtr());
+            /* noret */ des_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr());
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("TWOFISH"):
+        {
+            struct twofish_ctx ctx;
+
+            CF_CHECK_EQ(op.cleartext.GetSize() % TWOFISH_BLOCK_SIZE, 0);
+            CF_CHECK_GTE(op.cipher.key.GetSize(), TWOFISH_MIN_KEY_SIZE);
+            CF_CHECK_LTE(op.cipher.key.GetSize(), TWOFISH_MAX_KEY_SIZE);
+
+            out = util::malloc(op.cleartext.GetSize());
+
+            /* ignore return value */ twofish_set_key(&ctx, op.cipher.key.GetSize(), op.cipher.key.GetPtr());
+            /* noret */ twofish_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr());
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("SERPENT"):
+        {
+            struct serpent_ctx ctx;
+
+            CF_CHECK_EQ(op.cleartext.GetSize() % SERPENT_BLOCK_SIZE, 0);
+            CF_CHECK_GTE(op.cipher.key.GetSize(), SERPENT_MIN_KEY_SIZE);
+            CF_CHECK_LTE(op.cipher.key.GetSize(), SERPENT_MAX_KEY_SIZE);
+
+            out = util::malloc(op.cleartext.GetSize());
+
+            /* ignore return value */ serpent_set_key(&ctx, op.cipher.key.GetSize(), op.cipher.key.GetPtr());
+            /* noret */ serpent_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr());
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
+        }
+        break;
     }
 
 end:
@@ -1120,6 +1173,56 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
         case CF_CIPHER("SALSA20_12_256"):
         {
             ret = Nettle_detail::Salsa20Crypt(ds, op.ciphertext, op.cipher, SALSA20_256_KEY_SIZE, false);
+        }
+        break;
+
+        case CF_CIPHER("DES_ECB"):
+        {
+            struct des_ctx ctx;
+
+            CF_CHECK_EQ(op.ciphertext.GetSize() % DES_BLOCK_SIZE, 0);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), DES_KEY_SIZE);
+
+            out = util::malloc(op.ciphertext.GetSize());
+
+            /* ignore return value */ des_set_key(&ctx, op.cipher.key.GetPtr());
+            /* noret */ des_decrypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr());
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("TWOFISH"):
+        {
+            struct twofish_ctx ctx;
+
+            CF_CHECK_EQ(op.ciphertext.GetSize() % TWOFISH_BLOCK_SIZE, 0);
+            CF_CHECK_GTE(op.cipher.key.GetSize(), TWOFISH_MIN_KEY_SIZE);
+            CF_CHECK_LTE(op.cipher.key.GetSize(), TWOFISH_MAX_KEY_SIZE);
+
+            out = util::malloc(op.ciphertext.GetSize());
+
+            /* ignore return value */ twofish_set_key(&ctx, op.cipher.key.GetSize(), op.cipher.key.GetPtr());
+            /* noret */ twofish_decrypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr());
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("SERPENT"):
+        {
+            struct serpent_ctx ctx;
+
+            CF_CHECK_EQ(op.ciphertext.GetSize() % SERPENT_BLOCK_SIZE, 0);
+            CF_CHECK_GTE(op.cipher.key.GetSize(), SERPENT_MIN_KEY_SIZE);
+            CF_CHECK_LTE(op.cipher.key.GetSize(), SERPENT_MAX_KEY_SIZE);
+
+            out = util::malloc(op.ciphertext.GetSize());
+
+            /* ignore return value */ serpent_set_key(&ctx, op.cipher.key.GetSize(), op.cipher.key.GetPtr());
+            /* noret */ serpent_decrypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr());
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
         }
         break;
     }
