@@ -1643,8 +1643,13 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
         }
 
         for (const auto& part : partsCleartext) {
-            /* "the amount of data written may be anything from zero bytes to (inl + cipher_block_size - 1)" */
-            CF_CHECK_GTE(out_size, part.second + EVP_CIPHER_block_size(cipher) - 1);
+            if ( repository::IsWRAP(op.cipher.cipherType.Get()) ) {
+                /* WRAP ciphers don't honor the default rule */
+                CF_CHECK_GTE(out_size, part.second + EVP_CIPHER_block_size(cipher));
+            } else {
+                /* "the amount of data written may be anything from zero bytes to (inl + cipher_block_size - 1)" */
+                CF_CHECK_GTE(out_size, part.second + EVP_CIPHER_block_size(cipher) - 1);
+            }
 
             int len = -1;
             CF_CHECK_EQ(EVP_EncryptUpdate(ctx.GetPtr(), out + outIdx, &len, part.first, part.second), 1);
@@ -2001,6 +2006,11 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
              */
             CF_CHECK_EQ(isAEAD(cipher, op.cipher.cipherType.Get()), true);
         }
+
+        if ( repository::IsWRAP(op.cipher.cipherType.Get()) ) {
+            /* noret */ EVP_CIPHER_CTX_set_flags(ctx.GetPtr(), EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
+        }
+
         CF_CHECK_EQ(EVP_DecryptInit_ex(ctx.GetPtr(), cipher, nullptr, nullptr, nullptr), 1);
 
         /* Must be a multiple of the block size of this cipher */
