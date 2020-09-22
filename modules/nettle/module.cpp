@@ -1,6 +1,8 @@
 #include "module.h"
 #include <cryptofuzz/util.h>
 #include <nettle/arcfour.h>
+#include <nettle/blowfish.h>
+#include <nettle/cast128.h>
 #include <nettle/ccm.h>
 #include <nettle/chacha-poly1305.h>
 #include <nettle/chacha.h>
@@ -790,6 +792,40 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
         }
         break;
+
+        case CF_CIPHER("BLOWFISH_ECB"):
+        {
+            struct blowfish_ctx ctx;
+
+            CF_CHECK_EQ(op.cleartext.GetSize() % BLOWFISH_BLOCK_SIZE, 0);
+            CF_CHECK_GTE(op.cipher.key.GetSize(), BLOWFISH_MIN_KEY_SIZE);
+            CF_CHECK_LTE(op.cipher.key.GetSize(), BLOWFISH_MAX_KEY_SIZE);
+
+            out = util::malloc(op.cleartext.GetSize());
+
+            /* ignore return value */ blowfish_set_key(&ctx, op.cipher.key.GetSize(), op.cipher.key.GetPtr());
+            /* noret */ blowfish_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr());
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("CAST5_ECB"):
+        {
+            struct cast128_ctx ctx;
+
+            CF_CHECK_EQ(op.cleartext.GetSize() % CAST128_BLOCK_SIZE, 0);
+            CF_CHECK_GTE(op.cipher.key.GetSize(), CAST5_MIN_KEY_SIZE);
+            CF_CHECK_LTE(op.cipher.key.GetSize(), CAST5_MAX_KEY_SIZE);
+
+            out = util::malloc(op.cleartext.GetSize());
+
+            /* ignore return value */ cast5_set_key(&ctx, op.cipher.key.GetSize(), op.cipher.key.GetPtr());
+            /* noret */ cast128_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr());
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
+        }
+        break;
     }
 
 end:
@@ -1221,6 +1257,40 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
 
             /* ignore return value */ serpent_set_key(&ctx, op.cipher.key.GetSize(), op.cipher.key.GetPtr());
             /* noret */ serpent_decrypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr());
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("BLOWFISH_ECB"):
+        {
+            struct blowfish_ctx ctx;
+
+            CF_CHECK_EQ(op.ciphertext.GetSize() % BLOWFISH_BLOCK_SIZE, 0);
+            CF_CHECK_GTE(op.cipher.key.GetSize(), BLOWFISH_MIN_KEY_SIZE);
+            CF_CHECK_LTE(op.cipher.key.GetSize(), BLOWFISH_MAX_KEY_SIZE);
+
+            out = util::malloc(op.ciphertext.GetSize());
+
+            /* ignore return value */ blowfish_set_key(&ctx, op.cipher.key.GetSize(), op.cipher.key.GetPtr());
+            /* noret */ blowfish_decrypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr());
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+
+        case CF_CIPHER("CAST5_ECB"):
+        {
+            struct cast128_ctx ctx;
+
+            CF_CHECK_EQ(op.ciphertext.GetSize() % CAST128_BLOCK_SIZE, 0);
+            CF_CHECK_GTE(op.cipher.key.GetSize(), CAST5_MIN_KEY_SIZE);
+            CF_CHECK_LTE(op.cipher.key.GetSize(), CAST5_MAX_KEY_SIZE);
+
+            out = util::malloc(op.ciphertext.GetSize());
+
+            /* ignore return value */ cast5_set_key(&ctx, op.cipher.key.GetSize(), op.cipher.key.GetPtr());
+            /* noret */ cast128_decrypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr());
 
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
         }
