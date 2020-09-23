@@ -596,8 +596,14 @@ template<> void ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>:
 
 template<> void ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::postprocess(std::shared_ptr<Module> module, operation::ECDSA_Sign& op, const ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::ResultPair& result) const {
     (void)module;
-    (void)op;
-    (void)result;
+
+    if ( result.second != std::nullopt && (PRNG() % 4) == 0 ) {
+        const auto curveID = op.curveType.Get();
+        const auto sig_r = result.second->first.ToTrimmedString();
+        const auto sig_y = result.second->second.ToTrimmedString();
+
+        Pool_CurveECDSASignature[ PRNG() % 64 ] = { curveID, sig_r, sig_y };
+    }
 }
 
 template<> std::optional<component::ECDSA_Signature> ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::callModule(std::shared_ptr<Module> module, operation::ECDSA_Sign& op) const {
@@ -697,7 +703,14 @@ template<> void ExecutorBase<component::Bignum, operation::BignumCalc>::updateEx
 template<> void ExecutorBase<component::Bignum, operation::BignumCalc>::postprocess(std::shared_ptr<Module> module, operation::BignumCalc& op, const ExecutorBase<component::Bignum, operation::BignumCalc>::ResultPair& result) const {
     (void)module;
     (void)op;
-    (void)result;
+
+    if ( result.second != std::nullopt && (PRNG() % 4) == 0 ) {
+        const auto bignum = result.second->ToTrimmedString();
+
+        if ( bignum.size() <= 1000 ) {
+            Pool_Bignum[ PRNG() % 64 ] = { bignum };
+        }
+    }
 }
 
 template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, operation::BignumCalc>::callModule(std::shared_ptr<Module> module, operation::BignumCalc& op) const {

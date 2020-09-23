@@ -59,6 +59,14 @@ static std::string getBuffer(size_t size, const bool alternativeSize = false) {
     return std::string(size * 2, '0');
 }
 
+static std::string getBignum(const bool usePool = true) {
+    if ( !usePool || getBool() ) {
+        return numbers[PRNG() % (sizeof(numbers) / sizeof(numbers[0]))];
+    } else {
+        return Pool_Bignum[PRNG() % 64];
+    }
+}
+
 extern "C" size_t LLVMFuzzerMutate(uint8_t* data, size_t size, size_t maxSize);
 
 extern cryptofuzz::Options* cryptofuzz_options;
@@ -267,10 +275,10 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
                     parameters["calcOp"] = CalcOpLUT[ PRNG() % (sizeof(CalcOpLUT) / sizeof(CalcOpLUT[0])) ].id;
-                    parameters["bn1"] = numbers[PRNG() % (sizeof(numbers) / sizeof(numbers[0]))];
-                    parameters["bn2"] = numbers[PRNG() % (sizeof(numbers) / sizeof(numbers[0]))];
-                    parameters["bn3"] = numbers[PRNG() % (sizeof(numbers) / sizeof(numbers[0]))];
-                    parameters["bn4"] = numbers[PRNG() % (sizeof(numbers) / sizeof(numbers[0]))];
+                    parameters["bn1"] = getBignum();
+                    parameters["bn2"] = getBignum();
+                    parameters["bn3"] = getBignum();
+                    parameters["bn4"] = "";
 
                     cryptofuzz::operation::BignumCalc op(parameters);
                     op.Serialize(dsOut2);
@@ -286,7 +294,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         parameters["priv"] = Pool_CurvePrivkey[poolIndex].priv;
                     } else {
                         parameters["curveType"] = ECC_CurveLUT[ PRNG() % (sizeof(ECC_CurveLUT) / sizeof(ECC_CurveLUT[0])) ].id;
-                        parameters["priv"] = numbers[PRNG() % (sizeof(numbers) / sizeof(numbers[0]))];
+                        parameters["priv"] = getBignum();
                     }
 
                     cryptofuzz::operation::ECC_PrivateToPublic op(parameters);
@@ -297,19 +305,65 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
 
+                    if ( getBool() == true ) {
+                        const auto poolIndex1 = PRNG() % 64;
+                        const auto poolIndex2 = PRNG() % 64;
+                        CF_CHECK_EQ(Pool_CurvePrivkey[poolIndex1].curveID, Pool_CurvePrivkey[poolIndex2].curveID);
+
+                        parameters["curveType"] = Pool_CurvePrivkey[poolIndex1].curveID;
+
+                        parameters["pub1_x"] = Pool_CurveKeypair[poolIndex1].pub_x;
+                        parameters["pub1_y"] = Pool_CurveKeypair[poolIndex1].pub_y;
+
+                        parameters["pub2_x"] = Pool_CurveKeypair[poolIndex2].pub_x;
+                        parameters["pub2_y"] = Pool_CurveKeypair[poolIndex2].pub_y;
+                    } else {
+                        parameters["curveType"] = ECC_CurveLUT[ PRNG() % (sizeof(ECC_CurveLUT) / sizeof(ECC_CurveLUT[0])) ].id;
+
+                        parameters["pub1_x"] = getBignum();
+                        parameters["pub1_y"] = getBignum();
+
+                        parameters["pub2_x"] = getBignum();
+                        parameters["pub2_y"] = getBignum();
+                    }
+
+                    cryptofuzz::operation::ECDH_Derive op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("ECDSA_Sign"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+
+                    const auto poolIndex = PRNG() % 64;
+
+                    parameters["curveType"] = Pool_CurvePrivkey[poolIndex].curveID;
+                    parameters["priv"] = Pool_CurvePrivkey[poolIndex].priv;
+                    parameters["cleartext"] = getBuffer(PRNG() % 1000);
+
+                    cryptofuzz::operation::ECDSA_Sign op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("ECDSA_Verify"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+
                     const auto poolIndex1 = PRNG() % 64;
                     const auto poolIndex2 = PRNG() % 64;
                     CF_CHECK_EQ(Pool_CurvePrivkey[poolIndex1].curveID, Pool_CurvePrivkey[poolIndex2].curveID);
 
                     parameters["curveType"] = Pool_CurvePrivkey[poolIndex1].curveID;
 
-                    parameters["pub1_x"] = Pool_CurveKeypair[poolIndex1].pub_x;
-                    parameters["pub1_y"] = Pool_CurveKeypair[poolIndex1].pub_y;
+                    parameters["pub_x"] = Pool_CurveKeypair[poolIndex1].pub_x;
+                    parameters["pub_y"] = Pool_CurveKeypair[poolIndex1].pub_y;
 
-                    parameters["pub2_x"] = Pool_CurveKeypair[poolIndex2].pub_x;
-                    parameters["pub2_y"] = Pool_CurveKeypair[poolIndex2].pub_y;
+                    parameters["cleartext"] = getBuffer(PRNG() % 1000);
 
-                    cryptofuzz::operation::ECDH_Derive op(parameters);
+                    parameters["sig_r"] = Pool_CurveECDSASignature[poolIndex2].sig_r;
+                    parameters["sig_y"] = Pool_CurveECDSASignature[poolIndex2].sig_y;
+
+                    cryptofuzz::operation::ECDSA_Verify op(parameters);
                     op.Serialize(dsOut2);
                 }
                 break;
