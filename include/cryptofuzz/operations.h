@@ -1022,6 +1022,11 @@ class ECDH_Derive : public Operation {
                 (pub2 == rhs.pub2) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            pub1.Serialize(ds);
+            pub2.Serialize(ds);
+        }
 };
 
 class BignumCalc : public Operation {

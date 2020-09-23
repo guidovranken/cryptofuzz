@@ -5,11 +5,13 @@
 #include <cryptofuzz/operations.h>
 #include <cryptofuzz/repository.h>
 #include <cryptofuzz/options.h>
+#include <cryptofuzz/util.h>
 #include "repository_tbl.h"
 #include "numbers.h"
+#include "mutatorpool.h"
 #include "third_party/json/json.hpp"
 
-static uint32_t PRNG(void)
+uint32_t PRNG(void)
 {
     static uint32_t nSeed = 5323;
     nSeed = (8253729 * nSeed + 2396403);
@@ -277,10 +279,37 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("ECC_PrivateToPublic"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = ECC_CurveLUT[ PRNG() % (sizeof(ECC_CurveLUT) / sizeof(ECC_CurveLUT[0])) ].id;
-                    parameters["priv"] = numbers[PRNG() % (sizeof(numbers) / sizeof(numbers[0]))];
+
+                    if ( getBool() == true ) {
+                        const auto poolIndex = PRNG() % 64;
+                        parameters["curveType"] = Pool_CurvePrivkey[poolIndex].curveID;
+                        parameters["priv"] = Pool_CurvePrivkey[poolIndex].priv;
+                    } else {
+                        parameters["curveType"] = ECC_CurveLUT[ PRNG() % (sizeof(ECC_CurveLUT) / sizeof(ECC_CurveLUT[0])) ].id;
+                        parameters["priv"] = numbers[PRNG() % (sizeof(numbers) / sizeof(numbers[0]))];
+                    }
 
                     cryptofuzz::operation::ECC_PrivateToPublic op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("ECDH_Derive"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+
+                    const auto poolIndex1 = PRNG() % 64;
+                    const auto poolIndex2 = PRNG() % 64;
+                    CF_CHECK_EQ(Pool_CurvePrivkey[poolIndex1].curveID, Pool_CurvePrivkey[poolIndex2].curveID);
+
+                    parameters["curveType"] = Pool_CurvePrivkey[poolIndex1].curveID;
+
+                    parameters["pub1_x"] = Pool_CurveKeypair[poolIndex1].pub_x;
+                    parameters["pub1_y"] = Pool_CurveKeypair[poolIndex1].pub_y;
+
+                    parameters["pub2_x"] = Pool_CurveKeypair[poolIndex2].pub_x;
+                    parameters["pub2_y"] = Pool_CurveKeypair[poolIndex2].pub_y;
+
+                    cryptofuzz::operation::ECDH_Derive op(parameters);
                     op.Serialize(dsOut2);
                 }
                 break;

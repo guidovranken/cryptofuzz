@@ -1,9 +1,12 @@
 #include "executor.h"
 #include "tests.h"
+#include "mutatorpool.h"
 #include <cryptofuzz/util.h>
 #include <fuzzing/memory.hpp>
 #include <algorithm>
 #include <set>
+
+uint32_t PRNG(void);
 
 extern "C" {
 //__attribute__((section("__libfuzzer_extra_counters")))
@@ -558,8 +561,16 @@ template<> void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyP
 
 template<> void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::postprocess(std::shared_ptr<Module> module, operation::ECC_GenerateKeyPair& op, const ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::ResultPair& result) const {
     (void)module;
-    (void)op;
-    (void)result;
+
+    if ( result.second != std::nullopt && (PRNG() % 4) == 0 ) {
+        const auto curveID = op.curveType.Get();
+        const auto privkey = result.second->priv.ToTrimmedString();
+        const auto pub_x = result.second->pub.first.ToTrimmedString();
+        const auto pub_y = result.second->pub.second.ToTrimmedString();
+
+        Pool_CurvePrivkey[ PRNG() % 64 ] = { curveID, privkey };
+        Pool_CurveKeypair[ PRNG() % 64 ] = { curveID, privkey, pub_x, pub_y };
+    }
 }
 
 template<> std::optional<component::ECC_KeyPair> ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::callModule(std::shared_ptr<Module> module, operation::ECC_GenerateKeyPair& op) const {
