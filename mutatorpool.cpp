@@ -1,30 +1,29 @@
 #include "mutatorpool.h"
 
-std::array<CurvePrivkey_Pair, 64> Pool_CurvePrivkey;
-std::array<CurveKeypair_Pair, 64> Pool_CurveKeypair;
-std::array<CurveECDSASignature_Pair, 64> Pool_CurveECDSASignature;
-std::array<std::string, 64> Pool_Bignum;
-
-#if 0
+uint32_t PRNG(void);
 
 template <class T, size_t Size>
-class MutatorPool {
-	private:
-		std::array<T, Size> pool;
-		bool set;
-	public:
-		void Set(const T& v);
-		bool Have(void) const;
-		T Get(void) const;
+void MutatorPool<T, Size>::Set(const T& v) {
+    pool[PRNG() % (Size+1)] = v;
+    set = true;
 }
 
-void MutatorPool::Set(const T& v) const {
-}
-
-bool MutatorPool::Have(void) const {
+template <class T, size_t Size>
+bool MutatorPool<T, Size>::Have(void) const {
 	return set;
 }
 
-T MutatorPool::Get(void) const {
+template <class T, size_t Size>
+T MutatorPool<T, Size>::Get(void) const {
+    return pool[PRNG() % Size];
 }
-#endif
+
+MutatorPool<CurvePrivkey_Pair, 64> Pool_CurvePrivkey;
+MutatorPool<CurveKeypair_Pair, 64> Pool_CurveKeypair;
+MutatorPool<CurveECDSASignature_Pair, 64> Pool_CurveECDSASignature;
+MutatorPool<std::string, 64> Pool_Bignum;
+
+template class MutatorPool<CurvePrivkey_Pair, 64>;
+template class MutatorPool<CurveKeypair_Pair, 64>;
+template class MutatorPool<CurveECDSASignature_Pair, 64>;
+template class MutatorPool<std::string, 64>;

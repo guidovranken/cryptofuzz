@@ -59,11 +59,11 @@ static std::string getBuffer(size_t size, const bool alternativeSize = false) {
     return std::string(size * 2, '0');
 }
 
-static std::string getBignum(const bool usePool = true) {
-    if ( !usePool || getBool() ) {
-        return numbers[PRNG() % (sizeof(numbers) / sizeof(numbers[0]))];
+static std::string getBignum(void) {
+    if ( Pool_Bignum.Have() && getBool() ) {
+        return Pool_Bignum.Get();
     } else {
-        return Pool_Bignum[PRNG() % 64];
+        return numbers[PRNG() % (sizeof(numbers) / sizeof(numbers[0]))];
     }
 }
 
@@ -288,10 +288,11 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
 
-                    if ( getBool() == true ) {
-                        const auto poolIndex = PRNG() % 64;
-                        parameters["curveType"] = Pool_CurvePrivkey[poolIndex].curveID;
-                        parameters["priv"] = Pool_CurvePrivkey[poolIndex].priv;
+                    if ( Pool_CurvePrivkey.Have() && getBool() == true ) {
+                        const auto P1 = Pool_CurvePrivkey.Get();
+
+                        parameters["curveType"] = P1.curveID;
+                        parameters["priv"] = P1.priv;
                     } else {
                         parameters["curveType"] = ECC_CurveLUT[ PRNG() % (sizeof(ECC_CurveLUT) / sizeof(ECC_CurveLUT[0])) ].id;
                         parameters["priv"] = getBignum();
@@ -305,18 +306,19 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
 
-                    if ( getBool() == true ) {
-                        const auto poolIndex1 = PRNG() % 64;
-                        const auto poolIndex2 = PRNG() % 64;
-                        CF_CHECK_EQ(Pool_CurvePrivkey[poolIndex1].curveID, Pool_CurvePrivkey[poolIndex2].curveID);
+                    if ( Pool_CurvePrivkey.Have() && getBool() == true ) {
+                        const auto P1 = Pool_CurveKeypair.Get();
+                        const auto P2 = Pool_CurveKeypair.Get();
 
-                        parameters["curveType"] = Pool_CurvePrivkey[poolIndex1].curveID;
+                        CF_CHECK_EQ(P1.curveID, P2.curveID);
 
-                        parameters["pub1_x"] = Pool_CurveKeypair[poolIndex1].pub_x;
-                        parameters["pub1_y"] = Pool_CurveKeypair[poolIndex1].pub_y;
+                        parameters["curveType"] = P1.curveID;
 
-                        parameters["pub2_x"] = Pool_CurveKeypair[poolIndex2].pub_x;
-                        parameters["pub2_y"] = Pool_CurveKeypair[poolIndex2].pub_y;
+                        parameters["pub1_x"] = P1.pub_x;
+                        parameters["pub1_y"] = P1.pub_y;
+
+                        parameters["pub2_x"] = P2.pub_x;
+                        parameters["pub2_y"] = P2.pub_y;
                     } else {
                         parameters["curveType"] = ECC_CurveLUT[ PRNG() % (sizeof(ECC_CurveLUT) / sizeof(ECC_CurveLUT[0])) ].id;
 
@@ -335,10 +337,10 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
 
-                    const auto poolIndex = PRNG() % 64;
+                    const auto P1 = Pool_CurvePrivkey.Get();
 
-                    parameters["curveType"] = Pool_CurvePrivkey[poolIndex].curveID;
-                    parameters["priv"] = Pool_CurvePrivkey[poolIndex].priv;
+                    parameters["curveType"] = P1.curveID;
+                    parameters["priv"] = P1.priv;
                     parameters["cleartext"] = getBuffer(PRNG() % 1000);
 
                     cryptofuzz::operation::ECDSA_Sign op(parameters);
@@ -347,21 +349,28 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                 break;
             case    CF_OPERATION("ECDSA_Verify"):
                 {
+                    CF_CHECK_EQ(Pool_CurvePrivkey.Have(), true);
+                    CF_CHECK_EQ(Pool_CurveKeypair.Have(), true);
+                    CF_CHECK_EQ(Pool_CurveECDSASignature.Have(), true);
+
+                    const auto P1 = Pool_CurvePrivkey.Get();
+                    const auto P2 = Pool_CurveKeypair.Get();
+                    const auto P3 = Pool_CurveECDSASignature.Get();
+
+                    CF_CHECK_EQ(P1.curveID, P2.curveID);
+                    CF_CHECK_EQ(P2.curveID, P3.curveID);
+
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
 
-                    const auto poolIndex1 = PRNG() % 64;
-                    const auto poolIndex2 = PRNG() % 64;
-                    CF_CHECK_EQ(Pool_CurvePrivkey[poolIndex1].curveID, Pool_CurvePrivkey[poolIndex2].curveID);
+                    parameters["curveType"] = P1.curveID;
 
-                    parameters["curveType"] = Pool_CurvePrivkey[poolIndex1].curveID;
-
-                    parameters["pub_x"] = Pool_CurveKeypair[poolIndex1].pub_x;
-                    parameters["pub_y"] = Pool_CurveKeypair[poolIndex1].pub_y;
+                    parameters["pub_x"] = P2.pub_x;
+                    parameters["pub_y"] = P2.pub_y;
 
                     parameters["cleartext"] = getBuffer(PRNG() % 1000);
 
-                    parameters["sig_r"] = Pool_CurveECDSASignature[poolIndex2].sig_r;
-                    parameters["sig_y"] = Pool_CurveECDSASignature[poolIndex2].sig_y;
+                    parameters["sig_r"] = P3.sig_r;
+                    parameters["sig_y"] = P3.sig_y;
 
                     cryptofuzz::operation::ECDSA_Verify op(parameters);
                     op.Serialize(dsOut2);

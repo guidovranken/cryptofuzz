@@ -568,8 +568,8 @@ template<> void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyP
         const auto pub_x = result.second->pub.first.ToTrimmedString();
         const auto pub_y = result.second->pub.second.ToTrimmedString();
 
-        Pool_CurvePrivkey[ PRNG() % 64 ] = { curveID, privkey };
-        Pool_CurveKeypair[ PRNG() % 64 ] = { curveID, privkey, pub_x, pub_y };
+        Pool_CurvePrivkey.Set({ curveID, privkey });
+        Pool_CurveKeypair.Set({ curveID, privkey, pub_x, pub_y });
     }
 }
 
@@ -602,7 +602,7 @@ template<> void ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>:
         const auto sig_r = result.second->first.ToTrimmedString();
         const auto sig_y = result.second->second.ToTrimmedString();
 
-        Pool_CurveECDSASignature[ PRNG() % 64 ] = { curveID, sig_r, sig_y };
+        Pool_CurveECDSASignature.Set({ curveID, sig_r, sig_y });
     }
 }
 
@@ -708,7 +708,7 @@ template<> void ExecutorBase<component::Bignum, operation::BignumCalc>::postproc
         const auto bignum = result.second->ToTrimmedString();
 
         if ( bignum.size() <= 1000 ) {
-            Pool_Bignum[ PRNG() % 64 ] = { bignum };
+            Pool_Bignum.Set(bignum);
         }
     }
 }
