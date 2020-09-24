@@ -8,7 +8,7 @@ template <class T, size_t Size>
 class MutatorPool {
 	private:
 		std::array<T, Size> pool = {};
-		bool set;
+		bool set = false;
 	public:
 		void Set(const T& v);
 		bool Have(void) const;
