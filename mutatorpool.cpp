@@ -4,7 +4,7 @@ uint32_t PRNG(void);
 
 template <class T, size_t Size>
 void MutatorPool<T, Size>::Set(const T& v) {
-    pool[PRNG() % (Size+1)] = v;
+    pool[PRNG() % Size] = v;
     set = true;
 }
 
