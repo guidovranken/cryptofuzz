@@ -943,6 +943,11 @@ class ECDSA_Sign : public Operation {
                 (cleartext == rhs.cleartext) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            priv.Serialize(ds);
+            cleartext.Serialize(ds);
+        }
 };
 
 class ECDSA_Verify : public Operation {
@@ -978,6 +983,12 @@ class ECDSA_Verify : public Operation {
                 (cleartext == rhs.cleartext) &&
                 (signature == rhs.signature) &&
                 (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            pub.Serialize(ds);
+            cleartext.Serialize(ds);
+            signature.Serialize(ds);
         }
 };
 
@@ -1021,6 +1032,11 @@ class ECDH_Derive : public Operation {
                 (pub1 == rhs.pub2) &&
                 (pub2 == rhs.pub2) &&
                 (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            pub1.Serialize(ds);
+            pub2.Serialize(ds);
         }
 };
 
