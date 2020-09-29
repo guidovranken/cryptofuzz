@@ -37,10 +37,14 @@ var OpBignumCalc = function(FuzzerInput) {
     } else if ( IsNeg(calcOp) ) {
         ret = bn[0].negated();
     } else if ( IsExpMod(calcOp) ) {
+        /* Disabled due to timeouts */
+        return;
+        /*
         if ( bn[1].isGreaterThanOrEqualTo(new BigNumber("1000")) ) {
             return;
         }
         ret = bn[0].exponentiatedBy(bn[1]).modulo(bn[2]);
+        */
     } else if ( IsCmp(calcOp) ) {
         ret = new BigNumber( bn[0].comparedTo(bn[1]) );
     } else if ( IsAddMod(calcOp) ) {
