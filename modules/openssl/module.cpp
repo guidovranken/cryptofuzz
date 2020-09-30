@@ -2851,13 +2851,14 @@ std::optional<component::Key> OpenSSL::OpKDF_SP_800_108(operation::KDF_SP_800_10
         }
 
         if ( op.mode == 1 ) {
-            /* XXX Salt is ignored in feedback mode */
+            /* XXX Salt is ignored in feedback mode
+             * https://github.com/openssl/openssl/issues/12409#issuecomment-701645838
+             */
             CF_CHECK_EQ(op.salt.GetSize(), 0);
         }
 
         CF_CHECK_EQ(op.mech.mode, true); /* Currently only HMAC supported, not CMAC */
 
-        CF_CHECK_NE(op.secret.GetSize(), 0); /* Crashes if secret is empty. https://github.com/openssl/openssl/issues/12409 */
         CF_CHECK_NE(md = toEVPMD(op.mech.type), nullptr);
 
         std::string mdName(EVP_MD_name(md));
