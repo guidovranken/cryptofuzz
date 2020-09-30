@@ -70,6 +70,23 @@ static void test_ChaCha20_Poly1305_IV(const operation::SymmetricEncrypt& op, con
     }
 }
 
+static void test_XChaCha20_Poly1305_IV(const operation::SymmetricEncrypt& op, const std::optional<component::Ciphertext>& result) {
+    using fuzzing::datasource::ID;
+
+    if ( op.cipher.cipherType.Get() != CF_CIPHER("XCHACHA20_POLY1305") ) {
+        return;
+    }
+
+    if ( result == std::nullopt ) {
+        return;
+    }
+
+    if ( op.cipher.iv.GetSize() != 24 ) {
+        printf("XChaCha20-Poly1305 succeeded with an IV of %zu bytes large, but only IVs of 24 bytes are valid\n", op.cipher.iv.GetSize());
+        abort();
+    }
+}
+
 static void test_AES_CCM_Wycheproof(const operation::SymmetricEncrypt& op, const std::optional<component::Ciphertext>& result) {
     bool fail = false;
 
@@ -135,6 +152,7 @@ static void test_AES_GCM_Wycheproof(const operation::SymmetricEncrypt& op, const
 
 void test(const operation::SymmetricEncrypt& op, const std::optional<component::Ciphertext>& result) {
     test_ChaCha20_Poly1305_IV(op, result);
+    test_XChaCha20_Poly1305_IV(op, result);
     test_AES_CCM_Wycheproof(op, result);
     test_AES_GCM_Wycheproof(op, result);
 }
