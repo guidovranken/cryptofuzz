@@ -768,6 +768,14 @@ class KDF_SP_800_108 : public Operation {
                 (keySize == rhs.keySize) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            mech.Serialize(ds);
+            secret.Serialize(ds);
+            salt.Serialize(ds);
+            label.Serialize(ds);
+            ds.Put<>(mode);
+            ds.Put<>(keySize);
+        }
 };
 
 class CMAC : public Operation {

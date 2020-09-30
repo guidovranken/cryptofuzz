@@ -195,6 +195,10 @@ class MACType {
                 (mode == rhs.mode) &&
                 (type == rhs.type);
         }
+        void Serialize(Datasource& ds) const {
+            ds.Put<>(mode);
+            type.Serialize(ds);
+        }
 };
 
 } /* namespace component */

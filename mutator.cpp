@@ -569,6 +569,38 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     op.Serialize(dsOut2);
                 }
                 break;
+            case    CF_OPERATION("KDF_SP_800_108"):
+                {
+                    size_t numParts = 0;
+
+                    numParts++; /* modifier */
+                    numParts++; /* secret */
+                    numParts++; /* salt */
+                    numParts++; /* label */
+
+                    const auto lengths = SplitLength(maxSize - 64, numParts);
+
+                    if ( getBool() == true ) {
+                        /* MAC = HMAC */
+                        parameters["mech"]["mode"] = true;
+                        parameters["mech"]["type"] = DigestLUT[ PRNG() % (sizeof(DigestLUT) / sizeof(DigestLUT[0])) ].id;
+                    } else {
+                        /* MAC = CMAC */
+                        parameters["mech"]["mode"] = false;
+                        parameters["mech"]["type"] = getRandomCipher();
+                    }
+
+                    parameters["modifier"] = getBuffer(lengths[0]);
+                    parameters["secret"] = getBuffer(lengths[1]);
+                    parameters["salt"] = getBuffer(lengths[2]);
+                    parameters["label"] = getBuffer(lengths[3]);
+                    parameters["mode"] = PRNG() % 3;
+                    parameters["keySize"] = PRNG() % 17000;
+
+                    cryptofuzz::operation::KDF_SP_800_108 op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
             default:
                 goto end;
         }
