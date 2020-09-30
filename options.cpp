@@ -175,6 +175,12 @@ Options::Options(const int argc, char** argv) {
                 exit(1);
             }
             this->disableTests = true;
+        } else if ( !parts.empty() && parts[0] == "--no-decrypt" ) {
+            if ( parts.size() != 1 ) {
+                std::cout << "Expected no argument after --no-decrypt=" << std::endl;
+                exit(1);
+            }
+            this->noDecrypt = true;
         }
     }
 }

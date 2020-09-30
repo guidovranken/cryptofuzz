@@ -21,6 +21,7 @@ class Options {
         size_t minModules = 1;
         bool debug = false;
         bool disableTests = false;
+        bool noDecrypt = false;
 };
 
 } /* namespace cryptofuzz */

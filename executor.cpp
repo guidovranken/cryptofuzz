@@ -92,6 +92,10 @@ template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>
 }
 
 template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>::postprocess(std::shared_ptr<Module> module, operation::SymmetricEncrypt& op, const ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>::ResultPair& result) const {
+    if ( options.noDecrypt == true ) {
+        return;
+    }
+
     if ( result.second != std::nullopt ) {
         fuzzing::memory::memory_test_msan(result.second->ciphertext.GetPtr(), result.second->ciphertext.GetSize());
         if ( result.second->tag != std::nullopt ) {
