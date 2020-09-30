@@ -1004,6 +1004,28 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
         }
         break;
 
+#if defined(HAVE_XCHACHA)
+        case CF_CIPHER("XCHACHA20_POLY1305"):
+        {
+            CF_CHECK_NE(op.tagSize, std::nullopt);
+            CF_CHECK_GTE(*op.tagSize, CHACHA20_POLY1305_AEAD_AUTHTAG_SIZE);
+            CF_CHECK_NE(op.aad, std::nullopt);
+
+            out = util::malloc(op.ciphertextSize);
+
+            CF_CHECK_EQ(wc_XChaCha20Poly1305_encrypt_oneshot(
+                        out, op.ciphertextSize,
+                        op.cleartext.GetPtr(), op.cleartext.GetSize(),
+                        op.aad->GetPtr(), op.aad->GetSize(),
+                        op.cipher.iv.GetPtr(), op.cipher.iv.GetSize(),
+                        op.cipher.key.GetPtr(), op.cipher.key.GetSize()), 0);
+            ret = component::Ciphertext(
+                    Buffer(out, op.cleartext.GetSize()),
+                    Buffer(out + op.cleartext.GetSize(), CHACHA20_POLY1305_AEAD_AUTHTAG_SIZE));
+        }
+        break;
+#endif
+
         case CF_CIPHER("AES_128_CTR"):
         case CF_CIPHER("AES_192_CTR"):
         case CF_CIPHER("AES_256_CTR"):
@@ -1468,6 +1490,7 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     wolfCrypt_detail::SetGlobalDs(&ds);
 
+    uint8_t* in = nullptr;
     uint8_t* out = nullptr;
 
     switch ( op.cipher.cipherType.Get() ) {
@@ -1677,6 +1700,34 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
         }
         break;
+
+#if defined(HAVE_XCHACHA)
+        case CF_CIPHER("XCHACHA20_POLY1305"):
+        {
+            const size_t inSize = op.ciphertext.GetSize() + CHACHA20_POLY1305_AEAD_AUTHTAG_SIZE;
+            CF_CHECK_NE(op.tag, std::nullopt);
+            CF_CHECK_EQ(op.tag->GetSize(), CHACHA20_POLY1305_AEAD_AUTHTAG_SIZE);
+            CF_CHECK_NE(op.aad, std::nullopt);
+
+            /* Concatenate ciphertext + tag */
+            in = util::malloc(inSize);
+            if ( op.ciphertext.GetSize() ) {
+                memcpy(in, op.ciphertext.GetPtr(), op.ciphertext.GetSize());
+            }
+            memcpy(in + op.ciphertext.GetSize(), op.tag->GetPtr(), op.tag->GetSize());
+
+            out = util::malloc(op.cleartextSize);
+
+            CF_CHECK_EQ(wc_XChaCha20Poly1305_decrypt_oneshot(
+                        out, op.cleartextSize,
+                        in, inSize,
+                        op.aad->GetPtr(), op.aad->GetSize(),
+                        op.cipher.iv.GetPtr(), op.cipher.iv.GetSize(),
+                        op.cipher.key.GetPtr(), op.cipher.key.GetSize()), 0);
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+#endif
 
         case CF_CIPHER("AES_128_CTR"):
         case CF_CIPHER("AES_192_CTR"):
@@ -2127,6 +2178,7 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
     }
 
 end:
+    util::free(in);
     util::free(out);
 
     wolfCrypt_detail::UnsetGlobalDs();
