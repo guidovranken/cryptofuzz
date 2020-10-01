@@ -49,6 +49,14 @@ std::optional<component::MAC> crypto_js::OpHMAC(operation::HMAC& op) {
     return Run<component::MAC, operation::HMAC, CF_OPERATION("HMAC")>((JS*)js, op);
 }
 
+std::optional<component::Ciphertext> crypto_js::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
+    return Run<component::Ciphertext, operation::SymmetricEncrypt, CF_OPERATION("SymmetricEncrypt")>((JS*)js, op);
+}
+
+std::optional<component::Cleartext> crypto_js::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
+    return Run<component::Cleartext, operation::SymmetricDecrypt, CF_OPERATION("SymmetricDecrypt")>((JS*)js, op);
+}
+
 std::optional<component::Key> crypto_js::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
     return Run<component::Key, operation::KDF_PBKDF2, CF_OPERATION("KDF_PBKDF2")>((JS*)js, op);
 }

@@ -26,6 +26,16 @@ crypto-js.bytecode : header.js harness.js ids.js
 		$(CRYPTO_JS_PATH)/src/sha3.js \
 		$(CRYPTO_JS_PATH)/src/hmac.js \
 		$(CRYPTO_JS_PATH)/src/pbkdf2.js \
+		$(CRYPTO_JS_PATH)/src/cipher-core.js \
+		$(CRYPTO_JS_PATH)/src/aes.js \
+		$(CRYPTO_JS_PATH)/src/mode-ecb.js \
+		$(CRYPTO_JS_PATH)/src/mode-cfb.js \
+		$(CRYPTO_JS_PATH)/src/mode-ctr.js \
+		$(CRYPTO_JS_PATH)/src/mode-ofb.js \
+		$(CRYPTO_JS_PATH)/src/pad-nopadding.js \
+		$(CRYPTO_JS_PATH)/src/pad-iso10126.js \
+		$(CRYPTO_JS_PATH)/src/rc4.js \
+		$(CRYPTO_JS_PATH)/src/rabbit.js \
 		ids.js harness.js >combined.js
 	$(LIBFUZZER_JS_PATH)/to_bytecode combined.js crypto-js.bytecode
 crypto-js.bytecode.h : crypto-js.bytecode
