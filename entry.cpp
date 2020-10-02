@@ -120,6 +120,10 @@
   #include <modules/wolfcrypt-openssl/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_MONOCYPHER)
+  #include <modules/monocypher/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -240,6 +244,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
     driver->LoadModule( std::make_shared<cryptofuzz::module::wolfCrypt_OpenSSL>() );
+#endif
+
+#if defined(CRYPTOFUZZ_MONOCYPHER)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::Monocypher>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
