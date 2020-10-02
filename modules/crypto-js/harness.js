@@ -1,50 +1,20 @@
 FuzzerInput = JSON.parse(FuzzerInput);
 
-var toParts = function(modifier, input) {
-    var ret = [];
-    var modifierPos = 0;
-    var pos = 0;
-
-    while ( input.length - pos > 0 ) {
-        var curLength = input.length - pos;
-
-        if ( modifierPos + 3 <= modifier.length ) {
-            var chunk = modifier.slice(modifierPos, modifierPos+3);
-            var length = 0;
-            length += chunk.charCodeAt(0) << 16;
-            length += chunk.charCodeAt(1) << 8;
-            length += chunk.charCodeAt(2);
-
-            curLength = length % (curLength+1);
-            modifierPos += 3;
-        }
-
-        var slice = input.slice(pos, pos+curLength);
-        ret.push(slice);
-        pos += curLength;
-    }
-
-    return ret;
-}
-
-var processMultipart = function(obj, input, modifier) {
-    //input = toParts(modifier, input);
-
-    obj.update(input);
-    //input.forEach(function (curInput) {
-    //    obj.update(curInput);
-    //});
+var processMultipart = function(obj, input) {
+    input.forEach(function (curInput) {
+        obj.update(curInput);
+    });
 
     return obj.finalize().toString();
 }
 
-var digest = function(hasher, input, modifier) {
-    return processMultipart(hasher, input, modifier);
+var digest = function(hasher, input) {
+    return processMultipart(hasher, input);
 }
 
-var hmac = function(hasher, input, key, modifier) {
+var hmac = function(hasher, input, key) {
     var hmac = CryptoJS.algo.HMAC.create(hasher, key);
-    return processMultipart(hmac, input, modifier);
+    return processMultipart(hmac, input);
 }
 
 var toHasher = function(digestType) {
@@ -71,20 +41,24 @@ var toHasher = function(digestType) {
 
 var OpDigest = function(FuzzerInput) {
     var digestType = parseInt(FuzzerInput['digestType']);
-    var cleartext = CryptoJS.enc.Hex.parse(FuzzerInput['cleartext']);
-    var modifier = CryptoJS.enc.Hex.parse(FuzzerInput['modifier']);
+    var cleartext = [];
+    FuzzerInput['cleartext'].forEach(function (curInput) {
+        cleartext.push( CryptoJS.enc.Hex.parse(curInput) );
+    });
 
     try {
-        var ret = digest(toHasher(digestType), cleartext, modifier);
+        var ret = digest(toHasher(digestType), cleartext);
         FuzzerOutput = JSON.stringify(ret);
     } catch ( e ) { }
 }
 
 var OpHMAC = function(FuzzerInput) {
     var digestType = parseInt(FuzzerInput['digestType']);
-    var cleartext = CryptoJS.enc.Hex.parse(FuzzerInput['cleartext']);
+    var cleartext = [];
+    FuzzerInput['cleartext'].forEach(function (curInput) {
+        cleartext.push( CryptoJS.enc.Hex.parse(curInput) );
+    });
     var key = CryptoJS.enc.Hex.parse(FuzzerInput['cipher']['key']);
-    var modifier = CryptoJS.enc.Hex.parse(FuzzerInput['modifier']);
 
     try {
         var ret = hmac(toHasher(digestType), cleartext, key, modifier);
@@ -112,9 +86,41 @@ var OpPBKDF2 = function(FuzzerInput) {
     } catch ( e ) { }
 }
 
+var processMultipartCipher = function(obj, input) {
+    var ret;
+    var out;
+    var first = true;
+
+    input.forEach(function (curInput) {
+        if ( first == true ) {
+            out = obj.process(curInput);
+            first = false;
+        } else {
+            out.concat(obj.process(curInput));
+        }
+    });
+
+    if ( first == false ) {
+        out.concat(obj.finalize());
+        ret = out.toString();
+    } else {
+        ret = obj.finalize().toString();
+    }
+
+    return ret;
+}
+
 var OpSymmetricEncrypt = function(FuzzerInput) {
     var cipherType = parseInt(FuzzerInput['cipher']['cipherType']);
-    var cleartext = CryptoJS.enc.Hex.parse(FuzzerInput['cleartext']);
+    var cleartext;
+    if ( IsRC4(cipherType) || IsRABBIT(cipherType) ) {
+        cleartext = [];
+        FuzzerInput['cleartext'].forEach(function (curInput) {
+            cleartext.push( CryptoJS.enc.Hex.parse(curInput) );
+        });
+    } else {
+        cleartext = CryptoJS.enc.Hex.parse(FuzzerInput['cleartext']);
+    }
 
     var key = CryptoJS.enc.Hex.parse(FuzzerInput['cipher']['key']);
     var keySize = FuzzerInput['cipher']['key'].length / 2;
@@ -137,9 +143,11 @@ var OpSymmetricEncrypt = function(FuzzerInput) {
     } else if ( IsAES_128_OFB(cipherType) || IsAES_192_OFB(cipherType) || IsAES_256_OFB(cipherType) ) {
         ret = CryptoJS.AES.encrypt(cleartext, key, {iv: iv, mode: CryptoJS.mode.OFB, padding: CryptoJS.pad.NoPadding }).toString();
     } else if ( IsRC4(cipherType) ) {
-        ret = CryptoJS.RC4.encrypt(cleartext, key).toString();
+        var rc4 = CryptoJS.algo.RC4.createEncryptor(key);
+        ret = processMultipartCipher(rc4, cleartext);
     } else if ( IsRABBIT(cipherType) ) {
-        ret = CryptoJS.Rabbit.encrypt(cleartext, key, {iv: iv}).toString();
+        var rabbit = CryptoJS.algo.Rabbit.createEncryptor(key, {iv: iv});
+        ret = processMultipartCipher(rabbit, cleartext);
     }
 
     if ( typeof(ret) !== 'undefined' ) {
@@ -150,7 +158,14 @@ var OpSymmetricEncrypt = function(FuzzerInput) {
 var OpSymmetricDecrypt = function(FuzzerInput) {
     var cipherType = parseInt(FuzzerInput['cipher']['cipherType']);
     var ciphertext = {};
-    ciphertext.ciphertext = CryptoJS.enc.Hex.parse(FuzzerInput['ciphertext']);
+    if ( IsRC4(cipherType) || IsRABBIT(cipherType) ) {
+        ciphertext.ciphertext = [];
+        FuzzerInput['ciphertext'].forEach(function (curInput) {
+            ciphertext.ciphertext.push( CryptoJS.enc.Hex.parse(curInput) );
+        });
+    } else {
+        ciphertext.ciphertext = CryptoJS.enc.Hex.parse(FuzzerInput['ciphertext']);
+    }
 
     var key = CryptoJS.enc.Hex.parse(FuzzerInput['cipher']['key']);
     var keySize = FuzzerInput['cipher']['key'].length / 2;
@@ -172,9 +187,11 @@ var OpSymmetricDecrypt = function(FuzzerInput) {
     } else if ( IsAES_128_OFB(cipherType) || IsAES_192_OFB(cipherType) || IsAES_256_OFB(cipherType) ) {
         ret = CryptoJS.AES.decrypt(ciphertext, key, {iv: iv, mode: CryptoJS.mode.OFB, padding: CryptoJS.pad.NoPadding }).toString();
     } else if ( IsRC4(cipherType) ) {
-        ret = CryptoJS.RC4.decrypt(ciphertext, key).toString();
+        var rc4 = CryptoJS.algo.RC4.createDecryptor(key);
+        ret = processMultipartCipher(rc4, ciphertext.ciphertext);
     } else if ( IsRABBIT(cipherType) ) {
-        ret = CryptoJS.Rabbit.decrypt(ciphertext, key, {iv: iv}).toString();
+        var rabbit = CryptoJS.algo.Rabbit.createDecryptor(key, {iv: iv});
+        ret = processMultipartCipher(rabbit, ciphertext.ciphertext);
     }
 
     if ( typeof(ret) !== 'undefined' ) {
