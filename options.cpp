@@ -75,6 +75,34 @@ Options::Options(const int argc, char** argv) {
             }
 
             this->ciphers = cipherIDs;
+        } else if ( !parts.empty() && parts[0] == "--digests" ) {
+            if ( parts.size() != 2 ) {
+                std::cout << "Expected argument after --digests=" << std::endl;
+                exit(1);
+            }
+
+            std::vector<std::string> digestStrings;
+            boost::split(digestStrings, parts[1], boost::is_any_of(","));
+
+            std::vector<uint64_t> digestIDs;
+
+            for (const auto& curOpStr : digestStrings) {
+                bool found = false;
+                for (size_t i = 0; i < (sizeof(repository::DigestLUT) / sizeof(repository::DigestLUT[0])); i++) {
+                    if ( boost::iequals(curOpStr, std::string(repository::DigestLUT[i].name)) ) {
+                        digestIDs.push_back(repository::DigestLUT[i].id);
+                        found = true;
+                        break;
+                    }
+                }
+
+                if ( found == false ) {
+                    std::cout << "Undefined digest: " << curOpStr << std::endl;
+                    exit(1);
+                }
+            }
+
+            this->digests = digestIDs;
         } else if ( !parts.empty() && parts[0] == "--curves" ) {
             if ( parts.size() != 2 ) {
                 std::cout << "Expected argument after --curves=" << std::endl;

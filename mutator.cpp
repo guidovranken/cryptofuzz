@@ -79,6 +79,14 @@ uint64_t getRandomCipher(void) {
     }
 }
 
+uint64_t getRandomDigest(void) {
+    if ( cryptofuzz_options && cryptofuzz_options->digests != std::nullopt ) {
+        return (*cryptofuzz_options->digests)[PRNG() % cryptofuzz_options->digests->size()];
+    } else {
+        return DigestLUT[ PRNG() % (sizeof(DigestLUT) / sizeof(DigestLUT[0])) ].id;
+    }
+}
+
 extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t maxSize, unsigned int seed) {
     (void)seed;
 
@@ -111,7 +119,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     parameters["modifier"] = getBuffer(lengths[0]);
                     parameters["cleartext"] = getBuffer(lengths[1]);
-                    parameters["digestType"] = DigestLUT[ PRNG() % (sizeof(DigestLUT) / sizeof(DigestLUT[0])) ].id;
+                    parameters["digestType"] = getRandomDigest();
 
                     cryptofuzz::operation::Digest op(parameters);
                     op.Serialize(dsOut2);
@@ -133,7 +141,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["cipher"]["iv"] = getBuffer(lengths[2], true);
                     parameters["cipher"]["key"] = getBuffer(lengths[3], true);
                     parameters["cipher"]["cipherType"] = getRandomCipher();
-                    parameters["digestType"] = DigestLUT[ PRNG() % (sizeof(DigestLUT) / sizeof(DigestLUT[0])) ].id;
+                    parameters["digestType"] = getRandomDigest();
 
                     cryptofuzz::operation::HMAC op(parameters);
                     op.Serialize(dsOut2);
@@ -414,7 +422,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["salt"] = getBuffer(lengths[2]);
                     parameters["info"] = getBuffer(lengths[3]);
                     parameters["keySize"] = PRNG() % 17000;
-                    parameters["digestType"] = DigestLUT[ PRNG() % (sizeof(DigestLUT) / sizeof(DigestLUT[0])) ].id;
+                    parameters["digestType"] = getRandomDigest();
 
                     cryptofuzz::operation::KDF_HKDF op(parameters);
                     op.Serialize(dsOut2);
@@ -434,7 +442,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["secret"] = getBuffer(lengths[1]);
                     parameters["seed"] = getBuffer(lengths[2]);
                     parameters["keySize"] = PRNG() % 1024;
-                    parameters["digestType"] = DigestLUT[ PRNG() % (sizeof(DigestLUT) / sizeof(DigestLUT[0])) ].id;
+                    parameters["digestType"] = getRandomDigest();
 
                     cryptofuzz::operation::KDF_TLS1_PRF op(parameters);
                     op.Serialize(dsOut2);
@@ -455,7 +463,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["salt"] = getBuffer(lengths[2]);
                     parameters["iterations"] = PRNG() % 5;
                     parameters["keySize"] = PRNG() % 1024;
-                    parameters["digestType"] = DigestLUT[ PRNG() % (sizeof(DigestLUT) / sizeof(DigestLUT[0])) ].id;
+                    parameters["digestType"] = getRandomDigest();
 
                     cryptofuzz::operation::KDF_PBKDF op(parameters);
                     op.Serialize(dsOut2);
@@ -476,7 +484,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["salt"] = getBuffer(lengths[2]);
                     parameters["iterations"] = PRNG() % 5;
                     parameters["keySize"] = PRNG() % 1024;
-                    parameters["digestType"] = DigestLUT[ PRNG() % (sizeof(DigestLUT) / sizeof(DigestLUT[0])) ].id;
+                    parameters["digestType"] = getRandomDigest();
 
                     cryptofuzz::operation::KDF_PBKDF op(parameters);
                     op.Serialize(dsOut2);
@@ -497,7 +505,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["salt"] = getBuffer(lengths[2]);
                     parameters["iterations"] = PRNG() % 5;
                     parameters["keySize"] = PRNG() % 1024;
-                    parameters["digestType"] = DigestLUT[ PRNG() % (sizeof(DigestLUT) / sizeof(DigestLUT[0])) ].id;
+                    parameters["digestType"] = getRandomDigest();
 
                     cryptofuzz::operation::KDF_PBKDF2 op(parameters);
                     op.Serialize(dsOut2);
@@ -543,7 +551,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["session_id"] = getBuffer(lengths[3]);
                     parameters["type"] = getBuffer(1);
                     parameters["keySize"] = PRNG() % 1024;
-                    parameters["digestType"] = DigestLUT[ PRNG() % (sizeof(DigestLUT) / sizeof(DigestLUT[0])) ].id;
+                    parameters["digestType"] = getRandomDigest();
 
                     cryptofuzz::operation::KDF_SSH op(parameters);
                     op.Serialize(dsOut2);
@@ -563,7 +571,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["secret"] = getBuffer(lengths[1]);
                     parameters["info"] = getBuffer(lengths[2]);
                     parameters["keySize"] = PRNG() % 1024;
-                    parameters["digestType"] = DigestLUT[ PRNG() % (sizeof(DigestLUT) / sizeof(DigestLUT[0])) ].id;
+                    parameters["digestType"] = getRandomDigest();
 
                     cryptofuzz::operation::KDF_X963 op(parameters);
                     op.Serialize(dsOut2);
@@ -583,7 +591,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     if ( getBool() == true ) {
                         /* MAC = HMAC */
                         parameters["mech"]["mode"] = true;
-                        parameters["mech"]["type"] = DigestLUT[ PRNG() % (sizeof(DigestLUT) / sizeof(DigestLUT[0])) ].id;
+                        parameters["mech"]["type"] = getRandomDigest();
                     } else {
                         /* MAC = CMAC */
                         parameters["mech"]["mode"] = false;

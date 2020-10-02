@@ -35,6 +35,15 @@ template<> void ExecutorBase<component::Digest, operation::Digest>::postprocess(
 }
 
 template<> std::optional<component::Digest> ExecutorBase<component::Digest, operation::Digest>::callModule(std::shared_ptr<Module> module, operation::Digest& op) const {
+    /* Only run whitelisted digests, if specified */
+    if ( options.digests != std::nullopt ) {
+        if ( std::find(
+                    options.digests->begin(),
+                    options.digests->end(),
+                    op.digestType.Get()) == options.digests->end() ) {
+            return std::nullopt;
+        }
+    }
     return module->OpDigest(op);
 }
 
@@ -54,6 +63,15 @@ template<> void ExecutorBase<component::MAC, operation::HMAC>::postprocess(std::
 }
 
 template<> std::optional<component::MAC> ExecutorBase<component::MAC, operation::HMAC>::callModule(std::shared_ptr<Module> module, operation::HMAC& op) const {
+    /* Only run whitelisted digests, if specified */
+    if ( options.digests != std::nullopt ) {
+        if ( std::find(
+                    options.digests->begin(),
+                    options.digests->end(),
+                    op.digestType.Get()) == options.digests->end() ) {
+            return std::nullopt;
+        }
+    }
     return module->OpHMAC(op);
 }
 
@@ -269,6 +287,15 @@ template<> void ExecutorBase<component::Key, operation::KDF_HKDF>::postprocess(s
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_HKDF>::callModule(std::shared_ptr<Module> module, operation::KDF_HKDF& op) const {
+    /* Only run whitelisted digests, if specified */
+    if ( options.digests != std::nullopt ) {
+        if ( std::find(
+                    options.digests->begin(),
+                    options.digests->end(),
+                    op.digestType.Get()) == options.digests->end() ) {
+            return std::nullopt;
+        }
+    }
     return module->OpKDF_HKDF(op);
 }
 
@@ -290,6 +317,15 @@ template<> void ExecutorBase<component::Key, operation::KDF_PBKDF>::postprocess(
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_PBKDF>::callModule(std::shared_ptr<Module> module, operation::KDF_PBKDF& op) const {
+    /* Only run whitelisted digests, if specified */
+    if ( options.digests != std::nullopt ) {
+        if ( std::find(
+                    options.digests->begin(),
+                    options.digests->end(),
+                    op.digestType.Get()) == options.digests->end() ) {
+            return std::nullopt;
+        }
+    }
     return module->OpKDF_PBKDF(op);
 }
 
@@ -311,6 +347,15 @@ template<> void ExecutorBase<component::Key, operation::KDF_PBKDF1>::postprocess
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_PBKDF1>::callModule(std::shared_ptr<Module> module, operation::KDF_PBKDF1& op) const {
+    /* Only run whitelisted digests, if specified */
+    if ( options.digests != std::nullopt ) {
+        if ( std::find(
+                    options.digests->begin(),
+                    options.digests->end(),
+                    op.digestType.Get()) == options.digests->end() ) {
+            return std::nullopt;
+        }
+    }
     return module->OpKDF_PBKDF1(op);
 }
 
@@ -332,6 +377,15 @@ template<> void ExecutorBase<component::Key, operation::KDF_PBKDF2>::postprocess
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_PBKDF2>::callModule(std::shared_ptr<Module> module, operation::KDF_PBKDF2& op) const {
+    /* Only run whitelisted digests, if specified */
+    if ( options.digests != std::nullopt ) {
+        if ( std::find(
+                    options.digests->begin(),
+                    options.digests->end(),
+                    op.digestType.Get()) == options.digests->end() ) {
+            return std::nullopt;
+        }
+    }
     return module->OpKDF_PBKDF2(op);
 }
 
@@ -374,6 +428,15 @@ template<> void ExecutorBase<component::Key, operation::KDF_SSH>::postprocess(st
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_SSH>::callModule(std::shared_ptr<Module> module, operation::KDF_SSH& op) const {
+    /* Only run whitelisted digests, if specified */
+    if ( options.digests != std::nullopt ) {
+        if ( std::find(
+                    options.digests->begin(),
+                    options.digests->end(),
+                    op.digestType.Get()) == options.digests->end() ) {
+            return std::nullopt;
+        }
+    }
     return module->OpKDF_SSH(op);
 }
 
@@ -395,6 +458,15 @@ template<> void ExecutorBase<component::Key, operation::KDF_TLS1_PRF>::postproce
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_TLS1_PRF>::callModule(std::shared_ptr<Module> module, operation::KDF_TLS1_PRF& op) const {
+    /* Only run whitelisted digests, if specified */
+    if ( options.digests != std::nullopt ) {
+        if ( std::find(
+                    options.digests->begin(),
+                    options.digests->end(),
+                    op.digestType.Get()) == options.digests->end() ) {
+            return std::nullopt;
+        }
+    }
     return module->OpKDF_TLS1_PRF(op);
 }
 
@@ -416,6 +488,15 @@ template<> void ExecutorBase<component::Key, operation::KDF_X963>::postprocess(s
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_X963>::callModule(std::shared_ptr<Module> module, operation::KDF_X963& op) const {
+    /* Only run whitelisted digests, if specified */
+    if ( options.digests != std::nullopt ) {
+        if ( std::find(
+                    options.digests->begin(),
+                    options.digests->end(),
+                    op.digestType.Get()) == options.digests->end() ) {
+            return std::nullopt;
+        }
+    }
     return module->OpKDF_X963(op);
 }
 
@@ -437,6 +518,15 @@ template<> void ExecutorBase<component::Key, operation::KDF_BCRYPT>::postprocess
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_BCRYPT>::callModule(std::shared_ptr<Module> module, operation::KDF_BCRYPT& op) const {
+    /* Only run whitelisted digests, if specified */
+    if ( options.digests != std::nullopt ) {
+        if ( std::find(
+                    options.digests->begin(),
+                    options.digests->end(),
+                    op.digestType.Get()) == options.digests->end() ) {
+            return std::nullopt;
+        }
+    }
     return module->OpKDF_BCRYPT(op);
 }
 
@@ -458,6 +548,17 @@ template<> void ExecutorBase<component::Key, operation::KDF_SP_800_108>::postpro
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_SP_800_108>::callModule(std::shared_ptr<Module> module, operation::KDF_SP_800_108& op) const {
+    if ( op.mech.mode == true ) {
+        /* Only run whitelisted digests, if specified */
+        if ( options.digests != std::nullopt ) {
+            if ( std::find(
+                        options.digests->begin(),
+                        options.digests->end(),
+                        op.mech.type.Get()) == options.digests->end() ) {
+                return std::nullopt;
+            }
+        }
+    }
     return module->OpKDF_SP_800_108(op);
 }
 
