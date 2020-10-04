@@ -2634,7 +2634,9 @@ static std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Ed25519(ope
     /* Load private key */
     {
         CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
-        CF_CHECK_EQ(mp_to_unsigned_bin_len(priv.GetPtr(), key.k, sizeof(key.k)), MP_OKAY);
+        static_assert(sizeof(key.k) == 64);
+        memset(key.k + 32, 0, 32);
+        CF_CHECK_EQ(mp_to_unsigned_bin_len(priv.GetPtr(), key.k, 32), MP_OKAY);
     }
 
     /* Convert to public key */
