@@ -650,7 +650,7 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
             }
 
             /* Prepare signer */
-            signer.reset(new ::Botan::PK_Signer(*priv, rng, "EMSA1(SHA-1)", ::Botan::DER_SEQUENCE));
+            signer.reset(new ::Botan::PK_Signer(*priv, rng, "EMSA1(SHA-256)", ::Botan::DER_SEQUENCE));
         }
 
         /* Process */
@@ -683,10 +683,13 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
                     ++count;
                 }
 
+                const auto pub_x = priv->public_point().get_affine_x().to_dec_string();
+                const auto pub_y = priv->public_point().get_affine_y().to_dec_string();
+
                 const auto R_str = R.to_dec_string();
                 const auto S_str = S.to_dec_string();
 
-                ret = { R_str, S_str };
+                ret = component::ECDSA_Signature({ R_str, S_str }, { pub_x, pub_y });
             }
         }
     } catch ( ... ) { }
@@ -707,21 +710,41 @@ std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         ::Botan::EC_Group group(*curveString);
 
         {
-            const ::Botan::BigInt pub_x(op.pub.first.ToString(ds));
-            const ::Botan::BigInt pub_y(op.pub.second.ToString(ds));
+            const ::Botan::BigInt pub_x(op.signature.pub.first.ToString(ds));
+            const ::Botan::BigInt pub_y(op.signature.pub.second.ToString(ds));
             const ::Botan::PointGFp public_point = group.point(pub_x, pub_y);
             pub = std::make_unique<::Botan::ECDSA_PublicKey>(::Botan::ECDSA_PublicKey(group, public_point));
         }
 
         ::Botan::PK_Verifier verifier(*pub, "Raw");
 
-        const ::Botan::BigInt R(op.signature.first.ToString(ds));
-        const ::Botan::BigInt S(op.signature.second.ToString(ds));
+        auto hash = ::Botan::HashFunction::create("SHA-256");
+        hash->update(op.cleartext.GetPtr(), op.cleartext.GetSize());
+        const auto CT = hash->final();
+        std::vector<uint8_t> newCT(CT.size());
+
+        /* Apply the same truncation mechanism as OpenSSL uses */
+        {
+            auto CT_size = CT.size();
+            const auto order_size = group.get_order_bits();
+            ::Botan::BigInt e(CT.data(), CT.size());
+
+            if ( CT_size * 8 > order_size ) {
+                CT_size = (order_size + 7) / 8;
+            }
+            if ( CT_size * 8 > order_size ) {
+                e >>= (8 - (order_size & 0x07));
+            }
+            e.binary_encode(newCT.data(), newCT.size());
+        }
+
+        const ::Botan::BigInt R(op.signature.signature.first.ToString(ds));
+        const ::Botan::BigInt S(op.signature.signature.second.ToString(ds));
 
         /* XXX may throw: Encoding error: encode_fixed_length_int_pair: values too large to encode properly */
         auto sig = ::Botan::BigInt::encode_fixed_length_int_pair(R, S, group.get_order_bytes());
 
-        ret = verifier.verify_message(op.cleartext.Get(), sig);
+        ret = verifier.verify_message(newCT, sig);
     } catch ( ... ) { }
 
 end:

@@ -2762,6 +2762,63 @@ end:
     return ret;
 }
 
+std::optional<bool> wolfCrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    ecc_key* key = nullptr;
+    std::optional<int> curveID;
+    /* TODO size for sig (use ds) */
+    uint8_t* sig = nullptr;
+    uint8_t hash[WC_SHA256_DIGEST_SIZE];
+    word32 sigSz = ECC_MAX_SIG_SIZE;
+    int verify;
+
+    {
+        try {
+            sigSz = ds.Get<uint8_t>();
+        } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+        sig = util::malloc(sigSz);
+    }
+
+    CF_CHECK_NE(key = wc_ecc_key_new(nullptr), nullptr);
+    {
+        const char* name = nullptr;
+
+        CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
+
+        CF_CHECK_NE(name = wc_ecc_get_name(*curveID), nullptr);
+
+        CF_CHECK_EQ(wc_ecc_import_raw(
+                    key,
+                    util::DecToHex(op.signature.pub.first.ToTrimmedString()).c_str(),
+                    util::DecToHex(op.signature.pub.second.ToTrimmedString()).c_str(),
+                    nullptr,
+                    name), 0);
+    }
+
+    CF_CHECK_EQ(wc_ecc_rs_to_sig(
+                util::DecToHex(op.signature.signature.first.ToTrimmedString()).c_str(),
+                util::DecToHex(op.signature.signature.second.ToTrimmedString()).c_str(),
+                sig, &sigSz), 0);
+
+    CF_CHECK_EQ(wc_Sha256Hash(op.cleartext.GetPtr(), op.cleartext.GetSize(), hash), 0);
+    CF_CHECK_EQ(wc_ecc_verify_hash(sig, sigSz, hash, sizeof(hash), &verify, key), 0);
+
+    ret = verify ? true : false;
+
+end:
+    /* noret */ wc_ecc_key_free(key);
+
+    util::free(sig);
+
+    wolfCrypt_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
 std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());

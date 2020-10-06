@@ -919,6 +919,9 @@ class ECC_GenerateKeyPair : public Operation {
                 (curveType == rhs.curveType) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+        }
 };
 
 class ECDSA_Sign : public Operation {
@@ -961,23 +964,20 @@ class ECDSA_Sign : public Operation {
 class ECDSA_Verify : public Operation {
     public:
         const component::CurveType curveType;
-        const component::ECC_PublicKey pub;
         const component::Cleartext cleartext;
         const component::ECDSA_Signature signature;
 
         ECDSA_Verify(Datasource& ds, component::Modifier modifier) :
             Operation(std::move(modifier)),
             curveType(ds),
-            pub(ds),
             cleartext(ds),
             signature(ds)
         { }
         ECDSA_Verify(nlohmann::json json) :
             Operation(json["modifier"]),
             curveType(json["curveType"]),
-            pub(json["pub_x"], json["pub_y"]),
             cleartext(json["cleartext"]),
-            signature(json["sig_r"], json["sig_y"])
+            signature(json["signature"])
         { }
 
         static size_t MaxOperations(void) { return 5; }
@@ -987,14 +987,12 @@ class ECDSA_Verify : public Operation {
         inline bool operator==(const ECDSA_Verify& rhs) const {
             return
                 (curveType == rhs.curveType) &&
-                (pub == rhs.pub) &&
                 (cleartext == rhs.cleartext) &&
                 (signature == rhs.signature) &&
                 (modifier == rhs.modifier);
         }
         void Serialize(Datasource& ds) const {
             curveType.Serialize(ds);
-            pub.Serialize(ds);
             cleartext.Serialize(ds);
             signature.Serialize(ds);
         }

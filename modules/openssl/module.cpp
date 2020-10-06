@@ -3416,8 +3416,8 @@ std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group->GetPtr()), 1);
 
         /* Construct signature */
-        CF_CHECK_EQ(sig_r.Set(op.signature.first.ToString(ds)), true);
-        CF_CHECK_EQ(sig_s.Set(op.signature.second.ToString(ds)), true);
+        CF_CHECK_EQ(sig_r.Set(op.signature.signature.first.ToString(ds)), true);
+        CF_CHECK_EQ(sig_s.Set(op.signature.signature.second.ToString(ds)), true);
         CF_CHECK_NE(signature = ECDSA_SIG_new(), nullptr);
 #if defined(CRYPTOFUZZ_OPENSSL_102)
         BN_free(signature->r);
@@ -3433,8 +3433,8 @@ std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
 
         /* Construct key */
         CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
-        CF_CHECK_EQ(pub_x.Set(op.pub.first.ToString(ds)), true);
-        CF_CHECK_EQ(pub_y.Set(op.pub.second.ToString(ds)), true);
+        CF_CHECK_EQ(pub_x.Set(op.signature.pub.first.ToString(ds)), true);
+        CF_CHECK_EQ(pub_y.Set(op.signature.pub.second.ToString(ds)), true);
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
         CF_CHECK_NE(EC_POINT_set_affine_coordinates(group->GetPtr(), pub->GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
 #else
@@ -3445,7 +3445,9 @@ std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
 
     /* Process */
     {
-        const int res = ECDSA_do_verify(op.cleartext.GetPtr(), op.cleartext.GetSize(), signature, key.GetPtr());
+        uint8_t CT[32];
+        SHA256(op.cleartext.GetPtr(), op.cleartext.GetSize(), CT);
+        const int res = ECDSA_do_verify(CT, sizeof(CT), signature, key.GetPtr());
 
         if ( res == 0 ) {
             ret = false;

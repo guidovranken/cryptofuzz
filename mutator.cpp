@@ -87,6 +87,14 @@ uint64_t getRandomDigest(void) {
     }
 }
 
+uint64_t getRandomCurve(void) {
+    if ( cryptofuzz_options && cryptofuzz_options->curves != std::nullopt ) {
+        return (*cryptofuzz_options->curves)[PRNG() % cryptofuzz_options->curves->size()];
+    } else {
+        return ECC_CurveLUT[ PRNG() % (sizeof(ECC_CurveLUT) / sizeof(ECC_CurveLUT[0])) ].id;
+    }
+}
+
 extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t maxSize, unsigned int seed) {
     (void)seed;
 
@@ -302,7 +310,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         parameters["curveType"] = P1.curveID;
                         parameters["priv"] = P1.priv;
                     } else {
-                        parameters["curveType"] = ECC_CurveLUT[ PRNG() % (sizeof(ECC_CurveLUT) / sizeof(ECC_CurveLUT[0])) ].id;
+                        parameters["curveType"] = getRandomCurve();
                         parameters["priv"] = getBignum();
                     }
 
@@ -328,7 +336,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         parameters["pub2_x"] = P2.pub_x;
                         parameters["pub2_y"] = P2.pub_y;
                     } else {
-                        parameters["curveType"] = ECC_CurveLUT[ PRNG() % (sizeof(ECC_CurveLUT) / sizeof(ECC_CurveLUT[0])) ].id;
+                        parameters["curveType"] = getRandomCurve();
 
                         parameters["pub1_x"] = getBignum();
                         parameters["pub1_y"] = getBignum();
@@ -349,7 +357,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     parameters["curveType"] = P1.curveID;
                     parameters["priv"] = P1.priv;
-                    parameters["cleartext"] = getBuffer(PRNG() % 1000);
+                    parameters["cleartext"] = getBuffer(PRNG() % 32);
 
                     cryptofuzz::operation::ECDSA_Sign op(parameters);
                     op.Serialize(dsOut2);
@@ -357,30 +365,32 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                 break;
             case    CF_OPERATION("ECDSA_Verify"):
                 {
-                    CF_CHECK_EQ(Pool_CurvePrivkey.Have(), true);
-                    CF_CHECK_EQ(Pool_CurveKeypair.Have(), true);
                     CF_CHECK_EQ(Pool_CurveECDSASignature.Have(), true);
 
-                    const auto P1 = Pool_CurvePrivkey.Get();
-                    const auto P2 = Pool_CurveKeypair.Get();
-                    const auto P3 = Pool_CurveECDSASignature.Get();
+                    const auto P = Pool_CurveECDSASignature.Get();
 
-                    CF_CHECK_EQ(P1.curveID, P2.curveID);
-                    CF_CHECK_EQ(P2.curveID, P3.curveID);
+                    parameters["modifier"] = getBuffer(PRNG() % 1024);
 
-                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+                    parameters["curveType"] = P.curveID;
 
-                    parameters["curveType"] = P1.curveID;
+                    parameters["signature"]["pub"][0] = getBool() ? getBignum() : P.pub_x;
+                    parameters["signature"]["pub"][1] = getBool() ? getBignum() : P.pub_y;
 
-                    parameters["pub_x"] = P2.pub_x;
-                    parameters["pub_y"] = P2.pub_y;
+                    parameters["cleartext"] = getBuffer(PRNG() % 32);
 
-                    parameters["cleartext"] = getBuffer(PRNG() % 1000);
-
-                    parameters["sig_r"] = P3.sig_r;
-                    parameters["sig_y"] = P3.sig_y;
+                    parameters["signature"]["signature"][0] = getBool() ? getBignum() : P.sig_r;
+                    parameters["signature"]["signature"][1] = getBool() ? getBignum() : P.sig_y;
 
                     cryptofuzz::operation::ECDSA_Verify op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("ECC_GenerateKeyPair"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 128);
+                    parameters["curveType"] = getRandomCurve();
+
+                    cryptofuzz::operation::ECC_GenerateKeyPair op(parameters);
                     op.Serialize(dsOut2);
                 }
                 break;
