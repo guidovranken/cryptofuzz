@@ -2,6 +2,7 @@
 #include <cryptofuzz/util.h>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <botan/hash.h>
+#include <sstream>
 
 extern "C" {
     #include <secp256k1.h>
@@ -28,6 +29,111 @@ namespace secp256k1_detail {
         
         return true;
     }
+
+    static std::string toString(const boost::multiprecision::cpp_int& i) {
+        std::stringstream ss;
+        ss << i;
+
+        if ( ss.str().empty() ) {
+            return "0";
+        } else {
+            return ss.str();
+        }
+    }
+
+    std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(const std::string priv) {
+        std::optional<component::ECC_PublicKey> ret = std::nullopt;
+        secp256k1_context* ctx = nullptr;
+        secp256k1_pubkey pubkey;
+        std::vector<uint8_t> pubkey_bytes(65);
+        size_t pubkey_bytes_size = pubkey_bytes.size();
+        uint8_t key[32];
+
+        CF_CHECK_NE(ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN), nullptr);
+        CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                    priv,
+                    key), true);
+        CF_CHECK_EQ(secp256k1_ec_pubkey_create(ctx, &pubkey, key), 1);
+        CF_CHECK_EQ(secp256k1_ec_pubkey_serialize(ctx, pubkey_bytes.data(), &pubkey_bytes_size, &pubkey, SECP256K1_FLAGS_TYPE_COMPRESSION), 1);
+        CF_CHECK_EQ(pubkey_bytes_size, 65);
+
+        {
+            boost::multiprecision::cpp_int x, y;
+
+            boost::multiprecision::import_bits(x, pubkey_bytes.begin() + 1, pubkey_bytes.begin() + 1 + 32);
+            boost::multiprecision::import_bits(y, pubkey_bytes.begin() + 1 + 32, pubkey_bytes.end());
+
+            ret = {secp256k1_detail::toString(x), secp256k1_detail::toString(y)};
+        }
+
+end:
+        /* noret */ secp256k1_context_destroy(ctx);
+        return ret;
+    }
+
+}
+
+std::optional<component::ECC_PublicKey> secp256k1::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
+    std::optional<component::ECC_PublicKey> ret = std::nullopt;
+
+    CF_CHECK_EQ(op.curveType.Get(), CF_ECC_CURVE("secp256k1"));
+
+    ret = secp256k1_detail::OpECC_PrivateToPublic(op.priv.ToTrimmedString());
+
+end:
+    return ret;
+}
+
+std::optional<component::ECDSA_Signature> secp256k1::OpECDSA_Sign(operation::ECDSA_Sign& op) {
+    std::optional<component::ECDSA_Signature> ret = std::nullopt;
+
+    secp256k1_context* ctx = nullptr;
+    secp256k1_pubkey pubkey;
+    secp256k1_ecdsa_signature sig;
+    std::vector<uint8_t> sig_bytes(64);
+    std::vector<uint8_t> pubkey_bytes(65);
+    size_t pubkey_bytes_size = pubkey_bytes.size();
+    uint8_t key[32];
+    uint8_t hash[32];
+
+    CF_CHECK_EQ(op.curveType.Get(), CF_ECC_CURVE("secp256k1"));
+
+    CF_CHECK_NE(ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN), nullptr);
+
+    CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                op.priv.ToTrimmedString(),
+                key), true);
+    {
+        auto _hash = ::Botan::HashFunction::create("SHA-256");
+        _hash->update(op.cleartext.GetPtr(), op.cleartext.GetSize());
+        const auto CT = _hash->final();
+        memcpy(hash, CT.data(), CT.size());
+    }
+
+    CF_CHECK_EQ(secp256k1_ecdsa_sign(ctx, &sig, hash, key, secp256k1_nonce_function_rfc6979, nullptr), 1);
+    CF_CHECK_EQ(secp256k1_ecdsa_signature_serialize_compact(ctx, sig_bytes.data(), &sig), 1);
+
+    CF_CHECK_EQ(secp256k1_ec_pubkey_create(ctx, &pubkey, key), 1);
+    CF_CHECK_EQ(secp256k1_ec_pubkey_serialize(ctx, pubkey_bytes.data(), &pubkey_bytes_size, &pubkey, SECP256K1_FLAGS_TYPE_COMPRESSION), 1);
+    CF_CHECK_EQ(pubkey_bytes_size, 65);
+
+    {
+        boost::multiprecision::cpp_int r, s;
+
+        auto component_pubkey = secp256k1_detail::OpECC_PrivateToPublic(op.priv.ToTrimmedString());
+        CF_CHECK_NE(component_pubkey, std::nullopt);
+
+        boost::multiprecision::import_bits(r, sig_bytes.begin(), sig_bytes.begin() + 32);
+        boost::multiprecision::import_bits(s, sig_bytes.begin() + 32, sig_bytes.end());
+
+        ret = component::ECDSA_Signature(
+                {secp256k1_detail::toString(r), secp256k1_detail::toString(s)},
+                *component_pubkey);
+    }
+
+end:
+    /* noret */ secp256k1_context_destroy(ctx);
+    return ret;
 }
 
 std::optional<bool> secp256k1::OpECDSA_Verify(operation::ECDSA_Verify& op) {

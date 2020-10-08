@@ -683,6 +683,13 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
                     ++count;
                 }
 
+                /* For compatibility with the secp256k1 library.
+                 * See: https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#low-s-values-in-signatures
+                 */
+                if (S > ::Botan::BigInt("57896044618658097711785492504343953926418782139537452191302581570759080747168")) {
+                    S = ::Botan::BigInt("115792089237316195423570985008687907852837564279074904382605163141518161494337") - S;
+                }
+
                 const auto pub_x = priv->public_point().get_affine_x().to_dec_string();
                 const auto pub_y = priv->public_point().get_affine_y().to_dec_string();
 
