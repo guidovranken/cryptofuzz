@@ -635,7 +635,7 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
     try {
         /* Initialize */
         {
-            std::optional<std::string> curveString;
+            std::optional<std::string> curveString, algoString;
 
             /* Botan appears to generate a new key if the input key is 0, so don't do this */
             CF_CHECK_NE(op.priv.ToTrimmedString(), "0");
@@ -652,7 +652,10 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
             }
 
             /* Prepare signer */
-            signer.reset(new ::Botan::PK_Signer(*priv, rng, "EMSA1(SHA-256)", ::Botan::DER_SEQUENCE));
+            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get(), true, true), std::nullopt);
+
+            const std::string emsa1String = Botan_detail::parenthesize("EMSA1", *algoString);
+            signer.reset(new ::Botan::PK_Signer(*priv, rng, emsa1String, ::Botan::DER_SEQUENCE));
         }
 
         /* Process */
