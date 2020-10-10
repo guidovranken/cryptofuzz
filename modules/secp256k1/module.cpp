@@ -71,6 +71,18 @@ end:
         return ret;
     }
 
+    static int nonce_function(unsigned char *nonce32, const unsigned char *msg32, const unsigned char *key32, const unsigned char *algo16, void *data, unsigned int counter) {
+        (void)nonce32;
+        (void)msg32;
+        (void)key32;
+        (void)algo16;
+        (void)counter;
+
+        memcpy(nonce32, data, 32);
+
+        return counter == 0;
+    }
+
 }
 
 std::optional<component::ECC_PublicKey> secp256k1::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
@@ -86,6 +98,9 @@ end:
 
 std::optional<component::ECDSA_Signature> secp256k1::OpECDSA_Sign(operation::ECDSA_Sign& op) {
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
+    if ( op.UseRFC6979Nonce() == false && op.UseSpecifiedNonce() == false ) {
+        return ret;
+    }
 
     secp256k1_context* ctx = nullptr;
     secp256k1_pubkey pubkey;
@@ -95,6 +110,7 @@ std::optional<component::ECDSA_Signature> secp256k1::OpECDSA_Sign(operation::ECD
     size_t pubkey_bytes_size = pubkey_bytes.size();
     uint8_t key[32];
     uint8_t hash[32];
+    uint8_t specified_nonce[32];
 
     CF_CHECK_EQ(op.curveType.Get(), CF_ECC_CURVE("secp256k1"));
 
@@ -103,14 +119,30 @@ std::optional<component::ECDSA_Signature> secp256k1::OpECDSA_Sign(operation::ECD
     CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
                 op.priv.ToTrimmedString(),
                 key), true);
-    {
+
+    if ( op.digestType.Get() == 0 ) {
+        CF_CHECK_EQ(op.cleartext.GetSize(), sizeof(hash));
+        memcpy(hash, op.cleartext.GetPtr(), sizeof(hash));
+    } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
         auto _hash = ::Botan::HashFunction::create("SHA-256");
         _hash->update(op.cleartext.GetPtr(), op.cleartext.GetSize());
         const auto CT = _hash->final();
         memcpy(hash, CT.data(), CT.size());
+    } else {
+        goto end;
     }
 
-    CF_CHECK_EQ(secp256k1_ecdsa_sign(ctx, &sig, hash, key, secp256k1_nonce_function_rfc6979, nullptr), 1);
+    if ( op.UseRFC6979Nonce() == true ) {
+        CF_CHECK_EQ(secp256k1_ecdsa_sign(ctx, &sig, hash, key, secp256k1_nonce_function_rfc6979, nullptr), 1);
+    } else if ( op.UseSpecifiedNonce() == true ) {
+        CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                    op.nonce.ToTrimmedString(),
+                    specified_nonce), true);
+        CF_CHECK_EQ(secp256k1_ecdsa_sign(ctx, &sig, hash, key, secp256k1_detail::nonce_function, specified_nonce), 1);
+    } else {
+        abort();
+    }
+
     CF_CHECK_EQ(secp256k1_ecdsa_signature_serialize_compact(ctx, sig_bytes.data(), &sig), 1);
 
     CF_CHECK_EQ(secp256k1_ec_pubkey_create(ctx, &pubkey, key), 1);
@@ -163,11 +195,16 @@ std::optional<bool> secp256k1::OpECDSA_Verify(operation::ECDSA_Verify& op) {
                 op.signature.signature.second.ToTrimmedString(),
                 sig_bytes + 32), true);
 
-    {
+    if ( op.digestType.Get() == 0 ) {
+        CF_CHECK_EQ(op.cleartext.GetSize(), sizeof(hash));
+        memcpy(hash, op.cleartext.GetPtr(), sizeof(hash));
+    } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
         auto _hash = ::Botan::HashFunction::create("SHA-256");
         _hash->update(op.cleartext.GetPtr(), op.cleartext.GetSize());
         const auto CT = _hash->final();
         memcpy(hash, CT.data(), CT.size());
+    } else {
+        goto end;
     }
 
     CF_CHECK_NE(ctx = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY), nullptr);

@@ -731,6 +731,17 @@ template<> std::optional<component::ECDSA_Signature> ExecutorBase<component::ECD
             return std::nullopt;
         }
     }
+
+    /* Only run whitelisted digests, if specified */
+    if ( options.digests != std::nullopt && op.digestType.Get() != 0 ) {
+        if ( std::find(
+                    options.digests->begin(),
+                    options.digests->end(),
+                    op.digestType.Get()) == options.digests->end() ) {
+            return std::nullopt;
+        }
+    }
+
     const size_t size = op.priv.ToTrimmedString().size();
 
     if ( size == 0 || size > 4096 ) {
@@ -764,6 +775,17 @@ template<> std::optional<bool> ExecutorBase<bool, operation::ECDSA_Verify>::call
             return std::nullopt;
         }
     }
+
+    /* Only run whitelisted digests, if specified */
+    if ( options.digests != std::nullopt && op.digestType.Get() != 0 ) {
+        if ( std::find(
+                    options.digests->begin(),
+                    options.digests->end(),
+                    op.digestType.Get()) == options.digests->end() ) {
+            return std::nullopt;
+        }
+    }
+
     const std::vector<size_t> sizes = {
         op.signature.pub.first.ToTrimmedString().size(),
         op.signature.pub.second.ToTrimmedString().size(),
@@ -902,6 +924,16 @@ void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::compa
 template <class ResultType, class OperationType>
 bool ExecutorBase<ResultType, OperationType>::dontCompare(const OperationType& operation) const {
     (void)operation;
+
+    return false;
+}
+
+template <>
+bool ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::dontCompare(const operation::ECDSA_Sign& operation) const {
+    if ( operation.UseRandomNonce() ) {
+        /* Don't compare ECDSA signatures comptued from a randomly generated nonce */
+        return true;
+    }
 
     return false;
 }

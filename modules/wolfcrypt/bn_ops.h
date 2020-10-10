@@ -19,7 +19,7 @@ class Bignum {
     private:
         mp_int* mp = nullptr;
         Datasource& ds;
-        const bool noFree = false;
+        bool noFree = false;
     public:
 
         Bignum(Datasource& ds) :
@@ -68,6 +68,10 @@ class Bignum {
                 util::free(mp);
                 throw std::exception();
             }
+        }
+
+        void SetNoFree(void) {
+            noFree = true;
         }
 
         bool Set(const std::string s) {

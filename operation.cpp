@@ -500,8 +500,11 @@ std::string ECDSA_Sign::ToString(void) const {
 
     ss << "operation name: ECDSA_Sign" << std::endl;
     ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "nonce: " << nonce.ToString() << std::endl;
     ss << "private key: " << priv.ToString() << std::endl;
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+    ss << "nonce source: " << std::to_string(nonceSource) << std::endl;
+    ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
 
     return ss.str();
 }
@@ -509,8 +512,11 @@ std::string ECDSA_Sign::ToString(void) const {
 nlohmann::json ECDSA_Sign::ToJSON(void) const {
     nlohmann::json j;
     j["priv"] = priv.ToJSON();
+    j["nonce"] = priv.ToJSON();
     j["curveType"] = curveType.ToJSON();
     j["cleartext"] = cleartext.ToJSON();
+    j["nonceSource"] = nonceSource;
+    j["digestType"] = digestType.ToJSON();
     j["modifier"] = modifier.ToJSON();
     return j;
 }
@@ -526,6 +532,7 @@ std::string ECDSA_Verify::ToString(void) const {
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
     ss << "signature R: " << signature.signature.first.ToString() << std::endl;
     ss << "signature S: " << signature.signature.second.ToString() << std::endl;
+    ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
 
     return ss.str();
 }
@@ -538,6 +545,7 @@ nlohmann::json ECDSA_Verify::ToJSON(void) const {
     j["cleartext"] = cleartext.ToJSON();
     j["sig_r"] = signature.signature.first.ToJSON();
     j["sig_s"] = signature.signature.second.ToJSON();
+    j["digestType"] = digestType.ToJSON();
     j["modifier"] = modifier.ToJSON();
     return j;
 }

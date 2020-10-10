@@ -357,7 +357,14 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     parameters["curveType"] = P1.curveID;
                     parameters["priv"] = P1.priv;
-                    parameters["cleartext"] = getBuffer(PRNG() % 32);
+                    parameters["nonce"] = getBignum();
+                    parameters["cleartext"] = getBuffer(PRNG() % 2048);
+                    parameters["nonceSource"] = PRNG() % 3;
+                    if ( getBool() ) {
+                        parameters["digestType"] = 0;
+                    } else {
+                        parameters["digestType"] = getRandomDigest();
+                    }
 
                     cryptofuzz::operation::ECDSA_Sign op(parameters);
                     op.Serialize(dsOut2);
@@ -376,10 +383,16 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["signature"]["pub"][0] = getBool() ? getBignum() : P.pub_x;
                     parameters["signature"]["pub"][1] = getBool() ? getBignum() : P.pub_y;
 
-                    parameters["cleartext"] = getBuffer(PRNG() % 32);
+                    parameters["cleartext"] = getBuffer(PRNG() % 64);
 
                     parameters["signature"]["signature"][0] = getBool() ? getBignum() : P.sig_r;
                     parameters["signature"]["signature"][1] = getBool() ? getBignum() : P.sig_y;
+
+                    if ( getBool() ) {
+                        parameters["digestType"] = 0;
+                    } else {
+                        parameters["digestType"] = getRandomDigest();
+                    }
 
                     cryptofuzz::operation::ECDSA_Verify op(parameters);
                     op.Serialize(dsOut2);

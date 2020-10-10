@@ -630,6 +630,8 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
 
     static ::Botan::System_RNG rng;
 
+    CF_CHECK_EQ(op.UseRFC6979Nonce(), true);
+
     try {
         /* Initialize */
         {
@@ -725,10 +727,19 @@ std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
 
         ::Botan::PK_Verifier verifier(*pub, "Raw");
 
-        auto hash = ::Botan::HashFunction::create("SHA-256");
-        hash->update(op.cleartext.GetPtr(), op.cleartext.GetSize());
-        const auto CT = hash->final();
-        std::vector<uint8_t> newCT(CT.size());
+        std::vector<uint8_t> CT, newCT;
+        if ( op.digestType.Get() == 0 ) {
+            CT = op.cleartext.Get();
+            newCT.resize(CT.size());
+        } else {
+            std::optional<std::string> algoString;
+            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
+
+            auto hash = ::Botan::HashFunction::create(*algoString);
+            hash->update(op.cleartext.GetPtr(), op.cleartext.GetSize());
+            const auto CT = hash->final();
+            newCT.resize(CT.size());
+        }
 
         /* Apply the same truncation mechanism as OpenSSL uses */
         {
