@@ -503,7 +503,18 @@ std::string ECDSA_Sign::ToString(void) const {
     ss << "nonce: " << nonce.ToString() << std::endl;
     ss << "private key: " << priv.ToString() << std::endl;
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
-    ss << "nonce source: " << std::to_string(nonceSource) << std::endl;
+    ss << "nonce source: ";
+    if ( UseRandomNonce() ) {
+        ss << "random";
+    } else if ( UseRFC6979Nonce() ) {
+        ss << "RFC 6979";
+    } else if ( UseSpecifiedNonce() ) {
+        ss << "specified";
+    } else {
+        ss << "(unknown)";
+    }
+    ss << std::endl;
+
     ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
 
     return ss.str();
