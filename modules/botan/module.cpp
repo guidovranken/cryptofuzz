@@ -734,14 +734,18 @@ std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         if ( op.digestType.Get() == 0 ) {
             CT = op.cleartext.Get();
             newCT.resize(CT.size());
-        } else {
+        } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
             std::optional<std::string> algoString;
             CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
 
             auto hash = ::Botan::HashFunction::create(*algoString);
             hash->update(op.cleartext.GetPtr(), op.cleartext.GetSize());
-            const auto CT = hash->final();
+            const auto _CT = hash->final();
+            CT = {_CT.data(), _CT.data() + _CT.size()};
             newCT.resize(CT.size());
+        } else {
+            /* TODO other digests */
+            goto end;
         }
 
         /* Apply the same truncation mechanism as OpenSSL uses */
