@@ -3446,7 +3446,7 @@ std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     /* Process */
     {
         int res;
-        if ( op.digestType.Get() == 0 ) {
+        if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
             res = ECDSA_do_verify(op.cleartext.GetPtr(), op.cleartext.GetSize(), signature, key.GetPtr());
         } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
             uint8_t CT[32];

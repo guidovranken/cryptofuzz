@@ -731,7 +731,7 @@ std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         ::Botan::PK_Verifier verifier(*pub, "Raw");
 
         std::vector<uint8_t> CT, newCT;
-        if ( op.digestType.Get() == 0 ) {
+        if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
             CT = op.cleartext.Get();
             newCT.resize(CT.size());
         } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {

@@ -2902,7 +2902,7 @@ std::optional<bool> wolfCrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {
                 util::DecToHex(op.signature.signature.second.ToTrimmedString()).c_str(),
                 sig, &sigSz), 0);
 
-    if ( op.digestType.Get() == 0 ) {
+    if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
         CF_CHECK_EQ(wc_ecc_verify_hash(sig, sigSz, op.cleartext.GetPtr(), op.cleartext.GetSize(), &verify, key), 0);
     } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
         CF_CHECK_EQ(wc_Sha256Hash(op.cleartext.GetPtr(), op.cleartext.GetSize(), hash), 0);

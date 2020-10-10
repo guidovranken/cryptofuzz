@@ -195,7 +195,7 @@ std::optional<bool> secp256k1::OpECDSA_Verify(operation::ECDSA_Verify& op) {
                 op.signature.signature.second.ToTrimmedString(),
                 sig_bytes + 32), true);
 
-    if ( op.digestType.Get() == 0 ) {
+    if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
         CF_CHECK_EQ(op.cleartext.GetSize(), sizeof(hash));
         memcpy(hash, op.cleartext.GetPtr(), sizeof(hash));
     } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
