@@ -40,7 +40,7 @@ var toHasher = function(digestType) {
 }
 
 var OpDigest = function(FuzzerInput) {
-    var digestType = parseInt(FuzzerInput['digestType']);
+    var digestType = BigInt(FuzzerInput['digestType']);
     var cleartext = [];
     FuzzerInput['cleartext'].forEach(function (curInput) {
         cleartext.push( CryptoJS.enc.Hex.parse(curInput) );
@@ -53,7 +53,7 @@ var OpDigest = function(FuzzerInput) {
 }
 
 var OpHMAC = function(FuzzerInput) {
-    var digestType = parseInt(FuzzerInput['digestType']);
+    var digestType = BigInt(FuzzerInput['digestType']);
     var cleartext = [];
     FuzzerInput['cleartext'].forEach(function (curInput) {
         cleartext.push( CryptoJS.enc.Hex.parse(curInput) );
@@ -67,16 +67,16 @@ var OpHMAC = function(FuzzerInput) {
 }
 
 var OpPBKDF2 = function(FuzzerInput) {
-    var keySize = parseInt(FuzzerInput['keySize']);
+    var keySize = BigInt(FuzzerInput['keySize']);
     /* CryptoJS.PBKDF2 expects key size in words (4 bytes) */
     if ( keySize % 4 != 0 ) {
         return;
     }
 
-    var digestType = parseInt(FuzzerInput['digestType']);
+    var digestType = BigInt(FuzzerInput['digestType']);
     var password = CryptoJS.enc.Hex.parse(FuzzerInput['password']);
     var salt = CryptoJS.enc.Hex.parse(FuzzerInput['salt']);
-    var iterations = parseInt(FuzzerInput['iterations']);
+    var iterations = BigInt(FuzzerInput['iterations']);
 
     keySize /= 4;
 
@@ -111,7 +111,7 @@ var processMultipartCipher = function(obj, input) {
 }
 
 var OpSymmetricEncrypt = function(FuzzerInput) {
-    var cipherType = parseInt(FuzzerInput['cipher']['cipherType']);
+    var cipherType = BigInt(FuzzerInput['cipher']['cipherType']);
     var cleartext;
     if ( IsRC4(cipherType) || IsRABBIT(cipherType) ) {
         cleartext = [];
@@ -156,7 +156,7 @@ var OpSymmetricEncrypt = function(FuzzerInput) {
 }
 
 var OpSymmetricDecrypt = function(FuzzerInput) {
-    var cipherType = parseInt(FuzzerInput['cipher']['cipherType']);
+    var cipherType = BigInt(FuzzerInput['cipher']['cipherType']);
     var ciphertext = {};
     if ( IsRC4(cipherType) || IsRABBIT(cipherType) ) {
         ciphertext.ciphertext = [];
@@ -199,7 +199,7 @@ var OpSymmetricDecrypt = function(FuzzerInput) {
     }
 }
 
-var operation = parseInt(FuzzerInput['operation']);
+var operation = BigInt(FuzzerInput['operation']);
 
 if ( IsDigest(operation) ) {
     OpDigest(FuzzerInput);

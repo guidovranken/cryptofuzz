@@ -12,7 +12,7 @@ int main(void) {
             continue;
         }
         name = name.substr(0, pos);
-        printf("var Is%s = function(id) { return id == %zu; }\n", name.c_str(), item.first);
+        printf("var Is%s = function(id) { return id == BigInt(%zu); }\n", name.c_str(), item.first);
     }
 
     for (const auto item : CipherLUTMap ) {
@@ -23,12 +23,12 @@ int main(void) {
             continue;
         }
         name = name.substr(0, pos);
-        printf("var Is%s = function(id) { return id == %zu; }\n", name.c_str(), item.first);
+        printf("var Is%s = function(id) { return id == BigInt(%zu); }\n", name.c_str(), item.first);
     }
 
     for (const auto item : OperationLUTMap ) {
         std::string name = item.second.name;
-        printf("var Is%s = function(id) { return id == %zu; }\n", name.c_str(), item.first);
+        printf("var Is%s = function(id) { return id == BigInt(%zu); }\n", name.c_str(), item.first);
     }
 
     return 0;
