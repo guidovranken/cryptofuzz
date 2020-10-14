@@ -120,7 +120,7 @@ std::optional<component::ECDSA_Signature> secp256k1::OpECDSA_Sign(operation::ECD
                 op.priv.ToTrimmedString(),
                 key), true);
 
-    if ( op.digestType.Get() == 0 ) {
+    if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
         CF_CHECK_EQ(op.cleartext.GetSize(), sizeof(hash));
         memcpy(hash, op.cleartext.GetPtr(), sizeof(hash));
     } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
