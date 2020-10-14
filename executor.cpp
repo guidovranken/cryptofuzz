@@ -930,9 +930,13 @@ bool ExecutorBase<ResultType, OperationType>::dontCompare(const OperationType& o
 
 template <>
 bool ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::dontCompare(const operation::ECDSA_Sign& operation) const {
-    if ( operation.UseRandomNonce() ) {
-        /* Don't compare ECDSA signatures comptued from a randomly generated nonce */
-        return true;
+    if (
+            operation.curveType.Get() != CF_ECC_CURVE("ed25519") &&
+            operation.curveType.Get() != CF_ECC_CURVE("ed448") ) {
+        if ( operation.UseRandomNonce() ) {
+            /* Don't compare ECDSA signatures comptued from a randomly generated nonce */
+            return true;
+        }
     }
 
     return false;
