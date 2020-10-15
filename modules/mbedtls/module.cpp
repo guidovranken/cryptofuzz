@@ -160,12 +160,17 @@ namespace mbedTLS_detail {
             { CF_CIPHER("AES_256_XTS"), MBEDTLS_CIPHER_AES_256_XTS  },
             { CF_CIPHER("CHACHA20"), MBEDTLS_CIPHER_CHACHA20  },
             { CF_CIPHER("CHACHA20_POLY1305"), MBEDTLS_CIPHER_CHACHA20_POLY1305  },
+            /* Enable this once https://github.com/ARMmbed/mbedtls/issues/3665
+             * is fixed.
+             */
+#if 0
             { CF_CIPHER("AES_128_WRAP"), MBEDTLS_CIPHER_AES_128_KW  },
             { CF_CIPHER("AES_128_WRAP_PAD"), MBEDTLS_CIPHER_AES_128_KWP  },
             { CF_CIPHER("AES_192_WRAP"), MBEDTLS_CIPHER_AES_192_KW  },
             { CF_CIPHER("AES_192_WRAP_PAD"), MBEDTLS_CIPHER_AES_192_KWP  },
             { CF_CIPHER("AES_256_WRAP"), MBEDTLS_CIPHER_AES_256_KW  },
             { CF_CIPHER("AES_256_WRAP_PAD"), MBEDTLS_CIPHER_AES_256_KWP },
+#endif
         };
 
         if ( LUT.find(cipherType.Get()) == LUT.end() ) {
