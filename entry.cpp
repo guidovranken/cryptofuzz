@@ -128,6 +128,10 @@
   #include <modules/secp256k1/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_TREZOR_FIRMWARE)
+  #include <modules/trezor/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -256,6 +260,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_SECP256K1)
     driver->LoadModule( std::make_shared<cryptofuzz::module::secp256k1>() );
+#endif
+
+#if defined(CRYPTOFUZZ_TREZOR_FIRMWARE)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::trezor_firmware>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is

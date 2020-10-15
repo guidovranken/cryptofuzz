@@ -259,6 +259,7 @@ modules.Add( Module("mbed TLS") )
 modules.Add( Module("mpdecimal") )
 modules.Add( Module("secp256k1") )
 modules.Add( Module("sjcl") )
+modules.Add( Module("trezor-firmware") )
 modules.Add( Module("wolfCrypt") )
 modules.Add( Module("wolfCrypt-OpenSSL") )
 
