@@ -3688,6 +3688,9 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
         case    CF_CALCOP("Mask(A,B)"):
             opRunner = std::make_unique<OpenSSL_bignum::Mask>();
             break;
+        case    CF_CALCOP("IsCoprime(A,B)"):
+            opRunner = std::make_unique<OpenSSL_bignum::IsCoprime>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

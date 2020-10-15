@@ -372,6 +372,9 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
         case    CF_CALCOP("Bit(A,B)"):
             BignumCalc::AssertBinary(*result, "Bit");
             break;
+        case    CF_CALCOP("IsCoprime(A,B)"):
+            BignumCalc::AssertBinary(*result, "IsCoprime");
+            break;
         case    CF_CALCOP("IsEq(A,B)"):
             BignumCalc::AssertBinary(*result, "IsEq");
             break;

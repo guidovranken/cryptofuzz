@@ -12,6 +12,7 @@ extern "C" {
     int bn_lcm_consttime(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx);
     uint16_t bn_mod_u16_consttime(const BIGNUM *bn, uint16_t d);
     int bn_abs_sub_consttime(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx);
+    int bn_is_relatively_prime(int *out_relatively_prime, const BIGNUM *x, const BIGNUM *y, BN_CTX *ctx);
 }
 #endif
 
@@ -945,6 +946,28 @@ bool Mask::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) cons
 
 end:
     return ret;
+}
+
+bool IsCoprime::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
+#if defined(CRYPTOFUZZ_BORINGSSL)
+    (void)ds;
+
+    bool ret = false;
+    int out_relatively_prime;
+
+    CF_CHECK_EQ(bn_is_relatively_prime(&out_relatively_prime, bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+    CF_CHECK_EQ(res.Set( std::to_string(out_relatively_prime) ), true);
+
+    ret = true;
+end:
+    return ret;
+#else
+    (void)ds;
+    (void)res;
+    (void)bn;
+    (void)ctx;
+    return false;
+#endif
 }
 
 } /* namespace OpenSSL_bignum */
