@@ -76,3 +76,8 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - mbed TLS: [mbedtls_md_setup memory leak if allocation fails](https://github.com/ARMmbed/mbedtls/issues/3486)
 - OpenSSL: [EVP_CIPHER_CTX re-initialisation bugs](https://github.com/openssl/openssl/pull/12523)
 - OpenSSL: [KBKDF NULL ptr dereference, possibly wrong output](https://github.com/openssl/openssl/issues/12409)
+- Botan: [PointGFp_Multi_Point_Precompute gives wrong result when an infinity point occurs in the precomputation #2424](https://github.com/randombit/botan/issues/2424) (credit to @andrewkozlik)
+- Botan: [ECDSA hash truncation discrepancy](https://github.com/randombit/botan/issues/2415)
+- mbed TLS: [mbedtls_cipher_auth_encrypt with AES key wrap OOB write](https://github.com/ARMmbed/mbedtls/issues/3665)
+- bignumber.js: [squareRoot() produces incorrect result](https://github.com/MikeMcl/bignumber.js/issues/276)
+- elliptic: [Curves p384 and p521 produce incorrect results](https://github.com/indutny/elliptic/issues/239)
