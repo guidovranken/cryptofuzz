@@ -652,7 +652,7 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
             }
 
             /* Prepare signer */
-            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get(), true, true), std::nullopt);
+            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
 
             const std::string emsa1String = Botan_detail::parenthesize("EMSA1", *algoString);
             signer.reset(new ::Botan::PK_Signer(*priv, rng, emsa1String, ::Botan::DER_SEQUENCE));
@@ -748,6 +748,9 @@ std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
             goto end;
         }
 
+        const ::Botan::BigInt R(op.signature.signature.first.ToString(ds));
+        const ::Botan::BigInt S(op.signature.signature.second.ToString(ds));
+
         /* Apply the same truncation mechanism as OpenSSL uses */
         {
             auto CT_size = CT.size();
@@ -760,11 +763,19 @@ std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
             if ( CT_size * 8 > order_size ) {
                 e >>= (8 - (order_size & 0x07));
             }
+
+            {
+                /* Precompute u1.
+                 * If u1 is 0 then bail.
+                 * wolfCrypt and ellipic proceed in this case, but Botan returns false
+                 * from the verifier, leading to a discprenacy.
+                 */
+                const ::Botan::BigInt w = group.inverse_mod_order(S);
+                const ::Botan::BigInt u1 = group.multiply_mod_order(group.mod_order(e), w);
+                CF_CHECK_NE(u1, 0);
+            }
             e.binary_encode(newCT.data(), newCT.size());
         }
-
-        const ::Botan::BigInt R(op.signature.signature.first.ToString(ds));
-        const ::Botan::BigInt S(op.signature.signature.second.ToString(ds));
 
         /* XXX may throw: Encoding error: encode_fixed_length_int_pair: values too large to encode properly */
         auto sig = ::Botan::BigInt::encode_fixed_length_int_pair(R, S, group.get_order_bytes());
