@@ -24,8 +24,12 @@ elliptic::~elliptic(void) {
 std::optional<component::ECDSA_Signature> elliptic::OpECDSA_Sign(operation::ECDSA_Sign& op) {
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
 
-    CF_CHECK_EQ(op.UseRFC6979Nonce(), true);
-    CF_CHECK_EQ(op.digestType.Get(), CF_DIGEST("SHA256"));
+    if (
+            op.curveType.Get() != CF_ECC_CURVE("ed25519") &&
+            op.curveType.Get() != CF_ECC_CURVE("ed448") ) {
+        CF_CHECK_EQ(op.UseRFC6979Nonce(), true);
+        CF_CHECK_EQ(op.digestType.Get(), CF_DIGEST("SHA256"));
+    }
 
     {
         auto json = op.ToJSON();
@@ -35,7 +39,11 @@ std::optional<component::ECDSA_Signature> elliptic::OpECDSA_Sign(operation::ECDS
         const auto res = ((JS*)js)->Run(json.dump());
 
         if ( res != std::nullopt ) {
-            ret = component::ECDSA_Signature(nlohmann::json::parse(*res));
+            auto jsonRet = nlohmann::json::parse(*res);
+            if ( op.curveType.Get() == CF_ECC_CURVE("ed25519") ) {
+                jsonRet["pub"][0] = util::HexToDec(jsonRet["pub"][0].get<std::string>());
+            }
+            ret = component::ECDSA_Signature(jsonRet);
         }
     }
 
