@@ -211,7 +211,7 @@ std::optional<bool> secp256k1::OpECDSA_Verify(operation::ECDSA_Verify& op) {
 
     CF_CHECK_EQ(secp256k1_ec_pubkey_parse(ctx, &pubkey, pubkey_bytes, sizeof(pubkey_bytes)), 1);
     CF_CHECK_EQ(secp256k1_ecdsa_signature_parse_compact(ctx, &sig, sig_bytes), 1);
-    CF_CHECK_EQ(secp256k1_ecdsa_signature_normalize(ctx, &sig, &sig), 1);
+    secp256k1_ecdsa_signature_normalize(ctx, &sig, &sig);
 
     ret = secp256k1_ecdsa_verify(ctx, &sig, hash, &pubkey) == 1 ? true : false;
 
