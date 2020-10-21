@@ -6,6 +6,8 @@
 #include <cryptofuzz/repository.h>
 #include <cryptofuzz/options.h>
 #include <cryptofuzz/util.h>
+#include <boost/multiprecision/cpp_int.hpp>
+#include <boost/lexical_cast.hpp>
 #include "repository_tbl.h"
 #include "numbers.h"
 #include "mutatorpool.h"
@@ -310,8 +312,21 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         parameters["curveType"] = P1.curveID;
                         parameters["priv"] = P1.priv;
                     } else {
-                        parameters["curveType"] = getRandomCurve();
-                        parameters["priv"] = getBignum();
+                        const auto curveID = getRandomCurve();
+                        parameters["curveType"] = curveID;
+
+                        if ( getBool() ) {
+                            const auto order = cryptofuzz::repository::ECC_CurveToOrder(curveID);
+                            if ( order != std::nullopt ) {
+                                const auto o = boost::multiprecision::cpp_int(*order);
+                                parameters["priv"] = boost::lexical_cast<std::string>(o-1);
+                            } else {
+                                parameters["priv"] = getBignum();
+                            }
+                        } else {
+                            parameters["priv"] = getBignum();
+                        }
+
                     }
 
                     cryptofuzz::operation::ECC_PrivateToPublic op(parameters);
@@ -360,11 +375,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["nonce"] = getBignum();
                     parameters["cleartext"] = getBuffer(PRNG() % 2048);
                     parameters["nonceSource"] = PRNG() % 3;
-                    if ( getBool() ) {
-                        parameters["digestType"] = 0;
-                    } else {
-                        parameters["digestType"] = getRandomDigest();
-                    }
+                    parameters["digestType"] = getRandomDigest();
 
                     cryptofuzz::operation::ECDSA_Sign op(parameters);
                     op.Serialize(dsOut2);
@@ -372,27 +383,45 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                 break;
             case    CF_OPERATION("ECDSA_Verify"):
                 {
-                    CF_CHECK_EQ(Pool_CurveECDSASignature.Have(), true);
-
-                    const auto P = Pool_CurveECDSASignature.Get();
-
                     parameters["modifier"] = getBuffer(PRNG() % 1024);
 
-                    parameters["curveType"] = P.curveID;
+                    if ( Pool_CurveECDSASignature.Have() == true ) {
+                        const auto P = Pool_CurveECDSASignature.Get();
+                        parameters["curveType"] = P.curveID;
 
-                    parameters["signature"]["pub"][0] = getBool() ? getBignum() : P.pub_x;
-                    parameters["signature"]["pub"][1] = getBool() ? getBignum() : P.pub_y;
+                        parameters["signature"]["pub"][0] = getBool() ? getBignum() : P.pub_x;
+                        parameters["signature"]["pub"][1] = getBool() ? getBignum() : P.pub_y;
+
+                        parameters["signature"]["signature"][0] = getBool() ? getBignum() : P.sig_r;
+                        auto sigS = getBool() ? getBignum() : P.sig_y;
+
+                        if ( getBool() ) {
+                            /* Test ECDSA signature malleability */
+
+                            const auto order = cryptofuzz::repository::ECC_CurveToOrder(P.curveID);
+                            if ( order != std::nullopt ) {
+                                const auto o = boost::multiprecision::cpp_int(*order);
+                                const auto s = boost::multiprecision::cpp_int(sigS);
+                                if ( o > s ) {
+                                    sigS = boost::lexical_cast<std::string>(o - s);
+                                }
+                            }
+                        }
+
+                        parameters["signature"]["signature"][1] = sigS;
+                    } else {
+                        parameters["curveType"] = getRandomCurve();
+
+                        parameters["signature"]["pub"][0] = getBignum();
+                        parameters["signature"]["pub"][1] = getBignum();
+
+                        parameters["signature"]["signature"][0] = getBignum();
+                        parameters["signature"]["signature"][1] = getBignum();
+                    }
+
 
                     parameters["cleartext"] = getBuffer(PRNG() % 64);
-
-                    parameters["signature"]["signature"][0] = getBool() ? getBignum() : P.sig_r;
-                    parameters["signature"]["signature"][1] = getBool() ? getBignum() : P.sig_y;
-
-                    if ( getBool() ) {
-                        parameters["digestType"] = 0;
-                    } else {
-                        parameters["digestType"] = getRandomDigest();
-                    }
+                    parameters["digestType"] = getRandomDigest();
 
                     cryptofuzz::operation::ECDSA_Verify op(parameters);
                     op.Serialize(dsOut2);
