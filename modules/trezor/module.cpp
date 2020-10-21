@@ -6,6 +6,10 @@ extern "C" {
     #include <ecdsa.h>
     #include <secp256k1.h>
     #include <nist256p1.h>
+    #include <ripemd160.h>
+    #include <groestl.h>
+    #include <sha2.h>
+    #include <sha3.h>
 }
 
 namespace cryptofuzz {
@@ -107,6 +111,224 @@ end:
     }
 
 } /* namespace trezor_firmware_detail */
+
+std::optional<component::Digest> trezor_firmware::OpDigest(operation::Digest& op) {
+    std::optional<component::Digest> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    util::Multipart parts;
+
+    if ( op.digestType.Get() == CF_DIGEST("RIPEMD160") ) {
+        RIPEMD160_CTX ctx;
+
+        /* Initialize */
+        {
+            memset(&ctx, 0, sizeof(ctx));
+            parts = util::ToParts(ds, op.cleartext);
+            /* noret */ ripemd160_Init(&ctx);
+
+        }
+
+        /* Process */
+        for (const auto& part : parts) {
+            /* noret */ ripemd160_Update(&ctx, part.first, part.second);
+        }
+
+        /* Finalize */
+        {
+            uint8_t out[RIPEMD160_DIGEST_LENGTH];
+            /* noret */ ripemd160_Final(&ctx, out);
+
+            ret = component::Digest(out, sizeof(out));
+        }
+    } else if ( op.digestType.Get() == CF_DIGEST("GROESTL_512") ) {
+        sph_groestl_big_context ctx;
+
+        /* Initialize */
+        {
+            memset(&ctx, 0, sizeof(ctx));
+            parts = util::ToParts(ds, op.cleartext);
+            /* noret */ groestl512_Init(&ctx);
+
+        }
+
+        /* Process */
+        for (const auto& part : parts) {
+            /* noret */ groestl512_Update(&ctx, part.first, part.second);
+        }
+
+        /* Finalize */
+        {
+            uint8_t out[64];
+            /* noret */ groestl512_Final(&ctx, out);
+
+            ret = component::Digest(out, sizeof(out));
+        }
+    } else if ( op.digestType.Get() == CF_DIGEST("SHA1") ) {
+        SHA1_CTX ctx;
+
+        /* Initialize */
+        {
+            memset(&ctx, 0, sizeof(ctx));
+            parts = util::ToParts(ds, op.cleartext);
+            /* noret */ sha1_Init(&ctx);
+
+        }
+
+        /* Process */
+        for (const auto& part : parts) {
+            /* noret */ sha1_Update(&ctx, part.first, part.second);
+        }
+
+        /* Finalize */
+        {
+            uint8_t out[SHA1_DIGEST_LENGTH];
+            /* noret */ sha1_Final(&ctx, out);
+
+            ret = component::Digest(out, sizeof(out));
+        }
+    } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
+        SHA256_CTX ctx;
+
+        /* Initialize */
+        {
+            memset(&ctx, 0, sizeof(ctx));
+            parts = util::ToParts(ds, op.cleartext);
+            /* noret */ sha256_Init(&ctx);
+
+        }
+
+        /* Process */
+        for (const auto& part : parts) {
+            /* noret */ sha256_Update(&ctx, part.first, part.second);
+        }
+
+        /* Finalize */
+        {
+            uint8_t out[SHA256_DIGEST_LENGTH];
+            /* noret */ sha256_Final(&ctx, out);
+
+            ret = component::Digest(out, sizeof(out));
+        }
+    } else if ( op.digestType.Get() == CF_DIGEST("SHA512") ) {
+        SHA512_CTX ctx;
+
+        /* Initialize */
+        {
+            memset(&ctx, 0, sizeof(ctx));
+            parts = util::ToParts(ds, op.cleartext);
+            /* noret */ sha512_Init(&ctx);
+
+        }
+
+        /* Process */
+        for (const auto& part : parts) {
+            /* noret */ sha512_Update(&ctx, part.first, part.second);
+        }
+
+        /* Finalize */
+        {
+            uint8_t out[SHA512_DIGEST_LENGTH];
+            /* noret */ sha512_Final(&ctx, out);
+
+            ret = component::Digest(out, sizeof(out));
+        }
+    } else if ( op.digestType.Get() == CF_DIGEST("SHA3-224") ) {
+        SHA3_CTX ctx;
+
+        /* Initialize */
+        {
+            memset(&ctx, 0, sizeof(ctx));
+            parts = util::ToParts(ds, op.cleartext);
+            /* noret */ sha3_224_Init(&ctx);
+
+        }
+
+        /* Process */
+        for (const auto& part : parts) {
+            /* noret */ sha3_Update(&ctx, part.first, part.second);
+        }
+
+        /* Finalize */
+        {
+            uint8_t out[224 / 8];
+            /* noret */ sha3_Final(&ctx, out);
+
+            ret = component::Digest(out, sizeof(out));
+        }
+    } else if ( op.digestType.Get() == CF_DIGEST("SHA3-256") ) {
+        SHA3_CTX ctx;
+
+        /* Initialize */
+        {
+            memset(&ctx, 0, sizeof(ctx));
+            parts = util::ToParts(ds, op.cleartext);
+            /* noret */ sha3_256_Init(&ctx);
+
+        }
+
+        /* Process */
+        for (const auto& part : parts) {
+            /* noret */ sha3_Update(&ctx, part.first, part.second);
+        }
+
+        /* Finalize */
+        {
+            uint8_t out[256 / 8];
+            /* noret */ sha3_Final(&ctx, out);
+
+            ret = component::Digest(out, sizeof(out));
+        }
+    } else if ( op.digestType.Get() == CF_DIGEST("SHA3-384") ) {
+        SHA3_CTX ctx;
+
+        /* Initialize */
+        {
+            memset(&ctx, 0, sizeof(ctx));
+            parts = util::ToParts(ds, op.cleartext);
+            /* noret */ sha3_384_Init(&ctx);
+
+        }
+
+        /* Process */
+        for (const auto& part : parts) {
+            /* noret */ sha3_Update(&ctx, part.first, part.second);
+        }
+
+        /* Finalize */
+        {
+            uint8_t out[384 / 8];
+            /* noret */ sha3_Final(&ctx, out);
+
+            ret = component::Digest(out, sizeof(out));
+        }
+    } else if ( op.digestType.Get() == CF_DIGEST("SHA3-512") ) {
+        SHA3_CTX ctx;
+
+        /* Initialize */
+        {
+            memset(&ctx, 0, sizeof(ctx));
+            parts = util::ToParts(ds, op.cleartext);
+            /* noret */ sha3_512_Init(&ctx);
+
+        }
+
+        /* Process */
+        for (const auto& part : parts) {
+            /* noret */ sha3_Update(&ctx, part.first, part.second);
+        }
+
+        /* Finalize */
+        {
+            uint8_t out[512 / 8];
+            /* noret */ sha3_Final(&ctx, out);
+
+            ret = component::Digest(out, sizeof(out));
+        }
+    }
+
+    return ret;
+}
 
 std::optional<component::ECC_PublicKey> trezor_firmware::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     return trezor_firmware_detail::OpECC_PrivateToPublic(op.curveType, op.priv);
