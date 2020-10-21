@@ -1013,7 +1013,7 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
 
             out = util::malloc(op.ciphertextSize);
 
-            CF_CHECK_EQ(wc_XChaCha20Poly1305_encrypt_oneshot(
+            CF_CHECK_EQ(wc_XChaCha20Poly1305_Encrypt(
                         out, op.ciphertextSize,
                         op.cleartext.GetPtr(), op.cleartext.GetSize(),
                         op.aad->GetPtr(), op.aad->GetSize(),
@@ -1718,7 +1718,7 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
 
             out = util::malloc(op.cleartextSize);
 
-            CF_CHECK_EQ(wc_XChaCha20Poly1305_decrypt_oneshot(
+            CF_CHECK_EQ(wc_XChaCha20Poly1305_Decrypt(
                         out, op.cleartextSize,
                         in, inSize,
                         op.aad->GetPtr(), op.aad->GetSize(),
