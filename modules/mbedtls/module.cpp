@@ -862,6 +862,8 @@ end:
 
 std::optional<bool> mbedTLS::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
+    (void)op;
+#if 0
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     mbedTLS_detail::SetGlobalDs(&ds);
 
@@ -908,6 +910,7 @@ end:
 
     mbedTLS_detail::UnsetGlobalDs();
 
+#endif
     return ret;
 }
 
