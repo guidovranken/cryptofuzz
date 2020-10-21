@@ -20,6 +20,7 @@ bool IsAES(const uint64_t id);
 std::string DigestToString(const uint64_t id);
 std::string CipherToString(const uint64_t id);
 std::string ECC_CurveToString(const uint64_t id);
+std::optional<std::string> ECC_CurveToOrder(const uint64_t id);
 std::string CalcOpToString(const uint64_t id);
 std::optional<size_t> DigestSize(const uint64_t id);
 

@@ -128,6 +128,14 @@ std::string ECC_CurveToString(const uint64_t id) {
     }
 }
 
+std::optional<std::string> ECC_CurveToOrder(const uint64_t id) {
+    try {
+        return ECC_CurveLUTMap.at(id).order;
+    } catch ( std::out_of_range ) {
+        return std::nullopt;
+    }
+}
+
 std::string CalcOpToString(const uint64_t id) {
     try {
         return CalcOpLUTMap.at(id).name;
