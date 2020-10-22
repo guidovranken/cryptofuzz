@@ -150,9 +150,18 @@ func encodeSignature(R* big.Int, S* big.Int) ([]byte, error) {
     SBytes := S.Bytes()
     RLen := len(RBytes)
     SLen := len(SBytes)
-    //if RLen > 32 || SLen > 32 {
-    if RLen > 240 || SLen > 240 {
+
+    if RLen > 32 || SLen > 32 {
         return nil, fmt.Errorf("R or S too large")
+    }
+
+    RHigh := RLen > 0 && (RBytes[0] & 0x80 == 0x80)
+    SHigh := SLen > 0 && (SBytes[0] & 0x80 == 0x80)
+    if RHigh == true {
+        RLen += 1
+    }
+    if SHigh == true {
+        SLen += 1
     }
 
     ret := make([]byte, 0)
@@ -161,10 +170,16 @@ func encodeSignature(R* big.Int, S* big.Int) ([]byte, error) {
 
     ret = append(ret, 0x02)
     ret = append(ret, byte(RLen))
+    if RHigh == true {
+        ret = append(ret, 0x00)
+    }
     ret = append(ret, RBytes...)
 
     ret = append(ret, 0x02)
     ret = append(ret, byte(SLen))
+    if SHigh == true {
+        ret = append(ret, 0x00)
+    }
     ret = append(ret, SBytes...)
 
     return ret, nil
