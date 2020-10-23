@@ -209,6 +209,12 @@ Options::Options(const int argc, char** argv) {
                 exit(1);
             }
             this->noDecrypt = true;
+        } else if ( !parts.empty() && parts[0] == "--no-compare" ) {
+            if ( parts.size() != 1 ) {
+                std::cout << "Expected no argument after --no-compare=" << std::endl;
+                exit(1);
+            }
+            this->noCompare = true;
         }
     }
 }

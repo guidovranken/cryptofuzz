@@ -23,6 +23,7 @@ class Options {
         bool debug = false;
         bool disableTests = false;
         bool noDecrypt = false;
+        bool noCompare = false;
 };
 
 } /* namespace cryptofuzz */

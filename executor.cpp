@@ -1186,7 +1186,9 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
         postprocess(module, op, result);
     }
 
-    compare(operations, results, data, size);
+    if ( options.noCompare == false ) {
+        compare(operations, results, data, size);
+    }
 }
 
 /* Explicit template instantiation */
