@@ -1086,6 +1086,12 @@ namespace SymCrypt_detail {
                 return SymCryptEcurveParamsNistP521;
             case CF_ECC_CURVE("x25519"):
                 return SymCryptEcurveParamsCurve25519;
+            case CF_ECC_CURVE("numsp256t1"):
+                return SymCryptEcurveParamsNumsP256t1;
+            case CF_ECC_CURVE("numsp384t1"):
+                return SymCryptEcurveParamsNumsP384t1;
+            case CF_ECC_CURVE("numsp512t1"):
+                return SymCryptEcurveParamsNumsP512t1;
         }
 
         return nullptr;
