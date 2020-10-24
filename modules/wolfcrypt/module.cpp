@@ -2514,6 +2514,13 @@ namespace wolfCrypt_detail {
             { CF_ECC_CURVE("brainpool320r1"), ECC_BRAINPOOLP320R1 },
             { CF_ECC_CURVE("brainpool384r1"), ECC_BRAINPOOLP384R1 },
             { CF_ECC_CURVE("brainpool512r1"), ECC_BRAINPOOLP512R1 },
+
+            /* ANSI X9.62 */
+            { CF_ECC_CURVE("x962_p192v2"), ECC_PRIME192V2 },
+            { CF_ECC_CURVE("x962_p192v3"), ECC_PRIME192V3 },
+            { CF_ECC_CURVE("x962_p239v1"), ECC_PRIME239V1 },
+            { CF_ECC_CURVE("x962_p239v2"), ECC_PRIME239V2 },
+            { CF_ECC_CURVE("x962_p239v3"), ECC_PRIME239V3 },
         };
 
         if ( LUT.find(curveType.Get()) == LUT.end() ) {
