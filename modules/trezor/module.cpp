@@ -10,6 +10,8 @@ extern "C" {
     #include <groestl.h>
     #include <sha2.h>
     #include <sha3.h>
+    #include <hmac.h>
+    #include <pbkdf2.h>
 }
 
 namespace cryptofuzz {
@@ -326,6 +328,77 @@ std::optional<component::Digest> trezor_firmware::OpDigest(operation::Digest& op
             ret = component::Digest(out, sizeof(out));
         }
     }
+
+    return ret;
+}
+
+std::optional<component::MAC> trezor_firmware::OpHMAC(operation::HMAC& op) {
+    std::optional<component::MAC> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
+        HMAC_SHA256_CTX ctx;
+        uint8_t out[SHA256_DIGEST_LENGTH];
+
+        util::Multipart parts = util::ToParts(ds, op.cleartext);
+
+        /* noret */ hmac_sha256_Init(&ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize());
+
+        for (const auto& part : parts) {
+            /* noret */ hmac_sha256_Update(&ctx, part.first, part.second);
+        }
+
+        /* noret */ hmac_sha256_Final(&ctx, out);
+
+        ret = component::MAC(out, sizeof(out));
+    } else if ( op.digestType.Get() == CF_DIGEST("SHA512") ) {
+        HMAC_SHA512_CTX ctx;
+        uint8_t out[SHA512_DIGEST_LENGTH];
+
+        util::Multipart parts = util::ToParts(ds, op.cleartext);
+
+        /* noret */ hmac_sha512_Init(&ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize());
+
+        for (const auto& part : parts) {
+            /* noret */ hmac_sha512_Update(&ctx, part.first, part.second);
+        }
+
+        /* noret */ hmac_sha512_Final(&ctx, out);
+
+        ret = component::MAC(out, sizeof(out));
+    }
+
+    return ret;
+}
+
+std::optional<component::Key> trezor_firmware::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
+    std::optional<component::Key> ret = std::nullopt;
+
+    uint8_t* out = util::malloc(op.keySize);
+
+    if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
+        /* noret */ pbkdf2_hmac_sha256(
+                op.password.GetPtr(),
+                op.password.GetSize(),
+                op.salt.GetPtr(),
+                op.salt.GetSize(),
+                op.iterations,
+                out,
+                op.keySize);
+        ret = component::Key(out, op.keySize);
+    } else if ( op.digestType.Get() == CF_DIGEST("SHA512") ) {
+        /* noret */ pbkdf2_hmac_sha512(
+                op.password.GetPtr(),
+                op.password.GetSize(),
+                op.salt.GetPtr(),
+                op.salt.GetSize(),
+                op.iterations,
+                out,
+                op.keySize);
+        ret = component::Key(out, op.keySize);
+    }
+
+    util::free(out);
 
     return ret;
 }

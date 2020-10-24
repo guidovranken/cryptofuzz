@@ -2,9 +2,9 @@ all: module.a
 
 CXXFLAGS += -Wall -Wextra -Werror -std=c++17 -I ../../include -I ../../fuzzing-headers/include -DFUZZING_HEADERS_NO_IMPL
 
-module.a: module.o address.o base58.o bignum.o blake256.o blake2b.o ecdsa.o groestl.o hasher.o hmac_drbg.o memzero.o nist256p1.o rand.o rfc6979.o ripemd160.o secp256k1.o sha2.o sha3.o
+module.a: module.o address.o base58.o bignum.o blake256.o blake2b.o ecdsa.o groestl.o hasher.o hmac_drbg.o memzero.o nist256p1.o rand.o rfc6979.o ripemd160.o secp256k1.o sha2.o sha3.o hmac.o pbkdf2.o
 	rm -rf module.a
-	ar rcs module.a module.o address.o base58.o bignum.o blake256.o blake2b.o ecdsa.o groestl.o hasher.o hmac_drbg.o memzero.o nist256p1.o rand.o rfc6979.o ripemd160.o secp256k1.o sha2.o sha3.o
+	ar rcs module.a module.o address.o base58.o bignum.o blake256.o blake2b.o ecdsa.o groestl.o hasher.o hmac_drbg.o memzero.o nist256p1.o rand.o rfc6979.o ripemd160.o secp256k1.o sha2.o sha3.o hmac.o pbkdf2.o
 	ranlib module.a
 
 address.o : $(TREZOR_FIRMWARE_PATH)/crypto/address.c
@@ -57,6 +57,12 @@ sha2.o : $(TREZOR_FIRMWARE_PATH)/crypto/sha2.c
 
 sha3.o : $(TREZOR_FIRMWARE_PATH)/crypto/sha3.c
 	$(CC) $(CFLAGS) -c -DUSE_RFC6979 -I $(TREZOR_FIRMWARE_PATH)/crypto/ $(TREZOR_FIRMWARE_PATH)/crypto/sha3.c -o sha3.o
+
+hmac.o : $(TREZOR_FIRMWARE_PATH)/crypto/hmac.c
+	$(CC) $(CFLAGS) -c -DUSE_RFC6979 -I $(TREZOR_FIRMWARE_PATH)/crypto/ $(TREZOR_FIRMWARE_PATH)/crypto/hmac.c -o hmac.o
+
+pbkdf2.o : $(TREZOR_FIRMWARE_PATH)/crypto/pbkdf2.c
+	$(CC) $(CFLAGS) -c -DUSE_RFC6979 -I $(TREZOR_FIRMWARE_PATH)/crypto/ $(TREZOR_FIRMWARE_PATH)/crypto/pbkdf2.c -o pbkdf2.o
 
 module.o: module.cpp module.h
 	test $(TREZOR_FIRMWARE_PATH)
