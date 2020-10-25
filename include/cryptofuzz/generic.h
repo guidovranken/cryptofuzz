@@ -38,7 +38,10 @@ class Type {
 
         nlohmann::json ToJSON(void) const {
             nlohmann::json j;
-            j = type;
+            /* Store as string, not as number, because JavaScript's number
+             * type has only 53 bits of precision.
+             */
+            j = std::to_string(type);
             return j;
         }
 
