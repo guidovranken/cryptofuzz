@@ -12,6 +12,8 @@
 #if 0
 #include <nettle/ecc-curve.h>
 #include <nettle/ecc.h>
+#include <nettle/ecdsa.h>
+#include <nettle/knuth-lfib.h>
 #endif
 #include <nettle/gcm.h>
 #include <nettle/gosthash94.h>
@@ -1389,7 +1391,6 @@ end:
     return ret;
 }
 
-
 #if 0
 namespace Nettle_detail {
     const struct ecc_curve* to_ecc_curve(const uint64_t curveID) {
@@ -1410,6 +1411,66 @@ namespace Nettle_detail {
     }
 }
 #endif
+
+std::optional<component::ECC_KeyPair> Nettle::OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) {
+    std::optional<component::ECC_KeyPair> ret = std::nullopt;
+#if 1
+    /* Need to link against libhogweed.a in OSS-Fuzz before this can be enabled */
+    (void)op;
+#else
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    const struct ecc_curve* curve = nullptr;
+    mpz_t priv_mpz, pub_x, pub_y;
+    struct ecc_scalar priv_scalar;
+    struct ecc_point pub;
+    char* priv_str = nullptr, *pub_x_str = nullptr, *pub_y_str = nullptr;
+    struct knuth_lfib_ctx rctx;
+    bool initialized = false;
+    uint32_t seed = 0;
+
+    CF_CHECK_NE(curve = Nettle_detail::to_ecc_curve(op.curveType.Get()), nullptr);
+    try {
+        seed = ds.Get<uint32_t>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+    /* noret */ knuth_lfib_init(&rctx, seed);
+
+    /* noret */ ecc_point_init(&pub, curve);
+    /* noret */ ecc_scalar_init(&priv_scalar, curve);
+    /* noret */ mpz_init(priv_mpz);
+    /* noret */ mpz_init(pub_x);
+    /* noret */ mpz_init(pub_y);
+
+    initialized = true;
+
+    /* noret */ ecdsa_generate_keypair(&pub, &priv_scalar, &rctx, (nettle_random_func *) knuth_lfib_random);
+
+    /* noret */ ecc_scalar_get(&priv_scalar, priv_mpz);
+    priv_str = mpz_get_str(nullptr, 10, priv_mpz);
+
+    /* noret */ ecc_point_get(&pub, pub_x, pub_y);
+    pub_x_str = mpz_get_str(nullptr, 10, pub_x);
+    pub_y_str = mpz_get_str(nullptr, 10, pub_y);
+
+    ret = {
+        std::string(priv_str),
+        { std::string(pub_x_str), std::string(pub_y_str) }
+    };
+
+end:
+    if ( initialized == true ) {
+        /* noret */ ecc_point_clear(&pub);
+        /* noret */ ecc_scalar_clear(&priv_scalar);
+        /* noret */ mpz_clear(priv_mpz);
+        /* noret */ mpz_clear(pub_x);
+        /* noret */ mpz_clear(pub_y);
+        free(priv_str);
+        free(pub_x_str);
+        free(pub_y_str);
+    }
+#endif
+    return ret;
+}
 
 std::optional<component::ECC_PublicKey> Nettle::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
