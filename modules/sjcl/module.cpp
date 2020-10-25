@@ -138,7 +138,7 @@ std::optional<component::Bignum> sjcl::OpBignumCalc(operation::BignumCalc& op) {
 
     nlohmann::json json;
     json["operation"] = std::to_string( CF_OPERATION("BignumCalc") );
-    json["calcOp"] = op.calcOp.Get();
+    json["calcOp"] = std::to_string(op.calcOp.Get());
     json["bn0"] = DecToHex(op.bn0.ToTrimmedString());
     json["bn1"] = DecToHex(op.bn1.ToTrimmedString());
     json["bn2"] = DecToHex(op.bn2.ToTrimmedString());

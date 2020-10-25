@@ -24,6 +24,7 @@ crypto-js.bytecode : header.js harness.js ids.js
 		$(CRYPTO_JS_PATH)/src/sha224.js \
 		$(CRYPTO_JS_PATH)/src/sha384.js \
 		$(CRYPTO_JS_PATH)/src/sha3.js \
+		$(CRYPTO_JS_PATH)/src/ripemd160.js \
 		$(CRYPTO_JS_PATH)/src/hmac.js \
 		$(CRYPTO_JS_PATH)/src/pbkdf2.js \
 		$(CRYPTO_JS_PATH)/src/cipher-core.js \

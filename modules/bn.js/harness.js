@@ -1,13 +1,5 @@
 var BN = module.exports.BN;
 
-var toInt = function(s) {
-    if ( s.length == 0 ) {
-        return 0;
-    } else {
-        return parseInt(s);
-    }
-}
-
 FuzzerInput = JSON.parse(FuzzerInput);
 
 var bn = [
@@ -17,7 +9,7 @@ var bn = [
     new BN(FuzzerInput["bn3"], 10)
 ];
 
-var calcOp = toInt(FuzzerInput["calcOp"]);
+var calcOp = BigInt(FuzzerInput["calcOp"]);
 
 var NISTp192 = new BN("6277101735386680763835789423207666416083908700390324961279");
 var NISTp224 = new BN("26959946667150639794667015087019630673557916260026308143510066298881", 10);
@@ -63,8 +55,10 @@ try {
     } else if ( IsSetBit(calcOp) ) {
         FuzzerOutput = String(bn[0].setn(bn[1]));
     } else if ( IsExpMod(calcOp) ) {
+        /* Too slow.
         var r = BN.red(bn[2]);
         FuzzerOutput = String(bn[0].toRed(r).redPow(bn[1]).fromRed());
+        */
     } else if ( IsMod_NIST_192(calcOp) ) {
         FuzzerOutput = String(bn[0].mod(NISTp192));
     } else if ( IsMod_NIST_224(calcOp) ) {

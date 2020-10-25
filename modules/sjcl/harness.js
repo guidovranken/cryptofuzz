@@ -94,7 +94,7 @@ var toCurve = function(curveType) {
 }
 
 var OpDigest = function(FuzzerInput) {
-    var digestType = parseInt(FuzzerInput['digestType']);
+    var digestType = BigInt(FuzzerInput['digestType']);
     var cleartext = sjcl.codec.hex.toBits(FuzzerInput['cleartext']);
     var modifier = sjcl.codec.hex.toBits(FuzzerInput['modifier']);
 
@@ -108,7 +108,7 @@ var OpDigest = function(FuzzerInput) {
 }
 
 var OpHMAC = function(FuzzerInput) {
-    var digestType = parseInt(FuzzerInput['digestType']);
+    var digestType = BigInt(FuzzerInput['digestType']);
     var cleartext = sjcl.codec.hex.toBits(FuzzerInput['cleartext']);
     var key = sjcl.codec.hex.toBits(FuzzerInput['cipher']['key']);
     var modifier = sjcl.codec.hex.toBits(FuzzerInput['modifier']);
@@ -127,7 +127,7 @@ var OpHMAC = function(FuzzerInput) {
 var OpSymmetricEncrypt = function(FuzzerInput) {
     var cleartext = sjcl.codec.hex.toBits(FuzzerInput['cleartext']);
     var cleartextSize = sjcl.bitArray.bitLength(cleartext) / 8;
-    var cipherType = parseInt(FuzzerInput['cipher']['cipherType']);
+    var cipherType = BigInt(FuzzerInput['cipher']['cipherType']);
     var key = sjcl.codec.hex.toBits(FuzzerInput['cipher']['key']);
     var keySize = sjcl.bitArray.bitLength(key) / 8;
     var iv = sjcl.codec.hex.toBits(FuzzerInput['cipher']['iv']);
@@ -192,7 +192,7 @@ var OpSymmetricDecrypt = function(FuzzerInput) {
     var ciphertext = sjcl.codec.hex.toBits(FuzzerInput['ciphertext']);
     var ciphertextSize = sjcl.bitArray.bitLength(ciphertext) / 8;
 
-    var cipherType = parseInt(FuzzerInput['cipher']['cipherType']);
+    var cipherType = BigInt(FuzzerInput['cipher']['cipherType']);
 
     var key = sjcl.codec.hex.toBits(FuzzerInput['cipher']['key']);
     var keySize = sjcl.bitArray.bitLength(key) / 8;
@@ -263,7 +263,7 @@ var OpKDF_HKDF = function(FuzzerInput) {
     /* Despite being implemented, HKDF is not exposed by sjcl for reasons unknown */
     return;
 
-    var digestType = parseInt(FuzzerInput['digestType']);
+    var digestType = BigInt(FuzzerInput['digestType']);
     var password = sjcl.codec.hex.toBits(FuzzerInput['password']);
     var salt = sjcl.codec.hex.toBits(FuzzerInput['salt']);
     var info = sjcl.codec.hex.toBits(FuzzerInput['info']);
@@ -285,7 +285,7 @@ var OpKDF_HKDF = function(FuzzerInput) {
 
 
 var OpKDF_PBKDF2 = function(FuzzerInput) {
-    var digestType = parseInt(FuzzerInput['digestType']);
+    var digestType = BigInt(FuzzerInput['digestType']);
     var iterations = parseInt(FuzzerInput['iterations']);
     var keySize = parseInt(FuzzerInput['keySize']);
     var password = sjcl.codec.hex.toBits(FuzzerInput['password']);
@@ -345,7 +345,7 @@ var OpBignumCalc = function(FuzzerInput) {
         new sjcl.bn(FuzzerInput["bn2"]),
         new sjcl.bn(FuzzerInput["bn3"])
     ];
-    var calcOp = parseInt(FuzzerInput["calcOp"]);
+    var calcOp = BigInt(FuzzerInput["calcOp"]);
 
     if ( IsAdd(calcOp) ) {
         FuzzerOutput = JSON.stringify(bn[0].add(bn[1]).toString());
@@ -361,7 +361,6 @@ var OpBignumCalc = function(FuzzerInput) {
         try {
             FuzzerOutput = JSON.stringify(bn[0].inverseMod(bn[1]).toString());
         } catch ( e ) { }
-    } else if ( IsSetBit(calcOp) ) {
     } else if ( IsExpMod(calcOp) ) {
         if (!bn[2].equals(0) && !bn[1].equals(0) && !bn[1].greaterEquals(1000)) {
             // Wrong result:
@@ -382,7 +381,7 @@ var OpBignumCalc = function(FuzzerInput) {
 }
 
 var OpECC_PrivateToPublic = function(FuzzerInput) {
-    var curveType = parseInt(FuzzerInput['curveType']);
+    var curveType = BigInt(FuzzerInput['curveType']);
 
     var curve;
     try {
@@ -405,7 +404,7 @@ var OpECC_PrivateToPublic = function(FuzzerInput) {
     FuzzerOutput = JSON.stringify([sjcl.codec.hex.fromBits(pubPoint.x), sjcl.codec.hex.fromBits(pubPoint.y)]);
 }
 
-var operation = parseInt(FuzzerInput['operation']);
+var operation = BigInt(FuzzerInput['operation']);
 
 if ( IsDigest(operation) ) {
     OpDigest(FuzzerInput);

@@ -12,7 +12,7 @@ int main(void) {
             abort();
         }
         name = name.substr(0, pos);
-        printf("var Is%s = function(id) { return id == %zu; }\n", name.c_str(), item.first);
+        printf("var Is%s = function(id) { return id == BigInt(\"%zu\"); }\n", name.c_str(), item.first);
     }
 
     return 0;

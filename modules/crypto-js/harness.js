@@ -32,11 +32,9 @@ var toHasher = function(digestType) {
         return CryptoJS.algo.SHA384.create();
     } else if ( IsSHA512(digestType) ) {
         return CryptoJS.algo.SHA512.create();
-    } else if ( IsSHA3(digestType) ) {
-        return CryptoJS.algo.SHA3.create();
     }
 
-    throw "Invalid digest type";
+    return false;
 }
 
 var OpDigest = function(FuzzerInput) {
@@ -46,10 +44,13 @@ var OpDigest = function(FuzzerInput) {
         cleartext.push( CryptoJS.enc.Hex.parse(curInput) );
     });
 
-    try {
-        var ret = digest(toHasher(digestType), cleartext);
-        FuzzerOutput = JSON.stringify(ret);
-    } catch ( e ) { }
+    var hasher = toHasher(digestType);
+    if ( !hasher ) {
+        return;
+    }
+
+    var ret = digest(hasher, cleartext);
+    FuzzerOutput = JSON.stringify(ret);
 }
 
 var OpHMAC = function(FuzzerInput) {
@@ -60,14 +61,17 @@ var OpHMAC = function(FuzzerInput) {
     });
     var key = CryptoJS.enc.Hex.parse(FuzzerInput['cipher']['key']);
 
-    try {
-        var ret = hmac(toHasher(digestType), cleartext, key, modifier);
-        FuzzerOutput = JSON.stringify(ret);
-    } catch ( e ) { }
+    var hasher = toHasher(digestType);
+    if ( !hasher ) {
+        return;
+    }
+
+    var ret = hmac(hasher, cleartext, key);
+    FuzzerOutput = JSON.stringify(ret);
 }
 
 var OpPBKDF2 = function(FuzzerInput) {
-    var keySize = BigInt(FuzzerInput['keySize']);
+    var keySize = parseInt(FuzzerInput['keySize']);
     /* CryptoJS.PBKDF2 expects key size in words (4 bytes) */
     if ( keySize % 4 != 0 ) {
         return;
@@ -80,10 +84,13 @@ var OpPBKDF2 = function(FuzzerInput) {
 
     keySize /= 4;
 
-    try {
-        var ret = CryptoJS.PBKDF2(password, salt, {keySize : keySize, iterations : iterations, hasher : toHasher(digestType)}).toString();
-        FuzzerOutput = JSON.stringify(ret);
-    } catch ( e ) { }
+    var hasher = toHasher(digestType);
+    if ( !hasher ) {
+        return;
+    }
+
+    var ret = CryptoJS.PBKDF2(password, salt, {keySize : keySize, iterations : iterations, hasher : hasher}).toString();
+    FuzzerOutput = JSON.stringify(ret);
 }
 
 var processMultipartCipher = function(obj, input) {

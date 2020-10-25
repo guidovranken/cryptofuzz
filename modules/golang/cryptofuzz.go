@@ -27,15 +27,23 @@ import (
     "hash/crc32"
     "io"
     "math/big"
+    "strconv"
 )
 
 import "C"
 
 type ByteSlice []byte
+type Type uint64
 
 type SliceOpt struct {
     slice ByteSlice
     opt byte
+}
+
+func (t *Type) UnmarshalJSON(in []byte) error {
+    res, err := strconv.ParseUint(string(in[1:len(in)-1]), 10, 64)
+    *t = Type(res)
+    return err
 }
 
 func (b *ByteSlice) MarshalJSON() ([]byte, error) {
@@ -55,19 +63,19 @@ func (b *ByteSlice) UnmarshalJSON(in []byte) error {
 type OpDigest struct {
     Modifier ByteSlice
     Cleartext ByteSlice
-    DigestType uint64
+    DigestType Type
 }
 
 type ComponentCipher struct {
     IV ByteSlice
     Key ByteSlice
-    CipherType uint64
+    CipherType Type
 }
 
 type OpHMAC struct {
     Modifier ByteSlice
     Cleartext ByteSlice
-    DigestType uint64
+    DigestType Type
     Cipher ComponentCipher
 }
 
@@ -90,7 +98,7 @@ type OpKDF_SCRYPT struct {
 
 type OpKDF_HKDF struct {
     Modifier ByteSlice
-    DigestType uint64
+    DigestType Type
     Password ByteSlice
     Salt ByteSlice
     Info ByteSlice
@@ -99,7 +107,7 @@ type OpKDF_HKDF struct {
 
 type OpKDF_PBKDF2 struct {
     Modifier ByteSlice
-    DigestType uint64
+    DigestType Type
     Password ByteSlice
     Salt ByteSlice
     Iterations uint64
@@ -119,13 +127,13 @@ type OpKDF_ARGON2 struct {
 
 type OpECC_PrivateToPublic struct {
     Modifier ByteSlice
-    CurveType uint64
+    CurveType Type
     Priv string
 }
 
 type OpECDSA_Verify struct {
     Modifier ByteSlice
-    CurveType uint64
+    CurveType Type
     Pub_X string
     Pub_Y string
     Cleartext ByteSlice
@@ -135,7 +143,7 @@ type OpECDSA_Verify struct {
 
 type OpBignumCalc struct {
     Modifier ByteSlice
-    CalcOp uint64
+    CalcOp Type
     BN0 string
     BN1 string
     BN2 string
@@ -161,7 +169,7 @@ func Golang_Cryptofuzz_GetResult() *C.char {
     return C.CString(string(result))
 }
 
-func toHashFunc(digestType uint64) (func() hash.Hash, error) {
+func toHashFunc(digestType Type) (func() hash.Hash, error) {
     if false {
     } else if isMD4(digestType) {
         return md4.New, nil
@@ -192,7 +200,7 @@ func toHashFunc(digestType uint64) (func() hash.Hash, error) {
     return nil, fmt.Errorf("Unsupported digest ID")
 }
 
-func toHashInstance(digestType uint64) (hash.Hash, error) {
+func toHashInstance(digestType Type) (hash.Hash, error) {
 
     if false {
     } else if isCRC32(digestType) {
@@ -477,7 +485,7 @@ func decodeBignum(s string) *big.Int {
     return bn
 }
 
-func toCurve(curveType uint64) (elliptic.Curve, error) {
+func toCurve(curveType Type) (elliptic.Curve, error) {
     if issecp224r1(curveType) {
         return elliptic.P224(), nil
     } else if isx962_p256v1(curveType) {
