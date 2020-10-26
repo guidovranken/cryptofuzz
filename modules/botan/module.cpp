@@ -563,6 +563,27 @@ end:
     return ret;
 }
 
+std::optional<component::Key> Botan::OpKDF_TLS1_PRF(operation::KDF_TLS1_PRF& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    std::unique_ptr<::Botan::KDF> tlsprf = nullptr;
+
+    try {
+        {
+            CF_CHECK_EQ(op.digestType.Get(), CF_DIGEST("MD5_SHA1"));
+            CF_CHECK_NE(tlsprf = ::Botan::KDF::create("TLS-PRF()"), nullptr);
+        }
+
+        {
+            const auto derived = tlsprf->derive_key(op.keySize, op.secret.Get(), op.seed.Get(), std::vector<uint8_t>{});
+
+            ret = component::Key(derived.data(), derived.size());
+        }
+    } catch ( ... ) { }
+
+end:
+    return ret;
+}
+
 namespace Botan_detail {
     std::optional<std::string> CurveIDToString(const uint64_t curveID) {
 #include "curve_string_lut.h"
