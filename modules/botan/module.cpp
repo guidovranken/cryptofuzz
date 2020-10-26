@@ -584,6 +584,44 @@ end:
     return ret;
 }
 
+std::optional<component::Key> Botan::OpKDF_BCRYPT(operation::KDF_BCRYPT& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    std::unique_ptr<::Botan::PasswordHashFamily> pwdhash_fam = nullptr;
+    std::unique_ptr<::Botan::PasswordHash> pwdhash = nullptr;
+    uint8_t* out = util::malloc(op.keySize);
+
+    try {
+        /* Initialize */
+        {
+            CF_CHECK_EQ(op.digestType.Get(), CF_DIGEST("SHA512"));
+            CF_CHECK_NE(pwdhash_fam = ::Botan::PasswordHashFamily::create("Bcrypt-PBKDF"), nullptr);
+            CF_CHECK_NE(pwdhash = pwdhash_fam->from_params(op.iterations), nullptr);
+
+        }
+
+        /* Process */
+        {
+            pwdhash->derive_key(
+                    out,
+                    op.keySize,
+                    (const char*)op.secret.GetPtr(),
+                    op.secret.GetSize(),
+                    op.salt.GetPtr(),
+                    op.salt.GetSize());
+        }
+
+        /* Finalize */
+        {
+            ret = component::Key(out, op.keySize);
+        }
+    } catch ( ... ) { }
+
+end:
+    util::free(out);
+
+    return ret;
+}
+
 namespace Botan_detail {
     std::optional<std::string> CurveIDToString(const uint64_t curveID) {
 #include "curve_string_lut.h"
