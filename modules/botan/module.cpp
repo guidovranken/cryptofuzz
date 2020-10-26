@@ -934,6 +934,9 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
         case    CF_CALCOP("NumLSZeroBits(A)"):
             opRunner = std::make_unique<Botan_bignum::NumLSZeroBits>();
             break;
+        case    CF_CALCOP("Sqrt(A)"):
+            opRunner = std::make_unique<Botan_bignum::Sqrt>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
