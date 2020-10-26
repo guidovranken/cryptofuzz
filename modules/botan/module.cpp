@@ -575,6 +575,28 @@ end:
     }
 } /* namespace Botan_detail */
 
+std::optional<component::ECC_KeyPair> Botan::OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) {
+    std::optional<component::ECC_KeyPair> ret = std::nullopt;
+
+    std::optional<std::string> curveString;
+    static ::Botan::System_RNG rng;
+
+    CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
+
+    {
+        ::Botan::EC_Group group(*curveString);
+        auto priv = ::Botan::ECDSA_PrivateKey(rng, group);
+
+        const auto pub_x = priv.public_point().get_affine_x();
+        const auto pub_y = priv.public_point().get_affine_y();
+
+        ret = { priv.private_value().to_dec_string(), { pub_x.to_dec_string(), pub_y.to_dec_string() } };
+    }
+
+end:
+    return ret;
+}
+
 std::optional<component::ECC_PublicKey> Botan::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
