@@ -143,6 +143,7 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_
     uint8_t* sig = nullptr;
     word32 sigSz = ECC_MAX_SIG_SIZE;
     uint8_t* hash = nullptr;
+    uint8_t* nonce_bytes = nullptr;
     wolfCrypt_bignum::Bignum nonce(ds), r(ds), s(ds);
 
     CF_CHECK_NE(op.priv.ToTrimmedString(), "0");
@@ -230,6 +231,7 @@ end:
 
     util::free(sig);
     util::free(hash);
+    util::free(nonce_bytes);
 
     /* noret */ wc_ecc_key_free(key);
     /* noret */ wc_ecc_del_point(pub);
