@@ -372,6 +372,38 @@ bool Sqrt::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt
     return true;
 }
 
+bool AddMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
+    res = (bn[0] + bn[1]) % bn[2];
+
+    return true;
+}
+
+bool SubMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
+    res = (bn[0] - bn[1]) % bn[2];
+
+    return true;
+}
+
+bool NumBits::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
+    res = bn[0].bits();
+
+    return true;
+}
+
+bool Set::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
+    res = bn[0];
+
+    return true;
+}
+
 } /* namespace Botan_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

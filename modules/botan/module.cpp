@@ -937,6 +937,18 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
         case    CF_CALCOP("Sqrt(A)"):
             opRunner = std::make_unique<Botan_bignum::Sqrt>();
             break;
+        case    CF_CALCOP("AddMod(A,B,C)"):
+            opRunner = std::make_unique<Botan_bignum::AddMod>();
+            break;
+        case    CF_CALCOP("SubMod(A,B,C)"):
+            opRunner = std::make_unique<Botan_bignum::SubMod>();
+            break;
+        case    CF_CALCOP("NumBits(A)"):
+            opRunner = std::make_unique<Botan_bignum::NumBits>();
+            break;
+        case    CF_CALCOP("Set(A)"):
+            opRunner = std::make_unique<Botan_bignum::Set>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
