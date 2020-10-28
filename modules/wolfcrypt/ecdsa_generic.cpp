@@ -171,8 +171,15 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_
 
         if ( op.UseSpecifiedNonce() == true ) {
             CF_CHECK_EQ(nonce.Set(op.nonce.ToString(ds)), true);
-            key->sign_k = nonce.GetPtr();
-            nonce.SetNoFree();
+
+            const size_t nonce_bytes_size = mp_unsigned_bin_size(nonce.GetPtr());
+
+            /* Convert nonce to byte array */
+            nonce_bytes = util::malloc(nonce_bytes_size);
+            CF_CHECK_EQ(mp_to_unsigned_bin(nonce.GetPtr(), nonce_bytes), 0);
+
+            /* Set nonce */
+            CF_CHECK_EQ(wc_ecc_sign_set_k(nonce_bytes, nonce_bytes_size, key), 0);
         }
 
         CF_CHECK_EQ(wc_ecc_make_pub(key, pub), 0);
