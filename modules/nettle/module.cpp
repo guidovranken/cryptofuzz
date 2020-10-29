@@ -9,7 +9,7 @@
 #include <nettle/cmac.h>
 #include <nettle/des.h>
 #include <nettle/eax.h>
-#if 0
+#if defined(HAVE_LIBHOGWEED)
 #include <nettle/ecc-curve.h>
 #include <nettle/ecc.h>
 #include <nettle/ecdsa.h>
@@ -1391,7 +1391,7 @@ end:
     return ret;
 }
 
-#if 0
+#if defined(HAVE_LIBHOGWEED)
 namespace Nettle_detail {
     const struct ecc_curve* to_ecc_curve(const uint64_t curveID) {
         switch ( curveID ) {
@@ -1414,8 +1414,7 @@ namespace Nettle_detail {
 
 std::optional<component::ECC_KeyPair> Nettle::OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) {
     std::optional<component::ECC_KeyPair> ret = std::nullopt;
-#if 1
-    /* Need to link against libhogweed.a in OSS-Fuzz before this can be enabled */
+#if !defined(HAVE_LIBHOGWEED)
     (void)op;
 #else
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -1475,8 +1474,7 @@ end:
 std::optional<component::ECC_PublicKey> Nettle::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
 
-#if 1
-    /* Need to link against libhogweed.a in OSS-Fuzz before this can be enabled */
+#if !defined(HAVE_LIBHOGWEED)
     (void)op;
 #else
     mpz_t priv_mpz, pub_x, pub_y;
