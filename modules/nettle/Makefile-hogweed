@@ -14,6 +14,6 @@ module.a: module.o
 	ranlib module.a
 module.o: module.cpp module.h
 	test $(NETTLE_INCLUDE_PATH)
-	$(CXX) $(CXXFLAGS) -DHAVE_HOGWEED -I $(NETTLE_INCLUDE_PATH) -fPIC -c module.cpp -o module.o
+	$(CXX) $(CXXFLAGS) -DHAVE_LIBHOGWEED -I $(NETTLE_INCLUDE_PATH) -fPIC -c module.cpp -o module.o
 clean:
 	rm -rf *.o module.a
