@@ -214,6 +214,24 @@ end:
             return ret;
         }
 
+        static std::optional<std::vector<uint8_t>> ToBin(Datasource& ds, const component::Bignum b, std::optional<size_t> size = std::nullopt) {
+            std::optional<std::vector<uint8_t>> ret = std::nullopt;
+            std::vector<uint8_t> v;
+            Bignum bn(ds);
+
+            CF_CHECK_EQ(bn.Set(b), true);
+            if ( size != std::nullopt ) {
+                v.resize(*size);
+            } else {
+                v.resize( mp_unsigned_bin_size(bn.GetPtr()) );
+            }
+            CF_CHECK_EQ(bn.ToBin(v.data(), v.size()), true);
+
+            ret = v;
+end:
+            return ret;
+        }
+
         static bool ToBin(Datasource& ds, const component::Bignum b, uint8_t* dest, const size_t size) {
             bool ret = false;
             Bignum bn(ds);
