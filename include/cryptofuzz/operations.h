@@ -711,7 +711,7 @@ class KDF_BCRYPT : public Operation {
             keySize(json["keySize"].get<uint64_t>())
         { }
 
-        static size_t MaxOperations(void) { return 20; }
+        static size_t MaxOperations(void) { return 2; }
         std::string Name(void) const override;
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
