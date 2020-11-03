@@ -267,6 +267,16 @@ void test(const operation::ECDH_Derive& op, const std::optional<component::Secre
     (void)result;
 }
 
+void test(const operation::DH_GenerateKeyPair& op, const std::optional<component::DH_KeyPair>& result) {
+    (void)op;
+    (void)result;
+}
+
+void test(const operation::DH_Derive& op, const std::optional<component::Bignum>& result) {
+    (void)op;
+    (void)result;
+}
+
 namespace BignumCalc {
     static void Abort(const std::string& message, const std::string& opStr) {
         std::cout << "BignumCalc ( " << opStr << " ): " << message << std::endl;

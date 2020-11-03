@@ -112,6 +112,14 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::DH_KeyPair> OpDH_GenerateKeyPair(operation::DH_GenerateKeyPair& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::Bignum> OpDH_Derive(operation::DH_Derive& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) {
             (void)op;
             return std::nullopt;

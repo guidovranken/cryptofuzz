@@ -3535,6 +3535,81 @@ end:
     return ret;
 }
 
+std::optional<component::DH_KeyPair> OpenSSL::OpDH_GenerateKeyPair(operation::DH_GenerateKeyPair& op) {
+    std::optional<component::DH_KeyPair> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    DH* dh = nullptr;
+    OpenSSL_bignum::Bignum prime(ds), base(ds);
+    char* priv_str = nullptr;
+    char* pub_str = nullptr;
+
+    CF_CHECK_NE(dh = DH_new(), nullptr);
+
+    CF_CHECK_EQ(prime.Set(op.prime.ToString(ds)), true);
+    CF_CHECK_NE(dh->p = prime.GetPtrConst(), nullptr);
+    prime.ReleaseOwnership();
+
+    CF_CHECK_EQ(base.Set(op.base.ToString(ds)), true);
+    CF_CHECK_NE(dh->g = base.GetPtrConst(), nullptr);
+    base.ReleaseOwnership();
+
+	CF_CHECK_EQ(DH_generate_key(dh), 1);
+
+    CF_CHECK_NE(priv_str = BN_bn2dec(dh->priv_key), nullptr);
+    CF_CHECK_NE(pub_str = BN_bn2dec(dh->pub_key), nullptr);
+
+    ret = { std::string(priv_str), std::string(pub_str) };
+
+end:
+    DH_free(dh);
+    OPENSSL_free(priv_str);
+    OPENSSL_free(pub_str);
+    return ret;
+}
+
+std::optional<component::Bignum> OpenSSL::OpDH_Derive(operation::DH_Derive& op) {
+    std::optional<component::Bignum> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    DH* dh = nullptr;
+    OpenSSL_bignum::Bignum prime(ds), base(ds), priv(ds), pub(ds), derived(ds);
+    uint8_t* derived_bytes = nullptr;
+    int derived_size;
+
+    CF_CHECK_NE(op.priv.ToTrimmedString(), "0");
+    CF_CHECK_NE(dh = DH_new(), nullptr);
+
+    CF_CHECK_EQ(prime.Set(op.prime.ToString(ds)), true);
+    CF_CHECK_NE(dh->p = prime.GetPtrConst(), nullptr);
+    prime.ReleaseOwnership();
+
+    CF_CHECK_EQ(base.Set(op.base.ToString(ds)), true);
+    CF_CHECK_NE(dh->g = base.GetPtrConst(), nullptr);
+    base.ReleaseOwnership();
+
+    derived_size = DH_size(dh);
+    derived_bytes = util::malloc(derived_size);
+
+    CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
+    CF_CHECK_NE(dh->priv_key = priv.GetPtrConst(), nullptr);
+    priv.ReleaseOwnership();
+
+    CF_CHECK_EQ(pub.Set(op.pub.ToString(ds)), true);
+
+    CF_CHECK_NE(derived_size = DH_compute_key(derived_bytes, pub.GetPtr(), dh), -1);
+
+    CF_CHECK_EQ(derived.New(), true);
+    CF_CHECK_NE(BN_bin2bn(derived_bytes, derived_size, derived.GetDestPtr()), nullptr);
+
+    ret = derived.ToComponentBignum();
+
+end:
+    DH_free(dh);
+    util::free(derived_bytes);
+    return ret;
+}
+
 std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());

@@ -94,6 +94,17 @@ end:
             return ret;
         }
 
+        bool Set(const component::Bignum i) {
+            bool ret = false;
+
+            CF_CHECK_EQ(Set(i.ToString()), true);
+
+            ret = true;
+end:
+            return ret;
+        }
+
+
         mp_int* GetPtr(void) const {
             return mp;
         }
@@ -185,6 +196,35 @@ end:
             auto str = ToDecString();
             CF_CHECK_NE(str, std::nullopt);
             ret = { str };
+end:
+            return ret;
+        }
+
+        bool ToBin(uint8_t* dest, const size_t size) {
+            bool ret = false;
+
+            CF_CHECK_EQ(mp_to_unsigned_bin_len(GetPtr(), dest, size), MP_OKAY);
+
+            ret = true;
+end:
+            return ret;
+        }
+
+
+        static std::optional<std::vector<uint8_t>> ToBin(Datasource& ds, const component::Bignum b, std::optional<size_t> size = std::nullopt) {
+            std::optional<std::vector<uint8_t>> ret = std::nullopt;
+            std::vector<uint8_t> v;
+            Bignum bn(ds);
+
+            CF_CHECK_EQ(bn.Set(b), true);
+            if ( size != std::nullopt ) {
+                v.resize(*size);
+            } else {
+                v.resize( mp_unsigned_bin_size(bn.GetPtr()) );
+            }
+            CF_CHECK_EQ(bn.ToBin(v.data(), v.size()), true);
+
+            ret = v;
 end:
             return ret;
         }

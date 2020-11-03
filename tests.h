@@ -29,6 +29,8 @@ void test(const operation::ECC_GenerateKeyPair& op, const std::optional<componen
 void test(const operation::ECDSA_Sign& op, const std::optional<component::ECDSA_Signature>& result);
 void test(const operation::ECDSA_Verify& op, const std::optional<bool>& result);
 void test(const operation::ECDH_Derive& op, const std::optional<component::Secret>& result);
+void test(const operation::DH_GenerateKeyPair& op, const std::optional<component::DH_KeyPair>& result);
+void test(const operation::DH_Derive& op, const std::optional<component::Bignum>& result);
 void test(const operation::BignumCalc& op, const std::optional<component::Bignum>& result);
 
 } /* namespace tests */

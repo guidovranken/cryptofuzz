@@ -201,5 +201,8 @@ class MACType {
         }
 };
 
+using DH_Key = BignumPair;
+using DH_KeyPair = BignumPair;
+
 } /* namespace component */
 } /* namespace cryptofuzz */

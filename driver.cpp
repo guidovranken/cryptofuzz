@@ -37,6 +37,8 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorECDSA_Sign executorECDSA_Sign(CF_OPERATION("ECDSA_Sign"), modules, options);
     static ExecutorECDSA_Verify executorECDSA_Verify(CF_OPERATION("ECDSA_Verify"), modules, options);
     static ExecutorECDH_Derive executorECDH_Derive(CF_OPERATION("ECDH_Derive"), modules, options);
+    static ExecutorDH_GenerateKeyPair executorDH_GenerateKeyPair(CF_OPERATION("DH_GenerateKeyPair"), modules, options);
+    static ExecutorDH_Derive executorDH_Derive(CF_OPERATION("DH_Derive"), modules, options);
     static ExecutorBignumCalc executorBignumCalc(CF_OPERATION("BignumCalc"), modules, options);
 
     try {
@@ -127,6 +129,12 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("ECDH_Derive"):
                 executorECDH_Derive.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("DH_GenerateKeyPair"):
+                executorDH_GenerateKeyPair.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("DH_Derive"):
+                executorDH_Derive.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("BignumCalc"):
                 executorBignumCalc.Run(ds, payload.data(), payload.size());

@@ -22,6 +22,8 @@ MutatorPool<CurvePrivkey_Pair, 64> Pool_CurvePrivkey;
 MutatorPool<CurveKeypair_Pair, 64> Pool_CurveKeypair;
 MutatorPool<CurveECDSASignature_Pair, 64> Pool_CurveECDSASignature;
 MutatorPool<std::string, 64> Pool_Bignum;
+MutatorPool<std::string, 64> Pool_DH_PrivateKey;
+MutatorPool<std::string, 64> Pool_DH_PublicKey;
 
 template class MutatorPool<CurvePrivkey_Pair, 64>;
 template class MutatorPool<CurveKeypair_Pair, 64>;

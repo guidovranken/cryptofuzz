@@ -609,6 +609,37 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     op.Serialize(dsOut2);
                 }
                 break;
+            case    CF_OPERATION("DH_GenerateKeyPair"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+                    parameters["prime"] = getBignum();
+                    parameters["base"] = getBignum();
+
+                    cryptofuzz::operation::DH_GenerateKeyPair op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("DH_Derive"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+                    parameters["prime"] = getBignum();
+                    parameters["base"] = getBignum();
+                    if ( Pool_DH_PublicKey.Have() && getBool() == true ) {
+                        parameters["pub"] = Pool_DH_PublicKey.Get();
+                    } else {
+                        parameters["pub"] = getBignum();
+                    }
+
+                    if ( Pool_DH_PrivateKey.Have() && getBool() == true ) {
+                        parameters["priv"] = Pool_DH_PrivateKey.Get();
+                    } else {
+                        parameters["priv"] = getBignum();
+                    }
+
+                    cryptofuzz::operation::DH_Derive op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
             default:
                 goto end;
         }

@@ -37,3 +37,6 @@ typedef struct {
 extern MutatorPool<CurveECDSASignature_Pair, 64> Pool_CurveECDSASignature;
 
 extern MutatorPool<std::string, 64> Pool_Bignum;
+
+extern MutatorPool<std::string, 64> Pool_DH_PrivateKey;
+extern MutatorPool<std::string, 64> Pool_DH_PublicKey;

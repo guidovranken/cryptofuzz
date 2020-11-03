@@ -1,19 +1,20 @@
 #include "module.h"
 #include <cryptofuzz/util.h>
 #include <cryptofuzz/repository.h>
-#include <botan/hash.h>
-#include <botan/mac.h>
-#include <botan/cmac.h>
-#include <botan/cipher_mode.h>
-#include <botan/pbkdf.h>
-#include <botan/pwdhash.h>
-#include <botan/kdf.h>
-#include <botan/system_rng.h>
-#include <botan/bigint.h>
-#include <botan/ecdsa.h>
-#include <botan/pubkey.h>
 #include <botan/ber_dec.h>
+#include <botan/bigint.h>
+#include <botan/cipher_mode.h>
+#include <botan/cmac.h>
 #include <botan/curve25519.h>
+#include <botan/dh.h>
+#include <botan/ecdsa.h>
+#include <botan/hash.h>
+#include <botan/kdf.h>
+#include <botan/mac.h>
+#include <botan/pbkdf.h>
+#include <botan/pubkey.h>
+#include <botan/pwdhash.h>
+#include <botan/system_rng.h>
 #include "bn_ops.h"
 
 namespace cryptofuzz {
@@ -806,6 +807,35 @@ std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     } catch ( ... ) { }
 
 end:
+    return ret;
+}
+
+std::optional<component::Bignum> Botan::OpDH_Derive(operation::DH_Derive& op) {
+    std::optional<component::Bignum> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    static ::Botan::System_RNG rng;
+
+    try {
+        const ::Botan::BigInt g(op.base.ToString(ds));
+        const ::Botan::BigInt p(op.prime.ToString(ds));
+        const ::Botan::DL_Group grp(p, g);
+
+        const ::Botan::BigInt _priv(op.priv.ToString(ds));
+        std::unique_ptr<::Botan::Private_Key> priv(new ::Botan::DH_PrivateKey(rng, grp, _priv));
+
+        const ::Botan::BigInt _pub(op.pub.ToString(ds));
+        ::Botan::DH_PublicKey pub(grp, _pub);
+
+        std::unique_ptr<::Botan::PK_Key_Agreement> kas(new ::Botan::PK_Key_Agreement(*priv, rng, "Raw"));
+        const auto derived_key = kas->derive_key(0, pub.public_value());
+
+        const auto derived_str = ::Botan::BigInt(derived_key.bits_of()).to_dec_string();
+        if ( derived_str != "0" ) {
+            ret = derived_str;
+        }
+    } catch ( ... ) { }
+
     return ret;
 }
 

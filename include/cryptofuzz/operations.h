@@ -1048,6 +1048,100 @@ class ECDH_Derive : public Operation {
         }
 };
 
+class DH_GenerateKeyPair : public Operation {
+    public:
+        const component::Bignum prime;
+        const component::Bignum base;
+
+        DH_GenerateKeyPair(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            prime(ds),
+            base(ds)
+        { }
+        DH_GenerateKeyPair(nlohmann::json json) :
+            Operation(json["modifier"]),
+            prime(json["prime"]),
+            base(json["base"])
+        { }
+        DH_GenerateKeyPair(
+                component::Modifier modifier,
+                component::Bignum prime,
+                component::Bignum base) :
+            Operation(std::move(modifier)),
+            prime(prime),
+            base(base)
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const DH_GenerateKeyPair& rhs) const {
+            return
+                (prime == rhs.prime) &&
+                (base  == rhs.base) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            prime.Serialize(ds);
+            base.Serialize(ds);
+        }
+};
+
+class DH_Derive : public Operation {
+    public:
+        const component::Bignum prime;
+        const component::Bignum base;
+        const component::Bignum pub;
+        const component::Bignum priv;
+
+        DH_Derive(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            prime(ds),
+            base(ds),
+            pub(ds),
+            priv(ds)
+        { }
+        DH_Derive(nlohmann::json json) :
+            Operation(json["modifier"]),
+            prime(json["prime"]),
+            base(json["base"]),
+            pub(json["pub"]),
+            priv(json["priv"])
+        { }
+        DH_Derive(
+                component::Modifier modifier,
+                component::Bignum prime,
+                component::Bignum base,
+                component::Bignum pub,
+                component::Bignum priv) :
+            Operation(std::move(modifier)),
+            prime(prime),
+            base(base),
+            pub(pub),
+            priv(priv)
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const DH_Derive& rhs) const {
+            return
+                (prime == rhs.prime) &&
+                (base  == rhs.base) &&
+                (pub == rhs.pub) &&
+                (priv == rhs.priv) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            prime.Serialize(ds);
+            base.Serialize(ds);
+            pub.Serialize(ds);
+            priv.Serialize(ds);
+        }
+};
+
 class BignumCalc : public Operation {
     public:
         const component::CalcOp calcOp;

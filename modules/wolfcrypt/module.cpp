@@ -45,6 +45,8 @@ extern "C" {
 #include <wolfssl/wolfcrypt/curve448.h>
 #include <wolfssl/wolfcrypt/ed448.h>
 #include <wolfssl/wolfcrypt/ed25519.h>
+
+#include <wolfssl/wolfcrypt/dh.h>
 }
 
 #include "bn_ops.h"
@@ -2757,6 +2759,105 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
 end:
     /* noret */ wc_ecc_key_free(key);
 
+    wolfCrypt_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
+
+std::optional<component::DH_KeyPair> wolfCrypt::OpDH_GenerateKeyPair(operation::DH_GenerateKeyPair& op) {
+    std::optional<component::DH_KeyPair> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    DhKey key;
+    uint8_t priv_bytes[8192];
+    uint8_t pub_bytes[8192];
+    word32 privSz = sizeof(priv_bytes), pubSz = sizeof(pub_bytes);
+    std::optional<std::vector<uint8_t>> prime;
+    std::optional<std::vector<uint8_t>> base;
+
+    memset(&key, 0, sizeof(key));
+
+    /* Prevent timeouts if wolfCrypt is compiled with --disable-fastmath */
+#if !defined(USE_FAST_MATH) && !defined(WOLFSSL_SP_MATH)
+    CF_CHECK_LT(op.prime.GetSize(), 200);
+    CF_CHECK_LT(op.base.GetSize(), 200);
+#endif
+
+    CF_CHECK_EQ(wc_InitDhKey(&key), 0);
+
+    CF_CHECK_NE(prime = wolfCrypt_bignum::Bignum::ToBin(ds, op.prime), std::nullopt);
+    CF_CHECK_NE(base = wolfCrypt_bignum::Bignum::ToBin(ds, op.base), std::nullopt);
+    CF_CHECK_EQ(wc_DhSetKey(&key, prime->data(), prime->size(), base->data(), base->size()), 0);
+
+    CF_CHECK_EQ(wc_DhGenerateKeyPair(&key, &wolfCrypt_detail::rng, priv_bytes, &privSz, pub_bytes, &pubSz), 0);
+
+    {
+        std::optional<std::string> pub_str, priv_str;
+        wolfCrypt_bignum::Bignum pub(ds), priv(ds);
+
+        CF_CHECK_EQ(mp_read_unsigned_bin(pub.GetPtr(), pub_bytes, pubSz), MP_OKAY);
+        CF_CHECK_EQ(mp_read_unsigned_bin(priv.GetPtr(), priv_bytes, privSz), MP_OKAY);
+
+        CF_CHECK_NE(pub_str = pub.ToDecString(), std::nullopt);
+        CF_CHECK_NE(priv_str = priv.ToDecString(), std::nullopt);
+
+        ret = {*priv_str, *pub_str};
+    }
+
+end:
+    wc_FreeDhKey(&key);
+    wolfCrypt_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
+std::optional<component::Bignum> wolfCrypt::OpDH_Derive(operation::DH_Derive& op) {
+    std::optional<component::Bignum> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    DhKey key;
+    uint8_t agree[8192];
+    word32 agreeSz;
+    std::optional<std::vector<uint8_t>> prime;
+    std::optional<std::vector<uint8_t>> base;
+    std::optional<std::vector<uint8_t>> priv;
+    std::optional<std::vector<uint8_t>> pub;
+
+    memset(&key, 0, sizeof(key));
+
+    /* Prevent timeouts if wolfCrypt is compiled with --disable-fastmath */
+#if !defined(USE_FAST_MATH) && !defined(WOLFSSL_SP_MATH)
+    CF_CHECK_LT(op.prime.GetSize(), 200);
+    CF_CHECK_LT(op.base.GetSize(), 200);
+    CF_CHECK_LT(op.pub.GetSize(), 200);
+    CF_CHECK_LT(op.priv.GetSize(), 200);
+#endif
+
+    CF_CHECK_EQ(wc_InitDhKey(&key), 0);
+
+    CF_CHECK_NE(prime = wolfCrypt_bignum::Bignum::ToBin(ds, op.prime), std::nullopt);
+    CF_CHECK_NE(base = wolfCrypt_bignum::Bignum::ToBin(ds, op.base), std::nullopt);
+    CF_CHECK_EQ(wc_DhSetKey(&key, prime->data(), prime->size(), base->data(), base->size()), 0);
+
+    CF_CHECK_NE(pub = wolfCrypt_bignum::Bignum::ToBin(ds, op.pub), std::nullopt);
+    CF_CHECK_NE(priv = wolfCrypt_bignum::Bignum::ToBin(ds, op.priv), std::nullopt);
+    CF_CHECK_EQ(wc_DhAgree(&key, agree, &agreeSz, priv->data(), priv->size(), pub->data(), pub->size()), 0);
+
+    {
+        std::optional<std::string> derived_str;
+        wolfCrypt_bignum::Bignum derived(ds);
+        CF_CHECK_EQ(mp_read_unsigned_bin(derived.GetPtr(), agree, agreeSz), MP_OKAY);
+        CF_CHECK_NE(derived_str = derived.ToDecString(), std::nullopt);
+        if ( *derived_str != "0" ) {
+            ret = *derived_str;
+        }
+    }
+
+end:
+    wc_FreeDhKey(&key);
     wolfCrypt_detail::UnsetGlobalDs();
 
     return ret;

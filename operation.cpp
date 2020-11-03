@@ -566,6 +566,48 @@ nlohmann::json ECDH_Derive::ToJSON(void) const {
     return j;
 }
 
+std::string DH_GenerateKeyPair::Name(void) const { return "DH_GenerateKeyPair"; }
+std::string DH_GenerateKeyPair::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: DH_GenerateKeyPair" << std::endl;
+    ss << "prime: " << prime.ToString() << std::endl;
+    ss << "base: " << base.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json DH_GenerateKeyPair::ToJSON(void) const {
+    nlohmann::json j;
+    j["prime"] = prime.ToJSON();
+    j["base"] = base.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string DH_Derive::Name(void) const { return "DH_Derive"; }
+std::string DH_Derive::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: DH_Derive" << std::endl;
+    ss << "prime: " << prime.ToString() << std::endl;
+    ss << "base: " << base.ToString() << std::endl;
+    ss << "public key: " << pub.ToString() << std::endl;
+    ss << "private key: " << priv.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json DH_Derive::ToJSON(void) const {
+    nlohmann::json j;
+    j["prime"] = prime.ToJSON();
+    j["base"] = base.ToJSON();
+    j["pub"] = pub.ToJSON();
+    j["priv"] = priv.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string BignumCalc::Name(void) const { return "BignumCalc"; }
 std::string BignumCalc::ToString(void) const {
     std::stringstream ss;

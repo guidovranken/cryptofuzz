@@ -657,6 +657,16 @@ template<> std::optional<component::ECC_PublicKey> ExecutorBase<component::ECC_P
 }
 
 /* Specialization for operation::ECC_GenerateKeyPair */
+
+/* Do not compare DH_GenerateKeyPair results, because the result can be produced indeterministically */
+template <>
+void ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>::compare(const std::vector< std::pair<std::shared_ptr<Module>, operation::DH_GenerateKeyPair> >& operations, const ResultSet& results, const uint8_t* data, const size_t size) const {
+    (void)operations;
+    (void)results;
+    (void)data;
+    (void)size;
+}
+
 template<> void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::updateExtraCounters(const uint64_t moduleID, operation::ECC_GenerateKeyPair& op) const {
     (void)moduleID;
     (void)op;
@@ -795,6 +805,58 @@ template<> std::optional<component::Secret> ExecutorBase<component::Secret, oper
         }
     }
     return module->OpECDH_Derive(op);
+}
+
+/* Specialization for operation::DH_Derive */
+template<> void ExecutorBase<component::Bignum, operation::DH_Derive>::updateExtraCounters(const uint64_t moduleID, operation::DH_Derive& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::Bignum, operation::DH_Derive>::postprocess(std::shared_ptr<Module> module, operation::DH_Derive& op, const ExecutorBase<component::Bignum, operation::DH_Derive>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, operation::DH_Derive>::callModule(std::shared_ptr<Module> module, operation::DH_Derive& op) const {
+    if ( op.prime.GetSize() > 1000 ) return std::nullopt;
+    if ( op.base.GetSize() > 1000 ) return std::nullopt;
+    if ( op.pub.GetSize() > 1000 ) return std::nullopt;
+    if ( op.priv.GetSize() > 1000 ) return std::nullopt;
+
+    return module->OpDH_Derive(op);
+}
+
+/* Specialization for operation::DH_GenerateKeyPair */
+template<> void ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>::updateExtraCounters(const uint64_t moduleID, operation::DH_GenerateKeyPair& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>::postprocess(std::shared_ptr<Module> module, operation::DH_GenerateKeyPair& op, const ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>::ResultPair& result) const {
+    (void)result;
+    (void)op;
+    (void)module;
+
+    if ( result.second != std::nullopt && (PRNG() % 4) == 0 ) {
+        const auto priv = result.second->first.ToTrimmedString();
+        const auto pub = result.second->second.ToTrimmedString();
+
+        Pool_DH_PrivateKey.Set(priv);
+        Pool_DH_PublicKey.Set(pub);
+    }
+}
+
+template<> std::optional<component::DH_KeyPair> ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>::callModule(std::shared_ptr<Module> module, operation::DH_GenerateKeyPair& op) const {
+    if ( op.prime.GetSize() > 1000 ) return std::nullopt;
+    if ( op.base.GetSize() > 1000 ) return std::nullopt;
+
+    return module->OpDH_GenerateKeyPair(op);
 }
 
 /* Specialization for operation::BignumCalc */
@@ -1215,6 +1277,8 @@ template class ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPa
 template class ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>;
 template class ExecutorBase<bool, operation::ECDSA_Verify>;
 template class ExecutorBase<component::Secret, operation::ECDH_Derive>;
+template class ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>;
+template class ExecutorBase<component::Bignum, operation::DH_Derive>;
 template class ExecutorBase<component::Bignum, operation::BignumCalc>;
 
 } /* namespace cryptofuzz */
