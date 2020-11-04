@@ -3546,18 +3546,27 @@ std::optional<component::DH_KeyPair> OpenSSL::OpDH_GenerateKeyPair(operation::DH
 
     CF_CHECK_NE(dh = DH_new(), nullptr);
 
-    CF_CHECK_EQ(prime.Set(op.prime.ToString(ds)), true);
-    CF_CHECK_NE(dh->p = prime.GetPtrConst(), nullptr);
-    prime.ReleaseOwnership();
+    /* Set prime and base */
+    {
+        CF_CHECK_EQ(prime.Set(op.prime.ToString(ds)), true);
+        CF_CHECK_EQ(base.Set(op.base.ToString(ds)), true);
 
-    CF_CHECK_EQ(base.Set(op.base.ToString(ds)), true);
-    CF_CHECK_NE(dh->g = base.GetPtrConst(), nullptr);
-    base.ReleaseOwnership();
+        CF_CHECK_EQ(DH_set0_pqg(dh, prime.GetPtrConst(), nullptr, base.GetPtrConst()), 1);
+        prime.ReleaseOwnership();
+        base.ReleaseOwnership();
+    }
 
 	CF_CHECK_EQ(DH_generate_key(dh), 1);
 
-    CF_CHECK_NE(priv_str = BN_bn2dec(dh->priv_key), nullptr);
-    CF_CHECK_NE(pub_str = BN_bn2dec(dh->pub_key), nullptr);
+    {
+        const BIGNUM* priv = nullptr, *pub = nullptr;
+        /* noret */ DH_get0_key(dh, &priv, &pub);
+        CF_CHECK_NE(priv, nullptr);
+        CF_CHECK_NE(pub, nullptr);
+
+        CF_CHECK_NE(priv_str = BN_bn2dec(priv), nullptr);
+        CF_CHECK_NE(pub_str = BN_bn2dec(pub), nullptr);
+    }
 
     ret = { std::string(priv_str), std::string(pub_str) };
 
@@ -3580,20 +3589,22 @@ std::optional<component::Bignum> OpenSSL::OpDH_Derive(operation::DH_Derive& op) 
     CF_CHECK_NE(op.priv.ToTrimmedString(), "0");
     CF_CHECK_NE(dh = DH_new(), nullptr);
 
-    CF_CHECK_EQ(prime.Set(op.prime.ToString(ds)), true);
-    CF_CHECK_NE(dh->p = prime.GetPtrConst(), nullptr);
-    prime.ReleaseOwnership();
+    /* Set prime, base and private key */
+    {
+        CF_CHECK_EQ(prime.Set(op.prime.ToString(ds)), true);
+        CF_CHECK_EQ(base.Set(op.base.ToString(ds)), true);
 
-    CF_CHECK_EQ(base.Set(op.base.ToString(ds)), true);
-    CF_CHECK_NE(dh->g = base.GetPtrConst(), nullptr);
-    base.ReleaseOwnership();
+        CF_CHECK_EQ(DH_set0_pqg(dh, prime.GetPtrConst(), nullptr, base.GetPtrConst()), 1);
+        prime.ReleaseOwnership();
+        base.ReleaseOwnership();
+
+        CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
+        CF_CHECK_EQ(DH_set0_key(dh, nullptr, priv.GetPtrConst()), 1);
+        priv.ReleaseOwnership();
+    }
 
     derived_size = DH_size(dh);
     derived_bytes = util::malloc(derived_size);
-
-    CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
-    CF_CHECK_NE(dh->priv_key = priv.GetPtrConst(), nullptr);
-    priv.ReleaseOwnership();
 
     CF_CHECK_EQ(pub.Set(op.pub.ToString(ds)), true);
 
@@ -3601,6 +3612,8 @@ std::optional<component::Bignum> OpenSSL::OpDH_Derive(operation::DH_Derive& op) 
 
     CF_CHECK_EQ(derived.New(), true);
     CF_CHECK_NE(BN_bin2bn(derived_bytes, derived_size, derived.GetDestPtr()), nullptr);
+
+    CF_CHECK_EQ(BN_is_zero(derived.GetPtr()), 0);
 
     ret = derived.ToComponentBignum();
 
