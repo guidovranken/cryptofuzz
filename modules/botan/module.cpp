@@ -817,6 +817,8 @@ std::optional<component::Bignum> Botan::OpDH_Derive(operation::DH_Derive& op) {
     static ::Botan::System_RNG rng;
 
     try {
+        CF_CHECK_NE(op.priv.ToTrimmedString(), "0");
+
         const ::Botan::BigInt g(op.base.ToString(ds));
         const ::Botan::BigInt p(op.prime.ToString(ds));
         const ::Botan::DL_Group grp(p, g);
@@ -836,6 +838,7 @@ std::optional<component::Bignum> Botan::OpDH_Derive(operation::DH_Derive& op) {
         }
     } catch ( ... ) { }
 
+end:
     return ret;
 }
 
