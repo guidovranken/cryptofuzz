@@ -826,6 +826,30 @@ end:
     return ret;
 }
 
+bool MulAdd::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    bool ret = false;
+
+    std::optional<std::string> mulRes, toAdd;
+
+    auto mul = std::make_unique<Mul>();
+    auto add = std::make_unique<Add>();
+
+    CF_CHECK_NE(toAdd = bn[2].ToDecString(), std::nullopt);
+
+    CF_CHECK_EQ(mul->Run(ds, res, bn), true);
+
+    CF_CHECK_NE(mulRes = res.ToDecString(), std::nullopt);
+    CF_CHECK_EQ(bn.Set(0, *mulRes), true);
+
+    CF_CHECK_EQ(bn.Set(1, *toAdd), true);
+    CF_CHECK_EQ(add->Run(ds, res, bn), true);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
 } /* namespace wolfCrypt_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

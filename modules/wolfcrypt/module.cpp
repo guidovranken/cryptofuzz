@@ -2996,6 +2996,9 @@ std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& 
         case    CF_CALCOP("NumLSZeroBits(A)"):
             opRunner = std::make_unique<wolfCrypt_bignum::NumLSZeroBits>();
             break;
+        case    CF_CALCOP("MulAdd(A,B,C)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::MulAdd>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
