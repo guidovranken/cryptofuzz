@@ -331,7 +331,7 @@ bool ClearBit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::Bi
 bool MulAdd::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
     (void)ds;
 
-    res = ::Botan::mul_add(bn[0], bn[1], bn[2]);
+    res = (bn[0]*bn[1]) + bn[2];
 
     return true;
 }
