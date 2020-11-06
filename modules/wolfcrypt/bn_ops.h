@@ -462,6 +462,11 @@ class MulAdd : public Operation {
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;
 };
 
+class CondSet : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;
+};
+
 } /* namespace wolfCrypt_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

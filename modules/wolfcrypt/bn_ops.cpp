@@ -852,6 +852,20 @@ end:
     return ret;
 }
 
+bool CondSet::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+    const int doCopy = mp_iszero(bn[1].GetPtr()) ? 0 : 1;
+    CF_CHECK_EQ(mp_cond_copy(bn[0].GetPtr(), doCopy, res.GetPtr()), MP_OKAY);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
 } /* namespace wolfCrypt_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

@@ -404,6 +404,15 @@ bool Set::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
     return true;
 }
 
+bool CondSet::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
+    res.ct_cond_assign(bn[1] != 0, bn[0]);
+
+    return true;
+}
+
+
 } /* namespace Botan_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

@@ -982,6 +982,9 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
         case    CF_CALCOP("Set(A)"):
             opRunner = std::make_unique<Botan_bignum::Set>();
             break;
+        case    CF_CALCOP("CondSet(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::CondSet>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
