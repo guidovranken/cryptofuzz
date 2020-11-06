@@ -7,6 +7,10 @@ namespace cryptofuzz {
 namespace module {
 namespace wolfCrypt_detail {
 
+#if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
+    extern bool haveAllocFailure;
+#endif
+
 ECCKey::ECCKey(Datasource& ds) :
     ds(ds) {
     if ( (key = wc_ecc_key_new(nullptr)) == nullptr ) {
@@ -39,7 +43,8 @@ ecc_key* ECCKey::GetPtr(void) {
         x963 = util::malloc(outLen);
         CF_CHECK_EQ(wc_ecc_export_x963_ex(key, x963, &outLen, compressed), 0);;
 
-        if ( wc_ecc_import_x963(x963, outLen, newKey) != 0 ) {
+        haveAllocFailure = false;
+        if ( wc_ecc_import_x963(x963, outLen, newKey) != 0 && haveAllocFailure == false ) {
             printf("Cannot import X963-exported ECC key\n");
             abort();
         }
@@ -147,7 +152,9 @@ ecc_point* ECCPoint::GetPtr() {
             out = util::malloc(outSz);
 
             CF_CHECK_EQ(wc_ecc_export_point_der(curveIdx, point, out, &outSz), 0);
-            if ( wc_ecc_import_point_der(out, outSz, curveIdx, newPoint) != 0 ) {
+
+            haveAllocFailure = false;
+            if ( wc_ecc_import_point_der(out, outSz, curveIdx, newPoint) != 0 && haveAllocFailure == false ) {
                 printf("Cannot import DER-exported ECC point\n");
                 abort();
             }

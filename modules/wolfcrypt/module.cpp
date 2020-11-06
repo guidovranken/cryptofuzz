@@ -55,6 +55,10 @@ namespace module {
 namespace wolfCrypt_detail {
     WC_RNG rng;
 
+#if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
+    bool haveAllocFailure;
+#endif
+
 #if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES) || defined(CRYPTOFUZZ_WOLFCRYPT_MMAP_FIXED)
     Datasource* ds;
 #endif
@@ -82,12 +86,18 @@ namespace wolfCrypt_detail {
 #if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
         bool fail = false;
         if ( ds == nullptr ) {
+            if ( fail ) {
+                haveAllocFailure = true;
+            }
             return fail;
         }
         try {
             fail = ds->Get<bool>();
         } catch ( ... ) { }
 
+        if ( fail ) {
+            haveAllocFailure = true;
+        }
         return fail;
 #else
         return false;
