@@ -94,7 +94,7 @@ bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 ret = true;
             }
             break;
-#if !defined(USE_FAST_MATH)
+#if !defined(USE_FAST_MATH) && !defined(WOLFSSL_SP_MATH)
         case    2:
             CF_CHECK_EQ(mp_cmp_d(bn[1].GetPtr(), 2), MP_EQ);
             CF_CHECK_EQ(mp_mul_2(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
