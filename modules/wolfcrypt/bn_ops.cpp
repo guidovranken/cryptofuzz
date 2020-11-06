@@ -4,6 +4,8 @@
 
 #include "bn_ops.h"
 
+#define GET_OPTIONAL_BN() (ds.Get<bool>() ? bn.GetDestPtr(3) : nullptr)
+
 namespace cryptofuzz {
 namespace module {
 namespace wolfCrypt_bignum {
@@ -116,7 +118,7 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(mp_div(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr(), nullptr), MP_OKAY);
+            CF_CHECK_EQ(mp_div(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr(), GET_OPTIONAL_BN()), MP_OKAY);
             break;
         case    1:
             CF_CHECK_EQ(mp_cmp_d(bn[1].GetPtr(), 2), MP_EQ);
@@ -329,7 +331,7 @@ bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             break;
 #if !defined(WOLFSSL_SP_MATH)
         case    1:
-            CF_CHECK_EQ(mp_div_2d(bn[0].GetPtr(), numBits, res.GetPtr(), nullptr), MP_OKAY);
+            CF_CHECK_EQ(mp_div_2d(bn[0].GetPtr(), numBits, res.GetPtr(), GET_OPTIONAL_BN()), MP_OKAY);
             ret = true;
             break;
 #endif
