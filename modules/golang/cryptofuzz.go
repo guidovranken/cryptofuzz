@@ -134,6 +134,7 @@ type OpECC_PrivateToPublic struct {
 type OpECDSA_Verify struct {
     Modifier ByteSlice
     CurveType Type
+    DigestType Type
     Pub_X string
     Pub_Y string
     Cleartext ByteSlice
@@ -495,7 +496,7 @@ func toCurve(curveType Type) (elliptic.Curve, error) {
     } else if issecp521r1(curveType) {
         return elliptic.P521(), nil
     } else {
-        return nil, fmt.Errorf("Unsupported digest ID")
+        return nil, fmt.Errorf("Unsupported curve ID")
     }
 
 }
@@ -534,11 +535,14 @@ func Golang_Cryptofuzz_OpECDSA_Verify(in []byte) {
     var op OpECDSA_Verify
     unmarshal(in, &op)
 
+    if isNULL(op.DigestType) == false {
+        return
+    }
+
     curve, err := toCurve(op.CurveType)
     if err != nil {
         return
     }
-
 
     sigR := decodeBignum(op.Sig_R)
     sigS := decodeBignum(op.Sig_S)
@@ -548,9 +552,14 @@ func Golang_Cryptofuzz_OpECDSA_Verify(in []byte) {
     pubKey.X = decodeBignum(op.Pub_X)
     pubKey.Y = decodeBignum(op.Pub_Y)
 
-    ecdsa.Verify(pubKey, op.Cleartext, sigR, sigS)
+    res := ecdsa.Verify(pubKey, op.Cleartext, sigR, sigS)
 
-    /* TODO set result */
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
 }
 
 func op_ADD(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {

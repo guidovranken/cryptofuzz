@@ -398,8 +398,16 @@ var OpECC_PrivateToPublic = function(FuzzerInput) {
     var pubBn = curve.G.mult(privBn);
 
     var pub = new sjcl.ecc['ecdsa'].publicKey(curve, pubBn);
-
-    var pubPoint = pub.get();
+    /* May throw:
+     * TypeError: cannot read property 'toBits' of undefined
+     * at toBits (combined.js:2840)
+     * at <anonymous> (combined.js:3238)
+     * at OpECC_PrivateToPublic (combined.js:7004)
+     * at <anonymous> (combined.js:7028)
+     */
+    try {
+        var pubPoint = pub.get();
+    } catch ( e ) { return; }
 
     FuzzerOutput = JSON.stringify([sjcl.codec.hex.fromBits(pubPoint.x), sjcl.codec.hex.fromBits(pubPoint.y)]);
 }

@@ -33,6 +33,7 @@ std::string ToString(const bool val);
 std::string ToString(const component::Ciphertext& val);
 std::string ToString(const component::ECC_PublicKey& val);
 std::string ToString(const component::ECC_KeyPair& val);
+std::string ToString(const component::ECDSA_Signature& val);
 std::string ToString(const component::Bignum& val);
 uint8_t* GetNullPtr(void);
 uint8_t* malloc(const size_t n);

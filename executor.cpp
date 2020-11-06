@@ -632,8 +632,16 @@ template<> void ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToP
 
 template<> void ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>::postprocess(std::shared_ptr<Module> module, operation::ECC_PrivateToPublic& op, const ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>::ResultPair& result) const {
     (void)module;
-    (void)op;
-    (void)result;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto privkey = op.priv.ToTrimmedString();
+        const auto pub_x = result.second->first.ToTrimmedString();
+        const auto pub_y = result.second->second.ToTrimmedString();
+
+        Pool_CurvePrivkey.Set({ curveID, privkey });
+        Pool_CurveKeypair.Set({ curveID, privkey, pub_x, pub_y });
+    }
 }
 
 template<> std::optional<component::ECC_PublicKey> ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>::callModule(std::shared_ptr<Module> module, operation::ECC_PrivateToPublic& op) const {
@@ -667,7 +675,7 @@ template<> void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyP
 template<> void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::postprocess(std::shared_ptr<Module> module, operation::ECC_GenerateKeyPair& op, const ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::ResultPair& result) const {
     (void)module;
 
-    if ( result.second != std::nullopt && (PRNG() % 4) == 0 ) {
+    if ( result.second != std::nullopt  ) {
         const auto curveID = op.curveType.Get();
         const auto privkey = result.second->priv.ToTrimmedString();
         const auto pub_x = result.second->pub.first.ToTrimmedString();
@@ -702,12 +710,14 @@ template<> void ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>:
 template<> void ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::postprocess(std::shared_ptr<Module> module, operation::ECDSA_Sign& op, const ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::ResultPair& result) const {
     (void)module;
 
-    if ( result.second != std::nullopt && (PRNG() % 4) == 0 ) {
+    if ( result.second != std::nullopt  ) {
         const auto curveID = op.curveType.Get();
-        const auto sig_r = result.second->first.ToTrimmedString();
-        const auto sig_y = result.second->second.ToTrimmedString();
+        const auto pub_x = result.second->pub.first.ToTrimmedString();
+        const auto pub_y = result.second->pub.second.ToTrimmedString();
+        const auto sig_r = result.second->signature.first.ToTrimmedString();
+        const auto sig_y = result.second->signature.second.ToTrimmedString();
 
-        Pool_CurveECDSASignature.Set({ curveID, sig_r, sig_y });
+        Pool_CurveECDSASignature.Set({ curveID, pub_x, pub_y, sig_r, sig_y });
     }
 }
 
@@ -721,6 +731,17 @@ template<> std::optional<component::ECDSA_Signature> ExecutorBase<component::ECD
             return std::nullopt;
         }
     }
+
+    /* Only run whitelisted digests, if specified */
+    if ( options.digests != std::nullopt && op.digestType.Get() != 0 ) {
+        if ( std::find(
+                    options.digests->begin(),
+                    options.digests->end(),
+                    op.digestType.Get()) == options.digests->end() ) {
+            return std::nullopt;
+        }
+    }
+
     const size_t size = op.priv.ToTrimmedString().size();
 
     if ( size == 0 || size > 4096 ) {
@@ -754,11 +775,22 @@ template<> std::optional<bool> ExecutorBase<bool, operation::ECDSA_Verify>::call
             return std::nullopt;
         }
     }
+
+    /* Only run whitelisted digests, if specified */
+    if ( options.digests != std::nullopt && op.digestType.Get() != 0 ) {
+        if ( std::find(
+                    options.digests->begin(),
+                    options.digests->end(),
+                    op.digestType.Get()) == options.digests->end() ) {
+            return std::nullopt;
+        }
+    }
+
     const std::vector<size_t> sizes = {
-        op.pub.first.ToTrimmedString().size(),
-        op.pub.second.ToTrimmedString().size(),
-        op.signature.first.ToTrimmedString().size(),
-        op.signature.second.ToTrimmedString().size(),
+        op.signature.pub.first.ToTrimmedString().size(),
+        op.signature.pub.second.ToTrimmedString().size(),
+        op.signature.signature.first.ToTrimmedString().size(),
+        op.signature.signature.second.ToTrimmedString().size(),
     };
 
     for (const auto& size : sizes) {
@@ -809,7 +841,7 @@ template<> void ExecutorBase<component::Bignum, operation::BignumCalc>::postproc
     (void)module;
     (void)op;
 
-    if ( result.second != std::nullopt && (PRNG() % 4) == 0 ) {
+    if ( result.second != std::nullopt  ) {
         const auto bignum = result.second->ToTrimmedString();
 
         if ( bignum.size() <= 1000 ) {
@@ -892,6 +924,20 @@ void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::compa
 template <class ResultType, class OperationType>
 bool ExecutorBase<ResultType, OperationType>::dontCompare(const OperationType& operation) const {
     (void)operation;
+
+    return false;
+}
+
+template <>
+bool ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::dontCompare(const operation::ECDSA_Sign& operation) const {
+    if (
+            operation.curveType.Get() != CF_ECC_CURVE("ed25519") &&
+            operation.curveType.Get() != CF_ECC_CURVE("ed448") ) {
+        if ( operation.UseRandomNonce() ) {
+            /* Don't compare ECDSA signatures comptued from a randomly generated nonce */
+            return true;
+        }
+    }
 
     return false;
 }

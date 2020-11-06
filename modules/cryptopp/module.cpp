@@ -2177,6 +2177,8 @@ end:
 
 std::optional<bool> CryptoPP::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
+    (void)op;
+#if 0
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     const ::CryptoPP::Integer pubXStr(op.pub.first.ToString(ds).c_str());
@@ -2212,6 +2214,7 @@ std::optional<bool> CryptoPP::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     }
 
 end:
+#endif
     return ret;
 }
 
