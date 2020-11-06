@@ -23,7 +23,6 @@ static const std::map<uint64_t, std::string> LUT = {
     { CF_DIGEST("SM3"), "SM3" },
     { CF_DIGEST("STREEBOG-256"), "Streebog-256" },
     { CF_DIGEST("STREEBOG-512"), "Streebog-512" },
-    { CF_DIGEST("TIGER"), "Tiger" },
     { CF_DIGEST("WHIRLPOOL"), "Whirlpool" },
     { CF_DIGEST("SHA512-256"), "SHA-512-256" },
     { CF_DIGEST("SHAKE128"), "SHAKE-128(128)" },
