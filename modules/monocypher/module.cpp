@@ -102,6 +102,10 @@ std::optional<component::Key> Monocypher::OpKDF_ARGON2(operation::KDF_ARGON2& op
     if ( op.memory < 8) {
         return ret;
     }
+    if ( op.iterations == 0 ) {
+        /* iterations == 0 outputs uninitialized memory */
+        return ret;
+    }
     uint8_t* out = util::malloc(op.keySize);
     uint8_t* work_area = util::malloc(op.memory * 1024);
 
