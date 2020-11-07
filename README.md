@@ -83,3 +83,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - elliptic: [Curves p384 and p521 produce incorrect results](https://github.com/indutny/elliptic/issues/239)
 - Nettle: [Blowfish signed integer overshift](https://git.lysator.liu.se/nettle/nettle/-/commit/4c8b0cdd97ffec3ae3f8d995afdfccbc261b3c79)
 - Golang: [crypto/ecdsa: signature verification succeeds when it should fail](https://github.com/golang/go/issues/42340)
+- SymCrypt: [Elliptic curve private-to-public incorrect result on Linux 32 bit](https://github.com/microsoft/SymCrypt/issues/9)
