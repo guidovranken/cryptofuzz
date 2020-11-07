@@ -375,6 +375,9 @@ namespace libtomcrypt_detail {
             case CF_CIPHER("AES_128_CCM"):
             case CF_CIPHER("AES_192_CCM"):
             case CF_CIPHER("AES_256_CCM"):
+            case CF_CIPHER("AES_128_ECB"):
+            case CF_CIPHER("AES_192_ECB"):
+            case CF_CIPHER("AES_256_ECB"):
                 return find_cipher("aes");
             case CF_CIPHER("CAMELLIA_128_GCM"):
             case CF_CIPHER("CAMELLIA_192_GCM"):
@@ -382,7 +385,46 @@ namespace libtomcrypt_detail {
             case CF_CIPHER("CAMELLIA_128_CCM"):
             case CF_CIPHER("CAMELLIA_192_CCM"):
             case CF_CIPHER("CAMELLIA_256_CCM"):
+            case CF_CIPHER("CAMELLIA_128_ECB"):
+            case CF_CIPHER("CAMELLIA_192_ECB"):
+            case CF_CIPHER("CAMELLIA_256_ECB"):
                 return find_cipher("camellia");
+            case CF_CIPHER("IDEA_ECB"):
+                return find_cipher("idea");
+            case CF_CIPHER("CAST5_ECB"):
+                return find_cipher("cast5");
+            case CF_CIPHER("SKIPJACK_ECB"):
+                return find_cipher("skipjack");
+            case CF_CIPHER("BLOWFISH_ECB"):
+                return find_cipher("blowfish");
+            case CF_CIPHER("DES_ECB"):
+                return find_cipher("des");
+            case CF_CIPHER("RC2_ECB"):
+                return find_cipher("rc2");
+            case CF_CIPHER("XTEA_ECB"):
+                return find_cipher("xtea");
+            case CF_CIPHER("ANUBIS_ECB"):
+                return find_cipher("anubis");
+            case CF_CIPHER("KASUMI_ECB"):
+                return find_cipher("kasumi");
+            case CF_CIPHER("RC6_ECB"):
+                return find_cipher("rc6");
+            case CF_CIPHER("TEA_ECB"):
+                return find_cipher("tea");
+            case CF_CIPHER("SEED_ECB"):
+                return find_cipher("seed");
+            case CF_CIPHER("KHAZAD_ECB"):
+                return find_cipher("khazad");
+            case CF_CIPHER("NOEKEON_ECB"):
+                return find_cipher("noekeon");
+            case CF_CIPHER("RC5_ECB"):
+                return find_cipher("rc5");
+            case CF_CIPHER("SERPENT_ECB"):
+                return find_cipher("serpent");
+            case CF_CIPHER("SAFER_K_ECB"):
+                return find_cipher("safer-k64");
+            case CF_CIPHER("SAFER_SK_ECB"):
+                return find_cipher("safer-sk64");
             default:
                 return -1;
         }
@@ -409,7 +451,7 @@ namespace libtomcrypt_detail {
         parts = util::ToParts(ds, op.cleartext);
 
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
-        CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), std::nullopt);
+        CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_EQ((err = gcm_init(&gcm, *cipherIdx, op.cipher.key.GetPtr(), op.cipher.key.GetSize())), CRYPT_OK);
 
         CF_CHECK_EQ(gcm_add_iv(&gcm, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize()), CRYPT_OK);
@@ -460,7 +502,7 @@ namespace libtomcrypt_detail {
         parts = util::ToParts(ds, op.ciphertext);
 
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
-        CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), std::nullopt);
+        CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_EQ((err = gcm_init(&gcm, *cipherIdx, op.cipher.key.GetPtr(), op.cipher.key.GetSize())), CRYPT_OK);
 
         CF_CHECK_EQ(gcm_add_iv(&gcm, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize()), CRYPT_OK);
@@ -519,7 +561,7 @@ namespace libtomcrypt_detail {
         std::optional<int> cipherIdx;
 
         CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize());
-        CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), std::nullopt);
+        CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
 
         {
             unsigned long tag_len = *op.tagSize;
@@ -599,7 +641,7 @@ namespace libtomcrypt_detail {
         std::optional<int> cipherIdx;
 
         CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
-        CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), std::nullopt);
+        CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
 
         {
             unsigned long tag_len = op.tag->GetSize();
@@ -687,6 +729,50 @@ end:
         return ret;
     }
 
+    std::optional<Buffer> EcbEncrypt(operation::SymmetricEncrypt& op) {
+        std::optional<Buffer> ret = std::nullopt;
+
+        std::optional<int> cipherIdx;
+        symmetric_ECB ecb;
+        uint8_t* out = util::malloc(op.cleartext.GetSize());
+
+        CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
+        CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
+        CF_CHECK_GT(op.cleartext.GetSize(), 0);
+        CF_CHECK_EQ(op.cleartext.GetSize() % cipher_descriptor[*cipherIdx].block_length, 0);
+        CF_CHECK_EQ(ecb_start(*cipherIdx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &ecb), CRYPT_OK);
+        CF_CHECK_EQ(ecb_encrypt(op.cleartext.GetPtr(), out, op.cleartext.GetSize(), &ecb), CRYPT_OK);
+        CF_CHECK_EQ(ecb_done(&ecb), CRYPT_OK);
+
+        ret = Buffer(out, op.cleartext.GetSize());
+
+end:
+        util::free(out);
+        return ret;
+    }
+
+    std::optional<Buffer> EcbDecrypt(operation::SymmetricDecrypt& op) {
+        std::optional<Buffer> ret = std::nullopt;
+
+        std::optional<int> cipherIdx;
+        symmetric_ECB ecb;
+        uint8_t* out = util::malloc(op.ciphertext.GetSize());
+
+        CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
+        CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
+        CF_CHECK_GT(op.ciphertext.GetSize(), 0);
+        CF_CHECK_EQ(op.ciphertext.GetSize() % cipher_descriptor[*cipherIdx].block_length, 0);
+        CF_CHECK_EQ(ecb_start(*cipherIdx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &ecb), CRYPT_OK);
+        CF_CHECK_EQ(ecb_decrypt(op.ciphertext.GetPtr(), out, op.ciphertext.GetSize(), &ecb), CRYPT_OK);
+        CF_CHECK_EQ(ecb_done(&ecb), CRYPT_OK);
+
+        ret = Buffer(out, op.ciphertext.GetSize());
+
+end:
+        util::free(out);
+        return ret;
+    }
+
 } /* namespace libtomcrypt_detail */
 
 std::optional<component::Ciphertext> libtomcrypt::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
@@ -694,6 +780,8 @@ std::optional<component::Ciphertext> libtomcrypt::OpSymmetricEncrypt(operation::
         return libtomcrypt_detail::GcmEncrypt(op);
     } else if ( repository::IsCCM(op.cipher.cipherType.Get()) ) {
         return libtomcrypt_detail::CcmEncrypt(op);
+    } else if ( repository::IsECB(op.cipher.cipherType.Get()) ) {
+        return libtomcrypt_detail::EcbEncrypt(op);
     } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_128") ) {
         return libtomcrypt_detail::Salsa20Crypt(op.cleartext, op.cipher, 16, 20);
     } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_12_128") ) {
@@ -712,6 +800,8 @@ std::optional<component::Cleartext> libtomcrypt::OpSymmetricDecrypt(operation::S
         return libtomcrypt_detail::GcmDecrypt(op);
     } else if ( repository::IsCCM(op.cipher.cipherType.Get()) ) {
         return libtomcrypt_detail::CcmDecrypt(op);
+    } else if ( repository::IsECB(op.cipher.cipherType.Get()) ) {
+        return libtomcrypt_detail::EcbDecrypt(op);
     } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_128") ) {
         return libtomcrypt_detail::Salsa20Crypt(op.ciphertext, op.cipher, 16, 20);
     } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_12_128") ) {
