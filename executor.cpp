@@ -958,6 +958,13 @@ bool ExecutorBase<ResultType, OperationType>::dontCompare(const OperationType& o
     return false;
 }
 
+template <>
+bool ExecutorBase<component::Bignum, operation::BignumCalc>::dontCompare(const operation::BignumCalc& operation) const {
+    if ( operation.calcOp.Get() == CF_CALCOP("Rand()") ) { return true; }
+
+    return false;
+}
+
 /* OpenSSL DES_EDE3_WRAP randomizes the IV, result is different each time */
 template <>
 bool ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>::dontCompare(const operation::SymmetricEncrypt& operation) const {

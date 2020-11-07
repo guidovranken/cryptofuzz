@@ -970,6 +970,44 @@ end:
 #endif
 }
 
+bool Rand::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
+    (void)ctx;
+    bool ret = false;
+
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            CF_CHECK_EQ(BN_rand_range(res.GetDestPtr(), bn[0].GetPtr()), 1);
+            break;
+        case    1:
+            CF_CHECK_EQ(BN_pseudo_rand_range(res.GetDestPtr(), bn[0].GetPtr()), 1);
+            break;
+        case    2:
+            {
+                const auto bits = ds.Get<uint8_t>();
+                const auto top = ds.Get<uint8_t>();
+                const auto bottom = ds.Get<uint8_t>();
+                CF_CHECK_EQ(BN_rand(res.GetDestPtr(), bits, top, bottom), 1);
+            }
+            break;
+        case    3:
+            {
+                const auto bits = ds.Get<uint8_t>();
+                const auto top = ds.Get<uint8_t>();
+                const auto bottom = ds.Get<uint8_t>();
+                CF_CHECK_EQ(BN_pseudo_rand(res.GetDestPtr(), bits, top, bottom), 1);
+            }
+            break;
+        default:
+            ret = false;
+            break;
+    }
+
+    ret = true;
+
+end:
+    return ret;
+}
+
 } /* namespace OpenSSL_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */
