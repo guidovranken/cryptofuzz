@@ -4,7 +4,6 @@
 #include <botan/ber_dec.h>
 #include <botan/bigint.h>
 #include <botan/cipher_mode.h>
-#include <botan/cmac.h>
 #include <botan/curve25519.h>
 #include <botan/dh.h>
 #include <botan/ecdsa.h>
@@ -272,6 +271,10 @@ end:
 } /* namespace Botan_detail */
 
 std::optional<component::MAC> Botan::OpCMAC(operation::CMAC& op) {
+    (void)op;
+
+    return std::nullopt;
+#if 0
     if ( op.cipher.cipherType.Get() != CF_CIPHER("AES_128_CBC") ) {
         return {};
     }
@@ -314,6 +317,7 @@ std::optional<component::MAC> Botan::OpCMAC(operation::CMAC& op) {
 
 end:
     return ret;
+#endif
 }
 
 std::optional<component::Ciphertext> Botan::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
