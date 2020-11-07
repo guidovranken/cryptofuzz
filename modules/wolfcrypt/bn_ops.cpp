@@ -8,6 +8,11 @@
 
 namespace cryptofuzz {
 namespace module {
+
+namespace wolfCrypt_detail {
+    WC_RNG* GetRNG(void);
+}
+
 namespace wolfCrypt_bignum {
 
 namespace wolfCrypt_bignum_detail {
@@ -861,6 +866,33 @@ bool CondSet::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     CF_CHECK_EQ(mp_cond_copy(bn[0].GetPtr(), doCopy, res.GetPtr()), MP_OKAY);
 
     ret = true;
+
+end:
+    return ret;
+}
+
+bool Rand::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    (void)ds;
+    (void)bn;
+
+    bool ret = false;
+
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            {
+                const auto len = ds.Get<uint16_t>() % 512;
+                CF_CHECK_EQ(mp_rand(res.GetPtr(), len, wolfCrypt_detail::GetRNG()), MP_OKAY);
+                ret = true;
+            }
+            break;
+        case    1:
+            {
+                const auto len = ds.Get<uint16_t>() % 512;
+                CF_CHECK_EQ(mp_rand_prime(res.GetPtr(), len, wolfCrypt_detail::GetRNG(), nullptr), MP_OKAY);
+                ret = true;
+            }
+            break;
+    }
 
 end:
     return ret;

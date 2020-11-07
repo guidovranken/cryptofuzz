@@ -57,6 +57,10 @@ namespace module {
 namespace wolfCrypt_detail {
     static WC_RNG rng;
 
+    WC_RNG* GetRNG(void) {
+        return &rng;
+    }
+
 #if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES) || defined(CRYPTOFUZZ_WOLFCRYPT_MMAP_FIXED)
     Datasource* ds;
 #endif
@@ -3001,6 +3005,9 @@ std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& 
             break;
         case    CF_CALCOP("CondSet(A,B)"):
             opRunner = std::make_unique<wolfCrypt_bignum::CondSet>();
+            break;
+        case    CF_CALCOP("Rand()"):
+            opRunner = std::make_unique<wolfCrypt_bignum::Rand>();
             break;
     }
 
