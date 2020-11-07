@@ -412,6 +412,13 @@ bool CondSet::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::Big
     return true;
 }
 
+bool Ressol::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
+    res = ::Botan::ressol(bn[0], bn[1]);
+
+    return true;
+}
 
 } /* namespace Botan_bignum */
 } /* namespace module */
