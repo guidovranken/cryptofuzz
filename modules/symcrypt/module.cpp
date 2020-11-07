@@ -1101,6 +1101,12 @@ namespace SymCrypt_detail {
 }
 
 std::optional<component::ECC_PublicKey> SymCrypt::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
+#if INTPTR_MAX == INT32_MAX
+    /* Pending resolution of https://github.com/microsoft/SymCrypt/issues/9 */
+    (void)op;
+
+    return std::nullopt;
+#else
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
 
     SYMCRYPT_ECURVE* curve = nullptr;
@@ -1159,6 +1165,7 @@ end:
         /* noret */ SymCryptEcurveFree(curve);
     }
     return ret;
+#endif
 }
 
 } /* namespace module */
