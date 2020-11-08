@@ -22,6 +22,7 @@ libtomcrypt::libtomcrypt(void) :
     CF_CHECK_NE(register_hash(&sha384_desc), -1);
     CF_CHECK_NE(register_hash(&sha512_desc), -1);
     CF_CHECK_NE(register_hash(&tiger_desc), -1);
+    CF_CHECK_NE(register_hash(&whirlpool_desc), -1);
 
     CF_CHECK_NE(register_all_ciphers(), -1);
 
@@ -176,6 +177,7 @@ end:
     Digest<48> sha384(sha384_init, sha384_process, sha384_done);
     Digest<64> sha512(sha512_init, sha512_process, sha512_done);
     Digest<24> tiger(tiger_init, tiger_process, tiger_done);
+    Digest<64> whirlpool(whirlpool_init, whirlpool_process, whirlpool_done);
     Digest<20> blake2b160(blake2b_160_init, blake2b_process, blake2b_done);
     Digest<32> blake2b256(blake2b_256_init, blake2b_process, blake2b_done);
     Digest<48> blake2b384(blake2b_384_init, blake2b_process, blake2b_done);
@@ -233,6 +235,9 @@ end:
             case CF_DIGEST("TIGER"):
                 return find_hash("tiger");
                 break;
+            case CF_DIGEST("WHIRLPOOL"):
+                return find_hash("whirlpool");
+                break;
             default:
                 return -1;
         }
@@ -287,6 +292,9 @@ std::optional<component::Digest> libtomcrypt::OpDigest(operation::Digest& op) {
             break;
         case CF_DIGEST("TIGER"):
             ret = libtomcrypt_detail::tiger.Run(op);
+            break;
+        case CF_DIGEST("WHIRLPOOL"):
+            ret = libtomcrypt_detail::whirlpool.Run(op);
             break;
         case CF_DIGEST("BLAKE2B160"):
             ret = libtomcrypt_detail::blake2b160.Run(op);
