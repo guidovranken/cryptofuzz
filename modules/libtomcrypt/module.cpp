@@ -413,6 +413,12 @@ namespace libtomcrypt_detail {
             case CF_CIPHER("CAMELLIA_192_CBC"):
             case CF_CIPHER("CAMELLIA_256_CBC"):
                 return find_cipher("camellia");
+            case CF_CIPHER("TWOFISH_ECB"):
+            case CF_CIPHER("TWOFISH_CTR"):
+            case CF_CIPHER("TWOFISH_CFB"):
+            case CF_CIPHER("TWOFISH_OFB"):
+            case CF_CIPHER("TWOFISH_CBC"):
+                return find_cipher("twofish");
             case CF_CIPHER("IDEA_ECB"):
             case CF_CIPHER("IDEA_CTR"):
             case CF_CIPHER("IDEA_CFB"):
