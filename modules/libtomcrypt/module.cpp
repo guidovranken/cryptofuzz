@@ -874,7 +874,7 @@ end:
             return ret;
         }
 
-        if ( cipher.key.GetSize() > 16 ) {
+        if ( cipher.key.GetSize() == 0 || cipher.key.GetSize() > 16 ) {
             return ret;
         }
 
@@ -918,6 +918,9 @@ end:
         CF_CHECK_EQ(sosemanuk_setup(&state, cipher.key.GetPtr(), cipher.key.GetSize()), CRYPT_OK);
         CF_CHECK_EQ(sosemanuk_setiv(&state, cipher.iv.GetPtr(), cipher.iv.GetSize()), CRYPT_OK);
         for (const auto& part : parts) {
+            if ( part.first == nullptr ) {
+                continue;
+            }
             CF_CHECK_EQ(sosemanuk_crypt(&state, part.first, part.second, out + outIdx), CRYPT_OK);
             outIdx += part.second;
         }
@@ -944,6 +947,9 @@ end:
 
         CF_CHECK_EQ(rc4_stream_setup(&state, cipher.key.GetPtr(), cipher.key.GetSize()), CRYPT_OK);
         for (const auto& part : parts) {
+            if ( part.first == nullptr ) {
+                continue;
+            }
             CF_CHECK_EQ(rc4_stream_crypt(&state, part.first, part.second, out + outIdx), CRYPT_OK);
             outIdx += part.second;
         }
