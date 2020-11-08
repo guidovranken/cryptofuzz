@@ -929,6 +929,32 @@ end:
         return ret;
     }
 
+    std::optional<Buffer> RC4Crypt(Datasource& ds, const Buffer& in, const component::SymmetricCipher& cipher) {
+        std::optional<Buffer> ret = std::nullopt;
+
+        if ( cipher.key.GetSize() < 5 ) {
+            return ret;
+        }
+
+        rc4_state state;
+        size_t outIdx = 0;
+
+        uint8_t* out = util::malloc(in.GetSize());
+        const auto parts = util::ToParts(ds, in);
+
+        CF_CHECK_EQ(rc4_stream_setup(&state, cipher.key.GetPtr(), cipher.key.GetSize()), CRYPT_OK);
+        for (const auto& part : parts) {
+            CF_CHECK_EQ(rc4_stream_crypt(&state, part.first, part.second, out + outIdx), CRYPT_OK);
+            outIdx += part.second;
+        }
+
+        ret = Buffer(out, in.GetSize());
+
+end:
+        util::free(out);
+        return ret;
+    }
+
     std::optional<Buffer> EcbEncrypt(operation::SymmetricEncrypt& op) {
         std::optional<Buffer> ret = std::nullopt;
 
@@ -1187,6 +1213,8 @@ std::optional<component::Ciphertext> libtomcrypt::OpSymmetricEncrypt(operation::
         return libtomcrypt_detail::RABBITCrypt(ds, op.cleartext, op.cipher);
     } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SOSEMANUK") ) {
         return libtomcrypt_detail::SOSEMANUKCrypt(ds, op.cleartext, op.cipher);
+    } else if ( op.cipher.cipherType.Get() == CF_CIPHER("RC4") ) {
+        return libtomcrypt_detail::RC4Crypt(ds, op.cleartext, op.cipher);
     } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_128") ) {
         return libtomcrypt_detail::Salsa20Crypt(ds, op.cleartext, op.cipher, 16, 20);
     } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_12_128") ) {
@@ -1223,6 +1251,8 @@ std::optional<component::Cleartext> libtomcrypt::OpSymmetricDecrypt(operation::S
         return libtomcrypt_detail::RABBITCrypt(ds, op.ciphertext, op.cipher);
     } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SOSEMANUK") ) {
         return libtomcrypt_detail::SOSEMANUKCrypt(ds, op.ciphertext, op.cipher);
+    } else if ( op.cipher.cipherType.Get() == CF_CIPHER("RC4") ) {
+        return libtomcrypt_detail::RC4Crypt(ds, op.ciphertext, op.cipher);
     } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_128") ) {
         return libtomcrypt_detail::Salsa20Crypt(ds, op.ciphertext, op.cipher, 16, 20);
     } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_12_128") ) {
