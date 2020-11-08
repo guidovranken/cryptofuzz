@@ -378,6 +378,12 @@ namespace libtomcrypt_detail {
             case CF_CIPHER("AES_128_ECB"):
             case CF_CIPHER("AES_192_ECB"):
             case CF_CIPHER("AES_256_ECB"):
+            case CF_CIPHER("AES_128_CTR"):
+            case CF_CIPHER("AES_192_CTR"):
+            case CF_CIPHER("AES_256_CTR"):
+            case CF_CIPHER("AES_128_CFB"):
+            case CF_CIPHER("AES_192_CFB"):
+            case CF_CIPHER("AES_256_CFB"):
                 return find_cipher("aes");
             case CF_CIPHER("CAMELLIA_128_GCM"):
             case CF_CIPHER("CAMELLIA_192_GCM"):
@@ -391,60 +397,81 @@ namespace libtomcrypt_detail {
             case CF_CIPHER("CAMELLIA_128_CTR"):
             case CF_CIPHER("CAMELLIA_192_CTR"):
             case CF_CIPHER("CAMELLIA_256_CTR"):
+            case CF_CIPHER("CAMELLIA_128_CFB"):
+            case CF_CIPHER("CAMELLIA_192_CFB"):
+            case CF_CIPHER("CAMELLIA_256_CFB"):
                 return find_cipher("camellia");
             case CF_CIPHER("IDEA_ECB"):
             case CF_CIPHER("IDEA_CTR"):
+            case CF_CIPHER("IDEA_CFB"):
                 return find_cipher("idea");
             case CF_CIPHER("CAST5_ECB"):
             case CF_CIPHER("CAST5_CTR"):
+            case CF_CIPHER("CAST5_CFB"):
                 return find_cipher("cast5");
             case CF_CIPHER("SKIPJACK_ECB"):
             case CF_CIPHER("SKIPJACK_CTR"):
+            case CF_CIPHER("SKIPJACK_CFB"):
                 return find_cipher("skipjack");
             case CF_CIPHER("BLOWFISH_ECB"):
             case CF_CIPHER("BLOWFISH_CTR"):
+            case CF_CIPHER("BLOWFISH_CFB"):
                 return find_cipher("blowfish");
             case CF_CIPHER("DES_ECB"):
             case CF_CIPHER("DES_CTR"):
+            case CF_CIPHER("DES_CFB"):
                 return find_cipher("des");
             case CF_CIPHER("RC2_ECB"):
             case CF_CIPHER("RC2_CTR"):
+            case CF_CIPHER("RC2_CFB"):
                 return find_cipher("rc2");
             case CF_CIPHER("XTEA_ECB"):
             case CF_CIPHER("XTEA_CTR"):
+            case CF_CIPHER("XTEA_CFB"):
                 return find_cipher("xtea");
             case CF_CIPHER("ANUBIS_ECB"):
             case CF_CIPHER("ANUBIS_CTR"):
+            case CF_CIPHER("ANUBIS_CFB"):
                 return find_cipher("anubis");
             case CF_CIPHER("KASUMI_ECB"):
             case CF_CIPHER("KASUMI_CTR"):
+            case CF_CIPHER("KASUMI_CFB"):
                 return find_cipher("kasumi");
             case CF_CIPHER("RC6_ECB"):
             case CF_CIPHER("RC6_CTR"):
+            case CF_CIPHER("RC6_CFB"):
                 return find_cipher("rc6");
             case CF_CIPHER("TEA_ECB"):
             case CF_CIPHER("TEA_CTR"):
+            case CF_CIPHER("TEA_CFB"):
                 return find_cipher("tea");
             case CF_CIPHER("SEED_ECB"):
             case CF_CIPHER("SEED_CTR"):
+            case CF_CIPHER("SEED_CFB"):
                 return find_cipher("seed");
             case CF_CIPHER("KHAZAD_ECB"):
             case CF_CIPHER("KHAZAD_CTR"):
+            case CF_CIPHER("KHAZAD_CFB"):
                 return find_cipher("khazad");
             case CF_CIPHER("NOEKEON_ECB"):
             case CF_CIPHER("NOEKEON_CTR"):
+            case CF_CIPHER("NOEKEON_CFB"):
                 return find_cipher("noekeon");
             case CF_CIPHER("RC5_ECB"):
             case CF_CIPHER("RC5_CTR"):
+            case CF_CIPHER("RC5_CFB"):
                 return find_cipher("rc5");
             case CF_CIPHER("SERPENT_ECB"):
             case CF_CIPHER("SERPENT_CTR"):
+            case CF_CIPHER("SERPENT_CFB"):
                 return find_cipher("serpent");
             case CF_CIPHER("SAFER_K_ECB"):
             case CF_CIPHER("SAFER_K_CTR"):
+            case CF_CIPHER("SAFER_K_CFB"):
                 return find_cipher("safer-k64");
             case CF_CIPHER("SAFER_SK_ECB"):
             case CF_CIPHER("SAFER_SK_CTR"):
+            case CF_CIPHER("SAFER_SK_CFB"):
                 return find_cipher("safer-sk64");
             default:
                 return -1;
@@ -840,6 +867,52 @@ end:
         return ret;
     }
 
+    std::optional<Buffer> CfbEncrypt(operation::SymmetricEncrypt& op) {
+        std::optional<Buffer> ret = std::nullopt;
+
+        std::optional<int> cipherIdx;
+        symmetric_CFB cfb;
+        uint8_t* out = util::malloc(op.cleartext.GetSize());
+
+        CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
+        CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
+        CF_CHECK_GT(op.cleartext.GetSize(), 0);
+        CF_CHECK_EQ(op.cleartext.GetSize() % cipher_descriptor[*cipherIdx].block_length, 0);
+        CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[*cipherIdx].block_length);
+        CF_CHECK_EQ(cfb_start(*cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &cfb), CRYPT_OK);
+        CF_CHECK_EQ(cfb_encrypt(op.cleartext.GetPtr(), out, op.cleartext.GetSize(), &cfb), CRYPT_OK);
+        CF_CHECK_EQ(cfb_done(&cfb), CRYPT_OK);
+
+        ret = Buffer(out, op.cleartext.GetSize());
+
+end:
+        util::free(out);
+        return ret;
+    }
+
+    std::optional<Buffer> CfbDecrypt(operation::SymmetricDecrypt& op) {
+        std::optional<Buffer> ret = std::nullopt;
+
+        std::optional<int> cipherIdx;
+        symmetric_CFB cfb;
+        uint8_t* out = util::malloc(op.ciphertext.GetSize());
+
+        CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
+        CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
+        CF_CHECK_GT(op.ciphertext.GetSize(), 0);
+        CF_CHECK_EQ(op.ciphertext.GetSize() % cipher_descriptor[*cipherIdx].block_length, 0);
+        CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[*cipherIdx].block_length);
+        CF_CHECK_EQ(cfb_start(*cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &cfb), CRYPT_OK);
+        CF_CHECK_EQ(cfb_encrypt(op.ciphertext.GetPtr(), out, op.ciphertext.GetSize(), &cfb), CRYPT_OK);
+        CF_CHECK_EQ(cfb_done(&cfb), CRYPT_OK);
+
+        ret = Buffer(out, op.ciphertext.GetSize());
+
+end:
+        util::free(out);
+        return ret;
+    }
+
 } /* namespace libtomcrypt_detail */
 
 std::optional<component::Ciphertext> libtomcrypt::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
@@ -851,6 +924,8 @@ std::optional<component::Ciphertext> libtomcrypt::OpSymmetricEncrypt(operation::
         return libtomcrypt_detail::EcbEncrypt(op);
     } else if ( repository::IsCTR(op.cipher.cipherType.Get()) ) {
         return libtomcrypt_detail::CtrEncrypt(op);
+    } else if ( repository::IsCFB(op.cipher.cipherType.Get()) ) {
+        return libtomcrypt_detail::CfbEncrypt(op);
     } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_128") ) {
         return libtomcrypt_detail::Salsa20Crypt(op.cleartext, op.cipher, 16, 20);
     } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_12_128") ) {
@@ -873,6 +948,8 @@ std::optional<component::Cleartext> libtomcrypt::OpSymmetricDecrypt(operation::S
         return libtomcrypt_detail::EcbDecrypt(op);
     } else if ( repository::IsCTR(op.cipher.cipherType.Get()) ) {
         return libtomcrypt_detail::CtrDecrypt(op);
+    } else if ( repository::IsCFB(op.cipher.cipherType.Get()) ) {
+        return libtomcrypt_detail::CfbDecrypt(op);
     } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_128") ) {
         return libtomcrypt_detail::Salsa20Crypt(op.ciphertext, op.cipher, 16, 20);
     } else if ( op.cipher.cipherType.Get() == CF_CIPHER("SALSA20_12_128") ) {
