@@ -197,46 +197,32 @@ end:
         switch ( digestType ) {
             case CF_DIGEST("MD2"):
                 return find_hash("md2");
-                break;
             case CF_DIGEST("MD4"):
                 return find_hash("md4");
-                break;
             case CF_DIGEST("MD5"):
                 return find_hash("md5");
-                break;
             case CF_DIGEST("RIPEMD128"):
                 return find_hash("rmd128");
-                break;
             case CF_DIGEST("RIPEMD160"):
                 return find_hash("rmd160");
-                break;
             case CF_DIGEST("RIPEMD256"):
                 return find_hash("rmd256");
-                break;
             case CF_DIGEST("RIPEMD320"):
                 return find_hash("rmd320");
-                break;
             case CF_DIGEST("SHA1"):
                 return find_hash("sha1");
-                break;
             case CF_DIGEST("SHA224"):
                 return find_hash("sha224");
-                break;
             case CF_DIGEST("SHA256"):
                 return find_hash("sha256");
-                break;
             case CF_DIGEST("SHA384"):
                 return find_hash("sha384");
-                break;
             case CF_DIGEST("SHA512"):
                 return find_hash("sha512");
-                break;
             case CF_DIGEST("TIGER"):
                 return find_hash("tiger");
-                break;
             case CF_DIGEST("WHIRLPOOL"):
                 return find_hash("whirlpool");
-                break;
             default:
                 return -1;
         }
@@ -349,14 +335,14 @@ std::optional<component::MAC> libtomcrypt::OpHMAC(operation::HMAC& op) {
     hmac_state ctx;
     uint8_t out[MAXBLOCKSIZE];
     unsigned long outlen;
-    std::optional<int> hashIdx = std::nullopt;
+    int hashIdx = -1;
     util::Multipart parts;
 
     CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
 
-    CF_CHECK_NE(hashIdx = libtomcrypt_detail::ToHashIdx(op.digestType.Get()), std::nullopt);
+    CF_CHECK_NE(hashIdx = libtomcrypt_detail::ToHashIdx(op.digestType.Get()), -1);
 
-    CF_CHECK_EQ(hmac_init(&ctx, *hashIdx, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), CRYPT_OK);
+    CF_CHECK_EQ(hmac_init(&ctx, hashIdx, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), CRYPT_OK);
 
     parts = util::ToParts(ds, op.cleartext);
     for (const auto& part : parts) {
@@ -552,7 +538,7 @@ namespace libtomcrypt_detail {
 
         util::Multipart parts;
         gcm_state gcm;
-        std::optional<int> cipherIdx;
+        int cipherIdx = -1;
 
         int err = 0;
         uint8_t* tag = util::malloc(*op.tagSize);
@@ -564,7 +550,7 @@ namespace libtomcrypt_detail {
 
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
-        CF_CHECK_EQ((err = gcm_init(&gcm, *cipherIdx, op.cipher.key.GetPtr(), op.cipher.key.GetSize())), CRYPT_OK);
+        CF_CHECK_EQ((err = gcm_init(&gcm, cipherIdx, op.cipher.key.GetPtr(), op.cipher.key.GetSize())), CRYPT_OK);
 
         CF_CHECK_EQ(gcm_add_iv(&gcm, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize()), CRYPT_OK);
 
@@ -600,7 +586,7 @@ namespace libtomcrypt_detail {
 
         util::Multipart parts;
         gcm_state gcm;
-        std::optional<int> cipherIdx;
+        int cipherIdx = -1;
 
         int err = 0;
         if ( op.tag == std::nullopt ) {
@@ -615,7 +601,7 @@ namespace libtomcrypt_detail {
 
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
-        CF_CHECK_EQ((err = gcm_init(&gcm, *cipherIdx, op.cipher.key.GetPtr(), op.cipher.key.GetSize())), CRYPT_OK);
+        CF_CHECK_EQ((err = gcm_init(&gcm, cipherIdx, op.cipher.key.GetPtr(), op.cipher.key.GetSize())), CRYPT_OK);
 
         CF_CHECK_EQ(gcm_add_iv(&gcm, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize()), CRYPT_OK);
 
@@ -671,7 +657,7 @@ namespace libtomcrypt_detail {
 
         uint8_t* tag = util::malloc(*op.tagSize);
         uint8_t* out = util::malloc(op.ciphertextSize);
-        std::optional<int> cipherIdx;
+        int cipherIdx = -1;
 
         CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize());
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
@@ -687,7 +673,7 @@ namespace libtomcrypt_detail {
                 /* One-shot */
 
                 CF_CHECK_EQ(ccm_memory(
-                            *cipherIdx,
+                            cipherIdx,
                             op.cipher.key.GetPtr(),
                             op.cipher.key.GetSize(),
                             nullptr,
@@ -707,7 +693,7 @@ namespace libtomcrypt_detail {
                 ccm_state ccm;
                 CF_CHECK_EQ(ccm_init(
                             &ccm,
-                            *cipherIdx,
+                            cipherIdx,
                             op.cipher.key.GetPtr(),
                             op.cipher.key.GetSize(),
                             in.size(),
@@ -752,7 +738,7 @@ namespace libtomcrypt_detail {
 
         uint8_t* tag = util::malloc(op.tag->GetSize());
         uint8_t* out = util::malloc(op.cleartextSize);
-        std::optional<int> cipherIdx;
+        int cipherIdx = -1;
 
         CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
@@ -770,7 +756,7 @@ namespace libtomcrypt_detail {
                 /* One-shot */
 
                 CF_CHECK_EQ(ccm_memory(
-                            *cipherIdx,
+                            cipherIdx,
                             op.cipher.key.GetPtr(),
                             op.cipher.key.GetSize(),
                             nullptr,
@@ -790,7 +776,7 @@ namespace libtomcrypt_detail {
                 ccm_state ccm;
                 CF_CHECK_EQ(ccm_init(
                             &ccm,
-                            *cipherIdx,
+                            cipherIdx,
                             op.cipher.key.GetPtr(),
                             op.cipher.key.GetSize(),
                             in.size(),
@@ -1178,15 +1164,15 @@ end:
     std::optional<Buffer> EcbEncrypt(operation::SymmetricEncrypt& op) {
         std::optional<Buffer> ret = std::nullopt;
 
-        std::optional<int> cipherIdx;
+        int cipherIdx = -1;
         symmetric_ECB ecb;
         uint8_t* out = util::malloc(op.cleartext.GetSize());
 
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(op.cleartext.GetSize(), 0);
-        CF_CHECK_EQ(op.cleartext.GetSize() % cipher_descriptor[*cipherIdx].block_length, 0);
-        CF_CHECK_EQ(ecb_start(*cipherIdx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &ecb), CRYPT_OK);
+        CF_CHECK_EQ(op.cleartext.GetSize() % cipher_descriptor[cipherIdx].block_length, 0);
+        CF_CHECK_EQ(ecb_start(cipherIdx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &ecb), CRYPT_OK);
         CF_CHECK_EQ(ecb_encrypt(op.cleartext.GetPtr(), out, op.cleartext.GetSize(), &ecb), CRYPT_OK);
         CF_CHECK_EQ(ecb_done(&ecb), CRYPT_OK);
 
@@ -1200,15 +1186,15 @@ end:
     std::optional<Buffer> EcbDecrypt(operation::SymmetricDecrypt& op) {
         std::optional<Buffer> ret = std::nullopt;
 
-        std::optional<int> cipherIdx;
+        int cipherIdx = -1;
         symmetric_ECB ecb;
         uint8_t* out = util::malloc(op.ciphertext.GetSize());
 
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(op.ciphertext.GetSize(), 0);
-        CF_CHECK_EQ(op.ciphertext.GetSize() % cipher_descriptor[*cipherIdx].block_length, 0);
-        CF_CHECK_EQ(ecb_start(*cipherIdx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &ecb), CRYPT_OK);
+        CF_CHECK_EQ(op.ciphertext.GetSize() % cipher_descriptor[cipherIdx].block_length, 0);
+        CF_CHECK_EQ(ecb_start(cipherIdx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &ecb), CRYPT_OK);
         CF_CHECK_EQ(ecb_decrypt(op.ciphertext.GetPtr(), out, op.ciphertext.GetSize(), &ecb), CRYPT_OK);
         CF_CHECK_EQ(ecb_done(&ecb), CRYPT_OK);
 
@@ -1222,16 +1208,16 @@ end:
     std::optional<Buffer> CtrEncrypt(operation::SymmetricEncrypt& op) {
         std::optional<Buffer> ret = std::nullopt;
 
-        std::optional<int> cipherIdx;
+        int cipherIdx = -1;
         symmetric_CTR ctr;
         uint8_t* out = util::malloc(op.cleartext.GetSize());
 
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(op.cleartext.GetSize(), 0);
-        CF_CHECK_EQ(op.cleartext.GetSize() % cipher_descriptor[*cipherIdx].block_length, 0);
-        CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[*cipherIdx].block_length);
-        CF_CHECK_EQ(ctr_start(*cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, CTR_COUNTER_BIG_ENDIAN, &ctr), CRYPT_OK);
+        CF_CHECK_EQ(op.cleartext.GetSize() % cipher_descriptor[cipherIdx].block_length, 0);
+        CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[cipherIdx].block_length);
+        CF_CHECK_EQ(ctr_start(cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, CTR_COUNTER_BIG_ENDIAN, &ctr), CRYPT_OK);
         CF_CHECK_EQ(ctr_encrypt(op.cleartext.GetPtr(), out, op.cleartext.GetSize(), &ctr), CRYPT_OK);
         CF_CHECK_EQ(ctr_done(&ctr), CRYPT_OK);
 
@@ -1245,16 +1231,16 @@ end:
     std::optional<Buffer> CtrDecrypt(operation::SymmetricDecrypt& op) {
         std::optional<Buffer> ret = std::nullopt;
 
-        std::optional<int> cipherIdx;
+        int cipherIdx = -1;
         symmetric_CTR ctr;
         uint8_t* out = util::malloc(op.ciphertext.GetSize());
 
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(op.ciphertext.GetSize(), 0);
-        CF_CHECK_EQ(op.ciphertext.GetSize() % cipher_descriptor[*cipherIdx].block_length, 0);
-        CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[*cipherIdx].block_length);
-        CF_CHECK_EQ(ctr_start(*cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, CTR_COUNTER_BIG_ENDIAN, &ctr), CRYPT_OK);
+        CF_CHECK_EQ(op.ciphertext.GetSize() % cipher_descriptor[cipherIdx].block_length, 0);
+        CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[cipherIdx].block_length);
+        CF_CHECK_EQ(ctr_start(cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, CTR_COUNTER_BIG_ENDIAN, &ctr), CRYPT_OK);
         CF_CHECK_EQ(ctr_decrypt(op.ciphertext.GetPtr(), out, op.ciphertext.GetSize(), &ctr), CRYPT_OK);
         CF_CHECK_EQ(ctr_done(&ctr), CRYPT_OK);
 
@@ -1268,16 +1254,16 @@ end:
     std::optional<Buffer> CfbEncrypt(operation::SymmetricEncrypt& op) {
         std::optional<Buffer> ret = std::nullopt;
 
-        std::optional<int> cipherIdx;
+        int cipherIdx = -1;
         symmetric_CFB cfb;
         uint8_t* out = util::malloc(op.cleartext.GetSize());
 
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(op.cleartext.GetSize(), 0);
-        CF_CHECK_EQ(op.cleartext.GetSize() % cipher_descriptor[*cipherIdx].block_length, 0);
-        CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[*cipherIdx].block_length);
-        CF_CHECK_EQ(cfb_start(*cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &cfb), CRYPT_OK);
+        CF_CHECK_EQ(op.cleartext.GetSize() % cipher_descriptor[cipherIdx].block_length, 0);
+        CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[cipherIdx].block_length);
+        CF_CHECK_EQ(cfb_start(cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &cfb), CRYPT_OK);
         CF_CHECK_EQ(cfb_encrypt(op.cleartext.GetPtr(), out, op.cleartext.GetSize(), &cfb), CRYPT_OK);
         CF_CHECK_EQ(cfb_done(&cfb), CRYPT_OK);
 
@@ -1291,16 +1277,16 @@ end:
     std::optional<Buffer> CfbDecrypt(operation::SymmetricDecrypt& op) {
         std::optional<Buffer> ret = std::nullopt;
 
-        std::optional<int> cipherIdx;
+        int cipherIdx = -1;
         symmetric_CFB cfb;
         uint8_t* out = util::malloc(op.ciphertext.GetSize());
 
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(op.ciphertext.GetSize(), 0);
-        CF_CHECK_EQ(op.ciphertext.GetSize() % cipher_descriptor[*cipherIdx].block_length, 0);
-        CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[*cipherIdx].block_length);
-        CF_CHECK_EQ(cfb_start(*cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &cfb), CRYPT_OK);
+        CF_CHECK_EQ(op.ciphertext.GetSize() % cipher_descriptor[cipherIdx].block_length, 0);
+        CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[cipherIdx].block_length);
+        CF_CHECK_EQ(cfb_start(cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &cfb), CRYPT_OK);
         CF_CHECK_EQ(cfb_decrypt(op.ciphertext.GetPtr(), out, op.ciphertext.GetSize(), &cfb), CRYPT_OK);
         CF_CHECK_EQ(cfb_done(&cfb), CRYPT_OK);
 
@@ -1314,16 +1300,16 @@ end:
     std::optional<Buffer> OfbEncrypt(operation::SymmetricEncrypt& op) {
         std::optional<Buffer> ret = std::nullopt;
 
-        std::optional<int> cipherIdx;
+        int cipherIdx = -1;
         symmetric_OFB ofb;
         uint8_t* out = util::malloc(op.cleartext.GetSize());
 
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(op.cleartext.GetSize(), 0);
-        CF_CHECK_EQ(op.cleartext.GetSize() % cipher_descriptor[*cipherIdx].block_length, 0);
-        CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[*cipherIdx].block_length);
-        CF_CHECK_EQ(ofb_start(*cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &ofb), CRYPT_OK);
+        CF_CHECK_EQ(op.cleartext.GetSize() % cipher_descriptor[cipherIdx].block_length, 0);
+        CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[cipherIdx].block_length);
+        CF_CHECK_EQ(ofb_start(cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &ofb), CRYPT_OK);
         CF_CHECK_EQ(ofb_encrypt(op.cleartext.GetPtr(), out, op.cleartext.GetSize(), &ofb), CRYPT_OK);
         CF_CHECK_EQ(ofb_done(&ofb), CRYPT_OK);
 
@@ -1337,16 +1323,16 @@ end:
     std::optional<Buffer> OfbDecrypt(operation::SymmetricDecrypt& op) {
         std::optional<Buffer> ret = std::nullopt;
 
-        std::optional<int> cipherIdx;
+        int cipherIdx = -1;
         symmetric_OFB ofb;
         uint8_t* out = util::malloc(op.ciphertext.GetSize());
 
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(op.ciphertext.GetSize(), 0);
-        CF_CHECK_EQ(op.ciphertext.GetSize() % cipher_descriptor[*cipherIdx].block_length, 0);
-        CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[*cipherIdx].block_length);
-        CF_CHECK_EQ(ofb_start(*cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &ofb), CRYPT_OK);
+        CF_CHECK_EQ(op.ciphertext.GetSize() % cipher_descriptor[cipherIdx].block_length, 0);
+        CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[cipherIdx].block_length);
+        CF_CHECK_EQ(ofb_start(cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &ofb), CRYPT_OK);
         CF_CHECK_EQ(ofb_decrypt(op.ciphertext.GetPtr(), out, op.ciphertext.GetSize(), &ofb), CRYPT_OK);
         CF_CHECK_EQ(ofb_done(&ofb), CRYPT_OK);
 
@@ -1360,17 +1346,19 @@ end:
     std::optional<Buffer> CbcEncrypt(operation::SymmetricEncrypt& op) {
         std::optional<Buffer> ret = std::nullopt;
 
-        std::optional<int> cipherIdx;
+        int cipherIdx = -1;
         symmetric_CBC cbc;
-        const auto cleartext = util::Pkcs7Pad(op.cleartext.Get(), cipher_descriptor[*cipherIdx].block_length);
-        uint8_t* out = util::malloc(cleartext.size());
+        uint8_t* out = nullptr;
+        std::vector<uint8_t> cleartext;
 
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
+        cleartext = util::Pkcs7Pad(op.cleartext.Get(), cipher_descriptor[cipherIdx].block_length);
+        out = util::malloc(cleartext.size());
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(cleartext.size(), 0);
-        CF_CHECK_EQ(cleartext.size() % cipher_descriptor[*cipherIdx].block_length, 0);
-        CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[*cipherIdx].block_length);
-        CF_CHECK_EQ(cbc_start(*cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &cbc), CRYPT_OK);
+        CF_CHECK_EQ(cleartext.size() % cipher_descriptor[cipherIdx].block_length, 0);
+        CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[cipherIdx].block_length);
+        CF_CHECK_EQ(cbc_start(cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &cbc), CRYPT_OK);
         CF_CHECK_EQ(cbc_encrypt(cleartext.data(), out, cleartext.size(), &cbc), CRYPT_OK);
         CF_CHECK_EQ(cbc_done(&cbc), CRYPT_OK);
 
@@ -1384,21 +1372,21 @@ end:
     std::optional<Buffer> CbcDecrypt(operation::SymmetricDecrypt& op) {
         std::optional<Buffer> ret = std::nullopt;
 
-        std::optional<int> cipherIdx;
+        int cipherIdx = -1;
         symmetric_CBC cbc;
         uint8_t* out = util::malloc(op.ciphertext.GetSize());
 
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(op.ciphertext.GetSize(), 0);
-        CF_CHECK_EQ(op.ciphertext.GetSize() % cipher_descriptor[*cipherIdx].block_length, 0);
-        CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[*cipherIdx].block_length);
-        CF_CHECK_EQ(cbc_start(*cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &cbc), CRYPT_OK);
+        CF_CHECK_EQ(op.ciphertext.GetSize() % cipher_descriptor[cipherIdx].block_length, 0);
+        CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[cipherIdx].block_length);
+        CF_CHECK_EQ(cbc_start(cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &cbc), CRYPT_OK);
         CF_CHECK_EQ(cbc_decrypt(op.ciphertext.GetPtr(), out, op.ciphertext.GetSize(), &cbc), CRYPT_OK);
         CF_CHECK_EQ(cbc_done(&cbc), CRYPT_OK);
 
         {
-            const auto unpaddedCleartext = util::Pkcs7Unpad( std::vector<uint8_t>(out, out + op.ciphertext.GetSize()), cipher_descriptor[*cipherIdx].block_length);
+            const auto unpaddedCleartext = util::Pkcs7Unpad( std::vector<uint8_t>(out, out + op.ciphertext.GetSize()), cipher_descriptor[cipherIdx].block_length);
             CF_CHECK_NE(unpaddedCleartext, std::nullopt);
             ret = component::Cleartext(Buffer(*unpaddedCleartext));
         }
@@ -1496,16 +1484,16 @@ std::optional<component::Cleartext> libtomcrypt::OpSymmetricDecrypt(operation::S
 
 std::optional<component::Key> libtomcrypt::OpKDF_HKDF(operation::KDF_HKDF& op) {
     std::optional<component::Key> ret = std::nullopt;
-    std::optional<int> hashIdx = std::nullopt;
+    int hashIdx = -1;
     uint8_t* out = util::malloc(op.keySize);
 
     CF_CHECK_NE(out, nullptr);
     CF_CHECK_NE(op.password.GetPtr(), nullptr);
 
-    CF_CHECK_NE(hashIdx = libtomcrypt_detail::ToHashIdx(op.digestType.Get()), std::nullopt);
+    CF_CHECK_NE(hashIdx = libtomcrypt_detail::ToHashIdx(op.digestType.Get()), -1);
 
     CF_CHECK_EQ(hkdf(
-                *hashIdx,
+                hashIdx,
                 op.salt.GetPtr(),
                 op.salt.GetSize(),
                 op.info.GetPtr(),
@@ -1525,7 +1513,7 @@ end:
 
 std::optional<component::Key> libtomcrypt::OpKDF_PBKDF1(operation::KDF_PBKDF1& op) {
     std::optional<component::Key> ret = std::nullopt;
-    std::optional<int> hashIdx = std::nullopt;
+    int hashIdx = -1;
     uint8_t* out = util::malloc(op.keySize);
 
     CF_CHECK_NE(out, nullptr);
@@ -1534,7 +1522,7 @@ std::optional<component::Key> libtomcrypt::OpKDF_PBKDF1(operation::KDF_PBKDF1& o
     /* TODO report: iterations = 0 hangs */
     CF_CHECK_GT(op.iterations, 0);
 
-    CF_CHECK_NE(hashIdx = libtomcrypt_detail::ToHashIdx(op.digestType.Get()), std::nullopt);
+    CF_CHECK_NE(hashIdx = libtomcrypt_detail::ToHashIdx(op.digestType.Get()), -1);
 
     {
         unsigned long outLen = op.keySize;
@@ -1544,7 +1532,7 @@ std::optional<component::Key> libtomcrypt::OpKDF_PBKDF1(operation::KDF_PBKDF1& o
                     op.password.GetSize(),
                     op.salt.GetPtr(),
                     op.iterations,
-                    *hashIdx,
+                    hashIdx,
                     out,
                     &outLen), CRYPT_OK);
 
@@ -1560,14 +1548,14 @@ end:
 
 std::optional<component::Key> libtomcrypt::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
     std::optional<component::Key> ret = std::nullopt;
-    std::optional<int> hashIdx = std::nullopt;
+    int hashIdx = -1;
     uint8_t* out = util::malloc(op.keySize);
 
     CF_CHECK_NE(out, nullptr);
     CF_CHECK_NE(op.password.GetPtr(), nullptr);
     CF_CHECK_NE(op.salt.GetPtr(), nullptr);
 
-    CF_CHECK_NE(hashIdx = libtomcrypt_detail::ToHashIdx(op.digestType.Get()), std::nullopt);
+    CF_CHECK_NE(hashIdx = libtomcrypt_detail::ToHashIdx(op.digestType.Get()), -1);
 
     {
         unsigned long outLen = op.keySize;
@@ -1578,7 +1566,7 @@ std::optional<component::Key> libtomcrypt::OpKDF_PBKDF2(operation::KDF_PBKDF2& o
                     op.salt.GetPtr(),
                     op.salt.GetSize(),
                     op.iterations,
-                    *hashIdx,
+                    hashIdx,
                     out,
                     &outLen), CRYPT_OK);
 
@@ -1597,7 +1585,7 @@ std::optional<component::Key> libtomcrypt::OpKDF_BCRYPT(operation::KDF_BCRYPT& o
     /* bcrypt currently disabled because it leads to OOMs */
     return ret;
 
-    std::optional<int> hashIdx = std::nullopt;
+    int hashIdx = -1;
     uint8_t* out = util::malloc(op.keySize);
 
     CF_CHECK_NE(out, nullptr);
@@ -1605,7 +1593,7 @@ std::optional<component::Key> libtomcrypt::OpKDF_BCRYPT(operation::KDF_BCRYPT& o
     CF_CHECK_NE(op.secret.GetPtr(), nullptr);
     CF_CHECK_NE(op.salt.GetPtr(), nullptr);
 
-    CF_CHECK_NE(hashIdx = libtomcrypt_detail::ToHashIdx(op.digestType.Get()), std::nullopt);
+    CF_CHECK_NE(hashIdx = libtomcrypt_detail::ToHashIdx(op.digestType.Get()), -1);
 
     {
         unsigned long outLen = op.keySize;
@@ -1615,7 +1603,7 @@ std::optional<component::Key> libtomcrypt::OpKDF_BCRYPT(operation::KDF_BCRYPT& o
                     op.salt.GetPtr(),
                     op.salt.GetSize(),
                     op.iterations,
-                    *hashIdx,
+                    hashIdx,
                     out,
                     &outLen), CRYPT_OK);
 
