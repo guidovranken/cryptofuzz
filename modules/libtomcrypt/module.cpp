@@ -505,11 +505,11 @@ namespace libtomcrypt_detail {
             case CF_CIPHER("KHAZAD_OFB"):
             case CF_CIPHER("KHAZAD_CBC"):
                 return find_cipher("khazad");
-            case CF_CIPHER("NOEKEON_ECB"):
-            case CF_CIPHER("NOEKEON_CTR"):
-            case CF_CIPHER("NOEKEON_CFB"):
-            case CF_CIPHER("NOEKEON_OFB"):
-            case CF_CIPHER("NOEKEON_CBC"):
+            case CF_CIPHER("NOEKEON_DIRECT_ECB"):
+            case CF_CIPHER("NOEKEON_DIRECT_CTR"):
+            case CF_CIPHER("NOEKEON_DIRECT_CFB"):
+            case CF_CIPHER("NOEKEON_DIRECT_OFB"):
+            case CF_CIPHER("NOEKEON_DIRECT_CBC"):
                 return find_cipher("noekeon");
             case CF_CIPHER("RC5_ECB"):
             case CF_CIPHER("RC5_CTR"):
