@@ -414,10 +414,15 @@ bool CondSet::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::Big
 
 bool Ressol::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
     (void)ds;
+    (void)res;
+    (void)bn;
 
+    return false;
+#if 0
     res = ::Botan::ressol(bn[0], bn[1]);
 
     return true;
+#endif
 }
 
 } /* namespace Botan_bignum */
