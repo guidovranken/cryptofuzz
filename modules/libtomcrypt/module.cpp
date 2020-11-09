@@ -1229,7 +1229,7 @@ end:
         CF_CHECK_GT(op.cleartext.GetSize(), 0);
         CF_CHECK_EQ(op.cleartext.GetSize() % cipher_descriptor[*cipherIdx].block_length, 0);
         CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[*cipherIdx].block_length);
-        CF_CHECK_EQ(ctr_start(*cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, CTR_COUNTER_LITTLE_ENDIAN, &ctr), CRYPT_OK);
+        CF_CHECK_EQ(ctr_start(*cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, CTR_COUNTER_BIG_ENDIAN, &ctr), CRYPT_OK);
         CF_CHECK_EQ(ctr_encrypt(op.cleartext.GetPtr(), out, op.cleartext.GetSize(), &ctr), CRYPT_OK);
         CF_CHECK_EQ(ctr_done(&ctr), CRYPT_OK);
 
@@ -1252,7 +1252,7 @@ end:
         CF_CHECK_GT(op.ciphertext.GetSize(), 0);
         CF_CHECK_EQ(op.ciphertext.GetSize() % cipher_descriptor[*cipherIdx].block_length, 0);
         CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[*cipherIdx].block_length);
-        CF_CHECK_EQ(ctr_start(*cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, CTR_COUNTER_LITTLE_ENDIAN, &ctr), CRYPT_OK);
+        CF_CHECK_EQ(ctr_start(*cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, CTR_COUNTER_BIG_ENDIAN, &ctr), CRYPT_OK);
         CF_CHECK_EQ(ctr_decrypt(op.ciphertext.GetPtr(), out, op.ciphertext.GetSize(), &ctr), CRYPT_OK);
         CF_CHECK_EQ(ctr_done(&ctr), CRYPT_OK);
 
