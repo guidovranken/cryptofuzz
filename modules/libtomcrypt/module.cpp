@@ -219,10 +219,9 @@ end:
             case CF_DIGEST("SHA1"):
                 return find_hash("sha1");
                 break;
-            /* Currently disabled because of invalid output */
-            //case CF_DIGEST("SHA224"):
-            //  return find_hash("sha224");
-            //  break;
+            case CF_DIGEST("SHA224"):
+                return find_hash("sha224");
+                break;
             case CF_DIGEST("SHA256"):
                 return find_hash("sha256");
                 break;
