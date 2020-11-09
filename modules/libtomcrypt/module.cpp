@@ -487,11 +487,14 @@ namespace libtomcrypt_detail {
             case CF_CIPHER("RC6_OFB"):
             case CF_CIPHER("RC6_CBC"):
                 return find_cipher("rc6");
+            /* Pending fix for https://github.com/libtom/libtomcrypt/issues/553 */
+#if 0
             case CF_CIPHER("TEA_ECB"):
+            case CF_CIPHER("TEA_CBC"):
+#endif
             case CF_CIPHER("TEA_CTR"):
             case CF_CIPHER("TEA_CFB"):
             case CF_CIPHER("TEA_OFB"):
-            case CF_CIPHER("TEA_CBC"):
                 return find_cipher("tea");
             case CF_CIPHER("SEED_ECB"):
             case CF_CIPHER("SEED_CTR"):
