@@ -664,7 +664,8 @@ namespace libtomcrypt_detail {
             return ret;
         }
 
-        const auto oneshot = ds.Get<bool>();
+        auto oneshot = false;
+        try { oneshot = ds.Get<bool>(); } catch ( ... ) { }
 
         uint8_t* tag = util::malloc(*op.tagSize);
         uint8_t* out = util::malloc(op.ciphertextSize);
@@ -744,7 +745,8 @@ namespace libtomcrypt_detail {
             return ret;
         }
 
-        const auto oneshot = ds.Get<bool>();
+        auto oneshot = false;
+        try { oneshot = ds.Get<bool>(); } catch ( ... ) { }
 
         uint8_t* tag = util::malloc(op.tag->GetSize());
         uint8_t* out = util::malloc(op.cleartextSize);
