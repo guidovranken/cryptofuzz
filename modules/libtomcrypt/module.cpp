@@ -813,6 +813,177 @@ namespace libtomcrypt_detail {
         return ret;
     }
 
+    std::optional<component::Ciphertext> ChaCha20Poly1305Encrypt(operation::SymmetricEncrypt& op) {
+        std::optional<component::Ciphertext> ret = std::nullopt;
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+        if ( op.tagSize == std::nullopt ) {
+            return ret;
+        }
+
+        if ( *op.tagSize < 16 ) {
+            return ret;
+        }
+
+        if ( op.cipher.key.GetSize() != 16 && op.cipher.key.GetSize() != 32 ) {
+            return ret;
+        }
+
+        if ( op.cipher.iv.GetSize() != 8 && op.cipher.iv.GetSize() != 12 ) {
+            return ret;
+        }
+
+        auto oneshot = false;
+        try { oneshot = ds.Get<bool>(); } catch ( ... ) { }
+
+        uint8_t* tag = util::malloc(*op.tagSize);
+        uint8_t* out = util::malloc(op.ciphertextSize);
+
+        CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize());
+
+        {
+            unsigned long tag_len = *op.tagSize;
+            auto in = op.cleartext.Get();
+            CF_CHECK_NE(tag, nullptr);
+            CF_CHECK_NE(in.data(), nullptr);
+            CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
+            CF_CHECK_NE(op.cipher.iv.GetPtr(), nullptr);
+            if ( oneshot == true ) {
+                /* One-shot */
+
+                CF_CHECK_EQ(chacha20poly1305_memory(
+                            op.cipher.key.GetPtr(),
+                            op.cipher.key.GetSize(),
+                            op.cipher.iv.GetPtr(),
+                            op.cipher.iv.GetSize(),
+                            op.aad != std::nullopt ? op.aad->GetPtr() : nullptr,
+                            op.aad != std::nullopt ? op.aad->GetSize() : 0,
+                            in.data(),
+                            in.size(),
+                            out,
+                            tag,
+                            &tag_len,
+                            CHACHA20POLY1305_ENCRYPT), CRYPT_OK);
+            } else {
+                /* Multi-step */
+
+                chacha20poly1305_state state;
+                size_t outIdx = 0;
+                const auto parts = util::ToParts(ds, op.cleartext);
+
+                CF_CHECK_EQ(chacha20poly1305_init(&state, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), CRYPT_OK);
+                CF_CHECK_EQ(chacha20poly1305_setiv(&state, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize()), CRYPT_OK);
+
+                if ( op.aad != std::nullopt && op.aad->GetPtr() != nullptr ) {
+                    CF_CHECK_EQ(chacha20poly1305_add_aad(
+                                &state,
+                                op.aad != std::nullopt ? op.aad->GetPtr() : nullptr,
+                                op.aad != std::nullopt ? op.aad->GetSize() : 0), CRYPT_OK);
+                }
+
+                for (const auto& part : parts) {
+                    CF_CHECK_EQ(chacha20poly1305_encrypt(&state, part.first, part.second, out + outIdx), CRYPT_OK);
+                    outIdx += part.second;
+                }
+
+                CF_CHECK_EQ(chacha20poly1305_done(&state, tag, &tag_len), CRYPT_OK);
+            }
+
+            ret = component::Ciphertext(Buffer(out, in.size()), Buffer(tag, tag_len));
+        }
+
+    end:
+        util::free(out);
+        util::free(tag);
+
+        return ret;
+    }
+
+    std::optional<component::Cleartext> ChaCha20Poly1305Decrypt(operation::SymmetricDecrypt& op) {
+        std::optional<component::Cleartext> ret = std::nullopt;
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+        if ( op.tag == std::nullopt ) {
+            return ret;
+        }
+
+        if ( op.tag->GetSize() < 16 ) {
+            return ret;
+        }
+
+        if ( op.cipher.key.GetSize() != 16 && op.cipher.key.GetSize() != 32 ) {
+            return ret;
+        }
+
+        if ( op.cipher.iv.GetSize() != 8 && op.cipher.iv.GetSize() != 12 ) {
+            return ret;
+        }
+
+        auto oneshot = false;
+        try { oneshot = ds.Get<bool>(); } catch ( ... ) { }
+
+        uint8_t* tag = util::malloc(op.tag->GetSize());
+        uint8_t* out = util::malloc(op.cleartextSize);
+
+        CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
+
+        {
+            unsigned long tag_len = op.tag->GetSize();
+            auto in = op.ciphertext.Get();
+            auto tag = op.tag->Get();
+            CF_CHECK_NE(tag.data(), nullptr);
+            CF_CHECK_NE(in.data(), nullptr);
+            CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
+            CF_CHECK_NE(op.cipher.iv.GetPtr(), nullptr);
+
+            if ( oneshot == true ) {
+                /* One-shot */
+                CF_CHECK_EQ(chacha20poly1305_memory(
+                            op.cipher.key.GetPtr(),
+                            op.cipher.key.GetSize(),
+                            op.cipher.iv.GetPtr(),
+                            op.cipher.iv.GetSize(),
+                            op.aad != std::nullopt ? op.aad->GetPtr() : nullptr,
+                            op.aad != std::nullopt ? op.aad->GetSize() : 0,
+                            in.data(),
+                            in.size(),
+                            out,
+                            tag.data(),
+                            &tag_len,
+                            CHACHA20POLY1305_DECRYPT), CRYPT_OK);
+            } else {
+                chacha20poly1305_state state;
+                size_t outIdx = 0;
+                const auto parts = util::ToParts(ds, op.ciphertext);
+
+                CF_CHECK_EQ(chacha20poly1305_init(&state, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), CRYPT_OK);
+                CF_CHECK_EQ(chacha20poly1305_setiv(&state, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize()), CRYPT_OK);
+
+                if ( op.aad != std::nullopt && op.aad->GetPtr() != nullptr ) {
+                    CF_CHECK_EQ(chacha20poly1305_add_aad(
+                                &state,
+                                op.aad != std::nullopt ? op.aad->GetPtr() : nullptr,
+                                op.aad != std::nullopt ? op.aad->GetSize() : 0), CRYPT_OK);
+                }
+
+                for (const auto& part : parts) {
+                    CF_CHECK_EQ(chacha20poly1305_decrypt(&state, part.first, part.second, out + outIdx), CRYPT_OK);
+                    outIdx += part.second;
+                }
+
+                CF_CHECK_EQ(chacha20poly1305_done(&state, tag.data(), &tag_len), CRYPT_OK);
+            }
+
+            ret = component::Cleartext(Buffer(out, in.size()));
+        }
+
+    end:
+        util::free(out);
+        util::free(tag);
+
+        return ret;
+    }
+
     std::optional<Buffer> Salsa20Crypt(Datasource& ds, const Buffer& in, const component::SymmetricCipher& cipher, const size_t keySize, const size_t rounds) {
         std::optional<Buffer> ret = std::nullopt;
 
@@ -1242,6 +1413,8 @@ std::optional<component::Ciphertext> libtomcrypt::OpSymmetricEncrypt(operation::
         return libtomcrypt_detail::GcmEncrypt(op);
     } else if ( repository::IsCCM(op.cipher.cipherType.Get()) ) {
         return libtomcrypt_detail::CcmEncrypt(op);
+    } else if ( op.cipher.cipherType.Get() == CF_CIPHER("CHACHA20_POLY1305") ) {
+        return libtomcrypt_detail::ChaCha20Poly1305Encrypt(op);
     } else if ( repository::IsECB(op.cipher.cipherType.Get()) ) {
         return libtomcrypt_detail::EcbEncrypt(op);
     } else if ( repository::IsCTR(op.cipher.cipherType.Get()) ) {
@@ -1282,6 +1455,8 @@ std::optional<component::Cleartext> libtomcrypt::OpSymmetricDecrypt(operation::S
         return libtomcrypt_detail::GcmDecrypt(op);
     } else if ( repository::IsCCM(op.cipher.cipherType.Get()) ) {
         return libtomcrypt_detail::CcmDecrypt(op);
+    } else if ( op.cipher.cipherType.Get() == CF_CIPHER("CHACHA20_POLY1305") ) {
+        return libtomcrypt_detail::ChaCha20Poly1305Decrypt(op);
     } else if ( repository::IsECB(op.cipher.cipherType.Get()) ) {
         return libtomcrypt_detail::EcbDecrypt(op);
     } else if ( repository::IsCTR(op.cipher.cipherType.Get()) ) {
