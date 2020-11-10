@@ -243,6 +243,28 @@ std::string ToString(const component::ECC_KeyPair& val) {
     return ret;
 }
 
+std::string ToString(const component::ECDSA_Signature& val) {
+    std::string ret;
+
+    ret += "X: ";
+    ret += val.pub.first.ToString();
+    ret += "\n";
+
+    ret += "Y: ";
+    ret += val.pub.second.ToString();
+    ret += "\n";
+
+    ret += "R: ";
+    ret += val.signature.first.ToString();
+    ret += "\n";
+
+    ret += "S: ";
+    ret += val.signature.second.ToString();
+    ret += "\n";
+
+    return ret;
+}
+
 std::string ToString(const component::Bignum& val) {
     return val.ToString();
 }

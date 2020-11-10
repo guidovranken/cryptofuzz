@@ -166,7 +166,37 @@ class ECC_KeyPair {
         }
 };
 
-using ECDSA_Signature = BignumPair;
+
+class ECDSA_Signature {
+    public:
+        BignumPair signature;
+        ECC_PublicKey pub;
+
+        ECDSA_Signature(Datasource& ds) :
+            signature(ds),
+            pub(ds)
+        { }
+
+        ECDSA_Signature(BignumPair signature, ECC_PublicKey pub) :
+            signature(signature),
+            pub(pub)
+        { }
+
+        ECDSA_Signature(nlohmann::json json) :
+            signature(json["signature"]),
+            pub(json["pub"])
+        { }
+
+        inline bool operator==(const ECDSA_Signature& rhs) const {
+            return
+                (signature == rhs.signature) &&
+                (pub == rhs.pub);
+        }
+        void Serialize(Datasource& ds) const {
+            signature.Serialize(ds);
+            pub.Serialize(ds);
+        }
+};
 
 class MACType {
     public:

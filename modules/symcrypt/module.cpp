@@ -2,6 +2,7 @@
 #include <cryptofuzz/util.h>
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 #include <symcrypt.h>
 
 extern "C" {
@@ -13,6 +14,23 @@ extern "C" {
     void SymCryptInjectError( PBYTE pbData, SIZE_T cbData ) {
         (void)pbData;
         (void)cbData;
+    }
+
+    PVOID SymCryptCallbackAlloc( SIZE_T nBytes ) {
+        return malloc(nBytes);
+    }
+
+    VOID SymCryptCallbackFree( VOID * pMem ) {
+        free(pMem);
+    }
+
+    SYMCRYPT_ERROR SymCryptCallbackRandom(PBYTE   pbBuffer, SIZE_T  cbBuffer ) {
+        abort();
+    }
+
+    SYMCRYPT_CPU_FEATURES
+    SymCryptCpuFeaturesNeverPresent(void) {
+        return 0;
     }
 }
 
@@ -1025,6 +1043,129 @@ end:
 
     util::free(out);
     return ret;
+}
+
+namespace SymCrypt_detail {
+    static bool EncodeBignum(const std::string s, uint8_t* out, const size_t outSize) {
+        std::vector<uint8_t> v;
+        boost::multiprecision::cpp_int c(s);
+        boost::multiprecision::export_bits(c, std::back_inserter(v), 8);
+        if ( v.size() > outSize ) {
+            return false;
+        }
+        const auto diff = outSize - v.size();
+
+        memset(out, 0, outSize);
+        memcpy(out + diff, v.data(), v.size());
+
+        return true;
+    }
+
+    static std::string toString(const boost::multiprecision::cpp_int& i) {
+        std::stringstream ss;
+        ss << i;
+
+        if ( ss.str().empty() ) {
+            return "0";
+        } else {
+            return ss.str();
+        }
+    }
+
+    const SYMCRYPT_ECURVE_PARAMS* toCurveParams(const uint64_t curveID) {
+        switch ( curveID ) {
+            case CF_ECC_CURVE("secp192r1"):
+                return SymCryptEcurveParamsNistP192;
+            case CF_ECC_CURVE("secp224r1"):
+                return SymCryptEcurveParamsNistP224;
+            case CF_ECC_CURVE("secp256r1"):
+                return SymCryptEcurveParamsNistP256;
+            case CF_ECC_CURVE("secp384r1"):
+                return SymCryptEcurveParamsNistP384;
+            case CF_ECC_CURVE("secp521r1"):
+                return SymCryptEcurveParamsNistP521;
+#if 0
+            case CF_ECC_CURVE("x25519"):
+                return SymCryptEcurveParamsCurve25519;
+#endif
+            case CF_ECC_CURVE("numsp256t1"):
+                return SymCryptEcurveParamsNumsP256t1;
+            case CF_ECC_CURVE("numsp384t1"):
+                return SymCryptEcurveParamsNumsP384t1;
+            case CF_ECC_CURVE("numsp512t1"):
+                return SymCryptEcurveParamsNumsP512t1;
+        }
+
+        return nullptr;
+    }
+}
+
+std::optional<component::ECC_PublicKey> SymCrypt::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
+#if INTPTR_MAX == INT32_MAX
+    /* Pending resolution of https://github.com/microsoft/SymCrypt/issues/9 */
+    (void)op;
+
+    return std::nullopt;
+#else
+    std::optional<component::ECC_PublicKey> ret = std::nullopt;
+
+    SYMCRYPT_ECURVE* curve = nullptr;
+    SYMCRYPT_ECKEY* key = nullptr;
+    const SYMCRYPT_ECURVE_PARAMS* curveParams = nullptr;
+
+    CF_CHECK_NE(curveParams = SymCrypt_detail::toCurveParams(op.curveType.Get()), nullptr);
+    CF_CHECK_NE(curve = SymCryptEcurveAllocate(curveParams, 0), nullptr);
+    CF_CHECK_NE(key = SymCryptEckeyAllocate(curve), nullptr);
+
+    {
+        const auto priv_size = SymCryptEckeySizeofPrivateKey(key);
+        std::vector<uint8_t> priv_bytes(priv_size);
+
+        CF_CHECK_EQ(SymCrypt_detail::EncodeBignum(
+                    op.priv.ToTrimmedString(),
+                    priv_bytes.data(),
+                    priv_size), true);
+
+        CF_CHECK_EQ(SymCryptEckeySetValue(
+                priv_bytes.data(), priv_size,
+                NULL, 0,
+                SYMCRYPT_NUMBER_FORMAT_MSB_FIRST, SYMCRYPT_ECPOINT_FORMAT_XY,
+                0, key), SYMCRYPT_NO_ERROR);
+    }
+
+    {
+        const auto pub_size = SymCryptEckeySizeofPublicKey(key, SYMCRYPT_ECPOINT_FORMAT_XY);
+        if ( (pub_size % 2) != 0 ) {
+            abort();
+        }
+        std::vector<uint8_t> pub_bytes(pub_size);
+
+        CF_CHECK_EQ(SymCryptEckeyGetValue(
+                    key,
+                    NULL, 0,
+                    pub_bytes.data(), pub_size,
+                    SYMCRYPT_NUMBER_FORMAT_MSB_FIRST, SYMCRYPT_ECPOINT_FORMAT_XY,
+                    0), SYMCRYPT_NO_ERROR);
+
+        {
+            boost::multiprecision::cpp_int x, y;
+
+            boost::multiprecision::import_bits(x, pub_bytes.begin(), pub_bytes.begin() + (pub_size/2));
+            boost::multiprecision::import_bits(y, pub_bytes.begin() + (pub_size/2), pub_bytes.end());
+
+            ret = {SymCrypt_detail::toString(x), SymCrypt_detail::toString(y)};
+        }
+    }
+
+end:
+    if ( key ) {
+        /* noret */ SymCryptEckeyFree(key);
+    }
+    if ( curve ) {
+        /* noret */ SymCryptEcurveFree(curve);
+    }
+    return ret;
+#endif
 }
 
 } /* namespace module */

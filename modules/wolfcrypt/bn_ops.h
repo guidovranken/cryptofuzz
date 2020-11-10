@@ -1,5 +1,6 @@
 #include <cryptofuzz/components.h>
 #include <cryptofuzz/operations.h>
+#include <cryptofuzz/util.h>
 #include <array>
 
 extern "C" {
@@ -19,7 +20,7 @@ class Bignum {
     private:
         mp_int* mp = nullptr;
         Datasource& ds;
-        const bool noFree = false;
+        bool noFree = false;
     public:
 
         Bignum(Datasource& ds) :
@@ -70,6 +71,10 @@ class Bignum {
             }
         }
 
+        void SetNoFree(void) {
+            noFree = true;
+        }
+
         bool Set(const std::string s) {
             bool ret = false;
 
@@ -103,7 +108,6 @@ end:
 end:
             return ret;
         }
-
 
         mp_int* GetPtr(void) const {
             return mp;
@@ -225,6 +229,72 @@ end:
             CF_CHECK_EQ(bn.ToBin(v.data(), v.size()), true);
 
             ret = v;
+end:
+            return ret;
+        }
+
+        static bool ToBin(Datasource& ds, const component::Bignum b, uint8_t* dest, const size_t size) {
+            bool ret = false;
+            Bignum bn(ds);
+
+            CF_CHECK_EQ(bn.Set(b), true);
+            CF_CHECK_EQ(bn.ToBin(dest, size), true);
+
+            ret = true;
+end:
+            return ret;
+        }
+
+        static bool ToBin(Datasource& ds, const component::BignumPair b, uint8_t* dest, const size_t size) {
+            if ( (size % 2) != 0 ) {
+                abort();
+            }
+            bool ret = false;
+            const auto halfSize = size / 2;
+
+            CF_CHECK_EQ(ToBin(ds, b.first, dest, halfSize), true);
+            CF_CHECK_EQ(ToBin(ds, b.second, dest + halfSize, halfSize), true);
+
+            ret = true;
+end:
+            return ret;
+        }
+
+        static std::optional<component::Bignum> BinToBignum(Datasource& ds, const uint8_t* src, const size_t size) {
+            std::optional<component::Bignum> ret = std::nullopt;
+
+            wolfCrypt_bignum::Bignum bn(ds);
+            CF_CHECK_EQ(mp_read_unsigned_bin(bn.GetPtr(), src, size), MP_OKAY);
+
+            ret = bn.ToComponentBignum();
+
+end:
+            return ret;
+        }
+
+        static std::optional<component::BignumPair> BinToBignumPair(Datasource& ds, const uint8_t* src, const size_t size) {
+            if ( (size % 2) != 0 ) {
+                abort();
+            }
+            std::optional<component::BignumPair> ret = std::nullopt;
+            std::optional<component::Bignum> A, B;
+            const auto halfSize = size / 2;
+
+            {
+                wolfCrypt_bignum::Bignum bn(ds);
+                CF_CHECK_EQ(mp_read_unsigned_bin(bn.GetPtr(), src, halfSize), MP_OKAY);
+                CF_CHECK_NE(A = bn.ToComponentBignum(), std::nullopt);
+            }
+
+            {
+                wolfCrypt_bignum::Bignum bn(ds);
+                CF_CHECK_EQ(mp_read_unsigned_bin(bn.GetPtr(), src + halfSize, halfSize), MP_OKAY);
+                CF_CHECK_NE(B = bn.ToComponentBignum(), std::nullopt);
+            }
+
+
+            ret = {A->ToTrimmedString(), B->ToTrimmedString()};
+
 end:
             return ret;
         }

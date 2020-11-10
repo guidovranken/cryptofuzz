@@ -2,6 +2,7 @@
 #include <fuzzing/datasource/id.hpp>
 #include <cryptofuzz/repository.h>
 #include <cryptofuzz/util.h>
+#include <boost/multiprecision/cpp_int.hpp>
 #include <iostream>
 
 namespace cryptofuzz {
@@ -242,24 +243,69 @@ void test(const operation::Verify& op, const std::optional<bool>& result) {
     (void)result;
 }
 
+static void test_ECC_PrivateKey(const uint64_t curveID, const std::string priv) {
+    /* Disabled until all modules comply by default */
+    return;
+
+    /* Private key may be 0 with these curves */
+    if ( curveID == CF_ECC_CURVE("ed448") ) return;
+    if ( curveID == CF_ECC_CURVE("ed25519") ) return;
+    if ( curveID == CF_ECC_CURVE("x25519") ) return;
+    if ( curveID == CF_ECC_CURVE("x448") ) return;
+
+    if ( priv == "0" ) {
+        std::cout << "0 is an invalid elliptic curve private key" << std::endl;
+        ::abort();
+    }
+}
+
+
 void test(const operation::ECC_PrivateToPublic& op, const std::optional<component::ECC_PublicKey>& result) {
-    (void)op;
-    (void)result;
+    if ( result != std::nullopt ) {
+        test_ECC_PrivateKey(op.curveType.Get(), op.priv.ToTrimmedString());
+    }
 }
 
 void test(const operation::ECC_GenerateKeyPair& op, const std::optional<component::ECC_KeyPair>& result) {
-    (void)op;
-    (void)result;
+    if ( result != std::nullopt ) {
+        test_ECC_PrivateKey(op.curveType.Get(), result->priv.ToTrimmedString());
+    }
+}
+
+static void test_ECDSA_Signature(const uint64_t curveID, const std::string R, const std::string S) {
+    if ( curveID == CF_ECC_CURVE("ed448") ) return;
+    if ( curveID == CF_ECC_CURVE("ed25519") ) return;
+    if ( curveID == CF_ECC_CURVE("x25519") ) return;
+    if ( curveID == CF_ECC_CURVE("x448") ) return;
+
+    boost::multiprecision::cpp_int r(R);
+    boost::multiprecision::cpp_int s(S);
+    if ( r < 1 ) {
+        std::cout << "ECDSA signature invalid: R < 1" << std::endl;
+        ::abort();
+    }
+    if ( s < 1 ) {
+        std::cout << "ECDSA signature invalid: R < 1" << std::endl;
+        ::abort();
+    }
 }
 
 void test(const operation::ECDSA_Sign& op, const std::optional<component::ECDSA_Signature>& result) {
-    (void)op;
-    (void)result;
+    if ( result != std::nullopt ) {
+        test_ECC_PrivateKey(op.curveType.Get(), op.priv.ToTrimmedString());
+
+        test_ECDSA_Signature(op.curveType.Get(),
+                result->signature.first.ToTrimmedString(),
+                result->signature.second.ToTrimmedString());
+    }
 }
 
 void test(const operation::ECDSA_Verify& op, const std::optional<bool>& result) {
-    (void)op;
-    (void)result;
+    if ( result != std::nullopt && *result == true ) {
+        test_ECDSA_Signature(op.curveType.Get(),
+                op.signature.signature.first.ToTrimmedString(),
+                op.signature.signature.second.ToTrimmedString());
+    }
 }
 
 void test(const operation::ECDH_Derive& op, const std::optional<component::Secret>& result) {

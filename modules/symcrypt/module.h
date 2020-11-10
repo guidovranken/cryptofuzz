@@ -19,6 +19,7 @@ class SymCrypt : public Module {
         std::optional<component::Key> OpKDF_PBKDF2(operation::KDF_PBKDF2& op) override;
         std::optional<component::Key> OpKDF_TLS1_PRF(operation::KDF_TLS1_PRF& op) override;
         std::optional<component::Key> OpKDF_SP_800_108(operation::KDF_SP_800_108& op) override;
+        std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) override;
 };
 
 } /* namespace module */

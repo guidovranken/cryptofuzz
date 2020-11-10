@@ -2,6 +2,7 @@
 #include <cryptofuzz/util.h>
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
+#include <boost/lexical_cast.hpp>
 
 extern "C" {
     #include "cryptofuzz.h"
@@ -100,18 +101,21 @@ std::optional<component::Key> Golang::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
 }
 
 std::optional<component::ECC_PublicKey> Golang::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
-    auto jsonStr = op.ToJSON().dump();
+    auto json = op.ToJSON();
+    auto jsonStr = json.dump();
     Golang_Cryptofuzz_OpECC_PrivateToPublic(toGoSlice(jsonStr));
 
     return getResultAs<component::ECC_PublicKey>();
 }
 
 std::optional<bool> Golang::OpECDSA_Verify(operation::ECDSA_Verify& op) {
-    auto jsonStr = op.ToJSON().dump();
+    auto json = op.ToJSON();
+    auto jsonStr = json.dump();
     Golang_Cryptofuzz_OpECDSA_Verify(toGoSlice(jsonStr));
 
+    /* Not returning result until https://github.com/golang/go/issues/42340 is fixed */
     return std::nullopt;
-    //return getResultAs<component::bool>();
+    //return getResultAs<bool>();
 }
 
 std::optional<component::Bignum> Golang::OpBignumCalc(operation::BignumCalc& op) {

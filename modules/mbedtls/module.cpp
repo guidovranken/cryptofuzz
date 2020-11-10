@@ -16,6 +16,7 @@
 #include <mbedtls/platform.h>
 #include <mbedtls/ecp.h>
 #include <mbedtls/ecdsa.h>
+#include <mbedtls/sha256.h>
 #include "bn_ops.h"
 
 namespace cryptofuzz {
@@ -795,7 +796,9 @@ namespace mbedTLS_detail {
             { CF_ECC_CURVE("secp224k1"), 20 },
             { CF_ECC_CURVE("secp192r1"), 19 },
             { CF_ECC_CURVE("secp192k1"), 18 },
+#if 0
             { CF_ECC_CURVE("x25519"), 29 },
+#endif
         };
 
         if ( LUT.find(curveType.Get()) == LUT.end() ) {
@@ -863,8 +866,11 @@ end:
     return ret;
 }
 
+
 std::optional<bool> mbedTLS::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
+    (void)op;
+#if 0
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     mbedTLS_detail::SetGlobalDs(&ds);
 
@@ -885,16 +891,18 @@ std::optional<bool> mbedTLS::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     CF_CHECK_EQ(mbedtls_ecp_group_load(&ctx.grp, curve_info->grp_id), 0);
 
     /* Pubkey */
-    CF_CHECK_EQ(mbedtls_mpi_read_string(&ctx.Q.X, 10, op.pub.first.ToString(ds).c_str()), 0);
-    CF_CHECK_EQ(mbedtls_mpi_read_string(&ctx.Q.Y, 10, op.pub.second.ToString(ds).c_str()), 0);
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&ctx.Q.X, 10, op.signature.pub.first.ToString(ds).c_str()), 0);
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&ctx.Q.Y, 10, op.signature.pub.second.ToString(ds).c_str()), 0);
     CF_CHECK_EQ(mbedtls_mpi_lset(&ctx.Q.Z, 1), 0);
 
     /* Signature */
-    CF_CHECK_EQ(mbedtls_mpi_read_string(&sig_s, 10, op.signature.first.ToString(ds).c_str()), 0);
-    CF_CHECK_EQ(mbedtls_mpi_read_string(&sig_r, 10, op.signature.second.ToString(ds).c_str()), 0);
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&sig_s, 10, op.signature.signature.first.ToString(ds).c_str()), 0);
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&sig_r, 10, op.signature.signature.second.ToString(ds).c_str()), 0);
 
     {
-        const auto verifyRes = mbedtls_ecdsa_verify(&ctx.grp, op.cleartext.GetPtr(), op.cleartext.GetSize(), &ctx.Q, &sig_r, &sig_s);
+        uint8_t CT[32];
+        CF_CHECK_EQ(mbedtls_sha256_ret(op.cleartext.GetPtr(), op.cleartext.GetSize(), CT, 0), 0);
+        const auto verifyRes = mbedtls_ecdsa_verify(&ctx.grp, CT, sizeof(CT), &ctx.Q, &sig_r, &sig_s);
         if ( verifyRes == 0 ) {
             ret = true;
         } else if ( verifyRes == MBEDTLS_ERR_ECP_VERIFY_FAILED ) {
@@ -909,6 +917,7 @@ end:
 
     mbedTLS_detail::UnsetGlobalDs();
 
+#endif
     return ret;
 }
 

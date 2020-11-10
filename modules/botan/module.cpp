@@ -716,10 +716,12 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
 
     static ::Botan::System_RNG rng;
 
+    CF_CHECK_EQ(op.UseRFC6979Nonce(), true);
+
     try {
         /* Initialize */
         {
-            std::optional<std::string> curveString;
+            std::optional<std::string> curveString, algoString;
 
             /* Botan appears to generate a new key if the input key is 0, so don't do this */
             CF_CHECK_NE(op.priv.ToTrimmedString(), "0");
@@ -736,7 +738,10 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
             }
 
             /* Prepare signer */
-            signer.reset(new ::Botan::PK_Signer(*priv, rng, "EMSA1(SHA-1)", ::Botan::DER_SEQUENCE));
+            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
+
+            const std::string emsa1String = Botan_detail::parenthesize("EMSA1", *algoString);
+            signer.reset(new ::Botan::PK_Signer(*priv, rng, emsa1String, ::Botan::DER_SEQUENCE));
         }
 
         /* Process */
@@ -769,10 +774,20 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
                     ++count;
                 }
 
+                /* For compatibility with the secp256k1 library.
+                 * See: https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#low-s-values-in-signatures
+                 */
+                if (S > ::Botan::BigInt("57896044618658097711785492504343953926418782139537452191302581570759080747168")) {
+                    S = ::Botan::BigInt("115792089237316195423570985008687907852837564279074904382605163141518161494337") - S;
+                }
+
+                const auto pub_x = priv->public_point().get_affine_x().to_dec_string();
+                const auto pub_y = priv->public_point().get_affine_y().to_dec_string();
+
                 const auto R_str = R.to_dec_string();
                 const auto S_str = S.to_dec_string();
 
-                ret = { R_str, S_str };
+                ret = component::ECDSA_Signature({ R_str, S_str }, { pub_x, pub_y });
             }
         }
     } catch ( ... ) { }
@@ -793,21 +808,37 @@ std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         ::Botan::EC_Group group(*curveString);
 
         {
-            const ::Botan::BigInt pub_x(op.pub.first.ToString(ds));
-            const ::Botan::BigInt pub_y(op.pub.second.ToString(ds));
+            const ::Botan::BigInt pub_x(op.signature.pub.first.ToString(ds));
+            const ::Botan::BigInt pub_y(op.signature.pub.second.ToString(ds));
             const ::Botan::PointGFp public_point = group.point(pub_x, pub_y);
             pub = std::make_unique<::Botan::ECDSA_PublicKey>(::Botan::ECDSA_PublicKey(group, public_point));
         }
 
         ::Botan::PK_Verifier verifier(*pub, "Raw");
 
-        const ::Botan::BigInt R(op.signature.first.ToString(ds));
-        const ::Botan::BigInt S(op.signature.second.ToString(ds));
+        std::vector<uint8_t> CT;
+        if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
+            CT = op.cleartext.Get();
+        } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
+            std::optional<std::string> algoString;
+            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
+
+            auto hash = ::Botan::HashFunction::create(*algoString);
+            hash->update(op.cleartext.GetPtr(), op.cleartext.GetSize());
+            const auto _CT = hash->final();
+            CT = {_CT.data(), _CT.data() + _CT.size()};
+        } else {
+            /* TODO other digests */
+            goto end;
+        }
+
+        const ::Botan::BigInt R(op.signature.signature.first.ToString(ds));
+        const ::Botan::BigInt S(op.signature.signature.second.ToString(ds));
 
         /* XXX may throw: Encoding error: encode_fixed_length_int_pair: values too large to encode properly */
         auto sig = ::Botan::BigInt::encode_fixed_length_int_pair(R, S, group.get_order_bytes());
 
-        ret = verifier.verify_message(op.cleartext.Get(), sig);
+        ret = verifier.verify_message(CT, sig);
     } catch ( ... ) { }
 
 end:
