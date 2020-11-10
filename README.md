@@ -84,3 +84,5 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Nettle: [Blowfish signed integer overshift](https://git.lysator.liu.se/nettle/nettle/-/commit/4c8b0cdd97ffec3ae3f8d995afdfccbc261b3c79)
 - Golang: [crypto/ecdsa: signature verification succeeds when it should fail](https://github.com/golang/go/issues/42340)
 - SymCrypt: [Elliptic curve private-to-public incorrect result on Linux 32 bit](https://github.com/microsoft/SymCrypt/issues/9)
+- libtomcrypt: [PKBDF1 hang if iterations is 0](https://github.com/libtom/libtomcrypt/issues/552)
+- libtomcrypt: [TEA cipher incorrect result](https://github.com/libtom/libtomcrypt/issues/553)
