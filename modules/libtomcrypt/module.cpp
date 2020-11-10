@@ -1171,7 +1171,6 @@ end:
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(op.cleartext.GetSize(), 0);
-        CF_CHECK_EQ(op.cleartext.GetSize() % cipher_descriptor[cipherIdx].block_length, 0);
         CF_CHECK_EQ(ecb_start(cipherIdx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &ecb), CRYPT_OK);
         CF_CHECK_EQ(ecb_encrypt(op.cleartext.GetPtr(), out, op.cleartext.GetSize(), &ecb), CRYPT_OK);
         CF_CHECK_EQ(ecb_done(&ecb), CRYPT_OK);
@@ -1193,7 +1192,6 @@ end:
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(op.ciphertext.GetSize(), 0);
-        CF_CHECK_EQ(op.ciphertext.GetSize() % cipher_descriptor[cipherIdx].block_length, 0);
         CF_CHECK_EQ(ecb_start(cipherIdx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &ecb), CRYPT_OK);
         CF_CHECK_EQ(ecb_decrypt(op.ciphertext.GetPtr(), out, op.ciphertext.GetSize(), &ecb), CRYPT_OK);
         CF_CHECK_EQ(ecb_done(&ecb), CRYPT_OK);
@@ -1215,7 +1213,6 @@ end:
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(op.cleartext.GetSize(), 0);
-        CF_CHECK_EQ(op.cleartext.GetSize() % cipher_descriptor[cipherIdx].block_length, 0);
         CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[cipherIdx].block_length);
         CF_CHECK_EQ(ctr_start(cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, CTR_COUNTER_BIG_ENDIAN, &ctr), CRYPT_OK);
         CF_CHECK_EQ(ctr_encrypt(op.cleartext.GetPtr(), out, op.cleartext.GetSize(), &ctr), CRYPT_OK);
@@ -1238,7 +1235,6 @@ end:
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(op.ciphertext.GetSize(), 0);
-        CF_CHECK_EQ(op.ciphertext.GetSize() % cipher_descriptor[cipherIdx].block_length, 0);
         CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[cipherIdx].block_length);
         CF_CHECK_EQ(ctr_start(cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, CTR_COUNTER_BIG_ENDIAN, &ctr), CRYPT_OK);
         CF_CHECK_EQ(ctr_decrypt(op.ciphertext.GetPtr(), out, op.ciphertext.GetSize(), &ctr), CRYPT_OK);
@@ -1261,7 +1257,6 @@ end:
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(op.cleartext.GetSize(), 0);
-        CF_CHECK_EQ(op.cleartext.GetSize() % cipher_descriptor[cipherIdx].block_length, 0);
         CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[cipherIdx].block_length);
         CF_CHECK_EQ(cfb_start(cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &cfb), CRYPT_OK);
         CF_CHECK_EQ(cfb_encrypt(op.cleartext.GetPtr(), out, op.cleartext.GetSize(), &cfb), CRYPT_OK);
@@ -1284,7 +1279,6 @@ end:
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(op.ciphertext.GetSize(), 0);
-        CF_CHECK_EQ(op.ciphertext.GetSize() % cipher_descriptor[cipherIdx].block_length, 0);
         CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[cipherIdx].block_length);
         CF_CHECK_EQ(cfb_start(cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &cfb), CRYPT_OK);
         CF_CHECK_EQ(cfb_decrypt(op.ciphertext.GetPtr(), out, op.ciphertext.GetSize(), &cfb), CRYPT_OK);
@@ -1307,7 +1301,6 @@ end:
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(op.cleartext.GetSize(), 0);
-        CF_CHECK_EQ(op.cleartext.GetSize() % cipher_descriptor[cipherIdx].block_length, 0);
         CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[cipherIdx].block_length);
         CF_CHECK_EQ(ofb_start(cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &ofb), CRYPT_OK);
         CF_CHECK_EQ(ofb_encrypt(op.cleartext.GetPtr(), out, op.cleartext.GetSize(), &ofb), CRYPT_OK);
@@ -1330,7 +1323,6 @@ end:
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(op.ciphertext.GetSize(), 0);
-        CF_CHECK_EQ(op.ciphertext.GetSize() % cipher_descriptor[cipherIdx].block_length, 0);
         CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[cipherIdx].block_length);
         CF_CHECK_EQ(ofb_start(cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &ofb), CRYPT_OK);
         CF_CHECK_EQ(ofb_decrypt(op.ciphertext.GetPtr(), out, op.ciphertext.GetSize(), &ofb), CRYPT_OK);
@@ -1356,7 +1348,6 @@ end:
         out = util::malloc(cleartext.size());
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(cleartext.size(), 0);
-        CF_CHECK_EQ(cleartext.size() % cipher_descriptor[cipherIdx].block_length, 0);
         CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[cipherIdx].block_length);
         CF_CHECK_EQ(cbc_start(cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &cbc), CRYPT_OK);
         CF_CHECK_EQ(cbc_encrypt(cleartext.data(), out, cleartext.size(), &cbc), CRYPT_OK);
@@ -1379,7 +1370,6 @@ end:
         CF_CHECK_NE(cipherIdx = libtomcrypt_detail::ToCipherIdx(op.cipher.cipherType.Get()), -1);
         CF_CHECK_NE(op.cipher.key.GetPtr(), nullptr);
         CF_CHECK_GT(op.ciphertext.GetSize(), 0);
-        CF_CHECK_EQ(op.ciphertext.GetSize() % cipher_descriptor[cipherIdx].block_length, 0);
         CF_CHECK_EQ(op.cipher.iv.GetSize(), (size_t)cipher_descriptor[cipherIdx].block_length);
         CF_CHECK_EQ(cbc_start(cipherIdx, op.cipher.iv.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), 0, &cbc), CRYPT_OK);
         CF_CHECK_EQ(cbc_decrypt(op.ciphertext.GetPtr(), out, op.ciphertext.GetSize(), &cbc), CRYPT_OK);
