@@ -377,6 +377,14 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_
                     CF_CHECK_EQ(SSub.Set("115792089237316195423570985008687907852837564279074904382605163141518161494337"), true);
                     CF_CHECK_EQ(mp_sub(SSub.GetPtr(), s.GetPtr(), s.GetPtr()), 0);
                 }
+            } else if ( op.curveType.Get() == CF_ECC_CURVE("secp256r1") ) {
+                wolfCrypt_bignum::Bignum SMax(ds);
+                CF_CHECK_EQ(SMax.Set("57896044605178124381348723474703786764998477612067880171211129530534256022184"), true);
+                if ( mp_cmp(s.GetPtr(), SMax.GetPtr()) == 1 ) {
+                    wolfCrypt_bignum::Bignum SSub(ds);
+                    CF_CHECK_EQ(SSub.Set("115792089210356248762697446949407573529996955224135760342422259061068512044369"), true);
+                    CF_CHECK_EQ(mp_sub(SSub.GetPtr(), s.GetPtr(), s.GetPtr()), 0);
+                }
             }
 
             CF_CHECK_NE(r_str = r.ToDecString(), std::nullopt);

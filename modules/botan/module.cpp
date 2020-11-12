@@ -774,11 +774,18 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
                     ++count;
                 }
 
-                /* For compatibility with the secp256k1 library.
-                 * See: https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#low-s-values-in-signatures
-                 */
-                if (S > ::Botan::BigInt("57896044618658097711785492504343953926418782139537452191302581570759080747168")) {
-                    S = ::Botan::BigInt("115792089237316195423570985008687907852837564279074904382605163141518161494337") - S;
+                if ( op.curveType.Get() == CF_ECC_CURVE("secp256k1") ) {
+                    /* For compatibility with the secp256k1 library.
+                     * See: https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#low-s-values-in-signatures
+                     */
+                    if (S > ::Botan::BigInt("57896044618658097711785492504343953926418782139537452191302581570759080747168")) {
+                        S = ::Botan::BigInt("115792089237316195423570985008687907852837564279074904382605163141518161494337") - S;
+                    }
+                } else if ( op.curveType.Get() == CF_ECC_CURVE("secp256r1") ) {
+                    /* Similar ECDSA signature malleability adjustment for compatibility with trezor-firmware */
+                    if (S > ::Botan::BigInt("57896044605178124381348723474703786764998477612067880171211129530534256022184")) {
+                        S = ::Botan::BigInt("115792089210356248762697446949407573529996955224135760342422259061068512044369") - S;
+                    }
                 }
 
                 const auto pub_x = priv->public_point().get_affine_x().to_dec_string();
