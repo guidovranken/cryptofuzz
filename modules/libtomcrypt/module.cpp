@@ -327,9 +327,6 @@ std::optional<component::Digest> libtomcrypt::OpDigest(operation::Digest& op) {
 std::optional<component::MAC> libtomcrypt::OpHMAC(operation::HMAC& op) {
     std::optional<component::MAC> ret = std::nullopt;
 
-    /* Currently disabled because of invalid output */
-    return ret;
-
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     hmac_state ctx;
