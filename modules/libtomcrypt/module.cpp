@@ -331,7 +331,7 @@ std::optional<component::MAC> libtomcrypt::OpHMAC(operation::HMAC& op) {
 
     hmac_state ctx;
     uint8_t out[MAXBLOCKSIZE];
-    unsigned long outlen;
+    unsigned long outlen = sizeof(out);
     int hashIdx = -1;
     util::Multipart parts;
 
