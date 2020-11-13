@@ -717,6 +717,7 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
     static ::Botan::System_RNG rng;
 
     CF_CHECK_EQ(op.UseRFC6979Nonce(), true);
+    CF_CHECK_EQ(op.digestType.Get(), CF_DIGEST("SHA256"));
 
     try {
         /* Initialize */
@@ -728,8 +729,6 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
 
             CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
             ::Botan::EC_Group group(*curveString);
-
-            /* TODO check hash algorithm */
 
             /* Private key */
             {
