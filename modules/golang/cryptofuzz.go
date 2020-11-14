@@ -909,6 +909,11 @@ func op_XOR(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool)
     return true
 }
 
+func op_NUM_BITS(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    res.SetInt64((int64)(BN0.BitLen()))
+    return true
+}
+
 //export Golang_Cryptofuzz_OpBignumCalc
 func Golang_Cryptofuzz_OpBignumCalc(in []byte) {
     resetResult()
@@ -978,6 +983,8 @@ func Golang_Cryptofuzz_OpBignumCalc(in []byte) {
         success = op_XOR(res, bn[0], bn[1], bn[2], direct)
     } else if isSetBit(op.CalcOp) {
         success = op_SET_BIT(res, bn[0], bn[1], bn[2], direct)
+    } else if isNumBits(op.CalcOp) {
+        success = op_NUM_BITS(res, bn[0], bn[1], bn[2], direct)
     }
 
     if success == false {
