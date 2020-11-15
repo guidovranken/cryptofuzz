@@ -173,6 +173,99 @@ namespace BearSSL_detail {
 end:
         return &br_aes_big_ctrcbc_vtable;
     }
+
+    const br_ec_impl* Get_br_ec_impl(Datasource& ds) {
+        try {
+            switch ( ds.Get<uint8_t>() ) {
+                case    0:
+                    return &br_ec_prime_i15;
+                case    1:
+                    return &br_ec_prime_i31;
+                case    2:
+                    return &br_ec_p256_m15;
+                case    3:
+                    return &br_ec_p256_m31;
+                case    4:
+                    {
+                        const auto ret = br_ec_p256_m62_get();
+                        if ( ret == nullptr ) {
+                            goto end;
+                        }
+                        return ret;
+                    }
+                    break;
+                case    5:
+                    {
+                        const auto ret = br_ec_p256_m64_get();
+                        if ( ret == nullptr ) {
+                            goto end;
+                        }
+                        return ret;
+                    }
+                    break;
+                default:
+                        goto end;
+            }
+        } catch ( ... ) { }
+
+end:
+        return br_ec_get_default();
+    }
+
+    br_chacha20_run Get_br_chacha20_run(Datasource& ds) {
+        try {
+            switch ( ds.Get<uint8_t>() ) {
+                case    0:
+                    return &br_chacha20_ct_run;
+                case    1:
+                    {
+                        const auto ret = br_chacha20_sse2_get();
+                        if ( ret == nullptr ) {
+                            goto end;
+                        }
+                        return ret;
+                    }
+                    break;
+                default:
+                        goto end;
+            }
+        } catch ( ... ) { }
+
+end:
+        return &br_chacha20_ct_run;
+    }
+
+    br_ecdsa_sign Get_br_ecdsa_sign(Datasource& ds) {
+        try {
+            switch ( ds.Get<uint8_t>() ) {
+                case    0:
+                    return &br_ecdsa_i31_sign_raw;
+                case    1:
+                    return &br_ecdsa_i15_sign_raw;
+                default:
+                        goto end;
+            }
+        } catch ( ... ) { }
+
+end:
+        return &br_ecdsa_i31_sign_raw;
+    }
+
+    br_ecdsa_vrfy Get_br_ecdsa_vrfy(Datasource& ds) {
+        try {
+            switch ( ds.Get<uint8_t>() ) {
+                case    0:
+                    return &br_ecdsa_i31_vrfy_raw;
+                case    1:
+                    return &br_ecdsa_i15_vrfy_raw;
+                default:
+                        goto end;
+            }
+        } catch ( ... ) { }
+
+end:
+        return &br_ecdsa_i31_vrfy_raw;
+    }
 }
 
 BearSSL::BearSSL(void) :
@@ -225,7 +318,6 @@ std::optional<component::Digest> BearSSL::OpDigest(operation::Digest& op) {
                 ret = component::Digest(out, sizeof(out));
             }
             break;
-#if 0
         case    CF_DIGEST("SHAKE256"):
             {
                 uint8_t out[32];
@@ -237,12 +329,11 @@ std::optional<component::Digest> BearSSL::OpDigest(operation::Digest& op) {
                     /* noret */ br_shake_inject(&ctx, part.first, part.second);
                 }
                 /* noret */ br_shake_flip(&ctx);
-                /* noret */ br_shake_produce(&ctx, out, 256);
+                /* noret */ br_shake_produce(&ctx, out, 32);
 
                 ret = component::Digest(out, sizeof(out));
             }
             break;
-#endif
     }
 
     return ret;
@@ -401,6 +492,49 @@ std::optional<component::Ciphertext> BearSSL::OpSymmetricEncrypt(operation::Symm
                 }
             }
             break;
+        case    CF_CIPHER("CHACHA20"):
+            {
+                CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
+                CF_CHECK_EQ(op.cipher.iv.GetSize(), 12);
+
+                auto in = op.cleartext.Get();
+
+                auto cc20 = BearSSL_detail::Get_br_chacha20_run(ds);
+                cc20(op.cipher.key.GetPtr(), op.cipher.iv.GetPtr(), 0, in.data(), in.size());
+                ret = component::Ciphertext(Buffer(in));
+            }
+            break;
+        case    CF_CIPHER("CHACHA20_POLY1305"):
+            {
+                CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
+                CF_CHECK_EQ(op.cipher.iv.GetSize(), 12);
+
+                if ( op.tagSize != std::nullopt ) {
+                    CF_CHECK_EQ(*op.tagSize, 16);
+                }
+
+                uint8_t tag[16];
+                auto in = op.cleartext.Get();
+                auto cc20 = BearSSL_detail::Get_br_chacha20_run(ds);
+
+                br_poly1305_ctmul_run(
+                        op.cipher.key.GetPtr(),
+                        op.cipher.iv.GetPtr(),
+                        in.data(),
+                        in.size(),
+                        op.aad == std::nullopt ? nullptr : op.aad->GetPtr(),
+                        op.aad == std::nullopt ? 0 : op.aad->GetSize(),
+                        tag,
+                        cc20,
+                        1);
+
+                if ( op.tagSize != std::nullopt ) {
+                    ret = component::Ciphertext(Buffer(in), Buffer(tag, 16));
+                } else {
+                    ret = component::Ciphertext(Buffer(in));
+                }
+            }
+            break;
     }
 
 end:
@@ -521,6 +655,49 @@ std::optional<component::Cleartext> BearSSL::OpSymmetricDecrypt(operation::Symme
                 ret = component::Cleartext(Buffer(in));
             }
             break;
+        case    CF_CIPHER("CHACHA20"):
+            {
+                CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
+                CF_CHECK_EQ(op.cipher.iv.GetSize(), 12);
+
+                auto cc20 = BearSSL_detail::Get_br_chacha20_run(ds);
+                auto in = op.ciphertext.Get();
+
+                cc20(op.cipher.key.GetPtr(), op.cipher.iv.GetPtr(), 0, in.data(), in.size());
+                ret = component::Cleartext(Buffer(in));
+            }
+            break;
+        case    CF_CIPHER("CHACHA20_POLY1305"):
+            {
+                CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
+                CF_CHECK_EQ(op.cipher.iv.GetSize(), 12);
+
+                if ( op.tag != std::nullopt ) {
+                    CF_CHECK_EQ(op.tag->GetSize(), 16);
+                }
+
+                uint8_t tag[16];
+                auto in = op.ciphertext.Get();
+                auto cc20 = BearSSL_detail::Get_br_chacha20_run(ds);
+
+                br_poly1305_ctmul_run(
+                        op.cipher.key.GetPtr(),
+                        op.cipher.iv.GetPtr(),
+                        in.data(),
+                        in.size(),
+                        op.aad == std::nullopt ? nullptr : op.aad->GetPtr(),
+                        op.aad == std::nullopt ? 0 : op.aad->GetSize(),
+                        tag,
+                        cc20,
+                        0);
+
+                if ( op.tag != std::nullopt ) {
+                    CF_CHECK_EQ(memcmp(op.tag->GetPtr(), tag, 16), 0);
+                }
+
+                ret = component::Cleartext(Buffer(in));
+            }
+            break;
     }
 
 end:
@@ -608,6 +785,7 @@ end:
 
 std::optional<component::ECC_KeyPair> BearSSL::OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) {
     std::optional<component::ECC_KeyPair> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     br_ec_private_key sk;
     br_ec_public_key pk;
@@ -615,11 +793,12 @@ std::optional<component::ECC_KeyPair> BearSSL::OpECC_GenerateKeyPair(operation::
     uint8_t pub[BR_EC_KBUF_PUB_MAX_SIZE];
     size_t privSize, pubSize;
     int curve;
+    const auto ec_impl = BearSSL_detail::Get_br_ec_impl(ds);
 
     CF_CHECK_NE(curve = BearSSL_detail::toCurveID(op.curveType), -1);
 
-    CF_CHECK_NE(privSize = br_ec_keygen(&BearSSL_detail::rng.vtable, br_ec_get_default(), &sk, priv, curve), 0);
-    CF_CHECK_NE(pubSize = br_ec_compute_pub(br_ec_get_default(), &pk, pub, &sk), 0);
+    CF_CHECK_NE(privSize = br_ec_keygen(&BearSSL_detail::rng.vtable, ec_impl, &sk, priv, curve), 0);
+    CF_CHECK_NE(pubSize = br_ec_compute_pub(ec_impl, &pk, pub, &sk), 0);
 
     ret = { BearSSL_detail::toString(priv, privSize), BearSSL_detail::EncodePubkey(pub, pubSize) };
 end:
@@ -635,6 +814,7 @@ std::optional<component::ECC_PublicKey> BearSSL::OpECC_PrivateToPublic(operation
     uint8_t priv[BR_EC_KBUF_PRIV_MAX_SIZE];
     uint8_t pub[BR_EC_KBUF_PUB_MAX_SIZE];
     size_t pubSize;
+    const auto ec_impl = BearSSL_detail::Get_br_ec_impl(ds);
 
     CF_CHECK_NE(sk.curve = BearSSL_detail::toCurveID(op.curveType), -1);
     CF_CHECK_EQ(BearSSL_detail::EncodeBignum(op.priv.ToTrimmedString(), priv, sizeof(priv)), true);
@@ -643,7 +823,7 @@ std::optional<component::ECC_PublicKey> BearSSL::OpECC_PrivateToPublic(operation
     sk.xlen = sizeof(priv);
 
     memset(&pk, 0, sizeof(pk));
-    CF_CHECK_NE(pubSize = br_ec_compute_pub(br_ec_get_default(), &pk, pub, &sk), 0);
+    CF_CHECK_NE(pubSize = br_ec_compute_pub(ec_impl, &pk, pub, &sk), 0);
     ret = BearSSL_detail::EncodePubkey(pub, pubSize);
 
 end:
@@ -654,30 +834,142 @@ std::optional<bool> BearSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    uint8_t signature[200];
-    uint8_t pub[145];
-    br_ec_public_key pk;
+    size_t generator_len;
+    size_t signature_len;
+    switch ( op.curveType.Get() ) {
+        case CF_ECC_CURVE("secp256r1"):
+            generator_len = 65;
+            signature_len = 64;
+            break;
+        case CF_ECC_CURVE("secp384r1"):
+            generator_len = 97;
+            signature_len = 96;
+            break;
+        case CF_ECC_CURVE("secp521r1"):
+            generator_len = 133;
+            signature_len = 132;
+            break;
+        default:
+            return std::nullopt;
+    }
 
+    size_t pubkeyHalfSize = (generator_len - 1) / 2;
+    size_t signatureHalfSize = signature_len / 2;
+    uint8_t* signature = util::malloc(signature_len);
+    uint8_t* pub = util::malloc(generator_len);
+    br_ec_public_key pk;
+    const auto ec_impl = BearSSL_detail::Get_br_ec_impl(ds);
+    auto verify = BearSSL_detail::Get_br_ecdsa_vrfy(ds);
+    const br_hash_class* hash_class;
+    uint8_t _hash[64];
+    const uint8_t* hash;
+    size_t hash_size = 0;
+
+    if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
+        hash = op.cleartext.GetPtr();
+        hash_size = op.cleartext.GetSize();
+    } else {
+        br_hash_compat_context hc;
+
+        CF_CHECK_NE(hash_class = BearSSL_detail::To_br_hash_class(op.digestType), nullptr);
+
+        hash_class->init(&hc.vtable);
+        hash_class->update(&hc.vtable, op.cleartext.GetPtr(), op.cleartext.GetSize());
+        hash_class->out(&hc.vtable, _hash);
+        hash = _hash;
+        hash_size = (hash_class->desc >> BR_HASHDESC_OUT_OFF) & BR_HASHDESC_OUT_MASK;
+    }
     CF_CHECK_NE(pk.curve = BearSSL_detail::toCurveID(op.curveType), -1);
 
-    CF_CHECK_EQ(BearSSL_detail::EncodeBignum(op.signature.signature.first.ToTrimmedString(), signature, sizeof(signature) / 2), true);
-    CF_CHECK_EQ(BearSSL_detail::EncodeBignum(op.signature.signature.second.ToTrimmedString(), signature + sizeof(signature) / 2, sizeof(signature) / 2), true);
+    CF_CHECK_EQ(BearSSL_detail::EncodeBignum(op.signature.signature.first.ToTrimmedString(), signature, signatureHalfSize), true);
+    CF_CHECK_EQ(BearSSL_detail::EncodeBignum(op.signature.signature.second.ToTrimmedString(), signature + signatureHalfSize, signatureHalfSize), true);
 
     pub[0] = 0x04;
-    CF_CHECK_EQ(BearSSL_detail::EncodeBignum(op.signature.pub.first.ToTrimmedString(), pub + 1, 72), true);
-    CF_CHECK_EQ(BearSSL_detail::EncodeBignum(op.signature.pub.second.ToTrimmedString(), pub + 1 + 72, 72), true);
+    CF_CHECK_EQ(BearSSL_detail::EncodeBignum(op.signature.pub.first.ToTrimmedString(), pub + 1, pubkeyHalfSize), true);
+    CF_CHECK_EQ(BearSSL_detail::EncodeBignum(op.signature.pub.second.ToTrimmedString(), pub + 1 + pubkeyHalfSize, pubkeyHalfSize), true);
 
     pk.q = pub;
-    pk.qlen = sizeof(pub);
+    pk.qlen = generator_len;
 
-    br_ecdsa_i31_vrfy_raw(
-            br_ec_get_default(),
-            op.cleartext.GetPtr(),
-            op.cleartext.GetSize(),
+    ret = verify(
+            ec_impl,
+            hash,
+            hash_size,
             &pk,
             signature,
-            sizeof(signature));
+            signature_len);
 end:
+
+    util::free(signature);
+    util::free(pub);
+
+    return ret;
+}
+
+std::optional<component::ECDSA_Signature> BearSSL::OpECDSA_Sign(operation::ECDSA_Sign& op) {
+    std::optional<component::ECDSA_Signature> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    size_t signature_len;
+    switch ( op.curveType.Get() ) {
+        case CF_ECC_CURVE("secp256r1"):
+            signature_len = 64;
+            break;
+        case CF_ECC_CURVE("secp384r1"):
+            signature_len = 96;
+            break;
+        case CF_ECC_CURVE("secp521r1"):
+            signature_len = 132;
+            break;
+        default:
+            return std::nullopt;
+    }
+
+    br_ec_private_key sk;
+    br_ec_public_key pk;
+    uint8_t priv[BR_EC_KBUF_PRIV_MAX_SIZE];
+    uint8_t pub[BR_EC_KBUF_PUB_MAX_SIZE];
+    size_t pubSize;
+    uint8_t* signature = util::malloc(signature_len);
+    size_t sigSize;
+    uint8_t hash[64];
+    br_hash_compat_context hc;
+    const br_hash_class* hash_class;
+    const auto ec_impl = BearSSL_detail::Get_br_ec_impl(ds);
+    auto sign = BearSSL_detail::Get_br_ecdsa_sign(ds);
+
+    CF_CHECK_EQ(op.UseRFC6979Nonce(), true);
+    CF_CHECK_NE(hash_class = BearSSL_detail::To_br_hash_class(op.digestType), nullptr);
+
+    CF_CHECK_NE(sk.curve = BearSSL_detail::toCurveID(op.curveType), -1);
+    CF_CHECK_EQ(BearSSL_detail::EncodeBignum(op.priv.ToTrimmedString(), priv, sizeof(priv)), true);
+
+    hash_class->init(&hc.vtable);
+    hash_class->update(&hc.vtable, op.cleartext.GetPtr(), op.cleartext.GetSize());
+    hash_class->out(&hc.vtable, hash);
+
+    sk.x = priv;
+    sk.xlen = sizeof(priv);
+
+    memset(&pk, 0, sizeof(pk));
+    CF_CHECK_NE(pubSize = br_ec_compute_pub(ec_impl, &pk, pub, &sk), 0);
+
+    CF_CHECK_NE(sigSize = sign(ec_impl, hash_class, hash, &sk, signature), 0);
+
+    if ( sigSize % 2 != 0 ) {
+        abort();
+    }
+
+    /* Disabled because signature S needs to be corrected for compatibility with Botan/Trezor */
+    CF_CHECK_NE(op.curveType.Get(), CF_ECC_CURVE("secp256r1"));
+
+    ret = {
+            {BearSSL_detail::toString(signature, sigSize / 2), BearSSL_detail::toString(signature + (sigSize/2), sigSize / 2) },
+            BearSSL_detail::EncodePubkey(pub, pubSize)
+    };
+
+end:
+    util::free(signature);
     return ret;
 }
 

@@ -19,6 +19,7 @@ class BearSSL : public Module {
         std::optional<component::ECC_KeyPair> OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) override;
         std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) override;
         std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) override;
+        std::optional<component::ECDSA_Signature> OpECDSA_Sign(operation::ECDSA_Sign& op) override;
 };
 
 } /* namespace module */
