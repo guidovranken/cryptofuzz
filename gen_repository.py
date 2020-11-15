@@ -238,6 +238,7 @@ class CalcOpTable(Table):
         return tableEntry
 
 modules = ModuleTable()
+modules.Add( Module("BearSSL") )
 modules.Add( Module("Beast") )
 modules.Add( Module("Bitcoin") )
 modules.Add( Module("Boost") )

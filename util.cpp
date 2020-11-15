@@ -55,6 +55,10 @@ const uint8_t* ToInPlace(fuzzing::datasource::Datasource& ds, uint8_t* out, cons
     return inPlace ? out : in;
 }
 
+Multipart ToParts(fuzzing::datasource::Datasource& ds, const std::vector<uint8_t>& buffer) {
+    return ToParts(ds, buffer.data(), buffer.size());
+}
+
 Multipart ToParts(fuzzing::datasource::Datasource& ds, const Buffer& buffer) {
     return ToParts(ds, buffer.GetPtr(), buffer.GetSize());
 }
