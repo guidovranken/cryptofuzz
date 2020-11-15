@@ -1040,8 +1040,8 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
     }
 
     ret = { res.is_negative() ?
-            ("-" + res.to_dec_string()) :
-            res.to_dec_string() };
+            ("-" + util::HexToDec(res.to_hex_string())) :
+            util::HexToDec(res.to_hex_string()) };
 
 end:
     return ret;
