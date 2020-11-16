@@ -913,6 +913,16 @@ template<> void ExecutorBase<component::Bignum, operation::BignumCalc>::postproc
 }
 
 template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, operation::BignumCalc>::callModule(std::shared_ptr<Module> module, operation::BignumCalc& op) const {
+    /* Only run whitelisted calcops, if specified */
+    if ( options.calcOps != std::nullopt ) {
+        if ( std::find(
+                    options.calcOps->begin(),
+                    options.calcOps->end(),
+                    op.calcOp.Get()) == options.calcOps->end() ) {
+            return std::nullopt;
+        }
+    }
+
     /* Prevent timeouts */
     if ( op.bn0.GetSize() > 1000 ) return std::nullopt;
     if ( op.bn1.GetSize() > 1000 ) return std::nullopt;

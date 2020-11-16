@@ -7,6 +7,16 @@
 
 namespace cryptofuzz {
 
+std::string Options::calcOpToBase(const std::string calcOp) {
+    std::vector<std::string> calcOpParts;
+    boost::split(calcOpParts, calcOp, boost::is_any_of("("));
+    if ( calcOpParts.empty() ) {
+        printf("Cannot parse calcop\n");
+        abort();
+    }
+    return calcOpParts[0];
+}
+
 Options::Options(const int argc, char** argv, const std::vector<std::string> extraArguments) {
     for (int i = 0; i < argc; i++) {
         arguments.push_back( std::string(argv[i]) );
@@ -185,6 +195,34 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
             }
 
             this->disableModules = moduleIDs;
+        } else if ( !parts.empty() && parts[0] == "--calcops" ) {
+            if ( parts.size() != 2 ) {
+                std::cout << "Expected argument after --calcops=" << std::endl;
+                exit(1);
+            }
+
+            std::vector<std::string> calcOpStrings;
+            boost::split(calcOpStrings, parts[1], boost::is_any_of(","));
+
+            std::vector<uint64_t> calcOps;
+
+            for (const auto& curCalcOpStr : calcOpStrings) {
+                bool found = false;
+                for (size_t i = 0; i < (sizeof(repository::CalcOpLUT) / sizeof(repository::CalcOpLUT[0])); i++) {
+                    if ( boost::iequals(curCalcOpStr, calcOpToBase(repository::CalcOpLUT[i].name)) ) {
+                        calcOps.push_back(repository::CalcOpLUT[i].id);
+                        found = true;
+                        break;
+                    }
+                }
+
+                if ( found == false ) {
+                    std::cout << "Undefined calc op: " << curCalcOpStr << std::endl;
+                    exit(1);
+                }
+            }
+
+            this->calcOps = calcOps;
         } else if ( !parts.empty() && parts[0] == "--min-modules" ) {
             if ( parts.size() != 2 ) {
                 std::cout << "Expected argument after --min-modules=" << std::endl;
