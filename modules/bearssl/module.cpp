@@ -1,6 +1,7 @@
 #include "module.h"
 #include <cryptofuzz/util.h>
 #include <boost/multiprecision/cpp_int.hpp>
+#include <cryptofuzz/repository.h>
 #include <sstream>
 
 extern "C" {
@@ -265,6 +266,23 @@ end:
 
 end:
         return &br_ecdsa_i31_vrfy_raw;
+    }
+
+    bool IsValidPrivateKey(const component::Bignum& priv, const component::CurveType& curveType) {
+        const auto s = priv.ToTrimmedString();
+        if ( s == "0" ) {
+            return false;
+        }
+
+        const auto order = repository::ECC_CurveToOrder(curveType.Get());
+        if ( order == std::nullopt ) {
+            return false;
+        }
+
+        boost::multiprecision::cpp_int priv_cpp_int(s);
+        boost::multiprecision::cpp_int order_cpp_int(*order);
+
+        return priv_cpp_int < order_cpp_int;
     }
 }
 
@@ -817,6 +835,7 @@ std::optional<component::ECC_PublicKey> BearSSL::OpECC_PrivateToPublic(operation
     const auto ec_impl = BearSSL_detail::Get_br_ec_impl(ds);
 
     CF_CHECK_NE(sk.curve = BearSSL_detail::toCurveID(op.curveType), -1);
+    CF_CHECK_EQ(BearSSL_detail::IsValidPrivateKey(op.priv, op.curveType), true);
     CF_CHECK_EQ(BearSSL_detail::EncodeBignum(op.priv.ToTrimmedString(), priv, sizeof(priv)), true);
 
     sk.x = priv;
@@ -942,6 +961,7 @@ std::optional<component::ECDSA_Signature> BearSSL::OpECDSA_Sign(operation::ECDSA
     CF_CHECK_NE(hash_class = BearSSL_detail::To_br_hash_class(op.digestType), nullptr);
 
     CF_CHECK_NE(sk.curve = BearSSL_detail::toCurveID(op.curveType), -1);
+    CF_CHECK_EQ(BearSSL_detail::IsValidPrivateKey(op.priv, op.curveType), true);
     CF_CHECK_EQ(BearSSL_detail::EncodeBignum(op.priv.ToTrimmedString(), priv, sizeof(priv)), true);
 
     hash_class->init(&hc.vtable);
