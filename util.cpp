@@ -293,7 +293,14 @@ class HaveBadPointer {
 
 static HaveBadPointer haveBadPointer;
 
-uint8_t* GetNullPtr(void) {
+uint8_t* GetNullPtr(fuzzing::datasource::Datasource* ds) {
+    if ( ds != nullptr ) {
+        try {
+            return ds->Get<uint8_t*>();
+        } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+            return (uint8_t*)0x12;
+        }
+    }
     return haveBadPointer.Get() == true ? (uint8_t*)0x12 : nullptr;
 }
 

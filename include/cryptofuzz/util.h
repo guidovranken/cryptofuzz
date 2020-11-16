@@ -36,7 +36,7 @@ std::string ToString(const component::ECC_PublicKey& val);
 std::string ToString(const component::ECC_KeyPair& val);
 std::string ToString(const component::ECDSA_Signature& val);
 std::string ToString(const component::Bignum& val);
-uint8_t* GetNullPtr(void);
+uint8_t* GetNullPtr(fuzzing::datasource::Datasource* ds);
 uint8_t* malloc(const size_t n);
 uint8_t* realloc(void* ptr, const size_t n);
 void free(void* ptr);

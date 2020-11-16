@@ -10,7 +10,7 @@
 namespace cryptofuzz {
 
 namespace util {
-    uint8_t* GetNullPtr(void);
+    uint8_t* GetNullPtr(fuzzing::datasource::Datasource* ds = nullptr);
 }
 
 using fuzzing::datasource::Datasource;
@@ -81,9 +81,9 @@ class Buffer {
             return data;
         }
 
-        const uint8_t* GetPtr(void) const {
+        const uint8_t* GetPtr(fuzzing::datasource::Datasource* ds = nullptr) const {
             if ( data.size() == 0 ) {
-                return util::GetNullPtr();
+                return util::GetNullPtr(ds);
             } else {
                 return data.data();
             }
