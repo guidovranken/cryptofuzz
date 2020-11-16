@@ -149,7 +149,14 @@ std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
 
 extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
-    const cryptofuzz::Options options(*argc, *argv);
+    std::vector<std::string> extraArguments;
+
+    const std::string cmdline(
+#include "extra_options.h"
+    );
+    boost::split(extraArguments, cmdline, boost::is_any_of(" "));
+
+    const cryptofuzz::Options options(*argc, *argv, extraArguments);
 
     driver = std::make_shared<cryptofuzz::Driver>(options);
     cryptofuzz_options = driver->GetOptionsPtr();

@@ -7,10 +7,12 @@
 
 namespace cryptofuzz {
 
-Options::Options(const int argc, char** argv) {
+Options::Options(const int argc, char** argv, const std::vector<std::string> extraArguments) {
     for (int i = 0; i < argc; i++) {
         arguments.push_back( std::string(argv[i]) );
     }
+
+    arguments.insert(arguments.end(), extraArguments.begin(), extraArguments.end());
 
     for (size_t i = 1; i < arguments.size(); i++) {
         const auto arg = arguments[i];

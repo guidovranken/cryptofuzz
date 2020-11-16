@@ -8,7 +8,7 @@ executor.o : executor.cpp
 	$(CXX) $(CXXFLAGS) executor.cpp -c -o executor.o
 util.o : util.cpp
 	$(CXX) $(CXXFLAGS) util.cpp -c -o util.o
-entry.o : entry.cpp
+entry.o : entry.cpp extra_options.h
 	$(CXX) $(CXXFLAGS) entry.cpp -c -o entry.o
 operation.o : operation.cpp
 	$(CXX) $(CXXFLAGS) operation.cpp -c -o operation.o
