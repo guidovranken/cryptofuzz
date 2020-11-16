@@ -663,7 +663,7 @@ std::optional<component::Cleartext> BearSSL::OpSymmetricDecrypt(operation::Symme
 
                 for (auto& part : parts) {
                     /* "Data may be provided in several chunks of arbitrary length" */
-                    /* noret */ br_ccm_run(&ec, 1, (void*)part.first, part.second);
+                    /* noret */ br_ccm_run(&ec, 0, (void*)part.first, part.second);
                 }
 
                 if ( op.tag != std::nullopt ) {
