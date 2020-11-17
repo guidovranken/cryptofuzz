@@ -2572,29 +2572,64 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     wolfCrypt_detail::SetGlobalDs(&ds);
 
-    std::optional<int> curveID;
-    ecc_key* key = nullptr;
     std::optional<std::string> priv_str, pub_x_str, pub_y_str;
+    ecc_key* key = nullptr;
 
-    /* Initialize */
-    {
-        CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
+    if ( op.curveType.Get() == CF_ECC_CURVE("ed25519") ) {
+        ed25519_key key;
 
-        CF_CHECK_NE(key = wc_ecc_key_new(nullptr), nullptr);
-    }
-
-    /* Process */
-    {
-        CF_CHECK_EQ(wc_ecc_make_key_ex(&wolfCrypt_detail::rng, 0, key, *curveID), 0);
+        CF_CHECK_EQ(wc_ed25519_make_key(&wolfCrypt_detail::rng, ED25519_KEY_SIZE, &key), 0);
 
         {
-            wolfCrypt_bignum::Bignum priv(&key->k, ds);
-            wolfCrypt_bignum::Bignum pub_x(key->pubkey.x, ds);
-            wolfCrypt_bignum::Bignum pub_y(key->pubkey.y, ds);
+            std::optional<component::Bignum> priv = std::nullopt;
+            std::optional<component::Bignum> pub = std::nullopt;
 
-            CF_CHECK_NE(priv_str = priv.ToDecString(), std::nullopt);
-            CF_CHECK_NE(pub_x_str = pub_x.ToDecString(), std::nullopt);
-            CF_CHECK_NE(pub_y_str = pub_y.ToDecString(), std::nullopt);
+            CF_CHECK_NE(pub = wolfCrypt_bignum::Bignum::BinToBignum(ds, key.p, ED25519_PUB_KEY_SIZE), std::nullopt);
+            CF_CHECK_NE(priv = wolfCrypt_bignum::Bignum::BinToBignum(ds, key.k, ED25519_KEY_SIZE), std::nullopt);
+
+            priv_str = priv->ToTrimmedString();
+            pub_x_str = pub->ToTrimmedString();
+            pub_y_str = "0";
+        }
+    } else if ( op.curveType.Get() == CF_ECC_CURVE("ed448") ) {
+        ed448_key key;
+
+        CF_CHECK_EQ(wc_ed448_make_key(&wolfCrypt_detail::rng, ED448_KEY_SIZE, &key), 0);
+
+        {
+            std::optional<component::Bignum> priv = std::nullopt;
+            std::optional<component::Bignum> pub = std::nullopt;
+
+            CF_CHECK_NE(pub = wolfCrypt_bignum::Bignum::BinToBignum(ds, key.p, ED448_PUB_KEY_SIZE), std::nullopt);
+            CF_CHECK_NE(priv = wolfCrypt_bignum::Bignum::BinToBignum(ds, key.k, ED448_KEY_SIZE), std::nullopt);
+
+            priv_str = priv->ToTrimmedString();
+            pub_x_str = pub->ToTrimmedString();
+            pub_y_str = "0";
+        }
+    } else {
+        std::optional<int> curveID;
+
+        /* Initialize */
+        {
+            CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
+
+            CF_CHECK_NE(key = wc_ecc_key_new(nullptr), nullptr);
+        }
+
+        /* Process */
+        {
+            CF_CHECK_EQ(wc_ecc_make_key_ex(&wolfCrypt_detail::rng, 0, key, *curveID), 0);
+
+            {
+                wolfCrypt_bignum::Bignum priv(&key->k, ds);
+                wolfCrypt_bignum::Bignum pub_x(key->pubkey.x, ds);
+                wolfCrypt_bignum::Bignum pub_y(key->pubkey.y, ds);
+
+                CF_CHECK_NE(priv_str = priv.ToDecString(), std::nullopt);
+                CF_CHECK_NE(pub_x_str = pub_x.ToDecString(), std::nullopt);
+                CF_CHECK_NE(pub_y_str = pub_y.ToDecString(), std::nullopt);
+            }
         }
     }
 
