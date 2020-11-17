@@ -110,6 +110,18 @@ end:
         }
 
         mp_int* GetPtr(void) const {
+            {
+                /* Optionally clamp the bignum. This should not affect its value. */
+
+                bool clamp = false;
+
+                try { clamp = ds.Get<bool>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                if ( clamp ) {
+                    /* noret */ mp_clamp(mp);
+                }
+            }
+
             return mp;
         }
 
