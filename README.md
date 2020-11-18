@@ -86,3 +86,5 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - SymCrypt: [Elliptic curve private-to-public incorrect result on Linux 32 bit](https://github.com/microsoft/SymCrypt/issues/9)
 - libtomcrypt: [PKBDF1 hang if iterations is 0](https://github.com/libtom/libtomcrypt/issues/552)
 - libtomcrypt: [TEA cipher incorrect result](https://github.com/libtom/libtomcrypt/issues/553)
+- SymCryypt: [NULL pointer access in struct offset resolution](https://github.com/microsoft/SymCrypt/issues/10)
+- BearSSL: Carry propagation bug in ECC code. Commit: b2ec2030e40acf5e9e4cd0f2669aacb27eadb540
