@@ -58,6 +58,29 @@ std::optional<component::Ciphertext> Monocypher::OpSymmetricEncrypt(operation::S
                 op.cipher.iv.GetPtr());
 
         ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
+    } else if ( op.cipher.cipherType.Get() == CF_CIPHER("XCHACHA20_POLY1305") ) {
+        CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
+        CF_CHECK_EQ(op.cipher.iv.GetSize(), 24);
+        CF_CHECK_NE(op.tagSize, std::nullopt);
+        CF_CHECK_EQ(*op.tagSize, 16);
+
+        uint8_t tag[16];
+
+        out = util::malloc(op.cleartext.GetSize());
+
+        /* noret */ crypto_lock_aead(
+                tag,
+                out,
+                op.cipher.key.GetPtr(),
+                op.cipher.iv.GetPtr(),
+                op.aad == std::nullopt ? nullptr : op.aad->GetPtr(),
+                op.aad == std::nullopt ? 0 : op.aad->GetSize(),
+                op.cleartext.GetPtr(),
+                op.cleartext.GetSize());
+
+        ret = component::Ciphertext(
+                Buffer(out, op.cleartext.GetSize()),
+                Buffer(tag, sizeof(tag)));
     }
 
 end:
@@ -81,6 +104,25 @@ std::optional<component::Cleartext> Monocypher::OpSymmetricDecrypt(operation::Sy
                 op.ciphertext.GetSize(),
                 op.cipher.key.GetPtr(),
                 op.cipher.iv.GetPtr());
+
+        ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+    } else if ( op.cipher.cipherType.Get() == CF_CIPHER("XCHACHA20_POLY1305") ) {
+        CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
+        CF_CHECK_EQ(op.cipher.iv.GetSize(), 24);
+        CF_CHECK_NE(op.tag, std::nullopt);
+        CF_CHECK_EQ(op.tag->GetSize(), 16);
+
+        out = util::malloc(op.ciphertext.GetSize());
+
+        CF_CHECK_EQ(crypto_unlock_aead(
+                out,
+                op.cipher.key.GetPtr(),
+                op.cipher.iv.GetPtr(),
+                op.tag->GetPtr(),
+                op.aad == std::nullopt ? nullptr : op.aad->GetPtr(),
+                op.aad == std::nullopt ? 0 : op.aad->GetSize(),
+                op.ciphertext.GetPtr(),
+                op.ciphertext.GetSize()), 0);
 
         ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
     }
