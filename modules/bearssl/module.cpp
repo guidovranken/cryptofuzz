@@ -175,19 +175,36 @@ end:
         return &br_aes_big_ctrcbc_vtable;
     }
 
-    const br_ec_impl* Get_br_ec_impl(Datasource& ds) {
+    const br_ec_impl* Get_br_ec_impl(Datasource& ds, const component::CurveType& curveType) {
         try {
             switch ( ds.Get<uint8_t>() ) {
                 case    0:
-                    return &br_ec_prime_i15;
+                    switch ( curveType.Get() ) {
+                        case    CF_ECC_CURVE("secp256r1"):
+                        case    CF_ECC_CURVE("secp384r1"):
+                        case    CF_ECC_CURVE("secp521r1"):
+                            return &br_ec_prime_i15;
+                        default:
+                            goto end;
+                    }
                 case    1:
-                    return &br_ec_prime_i31;
+                    switch ( curveType.Get() ) {
+                        case    CF_ECC_CURVE("secp256r1"):
+                        case    CF_ECC_CURVE("secp384r1"):
+                        case    CF_ECC_CURVE("secp521r1"):
+                            return &br_ec_prime_i31;
+                        default:
+                            goto end;
+                    }
                 case    2:
+                    CF_CHECK_EQ(curveType.Get(), CF_ECC_CURVE("secp256r1"));
                     return &br_ec_p256_m15;
                 case    3:
+                    CF_CHECK_EQ(curveType.Get(), CF_ECC_CURVE("secp256r1"));
                     return &br_ec_p256_m31;
                 case    4:
                     {
+                        CF_CHECK_EQ(curveType.Get(), CF_ECC_CURVE("secp256r1"));
                         const auto ret = br_ec_p256_m62_get();
                         if ( ret == nullptr ) {
                             goto end;
@@ -197,6 +214,7 @@ end:
                     break;
                 case    5:
                     {
+                        CF_CHECK_EQ(curveType.Get(), CF_ECC_CURVE("secp256r1"));
                         const auto ret = br_ec_p256_m64_get();
                         if ( ret == nullptr ) {
                             goto end;
@@ -811,7 +829,7 @@ std::optional<component::ECC_KeyPair> BearSSL::OpECC_GenerateKeyPair(operation::
     uint8_t pub[BR_EC_KBUF_PUB_MAX_SIZE];
     size_t privSize, pubSize;
     int curve;
-    const auto ec_impl = BearSSL_detail::Get_br_ec_impl(ds);
+    const auto ec_impl = BearSSL_detail::Get_br_ec_impl(ds, op.curveType);
 
     CF_CHECK_NE(curve = BearSSL_detail::toCurveID(op.curveType), -1);
 
@@ -832,7 +850,7 @@ std::optional<component::ECC_PublicKey> BearSSL::OpECC_PrivateToPublic(operation
     uint8_t priv[BR_EC_KBUF_PRIV_MAX_SIZE];
     uint8_t pub[BR_EC_KBUF_PUB_MAX_SIZE];
     size_t pubSize;
-    const auto ec_impl = BearSSL_detail::Get_br_ec_impl(ds);
+    const auto ec_impl = BearSSL_detail::Get_br_ec_impl(ds, op.curveType);
 
     CF_CHECK_NE(sk.curve = BearSSL_detail::toCurveID(op.curveType), -1);
     CF_CHECK_EQ(BearSSL_detail::IsValidPrivateKey(op.priv, op.curveType), true);
@@ -877,7 +895,7 @@ std::optional<bool> BearSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     uint8_t* signature = util::malloc(signature_len);
     uint8_t* pub = util::malloc(generator_len);
     br_ec_public_key pk;
-    const auto ec_impl = BearSSL_detail::Get_br_ec_impl(ds);
+    const auto ec_impl = BearSSL_detail::Get_br_ec_impl(ds, op.curveType);
     auto verify = BearSSL_detail::Get_br_ecdsa_vrfy(ds);
     const br_hash_class* hash_class;
     uint8_t _hash[64];
@@ -954,7 +972,7 @@ std::optional<component::ECDSA_Signature> BearSSL::OpECDSA_Sign(operation::ECDSA
     uint8_t hash[64];
     br_hash_compat_context hc;
     const br_hash_class* hash_class;
-    const auto ec_impl = BearSSL_detail::Get_br_ec_impl(ds);
+    const auto ec_impl = BearSSL_detail::Get_br_ec_impl(ds, op.curveType);
     auto sign = BearSSL_detail::Get_br_ecdsa_sign(ds);
 
     CF_CHECK_EQ(op.UseRFC6979Nonce(), true);
