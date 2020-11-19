@@ -120,6 +120,10 @@ class Buffer {
         void Serialize(Datasource& ds) const {
             ds.PutData(data);
         }
+
+        Datasource AsDatasource(void) const {
+            return Datasource(data.data(), data.size());
+        }
 };
 
 class Bignum {
