@@ -36,6 +36,14 @@ class Type {
             return type;
         }
 
+        bool Is(const uint64_t t) const {
+            return type == t;
+        }
+
+        bool Is(const std::vector<uint64_t> t) const {
+            return std::find(t.begin(), t.end(), type) != t.end();
+        }
+
         nlohmann::json ToJSON(void) const {
             nlohmann::json j;
             /* Store as string, not as number, because JavaScript's number

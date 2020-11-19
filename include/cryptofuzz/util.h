@@ -14,6 +14,8 @@
 #define CF_CHECK_GTE(expr, res) if ( (expr) < (res) ) { goto end; }
 #define CF_CHECK_LT(expr, res) if ( (expr) >= (res) ) { goto end; }
 #define CF_CHECK_LTE(expr, res) if ( (expr) > (res) ) { goto end; }
+#define CF_CHECK_TRUE(expr) if ( !(expr) ) { goto end; }
+#define CF_CHECK_FALSE(expr) if ( (expr) ) { goto end; }
 
 namespace cryptofuzz {
 namespace util {
