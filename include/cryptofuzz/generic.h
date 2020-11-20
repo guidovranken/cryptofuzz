@@ -9,10 +9,6 @@
 
 namespace cryptofuzz {
 
-namespace util {
-    uint8_t* GetNullPtr(fuzzing::datasource::Datasource* ds = nullptr);
-}
-
 using fuzzing::datasource::Datasource;
 
 class Type {
@@ -20,183 +16,54 @@ class Type {
         const uint64_t type;
     public:
 
-        Type(Datasource& ds) : type ( ds.Get<uint64_t>(0) )
-        { }
+        Type(Datasource& ds);
+        Type(const Type& other); /* Copy constructor */
+        Type(nlohmann::json json);
 
-        /* Copy constructor */
-        Type(const Type& other) :
-            type(other.type)
-        { }
-
-        Type(nlohmann::json json) :
-            type(json.get<uint64_t>())
-        { }
-
-        uint64_t Get(void) const {
-            return type;
-        }
-
-        bool Is(const uint64_t t) const {
-            return type == t;
-        }
-
-        bool Is(const std::vector<uint64_t> t) const {
-            return std::find(t.begin(), t.end(), type) != t.end();
-        }
-
-        nlohmann::json ToJSON(void) const {
-            nlohmann::json j;
-            /* Store as string, not as number, because JavaScript's number
-             * type has only 53 bits of precision.
-             */
-            j = std::to_string(type);
-            return j;
-        }
-
-        inline bool operator==(const Type& rhs) const {
-            return type == rhs.type;
-        }
-
-        void Serialize(Datasource& ds) const {
-            ds.Put<>(type);
-        }
+        uint64_t Get(void) const;
+        bool Is(const uint64_t t) const;
+        bool Is(const std::vector<uint64_t> t) const;
+        nlohmann::json ToJSON(void) const;
+        bool operator==(const Type& rhs) const;
+        void Serialize(Datasource& ds) const;
 };
 
 class Buffer {
     private:
         std::vector<uint8_t> data;
     public:
-        Buffer(Datasource& ds) :
-            data( ds.GetData(0, 0, (10*1024*1024)) )
-        { }
+        Buffer(Datasource& ds);
+        Buffer(nlohmann::json json);
+        explicit Buffer(const std::vector<uint8_t>& data);
+        Buffer(const uint8_t* data, const size_t size);
+        Buffer(void);
 
-        Buffer(nlohmann::json json) {
-            const auto s = json.get<std::string>();
-            boost::algorithm::unhex(s, std::back_inserter(data));
-        }
-
-        explicit Buffer(const std::vector<uint8_t>& data) :
-            data(data)
-        { }
-
-        Buffer(const uint8_t* data, const size_t size) :
-            data(data, data + size)
-        { }
-
-        Buffer(void) { }
-
-        std::vector<uint8_t> Get(void) const {
-            return data;
-        }
-
-        const uint8_t* GetPtr(fuzzing::datasource::Datasource* ds = nullptr) const {
-            if ( data.size() == 0 ) {
-                return util::GetNullPtr(ds);
-            } else {
-                return data.data();
-            }
-        }
-
-        std::vector<uint8_t>& GetVectorPtr(void) {
-            return data;
-        }
-
-        size_t GetSize(void) const {
-            return data.size();
-        }
-
-        inline bool operator==(const Buffer& rhs) const {
-            return data == rhs.data;
-        }
-
-        nlohmann::json ToJSON(void) const {
-            nlohmann::json j;
-            std::string asHex;
-            boost::algorithm::hex(data, std::back_inserter(asHex));
-            j = asHex;
-            return j;
-        }
-
-        void Serialize(Datasource& ds) const {
-            ds.PutData(data);
-        }
-
-        Datasource AsDatasource(void) const {
-            return Datasource(data.data(), data.size());
-        }
+        std::vector<uint8_t> Get(void) const;
+        const uint8_t* GetPtr(fuzzing::datasource::Datasource* ds = nullptr) const;
+        std::vector<uint8_t>& GetVectorPtr(void);
+        size_t GetSize(void) const;
+        bool operator==(const Buffer& rhs) const;
+        nlohmann::json ToJSON(void) const;
+        void Serialize(Datasource& ds) const;
+        Datasource AsDatasource(void) const;
 };
 
 class Bignum {
     private:
         Buffer data;
-        void transform(void) {
-            auto& ptr = data.GetVectorPtr();
-
-            for (size_t i = 0; i < ptr.size(); i++) {
-                if ( isdigit(ptr[i]) ) continue;
-                ptr[i] %= 10;
-                ptr[i] += '0';
-            }
-        }
+        void transform(void);
     public:
-        Bignum(Datasource& ds) :
-            data(ds) {
-            transform();
-        }
+        Bignum(Datasource& ds);
+        Bignum(nlohmann::json json);
+        Bignum(const std::string s);
 
-        Bignum(nlohmann::json json) :
-            Bignum(json.get<std::string>())
-        {
-        }
-
-        Bignum(const std::string s) :
-            data((const uint8_t*)s.data(), s.size())
-        { }
-
-
-        inline bool operator==(const Bignum& rhs) const {
-            return data == rhs.data;
-        }
-
-        size_t GetSize(void) const {
-            return data.GetSize();
-        }
-
-        std::string ToString(void) const {
-            return std::string(data.GetPtr(), data.GetPtr() + data.GetSize());
-        }
-
-        std::string ToTrimmedString(void) const {
-            auto s = ToString();
-            trim_left_if(s, boost::is_any_of("0"));
-
-            if ( s == "" ) {
-                return "0";
-            } else {
-                return s;
-            }
-        }
-
-        /* Prefix the string with a pseudo-random amount of zeroes */
-        std::string ToString(Datasource& ds) const {
-            std::string zeros;
-
-            try {
-                while ( ds.Get<bool>() == true ) {
-                    zeros += "0";
-                }
-            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
-
-            return zeros + ToTrimmedString();
-        }
-
-        nlohmann::json ToJSON(void) const {
-            return ToString();
-        }
-
-        void Serialize(Datasource& ds) const {
-            data.Serialize(ds);
-        }
+        bool operator==(const Bignum& rhs) const;
+        size_t GetSize(void) const;
+        std::string ToString(void) const;
+        std::string ToTrimmedString(void) const;
+        std::string ToString(Datasource& ds) const;
+        nlohmann::json ToJSON(void) const;
+        void Serialize(Datasource& ds) const;
 };
 
 } /* namespace cryptofuzz */

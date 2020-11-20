@@ -38,44 +38,12 @@ class SymmetricCipher {
         const SymmetricIV iv;
         const SymmetricKey key;
         const SymmetricCipherType cipherType;
-        SymmetricCipher(Datasource& ds) :
-            iv(ds),
-            key(ds),
-            cipherType(ds)
-        { }
-        SymmetricCipher(nlohmann::json json) :
-            iv(json["iv"]),
-            key(json["key"]),
-            cipherType(json["cipherType"])
-        { }
-        nlohmann::json ToJSON(void) const {
-            nlohmann::json j;
-            j["iv"] = iv.ToJSON();
-            j["key"] = key.ToJSON();
-            j["cipherType"] = cipherType.ToJSON();
-            return j;
-        }
-        inline bool operator==(const SymmetricCipher& rhs) const {
-            return
-                (iv == rhs.iv) &&
-                (key == rhs.key) &&
-                (cipherType == rhs.cipherType);
-        }
-        void Serialize(Datasource& ds) const {
-            iv.Serialize(ds);
-            key.Serialize(ds);
-            cipherType.Serialize(ds);
-        }
-};
+        SymmetricCipher(Datasource& ds);
+        SymmetricCipher(nlohmann::json json);
+        nlohmann::json ToJSON(void) const;
 
-class AsymmetricCipher {
-    public:
-        const AsymmetricPrivKey privKey;
-        const AsymmetricCipherType cipherType;
-        AsymmetricCipher(Datasource& ds) :
-            privKey(ds),
-            cipherType(ds)
-        { }
+        bool operator==(const SymmetricCipher& rhs) const;
+        void Serialize(Datasource& ds) const;
 };
 
 class Ciphertext {
@@ -83,59 +51,23 @@ class Ciphertext {
         Buffer ciphertext;
         std::optional<Tag> tag;
 
-        Ciphertext(Datasource& ds) :
-            ciphertext(ds),
-            tag( ds.Get<bool>() ? std::nullopt : std::make_optional<Tag>(ds) )
-        { }
+        Ciphertext(Datasource& ds);
+        Ciphertext(Buffer ciphertext, std::optional<Tag> tag = std::nullopt);
 
-        Ciphertext(Buffer ciphertext, std::optional<Tag> tag = std::nullopt) :
-            ciphertext(ciphertext),
-            tag(tag)
-        { }
-
-        inline bool operator==(const Ciphertext& rhs) const {
-            return (ciphertext == rhs.ciphertext) && (tag == rhs.tag);
-        }
-        void Serialize(Datasource& ds) const {
-            ciphertext.Serialize(ds);
-            if ( tag == std::nullopt ) {
-                ds.Put<bool>(true);
-            } else {
-                ds.Put<bool>(false);
-                tag->Serialize(ds);
-            }
-        }
+        bool operator==(const Ciphertext& rhs) const;
+        void Serialize(Datasource& ds) const;
 };
 
 class BignumPair {
     public:
         Bignum first, second;
 
-        BignumPair(Datasource& ds) :
-            first(ds),
-            second(ds)
-        { }
+        BignumPair(Datasource& ds);
+        BignumPair(const std::string first, const std::string second);
+        BignumPair(nlohmann::json json);
 
-        BignumPair(const std::string first, const std::string second) :
-            first(first),
-            second(second)
-        { }
-
-        BignumPair(nlohmann::json json) :
-            first(json[0].get<std::string>()),
-            second(json[1].get<std::string>())
-        { }
-
-
-        inline bool operator==(const BignumPair& rhs) const {
-            return
-                (first == rhs.first) &&
-                (second == rhs.second);
-        }
-        void Serialize(Datasource& ds) const {
-            first.Serialize(ds);
-            second.Serialize(ds);
-        }
+        bool operator==(const BignumPair& rhs) const;
+        void Serialize(Datasource& ds) const;
 };
 
 using ECC_PublicKey = BignumPair;
@@ -145,25 +77,11 @@ class ECC_KeyPair {
         ECC_PrivateKey priv;
         ECC_PublicKey pub;
 
-        ECC_KeyPair(Datasource& ds) :
-            priv(ds),
-            pub(ds)
-        { }
+        ECC_KeyPair(Datasource& ds);
+        ECC_KeyPair(ECC_PrivateKey priv, BignumPair pub);
 
-        ECC_KeyPair(ECC_PrivateKey priv, BignumPair pub) :
-            priv(priv),
-            pub(pub)
-        { }
-
-        inline bool operator==(const ECC_KeyPair& rhs) const {
-            return
-                (priv == rhs.priv) &&
-                (pub == rhs.pub);
-        }
-        void Serialize(Datasource& ds) const {
-            priv.Serialize(ds);
-            pub.Serialize(ds);
-        }
+        bool operator==(const ECC_KeyPair& rhs) const;
+        void Serialize(Datasource& ds) const;
 };
 
 
@@ -172,30 +90,12 @@ class ECDSA_Signature {
         BignumPair signature;
         ECC_PublicKey pub;
 
-        ECDSA_Signature(Datasource& ds) :
-            signature(ds),
-            pub(ds)
-        { }
+        ECDSA_Signature(Datasource& ds);
+        ECDSA_Signature(BignumPair signature, ECC_PublicKey pub);
+        ECDSA_Signature(nlohmann::json json);
 
-        ECDSA_Signature(BignumPair signature, ECC_PublicKey pub) :
-            signature(signature),
-            pub(pub)
-        { }
-
-        ECDSA_Signature(nlohmann::json json) :
-            signature(json["signature"]),
-            pub(json["pub"])
-        { }
-
-        inline bool operator==(const ECDSA_Signature& rhs) const {
-            return
-                (signature == rhs.signature) &&
-                (pub == rhs.pub);
-        }
-        void Serialize(Datasource& ds) const {
-            signature.Serialize(ds);
-            pub.Serialize(ds);
-        }
+        bool operator==(const ECDSA_Signature& rhs) const;
+        void Serialize(Datasource& ds) const;
 };
 
 class MACType {
@@ -203,32 +103,11 @@ class MACType {
         bool mode;
         Type type;
 
-        MACType(Datasource& ds) :
-            mode(ds.Get<bool>()),
-            type(ds)
-        { }
-
-        MACType(nlohmann::json json) :
-            mode(json["mode"].get<bool>()),
-            type(json["type"])
-        { }
-
-        nlohmann::json ToJSON(void) const {
-            nlohmann::json j;
-            j["mode"] = mode;
-            j["type"] = type.ToJSON();
-            return j;
-        }
-
-        inline bool operator==(const MACType& rhs) const {
-            return
-                (mode == rhs.mode) &&
-                (type == rhs.type);
-        }
-        void Serialize(Datasource& ds) const {
-            ds.Put<>(mode);
-            type.Serialize(ds);
-        }
+        MACType(Datasource& ds);
+        MACType(nlohmann::json json);
+        nlohmann::json ToJSON(void) const;
+        bool operator==(const MACType& rhs) const;
+        void Serialize(Datasource& ds) const;
 };
 
 using DH_Key = BignumPair;
