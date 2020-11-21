@@ -796,18 +796,15 @@ template<> std::optional<bool> ExecutorBase<bool, operation::ECDSA_Verify>::call
         }
     }
 
-    const std::vector<size_t> sizes = {
-        op.signature.pub.first.ToTrimmedString().size(),
-        op.signature.pub.second.ToTrimmedString().size(),
-        op.signature.signature.first.ToTrimmedString().size(),
-        op.signature.signature.second.ToTrimmedString().size(),
-    };
-
-    for (const auto& size : sizes) {
-        if ( size == 0 || size > 4096 ) {
-            return std::nullopt;
-        }
-    }
+    /* Intentionally do not constrain the size of the public key or
+     * signature (like we do for BignumCalc).
+     *
+     * If any large public key or signature causes a time-out (or
+     * worse), this is something that needs attention;
+     * because verifiers sometimes process untrusted public keys,
+     * signatures or both, they should be resistant to bugs
+     * arising from large inputs.
+     */
 
     return module->OpECDSA_Verify(op);
 }
