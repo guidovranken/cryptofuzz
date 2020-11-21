@@ -1294,6 +1294,13 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
 
         if ( result.second != std::nullopt ) {
             updateExtraCounters(module->ID, op);
+
+            if ( options.jsonDumpFP != std::nullopt ) {
+                nlohmann::json j;
+                j["operation"] = op.ToJSON();
+                j["result"] = util::ToJSON(*result.second);
+                fprintf(*options.jsonDumpFP, "%s\n", j.dump().c_str());
+            }
         }
 
         if ( options.debug == true ) {

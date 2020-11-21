@@ -255,6 +255,20 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
                 exit(1);
             }
             this->noCompare = true;
+        } else if ( !parts.empty() && parts[0] == "--dump-json" ) {
+            if ( parts.size() != 2 ) {
+                std::cout << "Expected argument after --dump-json=" << std::endl;
+                exit(1);
+            }
+
+            const auto jsonPath = parts[1];
+
+            FILE* fp = fopen(jsonPath.c_str(), "wb");
+            if ( fp == nullptr ) {
+                std::cout << "Cannot open file " << jsonPath << std::endl;
+                exit(1);
+            }
+            this->jsonDumpFP = fp;
         }
     }
 }

@@ -273,6 +273,42 @@ std::string ToString(const component::Bignum& val) {
     return val.ToString();
 }
 
+nlohmann::json ToJSON(const Buffer& buffer) {
+    return buffer.ToJSON();
+}
+
+nlohmann::json ToJSON(const bool val) {
+    return val;
+}
+
+nlohmann::json ToJSON(const component::Ciphertext& ciphertext) {
+    nlohmann::json ret;
+
+    ret["ciphertext"] = ciphertext.ciphertext.ToJSON();
+
+    if ( ciphertext.tag != std::nullopt ) {
+        ret["tag"] = ciphertext.tag->ToJSON();
+    }
+
+    return ret;
+}
+
+nlohmann::json ToJSON(const component::ECC_PublicKey& val) {
+    return val.ToJSON();
+}
+
+nlohmann::json ToJSON(const component::ECC_KeyPair& val) {
+    return val.ToJSON();
+}
+
+nlohmann::json ToJSON(const component::ECDSA_Signature& val) {
+    return val.ToJSON();
+}
+
+nlohmann::json ToJSON(const component::Bignum& val) {
+    return val.ToJSON();
+}
+
 class HaveBadPointer {
     private:
         bool haveBadPointer = false;

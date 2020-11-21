@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdio.h>
 #include <string>
 #include <vector>
 #include <optional>
@@ -21,6 +22,7 @@ class Options {
         std::optional<std::vector<uint64_t>> calcOps = std::nullopt;
         std::optional<uint64_t> forceModule = std::nullopt;
         std::optional<std::vector<uint64_t>> disableModules = std::nullopt;
+        std::optional<FILE*> jsonDumpFP = std::nullopt;
         size_t minModules = 1;
         bool debug = false;
         bool disableTests = false;

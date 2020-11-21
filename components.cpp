@@ -269,6 +269,10 @@ void BignumPair::Serialize(Datasource& ds) const {
     second.Serialize(ds);
 }
 
+nlohmann::json BignumPair::ToJSON(void) const {
+    return std::vector<nlohmann::json>{first.ToJSON(), second.ToJSON()};
+}
+
 /* ECC_KeyPair */
 
 ECC_KeyPair::ECC_KeyPair(Datasource& ds) :
@@ -290,6 +294,10 @@ bool ECC_KeyPair::operator==(const ECC_KeyPair& rhs) const {
 void ECC_KeyPair::Serialize(Datasource& ds) const {
     priv.Serialize(ds);
     pub.Serialize(ds);
+}
+
+nlohmann::json ECC_KeyPair::ToJSON(void) const {
+    return std::vector<nlohmann::json>{priv.ToJSON(), pub.ToJSON()};
 }
 
 /* ECDSA_Signature */
@@ -317,6 +325,10 @@ bool ECDSA_Signature::operator==(const ECDSA_Signature& rhs) const {
 void ECDSA_Signature::Serialize(Datasource& ds) const {
     signature.Serialize(ds);
     pub.Serialize(ds);
+}
+
+nlohmann::json ECDSA_Signature::ToJSON(void) const {
+    return std::vector<nlohmann::json>{signature.ToJSON(), pub.ToJSON()};
 }
 
 /* MACType */

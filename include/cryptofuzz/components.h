@@ -68,6 +68,7 @@ class BignumPair {
 
         bool operator==(const BignumPair& rhs) const;
         void Serialize(Datasource& ds) const;
+        nlohmann::json ToJSON(void) const;
 };
 
 using ECC_PublicKey = BignumPair;
@@ -82,6 +83,7 @@ class ECC_KeyPair {
 
         bool operator==(const ECC_KeyPair& rhs) const;
         void Serialize(Datasource& ds) const;
+        nlohmann::json ToJSON(void) const;
 };
 
 
@@ -96,6 +98,7 @@ class ECDSA_Signature {
 
         bool operator==(const ECDSA_Signature& rhs) const;
         void Serialize(Datasource& ds) const;
+        nlohmann::json ToJSON(void) const;
 };
 
 class MACType {
