@@ -9,6 +9,8 @@
 #include <cstdlib>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
+#include <boost/algorithm/hex.hpp>
+#include <boost/uuid/sha1.hpp>
 #include "third_party/cpu_features/include/cpuinfo_x86.h"
 
 namespace cryptofuzz {
@@ -438,6 +440,119 @@ std::string DecToHex(std::string s) {
     }
     ss << std::hex << i;
     return ss.str();
+}
+
+std::vector<uint8_t> HexToBin(const std::string s) {
+    std::vector<uint8_t> data;
+
+    boost::algorithm::unhex(s, std::back_inserter(data));
+
+    return data;
+}
+
+std::string BinToHex(const uint8_t* data, const size_t size) {
+    return BinToHex(std::vector<uint8_t>(data, data + size));
+}
+
+std::string BinToHex(const std::vector<uint8_t> data) {
+    std::string res;
+    boost::algorithm::hex_lower(data.begin(), data.end(), back_inserter(res));
+
+    return res;
+}
+
+std::string BinToDec(const std::vector<uint8_t> data) {
+    if ( data.empty() ) {
+        return "0";
+    }
+
+    boost::multiprecision::cpp_int i;
+    boost::multiprecision::import_bits(i, data.data(), data.data() + data.size());
+
+    std::stringstream ss;
+    ss << i;
+
+    if ( ss.str().empty() ) {
+        return "0";
+    } else {
+        return ss.str();
+    }
+}
+
+std::optional<std::pair<std::string, std::string>> SignatureFromDER(const std::string s) {
+    return SignatureFromDER(HexToBin(s));
+}
+
+std::optional<std::pair<std::string, std::string>> SignatureFromDER(const std::vector<uint8_t> data) {
+#define ADVANCE(n) { \
+    i += n; \
+    left -= n; \
+}
+
+#define GETBYTE() { \
+    CF_CHECK_LT(i, data.size()); \
+    b = data[i]; \
+    ADVANCE(1); \
+}
+    std::optional<std::pair<std::string, std::string>> ret = std::nullopt;
+    uint8_t b;
+    size_t i = 0, left = data.size();
+    std::string R, S;
+
+    GETBYTE(); CF_CHECK_EQ(b, 0x30);
+
+    GETBYTE(); CF_CHECK_EQ(b, left);
+
+    /* R */
+    {
+        GETBYTE(); CF_CHECK_EQ(b, 0x02);
+
+        GETBYTE(); CF_CHECK_LTE(b, left);
+        auto size = b;
+
+        R = BinToDec(std::vector<uint8_t>(&data[i], &data[i+size]));
+        ADVANCE(size);
+
+    }
+
+    /* S */
+    {
+        GETBYTE(); CF_CHECK_EQ(b, 0x02);
+
+        GETBYTE(); CF_CHECK_LTE(b, left);
+        auto size = b;
+
+        S = BinToDec(std::vector<uint8_t>(&data[i], &data[i+size]));
+        ADVANCE(size);
+    }
+
+    ret = {R, S};
+
+end:
+    return ret;
+}
+
+std::string SHA1(const std::vector<uint8_t> data) {
+    boost::uuids::detail::sha1 sha1;
+    sha1.process_bytes(data.data(), data.size());
+    unsigned int out[5];
+    sha1.get_digest(out);
+    uint8_t out2[20];
+
+    memcpy(out2, out, sizeof(out2));
+    for (size_t i = 0; i < 20; i += 4) {
+        uint8_t tmp;
+
+        tmp = out2[i+0];
+        out2[i+0] = out2[i+3];
+        out2[i+3] = tmp;
+
+        tmp = out2[i+1];
+        out2[i+1] = out2[i+2];
+        out2[i+2] = tmp;
+    }
+
+    return BinToHex(out2, 20);
 }
 
 } /* namespace util */

@@ -16,6 +16,7 @@
 #define CF_CHECK_LTE(expr, res) if ( (expr) > (res) ) { goto end; }
 #define CF_CHECK_TRUE(expr) if ( !(expr) ) { goto end; }
 #define CF_CHECK_FALSE(expr) if ( (expr) ) { goto end; }
+#define CF_ASSERT(expr, msg) if ( !(expr) ) { printf("Cryptofuzz assertion failure: %s\n", msg); abort(); }
 
 namespace cryptofuzz {
 namespace util {
@@ -53,6 +54,13 @@ bool HaveSSE42(void);
 void abort(const std::vector<std::string> components);
 std::string HexToDec(std::string s);
 std::string DecToHex(std::string s);
+std::vector<uint8_t> HexToBin(const std::string s);
+std::string BinToHex(const uint8_t* data, const size_t size);
+std::string BinToHex(const std::vector<uint8_t> data);
+std::string BinToDec(const std::vector<uint8_t> data);
+std::optional<std::pair<std::string, std::string>> SignatureFromDER(const std::string s);
+std::optional<std::pair<std::string, std::string>> SignatureFromDER(const std::vector<uint8_t> data);
+std::string SHA1(const std::vector<uint8_t> data);
 
 } /* namespace util */
 } /* namespace cryptofuzz */

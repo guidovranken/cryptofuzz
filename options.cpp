@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <cryptofuzz/repository.h>
+#include <cryptofuzz/wycheproof.h>
 
 namespace cryptofuzz {
 
@@ -269,6 +270,24 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
                 exit(1);
             }
             this->jsonDumpFP = fp;
+        } else if ( !parts.empty() && parts[0] == "--from-wycheproof" ) {
+            if ( parts.size() != 2 ) {
+                std::cout << "Expected argument after --from-wycheproof=" << std::endl;
+                exit(1);
+            }
+
+            std::vector<std::string> wycheproofArgs;
+            boost::split(wycheproofArgs, parts[1], boost::is_any_of(","));
+
+            if ( wycheproofArgs.size() != 2 ) {
+                std::cout << "Expected 2 arguments after --from-wycheproof=" << std::endl;
+                exit(1);
+            }
+
+            Wycheproof wp(wycheproofArgs[0], wycheproofArgs[1]);
+            wp.Run();
+
+            exit(0);
         }
     }
 }
