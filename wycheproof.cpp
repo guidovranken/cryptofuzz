@@ -18,6 +18,8 @@ void Wycheproof::Run(void) {
 
     if ( j["schema"].get<std::string>() == "ecdsa_verify_schema.json" ) {
         ECDSA_Verify(groups);
+    } else if ( j["schema"].get<std::string>() == "eddsa_verify_schema.json" ) {
+        EDDSA_Verify(groups);
     }
 }
         
@@ -117,6 +119,54 @@ void Wycheproof::ECDSA_Verify(const nlohmann::json& groups) {
 
                 parameters["signature"]["signature"][0] = sig->first;
                 parameters["signature"]["signature"][1] = sig->second;
+            }
+
+            parameters["cleartext"] = test["msg"].get<std::string>();
+
+            parameters["modifier"] = std::string(1000, '0');
+            {
+                fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+                cryptofuzz::operation::ECDSA_Verify op(parameters);
+                op.Serialize(dsOut2);
+
+                write(CF_OPERATION("ECDSA_Verify"), dsOut2);
+            }
+
+end:
+            (void)1;
+        }
+    }
+}
+
+void Wycheproof::EDDSA_Verify(const nlohmann::json& groups) {
+    for (const auto &group : groups) {
+        for (const auto &test : group["tests"]) {
+            nlohmann::json parameters;
+
+            {
+                const std::string curve = group["key"]["curve"];
+
+                if ( curve == "edwards448" ) {
+                    parameters["curveType"] = CF_ECC_CURVE("ed448");
+                } else {
+                    CF_ASSERT(0, "Curve not recognized");
+                }
+            }
+
+            parameters["digestType"] = CF_DIGEST("NULL");
+
+            parameters["signature"]["pub"][0] = util::HexToDec(group["key"]["pk"]);
+            parameters["signature"]["pub"][1] = "0";
+
+            {
+                const auto sig = test["sig"].get<std::string>();
+                CF_CHECK_EQ(sig.size() % 4, 0);
+
+                const auto R = std::string(sig.data(), sig.data() + (sig.size() / 2));
+                const auto S = std::string(sig.data() + (sig.size() / 2), sig.data() + sig.size());
+
+                parameters["signature"]["signature"][0] = util::HexToDec(R);
+                parameters["signature"]["signature"][1] = util::HexToDec(S);
             }
 
             parameters["cleartext"] = test["msg"].get<std::string>();
