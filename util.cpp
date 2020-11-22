@@ -1,6 +1,7 @@
 #include <cryptofuzz/util.h>
 #include <cryptofuzz/util_hexdump.h>
 #include <cryptofuzz/repository.h>
+#include <cryptofuzz/crypto.h>
 #include <fuzzing/datasource/id.hpp>
 #include <iomanip>
 #include <map>
@@ -10,7 +11,6 @@
 #include <boost/algorithm/string/join.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/algorithm/hex.hpp>
-#include <boost/uuid/sha1.hpp>
 #include "third_party/cpu_features/include/cpuinfo_x86.h"
 
 namespace cryptofuzz {
@@ -533,26 +533,7 @@ end:
 }
 
 std::string SHA1(const std::vector<uint8_t> data) {
-    boost::uuids::detail::sha1 sha1;
-    sha1.process_bytes(data.data(), data.size());
-    unsigned int out[5];
-    sha1.get_digest(out);
-    uint8_t out2[20];
-
-    memcpy(out2, out, sizeof(out2));
-    for (size_t i = 0; i < 20; i += 4) {
-        uint8_t tmp;
-
-        tmp = out2[i+0];
-        out2[i+0] = out2[i+3];
-        out2[i+3] = tmp;
-
-        tmp = out2[i+1];
-        out2[i+1] = out2[i+2];
-        out2[i+2] = tmp;
-    }
-
-    return BinToHex(out2, 20);
+    return BinToHex(crypto::sha1(data));
 }
 
 } /* namespace util */
