@@ -333,6 +333,7 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_
         CF_CHECK_EQ(wc_ecc_set_curve(key.GetPtr(), 0, *curveID), 0);
 
         CF_CHECK_EQ(key.SetCurve(op.curveType), true);
+        CF_CHECK_EQ(key.LoadPrivateKey(op.priv), true);
         key.GetPtr()->type = ECC_PRIVATEKEY_ONLY;
 
         if ( op.UseSpecifiedNonce() == true ) {
