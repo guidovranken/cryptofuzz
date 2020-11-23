@@ -3388,6 +3388,85 @@ end:
     return ret;
 }
 
+std::optional<component::ECDSA_Signature> OpenSSL::OpECDSA_Sign(operation::ECDSA_Sign& op) {
+    std::optional<component::ECDSA_Signature> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    ECDSA_SIG* signature = nullptr;
+
+    CF_EC_KEY key(ds);
+    std::shared_ptr<CF_EC_GROUP> group = nullptr;
+    OpenSSL_bignum::Bignum prv(ds);
+    std::unique_ptr<CF_EC_POINT> pub = nullptr;
+    OpenSSL_bignum::Bignum pub_x(ds);
+    OpenSSL_bignum::Bignum pub_y(ds);
+    char* pub_x_str = nullptr;
+    char* pub_y_str = nullptr;
+    const BIGNUM *R = nullptr, *S = nullptr;
+    char* sig_r_str = nullptr;
+    char* sig_s_str = nullptr;
+
+    CF_CHECK_TRUE(op.UseRandomNonce());
+    CF_CHECK_TRUE(op.digestType.Is(CF_DIGEST("NULL")));
+
+    {
+        std::optional<int> curveNID;
+        CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
+        CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
+        group->Lock();
+        CF_CHECK_NE(group->GetPtr(), nullptr);
+    }
+
+    CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group->GetPtr()), 1);
+
+    /* Load private key */
+    CF_CHECK_EQ(prv.Set(op.priv.ToString(ds)), true);
+
+    /* Set private key */
+    CF_CHECK_EQ(EC_KEY_set_private_key(key.GetPtr(), prv.GetPtr()), 1);
+
+    /* Compute public key */
+    CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+    CF_CHECK_EQ(EC_POINT_mul(group->GetPtr(), pub->GetPtr(), prv.GetPtr(), nullptr, nullptr, nullptr), 1);
+
+    CF_CHECK_EQ(pub_x.New(), true);
+    CF_CHECK_EQ(pub_y.New(), true);
+
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+    CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), pub->GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
+#else
+    CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group->GetPtr(), pub->GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
+#endif
+
+    CF_CHECK_NE(pub_x_str = BN_bn2dec(pub_x.GetPtr()), nullptr);
+    CF_CHECK_NE(pub_y_str = BN_bn2dec(pub_y.GetPtr()), nullptr);
+
+    CF_CHECK_NE(signature = ECDSA_do_sign(op.cleartext.GetPtr(), op.cleartext.GetSize(), key.GetPtr()), nullptr);
+#if 0
+    CF_CHECK_NE(R = ECDSA_SIG_get0_r(signature), nullptr);
+    CF_CHECK_NE(S = ECDSA_SIG_get0_s(signature), nullptr);
+#endif
+    /* noret */ ECDSA_SIG_get0(signature, &R, &S);
+    CF_CHECK_NE(R, nullptr);
+    CF_CHECK_NE(S, nullptr);
+
+    /* Convert bignum x/y to strings */
+    CF_CHECK_NE(sig_r_str = BN_bn2dec(R), nullptr);
+    CF_CHECK_NE(sig_s_str  = BN_bn2dec(S), nullptr);
+
+    ret = { {sig_r_str, sig_s_str}, {pub_x_str, pub_y_str} };
+
+end:
+    if ( signature != nullptr ) {
+        ECDSA_SIG_free(signature);
+    }
+    OPENSSL_free(pub_x_str);
+    OPENSSL_free(pub_y_str);
+    OPENSSL_free(sig_r_str);
+    OPENSSL_free(sig_s_str);
+
+    return ret;
+}
+
 std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
