@@ -21,6 +21,29 @@ class Bignum {
         mp_int* mp = nullptr;
         Datasource& ds;
         bool noFree = false;
+
+        void baseConversion(void) const {
+#if !defined(WOLFSSL_SP_MATH)
+            uint8_t base = 2;
+            char* str = nullptr;
+
+            try { base = ds.Get<uint8_t>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+            {
+                int size;
+                CF_CHECK_EQ(mp_radix_size(mp, base, &size), MP_OKAY);
+                str = (char*)util::malloc(size);
+
+                CF_CHECK_EQ(mp_toradix(mp, str, base), MP_OKAY);
+
+                CF_ASSERT(mp_read_radix(mp, str, base) == MP_OKAY, "wolfCrypt cannot parse the output of mp_toradix");
+            }
+
+end:
+            util::free(str);
+#endif
+        }
+
     public:
 
         Bignum(Datasource& ds) :
@@ -122,6 +145,18 @@ end:
                 }
             }
 
+            {
+                /* Optionally convert to a random base and back */
+
+                bool convert = false;
+
+                try { convert = ds.Get<bool>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                if ( convert ) {
+                    baseConversion();
+                }
+            }
+
             return mp;
         }
 
@@ -169,7 +204,6 @@ end:
         std::optional<std::string> ToDecString(void) {
             std::optional<std::string> ret = std::nullopt;
             char* str = nullptr;
-
 
 #if defined(WOLFSSL_SP_MATH)
             str = (char*)util::malloc(8192);
