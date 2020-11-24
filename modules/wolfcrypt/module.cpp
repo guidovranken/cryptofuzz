@@ -2580,6 +2580,11 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
 
         CF_CHECK_EQ(wc_ed25519_make_key(&wolfCrypt_detail::rng, ED25519_KEY_SIZE, &key), 0);
 
+        wolfCrypt_detail::haveAllocFailure = false;
+        if ( wc_ed25519_check_key(&key) != 0 && wolfCrypt_detail::haveAllocFailure == false ) {
+            CF_ASSERT(0, "Key created with wc_ed25519_make_key() fails validation");
+        }
+
         {
             std::optional<component::Bignum> priv = std::nullopt;
             std::optional<component::Bignum> pub = std::nullopt;
@@ -2595,6 +2600,10 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
         ed448_key key;
 
         CF_CHECK_EQ(wc_ed448_make_key(&wolfCrypt_detail::rng, ED448_KEY_SIZE, &key), 0);
+        wolfCrypt_detail::haveAllocFailure = false;
+        if ( wc_ed448_check_key(&key) != 0 && wolfCrypt_detail::haveAllocFailure == false ) {
+            CF_ASSERT(0, "Key created with wc_ed448_make_key() fails validation");
+        }
 
         {
             std::optional<component::Bignum> priv = std::nullopt;
@@ -2620,6 +2629,11 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
         /* Process */
         {
             CF_CHECK_EQ(wc_ecc_make_key_ex(&wolfCrypt_detail::rng, 0, key, *curveID), 0);
+
+            wolfCrypt_detail::haveAllocFailure = false;
+            if ( wc_ecc_check_key(key) != 0 && wolfCrypt_detail::haveAllocFailure == false ) {
+                CF_ASSERT(0, "Key created with wc_ecc_make_key_ex() fails validation");
+            }
 
             {
                 wolfCrypt_bignum::Bignum priv(&key->k, ds);
