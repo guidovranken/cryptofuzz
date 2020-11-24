@@ -48,6 +48,8 @@ extern "C" {
 
 #include <wolfssl/wolfcrypt/dh.h>
 #include <wolfssl/wolfcrypt/asn.h>
+#include <wolfssl/wolfcrypt/cryptocb.h>
+#include <wolfssl/wolfcrypt/error-crypt.h>
 }
 
 #include "bn_ops.h"
@@ -60,18 +62,71 @@ namespace module {
 
 namespace wolfCrypt_detail {
     WC_RNG rng;
+#if defined(WOLF_CRYPTO_CB)
+    WC_RNG rng_deterministic;
+#endif /* WOLF_CRYPTO_CB */
+
+
+#if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES) || defined(CRYPTOFUZZ_WOLFCRYPT_MMAP_FIXED)
+    Datasource* ds;
+#endif
+
+#if defined(WOLF_CRYPTO_CB)
+    int CryptoCB(int devId, wc_CryptoInfo* info, void* ctx) {
+        (void)devId;
+        (void)ctx;
+
+        if (info->algo_type == WC_ALGO_TYPE_RNG) {
+            try {
+                if ( info->rng.sz ) {
+                    const auto data = ds->GetData(0, info->rng.sz, info->rng.sz);
+                    memcpy(info->rng.out, data.data(), info->rng.sz);
+                }
+            } catch ( ... ) {
+                return -1;
+            }
+
+            return 0;
+        } else if (info->algo_type == WC_ALGO_TYPE_SEED) {
+            /* Taken from wolfcrypt/test/test.c */
+
+            static byte seed[sizeof(word32)] = { 0x00, 0x00, 0x00, 0x01 };
+            word32* seedWord32 = (word32*)seed;
+            word32 len;
+
+            /* wc_GenerateSeed is a local symbol so we need to fake the entropy. */
+            while (info->seed.sz > 0) {
+                len = (word32)sizeof(seed);
+                if (info->seed.sz < len)
+                    len = info->seed.sz;
+                XMEMCPY(info->seed.seed, seed, sizeof(seed));
+                info->seed.seed += len;
+                info->seed.sz -= len;
+                (*seedWord32)++;
+            }
+            return 0;
+        }
+        return NOT_COMPILED_IN;
+    }
+#endif /* WOLF_CRYPTO_CB */
 
 #if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
     bool haveAllocFailure;
 #endif
 
     WC_RNG* GetRNG(void) {
-        return &rng;
-    }
+#if defined(WOLF_CRYPTO_CB)
+        if ( ds == nullptr ) {
+            return &rng;
+        }
 
-#if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES) || defined(CRYPTOFUZZ_WOLFCRYPT_MMAP_FIXED)
-    Datasource* ds;
+        bool which = false; try { which = ds->Get<bool>(); } catch ( ... ) { }
+
+        return which ? &rng : &rng_deterministic;
+#else
+        return &rng;
 #endif
+    }
 
     std::vector<std::pair<void*, size_t>> fixed_allocs;
 
@@ -227,6 +282,20 @@ wolfCrypt::wolfCrypt(void) :
         printf("Cannot initialize wolfCrypt RNG\n");
         abort();
     }
+
+#if defined(WOLF_CRYPTO_CB)
+    /* noret */ wc_CryptoCb_Init();
+
+    if ( wc_CryptoCb_RegisterDevice(0xAABBCC, wolfCrypt_detail::CryptoCB, nullptr) != 0 ) {
+        printf("Cannot initialize CryptoCB\n");
+        abort();
+    }
+
+    if ( wc_InitRng_ex(&wolfCrypt_detail::rng_deterministic, nullptr, 0xAABBCC) != 0 ) {
+        printf("Cannot initialize wolfCrypt RNG\n");
+        abort();
+    }
+#endif /* WOLF_CRYPTO_CB */
 
     wolfCrypt_detail::SetGlobalDs(nullptr);
     if ( wolfSSL_SetAllocators(wolfCrypt_custom_malloc, wolfCrypt_custom_free, wolfCrypt_custom_realloc) != 0 ) {
@@ -2578,7 +2647,7 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
     if ( op.curveType.Get() == CF_ECC_CURVE("ed25519") ) {
         ed25519_key key;
 
-        CF_CHECK_EQ(wc_ed25519_make_key(&wolfCrypt_detail::rng, ED25519_KEY_SIZE, &key), 0);
+        CF_CHECK_EQ(wc_ed25519_make_key(wolfCrypt_detail::GetRNG(), ED25519_KEY_SIZE, &key), 0);
 
         wolfCrypt_detail::haveAllocFailure = false;
         if ( wc_ed25519_check_key(&key) != 0 && wolfCrypt_detail::haveAllocFailure == false ) {
@@ -2599,7 +2668,7 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
     } else if ( op.curveType.Get() == CF_ECC_CURVE("ed448") ) {
         ed448_key key;
 
-        CF_CHECK_EQ(wc_ed448_make_key(&wolfCrypt_detail::rng, ED448_KEY_SIZE, &key), 0);
+        CF_CHECK_EQ(wc_ed448_make_key(wolfCrypt_detail::GetRNG(), ED448_KEY_SIZE, &key), 0);
         wolfCrypt_detail::haveAllocFailure = false;
         if ( wc_ed448_check_key(&key) != 0 && wolfCrypt_detail::haveAllocFailure == false ) {
             CF_ASSERT(0, "Key created with wc_ed448_make_key() fails validation");
@@ -2628,7 +2697,7 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
 
         /* Process */
         {
-            CF_CHECK_EQ(wc_ecc_make_key_ex(&wolfCrypt_detail::rng, 0, key, *curveID), 0);
+            CF_CHECK_EQ(wc_ecc_make_key_ex(wolfCrypt_detail::GetRNG(), 0, key, *curveID), 0);
 
             wolfCrypt_detail::haveAllocFailure = false;
             if ( wc_ecc_check_key(key) != 0 && wolfCrypt_detail::haveAllocFailure == false ) {
@@ -2688,7 +2757,7 @@ std::optional<component::DH_KeyPair> wolfCrypt::OpDH_GenerateKeyPair(operation::
     CF_CHECK_NE(base = wolfCrypt_bignum::Bignum::ToBin(ds, op.base), std::nullopt);
     CF_CHECK_EQ(wc_DhSetKey(&key, prime->data(), prime->size(), base->data(), base->size()), 0);
 
-    CF_CHECK_EQ(wc_DhGenerateKeyPair(&key, &wolfCrypt_detail::rng, priv_bytes, &privSz, pub_bytes, &pubSz), 0);
+    CF_CHECK_EQ(wc_DhGenerateKeyPair(&key, wolfCrypt_detail::GetRNG(), priv_bytes, &privSz, pub_bytes, &pubSz), 0);
 
     {
         std::optional<std::string> pub_str, priv_str;

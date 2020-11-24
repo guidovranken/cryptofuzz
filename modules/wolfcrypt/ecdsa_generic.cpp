@@ -11,6 +11,8 @@ namespace wolfCrypt_detail {
     extern bool haveAllocFailure;
 #endif
 
+WC_RNG* GetRNG(void);
+
 ECCKey::ECCKey(Datasource& ds) :
     ds(ds) {
     if ( (key = wc_ecc_key_new(nullptr)) == nullptr ) {
@@ -353,7 +355,7 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_
         CF_CHECK_NE(pub, std::nullopt);
 
         if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
-            CF_CHECK_EQ(wc_ecc_sign_hash(op.cleartext.GetPtr(), op.cleartext.GetSize(), sig, &sigSz, &wolfCrypt_detail::rng, key.GetPtr()), 0);
+            CF_CHECK_EQ(wc_ecc_sign_hash(op.cleartext.GetPtr(), op.cleartext.GetSize(), sig, &sigSz, wolfCrypt_detail::GetRNG(), key.GetPtr()), 0);
         } else {
             std::optional<wc_HashType> hashType;
             CF_CHECK_NE(hashType = wolfCrypt_detail::toHashType(op.digestType), std::nullopt);
@@ -363,7 +365,7 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_
 
             CF_CHECK_EQ(wc_Hash(*hashType, op.cleartext.GetPtr(), op.cleartext.GetSize(), hash, hashSize), 0);
 
-            CF_CHECK_EQ(wc_ecc_sign_hash(hash, hashSize, sig, &sigSz, &wolfCrypt_detail::rng, key.GetPtr()), 0);
+            CF_CHECK_EQ(wc_ecc_sign_hash(hash, hashSize, sig, &sigSz, wolfCrypt_detail::GetRNG(), key.GetPtr()), 0);
         }
 
         CF_CHECK_EQ(DecodeECC_DSA_Sig(sig, sigSz, r.GetPtr(), s.GetPtr()), 0);
