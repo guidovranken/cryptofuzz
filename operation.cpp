@@ -607,6 +607,37 @@ nlohmann::json ECDH_Derive::ToJSON(void) const {
     return j;
 }
 
+std::string ECIES_Encrypt::Name(void) const { return "ECIES_Encrypt"; }
+std::string ECIES_Encrypt::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: ECIES_Encrypt" << std::endl;
+    ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "private key: " << priv.ToString() << std::endl;
+    ss << "public key X: " << pub.first.ToString() << std::endl;
+    ss << "public key Y: " << pub.second.ToString() << std::endl;
+    ss << "cipher: " << repository::CipherToString(cipherType.Get()) << std::endl;
+    ss << "iv: " << (iv ? util::HexDump(iv->Get()) : "nullopt") << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json ECIES_Encrypt::ToJSON(void) const {
+    nlohmann::json j;
+    j["operation"] = "ECIES_Encrypt";
+    j["cleartext"] = cleartext.ToJSON();
+    j["curveType"] = curveType.ToJSON();
+    j["priv"] = priv.ToJSON();
+    j["pub_x"] = pub.first.ToJSON();
+    j["pub_y"] = pub.second.ToJSON();
+    j["cipherType"] = cipherType.ToJSON();
+    j["iv_enabled"] = (bool)(iv != std::nullopt);
+    j["iv"] = iv != std::nullopt ? iv->ToJSON() : "";
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string DH_GenerateKeyPair::Name(void) const { return "DH_GenerateKeyPair"; }
 std::string DH_GenerateKeyPair::ToString(void) const {
     std::stringstream ss;

@@ -71,6 +71,7 @@ using ExecutorECC_GenerateKeyPair = ExecutorBase<component::ECC_KeyPair, operati
 using ExecutorECDSA_Sign = ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>;
 using ExecutorECDSA_Verify = ExecutorBase<bool, operation::ECDSA_Verify>;
 using ExecutorECDH_Derive = ExecutorBase<component::Secret, operation::ECDH_Derive>;
+using ExecutorECIES_Encrypt = ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>;
 using ExecutorDH_GenerateKeyPair = ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>;
 using ExecutorDH_Derive = ExecutorBase<component::Bignum, operation::DH_Derive>;
 using ExecutorBignumCalc = ExecutorBase<component::Bignum, operation::BignumCalc>;

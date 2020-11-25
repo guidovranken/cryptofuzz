@@ -313,6 +313,12 @@ void test(const operation::ECDH_Derive& op, const std::optional<component::Secre
     (void)result;
 }
 
+void test(const operation::ECIES_Encrypt& op, const std::optional<component::Ciphertext>& result) {
+    /* TODO check minimum size? */
+    (void)op;
+    (void)result;
+}
+
 void test(const operation::DH_GenerateKeyPair& op, const std::optional<component::DH_KeyPair>& result) {
     (void)op;
     (void)result;

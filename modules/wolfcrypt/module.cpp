@@ -3010,5 +3010,9 @@ end:
     return ret;
 }
 
+std::optional<component::Ciphertext> wolfCrypt::OpECIES_Encrypt(operation::ECIES_Encrypt& op) {
+    return wolfCrypt_detail::OpECIES_Encrypt_Generic(op);
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */

@@ -436,6 +436,39 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     op.Serialize(dsOut2);
                 }
                 break;
+            case    CF_OPERATION("ECIES_Encrypt"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 128);
+                    parameters["cleartext"] = getBuffer(PRNG() % 1024);
+                    //parameters["cipherType"] = getRandomCipher();
+                    parameters["cipherType"] = CF_CIPHER("AES_128_CBC");
+                    parameters["iv_enabled"] = false;
+
+                    parameters["priv"] = getBignum();
+
+                    if ( Pool_CurveKeypair.Have() && getBool() == true ) {
+                        const auto P = Pool_CurveKeypair.Get();
+
+                        parameters["curveType"] = P.curveID;
+                        parameters["pub_x"] = P.pub_x;
+                        parameters["pub_y"] = P.pub_y;
+
+                        if ( Pool_CurvePrivkey.Have() && getBool() == true ) {
+                            const auto P2 = Pool_CurvePrivkey.Get();
+                            if ( P2.curveID == P.curveID ) {
+                                parameters["priv"] = P2.priv;
+                            }
+                        }
+                    } else {
+                        parameters["curveType"] = getRandomCurve();
+                        parameters["pub_x"] = getBignum();
+                        parameters["pub_y"] = getBignum();
+                    }
+
+                    cryptofuzz::operation::ECIES_Encrypt op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
             case    CF_OPERATION("KDF_SCRYPT"):
                 {
                     size_t numParts = 0;
