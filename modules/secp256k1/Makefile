@@ -8,6 +8,6 @@ module.a: module.o
 	ranlib module.a
 module.o: module.cpp module.h
 	test $(SECP256K1_INCLUDE_PATH)
-	$(CXX) $(CXXFLAGS) -I $(BOTAN_INCLUDE_PATH) -I $(SECP256K1_INCLUDE_PATH) -fPIC -c module.cpp -o module.o
+	$(CXX) $(CXXFLAGS) -I $(SECP256K1_INCLUDE_PATH) -fPIC -c module.cpp -o module.o
 clean:
 	rm -rf *.o module.a

@@ -1,7 +1,7 @@
 #include "module.h"
 #include <cryptofuzz/util.h>
+#include <cryptofuzz/crypto.h>
 #include <boost/multiprecision/cpp_int.hpp>
-#include <botan/hash.h>
 #include <sstream>
 
 extern "C" {
@@ -124,10 +124,8 @@ std::optional<component::ECDSA_Signature> secp256k1::OpECDSA_Sign(operation::ECD
         CF_CHECK_EQ(op.cleartext.GetSize(), sizeof(hash));
         memcpy(hash, op.cleartext.GetPtr(), sizeof(hash));
     } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
-        auto _hash = ::Botan::HashFunction::create("SHA-256");
-        _hash->update(op.cleartext.GetPtr(), op.cleartext.GetSize());
-        const auto CT = _hash->final();
-        memcpy(hash, CT.data(), CT.size());
+        const auto _hash = crypto::sha256(op.cleartext.Get());
+        memcpy(hash, _hash.data(), _hash.size());
     } else {
         goto end;
     }
@@ -199,10 +197,8 @@ std::optional<bool> secp256k1::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         CF_CHECK_EQ(op.cleartext.GetSize(), sizeof(hash));
         memcpy(hash, op.cleartext.GetPtr(), sizeof(hash));
     } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
-        auto _hash = ::Botan::HashFunction::create("SHA-256");
-        _hash->update(op.cleartext.GetPtr(), op.cleartext.GetSize());
-        const auto CT = _hash->final();
-        memcpy(hash, CT.data(), CT.size());
+        const auto _hash = crypto::sha256(op.cleartext.Get());
+        memcpy(hash, _hash.data(), _hash.size());
     } else {
         goto end;
     }
