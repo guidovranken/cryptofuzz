@@ -98,17 +98,21 @@ std::optional<bool> micro_ecc::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
 
     std::optional<uECC_Curve> curve;
-    std::vector<uint8_t> pub, sig(64);
+    std::vector<uint8_t> pub, sig;
+    size_t pointHalfSize = 0;
 
     CF_CHECK_EQ(op.digestType.Get(), CF_DIGEST("NULL"));
     CF_CHECK_NE(curve = micro_ecc_detail::to_uECC_Curve(op.curveType), std::nullopt);
 
-    pub.resize(uECC_curve_public_key_size(*curve));
+    pointHalfSize = uECC_curve_public_key_size(*curve) / 2;
 
-    CF_CHECK_EQ(micro_ecc_detail::EncodeBignum(op.signature.signature.first.ToTrimmedString(), sig.data(), 32), true);
-    CF_CHECK_EQ(micro_ecc_detail::EncodeBignum(op.signature.signature.second.ToTrimmedString(), sig.data() + 32, 32), true);
-    CF_CHECK_EQ(micro_ecc_detail::EncodeBignum(op.signature.pub.first.ToTrimmedString(), pub.data(), pub.size() / 2), true);
-    CF_CHECK_EQ(micro_ecc_detail::EncodeBignum(op.signature.pub.second.ToTrimmedString(), pub.data() + (pub.size() / 2), pub.size() / 2), true);
+    sig.resize(pointHalfSize * 2);
+    pub.resize(pointHalfSize * 2);
+
+    CF_CHECK_EQ(micro_ecc_detail::EncodeBignum(op.signature.signature.first.ToTrimmedString(), sig.data(), pointHalfSize), true);
+    CF_CHECK_EQ(micro_ecc_detail::EncodeBignum(op.signature.signature.second.ToTrimmedString(), sig.data() + pointHalfSize, pointHalfSize), true);
+    CF_CHECK_EQ(micro_ecc_detail::EncodeBignum(op.signature.pub.first.ToTrimmedString(), pub.data(), pointHalfSize), true);
+    CF_CHECK_EQ(micro_ecc_detail::EncodeBignum(op.signature.pub.second.ToTrimmedString(), pub.data() + pointHalfSize, pointHalfSize), true);
 
     ret = uECC_verify(pub.data(), op.cleartext.GetPtr(), op.cleartext.GetSize(), sig.data(), *curve);
 
@@ -121,7 +125,8 @@ std::optional<component::ECDSA_Signature> micro_ecc::OpECDSA_Sign(operation::ECD
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
 
     std::optional<uECC_Curve> curve;
-    std::vector<uint8_t> priv, pub, sig(64);
+    std::vector<uint8_t> priv, pub, sig;
+    size_t pointHalfSize = 0;
 
     CF_CHECK_EQ(op.UseRandomNonce(), true);
     CF_CHECK_EQ(op.digestType.Get(), CF_DIGEST("NULL"));
@@ -130,6 +135,10 @@ std::optional<component::ECDSA_Signature> micro_ecc::OpECDSA_Sign(operation::ECD
     priv.resize(uECC_curve_private_key_size(*curve));
     pub.resize(uECC_curve_public_key_size(*curve));
 
+    priv.resize(pointHalfSize);
+    pub.resize(pointHalfSize * 2);
+    sig.resize(pointHalfSize * 2);
+
     CF_CHECK_EQ(micro_ecc_detail::EncodeBignum(op.priv.ToTrimmedString(), priv.data(), priv.size()), true);
 
     CF_CHECK_EQ(uECC_compute_public_key(priv.data(), pub.data(), *curve), 1);
@@ -137,7 +146,7 @@ std::optional<component::ECDSA_Signature> micro_ecc::OpECDSA_Sign(operation::ECD
     CF_CHECK_EQ(uECC_sign(priv.data(), op.cleartext.GetPtr(), op.cleartext.GetSize(), sig.data(), *curve), 1);
 
     ret = {
-            {micro_ecc_detail::toString(sig.data(), 32), micro_ecc_detail::toString(sig.data() + 32, 32) },
+            {micro_ecc_detail::toString(sig.data(), pointHalfSize), micro_ecc_detail::toString(sig.data() + pointHalfSize, pointHalfSize) },
             micro_ecc_detail::EncodePubkey(pub.data(), pub.size()) };
 end:
     return ret;
