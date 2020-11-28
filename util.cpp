@@ -424,7 +424,7 @@ std::string HexToDec(std::string s) {
     }
 }
 
-std::string DecToHex(std::string s) {
+std::string DecToHex(std::string s, const std::optional<size_t> padTo) {
     s.erase(0, s.find_first_not_of('0'));
     boost::multiprecision::cpp_int i(s);
     bool negative;
@@ -442,6 +442,9 @@ std::string DecToHex(std::string s) {
     auto ret = ss.str();
     if ( ret.size() % 2 != 0 ) {
         ret = "0" + ret;
+    }
+    if ( padTo != std::nullopt && ret.size() < *padTo ) {
+        ret = std::string(*padTo - ret.size(), '0') + ret;
     }
     return ret;
 }

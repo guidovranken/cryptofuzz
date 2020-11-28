@@ -61,12 +61,16 @@ static std::string getBuffer(size_t size, const bool alternativeSize = false) {
     return std::string(size * 2, '0');
 }
 
-static std::string getBignum(void) {
+static std::string getBignum(const bool positive = false) {
     if ( Pool_Bignum.Have() && getBool() ) {
-        return Pool_Bignum.Get();
-    } else {
-        return numbers[PRNG() % (sizeof(numbers) / sizeof(numbers[0]))];
+        const auto ret = Pool_Bignum.Get();
+        if ( positive && !ret.empty() && ret[0] == '-' ) {
+            goto end;
+        }
+        return ret;
     }
+end:
+    return numbers[PRNG() % (sizeof(numbers) / sizeof(numbers[0]))];
 }
 
 extern "C" size_t LLVMFuzzerMutate(uint8_t* data, size_t size, size_t maxSize);
@@ -373,7 +377,8 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["curveType"] = P1.curveID;
                     parameters["priv"] = P1.priv;
                     parameters["nonce"] = getBignum();
-                    parameters["cleartext"] = cryptofuzz::util::DecToHex(getBignum());
+
+                    parameters["cleartext"] = cryptofuzz::util::DecToHex(getBignum(true), 64);
                     parameters["nonceSource"] = PRNG() % 3;
                     parameters["digestType"] = getRandomDigest();
 
@@ -419,8 +424,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         parameters["signature"]["signature"][1] = getBignum();
                     }
 
-
-                    parameters["cleartext"] = cryptofuzz::util::DecToHex(getBignum());
+                    parameters["cleartext"] = cryptofuzz::util::DecToHex(getBignum(true), 64);
                     parameters["digestType"] = getRandomDigest();
 
                     cryptofuzz::operation::ECDSA_Verify op(parameters);

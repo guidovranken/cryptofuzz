@@ -53,7 +53,7 @@ void free(void* ptr);
 bool HaveSSE42(void);
 void abort(const std::vector<std::string> components);
 std::string HexToDec(std::string s);
-std::string DecToHex(std::string s);
+std::string DecToHex(std::string s, const std::optional<size_t> padTo = std::nullopt);
 std::vector<uint8_t> HexToBin(const std::string s);
 std::string BinToHex(const uint8_t* data, const size_t size);
 std::string BinToHex(const std::vector<uint8_t> data);
