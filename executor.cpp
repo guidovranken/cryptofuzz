@@ -641,6 +641,9 @@ template<> void ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToP
 
         Pool_CurvePrivkey.Set({ curveID, privkey });
         Pool_CurveKeypair.Set({ curveID, privkey, pub_x, pub_y });
+
+        if ( pub_x.size() <= 1000 ) { Pool_Bignum.Set(pub_x); }
+        if ( pub_y.size() <= 1000 ) { Pool_Bignum.Set(pub_y); }
     }
 }
 
@@ -725,9 +728,14 @@ template<> void ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>:
         const auto pub_x = result.second->pub.first.ToTrimmedString();
         const auto pub_y = result.second->pub.second.ToTrimmedString();
         const auto sig_r = result.second->signature.first.ToTrimmedString();
-        const auto sig_y = result.second->signature.second.ToTrimmedString();
+        const auto sig_s = result.second->signature.second.ToTrimmedString();
 
-        Pool_CurveECDSASignature.Set({ curveID, pub_x, pub_y, sig_r, sig_y });
+        Pool_CurveECDSASignature.Set({ curveID, pub_x, pub_y, sig_r, sig_s});
+
+        if ( pub_x.size() <= 1000 ) { Pool_Bignum.Set(pub_x); }
+        if ( pub_y.size() <= 1000 ) { Pool_Bignum.Set(pub_y); }
+        if ( sig_r.size() <= 1000 ) { Pool_Bignum.Set(sig_r); }
+        if ( sig_s.size() <= 1000 ) { Pool_Bignum.Set(sig_s); }
     }
 }
 

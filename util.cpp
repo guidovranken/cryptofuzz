@@ -439,7 +439,11 @@ std::string DecToHex(std::string s) {
         ss << "-";
     }
     ss << std::hex << i;
-    return ss.str();
+    auto ret = ss.str();
+    if ( ret.size() % 2 != 0 ) {
+        ret = "0" + ret;
+    }
+    return ret;
 }
 
 std::vector<uint8_t> HexToBin(const std::string s) {

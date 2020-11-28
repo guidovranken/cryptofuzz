@@ -373,7 +373,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["curveType"] = P1.curveID;
                     parameters["priv"] = P1.priv;
                     parameters["nonce"] = getBignum();
-                    parameters["cleartext"] = getBuffer(PRNG() % 2048);
+                    parameters["cleartext"] = cryptofuzz::util::DecToHex(getBignum());
                     parameters["nonceSource"] = PRNG() % 3;
                     parameters["digestType"] = getRandomDigest();
 
@@ -420,7 +420,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     }
 
 
-                    parameters["cleartext"] = getBuffer(PRNG() % 64);
+                    parameters["cleartext"] = cryptofuzz::util::DecToHex(getBignum());
                     parameters["digestType"] = getRandomDigest();
 
                     cryptofuzz::operation::ECDSA_Verify op(parameters);
