@@ -381,9 +381,6 @@ std::optional<component::Key> Botan::OpKDF_HKDF(operation::KDF_HKDF& op) {
         {
             auto derived = hkdf->derive_key(op.keySize, op.password.Get(), op.salt.Get(), op.info.Get());
 
-            /* Workaround for an anomaly in Botan: https://github.com/randombit/botan/issues/2347 */
-            CF_CHECK_GTE(derived.size(), op.keySize);
-
             ret = component::Key(derived.data(), derived.size());
         }
     } catch ( ... ) { }
