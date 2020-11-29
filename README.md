@@ -75,7 +75,7 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Crypto++: [AES GCM encryption with large tag size results in incorrect output, out-of-bounds reads](https://github.com/weidai11/cryptopp/issues/954)
 - mbed TLS: [mbedtls_md_setup memory leak if allocation fails](https://github.com/ARMmbed/mbedtls/issues/3486)
 - OpenSSL: [EVP_CIPHER_CTX re-initialisation bugs](https://github.com/openssl/openssl/pull/12523)
-- OpenSSL: [KBKDF NULL ptr dereference, possibly wrong output](https://github.com/openssl/openssl/issues/12409)
+- OpenSSL: [KBKDF NULL ptr dereference](https://github.com/openssl/openssl/issues/12409)
 - Botan: [PointGFp_Multi_Point_Precompute gives wrong result when an infinity point occurs in the precomputation](https://github.com/randombit/botan/issues/2424) (credit to @andrewkozlik)
 - Botan: [ECDSA hash truncation discrepancy](https://github.com/randombit/botan/issues/2415)
 - mbed TLS: [mbedtls_cipher_auth_encrypt with AES key wrap OOB write](https://github.com/ARMmbed/mbedtls/issues/3665)
@@ -86,5 +86,9 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - SymCrypt: [Elliptic curve private-to-public incorrect result on Linux 32 bit](https://github.com/microsoft/SymCrypt/issues/9)
 - libtomcrypt: [PKBDF1 hang if iterations is 0](https://github.com/libtom/libtomcrypt/issues/552)
 - libtomcrypt: [TEA cipher incorrect result](https://github.com/libtom/libtomcrypt/issues/553)
-- SymCryypt: [NULL pointer access in struct offset resolution](https://github.com/microsoft/SymCrypt/issues/10)
+- SymCrypt: [NULL pointer access in struct offset resolution](https://github.com/microsoft/SymCrypt/issues/10)
 - BearSSL: Carry propagation bug in ECC code. Commit: b2ec2030e40acf5e9e4cd0f2669aacb27eadb540
+- Trezor firmware: [ECDSA verification fails if hash is curve order](https://github.com/trezor/trezor-firmware/pull/1374)
+- TBA: TBA
+- TBA: TBA
+- TBA: TBA
