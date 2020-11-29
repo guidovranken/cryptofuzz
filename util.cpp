@@ -457,6 +457,28 @@ std::vector<uint8_t> HexToBin(const std::string s) {
     return data;
 }
 
+std::optional<std::vector<uint8_t>> DecToBin(const std::string s, std::optional<size_t> size) {
+    std::vector<uint8_t> v;
+    boost::multiprecision::cpp_int c(s);
+    boost::multiprecision::export_bits(c, std::back_inserter(v), 8);
+    if ( size == std::nullopt ) {
+        return v;
+    }
+
+    if ( v.size() > *size ) {
+        return std::nullopt;
+    }
+    const auto diff = *size - v.size();
+
+    std::vector<uint8_t> ret(*size);
+    if ( diff > 0 ) {
+        memset(ret.data(), 0, diff);
+    }
+    memcpy(ret.data() + diff, v.data(), v.size());
+
+    return ret;
+}
+
 std::string BinToHex(const uint8_t* data, const size_t size) {
     return BinToHex(std::vector<uint8_t>(data, data + size));
 }
@@ -466,6 +488,10 @@ std::string BinToHex(const std::vector<uint8_t> data) {
     boost::algorithm::hex_lower(data.begin(), data.end(), back_inserter(res));
 
     return res;
+}
+
+std::string BinToDec(const uint8_t* data, const size_t size) {
+    return BinToDec(std::vector<uint8_t>(data, data + size));
 }
 
 std::string BinToDec(const std::vector<uint8_t> data) {

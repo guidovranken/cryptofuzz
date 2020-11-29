@@ -1,9 +1,11 @@
 #include "module.h"
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 #include <nss.h>
 #include <pk11pub.h>
 #include <nss_scoped_ptrs.h>
+#include <blapi.h>
 #include "bn_ops.h"
 
 namespace cryptofuzz {
@@ -699,6 +701,231 @@ end:
     if ( slot != nullptr ) {
         PK11_FreeSlot(slot);
     }
+
+    return ret;
+}
+
+namespace nss_detail {
+    ECParams* ToECParams(const component::CurveType curveType) {
+        ECParams* ret = nullptr;
+        ECParams* ecparams = nullptr;
+        static std::vector<uint8_t> oid_secp256r1{0x06, 0x08, 0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x03, 0x01, 0x07};
+        static std::vector<uint8_t> oid_secp384r1{0x06, 0x05, 0x2B, 0x81, 0x04, 0x00, 0x22};
+        static std::vector<uint8_t> oid_secp521r1{0x06, 0x05, 0x2B, 0x81, 0x04, 0x00, 0x23};
+
+        SECItem encodedparams;
+
+        if ( curveType.Is(CF_ECC_CURVE("secp256r1")) ) {
+            encodedparams = {siBuffer, oid_secp256r1.data(), static_cast<unsigned int>(oid_secp256r1.size())};
+        } else if ( curveType.Is(CF_ECC_CURVE("secp384r1")) ) {
+            encodedparams = {siBuffer, oid_secp384r1.data(), static_cast<unsigned int>(oid_secp384r1.size())};
+        } else if ( curveType.Is(CF_ECC_CURVE("secp521r1")) ) {
+            encodedparams = {siBuffer, oid_secp521r1.data(), static_cast<unsigned int>(oid_secp521r1.size())};
+        } else {
+            goto end;
+        }
+
+        CF_CHECK_EQ(EC_DecodeParams(&encodedparams, &ecparams), SECSuccess);
+
+        ret = ecparams;
+end:
+        return ret;
+    }
+
+    ECPrivateKey* ToECPrivateKey(ECParams* ecparams, const std::string priv) {
+        ECPrivateKey* privKey = nullptr, *ret = nullptr;;
+        const auto priv_bytes = util::DecToBin(priv);
+        CF_CHECK_NE(priv_bytes, std::nullopt);
+
+        CF_CHECK_EQ(EC_NewKeyFromSeed(ecparams, &privKey, priv_bytes->data(), priv_bytes->size()), SECSuccess);
+
+        ret = privKey;
+
+end:
+        return ret;
+    }
+
+    bool IsValidPrivKey(const component::CurveType& curveType, const std::string privStr) {
+        bool ret = false;
+
+        const auto priv = boost::multiprecision::cpp_int(privStr);
+
+        CF_CHECK_NE(priv, 0);
+
+        /* Check if private key is below curve order.
+         * If it is not, NSS gives a different result than other libraries like Botan.
+         */
+        if ( curveType.Is(CF_ECC_CURVE("secp256r1")) ) {
+            CF_CHECK_LT(priv, boost::multiprecision::cpp_int("115792089210356248762697446949407573529996955224135760342422259061068512044369"));
+        } else if ( curveType.Is(CF_ECC_CURVE("secp384r1")) ) {
+            CF_CHECK_LT(priv, boost::multiprecision::cpp_int("39402006196394479212279040100143613805079739270465446667946905279627659399113263569398956308152294913554433653942643"));
+        } else if ( curveType.Is(CF_ECC_CURVE("secp521r1")) ) {
+            CF_CHECK_LT(priv, boost::multiprecision::cpp_int("6864797660130609714981900799081393217269435300143305409394463459185543183397655394245057746333217197532963996371363321113864768612440380340372808892707005449"));
+        } else {
+            abort();
+        }
+        ret = true;
+
+end:
+        return ret;
+    }
+
+    std::pair<std::string, std::string> ToPublicKey(ECPrivateKey* privKey) {
+        CF_ASSERT(privKey->publicValue.len != 0, "NSS: Public key is empty");
+        CF_ASSERT(privKey->publicValue.data[0] == 0x04, "NSS: Public key doesn't start with 0x04");
+        CF_ASSERT(((privKey->publicValue.len - 1) % 2) == 0, "NSS: Public key isn't multiple of 2");
+
+        const auto halfSize = (privKey->publicValue.len - 1) / 2;
+        const auto X = util::BinToDec(privKey->publicValue.data + 1, halfSize);
+        const auto Y = util::BinToDec(privKey->publicValue.data + 1 + halfSize, halfSize);
+
+        return {X, Y};
+    }
+}
+std::optional<component::ECC_PublicKey> NSS::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
+    std::optional<component::ECC_PublicKey> ret = std::nullopt;
+
+    ECParams* ecparams = nullptr;
+    ECPrivateKey* privKey = nullptr;
+    std::pair<std::string, std::string> pubkey;
+
+    CF_CHECK_NE(ecparams = nss_detail::ToECParams(op.curveType), nullptr);
+    CF_CHECK_NE(privKey = nss_detail::ToECPrivateKey(ecparams, op.priv.ToTrimmedString()), nullptr);
+    pubkey = nss_detail::ToPublicKey(privKey);
+    CF_CHECK_TRUE(nss_detail::IsValidPrivKey(op.curveType, op.priv.ToTrimmedString()));
+    ret = {pubkey.first, pubkey.second};
+
+end:
+    if ( privKey ) {
+        PORT_FreeArena(privKey->ecParams.arena, PR_FALSE);
+    }
+    if (ecparams) {
+        PORT_FreeArena(ecparams->arena, PR_FALSE);
+    }
+
+    return ret;
+}
+
+std::optional<bool> NSS::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+    SECItem sig_item, hash_item;
+    ECParams* ecparams = nullptr;
+    ECPublicKey ecpub;
+    ecpub.ecParams.arena = nullptr;
+    std::vector<uint8_t> sig;
+    std::vector<uint8_t> pub;
+
+    auto ct = op.cleartext.Get();
+
+    CF_CHECK_NE(ecparams = nss_detail::ToECParams(op.curveType), nullptr);
+
+    /* If ct is empty, crash will occur:
+     * mp_err mp_read_unsigned_octets(mp_int *, const unsigned char *, mp_size): Assertion `mp != ((void*)0) && str != ((void*)0) && len > 0' failed.
+     */
+    CF_CHECK_FALSE(ct.empty());
+
+    CF_CHECK_TRUE(op.digestType.Is(CF_DIGEST("NULL")));
+
+    {
+        std::optional<std::vector<uint8_t>> sig_r, sig_s;
+        CF_CHECK_NE(sig_r = util::DecToBin(op.signature.signature.first.ToTrimmedString(), ecparams->order.len), std::nullopt);
+        CF_CHECK_NE(sig_s = util::DecToBin(op.signature.signature.second.ToTrimmedString(), ecparams->order.len), std::nullopt);
+        sig.insert(std::end(sig), std::begin(*sig_r), std::end(*sig_r));
+        sig.insert(std::end(sig), std::begin(*sig_s), std::end(*sig_s));
+        sig_item = {siBuffer, sig.data(), static_cast<unsigned int>(sig.size())};
+    }
+
+    {
+        std::optional<std::vector<uint8_t>> pub_x, pub_y;
+        CF_CHECK_NE(pub_x = util::DecToBin(op.signature.pub.first.ToTrimmedString(), ecparams->order.len), std::nullopt);
+        CF_CHECK_NE(pub_y = util::DecToBin(op.signature.pub.second.ToTrimmedString(), ecparams->order.len), std::nullopt);
+        pub.push_back(0x04);
+        pub.insert(std::end(pub), std::begin(*pub_x), std::end(*pub_x));
+        pub.insert(std::end(pub), std::begin(*pub_y), std::end(*pub_y));
+        ecpub.ecParams.arena = PORT_NewArena(DER_DEFAULT_CHUNKSIZE);
+        CF_CHECK_EQ(EC_CopyParams(ecpub.ecParams.arena, &ecpub.ecParams, ecparams), SECSuccess);
+        ecpub.publicValue = {siBuffer, pub.data(), static_cast<unsigned int>(pub.size())};
+    }
+
+    hash_item = {siBuffer, ct.data(), static_cast<unsigned int>(ct.size())};
+
+    ret = ECDSA_VerifyDigest(&ecpub, &sig_item, &hash_item) == SECSuccess;
+
+end:
+    if (ecparams) {
+        PORT_FreeArena(ecparams->arena, PR_FALSE);
+    }
+    if (ecpub.ecParams.arena) {
+        PORT_FreeArena(ecpub.ecParams.arena, PR_FALSE);
+    }
+
+    return ret;
+}
+
+std::optional<component::ECDSA_Signature> NSS::OpECDSA_Sign(operation::ECDSA_Sign& op) {
+    std::optional<component::ECDSA_Signature> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    SECItem sig_item, hash_item;
+    ECParams* ecparams = nullptr;
+    uint8_t* sig = nullptr;
+    uint8_t sigSize = 2 * MAX_ECKEY_LEN;
+    auto ct = op.cleartext.Get();
+    ECPrivateKey* privKey = nullptr;
+
+    if ( op.UseRandomNonce() == false && op.UseSpecifiedNonce() == false ) {
+        return ret;
+    }
+    CF_CHECK_TRUE(op.digestType.Is(CF_DIGEST("NULL")));
+
+    /* If ct is empty, crash will occur:
+     * mp_err mp_read_unsigned_octets(mp_int *, const unsigned char *, mp_size): Assertion `mp != ((void*)0) && str != ((void*)0) && len > 0' failed.
+     */
+    CF_CHECK_FALSE(ct.empty());
+
+    CF_CHECK_NE(ecparams = nss_detail::ToECParams(op.curveType), nullptr);
+    CF_CHECK_NE(privKey = nss_detail::ToECPrivateKey(ecparams, op.priv.ToTrimmedString()), nullptr);
+
+    hash_item = {siBuffer, ct.data(), static_cast<unsigned int>(ct.size())};
+
+    try { sigSize = ds.Get<uint8_t>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+    sig = util::malloc(sigSize);
+    CF_CHECK_NE(sig, nullptr);
+    sig_item = {siBuffer, sig, static_cast<unsigned int>(sigSize)};
+
+    if ( op.UseSpecifiedNonce() == true ) {
+        std::optional<std::vector<uint8_t>> nonce_bytes;
+        CF_CHECK_NE(nonce_bytes = util::DecToBin(op.nonce.ToTrimmedString()), std::nullopt);
+        CF_CHECK_EQ(ECDSA_SignDigestWithSeed(privKey, &sig_item, &hash_item, nonce_bytes->data(), nonce_bytes->size()), SECSuccess);
+    } else if ( op.UseRandomNonce() == true ) {
+        CF_CHECK_EQ(ECDSA_SignDigest(privKey, &sig_item, &hash_item), SECSuccess);
+    } else {
+        abort();
+    }
+
+    CF_ASSERT((sig_item.len % 2) == 0, "NSS: Signature isn't multiple of 2");
+
+    CF_CHECK_TRUE(nss_detail::IsValidPrivKey(op.curveType, op.priv.ToTrimmedString()));
+
+    {
+        const size_t halfSize = sig_item.len / 2;
+
+        const auto R = util::BinToDec(sig_item.data, halfSize);
+        const auto S = util::BinToDec(sig_item.data + halfSize, halfSize);
+
+        const auto pubkey = nss_detail::ToPublicKey(privKey);
+
+        ret = {{pubkey.first, pubkey.second}, {R, S} };
+    }
+end:
+    if ( privKey ) {
+        PORT_FreeArena(privKey->ecParams.arena, PR_FALSE);
+    }
+    if (ecparams) {
+        PORT_FreeArena(ecparams->arena, PR_FALSE);
+    }
+
+    util::free(sig);
 
     return ret;
 }
