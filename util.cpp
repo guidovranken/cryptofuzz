@@ -512,6 +512,50 @@ std::string BinToDec(const std::vector<uint8_t> data) {
     }
 }
 
+std::optional<std::vector<uint8_t>> ToDER(const std::string A, const std::string B) {
+    std::vector<uint8_t> ret;
+
+    const auto ABin = DecToBin(A);
+    if ( ABin == std::nullopt ) {
+        return std::nullopt;
+    }
+    const auto BBin = DecToBin(B);
+    if ( BBin == std::nullopt ) {
+        return std::nullopt;
+    }
+
+    size_t ABinSize = ABin->size();
+    size_t BBinSize = BBin->size();
+    if ( ABinSize + BBinSize + 2 + 2 > 255 ) {
+        return std::nullopt;
+    }
+
+    const bool AHigh = ABinSize > 0 && ((*ABin)[0] & 0x80) == 0x80;
+    const bool BHigh = BBinSize > 0 && ((*BBin)[0] & 0x80) == 0x80;
+
+    ABinSize += AHigh ? 1 : 0;
+    BBinSize += BHigh ? 1 : 0;
+
+    ret.push_back(0x30);
+    ret.push_back(2 + ABinSize + 2 + BBinSize);
+
+    ret.push_back(0x02);
+    ret.push_back(ABinSize);
+    if ( AHigh == true ) {
+        ret.push_back(0x00);
+    }
+    ret.insert(std::end(ret), std::begin(*ABin), std::end(*ABin));
+
+    ret.push_back(0x02);
+    ret.push_back(BBinSize);
+    if ( BHigh == true ) {
+        ret.push_back(0x00);
+    }
+    ret.insert(std::end(ret), std::begin(*BBin), std::end(*BBin));
+
+    return ret;
+}
+
 std::optional<std::pair<std::string, std::string>> SignatureFromDER(const std::string s) {
     return SignatureFromDER(HexToBin(s));
 }

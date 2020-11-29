@@ -60,6 +60,7 @@ std::string BinToHex(const uint8_t* data, const size_t size);
 std::string BinToHex(const std::vector<uint8_t> data);
 std::string BinToDec(const uint8_t* data, const size_t size);
 std::string BinToDec(const std::vector<uint8_t> data);
+std::optional<std::vector<uint8_t>> ToDER(const std::string A, const std::string B);
 std::optional<std::pair<std::string, std::string>> SignatureFromDER(const std::string s);
 std::optional<std::pair<std::string, std::string>> SignatureFromDER(const std::vector<uint8_t> data);
 std::string SHA1(const std::vector<uint8_t> data);
