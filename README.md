@@ -89,6 +89,8 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - SymCrypt: [NULL pointer access in struct offset resolution](https://github.com/microsoft/SymCrypt/issues/10)
 - BearSSL: Carry propagation bug in ECC code. Commit: b2ec2030e40acf5e9e4cd0f2669aacb27eadb540
 - Trezor firmware: [ECDSA verification fails if hash is curve order](https://github.com/trezor/trezor-firmware/pull/1374)
+- Botan: [ECDSA verification succeeds with invalid public key](https://github.com/randombit/botan/commit/92cd9ad72184bacacb7682c1b65ff040ab2347ee)
+- Botan: [KDF + BLAKE incorrect result](https://github.com/randombit/botan/issues/2525)
 - TBA: TBA
 - TBA: TBA
 - TBA: TBA
