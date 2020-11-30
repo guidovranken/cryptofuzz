@@ -629,5 +629,48 @@ std::vector<uint8_t> sha256(const std::vector<uint8_t> data) {
     return sha256(data.data(), data.size());
 }
 
+std::vector<uint8_t> hmac_sha256(const uint8_t* data, const size_t size, const uint8_t* key, const size_t key_size) {
+    uint8_t _key[64];
+    uint8_t out[32];
+    impl::hash_state inner, outer;
+
+    impl::sha256_init(&inner);
+    impl::sha256_init(&outer);
+
+    if ( key_size <= 64 ) {
+        if ( key_size ) {
+            memcpy(_key, key, key_size);
+        }
+        memset(_key + key_size, 0, 64 - key_size);
+    } else {
+        const auto key_hash = sha256(key, key_size);
+        memcpy(_key, key_hash.data(), key_hash.size());
+        memset(_key + 32, 0, 32);
+    }
+
+    for (size_t i = 0; i < 64; i++) {
+        _key[i] ^= 0x5C;
+    }
+    impl::sha256_process(&outer, _key, 64);
+
+    for (int i = 0; i < 64; i++) {
+        _key[i] ^= 0x5C ^ 0x36;
+    }
+    impl::sha256_process(&inner, _key, 64);
+
+    impl::sha256_process(&inner, data, size);
+
+    impl::sha256_done(&inner, out);
+    impl::sha256_process(&outer, out, 32);
+    impl::sha256_done(&outer, out);
+
+    return {out, out + 32};
+}
+
+std::vector<uint8_t> hmac_sha256(const std::vector<uint8_t> data, const std::vector<uint8_t> key) {
+    return hmac_sha256(data.data(), data.size(), key.data(), key.size());
+}
+
+
 } /* namespace crypto */
 } /* namespace cryptofuzz */
