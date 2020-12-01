@@ -67,6 +67,7 @@ using ExecutorKDF_SP_800_108 = ExecutorBase<component::Key, operation::KDF_SP_80
 using ExecutorSign = ExecutorBase<component::Signature, operation::Sign>;
 using ExecutorVerify = ExecutorBase<bool, operation::Verify>;
 using ExecutorECC_PrivateToPublic = ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>;
+using ExecutorECC_ValidatePubkey = ExecutorBase<bool, operation::ECC_ValidatePubkey>;
 using ExecutorECC_GenerateKeyPair = ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>;
 using ExecutorECDSA_Sign = ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>;
 using ExecutorECDSA_Verify = ExecutorBase<bool, operation::ECDSA_Verify>;

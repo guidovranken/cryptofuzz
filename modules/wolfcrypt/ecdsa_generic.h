@@ -47,6 +47,7 @@ class ECCKey {
 };
 
 std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Generic(operation::ECC_PrivateToPublic& op);
+std::optional<bool> OpECC_ValidatePubkey_Generic(operation::ECC_ValidatePubkey& op);
 std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op);
 std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_Sign& op);
 std::optional<component::Ciphertext> OpECIES_Encrypt_Generic(operation::ECIES_Encrypt& op);

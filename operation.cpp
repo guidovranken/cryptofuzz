@@ -494,6 +494,29 @@ nlohmann::json ECC_PrivateToPublic::ToJSON(void) const {
     j["modifier"] = modifier.ToJSON();
     return j;
 }
+
+std::string ECC_ValidatePubkey::Name(void) const { return "ECC_ValidatePubkey"; }
+std::string ECC_ValidatePubkey::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: ECC_ValidatePubkey" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "public key X: " << pub.first.ToString() << std::endl;
+    ss << "public key Y: " << pub.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json ECC_ValidatePubkey::ToJSON(void) const {
+    nlohmann::json j;
+    j["operation"] = "ECC_ValidatePubkey";
+    j["pub_x"] = pub.first.ToJSON();
+    j["pub_y"] = pub.second.ToJSON();
+    j["curveType"] = curveType.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string ECC_GenerateKeyPair::Name(void) const { return "ECC_GenerateKeyPair"; }
 std::string ECC_GenerateKeyPair::ToString(void) const {
     std::stringstream ss;

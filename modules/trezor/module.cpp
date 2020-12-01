@@ -407,6 +407,27 @@ std::optional<component::ECC_PublicKey> trezor_firmware::OpECC_PrivateToPublic(o
     return trezor_firmware_detail::OpECC_PrivateToPublic(op.curveType, op.priv);
 }
 
+std::optional<bool> trezor_firmware::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
+    std::optional<bool> ret = std::nullopt;
+    uint8_t pubkey_bytes[65];
+    curve_point point;
+    std::optional<const ecdsa_curve*> curve = std::nullopt;
+
+    CF_CHECK_NE(curve = trezor_firmware_detail::toCurve(op.curveType), std::nullopt);
+    pubkey_bytes[0] = 4;
+    CF_CHECK_EQ(trezor_firmware_detail::EncodeBignum(
+                op.pub.first.ToTrimmedString(),
+                pubkey_bytes + 1), true);
+    CF_CHECK_EQ(trezor_firmware_detail::EncodeBignum(
+                op.pub.second.ToTrimmedString(),
+                pubkey_bytes + 1 + 32), true);
+
+    ret = ecdsa_read_pubkey(*curve, pubkey_bytes, &point) == 1;
+end:
+    return ret;
+}
+
+
 std::optional<component::ECDSA_Signature> trezor_firmware::OpECDSA_Sign(operation::ECDSA_Sign& op) {
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
     if ( op.UseRFC6979Nonce() == false ) {

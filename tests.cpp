@@ -266,6 +266,11 @@ void test(const operation::ECC_PrivateToPublic& op, const std::optional<componen
     }
 }
 
+void test(const operation::ECC_ValidatePubkey& op, const std::optional<bool>& result) {
+    (void)op;
+    (void)result;
+}
+
 void test(const operation::ECC_GenerateKeyPair& op, const std::optional<component::ECC_KeyPair>& result) {
     if ( result != std::nullopt ) {
         test_ECC_PrivateKey(op.curveType.Get(), result->priv.ToTrimmedString());

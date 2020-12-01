@@ -2636,6 +2636,20 @@ std::optional<component::ECC_PublicKey> wolfCrypt::OpECC_PrivateToPublic(operati
     }
 }
 
+std::optional<bool> wolfCrypt::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
+    if ( op.curveType.Get() == CF_ECC_CURVE("x25519") ) {
+        return std::nullopt; /* TODO */
+    } else if ( op.curveType.Get() == CF_ECC_CURVE("x448") ) {
+        return std::nullopt; /* TODO */
+    } else if ( op.curveType.Get() == CF_ECC_CURVE("ed25519") ) {
+        return std::nullopt; /* TODO */
+    } else if ( op.curveType.Get() == CF_ECC_CURVE("ed448") ) {
+        return std::nullopt; /* TODO */
+    } else {
+        return wolfCrypt_detail::OpECC_ValidatePubkey_Generic(op);
+    }
+}
+
 std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) {
     std::optional<component::ECC_KeyPair> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());

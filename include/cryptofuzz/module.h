@@ -96,6 +96,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<bool> OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::ECC_KeyPair> OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) {
             (void)op;
             return std::nullopt;

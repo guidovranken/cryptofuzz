@@ -33,6 +33,7 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorKDF_BCRYPT executorKDF_BCRYPT(CF_OPERATION("KDF_BCRYPT"), modules, options);
     static ExecutorKDF_SP_800_108 executorKDF_SP_800_108(CF_OPERATION("KDF_SP_800_108"), modules, options);
     static ExecutorECC_PrivateToPublic executorECC_PrivateToPublic(CF_OPERATION("ECC_PrivateToPublic"), modules, options);
+    static ExecutorECC_ValidatePubkey executorECC_ValidatePubkey(CF_OPERATION("ECC_ValidatePubkey"), modules, options);
     static ExecutorECC_GenerateKeyPair executorECC_GenerateKeyPair(CF_OPERATION("ECC_GenerateKeyPair"), modules, options);
     static ExecutorECDSA_Sign executorECDSA_Sign(CF_OPERATION("ECDSA_Sign"), modules, options);
     static ExecutorECDSA_Verify executorECDSA_Verify(CF_OPERATION("ECDSA_Verify"), modules, options);
@@ -118,6 +119,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
 #endif
             case CF_OPERATION("ECC_PrivateToPublic"):
                 executorECC_PrivateToPublic.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("ECC_ValidatePubkey"):
+                executorECC_ValidatePubkey.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("ECC_GenerateKeyPair"):
                 executorECC_GenerateKeyPair.Run(ds, payload.data(), payload.size());

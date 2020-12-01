@@ -96,6 +96,30 @@ end:
     return ret;
 }
 
+std::optional<bool> secp256k1::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
+    std::optional<bool> ret = std::nullopt;
+
+    secp256k1_context* ctx = nullptr;
+    secp256k1_pubkey pubkey;
+    uint8_t pubkey_bytes[65];
+    pubkey_bytes[0] = 4;
+
+    CF_CHECK_EQ(op.curveType.Get(), CF_ECC_CURVE("secp256k1"));
+    CF_CHECK_NE(ctx = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY), nullptr);
+    CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                op.pub.first.ToTrimmedString(),
+                pubkey_bytes + 1), true);
+    CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                op.pub.second.ToTrimmedString(),
+                pubkey_bytes + 1 + 32), true);
+
+    ret = secp256k1_ec_pubkey_parse(ctx, &pubkey, pubkey_bytes, sizeof(pubkey_bytes)) == 1;
+
+end:
+    /* noret */ secp256k1_context_destroy(ctx);
+    return ret;
+}
+
 std::optional<component::ECDSA_Signature> secp256k1::OpECDSA_Sign(operation::ECDSA_Sign& op) {
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
     if ( op.UseRFC6979Nonce() == false && op.UseSpecifiedNonce() == false ) {

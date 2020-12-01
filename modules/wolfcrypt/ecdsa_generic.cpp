@@ -45,8 +45,12 @@ ecc_key* ECCKey::GetPtr(void) {
         x963 = util::malloc(outLen);
         CF_CHECK_EQ(wc_ecc_export_x963_ex(key, x963, &outLen, compressed), 0);;
 
+        /* Get the curve id of the old key */
+        int curveID;
+        CF_CHECK_NE(curveID = wc_ecc_get_curve_id(key->idx), ECC_CURVE_INVALID);
+
         haveAllocFailure = false;
-        if ( wc_ecc_import_x963(x963, outLen, newKey) != 0 && haveAllocFailure == false ) {
+        if ( wc_ecc_import_x963_ex(x963, outLen, newKey, curveID) != 0 && haveAllocFailure == false ) {
             printf("Cannot import X963-exported ECC key\n");
             abort();
         }
@@ -232,6 +236,42 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Generic(operation:
             CF_CHECK_NE(pub, std::nullopt);
 
             ret = pub->ToBignumPair();
+        }
+    } catch ( ... ) { }
+
+end:
+
+    wolfCrypt_detail::UnsetGlobalDs();
+    return ret;
+}
+
+std::optional<bool> OpECC_ValidatePubkey_Generic(operation::ECC_ValidatePubkey& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    std::optional<int> curveID;
+
+    try {
+        ECCKey key(ds);
+        {
+            const char* name = nullptr;
+
+            CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
+
+            CF_CHECK_NE(name = wc_ecc_get_name(*curveID), nullptr);
+
+            CF_CHECK_EQ(wc_ecc_import_raw(
+                        key.GetPtr(),
+                        util::DecToHex(op.pub.first.ToTrimmedString()).c_str(),
+                        util::DecToHex(op.pub.second.ToTrimmedString()).c_str(),
+                        nullptr,
+                        name), 0);
+            haveAllocFailure = false;
+            ret = wc_ecc_check_key(key.GetPtr()) == 0;
+            if ( *ret == false && haveAllocFailure == true ) {
+                ret = std::nullopt;
+            }
         }
     } catch ( ... ) { }
 

@@ -896,6 +896,38 @@ class ECC_PrivateToPublic : public Operation {
         }
 };
 
+class ECC_ValidatePubkey : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::ECC_PublicKey pub;
+
+        ECC_ValidatePubkey(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            pub(ds)
+        { }
+        ECC_ValidatePubkey(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            pub(json["pub_x"], json["pub_y"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const ECC_ValidatePubkey& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (pub == rhs.pub) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            pub.Serialize(ds);
+        }
+};
+
 class ECC_GenerateKeyPair : public Operation {
     public:
         const component::CurveType curveType;

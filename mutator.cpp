@@ -337,6 +337,27 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     op.Serialize(dsOut2);
                 }
                 break;
+            case    CF_OPERATION("ECC_ValidatePubkey"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+
+                    if ( Pool_CurveKeypair.Have() ) {
+                        const auto P = Pool_CurveKeypair.Get();
+
+                        parameters["curveType"] = P.curveID;
+
+                        parameters["pub_x"] = getBool() ? getBignum() : P.pub_x;
+                        parameters["pub_y"] = getBool() ? getBignum() : P.pub_y;
+                    } else {
+                        parameters["curveType"] = getRandomCurve();
+                        parameters["pub_x"] = getBignum();
+                        parameters["pub_y"] = getBignum();
+                    }
+
+                    cryptofuzz::operation::ECC_ValidatePubkey op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
             case    CF_OPERATION("ECDH_Derive"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
