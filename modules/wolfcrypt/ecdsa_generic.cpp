@@ -275,6 +275,7 @@ std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op) {
                         util::DecToHex(op.signature.pub.second.ToTrimmedString()).c_str(),
                         nullptr,
                         name), 0);
+            CF_CHECK_EQ(wc_ecc_check_key(key.GetPtr()), 0);
         }
 
         CF_CHECK_EQ(wc_ecc_rs_to_sig(
