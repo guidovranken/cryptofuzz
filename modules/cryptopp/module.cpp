@@ -2185,6 +2185,29 @@ end:
     return ret;
 }
 
+std::optional<bool> CryptoPP::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    ::CryptoPP::ECDSA<::CryptoPP::ECP, ::CryptoPP::SHA256>::PublicKey publicKey;
+
+    try {
+        const ::CryptoPP::DL_GroupParameters_EC<::CryptoPP::ECP>& curve = CryptoPP_detail::ResolveCurve(op.curveType);
+
+        publicKey.Initialize(
+                curve,
+                ::CryptoPP::ECP::Point(
+                    ::CryptoPP::Integer(op.pub.first.ToString(ds).c_str()),
+                    ::CryptoPP::Integer(op.pub.second.ToString(ds).c_str())
+                    ));
+
+        ::CryptoPP::AutoSeededRandomPool prng;
+        ret = publicKey.Validate(prng, 3);
+    } catch ( ... ) { }
+
+    return ret;
+}
+
 std::optional<bool> CryptoPP::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
     (void)op;
