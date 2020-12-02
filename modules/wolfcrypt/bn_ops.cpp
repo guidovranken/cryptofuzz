@@ -154,9 +154,11 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
         case    0:
             CF_CHECK_EQ(mp_exptmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
+#if defined(WOLFSSL_SP_MATH_ALL)
         case    1:
             CF_CHECK_EQ(mp_exptmod_nct(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
+#endif
 #if !defined(WOLFSSL_SP_MATH)
         case    2:
             CF_CHECK_EQ(mp_exptmod_ex(bn[0].GetPtr(), bn[1].GetPtr(), bn[1].GetPtr()->used, bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
@@ -302,7 +304,7 @@ bool Neg::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
-#if defined(WOLFSSL_SP_MATH)
+#if defined(WOLFSSL_SP_MATH) || defined(WOLFSSL_SP_MATH_ALL)
     (void)res;
     (void)bn;
 #else
@@ -371,7 +373,7 @@ bool IsNeg::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-#if defined(WOLFSSL_SP_MATH)
+#if defined(WOLFSSL_SP_MATH) || defined(WOLFSSL_SP_MATH_ALL)
     (void)res;
     (void)bn;
 #else
@@ -795,7 +797,7 @@ bool Exp2::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     const auto exponent = bn[0].AsUnsigned<unsigned int>();
     CF_CHECK_NE(exponent, std::nullopt);
-#if defined(USE_FAST_MATH) && !defined(WOLFSSL_SP_MATH)
+#if defined(USE_FAST_MATH) && !defined(WOLFSSL_SP_MATH) && !defined(WOLFSSL_SP_MATH_ALL)
     CF_CHECK_LT(*exponent / DIGIT_BIT, FP_SIZE);
 #endif
     CF_CHECK_EQ(mp_2expt(res.GetPtr(), *exponent), MP_OKAY);
