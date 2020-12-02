@@ -91,7 +91,8 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Trezor firmware: [ECDSA verification fails if hash is curve order](https://github.com/trezor/trezor-firmware/pull/1374)
 - Botan: [ECDSA verification succeeds with invalid public key](https://github.com/randombit/botan/commit/92cd9ad72184bacacb7682c1b65ff040ab2347ee)
 - Botan: [KDF + BLAKE incorrect result](https://github.com/randombit/botan/issues/2525)
-- Crypto++: [ECDSA verification succeeds with invalid public key](https://github.com/weidai11/cryptopp/issues/981)
+- Crypto++: [ECDSA verification succeeds with invalid signature](https://github.com/weidai11/cryptopp/issues/981)
+- micro-ecc: [ECDSA verification fails when it should succeed](https://github.com/kmackay/micro-ecc/issues/179#issuecomment-734515934)
 - TBA: TBA
 - TBA: TBA
 - TBA: TBA
