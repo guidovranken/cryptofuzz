@@ -1,0 +1,12 @@
+[package]
+name = "rust-libsecp256k1"
+version = "0.1.0"
+authors = ["Guido Vranken <guidovranken@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+#libsecp256k1 = "0.3.5"
+libsecp256k1 = { git = "https://github.com/paritytech/libsecp256k1" }

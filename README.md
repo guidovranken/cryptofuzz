@@ -93,6 +93,7 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Botan: [KDF + BLAKE incorrect result](https://github.com/randombit/botan/issues/2525)
 - Crypto++: [ECDSA verification succeeds with invalid signature](https://github.com/weidai11/cryptopp/issues/981)
 - micro-ecc: [ECDSA verification fails when it should succeed](https://github.com/kmackay/micro-ecc/issues/179#issuecomment-734515934)
+- Parity libsecp256k1: [RFC6979 signature discrepancy if input is curve order](https://github.com/paritytech/libsecp256k1/issues/62)
 - TBA: TBA
 - TBA: TBA
 - TBA: TBA

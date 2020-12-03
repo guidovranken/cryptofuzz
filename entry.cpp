@@ -128,6 +128,10 @@
   #include <modules/secp256k1/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_RUST_LIBSECP256K1)
+  #include <modules/rust-libsecp256k1/module.h>
+#endif
+
 #if defined(CRYPTOFUZZ_TREZOR_FIRMWARE)
   #include <modules/trezor/module.h>
 #endif
@@ -283,6 +287,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_SECP256K1)
     driver->LoadModule( std::make_shared<cryptofuzz::module::secp256k1>() );
+#endif
+
+#if defined(CRYPTOFUZZ_RUST_LIBSECP256K1)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::rust_libsecp256k1>() );
 #endif
 
 #if defined(CRYPTOFUZZ_TREZOR_FIRMWARE)
