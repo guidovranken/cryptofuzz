@@ -3,6 +3,7 @@
 #include <boost/multiprecision/cpp_int.hpp>
 #include <cryptofuzz/repository.h>
 #include <sstream>
+#include <algorithm>
 
 extern "C" {
     #include <bearssl.h>
@@ -63,7 +64,7 @@ namespace BearSSL_detail {
         }
     }
 
-    static bool EncodeBignum(const std::string s, uint8_t* out, const size_t maxSize) {
+    static bool EncodeBignum(const std::string s, uint8_t* out, const size_t maxSize, const bool reverse = false) {
         std::vector<uint8_t> v;
         boost::multiprecision::cpp_int c(s);
         boost::multiprecision::export_bits(c, std::back_inserter(v), 8);
@@ -74,6 +75,10 @@ namespace BearSSL_detail {
 
         memset(out, 0, maxSize);
         memcpy(out + diff, v.data(), v.size());
+
+        if ( reverse == true ) {
+            std::reverse(out, out + maxSize);
+        }
         
         return true;
     }
@@ -97,8 +102,8 @@ namespace BearSSL_detail {
             { CF_ECC_CURVE("brainpool256r1"), BR_EC_brainpoolP256r1},
             { CF_ECC_CURVE("brainpool384r1"), BR_EC_brainpoolP384r1},
             { CF_ECC_CURVE("brainpool512r1"), BR_EC_brainpoolP512r1},
-#if 0
             { CF_ECC_CURVE("x25519"), BR_EC_curve25519},
+#if 0
             { CF_ECC_CURVE("x448"), BR_EC_curve448},
 #endif
             { CF_ECC_CURVE("secp160k1"), BR_EC_secp160k1},
@@ -135,15 +140,28 @@ namespace BearSSL_detail {
         return LUT.at(curveType.Get());
     }
 
-    component::BignumPair EncodePubkey(const uint8_t* data, const size_t size) {
-        if ( (size % 2) != 1 || data[0] != 0x04 ) {
-            abort();
-        }
-        size_t halfSize = (size - 1) / 2;
+    component::BignumPair EncodePubkey(const component::CurveType& curveType, const uint8_t* data, const size_t size) {
+        switch ( curveType.Get() ) {
+            case    CF_ECC_CURVE("x25519"):
+                {
+                    CF_ASSERT(size == 32, "x25519 pubkey is not 32 bytes");
+                    return {
+                        BearSSL_detail::toString(data, 32),
+                        "0" };
+                }
+                break;
+            default:
+                {
+                    if ( (size % 2) != 1 || data[0] != 0x04 ) {
+                        abort();
+                    }
+                    size_t halfSize = (size - 1) / 2;
 
-        return {
-            BearSSL_detail::toString(data + 1, halfSize),
-            BearSSL_detail::toString(data + 1 + halfSize, halfSize) };
+                    return {
+                        BearSSL_detail::toString(data + 1, halfSize),
+                        BearSSL_detail::toString(data + 1 + halfSize, halfSize) };
+                }
+        }
     }
 	
     const br_block_ctrcbc_class* Get_br_block_ctrcbc_class(Datasource& ds) {
@@ -206,9 +224,7 @@ end:
                     {
                         CF_CHECK_EQ(curveType.Get(), CF_ECC_CURVE("secp256r1"));
                         const auto ret = br_ec_p256_m62_get();
-                        if ( ret == nullptr ) {
-                            goto end;
-                        }
+                        CF_CHECK_NE(ret, nullptr);
                         return ret;
                     }
                     break;
@@ -216,10 +232,48 @@ end:
                     {
                         CF_CHECK_EQ(curveType.Get(), CF_ECC_CURVE("secp256r1"));
                         const auto ret = br_ec_p256_m64_get();
-                        if ( ret == nullptr ) {
-                            goto end;
-                        }
+                        CF_CHECK_NE(ret, nullptr);
                         return ret;
+                    }
+                    break;
+                case    6:
+                    {
+                        CF_CHECK_EQ(curveType.Get(), CF_ECC_CURVE("x25519"));
+                        const auto ret = br_ec_c25519_m62_get();
+                        CF_CHECK_NE(ret, nullptr);
+                        return ret;
+                    }
+                    break;
+                case    7:
+                    {
+                        CF_CHECK_EQ(curveType.Get(), CF_ECC_CURVE("x25519"));
+                        const auto ret = br_ec_c25519_m64_get();
+                        CF_CHECK_NE(ret, nullptr);
+                        return ret;
+                    }
+                    break;
+                case    8:
+                    {
+                        CF_CHECK_EQ(curveType.Get(), CF_ECC_CURVE("x25519"));
+                        return &br_ec_c25519_i15;
+                    }
+                    break;
+                case    9:
+                    {
+                        CF_CHECK_EQ(curveType.Get(), CF_ECC_CURVE("x25519"));
+                        return &br_ec_c25519_i31;
+                    }
+                    break;
+                case    10:
+                    {
+                        CF_CHECK_EQ(curveType.Get(), CF_ECC_CURVE("x25519"));
+                        return &br_ec_c25519_m15;
+                    }
+                    break;
+                case    11:
+                    {
+                        CF_CHECK_EQ(curveType.Get(), CF_ECC_CURVE("x25519"));
+                        return &br_ec_c25519_m31;
                     }
                     break;
                 default:
@@ -287,6 +341,10 @@ end:
     }
 
     bool IsValidPrivateKey(const component::Bignum& priv, const component::CurveType& curveType) {
+        if ( curveType.Is(CF_ECC_CURVE("x25519")) ) {
+            return true;
+        }
+
         const auto s = priv.ToTrimmedString();
         if ( s == "0" ) {
             return false;
@@ -836,7 +894,11 @@ std::optional<component::ECC_KeyPair> BearSSL::OpECC_GenerateKeyPair(operation::
     CF_CHECK_NE(privSize = br_ec_keygen(&BearSSL_detail::rng.vtable, ec_impl, &sk, priv, curve), 0);
     CF_CHECK_NE(pubSize = br_ec_compute_pub(ec_impl, &pk, pub, &sk), 0);
 
-    ret = { BearSSL_detail::toString(priv, privSize), BearSSL_detail::EncodePubkey(pub, pubSize) };
+    if ( op.curveType.Is(CF_ECC_CURVE("x25519")) ) {
+        std::reverse(priv, priv + privSize);
+    }
+
+    ret = { BearSSL_detail::toString(priv, privSize), BearSSL_detail::EncodePubkey(op.curveType, pub, pubSize) };
 end:
     return ret;
 }
@@ -849,19 +911,31 @@ std::optional<component::ECC_PublicKey> BearSSL::OpECC_PrivateToPublic(operation
     br_ec_public_key pk;
     uint8_t priv[BR_EC_KBUF_PRIV_MAX_SIZE];
     uint8_t pub[BR_EC_KBUF_PUB_MAX_SIZE];
+    size_t privSize;
     size_t pubSize;
     const auto ec_impl = BearSSL_detail::Get_br_ec_impl(ds, op.curveType);
 
     CF_CHECK_NE(sk.curve = BearSSL_detail::toCurveID(op.curveType), -1);
     CF_CHECK_EQ(BearSSL_detail::IsValidPrivateKey(op.priv, op.curveType), true);
-    CF_CHECK_EQ(BearSSL_detail::EncodeBignum(op.priv.ToTrimmedString(), priv, sizeof(priv)), true);
+    {
+        bool reverse;
+
+        if ( op.curveType.Is(CF_ECC_CURVE("x25519")) ) {
+            privSize = 32;
+            reverse = true;
+        } else {
+            reverse = false;
+            privSize = sizeof(priv);
+        }
+        CF_CHECK_EQ(BearSSL_detail::EncodeBignum(op.priv.ToTrimmedString(), priv, privSize, reverse), true);
+    }
 
     sk.x = priv;
-    sk.xlen = sizeof(priv);
+    sk.xlen = privSize;
 
     memset(&pk, 0, sizeof(pk));
     CF_CHECK_NE(pubSize = br_ec_compute_pub(ec_impl, &pk, pub, &sk), 0);
-    ret = BearSSL_detail::EncodePubkey(pub, pubSize);
+    ret = BearSSL_detail::EncodePubkey(op.curveType, pub, pubSize);
 
 end:
     return ret;
@@ -1003,7 +1077,7 @@ std::optional<component::ECDSA_Signature> BearSSL::OpECDSA_Sign(operation::ECDSA
 
     ret = {
             {BearSSL_detail::toString(signature, sigSize / 2), BearSSL_detail::toString(signature + (sigSize/2), sigSize / 2) },
-            BearSSL_detail::EncodePubkey(pub, pubSize)
+            BearSSL_detail::EncodePubkey(op.curveType, pub, pubSize)
     };
 
 end:
