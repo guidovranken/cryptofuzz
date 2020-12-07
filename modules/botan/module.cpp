@@ -119,9 +119,15 @@ std::optional<component::MAC> Botan::OpHMAC(operation::HMAC& op) {
             std::optional<std::string> algoString;
             CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get(), true, true), std::nullopt);
 
-            const bool isSipHash = op.digestType.Get() == CF_DIGEST("SIPHASH64");
+            std::string hmacString;
+            if (
+                    op.digestType.Is(CF_DIGEST("SIPHASH64")) ||
+                    op.digestType.Is(CF_DIGEST("BLAKE2B_MAC")) ) {
+                hmacString = *algoString;
+            } else {
+                hmacString = Botan_detail::parenthesize("HMAC", *algoString);
+            }
 
-            const std::string hmacString = isSipHash ? *algoString : Botan_detail::parenthesize("HMAC", *algoString);
             CF_CHECK_NE(hmac = ::Botan::MessageAuthenticationCode::create(hmacString), nullptr);
 
             try {

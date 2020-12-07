@@ -835,7 +835,58 @@ std::optional<component::Digest> wolfCrypt::OpDigest(operation::Digest& op) {
     return ret;
 }
 
+namespace wolfCrypt_detail {
+    std::optional<component::MAC> Blake2_MAC(operation::HMAC& op) {
+        std::optional<component::MAC> ret = std::nullopt;
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+        wolfCrypt_detail::SetGlobalDs(&ds);
+
+        Blake2b blake2b;
+        Blake2s blake2s;
+
+        util::Multipart parts;
+        uint8_t out[64];
+
+        if ( op.digestType.Is(CF_DIGEST("BLAKE2B_MAC")) ) {
+            CF_CHECK_EQ(wc_InitBlake2b_WithKey(&blake2b, 64, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), 0);
+        } else if ( op.digestType.Is(CF_DIGEST("BLAKE2S_MAC")) ) {
+            CF_CHECK_EQ(wc_InitBlake2s_WithKey(&blake2s, 64, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), 0);
+        } else {
+            abort();
+        }
+
+        parts = util::ToParts(ds, op.cleartext);
+
+        if ( op.digestType.Is(CF_DIGEST("BLAKE2B_MAC")) ) {
+            for (const auto& part : parts) {
+                CF_CHECK_EQ(wc_Blake2bUpdate(&blake2b, part.first, part.second), 0);
+            }
+        } else if ( op.digestType.Is(CF_DIGEST("BLAKE2S_MAC")) ) {
+            for (const auto& part : parts) {
+                CF_CHECK_EQ(wc_Blake2sUpdate(&blake2s, part.first, part.second), 0);
+            }
+        }
+
+        if ( op.digestType.Is(CF_DIGEST("BLAKE2B_MAC")) ) {
+            CF_CHECK_EQ(wc_Blake2bFinal(&blake2b, out, 64), 0);
+        } else if ( op.digestType.Is(CF_DIGEST("BLAKE2S_MAC")) ) {
+            CF_CHECK_EQ(wc_Blake2sFinal(&blake2s, out, 64), 0);
+        }
+
+        ret = component::MAC(out, 64);
+end:
+        wolfCrypt_detail::UnsetGlobalDs();
+        return ret;
+    }
+} /* namespace wolfCrypt_detail */
+
 std::optional<component::MAC> wolfCrypt::OpHMAC(operation::HMAC& op) {
+    if (
+        op.digestType.Is(CF_DIGEST("BLAKE2B_MAC")) ||
+        op.digestType.Is(CF_DIGEST("BLAKE2S_MAC")) ) {
+        return wolfCrypt_detail::Blake2_MAC(op);
+    }
+
     std::optional<component::MAC> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     wolfCrypt_detail::SetGlobalDs(&ds);

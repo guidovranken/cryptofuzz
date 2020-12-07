@@ -1,5 +1,6 @@
 static const std::map<uint64_t, std::string> LUT = {
     { CF_DIGEST("ADLER32"), "Adler32" },
+    { CF_DIGEST("BLAKE2B_MAC"), "Blake2b(512)" },
     { CF_DIGEST("BLAKE2B160"), "Blake2b(160)" },
     { CF_DIGEST("BLAKE2B256"), "Blake2b(256)" },
     { CF_DIGEST("BLAKE2B384"), "Blake2b(384)" },
