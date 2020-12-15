@@ -2,6 +2,13 @@
 
 namespace cryptofuzz {
 namespace module {
+
+namespace wolfCrypt_detail {
+#if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
+    extern bool haveAllocFailure;
+#endif
+} /* namespace wolfCrypt_detail */
+
 namespace wolfCrypt_bignum {
 
 void Bignum::baseConversion(void) const {
@@ -18,14 +25,15 @@ void Bignum::baseConversion(void) const {
 
         CF_CHECK_EQ(mp_toradix(mp, str, base), MP_OKAY);
 
-        CF_ASSERT(mp_read_radix(mp, str, base) == MP_OKAY, "wolfCrypt cannot parse the output of mp_toradix");
+        wolfCrypt_detail::haveAllocFailure = false;
+        CF_ASSERT(mp_read_radix(mp, str, base) == MP_OKAY || wolfCrypt_detail::haveAllocFailure, "wolfCrypt cannot parse the output of mp_toradix");
     }
 
 end:
     util::free(str);
 #endif
 }
-        
+
 Bignum::Bignum(Datasource& ds) :
     ds(ds) {
     mp = (mp_int*)util::malloc(sizeof(mp_int));
