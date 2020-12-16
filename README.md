@@ -95,5 +95,5 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - micro-ecc: [ECDSA verification fails when it should succeed](https://github.com/kmackay/micro-ecc/issues/179#issuecomment-734515934)
 - Parity libsecp256k1: [RFC6979 signature discrepancy if input is curve order](https://github.com/paritytech/libsecp256k1/issues/62)
 - LibreSSL: [ECDSA verification succeeds with invalid public key](https://github.com/openbsd/src/commit/ea076652f78324977b6dc08890965b6823672c02)
-- TBA: TBA
+- SymCrypt: Uninitialized memory used as array index in ECDSA verification if hash is 0
 - TBA: TBA
