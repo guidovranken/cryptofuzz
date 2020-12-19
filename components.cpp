@@ -101,6 +101,12 @@ nlohmann::json Buffer::ToJSON(void) const {
     return j;
 }
 
+std::string Buffer::ToHex(void) const {
+    std::string asHex;
+    boost::algorithm::hex(data, std::back_inserter(asHex));
+    return asHex;
+}
+
 void Buffer::Serialize(Datasource& ds) const {
     ds.PutData(data);
 }

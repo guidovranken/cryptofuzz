@@ -44,6 +44,7 @@ class Buffer {
         size_t GetSize(void) const;
         bool operator==(const Buffer& rhs) const;
         nlohmann::json ToJSON(void) const;
+        std::string ToHex(void) const;
         void Serialize(Datasource& ds) const;
         Datasource AsDatasource(void) const;
 };

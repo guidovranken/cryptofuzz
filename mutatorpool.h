@@ -31,6 +31,7 @@ extern MutatorPool<CurveKeypair_Pair, 64> Pool_CurveKeypair;
 
 typedef struct {
     uint64_t curveID;
+    std::string cleartext;
     std::string pub_x;
     std::string pub_y;
     std::string sig_r;

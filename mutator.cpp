@@ -423,7 +423,11 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["priv"] = P1.priv;
                     parameters["nonce"] = getBignum();
 
-                    parameters["cleartext"] = cryptofuzz::util::DecToHex(getBignum(true), 64);
+                    if ( getBool() ) {
+                        parameters["cleartext"] = cryptofuzz::util::DecToHex(getBignum(true), (PRNG() % 64) * 2);
+                    } else {
+                        parameters["cleartext"] = getBuffer(PRNG() % 32);
+                    }
                     parameters["nonceSource"] = PRNG() % 3;
                     parameters["digestType"] = getRandomDigest();
 
@@ -459,6 +463,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         }
 
                         parameters["signature"]["signature"][1] = sigS;
+                        parameters["cleartext"] = P.cleartext;
                     } else {
                         parameters["curveType"] = getRandomCurve();
 
@@ -467,9 +472,10 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                         parameters["signature"]["signature"][0] = getBignum();
                         parameters["signature"]["signature"][1] = getBignum();
+
+                        parameters["cleartext"] = cryptofuzz::util::DecToHex(getBignum(true), (PRNG() % 64) * 2);
                     }
 
-                    parameters["cleartext"] = cryptofuzz::util::DecToHex(getBignum(true), 64);
                     parameters["digestType"] = getRandomDigest();
 
                     cryptofuzz::operation::ECDSA_Verify op(parameters);

@@ -753,12 +753,13 @@ template<> void ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>:
 
     if ( result.second != std::nullopt  ) {
         const auto curveID = op.curveType.Get();
+        const auto cleartext = op.cleartext.ToHex();
         const auto pub_x = result.second->pub.first.ToTrimmedString();
         const auto pub_y = result.second->pub.second.ToTrimmedString();
         const auto sig_r = result.second->signature.first.ToTrimmedString();
         const auto sig_s = result.second->signature.second.ToTrimmedString();
 
-        Pool_CurveECDSASignature.Set({ curveID, pub_x, pub_y, sig_r, sig_s});
+        Pool_CurveECDSASignature.Set({ curveID, cleartext, pub_x, pub_y, sig_r, sig_s});
 
         if ( pub_x.size() <= 1000 ) { Pool_Bignum.Set(pub_x); }
         if ( pub_y.size() <= 1000 ) { Pool_Bignum.Set(pub_y); }
