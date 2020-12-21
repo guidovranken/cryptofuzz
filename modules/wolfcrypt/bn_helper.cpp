@@ -21,6 +21,8 @@ void Bignum::baseConversion(void) const {
     {
         int size;
         CF_CHECK_EQ(mp_radix_size(mp, base, &size), MP_OKAY);
+        CF_ASSERT(size > 0, "Output of mp_radix_size is 0 or less");
+
         str = (char*)util::malloc(size);
 
         CF_CHECK_EQ(mp_toradix(mp, str, base), MP_OKAY);
@@ -192,12 +194,16 @@ std::optional<std::string> Bignum::ToDecString(void) {
 
     if ( hex == true ) {
         CF_CHECK_EQ(mp_radix_size(mp, 16, &size), MP_OKAY);
+        CF_ASSERT(size > 0, "Output of mp_radix_size is 0 or less");
+
         str = (char*)util::malloc(size+1);
 
         CF_CHECK_EQ(mp_tohex(mp, str), MP_OKAY);
         ret = { util::HexToDec(str) };
     } else {
         CF_CHECK_EQ(mp_radix_size(mp, 10, &size), MP_OKAY);
+        CF_ASSERT(size > 0, "Output of mp_radix_size is 0 or less");
+
         str = (char*)util::malloc(size);
 
         CF_CHECK_EQ(mp_toradix(mp, str, 10), MP_OKAY);
@@ -263,9 +269,8 @@ end:
 }
 
 bool Bignum::ToBin(Datasource& ds, const component::BignumPair b, uint8_t* dest, const size_t size) {
-    if ( (size % 2) != 0 ) {
-        abort();
-    }
+    CF_ASSERT((size % 2) == 0, "Input size is not multiple of 2 in Bignum::ToBin");
+
     bool ret = false;
     const auto halfSize = size / 2;
 
@@ -290,9 +295,8 @@ end:
 }
 
 std::optional<component::BignumPair> Bignum::BinToBignumPair(Datasource& ds, const uint8_t* src, const size_t size) {
-    if ( (size % 2) != 0 ) {
-        abort();
-    }
+    CF_ASSERT((size % 2) == 0, "Input size is not multiple of 2 in Bignum::BinToBignumPair");
+
     std::optional<component::BignumPair> ret = std::nullopt;
     std::optional<component::Bignum> A, B;
     const auto halfSize = size / 2;
@@ -326,9 +330,7 @@ BignumCluster::BignumCluster(Datasource& ds, Bignum bn0, Bignum bn1, Bignum bn2,
 { }
 
 Bignum& BignumCluster::operator[](const size_t index) {
-    if ( index >= bn.size() ) {
-        abort();
-    }
+    CF_ASSERT(index < bn.size(), "Invalid index requested in BignumCluster::operator[]");
 
     try {
         /* Rewire? */
@@ -350,9 +352,7 @@ Bignum& BignumCluster::operator[](const size_t index) {
 }
 
 bool BignumCluster::Set(const size_t index, const std::string s) {
-    if ( index >= bn.size() ) {
-        abort();
-    }
+    CF_ASSERT(index < bn.size(), "Invalid index requested in BignumCluster::Set");
 
     return bn[index].Set(s);
 }

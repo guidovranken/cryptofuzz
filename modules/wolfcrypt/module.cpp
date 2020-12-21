@@ -278,29 +278,17 @@ static void wolfCrypt_custom_free(void* ptr) {
 wolfCrypt::wolfCrypt(void) :
     Module("wolfCrypt") {
 
-    if ( wc_InitRng(&wolfCrypt_detail::rng) != 0 ) {
-        printf("Cannot initialize wolfCrypt RNG\n");
-        abort();
-    }
+    CF_ASSERT(wc_InitRng(&wolfCrypt_detail::rng) == 0, "Cannot initialize wolfCrypt RNG");
 
 #if defined(WOLF_CRYPTO_CB)
     /* noret */ wc_CryptoCb_Init();
 
-    if ( wc_CryptoCb_RegisterDevice(0xAABBCC, wolfCrypt_detail::CryptoCB, nullptr) != 0 ) {
-        printf("Cannot initialize CryptoCB\n");
-        abort();
-    }
-
-    if ( wc_InitRng_ex(&wolfCrypt_detail::rng_deterministic, nullptr, 0xAABBCC) != 0 ) {
-        printf("Cannot initialize wolfCrypt RNG\n");
-        abort();
-    }
+    CF_ASSERT(wc_CryptoCb_RegisterDevice(0xAABBCC, wolfCrypt_detail::CryptoCB, nullptr) == 0, "Cannot initialize CryptoCB");
+    CF_ASSERT(wc_InitRng_ex(&wolfCrypt_detail::rng_deterministic, nullptr, 0xAABBCC) == 0, "Cannot initialize deterministic wolfCrypt RNG");
 #endif /* WOLF_CRYPTO_CB */
 
     wolfCrypt_detail::SetGlobalDs(nullptr);
-    if ( wolfSSL_SetAllocators(wolfCrypt_custom_malloc, wolfCrypt_custom_free, wolfCrypt_custom_realloc) != 0 ) {
-        abort();
-    }
+    CF_ASSERT(wolfSSL_SetAllocators(wolfCrypt_custom_malloc, wolfCrypt_custom_free, wolfCrypt_custom_realloc) == 0, "Cannot set allocator functions");
 }
 
 namespace wolfCrypt_detail {
@@ -2376,16 +2364,14 @@ std::optional<component::MAC> wolfCrypt::OpCMAC(operation::CMAC& op) {
         }
     }
 
-    if ( wc_AesCmacVerify(
+    CF_ASSERT(wc_AesCmacVerify(
                     out,
                     outSize,
                     op.cleartext.GetPtr(&ds),
                     op.cleartext.GetSize(),
                     op.cipher.key.GetPtr(&ds),
-                    op.cipher.key.GetSize()) != 0 ) {
-        abort();
-    }
-
+                    op.cipher.key.GetSize()) == 0,
+            "Cannot verify self-generated CMAC");
 end:
 
     wolfCrypt_detail::UnsetGlobalDs();

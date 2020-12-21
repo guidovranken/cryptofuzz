@@ -277,8 +277,7 @@ bool Cmp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             CF_CHECK_EQ( res.Set("0"), true);
             break;
         default:
-            /* Invalid return value */
-            abort();
+            CF_ASSERT(0, "Compare result is not one of (MP_GT, MP_LT, MP_EQ)");
     }
 
     ret = true;
@@ -664,10 +663,7 @@ bool MSB::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     const int bit = mp_leading_bit(bn[0].GetPtr());
 
-    /* Must be 0 or 1 */
-    if ( bit != 0 && bit != 1 ) {
-        abort();
-    }
+    CF_ASSERT(bit == 0 || bit == 1, "mp_leading_bit result is not one of (0, 1)");
 
     CF_CHECK_EQ( res.Set( std::to_string(bit) ), true);
 
@@ -685,10 +681,7 @@ bool NumBits::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     const auto numBits = mp_count_bits(bn[0].GetPtr());
 
-    /* Basic sanity check */
-    if ( numBits < 0 ) {
-        abort();
-    }
+    CF_ASSERT(numBits >= 0, "mp_count_bits result is negative");
 
     CF_CHECK_EQ( res.Set( std::to_string(numBits) ), true);
 
@@ -776,9 +769,7 @@ bool Jacobi::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 CF_CHECK_EQ( res.Set("0"), true);
                 break;
             default:
-                printf("Error: mp_jacobi returned %d\n", jacobi);
-                /* Invalid return value */
-                abort();
+                CF_ASSERT(0, "mp_jacobi result is not one of (-1, 0, 1)");
         }
 
         ret = true;
@@ -820,10 +811,7 @@ bool NumLSZeroBits::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 #else
     const auto numBits = mp_cnt_lsb(bn[0].GetPtr());
 
-    /* Basic sanity check */
-    if ( numBits < 0 ) {
-        abort();
-    }
+    CF_ASSERT(numBits >= 0, "mp_cnt_lsb result is negative");
 
     CF_CHECK_EQ( res.Set( std::to_string(numBits) ), true);
 

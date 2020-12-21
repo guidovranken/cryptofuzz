@@ -50,10 +50,7 @@ ecc_key* ECCKey::GetPtr(void) {
         CF_CHECK_NE(curveID = wc_ecc_get_curve_id(key->idx), ECC_CURVE_INVALID);
 
         haveAllocFailure = false;
-        if ( wc_ecc_import_x963_ex(x963, outLen, newKey, curveID) != 0 && haveAllocFailure == false ) {
-            printf("Cannot import X963-exported ECC key\n");
-            abort();
-        }
+        CF_ASSERT(wc_ecc_import_x963_ex(x963, outLen, newKey, curveID) == 0 || haveAllocFailure, "Cannot import X963-exported ECC key");
 
         /* noret */ wc_ecc_key_free(key);
         key = newKey;
@@ -170,10 +167,7 @@ ecc_point* ECCPoint::GetPtr() {
             CF_CHECK_EQ(wc_ecc_export_point_der(curveIdx, point, out, &outSz), 0);
 
             haveAllocFailure = false;
-            if ( wc_ecc_import_point_der(out, outSz, curveIdx, newPoint) != 0 && haveAllocFailure == false ) {
-                printf("Cannot import DER-exported ECC point\n");
-                abort();
-            }
+            CF_ASSERT(wc_ecc_import_point_der(out, outSz, curveIdx, newPoint) == 0 || haveAllocFailure, "Cannot import DER-exported ECC point");
 
             /* noret */ wc_ecc_del_point(point);
             point = newPoint;
