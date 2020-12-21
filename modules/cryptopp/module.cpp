@@ -115,8 +115,12 @@ namespace CryptoPP_detail {
                 return Function<::CryptoPP::Keccak_384>::Compute(op);
             case CF_DIGEST("KECCAK_512"):
                 return Function<::CryptoPP::Keccak_512>::Compute(op);
+/*
+            Fails in the link step in OSS-Fuzz for unclear reason
+
             case CF_DIGEST("PANAMA"):
                 return Function<::CryptoPP::Weak::PanamaHash<::CryptoPP::LittleEndian>>::Compute(op);
+*/
             default:
                 return std::nullopt;
         }
