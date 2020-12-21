@@ -299,6 +299,13 @@ void test(const operation::ECDSA_Sign& op, const std::optional<component::ECDSA_
     if ( result != std::nullopt ) {
         test_ECC_PrivateKey(op.curveType.Get(), op.priv.ToTrimmedString());
 
+        if ( op.UseSpecifiedNonce() == true ) {
+            if ( op.nonce.ToTrimmedString() == "0" ) {
+                std::cout << "0 is an invalid ECDSA nonce" << std::endl;
+                ::abort();
+            }
+        }
+
         test_ECDSA_Signature(op.curveType.Get(),
                 result->signature.first.ToTrimmedString(),
                 result->signature.second.ToTrimmedString());
