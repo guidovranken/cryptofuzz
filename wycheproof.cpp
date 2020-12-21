@@ -2,6 +2,7 @@
 #include <cryptofuzz/repository.h>
 #include <cryptofuzz/operations.h>
 #include <cryptofuzz/util.h>
+#include <cryptofuzz/crypto.h>
 #include <stdio.h>
 #include <fstream>
 
@@ -53,6 +54,7 @@ void Wycheproof::ECDSA_Verify(const nlohmann::json& groups) {
     for (const auto &group : groups) {
         for (const auto &test : group["tests"]) {
             nlohmann::json parameters;
+            std::string digest;
 
             {
                 const std::string curve = group["key"]["curve"];
@@ -88,7 +90,8 @@ void Wycheproof::ECDSA_Verify(const nlohmann::json& groups) {
             }
 
             {
-                const std::string digest = group["sha"];
+                digest = group["sha"];
+
                 if ( digest == "SHA-224") {
                     parameters["digestType"] = CF_DIGEST("SHA224");
                 } else if ( digest == "SHA-256") {
@@ -124,7 +127,32 @@ void Wycheproof::ECDSA_Verify(const nlohmann::json& groups) {
             parameters["cleartext"] = test["msg"].get<std::string>();
 
             parameters["modifier"] = std::string(1000, '0');
+
+            /* Construct and write */
             {
+                fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+                cryptofuzz::operation::ECDSA_Verify op(parameters);
+                op.Serialize(dsOut2);
+
+                write(CF_OPERATION("ECDSA_Verify"), dsOut2);
+            }
+
+            /* If digest type is SHA256, compute the SHA256 hash of the message,
+             * and use this to write an input that uses the NULL digest */
+            if ( digest == "SHA-256" ) {
+                /* Hex-decode cleartext */
+                std::vector<uint8_t> ct_sha256;
+                boost::algorithm::unhex(
+                        test["msg"].get<std::string>(),
+                        std::back_inserter(ct_sha256));
+                const auto ct = crypto::sha256(ct_sha256);
+
+                std::string ct_hex;
+                boost::algorithm::hex(ct, std::back_inserter(ct_hex));
+
+                parameters["cleartext"] = ct_hex;
+                parameters["digestType"] = CF_DIGEST("NULL");
+
                 fuzzing::datasource::Datasource dsOut2(nullptr, 0);
                 cryptofuzz::operation::ECDSA_Verify op(parameters);
                 op.Serialize(dsOut2);
