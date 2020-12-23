@@ -122,7 +122,7 @@ namespace wolfCrypt_detail {
 
         bool which = false; try { which = ds->Get<bool>(); } catch ( ... ) { }
 
-        return which ? &rng : &rng_deterministic;
+        return which ? &rng_deterministic : &rng;
 #else
         return &rng;
 #endif
