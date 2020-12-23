@@ -243,15 +243,26 @@ void test(const operation::Verify& op, const std::optional<bool>& result) {
     (void)result;
 }
 
+static bool IsSpecialCurve(const uint64_t curveID) {
+    switch ( curveID ) {
+        case CF_ECC_CURVE("ed448"):
+        case CF_ECC_CURVE("ed25519"):
+        case CF_ECC_CURVE("x25519"):
+        case CF_ECC_CURVE("x448"):
+            return true;
+        default:
+            return false;
+    }
+}
+
 static void test_ECC_PrivateKey(const uint64_t curveID, const std::string priv) {
     /* Disabled until all modules comply by default */
     return;
 
     /* Private key may be 0 with these curves */
-    if ( curveID == CF_ECC_CURVE("ed448") ) return;
-    if ( curveID == CF_ECC_CURVE("ed25519") ) return;
-    if ( curveID == CF_ECC_CURVE("x25519") ) return;
-    if ( curveID == CF_ECC_CURVE("x448") ) return;
+    if ( IsSpecialCurve(curveID) ) {
+        return;
+    }
 
     if ( priv == "0" ) {
         std::cout << "0 is an invalid elliptic curve private key" << std::endl;
@@ -278,10 +289,9 @@ void test(const operation::ECC_GenerateKeyPair& op, const std::optional<componen
 }
 
 static void test_ECDSA_Signature(const uint64_t curveID, const std::string R, const std::string S) {
-    if ( curveID == CF_ECC_CURVE("ed448") ) return;
-    if ( curveID == CF_ECC_CURVE("ed25519") ) return;
-    if ( curveID == CF_ECC_CURVE("x25519") ) return;
-    if ( curveID == CF_ECC_CURVE("x448") ) return;
+    if ( IsSpecialCurve(curveID) ) {
+        return;
+    }
 
     boost::multiprecision::cpp_int r(R);
     boost::multiprecision::cpp_int s(S);
@@ -299,11 +309,13 @@ void test(const operation::ECDSA_Sign& op, const std::optional<component::ECDSA_
     if ( result != std::nullopt ) {
         test_ECC_PrivateKey(op.curveType.Get(), op.priv.ToTrimmedString());
 
-        if ( op.UseSpecifiedNonce() == true ) {
-            if ( op.nonce.ToTrimmedString() == "0" ) {
-                std::cout << "0 is an invalid ECDSA nonce" << std::endl;
-                ::abort();
-            }
+        if (
+                op.UseSpecifiedNonce() == true &&
+                !IsSpecialCurve(op.curveType.Get()) &&
+                op.nonce.ToTrimmedString() == "0"
+           ) {
+            std::cout << "0 is an invalid ECDSA nonce" << std::endl;
+            ::abort();
         }
 
         test_ECDSA_Signature(op.curveType.Get(),
