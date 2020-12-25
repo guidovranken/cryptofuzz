@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cryptofuzz/components.h>
 #include <cryptofuzz/operations.h>
 #include <openssl/bn.h>

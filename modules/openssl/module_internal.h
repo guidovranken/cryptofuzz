@@ -1,5 +1,7 @@
 #pragma once
 
+#include "bn_ops.h"
+
 namespace cryptofuzz {
 namespace module {
 
@@ -141,24 +143,128 @@ class EC_POINT_Copier {
             /* noret */ EC_POINT_free(point);
         }
 
-        EC_POINT* copy(void) {
-            bool doCopyPoint = true;
+
+        point_conversion_form_t GetForm(void) {
+            uint8_t form = 0;
             try {
-                doCopyPoint = ds.Get<bool>();
+                form = ds.Get<uint8_t>() % 2;
             } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
-            if ( doCopyPoint == true ) {
-                EC_POINT* tmpPoint = newPoint();
-                if ( tmpPoint != nullptr ) {
-                    if ( copyPoint(tmpPoint, point) == 1 ) {
-                        /* Copy succeeded, free the old point */
-                        freePoint(point);
+            if ( form == 0 ) {
+                return POINT_CONVERSION_COMPRESSED;
+            } else if ( form == 1 ) {
+                return POINT_CONVERSION_UNCOMPRESSED;
+            } else if ( form == 2 ) {
+                return POINT_CONVERSION_HYBRID;
+            } else {
+                abort();
+            }
+        }
 
-                        /* Use the copied point */
-                        point = tmpPoint;
-                    } else {
-                        freePoint(tmpPoint);
+
+        EC_POINT* copy(void) {
+            {
+                bool doCopyPoint = true;
+                try {
+                    doCopyPoint = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                if ( doCopyPoint == true ) {
+                    EC_POINT* tmpPoint = newPoint();
+                    if ( tmpPoint != nullptr ) {
+                        if ( copyPoint(tmpPoint, point) == 1 ) {
+                            /* Copy succeeded, free the old point */
+                            freePoint(point);
+
+                            /* Use the copied point */
+                            point = tmpPoint;
+                        } else {
+                            freePoint(tmpPoint);
+                        }
                     }
+                }
+            }
+
+            {
+                bool toOct = true;
+                try {
+                    toOct = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                if ( toOct == true ) {
+                    size_t outSize;
+                    const auto form = GetForm();
+                    OpenSSL_bignum::BN_CTX ctx(ds);
+
+                    outSize = EC_POINT_point2oct(
+                            group->GetPtr(),
+                            point,
+                            form,
+                            nullptr,
+                            0,
+                            ctx.GetPtr());
+
+                    uint8_t* out = util::malloc(outSize);
+                    if ( EC_POINT_point2oct(
+                            group->GetPtr(),
+                            point,
+                            form,
+                            out,
+                            outSize,
+                            ctx.GetPtr()) != 0 ) {
+                        EC_POINT* tmpPoint = newPoint();
+                        if ( tmpPoint != nullptr ) {
+                            CF_ASSERT(
+                                    EC_POINT_oct2point(
+                                                        group->GetPtr(),
+                                                        tmpPoint,
+                                                        out,
+                                                        outSize,
+                                                        ctx.GetPtr()) == 1,
+                                    "Cannot convert point from oct");
+                            freePoint(point);
+                            point = tmpPoint;
+                        }
+
+                    }
+
+                    util::free(out);
+                }
+            }
+
+            {
+                bool toHex = true;
+                try {
+                    toHex = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                if ( toHex == true ) {
+#if !defined(CRYPTOFUZZ_BORINGSSL)
+                    const auto form = GetForm();
+                    OpenSSL_bignum::BN_CTX ctx(ds);
+
+                    char* hex = EC_POINT_point2hex(
+                            group->GetPtr(),
+                            point,
+                            form,
+                            ctx.GetPtr());
+                    if ( hex != nullptr ) {
+                        EC_POINT* tmpPoint = EC_POINT_hex2point(
+                                group->GetPtr(),
+                                hex,
+                                nullptr,
+                                ctx.GetPtr());
+                        // XXX Aborts in LibreSSL
+                        // CF_ASSERT(tmpPoint != nullptr, "Cannot convert point from hex");
+
+                        if ( tmpPoint != nullptr ) {
+                            freePoint(point);
+                            point = tmpPoint;
+                        }
+
+                        OPENSSL_free(hex);
+                    }
+#endif
                 }
             }
 
