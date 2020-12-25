@@ -147,7 +147,7 @@ class EC_POINT_Copier {
         point_conversion_form_t GetForm(void) {
             uint8_t form = 0;
             try {
-                form = ds.Get<uint8_t>() % 2;
+                form = ds.Get<uint8_t>() % 3;
             } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
             if ( form == 0 ) {
@@ -254,8 +254,10 @@ class EC_POINT_Copier {
                                 hex,
                                 nullptr,
                                 ctx.GetPtr());
+#if !defined(CRYPTOFUZZ_LIBRESSL)
                         // XXX Aborts in LibreSSL
-                        // CF_ASSERT(tmpPoint != nullptr, "Cannot convert point from hex");
+                        CF_ASSERT(tmpPoint != nullptr, "Cannot convert point from hex");
+#endif
 
                         if ( tmpPoint != nullptr ) {
                             freePoint(point);
