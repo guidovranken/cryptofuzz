@@ -877,7 +877,7 @@ bool Rand::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             break;
         case    1:
             {
-                const auto len = ds.Get<uint16_t>() % 512;
+                const auto len = ds.Get<uint16_t>() % 100;
                 CF_CHECK_EQ(mp_rand_prime(res.GetPtr(), len, wolfCrypt_detail::GetRNG(), nullptr), MP_OKAY);
                 ret = true;
             }
