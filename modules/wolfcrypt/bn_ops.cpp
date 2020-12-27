@@ -46,7 +46,7 @@ end:
 bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-#if defined(WOLFSSL_SP_MATH)
+#if defined(WOLFSSL_SP_MATH) || defined(WOLFSSL_SP_MATH_ALL)
     /* SP math cannot represent negative numbers, so ensure the result
      * of the subtracton is always >= 0.
      *
@@ -75,7 +75,7 @@ bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     }
 
 end:
-#if defined(WOLFSSL_SP_MATH)
+#if defined(WOLFSSL_SP_MATH) || defined(WOLFSSL_SP_MATH_ALL)
     if ( negative == true ) {
         return false;
     }
