@@ -106,6 +106,24 @@ bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             ret = true;
             break;
 #endif
+        case    3:
+            {
+                static_assert(sizeof(mp_digit) == 8 || sizeof(mp_digit) == 4);
+
+                constexpr int digitBytes = sizeof(mp_digit);
+                constexpr int digitBits = sizeof(mp_digit) * 8;
+
+                const auto numBytes = mp_unsigned_bin_size(bn[1].GetPtr());
+                CF_CHECK_GT(numBytes, digitBytes);
+                CF_CHECK_EQ(numBytes % digitBytes, 1);
+                const int numDigits = (numBytes - 1) / digitBytes;
+                CF_CHECK_EQ(mp_cnt_lsb(bn[1].GetPtr()), digitBits * numDigits);
+
+                CF_CHECK_EQ(mp_lshd(bn.GetDestPtr(0), numDigits), MP_OKAY);
+                CF_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+                ret = true;
+            }
+            break;
     }
 
 end:
