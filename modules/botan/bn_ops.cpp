@@ -36,7 +36,6 @@ bool Mul::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
 }
 
 bool Div::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
-
     try {
         switch ( ds.Get<uint8_t>() ) {
             case    0:
@@ -69,9 +68,24 @@ end:
 }
 
 bool Mod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
-    (void)ds;
-    res = bn[0] % bn[1];
-    return true;
+    try {
+        switch ( ds.Get<uint8_t>() ) {
+            case    0:
+                {
+                    const Botan::Modular_Reducer reducer(bn[1]);
+                    res = reducer.reduce(bn[0]);
+                }
+                return true;
+            case    1:
+                res = ct_modulo(bn[0], bn[1]);
+                return true;
+            case    2:
+                res = bn[0] % bn[1];
+                return true;
+        }
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+    return false;
 }
 
 bool ExpMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
