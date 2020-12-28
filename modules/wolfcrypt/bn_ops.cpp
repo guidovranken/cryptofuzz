@@ -634,6 +634,17 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             }
             break;
 #endif
+        case    3:
+            {
+                mp_digit mp;
+                wolfCrypt_bignum::Bignum tmp(ds);
+
+                CF_CHECK_EQ(mp_montgomery_setup(bn[1].GetPtr(), &mp), MP_OKAY);
+                CF_CHECK_EQ(mp_montgomery_calc_normalization(tmp.GetPtr(), bn[1].GetPtr()), MP_OKAY);
+                CF_CHECK_EQ(mp_mulmod(bn[0].GetPtr(), tmp.GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+                CF_CHECK_EQ(mp_montgomery_reduce(res.GetPtr(), bn[1].GetPtr(), mp), MP_OKAY);
+            }
+            break;
         default:
             goto end;
     }
