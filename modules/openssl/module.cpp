@@ -1863,29 +1863,14 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt(operation::Symm
 
 #if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
     if ( toEVPAEAD(op.cipher.cipherType) != nullptr ) {
-        bool do_AEAD_Encrypt = true;
-        if ( op.tagSize != std::nullopt ) {
-            do_AEAD_Encrypt = false;
-        } else if ( op.aad != std::nullopt ) {
-            do_AEAD_Encrypt = false;
-        }
-
-#if defined(CRYPTOFUZZ_BORINGSSL)
-        if ( do_AEAD_Encrypt == true ) {
-            if ( op.cipher.cipherType.Get() != CF_CIPHER("CHACHA20_POLY1305") &&
-                    op.cipher.cipherType.Get() != CF_CIPHER("XCHACHA20_POLY1305") ) {
-                try {
-                    do_AEAD_Encrypt = ds.Get<bool>();
-                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+        try {
+            if ( ds.Get<bool>() == true ) {
+                return AEAD_Encrypt(op, ds);
             }
-        }
-#endif
 
-        if ( do_AEAD_Encrypt == true ) {
-            return AEAD_Encrypt(op, ds);
-        } else {
             /* Fall through to OpSymmetricEncrypt_EVP/OpSymmetricEncrypt_BIO */
-        }
+
+        } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
     }
 #endif
 
