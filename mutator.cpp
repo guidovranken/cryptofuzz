@@ -125,6 +125,14 @@ uint64_t getRandomCurve(void) {
     }
 }
 
+uint64_t getRandomCalcOp(void) {
+    if ( cryptofuzz_options && cryptofuzz_options->calcOps != std::nullopt ) {
+        return (*cryptofuzz_options->calcOps)[PRNG() % cryptofuzz_options->calcOps->size()];
+    } else {
+        return CalcOpLUT[ PRNG() % (sizeof(CalcOpLUT) / sizeof(CalcOpLUT[0])) ].id;
+    }
+}
+
 extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t maxSize, unsigned int seed) {
     (void)seed;
 
@@ -320,7 +328,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BignumCalc"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["calcOp"] = CalcOpLUT[ PRNG() % (sizeof(CalcOpLUT) / sizeof(CalcOpLUT[0])) ].id;
+                    parameters["calcOp"] = getRandomCalcOp();
                     parameters["bn1"] = getBignum();
                     parameters["bn2"] = getBignum();
                     parameters["bn3"] = getBignum();
