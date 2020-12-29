@@ -1,6 +1,7 @@
 #include "module.h"
 #include <cryptofuzz/util.h>
 #include <cryptofuzz/repository.h>
+#include <botan/aead.h>
 #include <botan/ber_dec.h>
 #include <botan/bigint.h>
 #include <botan/cipher_mode.h>
@@ -195,11 +196,6 @@ end:
     }
 
     template <class OperationType>
-    ::Botan::secure_vector<uint8_t> GetInData(const OperationType& op) {
-        return ::Botan::secure_vector<uint8_t>(GetInPtr(op), GetInPtr(op) + GetInSize(op));
-    }
-
-    template <class OperationType>
     ::Botan::Cipher_Dir GetCryptType(void);
 
     template <>
@@ -212,12 +208,122 @@ end:
         return ::Botan::DECRYPTION;
     }
 
-    template <class ReturnType, class OperationType>
+    template <class OperationType>
+    std::optional<size_t> GetTagSize(const OperationType& op);
+
+    template <>
+    std::optional<size_t> GetTagSize<>(const operation::SymmetricEncrypt& op) {
+        if ( op.tagSize == std::nullopt ) {
+            return std::nullopt;
+        }
+
+        return *op.tagSize;
+    }
+
+    template <>
+    std::optional<size_t> GetTagSize<>(const operation::SymmetricDecrypt& op) {
+        if ( op.tag == std::nullopt ) {
+            return std::nullopt;
+        }
+
+        return op.tag->GetSize();
+    }
+
+    template <class OperationType>
+    const uint8_t* GetTagPtr(const OperationType& op);
+
+    template <>
+    const uint8_t* GetTagPtr<>(const operation::SymmetricEncrypt& op) {
+        (void)op;
+
+        return nullptr;
+    }
+
+    template <>
+    const uint8_t* GetTagPtr<>(const operation::SymmetricDecrypt& op) {
+        if ( op.tag == std::nullopt ) {
+            return nullptr;
+        }
+
+        return op.tag->GetPtr();
+    }
+
+    template <class CryptClass>
+    void SetAAD(std::shared_ptr<CryptClass> crypt, const std::optional<component::AAD>& aad);
+
+    template <>
+    void SetAAD<>(std::shared_ptr<::Botan::AEAD_Mode> crypt, const std::optional<component::AAD>& aad) {
+        if ( aad != std::nullopt ) {
+            crypt->set_ad(aad->Get());
+        }
+    }
+
+    template <>
+    void SetAAD<>(std::shared_ptr<::Botan::Cipher_Mode> crypt, const std::optional<component::AAD>& aad) {
+        (void)crypt;
+        (void)aad;
+    }
+
+    template <class OperationType>
+    ::Botan::secure_vector<uint8_t> GetInData(const OperationType& op) {
+        ::Botan::secure_vector<uint8_t> ret(GetInPtr(op), GetInPtr(op) + GetInSize(op));
+
+        if ( GetCryptType<OperationType>() == ::Botan::ENCRYPTION ) {
+            return ret;
+        }
+
+        const auto tagSize = GetTagSize(op);
+
+        if ( tagSize == std::nullopt || *tagSize == 0 ) {
+            return ret;
+        }
+
+        /* Append the tag */
+
+        ret.resize(ret.size() + *tagSize);
+
+        memcpy(ret.data() + GetInSize(op), GetTagPtr(op), *tagSize);
+
+        return ret;
+    }
+
+    template <class ReturnType>
+    ReturnType ToReturnType(const ::Botan::secure_vector<uint8_t>& data, std::optional<size_t> tagSize);
+
+    template <>
+    component::Ciphertext ToReturnType(const ::Botan::secure_vector<uint8_t>& data, std::optional<size_t> tagSize) {
+        if ( tagSize == std::nullopt ) {
+            return component::Ciphertext(Buffer(data.data(), data.size()));
+        }
+
+        const size_t ciphertextSize = data.size() - *tagSize;
+
+        return component::Ciphertext(Buffer(data.data(), ciphertextSize), Buffer(data.data() + ciphertextSize, *tagSize));
+    }
+
+    template <>
+    component::Cleartext ToReturnType(const ::Botan::secure_vector<uint8_t>& data, std::optional<size_t> tagSize) {
+        (void)tagSize;
+
+        return component::Cleartext(Buffer(data.data(), data.size()));
+    }
+
+    template <class ReturnType, class OperationType, class CryptClass>
         std::optional<ReturnType> Crypt(OperationType& op) {
             std::optional<ReturnType> ret = std::nullopt;
+
+            if ( typeid(CryptClass) == typeid(::Botan::Cipher_Mode) ) {
+                if ( op.aad != std::nullopt ) {
+                    return std::nullopt;
+                }
+                if ( GetTagSize(op) != std::nullopt ) {
+                    return std::nullopt;
+                }
+            }
+
             Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-            std::unique_ptr<::Botan::Cipher_Mode> crypt = nullptr;
+            std::shared_ptr<CryptClass> crypt = nullptr;
             const ::Botan::SymmetricKey key(op.cipher.key.GetPtr(), op.cipher.key.GetSize());
             const ::Botan::InitializationVector iv(op.cipher.iv.GetPtr(), op.cipher.iv.GetSize());
             ::Botan::secure_vector<uint8_t> in = GetInData(op);
@@ -225,13 +331,25 @@ end:
             bool useOneShot = true;
             util::Multipart parts;
 
+            const std::optional<size_t> tagSize = GetTagSize(op);
+
             try {
                 /* Initialize */
                 {
-                    std::optional<std::string> algoString;
-                    CF_CHECK_NE(algoString = Botan_detail::CipherIDToString(op.cipher.cipherType.Get()), std::nullopt);
-                    CF_CHECK_NE(crypt = ::Botan::Cipher_Mode::create(*algoString, GetCryptType<OperationType>()), nullptr);
+                    std::optional<std::string> _algoString;
+                    CF_CHECK_NE(_algoString = Botan_detail::CipherIDToString(op.cipher.cipherType.Get()), std::nullopt);
+                    std::string algoString;
+                    if ( tagSize == std::nullopt ) {
+                        algoString = Botan_detail::parenthesize(*_algoString, std::to_string(0));
+                    } else {
+                        algoString = Botan_detail::parenthesize(*_algoString, std::to_string(*tagSize));
+                    }
+
+                    CF_CHECK_NE(crypt = CryptClass::create(algoString, GetCryptType<OperationType>()), nullptr);
                     crypt->set_key(key);
+
+                    SetAAD(crypt, op.aad);
+
                     crypt->start(iv.bits_of());
                     if ( crypt->update_granularity() == 1 ) {
                         try {
@@ -245,8 +363,6 @@ end:
 
                 /* Process */
                 {
-                    /* TODO aad/tag */
-
                     if ( useOneShot == true ) {
                         crypt->finish(in);
                     } else {
@@ -263,9 +379,9 @@ end:
                     /* TODO take max output size in consideration */
 
                     if ( useOneShot == true ) {
-                        ret = ReturnType(Buffer(in.data(), in.size()));
+                        ret = ToReturnType<ReturnType>(in, tagSize);
                     } else {
-                        ret = ReturnType(Buffer(out.data(), out.size()));
+                        ret = ToReturnType<ReturnType>(::Botan::secure_vector<uint8_t>(out.data(), out.data() + out.size()), tagSize);
                     }
                 }
             } catch ( ... ) { }
@@ -327,11 +443,28 @@ end:
 }
 
 std::optional<component::Ciphertext> Botan::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
-    return Botan_detail::Crypt<component::Ciphertext, operation::SymmetricEncrypt>(op);
+    if ( op.cipher.cipherType.Is(CF_CIPHER("CHACHA20_POLY1305")) && op.cipher.iv.GetSize() == 24 ) {
+        /* Botan interpretes CHACHA20_POLY1305 + 192 bits IV as XCHACHA20_POLY1305 */
+        return std::nullopt;
+    }
+
+    if ( cryptofuzz::repository::IsAEAD(op.cipher.cipherType.Get()) ) {
+        return Botan_detail::Crypt<component::Ciphertext, operation::SymmetricEncrypt, ::Botan::AEAD_Mode>(op);
+    } else {
+        return Botan_detail::Crypt<component::Ciphertext, operation::SymmetricEncrypt, ::Botan::Cipher_Mode>(op);
+    }
 }
 
 std::optional<component::Cleartext> Botan::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
-    return Botan_detail::Crypt<component::Cleartext, operation::SymmetricDecrypt>(op);
+    if ( op.cipher.cipherType.Is(CF_CIPHER("CHACHA20_POLY1305")) && op.cipher.iv.GetSize() == 24 ) {
+        return std::nullopt;
+    }
+
+    if ( cryptofuzz::repository::IsAEAD(op.cipher.cipherType.Get()) ) {
+        return Botan_detail::Crypt<component::Cleartext, operation::SymmetricDecrypt, ::Botan::AEAD_Mode>(op);
+    } else {
+        return Botan_detail::Crypt<component::Cleartext, operation::SymmetricDecrypt, ::Botan::Cipher_Mode>(op);
+    }
 }
 
 std::optional<component::Key> Botan::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
