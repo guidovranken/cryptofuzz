@@ -101,7 +101,7 @@ extern "C" size_t LLVMFuzzerMutate(uint8_t* data, size_t size, size_t maxSize);
 
 extern cryptofuzz::Options* cryptofuzz_options;
 
-uint64_t getRandomCipher(void) {
+static uint64_t getRandomCipher(void) {
     if ( cryptofuzz_options && cryptofuzz_options->ciphers != std::nullopt ) {
         return (*cryptofuzz_options->ciphers)[PRNG() % cryptofuzz_options->ciphers->size()];
     } else {
@@ -109,7 +109,7 @@ uint64_t getRandomCipher(void) {
     }
 }
 
-uint64_t getRandomDigest(void) {
+static uint64_t getRandomDigest(void) {
     if ( cryptofuzz_options && cryptofuzz_options->digests != std::nullopt ) {
         return (*cryptofuzz_options->digests)[PRNG() % cryptofuzz_options->digests->size()];
     } else {
@@ -117,7 +117,7 @@ uint64_t getRandomDigest(void) {
     }
 }
 
-uint64_t getRandomCurve(void) {
+static uint64_t getRandomCurve(void) {
     if ( cryptofuzz_options && cryptofuzz_options->curves != std::nullopt ) {
         return (*cryptofuzz_options->curves)[PRNG() % cryptofuzz_options->curves->size()];
     } else {
@@ -125,7 +125,7 @@ uint64_t getRandomCurve(void) {
     }
 }
 
-uint64_t getRandomCalcOp(void) {
+static uint64_t getRandomCalcOp(void) {
     if ( cryptofuzz_options && cryptofuzz_options->calcOps != std::nullopt ) {
         return (*cryptofuzz_options->calcOps)[PRNG() % cryptofuzz_options->calcOps->size()];
     } else {
