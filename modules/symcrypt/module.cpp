@@ -90,10 +90,12 @@ namespace SymCrypt_detail {
             case CF_CIPHER("AES_192_CBC"):
             case CF_CIPHER("AES_256_CBC"):
                 return SymCryptAesBlockCipher;
+#if 0
             case CF_CIPHER("RC2_ECB"):
             case CF_CIPHER("RC2_CFB"):
             case CF_CIPHER("RC2_CBC"):
                 return SymCryptRc2BlockCipher;
+#endif
             case CF_CIPHER("DESX_A_CBC"):
                 return SymCryptDesxBlockCipher;
             case CF_CIPHER("DES_EDE3_ECB"):
