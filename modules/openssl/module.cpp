@@ -1695,8 +1695,14 @@ std::optional<component::Ciphertext> OpenSSL::AEAD_Encrypt(operation::SymmetricE
 
     std::optional<component::Ciphertext> ret = std::nullopt;
 
-    if ( op.tagSize == std::nullopt ) {
-        return ret;
+    /* The AEAD API will use the default tag size if a tag size of 0
+     * is specified, unless the cipher is GCM_SIV
+     */
+    if (    !op.cipher.cipherType.Is(CF_CIPHER("AES_128_GCM_SIV")) &&
+            !op.cipher.cipherType.Is(CF_CIPHER("AES_256_GCM_SIV")) ) {
+        if ( op.tagSize == std::nullopt || *op.tagSize == 0 ) {
+            return ret;
+        }
     }
 
     const EVP_AEAD* aead = nullptr;
@@ -1742,10 +1748,7 @@ std::optional<component::Ciphertext> OpenSSL::AEAD_Encrypt(operation::SymmetricE
         /* The tag should be part of the output.
          * Hence, the total output size should be equal or greater than the tag size.
          * Note that removing this check will lead to an overflow below. */
-        if ( tagSize > len ) {
-            printf("tagSize > len in %s\n", __FUNCTION__);
-            abort();
-        }
+        CF_ASSERT(op.cleartext.GetSize() + tagSize == len, "input + tag size != output length");
 
         const size_t ciphertextSize = len - tagSize;
 
