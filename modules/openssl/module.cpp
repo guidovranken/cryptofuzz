@@ -10,6 +10,7 @@
 #include <openssl/kdf.h>
 #include <openssl/core_names.h>
 #endif
+#include <openssl/rand.h>
 
 #if defined(CRYPTOFUZZ_BORINGSSL)
 #include <openssl/curve25519.h>
@@ -27,6 +28,61 @@ extern "C" { void X448_public_from_private(uint8_t out_public_value[56], const u
 
 namespace cryptofuzz {
 namespace module {
+
+fuzzing::datasource::Datasource* global_ds = nullptr;
+
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+const RAND_METHOD* cryptofuzz_openssl_rand_default_method;
+
+static int cryptofuzz_openssl_default_rand_bytes(unsigned char *buf, int num) {
+    CF_ASSERT(cryptofuzz_openssl_rand_default_method != nullptr, "default rand method is NULL");
+
+    return cryptofuzz_openssl_rand_default_method->bytes(buf, num);
+}
+
+static int cryptofuzz_openssl_rand_bytes(unsigned char *buf, int num)
+{
+    CF_ASSERT(num >= 0, "called rand_bytes with num < 0");
+
+    if ( num == 0 ) {
+        return 1;
+    }
+
+    if ( global_ds == nullptr ) {
+        return cryptofuzz_openssl_default_rand_bytes(buf, num);
+    }
+
+    try {
+        if ( global_ds->Get<bool>() == false ) {
+            return cryptofuzz_openssl_default_rand_bytes(buf, num);
+        }
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+        return cryptofuzz_openssl_default_rand_bytes(buf, num);
+    }
+
+    try {
+        const auto data = global_ds->GetData(0, num, num);
+        memcpy(buf, data.data(), num);
+        return 1;
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+        return 0;
+    }
+}
+
+static int cryptofuzz_openssl_rand_status(void)
+{
+    return 1;
+}
+
+static RAND_METHOD cryptofuzz_openssl_rand_method = {
+    nullptr,
+    cryptofuzz_openssl_rand_bytes,
+    nullptr,
+    nullptr,
+    cryptofuzz_openssl_rand_bytes,
+    cryptofuzz_openssl_rand_status
+};
+#endif
 
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
 #if 1
@@ -70,6 +126,13 @@ OpenSSL::OpenSSL(void) :
      OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS, nullptr);
 #else
      OpenSSL_add_all_algorithms();
+#endif
+
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+     CF_ASSERT((cryptofuzz_openssl_rand_default_method = RAND_get_rand_method()) != nullptr,
+         "Cannot retrieve default rand method");
+     CF_ASSERT(RAND_set_rand_method(&cryptofuzz_openssl_rand_method) == 1,
+         "Cannot set default rand method");
 #endif
 }
 
@@ -3216,101 +3279,108 @@ int BN_bn2binpad(const BIGNUM *a, unsigned char *to, int tolen)
 std::optional<component::ECC_PublicKey> OpenSSL::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    global_ds = &ds;
+
     char* pub_x_str = nullptr;
     char* pub_y_str = nullptr;
 
-    if ( op.curveType.Get() == CF_ECC_CURVE("x25519") ) {
-        uint8_t priv_bytes[32];
-        uint8_t pub_bytes[32];
-        OpenSSL_bignum::Bignum priv(ds), pub(ds);
-        CF_CHECK_EQ(pub.New(), true);
+    try {
+        if ( op.curveType.Get() == CF_ECC_CURVE("x25519") ) {
+            uint8_t priv_bytes[32];
+            uint8_t pub_bytes[32];
+            OpenSSL_bignum::Bignum priv(ds), pub(ds);
+            CF_CHECK_EQ(pub.New(), true);
 
-        CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
+            CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
 
-        /* Load private key */
-        CF_CHECK_NE(BN_bn2binpad(priv.GetPtr(), priv_bytes, sizeof(priv_bytes)), -1);
+            /* Load private key */
+            CF_CHECK_NE(BN_bn2binpad(priv.GetPtr(), priv_bytes, sizeof(priv_bytes)), -1);
 
-        /* Private -> public */
-        /* noret */ X25519_public_from_private(pub_bytes, priv_bytes);
+            /* Private -> public */
+            /* noret */ X25519_public_from_private(pub_bytes, priv_bytes);
 
-        /* Convert public key */
-        CF_CHECK_NE(BN_bin2bn(pub_bytes, sizeof(pub_bytes), pub.GetDestPtr()), nullptr);
+            /* Convert public key */
+            CF_CHECK_NE(BN_bin2bn(pub_bytes, sizeof(pub_bytes), pub.GetDestPtr()), nullptr);
 
-        CF_CHECK_NE(pub_x_str = BN_bn2dec(pub.GetPtr()), nullptr);
+            CF_CHECK_NE(pub_x_str = BN_bn2dec(pub.GetPtr()), nullptr);
 
-        /* Save bignum x/y */
-        ret = { std::string(pub_x_str), "0" };
+            /* Save bignum x/y */
+            ret = { std::string(pub_x_str), "0" };
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL)
-    } else if ( op.curveType.Get() == CF_ECC_CURVE("x448") ) {
-        uint8_t priv_bytes[56];
-        uint8_t pub_bytes[56];
-        OpenSSL_bignum::Bignum priv(ds), pub(ds);
-        CF_CHECK_EQ(pub.New(), true);
+        } else if ( op.curveType.Get() == CF_ECC_CURVE("x448") ) {
+            uint8_t priv_bytes[56];
+            uint8_t pub_bytes[56];
+            OpenSSL_bignum::Bignum priv(ds), pub(ds);
+            CF_CHECK_EQ(pub.New(), true);
 
-        CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
+            CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
 
-        /* Load private key */
-        CF_CHECK_NE(BN_bn2binpad(priv.GetPtr(), priv_bytes, sizeof(priv_bytes)), -1);
+            /* Load private key */
+            CF_CHECK_NE(BN_bn2binpad(priv.GetPtr(), priv_bytes, sizeof(priv_bytes)), -1);
 
-        /* Private -> public */
-        /* noret */ X448_public_from_private(pub_bytes, priv_bytes);
+            /* Private -> public */
+            /* noret */ X448_public_from_private(pub_bytes, priv_bytes);
 
-        /* Convert public key */
-        CF_CHECK_NE(BN_bin2bn(pub_bytes, sizeof(pub_bytes), pub.GetDestPtr()), nullptr);
+            /* Convert public key */
+            CF_CHECK_NE(BN_bin2bn(pub_bytes, sizeof(pub_bytes), pub.GetDestPtr()), nullptr);
 
-        CF_CHECK_NE(pub_x_str = BN_bn2dec(pub.GetPtr()), nullptr);
+            CF_CHECK_NE(pub_x_str = BN_bn2dec(pub.GetPtr()), nullptr);
 
-        /* Save bignum x/y */
-        ret = { std::string(pub_x_str), "0" };
+            /* Save bignum x/y */
+            ret = { std::string(pub_x_str), "0" };
 #endif
-    } else {
-        CF_EC_KEY key(ds);
-        std::shared_ptr<CF_EC_GROUP> group = nullptr;
-        OpenSSL_bignum::Bignum prv(ds);
-        std::unique_ptr<CF_EC_POINT> pub = nullptr;
-        OpenSSL_bignum::Bignum pub_x(ds);
-        OpenSSL_bignum::Bignum pub_y(ds);
+        } else {
+            CF_EC_KEY key(ds);
+            std::shared_ptr<CF_EC_GROUP> group = nullptr;
+            OpenSSL_bignum::Bignum prv(ds);
+            std::unique_ptr<CF_EC_POINT> pub = nullptr;
+            OpenSSL_bignum::Bignum pub_x(ds);
+            OpenSSL_bignum::Bignum pub_y(ds);
 
-        {
-            std::optional<int> curveNID;
-            CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
-            CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
-            group->Lock();
-            CF_CHECK_NE(group->GetPtr(), nullptr);
-        }
+            {
+                std::optional<int> curveNID;
+                CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
+                CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
+                group->Lock();
+                CF_CHECK_NE(group->GetPtr(), nullptr);
+            }
 
-        CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group->GetPtr()), 1);
+            CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group->GetPtr()), 1);
 
-        /* Load private key */
-        CF_CHECK_EQ(prv.Set(op.priv.ToString(ds)), true);
+            /* Load private key */
+            CF_CHECK_EQ(prv.Set(op.priv.ToString(ds)), true);
 
-        /* Set private key */
-        CF_CHECK_EQ(EC_KEY_set_private_key(key.GetPtr(), prv.GetPtr()), 1);
+            /* Set private key */
+            CF_CHECK_EQ(EC_KEY_set_private_key(key.GetPtr(), prv.GetPtr()), 1);
 
-        /* Compute public key */
-        CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
-        CF_CHECK_EQ(EC_POINT_mul(group->GetPtr(), pub->GetPtr(), prv.GetPtr(), nullptr, nullptr, nullptr), 1);
+            /* Compute public key */
+            CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+            CF_CHECK_EQ(EC_POINT_mul(group->GetPtr(), pub->GetPtr(), prv.GetPtr(), nullptr, nullptr, nullptr), 1);
 
-        CF_CHECK_EQ(pub_x.New(), true);
-        CF_CHECK_EQ(pub_y.New(), true);
+            CF_CHECK_EQ(pub_x.New(), true);
+            CF_CHECK_EQ(pub_y.New(), true);
 
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
-    CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), pub->GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
+            CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), pub->GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
 #else
-    CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group->GetPtr(), pub->GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
+            CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group->GetPtr(), pub->GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
 #endif
 
-        /* Convert bignum x/y to strings */
-        CF_CHECK_NE(pub_x_str = BN_bn2dec(pub_x.GetPtr()), nullptr);
-        CF_CHECK_NE(pub_y_str = BN_bn2dec(pub_y.GetPtr()), nullptr);
+            /* Convert bignum x/y to strings */
+            CF_CHECK_NE(pub_x_str = BN_bn2dec(pub_x.GetPtr()), nullptr);
+            CF_CHECK_NE(pub_y_str = BN_bn2dec(pub_y.GetPtr()), nullptr);
 
-        /* Save bignum x/y */
-        ret = { std::string(pub_x_str), std::string(pub_y_str) };
-    }
+            /* Save bignum x/y */
+            ret = { std::string(pub_x_str), std::string(pub_y_str) };
+        }
+    } catch ( ... ) { }
 
 end:
     OPENSSL_free(pub_x_str);
     OPENSSL_free(pub_y_str);
+
+    global_ds = nullptr;
 
     return ret;
 }
@@ -3319,53 +3389,59 @@ std::optional<component::ECC_KeyPair> OpenSSL::OpECC_GenerateKeyPair(operation::
     std::optional<component::ECC_KeyPair> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
+    global_ds = &ds;
+
     EC_KEY* key = nullptr;
-    const BIGNUM* priv = nullptr;
     char* priv_str = nullptr;
-    std::shared_ptr<CF_EC_GROUP> group = nullptr;
-    std::unique_ptr<CF_EC_POINT> pub = nullptr;
     BIGNUM* pub_x = nullptr;
     BIGNUM* pub_y = nullptr;
     char* pub_x_str = nullptr;
     char* pub_y_str = nullptr;
 
-    std::optional<int> curveNID;
-    CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
-    CF_CHECK_NE(key = EC_KEY_new_by_curve_name(*curveNID), nullptr);
-    CF_CHECK_EQ(EC_KEY_generate_key(key), 1);
+    try {
+        const BIGNUM* priv = nullptr;
+        std::shared_ptr<CF_EC_GROUP> group = nullptr;
+        std::unique_ptr<CF_EC_POINT> pub = nullptr;
 
-    /* Private key */
-    {
-        CF_CHECK_NE(priv = EC_KEY_get0_private_key(key), nullptr);
-        CF_CHECK_NE(priv_str = BN_bn2dec(priv), nullptr);
-    }
+        std::optional<int> curveNID;
+        CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
+        CF_CHECK_NE(key = EC_KEY_new_by_curve_name(*curveNID), nullptr);
+        CF_CHECK_EQ(EC_KEY_generate_key(key), 1);
 
-    /* Public key */
-    {
-        CF_CHECK_NE(pub_x = BN_new(), nullptr);
-        CF_CHECK_NE(pub_y = BN_new(), nullptr);
-        CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
-        group->Lock();
-        CF_CHECK_NE(group->GetPtr(), nullptr);
-        CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
-        CF_CHECK_EQ(EC_POINT_mul(group->GetPtr(), pub->GetPtr(), priv, nullptr, nullptr, nullptr), 1);
+        /* Private key */
+        {
+            CF_CHECK_NE(priv = EC_KEY_get0_private_key(key), nullptr);
+            CF_CHECK_NE(priv_str = BN_bn2dec(priv), nullptr);
+        }
+
+        /* Public key */
+        {
+            CF_CHECK_NE(pub_x = BN_new(), nullptr);
+            CF_CHECK_NE(pub_y = BN_new(), nullptr);
+            CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
+            group->Lock();
+            CF_CHECK_NE(group->GetPtr(), nullptr);
+            CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+            CF_CHECK_EQ(EC_POINT_mul(group->GetPtr(), pub->GetPtr(), priv, nullptr, nullptr, nullptr), 1);
 
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
-        CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), pub->GetPtr(), pub_x, pub_y, nullptr), 0);
+            CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), pub->GetPtr(), pub_x, pub_y, nullptr), 0);
 #else
-        CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group->GetPtr(), pub->GetPtr(), pub_x, pub_y, nullptr), 0);
+            CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group->GetPtr(), pub->GetPtr(), pub_x, pub_y, nullptr), 0);
 #endif
 
-        CF_CHECK_NE(pub_x_str = BN_bn2dec(pub_x), nullptr);
-        CF_CHECK_NE(pub_y_str = BN_bn2dec(pub_y), nullptr);
-    }
+            CF_CHECK_NE(pub_x_str = BN_bn2dec(pub_x), nullptr);
+            CF_CHECK_NE(pub_y_str = BN_bn2dec(pub_y), nullptr);
+        }
 
-    {
-        ret = {
-            std::string(priv_str),
-            { std::string(pub_x_str), std::string(pub_y_str) }
-        };
-    }
+        {
+            ret = {
+                std::string(priv_str),
+                { std::string(pub_x_str), std::string(pub_y_str) }
+            };
+        }
+    } catch ( ... ) { }
+
 end:
     EC_KEY_free(key);
     OPENSSL_free(priv_str);
@@ -3373,6 +3449,9 @@ end:
     BN_free(pub_y);
     OPENSSL_free(pub_x_str);
     OPENSSL_free(pub_y_str);
+
+    global_ds = nullptr;
+
     return ret;
 }
 
@@ -3414,69 +3493,74 @@ end:
 std::optional<component::ECDSA_Signature> OpenSSL::OpECDSA_Sign(operation::ECDSA_Sign& op) {
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
-    ECDSA_SIG* signature = nullptr;
 
-    CF_EC_KEY key(ds);
-    std::shared_ptr<CF_EC_GROUP> group = nullptr;
-    OpenSSL_bignum::Bignum prv(ds);
-    std::unique_ptr<CF_EC_POINT> pub = nullptr;
-    OpenSSL_bignum::Bignum pub_x(ds);
-    OpenSSL_bignum::Bignum pub_y(ds);
+    global_ds = &ds;
+
+    ECDSA_SIG* signature = nullptr;
     char* pub_x_str = nullptr;
     char* pub_y_str = nullptr;
-    const BIGNUM *R = nullptr, *S = nullptr;
     char* sig_r_str = nullptr;
     char* sig_s_str = nullptr;
 
-    CF_CHECK_TRUE(op.UseRandomNonce());
-    CF_CHECK_TRUE(op.digestType.Is(CF_DIGEST("NULL")));
+    try {
+        CF_EC_KEY key(ds);
+        std::shared_ptr<CF_EC_GROUP> group = nullptr;
+        OpenSSL_bignum::Bignum prv(ds);
+        std::unique_ptr<CF_EC_POINT> pub = nullptr;
+        OpenSSL_bignum::Bignum pub_x(ds);
+        OpenSSL_bignum::Bignum pub_y(ds);
+        const BIGNUM *R = nullptr, *S = nullptr;
 
-    {
-        std::optional<int> curveNID;
-        CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
-        CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
-        group->Lock();
-        CF_CHECK_NE(group->GetPtr(), nullptr);
-    }
+        CF_CHECK_TRUE(op.UseRandomNonce());
+        CF_CHECK_TRUE(op.digestType.Is(CF_DIGEST("NULL")));
 
-    CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group->GetPtr()), 1);
+        {
+            std::optional<int> curveNID;
+            CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
+            CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
+            group->Lock();
+            CF_CHECK_NE(group->GetPtr(), nullptr);
+        }
 
-    /* Load private key */
-    CF_CHECK_EQ(prv.Set(op.priv.ToString(ds)), true);
+        CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group->GetPtr()), 1);
 
-    /* Set private key */
-    CF_CHECK_EQ(EC_KEY_set_private_key(key.GetPtr(), prv.GetPtr()), 1);
+        /* Load private key */
+        CF_CHECK_EQ(prv.Set(op.priv.ToString(ds)), true);
 
-    /* Compute public key */
-    CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
-    CF_CHECK_EQ(EC_POINT_mul(group->GetPtr(), pub->GetPtr(), prv.GetPtr(), nullptr, nullptr, nullptr), 1);
+        /* Set private key */
+        CF_CHECK_EQ(EC_KEY_set_private_key(key.GetPtr(), prv.GetPtr()), 1);
 
-    CF_CHECK_EQ(pub_x.New(), true);
-    CF_CHECK_EQ(pub_y.New(), true);
+        /* Compute public key */
+        CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+        CF_CHECK_EQ(EC_POINT_mul(group->GetPtr(), pub->GetPtr(), prv.GetPtr(), nullptr, nullptr, nullptr), 1);
+
+        CF_CHECK_EQ(pub_x.New(), true);
+        CF_CHECK_EQ(pub_y.New(), true);
 
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
-    CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), pub->GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
+        CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), pub->GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
 #else
-    CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group->GetPtr(), pub->GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
+        CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group->GetPtr(), pub->GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
 #endif
 
-    CF_CHECK_NE(pub_x_str = BN_bn2dec(pub_x.GetPtr()), nullptr);
-    CF_CHECK_NE(pub_y_str = BN_bn2dec(pub_y.GetPtr()), nullptr);
+        CF_CHECK_NE(pub_x_str = BN_bn2dec(pub_x.GetPtr()), nullptr);
+        CF_CHECK_NE(pub_y_str = BN_bn2dec(pub_y.GetPtr()), nullptr);
 
-    CF_CHECK_NE(signature = ECDSA_do_sign(op.cleartext.GetPtr(), op.cleartext.GetSize(), key.GetPtr()), nullptr);
+        CF_CHECK_NE(signature = ECDSA_do_sign(op.cleartext.GetPtr(), op.cleartext.GetSize(), key.GetPtr()), nullptr);
 #if 0
-    CF_CHECK_NE(R = ECDSA_SIG_get0_r(signature), nullptr);
-    CF_CHECK_NE(S = ECDSA_SIG_get0_s(signature), nullptr);
+        CF_CHECK_NE(R = ECDSA_SIG_get0_r(signature), nullptr);
+        CF_CHECK_NE(S = ECDSA_SIG_get0_s(signature), nullptr);
 #endif
-    /* noret */ ECDSA_SIG_get0(signature, &R, &S);
-    CF_CHECK_NE(R, nullptr);
-    CF_CHECK_NE(S, nullptr);
+        /* noret */ ECDSA_SIG_get0(signature, &R, &S);
+        CF_CHECK_NE(R, nullptr);
+        CF_CHECK_NE(S, nullptr);
 
-    /* Convert bignum x/y to strings */
-    CF_CHECK_NE(sig_r_str = BN_bn2dec(R), nullptr);
-    CF_CHECK_NE(sig_s_str  = BN_bn2dec(S), nullptr);
+        /* Convert bignum x/y to strings */
+        CF_CHECK_NE(sig_r_str = BN_bn2dec(R), nullptr);
+        CF_CHECK_NE(sig_s_str  = BN_bn2dec(S), nullptr);
 
-    ret = { {sig_r_str, sig_s_str}, {pub_x_str, pub_y_str} };
+        ret = { {sig_r_str, sig_s_str}, {pub_x_str, pub_y_str} };
+    } catch ( ... ) { }
 
 end:
     if ( signature != nullptr ) {
@@ -3487,6 +3571,8 @@ end:
     OPENSSL_free(sig_r_str);
     OPENSSL_free(sig_s_str);
 
+    global_ds = nullptr;
+
     return ret;
 }
 
@@ -3494,85 +3580,91 @@ std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    CF_EC_KEY key(ds);
-    std::shared_ptr<CF_EC_GROUP> group = nullptr;
+    global_ds = &ds;
 
     ECDSA_SIG* signature = nullptr;
 
-    std::unique_ptr<CF_EC_POINT> pub = nullptr;
-    OpenSSL_bignum::Bignum pub_x(ds);
-    OpenSSL_bignum::Bignum pub_y(ds);
+    try {
+        CF_EC_KEY key(ds);
+        std::shared_ptr<CF_EC_GROUP> group = nullptr;
 
-    OpenSSL_bignum::Bignum sig_s(ds);
-    OpenSSL_bignum::Bignum sig_r(ds);
+        std::unique_ptr<CF_EC_POINT> pub = nullptr;
+        OpenSSL_bignum::Bignum pub_x(ds);
+        OpenSSL_bignum::Bignum pub_y(ds);
 
-    /* Initialize */
-    {
+        OpenSSL_bignum::Bignum sig_s(ds);
+        OpenSSL_bignum::Bignum sig_r(ds);
+
+        /* Initialize */
         {
-            std::optional<int> curveNID;
-            CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
-            CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
-            group->Lock();
-            CF_CHECK_NE(group->GetPtr(), nullptr);
-        }
-        CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group->GetPtr()), 1);
+            {
+                std::optional<int> curveNID;
+                CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
+                CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
+                group->Lock();
+                CF_CHECK_NE(group->GetPtr(), nullptr);
+            }
+            CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group->GetPtr()), 1);
 
-        /* Construct signature */
-        CF_CHECK_EQ(sig_r.Set(op.signature.signature.first.ToString(ds)), true);
-        CF_CHECK_EQ(sig_s.Set(op.signature.signature.second.ToString(ds)), true);
-        CF_CHECK_NE(signature = ECDSA_SIG_new(), nullptr);
+            /* Construct signature */
+            CF_CHECK_EQ(sig_r.Set(op.signature.signature.first.ToString(ds)), true);
+            CF_CHECK_EQ(sig_s.Set(op.signature.signature.second.ToString(ds)), true);
+            CF_CHECK_NE(signature = ECDSA_SIG_new(), nullptr);
 #if defined(CRYPTOFUZZ_OPENSSL_102)
-        BN_free(signature->r);
-        BN_free(signature->s);
-        signature->r = sig_r.GetPtr(false);
-        signature->s = sig_s.GetPtr(false);
+            BN_free(signature->r);
+            BN_free(signature->s);
+            signature->r = sig_r.GetPtr(false);
+            signature->s = sig_s.GetPtr(false);
 #else
-        CF_CHECK_EQ(ECDSA_SIG_set0(signature, sig_r.GetDestPtr(false), sig_s.GetDestPtr(false)), 1);
+            CF_CHECK_EQ(ECDSA_SIG_set0(signature, sig_r.GetDestPtr(false), sig_s.GetDestPtr(false)), 1);
 #endif
-        /* 'signature' now has ownership, and the BIGNUMs will be freed by ECDSA_SIG_free */
-        sig_r.ReleaseOwnership();
-        sig_s.ReleaseOwnership();
+            /* 'signature' now has ownership, and the BIGNUMs will be freed by ECDSA_SIG_free */
+            sig_r.ReleaseOwnership();
+            sig_s.ReleaseOwnership();
 
-        /* Construct key */
-        CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
-        CF_CHECK_EQ(pub_x.Set(op.signature.pub.first.ToString(ds)), true);
-        CF_CHECK_EQ(pub_y.Set(op.signature.pub.second.ToString(ds)), true);
+            /* Construct key */
+            CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+            CF_CHECK_EQ(pub_x.Set(op.signature.pub.first.ToString(ds)), true);
+            CF_CHECK_EQ(pub_y.Set(op.signature.pub.second.ToString(ds)), true);
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
-        CF_CHECK_NE(EC_POINT_set_affine_coordinates(group->GetPtr(), pub->GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+            CF_CHECK_NE(EC_POINT_set_affine_coordinates(group->GetPtr(), pub->GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
 #else
-        CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group->GetPtr(), pub->GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+            CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group->GetPtr(), pub->GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
 #endif
-        CF_CHECK_EQ(EC_KEY_set_public_key(key.GetPtr(), pub->GetPtr()), 1);
-    }
-
-    /* Process */
-    {
-        int res;
-        if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
-            res = ECDSA_do_verify(op.cleartext.GetPtr(), op.cleartext.GetSize(), signature, key.GetPtr());
-        } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
-            uint8_t CT[32];
-            SHA256(op.cleartext.GetPtr(), op.cleartext.GetSize(), CT);
-            res = ECDSA_do_verify(CT, sizeof(CT), signature, key.GetPtr());
-        } else {
-            /* TODO other digests */
-            goto end;
+            CF_CHECK_EQ(EC_KEY_set_public_key(key.GetPtr(), pub->GetPtr()), 1);
         }
 
-        if ( res == 0 ) {
-            ret = false;
-        } else if ( res == 1 ) {
-            ret = true;
-        } else {
-            /* ECDSA_do_verify failed -- don't set ret */
-        }
+        /* Process */
+        {
+            int res;
+            if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
+                res = ECDSA_do_verify(op.cleartext.GetPtr(), op.cleartext.GetSize(), signature, key.GetPtr());
+            } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
+                uint8_t CT[32];
+                SHA256(op.cleartext.GetPtr(), op.cleartext.GetSize(), CT);
+                res = ECDSA_do_verify(CT, sizeof(CT), signature, key.GetPtr());
+            } else {
+                /* TODO other digests */
+                goto end;
+            }
 
-    }
+            if ( res == 0 ) {
+                ret = false;
+            } else if ( res == 1 ) {
+                ret = true;
+            } else {
+                /* ECDSA_do_verify failed -- don't set ret */
+            }
+
+        }
+    } catch ( ... ) { }
 
 end:
     if ( signature != nullptr ) {
         ECDSA_SIG_free(signature);
     }
+
+    global_ds = nullptr;
 
     return ret;
 }
@@ -3739,167 +3831,173 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    OpenSSL_bignum::BN_CTX ctx(ds);
-    OpenSSL_bignum::BignumCluster bn(ds,
-        OpenSSL_bignum::Bignum(ds),
-        OpenSSL_bignum::Bignum(ds),
-        OpenSSL_bignum::Bignum(ds),
-        OpenSSL_bignum::Bignum(ds));
-    OpenSSL_bignum::Bignum res(ds);
-    std::unique_ptr<OpenSSL_bignum::Operation> opRunner = nullptr;
+    global_ds = &ds;
 
-    CF_CHECK_EQ(res.New(), true);
-    CF_CHECK_EQ(bn.New(0), true);
-    CF_CHECK_EQ(bn.New(1), true);
-    CF_CHECK_EQ(bn.New(2), true);
-    CF_CHECK_EQ(bn.New(3), true);
+    try {
+        OpenSSL_bignum::BN_CTX ctx(ds);
+        OpenSSL_bignum::BignumCluster bn(ds,
+                OpenSSL_bignum::Bignum(ds),
+                OpenSSL_bignum::Bignum(ds),
+                OpenSSL_bignum::Bignum(ds),
+                OpenSSL_bignum::Bignum(ds));
+        OpenSSL_bignum::Bignum res(ds);
+        std::unique_ptr<OpenSSL_bignum::Operation> opRunner = nullptr;
 
-    CF_CHECK_EQ(res.Set("0"), true);
-    CF_CHECK_EQ(bn.Set(0, op.bn0.ToString(ds)), true);
-    CF_CHECK_EQ(bn.Set(1, op.bn1.ToString(ds)), true);
-    CF_CHECK_EQ(bn.Set(2, op.bn2.ToString(ds)), true);
-    CF_CHECK_EQ(bn.Set(3, op.bn3.ToString(ds)), true);
+        CF_CHECK_EQ(res.New(), true);
+        CF_CHECK_EQ(bn.New(0), true);
+        CF_CHECK_EQ(bn.New(1), true);
+        CF_CHECK_EQ(bn.New(2), true);
+        CF_CHECK_EQ(bn.New(3), true);
 
-    switch ( op.calcOp.Get() ) {
-        case    CF_CALCOP("Add(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::Add>();
-            break;
-        case    CF_CALCOP("Sub(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::Sub>();
-            break;
-        case    CF_CALCOP("Mul(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::Mul>();
-            break;
-        case    CF_CALCOP("Mod(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::Mod>();
-            break;
-        case    CF_CALCOP("ExpMod(A,B,C)"):
-            opRunner = std::make_unique<OpenSSL_bignum::ExpMod>();
-            break;
-        case    CF_CALCOP("Sqr(A)"):
-            opRunner = std::make_unique<OpenSSL_bignum::Sqr>();
-            break;
-        case    CF_CALCOP("GCD(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::GCD>();
-            break;
-        case    CF_CALCOP("AddMod(A,B,C)"):
-            opRunner = std::make_unique<OpenSSL_bignum::AddMod>();
-            break;
-        case    CF_CALCOP("SubMod(A,B,C)"):
-            opRunner = std::make_unique<OpenSSL_bignum::SubMod>();
-            break;
-        case    CF_CALCOP("MulMod(A,B,C)"):
-            opRunner = std::make_unique<OpenSSL_bignum::MulMod>();
-            break;
-        case    CF_CALCOP("SqrMod(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::SqrMod>();
-            break;
-        case    CF_CALCOP("InvMod(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::InvMod>();
-            break;
-        case    CF_CALCOP("Cmp(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::Cmp>();
-            break;
-        case    CF_CALCOP("Div(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::Div>();
-            break;
-        case    CF_CALCOP("IsPrime(A)"):
-            opRunner = std::make_unique<OpenSSL_bignum::IsPrime>();
-            break;
-        case    CF_CALCOP("Sqrt(A)"):
-            opRunner = std::make_unique<OpenSSL_bignum::Sqrt>();
-            break;
-        case    CF_CALCOP("IsNeg(A)"):
-            opRunner = std::make_unique<OpenSSL_bignum::IsNeg>();
-            break;
-        case    CF_CALCOP("IsEq(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::IsEq>();
-            break;
-        case    CF_CALCOP("IsEven(A)"):
-            opRunner = std::make_unique<OpenSSL_bignum::IsEven>();
-            break;
-        case    CF_CALCOP("IsOdd(A)"):
-            opRunner = std::make_unique<OpenSSL_bignum::IsOdd>();
-            break;
-        case    CF_CALCOP("IsZero(A)"):
-            opRunner = std::make_unique<OpenSSL_bignum::IsZero>();
-            break;
-        case    CF_CALCOP("IsOne(A)"):
-            opRunner = std::make_unique<OpenSSL_bignum::IsOne>();
-            break;
-        case    CF_CALCOP("Jacobi(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::Jacobi>();
-            break;
+        CF_CHECK_EQ(res.Set("0"), true);
+        CF_CHECK_EQ(bn.Set(0, op.bn0.ToString(ds)), true);
+        CF_CHECK_EQ(bn.Set(1, op.bn1.ToString(ds)), true);
+        CF_CHECK_EQ(bn.Set(2, op.bn2.ToString(ds)), true);
+        CF_CHECK_EQ(bn.Set(3, op.bn3.ToString(ds)), true);
+
+        switch ( op.calcOp.Get() ) {
+            case    CF_CALCOP("Add(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::Add>();
+                break;
+            case    CF_CALCOP("Sub(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::Sub>();
+                break;
+            case    CF_CALCOP("Mul(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::Mul>();
+                break;
+            case    CF_CALCOP("Mod(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::Mod>();
+                break;
+            case    CF_CALCOP("ExpMod(A,B,C)"):
+                opRunner = std::make_unique<OpenSSL_bignum::ExpMod>();
+                break;
+            case    CF_CALCOP("Sqr(A)"):
+                opRunner = std::make_unique<OpenSSL_bignum::Sqr>();
+                break;
+            case    CF_CALCOP("GCD(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::GCD>();
+                break;
+            case    CF_CALCOP("AddMod(A,B,C)"):
+                opRunner = std::make_unique<OpenSSL_bignum::AddMod>();
+                break;
+            case    CF_CALCOP("SubMod(A,B,C)"):
+                opRunner = std::make_unique<OpenSSL_bignum::SubMod>();
+                break;
+            case    CF_CALCOP("MulMod(A,B,C)"):
+                opRunner = std::make_unique<OpenSSL_bignum::MulMod>();
+                break;
+            case    CF_CALCOP("SqrMod(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::SqrMod>();
+                break;
+            case    CF_CALCOP("InvMod(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::InvMod>();
+                break;
+            case    CF_CALCOP("Cmp(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::Cmp>();
+                break;
+            case    CF_CALCOP("Div(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::Div>();
+                break;
+            case    CF_CALCOP("IsPrime(A)"):
+                opRunner = std::make_unique<OpenSSL_bignum::IsPrime>();
+                break;
+            case    CF_CALCOP("Sqrt(A)"):
+                opRunner = std::make_unique<OpenSSL_bignum::Sqrt>();
+                break;
+            case    CF_CALCOP("IsNeg(A)"):
+                opRunner = std::make_unique<OpenSSL_bignum::IsNeg>();
+                break;
+            case    CF_CALCOP("IsEq(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::IsEq>();
+                break;
+            case    CF_CALCOP("IsEven(A)"):
+                opRunner = std::make_unique<OpenSSL_bignum::IsEven>();
+                break;
+            case    CF_CALCOP("IsOdd(A)"):
+                opRunner = std::make_unique<OpenSSL_bignum::IsOdd>();
+                break;
+            case    CF_CALCOP("IsZero(A)"):
+                opRunner = std::make_unique<OpenSSL_bignum::IsZero>();
+                break;
+            case    CF_CALCOP("IsOne(A)"):
+                opRunner = std::make_unique<OpenSSL_bignum::IsOne>();
+                break;
+            case    CF_CALCOP("Jacobi(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::Jacobi>();
+                break;
 #if !defined(CRYPTOFUZZ_BORINGSSL)
-        case    CF_CALCOP("Mod_NIST_192(A)"):
-            opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_192>();
-            break;
-        case    CF_CALCOP("Mod_NIST_224(A)"):
-            opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_224>();
-            break;
-        case    CF_CALCOP("Mod_NIST_256(A)"):
-            opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_256>();
-            break;
-        case    CF_CALCOP("Mod_NIST_384(A)"):
-            opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_384>();
-            break;
-        case    CF_CALCOP("Mod_NIST_521(A)"):
-            opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_521>();
-            break;
+            case    CF_CALCOP("Mod_NIST_192(A)"):
+                opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_192>();
+                break;
+            case    CF_CALCOP("Mod_NIST_224(A)"):
+                opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_224>();
+                break;
+            case    CF_CALCOP("Mod_NIST_256(A)"):
+                opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_256>();
+                break;
+            case    CF_CALCOP("Mod_NIST_384(A)"):
+                opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_384>();
+                break;
+            case    CF_CALCOP("Mod_NIST_521(A)"):
+                opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_521>();
+                break;
 #endif
-        case    CF_CALCOP("SqrtMod(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::SqrtMod>();
-            break;
+            case    CF_CALCOP("SqrtMod(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::SqrtMod>();
+                break;
 #if defined(CRYPTOFUZZ_BORINGSSL)
-        case    CF_CALCOP("LCM(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::LCM>();
-            break;
+            case    CF_CALCOP("LCM(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::LCM>();
+                break;
 #endif
-        case    CF_CALCOP("Exp(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::Exp>();
-            break;
-        case    CF_CALCOP("Abs(A)"):
-            opRunner = std::make_unique<OpenSSL_bignum::Abs>();
-            break;
-        case    CF_CALCOP("RShift(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::RShift>();
-            break;
-        case    CF_CALCOP("LShift1(A)"):
-            opRunner = std::make_unique<OpenSSL_bignum::LShift1>();
-            break;
-        case    CF_CALCOP("SetBit(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::SetBit>();
-            break;
-        case    CF_CALCOP("ClearBit(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::ClearBit>();
-            break;
-        case    CF_CALCOP("Bit(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::Bit>();
-            break;
-        case    CF_CALCOP("CmpAbs(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::CmpAbs>();
-            break;
-        case    CF_CALCOP("ModLShift(A,B,C)"):
-            opRunner = std::make_unique<OpenSSL_bignum::ModLShift>();
-            break;
-        case    CF_CALCOP("IsPow2(A)"):
-            opRunner = std::make_unique<OpenSSL_bignum::IsPow2>();
-            break;
-        case    CF_CALCOP("Mask(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::Mask>();
-            break;
-        case    CF_CALCOP("IsCoprime(A,B)"):
-            opRunner = std::make_unique<OpenSSL_bignum::IsCoprime>();
-            break;
-        case    CF_CALCOP("Rand()"):
-            opRunner = std::make_unique<OpenSSL_bignum::Rand>();
-            break;
-    }
+            case    CF_CALCOP("Exp(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::Exp>();
+                break;
+            case    CF_CALCOP("Abs(A)"):
+                opRunner = std::make_unique<OpenSSL_bignum::Abs>();
+                break;
+            case    CF_CALCOP("RShift(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::RShift>();
+                break;
+            case    CF_CALCOP("LShift1(A)"):
+                opRunner = std::make_unique<OpenSSL_bignum::LShift1>();
+                break;
+            case    CF_CALCOP("SetBit(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::SetBit>();
+                break;
+            case    CF_CALCOP("ClearBit(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::ClearBit>();
+                break;
+            case    CF_CALCOP("Bit(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::Bit>();
+                break;
+            case    CF_CALCOP("CmpAbs(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::CmpAbs>();
+                break;
+            case    CF_CALCOP("ModLShift(A,B,C)"):
+                opRunner = std::make_unique<OpenSSL_bignum::ModLShift>();
+                break;
+            case    CF_CALCOP("IsPow2(A)"):
+                opRunner = std::make_unique<OpenSSL_bignum::IsPow2>();
+                break;
+            case    CF_CALCOP("Mask(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::Mask>();
+                break;
+            case    CF_CALCOP("IsCoprime(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::IsCoprime>();
+                break;
+            case    CF_CALCOP("Rand()"):
+                opRunner = std::make_unique<OpenSSL_bignum::Rand>();
+                break;
+        }
 
-    CF_CHECK_NE(opRunner, nullptr);
-    CF_CHECK_EQ(opRunner->Run(ds, res, bn, ctx), true);
+        CF_CHECK_NE(opRunner, nullptr);
+        CF_CHECK_EQ(opRunner->Run(ds, res, bn, ctx), true);
 
-    ret = res.ToComponentBignum();
+        ret = res.ToComponentBignum();
+    } catch ( ... ) { }
+
+    global_ds = nullptr;
 
 end:
     return ret;
