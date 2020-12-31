@@ -3997,9 +3997,9 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
         ret = res.ToComponentBignum();
     } catch ( ... ) { }
 
+end:
     global_ds = nullptr;
 
-end:
     return ret;
 }
 
