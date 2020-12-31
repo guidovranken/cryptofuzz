@@ -3743,41 +3743,48 @@ std::optional<component::DH_KeyPair> OpenSSL::OpDH_GenerateKeyPair(operation::DH
     std::optional<component::DH_KeyPair> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
+    global_ds = &ds;
+
     DH* dh = nullptr;
-    OpenSSL_bignum::Bignum prime(ds), base(ds);
     char* priv_str = nullptr;
     char* pub_str = nullptr;
 
     CF_CHECK_NE(dh = DH_new(), nullptr);
 
-    /* Set prime and base */
-    {
-        CF_CHECK_EQ(prime.Set(op.prime.ToString(ds)), true);
-        CF_CHECK_EQ(base.Set(op.base.ToString(ds)), true);
+    try {
+        OpenSSL_bignum::Bignum prime(ds), base(ds);
+        /* Set prime and base */
+        {
+            CF_CHECK_EQ(prime.Set(op.prime.ToString(ds)), true);
+            CF_CHECK_EQ(base.Set(op.base.ToString(ds)), true);
 
-        CF_CHECK_EQ(DH_set0_pqg(dh, prime.GetPtrConst(), nullptr, base.GetPtrConst()), 1);
-        prime.ReleaseOwnership();
-        base.ReleaseOwnership();
-    }
+            CF_CHECK_EQ(DH_set0_pqg(dh, prime.GetPtrConst(), nullptr, base.GetPtrConst()), 1);
+            prime.ReleaseOwnership();
+            base.ReleaseOwnership();
+        }
 
-	CF_CHECK_EQ(DH_generate_key(dh), 1);
+        CF_CHECK_EQ(DH_generate_key(dh), 1);
 
-    {
-        const BIGNUM* priv = nullptr, *pub = nullptr;
-        /* noret */ DH_get0_key(dh, &priv, &pub);
-        CF_CHECK_NE(priv, nullptr);
-        CF_CHECK_NE(pub, nullptr);
+        {
+            const BIGNUM* priv = nullptr, *pub = nullptr;
+            /* noret */ DH_get0_key(dh, &priv, &pub);
+            CF_CHECK_NE(priv, nullptr);
+            CF_CHECK_NE(pub, nullptr);
 
-        CF_CHECK_NE(priv_str = BN_bn2dec(priv), nullptr);
-        CF_CHECK_NE(pub_str = BN_bn2dec(pub), nullptr);
-    }
+            CF_CHECK_NE(priv_str = BN_bn2dec(priv), nullptr);
+            CF_CHECK_NE(pub_str = BN_bn2dec(pub), nullptr);
+        }
 
-    ret = { std::string(priv_str), std::string(pub_str) };
+        ret = { std::string(priv_str), std::string(pub_str) };
+    } catch ( ... ) { }
 
 end:
     DH_free(dh);
     OPENSSL_free(priv_str);
     OPENSSL_free(pub_str);
+
+    global_ds = nullptr;
+
     return ret;
 }
 
