@@ -257,7 +257,18 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-    CF_CHECK_EQ(mp_invmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            CF_CHECK_EQ(mp_invmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+            break;
+#if !defined(USE_FAST_MATH)
+        case    1:
+            CF_CHECK_EQ(mp_invmod_slow(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+            break;
+#endif
+        default:
+            goto end;
+    }
 
     ret = true;
 
