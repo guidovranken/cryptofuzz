@@ -20,7 +20,7 @@ namespace wolfCrypt_bignum_detail {
         return mp_cmp(A.GetPtr(), B.GetPtr());
     }
 
-#if !defined(USE_FAST_MATH) || defined(WOLFSSL_SP_MATH_ALL)
+#if !defined(WOLFSSL_SP_MATH) && (!defined(USE_FAST_MATH) || defined(WOLFSSL_SP_MATH_ALL))
     static std::optional<int> isPowerOf2(Bignum& A, Datasource& ds) {
         std::optional<int> ret = std::nullopt;
         wolfCrypt_bignum::Bignum tmp(ds);
@@ -218,7 +218,7 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             CF_CHECK_EQ(sp_ModExp_4096(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
 #endif
-#if !defined(WOLFSSL_SP_MATH_ALL) && !defined(USE_FAST_MATH)
+#if !defined(WOLFSSL_SP_MATH) && !defined(WOLFSSL_SP_MATH_ALL) && !defined(USE_FAST_MATH)
         case    8:
             {
                 int redmode = 0;
@@ -293,7 +293,7 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
         case    0:
             CF_CHECK_EQ(mp_invmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
-#if !defined(USE_FAST_MATH)
+#if !defined(USE_FAST_MATH) && !defined(WOLFSSL_SP_MATH)
         case    1:
             CF_CHECK_EQ(mp_invmod_slow(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
@@ -689,7 +689,6 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 CF_CHECK_EQ(mp_div_2_mod_ct(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             }
             break;
-#endif
         case    3:
             {
                 mp_digit mp;
@@ -701,7 +700,8 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 CF_CHECK_EQ(mp_montgomery_reduce(res.GetPtr(), bn[1].GetPtr(), mp), MP_OKAY);
             }
             break;
-#if !defined(USE_FAST_MATH) || defined(WOLFSSL_SP_MATH_ALL)
+#endif
+#if !defined(WOLFSSL_SP_MATH) && (!defined(USE_FAST_MATH) || defined(WOLFSSL_SP_MATH_ALL))
         case    4:
             {
                 std::optional<int> exponent = std::nullopt;
