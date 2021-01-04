@@ -25,7 +25,17 @@ void Bignum::baseConversion(void) const {
 
         str = (char*)util::malloc(size);
 
+#if defined(WOLFSSL_SP_MATH) || defined(WOLFSSL_SP_MATH_ALL) || !defined(USE_FAST_MATH)
         CF_CHECK_EQ(mp_toradix(mp, str, base), MP_OKAY);
+#else
+        wolfCrypt_detail::haveAllocFailure = false;
+        CF_ASSERT(
+                    mp_toradix(mp, str, base) == MP_OKAY ||
+                    wolfCrypt_detail::haveAllocFailure ||
+                    base < 2 ||
+                    base > 64,
+                    "wolfCrypt cannot convert mp to string");
+#endif
 
         wolfCrypt_detail::haveAllocFailure = false;
         CF_ASSERT(mp_read_radix(mp, str, base) == MP_OKAY || wolfCrypt_detail::haveAllocFailure, "wolfCrypt cannot parse the output of mp_toradix");
