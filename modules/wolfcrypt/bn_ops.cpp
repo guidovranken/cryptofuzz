@@ -389,6 +389,19 @@ bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             ret = true;
             break;
 #endif
+        case    2:
+            {
+                /* Check if number of bits to shift is a multiple of a full digit */
+                CF_CHECK_EQ(numBits % (sizeof(mp_digit) * 8), 0);
+
+                CF_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+
+                const auto numDigits = numBits / (sizeof(mp_digit) * 8);
+                /* noret */ mp_rshd(res.GetPtr(), numDigits);
+
+                ret = true;
+            }
+            break;
     }
 
 end:
