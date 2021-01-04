@@ -19,6 +19,25 @@ namespace wolfCrypt_bignum_detail {
     static int compare(Bignum& A, Bignum& B) {
         return mp_cmp(A.GetPtr(), B.GetPtr());
     }
+
+#if !defined(USE_FAST_MATH) || defined(WOLFSSL_SP_MATH_ALL)
+    static std::optional<int> isPowerOf2(Bignum& A, Datasource& ds) {
+        std::optional<int> ret = std::nullopt;
+        wolfCrypt_bignum::Bignum tmp(ds);
+
+        auto numBits = mp_count_bits(A.GetPtr());
+        CF_CHECK_GTE(numBits, 1);
+        numBits--;
+        CF_CHECK_EQ(mp_copy(A.GetPtr(), tmp.GetPtr()), MP_OKAY);
+        /* noret */ mp_rshb(tmp.GetPtr(), numBits);
+        CF_CHECK_EQ(mp_mul_2d(tmp.GetPtr(), numBits, tmp.GetPtr()), MP_OKAY);
+        CF_CHECK_EQ(compare(A, tmp), MP_EQ);
+
+        ret = numBits;
+end:
+        return ret;
+    }
+#endif
 }
 
 bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
@@ -656,6 +675,17 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 CF_CHECK_EQ(mp_montgomery_reduce(res.GetPtr(), bn[1].GetPtr(), mp), MP_OKAY);
             }
             break;
+#if !defined(USE_FAST_MATH) || defined(WOLFSSL_SP_MATH_ALL)
+        case    4:
+            {
+                std::optional<int> exponent = std::nullopt;
+
+                CF_CHECK_NE(exponent = wolfCrypt_bignum_detail::isPowerOf2(bn[1], ds), std::nullopt);
+
+                CF_CHECK_EQ(mp_mod_2d(bn[0].GetPtr(), *exponent, res.GetPtr()), MP_OKAY);
+            }
+            break;
+#endif
         default:
             goto end;
     }
