@@ -66,7 +66,7 @@ class EC_GROUP_Copier {
             return EC_GROUP_new_by_curve_name(curveNID);
         }
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
         int copyGroup(EC_GROUP* dest, EC_GROUP* src) {
             return EC_GROUP_copy(dest, src);
         }
@@ -82,7 +82,7 @@ class EC_GROUP_Copier {
             } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
             if ( doCopyGroup == true ) {
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
                 EC_GROUP* tmpGroup = newGroup();
                 if ( tmpGroup != nullptr ) {
                     if ( copyGroup(tmpGroup, group) == 1 ) {
@@ -201,7 +201,7 @@ template<> void CTX_Copier<EVP_MD_CTX>::freeCTX(EVP_MD_CTX* ctx) const { EVP_MD_
 template<> void CTX_Copier<EVP_MD_CTX>::freeCTX(EVP_MD_CTX* ctx) const { EVP_MD_CTX_cleanup(ctx); free(ctx); }
 #endif
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 template<> EVP_CIPHER_CTX* CTX_Copier<EVP_CIPHER_CTX>::newCTX(void) const { return EVP_CIPHER_CTX_new(); }
 template<> int CTX_Copier<EVP_CIPHER_CTX>::copyCTX(EVP_CIPHER_CTX* dest, EVP_CIPHER_CTX* src) const { return EVP_CIPHER_CTX_copy(dest, src); }
 template<> void CTX_Copier<EVP_CIPHER_CTX>::freeCTX(EVP_CIPHER_CTX* ctx) const { return EVP_CIPHER_CTX_free(ctx); }
@@ -213,7 +213,7 @@ template<> int CTX_Copier<HMAC_CTX>::copyCTX(HMAC_CTX* dest, HMAC_CTX* src) cons
 template<> void CTX_Copier<HMAC_CTX>::freeCTX(HMAC_CTX* ctx) const { return HMAC_CTX_free(ctx); }
 #endif
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 template<> CMAC_CTX* CTX_Copier<CMAC_CTX>::newCTX(void) const { return CMAC_CTX_new(); }
 template<> int CTX_Copier<CMAC_CTX>::copyCTX(CMAC_CTX* dest, CMAC_CTX* src) const { return CMAC_CTX_copy(dest, src); }
 template<> void CTX_Copier<CMAC_CTX>::freeCTX(CMAC_CTX* ctx) const { return CMAC_CTX_free(ctx); }
@@ -221,7 +221,7 @@ template<> void CTX_Copier<CMAC_CTX>::freeCTX(CMAC_CTX* ctx) const { return CMAC
 
 template<> EC_KEY* CTX_Copier<EC_KEY>::newCTX(void) const { return EC_KEY_new(); }
 template<> int CTX_Copier<EC_KEY>::copyCTX(EC_KEY* dest, EC_KEY* src) const {
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
     return EC_KEY_copy(dest, src) == nullptr ? 0 : 1;
 #else
     (void)dest;
@@ -234,7 +234,7 @@ template<> void CTX_Copier<EC_KEY>::freeCTX(EC_KEY* ctx) const { return EC_KEY_f
 using CF_EVP_MD_CTX = CTX_Copier<EVP_MD_CTX>;
 using CF_EVP_CIPHER_CTX = CTX_Copier<EVP_CIPHER_CTX>;
 using CF_HMAC_CTX = CTX_Copier<HMAC_CTX>;
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 using CF_CMAC_CTX = CTX_Copier<CMAC_CTX>;
 #endif
 using CF_EC_KEY = CTX_Copier<EC_KEY>;

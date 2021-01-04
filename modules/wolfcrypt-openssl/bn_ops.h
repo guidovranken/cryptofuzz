@@ -74,7 +74,7 @@ end:
 
             bool ret = false;
 
-#if defined(CRYPTOFUZZ_WOLFCRYPT)
+#if defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
             const auto asHex = util::DecToHex(s);
             CF_CHECK_NE(BN_hex2bn(&bn, asHex.c_str()), 0);
 #else
@@ -91,7 +91,7 @@ end:
             try {
                 switch ( ds.Get<uint8_t>() ) {
                     case    0:
-#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
                         {
                             /* BN_bn2binpad is not supported by LibreSSL */
 
@@ -120,7 +120,7 @@ end:
 #endif
                         break;
                     case    1:
-#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
                         {
                             ASN1_INTEGER* asn1 = nullptr;
                             uint64_t v;
@@ -245,7 +245,7 @@ end:
                             const bool asn1Convert = ds.Get<bool>();
 
                             if ( asn1Convert == true ) {
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
                                 ASN1_ENUMERATED* asn1 = BN_to_ASN1_ENUMERATED(bn, nullptr);
 
                                 if ( asn1 != nullptr ) {
@@ -272,7 +272,7 @@ end:
             return bn;
         }
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
         const BIGNUM* GetPtr(const bool allowDup = true) {
 #else
         BIGNUM* GetPtr(const bool allowDup = true) {
@@ -388,7 +388,7 @@ class BN_CTX {
         }
 };
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 class BN_MONT_CTX {
     private:
         ::BN_MONT_CTX* ctx = nullptr;
@@ -428,7 +428,7 @@ class Sub : public Operation {
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 class Mul : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
@@ -445,14 +445,14 @@ class ExpMod : public Operation {
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 class Sqr : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 #endif
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 class GCD : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
@@ -464,7 +464,7 @@ class AddMod : public Operation {
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 class SubMod : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
@@ -476,7 +476,7 @@ class MulMod : public Operation {
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 class SqrMod : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
@@ -493,7 +493,7 @@ class Cmp : public Operation {
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 class Div : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
@@ -540,14 +540,14 @@ class IsOne : public Operation {
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 class Jacobi : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 #endif
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 class Mod_NIST_192 : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
@@ -623,14 +623,14 @@ class Bit : public Operation {
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 class CmpAbs : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 #endif
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 class ModLShift : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;

@@ -34,7 +34,7 @@ bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
         case    0:
             CF_CHECK_EQ(BN_add(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
             break;
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
         case    1:
             CF_CHECK_EQ(BN_is_negative(bn[0].GetPtr()), 0);
             CF_CHECK_EQ(BN_is_negative(bn[1].GetPtr()), 0);
@@ -81,7 +81,7 @@ bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
             CF_CHECK_EQ(BN_usub(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
             break;
 #endif
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
         case    2:
             {
                 const auto val = bn[1].AsBN_ULONG();
@@ -112,7 +112,7 @@ end:
     return ret;
 }
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     (void)ctx;
@@ -154,7 +154,7 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
         case    0:
             CF_CHECK_EQ(BN_mod(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             break;
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
         case    1:
             /* "BN_mod() corresponds to BN_div() with dv set to NULL" */
             CF_CHECK_EQ(BN_div(nullptr, res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
@@ -223,7 +223,7 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
         case    0:
             CF_CHECK_EQ(BN_mod_exp_mont_consttime(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr(), nullptr), 1);
             break;
@@ -235,7 +235,7 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
             CF_CHECK_EQ(BN_mod_exp(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
             break;
         case    3:
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
             CF_CHECK_EQ(BN_mod_exp_simple(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
 #else
             goto end;
@@ -253,7 +253,7 @@ end:
     return ret;
 }
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 bool Sqr::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;
@@ -268,7 +268,7 @@ end:
 }
 #endif
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 bool GCD::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;
@@ -300,7 +300,7 @@ bool AddMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
         case    0:
             CF_CHECK_EQ(BN_mod_add(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
             break;
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
         case    1:
             {
                 Bignum zero(ds);
@@ -326,7 +326,7 @@ end:
     return ret;
 }
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 bool SubMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     bool ret = false;
 
@@ -376,7 +376,7 @@ end:
     return ret;
 }
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 bool SqrMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     bool ret = false;
 
@@ -435,7 +435,7 @@ bool Cmp::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
         case    0:
             cmpRes = BN_cmp(bn[0].GetPtr(), bn[1].GetPtr());
             break;
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
         case    1:
             CF_CHECK_EQ(BN_is_negative(bn[0].GetPtr()), 0);
             CF_CHECK_EQ(BN_is_negative(bn[1].GetPtr()), 0);
@@ -462,7 +462,7 @@ bool Cmp::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
         cmpRes = -1;
     }
 
-#if defined(CRYPTOFUZZ_WOLFCRYPT)
+#if defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
     /* wolfCrypt's OpenSSL API cannot set negative numbers */
     if ( cmpRes == -1 ) {
         goto end;
@@ -476,7 +476,7 @@ end:
     return ret;
 }
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     (void)ctx;
@@ -630,7 +630,7 @@ bool IsOne::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) con
     return true;
 }
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 bool Jacobi::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;
@@ -652,7 +652,7 @@ end:
 }
 #endif
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 bool Mod_NIST_192::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;
@@ -755,7 +755,7 @@ bool Exp::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     (void)ds;
     bool ret = false;
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
     CF_CHECK_EQ(BN_exp(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
 
     ret = true;
@@ -771,7 +771,7 @@ end:
 }
 
 /* BN_copy doesn't work in wolfCrypt's OpenSSL API */
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 bool Abs::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     (void)ctx;
@@ -816,7 +816,7 @@ bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
             CF_CHECK_EQ(BN_rshift(res.GetDestPtr(), bn[0].GetPtr(), *places), 1);
             break;
         case    1:
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
             if ( *places != 1 ) {
                 goto end;
             }
@@ -838,7 +838,7 @@ bool LShift1::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) c
     (void)ds;
     bool ret = false;
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
     CF_CHECK_EQ(BN_lshift1(res.GetDestPtr(), bn[0].GetPtr()), 1);
 
     ret = true;
@@ -901,7 +901,7 @@ end:
     return ret;
 }
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 bool CmpAbs::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ctx;
     (void)ds;
@@ -920,7 +920,7 @@ bool CmpAbs::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
 }
 #endif
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 bool ModLShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ctx;
     (void)ds;

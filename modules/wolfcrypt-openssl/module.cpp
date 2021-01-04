@@ -73,7 +73,7 @@ namespace wolfCrypt_OpenSSL_detail {
             { CF_DIGEST("WHIRLPOOL"), EVP_whirlpool() },
             { CF_DIGEST("BLAKE2B512"), EVP_blake2b512() },
             { CF_DIGEST("BLAKE2S256"), EVP_blake2s256() },
-#elif defined(CRYPTOFUZZ_WOLFCRYPT)
+#elif defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
             { CF_DIGEST("SHA1"), EVP_sha1() },
             { CF_DIGEST("MDC2"), EVP_mdc2() },
             { CF_DIGEST("MD4"), EVP_md4() },
@@ -245,7 +245,7 @@ end:
 std::optional<component::MAC> wolfCrypt_OpenSSL::OpHMAC(operation::HMAC& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
     if (    op.digestType.Get() == CF_DIGEST("SIPHASH64") ||
             op.digestType.Get() == CF_DIGEST("SIPHASH128") ) {
         /* Not HMAC but invoking SipHash here anyway due to convenience. */
@@ -308,7 +308,7 @@ std::optional<component::Bignum> wolfCrypt_OpenSSL::OpBignumCalc(operation::Bign
         case    CF_CALCOP("Sub(A,B)"):
             opRunner = std::make_unique<OpenSSL_bignum::Sub>();
             break;
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
         case    CF_CALCOP("Mul(A,B)"):
             opRunner = std::make_unique<OpenSSL_bignum::Mul>();
             break;
@@ -319,12 +319,12 @@ std::optional<component::Bignum> wolfCrypt_OpenSSL::OpBignumCalc(operation::Bign
         case    CF_CALCOP("ExpMod(A,B,C)"):
             opRunner = std::make_unique<OpenSSL_bignum::ExpMod>();
             break;
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
         case    CF_CALCOP("Sqr(A)"):
             opRunner = std::make_unique<OpenSSL_bignum::Sqr>();
             break;
 #endif
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
         case    CF_CALCOP("GCD(A,B)"):
             opRunner = std::make_unique<OpenSSL_bignum::GCD>();
             break;
@@ -332,7 +332,7 @@ std::optional<component::Bignum> wolfCrypt_OpenSSL::OpBignumCalc(operation::Bign
         case    CF_CALCOP("AddMod(A,B,C)"):
             opRunner = std::make_unique<OpenSSL_bignum::AddMod>();
             break;
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
         case    CF_CALCOP("SubMod(A,B,C)"):
             opRunner = std::make_unique<OpenSSL_bignum::SubMod>();
             break;
@@ -340,7 +340,7 @@ std::optional<component::Bignum> wolfCrypt_OpenSSL::OpBignumCalc(operation::Bign
         case    CF_CALCOP("MulMod(A,B,C)"):
             opRunner = std::make_unique<OpenSSL_bignum::MulMod>();
             break;
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
         case    CF_CALCOP("SqrMod(A,B)"):
             opRunner = std::make_unique<OpenSSL_bignum::SqrMod>();
             break;
@@ -351,7 +351,7 @@ std::optional<component::Bignum> wolfCrypt_OpenSSL::OpBignumCalc(operation::Bign
         case    CF_CALCOP("Cmp(A,B)"):
             opRunner = std::make_unique<OpenSSL_bignum::Cmp>();
             break;
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
         case    CF_CALCOP("Div(A,B)"):
             opRunner = std::make_unique<OpenSSL_bignum::Div>();
             break;
@@ -380,12 +380,12 @@ std::optional<component::Bignum> wolfCrypt_OpenSSL::OpBignumCalc(operation::Bign
         case    CF_CALCOP("IsOne(A)"):
             opRunner = std::make_unique<OpenSSL_bignum::IsOne>();
             break;
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
         case    CF_CALCOP("Jacobi(A,B)"):
             opRunner = std::make_unique<OpenSSL_bignum::Jacobi>();
             break;
 #endif
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
         case    CF_CALCOP("Mod_NIST_192(A)"):
             opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_192>();
             break;
@@ -413,7 +413,7 @@ std::optional<component::Bignum> wolfCrypt_OpenSSL::OpBignumCalc(operation::Bign
         case    CF_CALCOP("Exp(A,B)"):
             opRunner = std::make_unique<OpenSSL_bignum::Exp>();
             break;
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
         case    CF_CALCOP("Abs(A)"):
             opRunner = std::make_unique<OpenSSL_bignum::Abs>();
             break;
@@ -433,12 +433,12 @@ std::optional<component::Bignum> wolfCrypt_OpenSSL::OpBignumCalc(operation::Bign
         case    CF_CALCOP("Bit(A,B)"):
             opRunner = std::make_unique<OpenSSL_bignum::Bit>();
             break;
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
         case    CF_CALCOP("CmpAbs(A,B)"):
             opRunner = std::make_unique<OpenSSL_bignum::CmpAbs>();
             break;
 #endif
-#if !defined(CRYPTOFUZZ_WOLFCRYPT)
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
         case    CF_CALCOP("ModLShift(A,B,C)"):
             opRunner = std::make_unique<OpenSSL_bignum::ModLShift>();
             break;
