@@ -218,6 +218,19 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             CF_CHECK_EQ(sp_ModExp_4096(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
 #endif
+#if !defined(WOLFSSL_SP_MATH_ALL) && !defined(USE_FAST_MATH)
+        case    8:
+            {
+                int redmode = 0;
+
+                try {
+                    redmode = ds.Get<uint8_t>() % 2;
+                } catch ( ... ) { }
+
+                CF_CHECK_EQ(mp_exptmod_fast(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr(), redmode), MP_OKAY);
+            }
+            break;
+#endif
         default:
             goto end;
     }
