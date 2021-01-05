@@ -213,7 +213,6 @@ end:
 }
 
 bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
-    (void)ds;
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -257,6 +256,15 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 } catch ( ... ) { }
 
                 MP_CHECK_EQ(mp_exptmod_fast(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr(), redmode), MP_OKAY);
+            }
+            break;
+#endif
+#if !defined(WOLFSSL_SP_MATH) && !defined(WOLFSSL_SP_MATH_ALL) && !defined(USE_FAST_MATH)
+        case    9:
+            {
+                util::HintBignum("2");
+                CF_CHECK_EQ(mp_cmp_d(bn[0].GetPtr(), 2), MP_EQ);
+                MP_CHECK_EQ(mp_exptmod_base_2(bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             }
             break;
 #endif

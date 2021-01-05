@@ -64,6 +64,7 @@ std::optional<std::vector<uint8_t>> ToDER(const std::string A, const std::string
 std::optional<std::pair<std::string, std::string>> SignatureFromDER(const std::string s);
 std::optional<std::pair<std::string, std::string>> SignatureFromDER(const std::vector<uint8_t> data);
 std::string SHA1(const std::vector<uint8_t> data);
+void HintBignum(const std::string bn);
 
 } /* namespace util */
 } /* namespace cryptofuzz */

@@ -12,6 +12,7 @@
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/algorithm/hex.hpp>
 #include "third_party/cpu_features/include/cpuinfo_x86.h"
+#include "mutatorpool.h"
 
 namespace cryptofuzz {
 namespace util {
@@ -611,6 +612,12 @@ end:
 
 std::string SHA1(const std::vector<uint8_t> data) {
     return BinToHex(crypto::sha1(data));
+}
+
+void HintBignum(const std::string bn) {
+    if ( bn.size() < 1000 ) {
+        Pool_Bignum.Set(bn);
+    }
 }
 
 } /* namespace util */
