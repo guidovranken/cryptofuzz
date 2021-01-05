@@ -475,11 +475,9 @@ end:
 }
 
 bool IsEq::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
-    (void)ds;
-
     bool ret = false;
 
-    const bool isEq = mp_cmp(bn[0].GetPtr(), bn[1].GetPtr()) == MP_EQ;
+    const bool isEq = wolfCrypt_bignum_detail::compare(bn[0], bn[1], ds) == MP_EQ;
     CF_CHECK_EQ( res.Set( std::to_string(isEq ? 1 : 0) ), true);
 
     ret = true;
@@ -528,8 +526,6 @@ end:
 }
 
 bool AddMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
-    (void)ds;
-
     bool ret = false;
 
 #if defined(WOLFSSL_SP_MATH)
@@ -541,8 +537,8 @@ bool AddMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             CF_CHECK_EQ(mp_addmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
         case    1:
-            CF_CHECK_EQ(mp_cmp(bn[0].GetPtr(), bn[1].GetPtr()), MP_LT);
-            CF_CHECK_EQ(mp_cmp(bn[1].GetPtr(), bn[2].GetPtr()), MP_LT);
+            CF_CHECK_EQ(wolfCrypt_bignum_detail::compare(bn[0], bn[1], ds), MP_LT)
+            CF_CHECK_EQ(wolfCrypt_bignum_detail::compare(bn[1], bn[2], ds), MP_LT)
             CF_CHECK_EQ(mp_addmod_ct(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
         default:
@@ -557,8 +553,6 @@ end:
 }
 
 bool SubMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
-    (void)ds;
-
     bool ret = false;
 
 #if defined(WOLFSSL_SP_MATH)
@@ -570,8 +564,8 @@ bool SubMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             CF_CHECK_EQ(mp_submod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
         case    1:
-            CF_CHECK_EQ(mp_cmp(bn[0].GetPtr(), bn[1].GetPtr()), MP_LT);
-            CF_CHECK_EQ(mp_cmp(bn[1].GetPtr(), bn[2].GetPtr()), MP_LT);
+            CF_CHECK_EQ(wolfCrypt_bignum_detail::compare(bn[0], bn[1], ds), MP_LT)
+            CF_CHECK_EQ(wolfCrypt_bignum_detail::compare(bn[1], bn[2], ds), MP_LT)
             CF_CHECK_EQ(mp_submod_ct(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
         default:
@@ -700,7 +694,7 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 /* bn[0] *= 2 */
                 CF_CHECK_EQ(mp_mul_d(bn[0].GetPtr(), 2, bn.GetDestPtr(0)), MP_OKAY);
 
-                CF_CHECK_EQ(mp_cmp(bn[0].GetPtr(), bn[1].GetPtr()), MP_LT);
+                CF_CHECK_EQ(wolfCrypt_bignum_detail::compare(bn[0], bn[1], ds), MP_LT)
                 CF_CHECK_EQ(mp_div_2_mod_ct(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             }
             break;
