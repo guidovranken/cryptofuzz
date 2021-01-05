@@ -1,6 +1,7 @@
 #include <cryptofuzz/util.h>
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
+#include <type_traits>
 
 #include "bn_ops.h"
 
@@ -16,6 +17,19 @@ namespace wolfCrypt_detail {
 namespace wolfCrypt_bignum {
 
 namespace wolfCrypt_bignum_detail {
+
+    template <class ReturnType>
+    static ReturnType assertRet(const ReturnType ret) {
+        static_assert(std::is_same<ReturnType, int>());
+
+        if ( ret > 0 ) {
+            CF_ASSERT(0, "Result of mp_* function is not negative or zero");
+        }
+
+        return ret;
+    }
+#define MP_CHECK_EQ(expr, res) CF_CHECK_EQ(::cryptofuzz::module::wolfCrypt_bignum::wolfCrypt_bignum_detail::assertRet(expr), res);
+
     static int compare(Bignum& A, Bignum& B, Datasource& ds) {
         bool swap = false;
         try {
@@ -46,9 +60,9 @@ namespace wolfCrypt_bignum_detail {
         auto numBits = mp_count_bits(A.GetPtr());
         CF_CHECK_GTE(numBits, 1);
         numBits--;
-        CF_CHECK_EQ(mp_copy(A.GetPtr(), tmp.GetPtr()), MP_OKAY);
+        MP_CHECK_EQ(mp_copy(A.GetPtr(), tmp.GetPtr()), MP_OKAY);
         /* noret */ mp_rshb(tmp.GetPtr(), numBits);
-        CF_CHECK_EQ(mp_mul_2d(tmp.GetPtr(), numBits, tmp.GetPtr()), MP_OKAY);
+        MP_CHECK_EQ(mp_mul_2d(tmp.GetPtr(), numBits, tmp.GetPtr()), MP_OKAY);
         CF_CHECK_EQ(compare(A, tmp, ds), MP_EQ);
 
         ret = numBits;
@@ -63,14 +77,14 @@ bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(mp_add(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(mp_add(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             ret = true;
             break;
         case    1:
             {
                 const auto op = bn[1].AsUnsigned<mp_digit>();
                 CF_CHECK_NE(op, std::nullopt);
-                CF_CHECK_EQ(mp_add_d(bn[0].GetPtr(), *op, res.GetPtr()), MP_OKAY);
+                MP_CHECK_EQ(mp_add_d(bn[0].GetPtr(), *op, res.GetPtr()), MP_OKAY);
                 ret = true;
             }
             break;
@@ -98,14 +112,14 @@ bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(mp_sub(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(mp_sub(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             ret = true;
             break;
         case    1:
             {
                 const auto op = bn[1].AsUnsigned<mp_digit>();
                 CF_CHECK_NE(op, std::nullopt);
-                CF_CHECK_EQ(mp_sub_d(bn[0].GetPtr(), *op, res.GetPtr()), MP_OKAY);
+                MP_CHECK_EQ(mp_sub_d(bn[0].GetPtr(), *op, res.GetPtr()), MP_OKAY);
                 ret = true;
             }
             break;
@@ -125,21 +139,21 @@ bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(mp_mul(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(mp_mul(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             ret = true;
             break;
         case    1:
             {
                 const auto op = bn[1].AsUnsigned<mp_digit>();
                 CF_CHECK_NE(op, std::nullopt);
-                CF_CHECK_EQ(mp_mul_d(bn[0].GetPtr(), *op, res.GetPtr()), MP_OKAY);
+                MP_CHECK_EQ(mp_mul_d(bn[0].GetPtr(), *op, res.GetPtr()), MP_OKAY);
                 ret = true;
             }
             break;
 #if !defined(USE_FAST_MATH) && !defined(WOLFSSL_SP_MATH)
         case    2:
             CF_CHECK_EQ(mp_cmp_d(bn[1].GetPtr(), 2), MP_EQ);
-            CF_CHECK_EQ(mp_mul_2(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(mp_mul_2(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
             ret = true;
             break;
 #endif
@@ -150,11 +164,11 @@ bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 CF_CHECK_EQ(numBits % DIGIT_BIT, 0);
 
                 wolfCrypt_bignum::Bignum multiplier(ds);
-                CF_CHECK_EQ(mp_2expt(multiplier.GetPtr(), numBits), MP_OKAY);
+                MP_CHECK_EQ(mp_2expt(multiplier.GetPtr(), numBits), MP_OKAY);
                 CF_CHECK_EQ(wolfCrypt_bignum_detail::compare(bn[1], multiplier, ds), MP_EQ);
 
-                CF_CHECK_EQ(mp_lshd(bn.GetDestPtr(0), numBits / DIGIT_BIT), MP_OKAY);
-                CF_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+                MP_CHECK_EQ(mp_lshd(bn.GetDestPtr(0), numBits / DIGIT_BIT), MP_OKAY);
+                MP_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
                 ret = true;
             }
             break;
@@ -175,16 +189,16 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(mp_div(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr(), GET_OPTIONAL_BN()), MP_OKAY);
+            MP_CHECK_EQ(mp_div(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr(), GET_OPTIONAL_BN()), MP_OKAY);
             break;
         case    1:
             CF_CHECK_EQ(mp_cmp_d(bn[1].GetPtr(), 2), MP_EQ);
-            CF_CHECK_EQ(mp_div_2(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(mp_div_2(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
 #if !defined(USE_FAST_MATH)
         case    2:
             CF_CHECK_EQ(mp_cmp_d(bn[1].GetPtr(), 3), MP_EQ);
-            CF_CHECK_EQ(mp_div_3(bn[0].GetPtr(), res.GetPtr(), nullptr), MP_OKAY);
+            MP_CHECK_EQ(mp_div_3(bn[0].GetPtr(), res.GetPtr(), nullptr), MP_OKAY);
             break;
 #endif
         default:
@@ -204,33 +218,33 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(mp_exptmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(mp_exptmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
 #if defined(WOLFSSL_SP_MATH_ALL)
         case    1:
-            CF_CHECK_EQ(mp_exptmod_nct(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(mp_exptmod_nct(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
 #endif
 #if !defined(WOLFSSL_SP_MATH)
         case    2:
-            CF_CHECK_EQ(mp_exptmod_ex(bn[0].GetPtr(), bn[1].GetPtr(), bn[1].GetPtr()->used, bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(mp_exptmod_ex(bn[0].GetPtr(), bn[1].GetPtr(), bn[1].GetPtr()->used, bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
 #endif
 #if defined(WOLFSSL_SP_MATH)
         case    3:
-            CF_CHECK_EQ(sp_ModExp_1024(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(sp_ModExp_1024(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
         case    4:
-            CF_CHECK_EQ(sp_ModExp_1536(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(sp_ModExp_1536(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
         case    5:
-            CF_CHECK_EQ(sp_ModExp_2048(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(sp_ModExp_2048(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
         case    6:
-            CF_CHECK_EQ(sp_ModExp_3072(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(sp_ModExp_3072(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
         case    7:
-            CF_CHECK_EQ(sp_ModExp_4096(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(sp_ModExp_4096(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
 #endif
 #if !defined(WOLFSSL_SP_MATH) && !defined(WOLFSSL_SP_MATH_ALL) && !defined(USE_FAST_MATH)
@@ -242,7 +256,7 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                     redmode = ds.Get<uint8_t>() % 2;
                 } catch ( ... ) { }
 
-                CF_CHECK_EQ(mp_exptmod_fast(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr(), redmode), MP_OKAY);
+                MP_CHECK_EQ(mp_exptmod_fast(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr(), redmode), MP_OKAY);
             }
             break;
 #endif
@@ -275,7 +289,7 @@ bool Sqr::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)res;
     (void)bn;
 #else
-    CF_CHECK_EQ(mp_sqr(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+    MP_CHECK_EQ(mp_sqr(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
 
     ret = true;
 
@@ -291,7 +305,7 @@ bool GCD::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-    CF_CHECK_EQ(mp_gcd(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+    MP_CHECK_EQ(mp_gcd(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
 
     ret = true;
 
@@ -306,11 +320,11 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(mp_invmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(mp_invmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
 #if !defined(USE_FAST_MATH) && !defined(WOLFSSL_SP_MATH)
         case    1:
-            CF_CHECK_EQ(mp_invmod_slow(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(mp_invmod_slow(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
 #endif
         default:
@@ -367,7 +381,7 @@ bool Abs::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-    CF_CHECK_EQ(mp_abs(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+    MP_CHECK_EQ(mp_abs(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
 
     ret = true;
 
@@ -384,7 +398,7 @@ bool Neg::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)bn;
 #else
     CF_CHECK_EQ(res.Set("0"), true);
-    CF_CHECK_EQ(mp_sub(res.GetPtr(), bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+    MP_CHECK_EQ(mp_sub(res.GetPtr(), bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
 
     ret = true;
 
@@ -407,13 +421,13 @@ bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
             /* noret */ mp_rshb(res.GetPtr(), numBits);
             ret = true;
             break;
 #if !defined(WOLFSSL_SP_MATH)
         case    1:
-            CF_CHECK_EQ(mp_div_2d(bn[0].GetPtr(), numBits, res.GetPtr(), GET_OPTIONAL_BN()), MP_OKAY);
+            MP_CHECK_EQ(mp_div_2d(bn[0].GetPtr(), numBits, res.GetPtr(), GET_OPTIONAL_BN()), MP_OKAY);
             ret = true;
             break;
 #endif
@@ -422,7 +436,7 @@ bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 /* Check if number of bits to shift is a multiple of a full digit */
                 CF_CHECK_EQ(numBits % (sizeof(mp_digit) * 8), 0);
 
-                CF_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+                MP_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
 
                 const auto numDigits = numBits / (sizeof(mp_digit) * 8);
                 /* noret */ mp_rshd(res.GetPtr(), numDigits);
@@ -446,7 +460,7 @@ bool LShift1::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)res;
     (void)bn;
 #else
-    CF_CHECK_EQ(mp_mul_2d(bn[0].GetPtr(), 1, res.GetPtr()), MP_OKAY);
+    MP_CHECK_EQ(mp_mul_2d(bn[0].GetPtr(), 1, res.GetPtr()), MP_OKAY);
 
     ret = true;
 
@@ -517,7 +531,7 @@ bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-    CF_CHECK_EQ(mp_mulmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+    MP_CHECK_EQ(mp_mulmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
 
     ret = true;
 
@@ -534,12 +548,12 @@ bool AddMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 #else
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(mp_addmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(mp_addmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
         case    1:
             CF_CHECK_EQ(wolfCrypt_bignum_detail::compare(bn[0], bn[1], ds), MP_LT)
             CF_CHECK_EQ(wolfCrypt_bignum_detail::compare(bn[1], bn[2], ds), MP_LT)
-            CF_CHECK_EQ(mp_addmod_ct(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(mp_addmod_ct(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
         default:
             goto end;
@@ -561,12 +575,12 @@ bool SubMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 #else
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(mp_submod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(mp_submod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
         case    1:
             CF_CHECK_EQ(wolfCrypt_bignum_detail::compare(bn[0], bn[1], ds), MP_LT)
             CF_CHECK_EQ(wolfCrypt_bignum_detail::compare(bn[1], bn[2], ds), MP_LT)
-            CF_CHECK_EQ(mp_submod_ct(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(mp_submod_ct(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
         default:
             goto end;
@@ -588,7 +602,7 @@ bool SqrMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)res;
     (void)bn;
 #else
-    CF_CHECK_EQ(mp_sqrmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+    MP_CHECK_EQ(mp_sqrmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
 
     ret = true;
 
@@ -650,8 +664,8 @@ bool SetBit::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     /* Ensure no truncation has occurred */
     CF_CHECK_EQ(bitPos, *_bitPos);
 
-    CF_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
-    CF_CHECK_EQ(mp_set_bit(res.GetPtr(), bitPos), MP_OKAY);
+    MP_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+    MP_CHECK_EQ(mp_set_bit(res.GetPtr(), bitPos), MP_OKAY);
 
     ret = true;
 
@@ -664,7 +678,7 @@ bool LCM::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-    CF_CHECK_EQ(mp_lcm(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+    MP_CHECK_EQ(mp_lcm(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
 
     ret = true;
 
@@ -677,7 +691,7 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(mp_mod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(mp_mod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
 #if !defined(WOLFSSL_SP_MATH)
         case    1:
@@ -685,17 +699,17 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 const auto op = bn[1].AsUnsigned<mp_digit>();
                 CF_CHECK_NE(op, std::nullopt);
                 mp_digit modResult;
-                CF_CHECK_EQ(mp_mod_d(bn[0].GetPtr(), *op, &modResult), MP_OKAY);
+                MP_CHECK_EQ(mp_mod_d(bn[0].GetPtr(), *op, &modResult), MP_OKAY);
                 CF_CHECK_EQ(res.Set(std::to_string(modResult)), true);
             }
             break;
         case    2:
             {
                 /* bn[0] *= 2 */
-                CF_CHECK_EQ(mp_mul_d(bn[0].GetPtr(), 2, bn.GetDestPtr(0)), MP_OKAY);
+                MP_CHECK_EQ(mp_mul_d(bn[0].GetPtr(), 2, bn.GetDestPtr(0)), MP_OKAY);
 
                 CF_CHECK_EQ(wolfCrypt_bignum_detail::compare(bn[0], bn[1], ds), MP_LT)
-                CF_CHECK_EQ(mp_div_2_mod_ct(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+                MP_CHECK_EQ(mp_div_2_mod_ct(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             }
             break;
         case    3:
@@ -703,10 +717,10 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 mp_digit mp;
                 wolfCrypt_bignum::Bignum tmp(ds);
 
-                CF_CHECK_EQ(mp_montgomery_setup(bn[1].GetPtr(), &mp), MP_OKAY);
-                CF_CHECK_EQ(mp_montgomery_calc_normalization(tmp.GetPtr(), bn[1].GetPtr()), MP_OKAY);
-                CF_CHECK_EQ(mp_mulmod(bn[0].GetPtr(), tmp.GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
-                CF_CHECK_EQ(mp_montgomery_reduce(res.GetPtr(), bn[1].GetPtr(), mp), MP_OKAY);
+                MP_CHECK_EQ(mp_montgomery_setup(bn[1].GetPtr(), &mp), MP_OKAY);
+                MP_CHECK_EQ(mp_montgomery_calc_normalization(tmp.GetPtr(), bn[1].GetPtr()), MP_OKAY);
+                MP_CHECK_EQ(mp_mulmod(bn[0].GetPtr(), tmp.GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+                MP_CHECK_EQ(mp_montgomery_reduce(res.GetPtr(), bn[1].GetPtr(), mp), MP_OKAY);
             }
             break;
 #endif
@@ -717,7 +731,7 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
                 CF_CHECK_NE(exponent = wolfCrypt_bignum_detail::isPowerOf2(bn[1], ds), std::nullopt);
 
-                CF_CHECK_EQ(mp_mod_2d(bn[0].GetPtr(), *exponent, res.GetPtr()), MP_OKAY);
+                MP_CHECK_EQ(mp_mod_2d(bn[0].GetPtr(), *exponent, res.GetPtr()), MP_OKAY);
             }
             break;
 #endif
@@ -801,14 +815,14 @@ bool Set::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            CF_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+            MP_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
             ret = true;
             break;
         case    1:
             {
                 const auto op = bn[0].AsUnsigned<mp_digit>();
                 CF_CHECK_NE(op, std::nullopt);
-                CF_CHECK_EQ(mp_set(res.GetPtr(), *op), MP_OKAY);
+                MP_CHECK_EQ(mp_set(res.GetPtr(), *op), MP_OKAY);
                 ret = true;
             }
             break;
@@ -819,7 +833,7 @@ bool Set::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                  * with --disable-fastmath or SP math.
                  */
 #if defined(USE_FAST_MATH)
-                CF_CHECK_EQ(mp_exch(res.GetPtr(), bn[0].GetPtr()), MP_OKAY);
+                MP_CHECK_EQ(mp_exch(res.GetPtr(), bn[0].GetPtr()), MP_OKAY);
 #else
                 /* noret */ mp_exch(res.GetPtr(), bn[0].GetPtr());
 #endif
@@ -830,7 +844,7 @@ bool Set::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             {
                 const auto op = bn[0].AsUnsigned<unsigned long>();
                 CF_CHECK_NE(op, std::nullopt);
-                CF_CHECK_EQ(mp_set_int(res.GetPtr(), *op), MP_OKAY);
+                MP_CHECK_EQ(mp_set_int(res.GetPtr(), *op), MP_OKAY);
                 ret = true;
             }
             break;
@@ -861,7 +875,7 @@ bool Jacobi::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 #else
     if ( mp_isodd(bn[1].GetPtr()) ) {
         int jacobi;
-        CF_CHECK_EQ(mp_jacobi(bn[0].GetPtr(), bn[1].GetPtr(), &jacobi), MP_OKAY);
+        MP_CHECK_EQ(mp_jacobi(bn[0].GetPtr(), bn[1].GetPtr(), &jacobi), MP_OKAY);
 
         switch ( jacobi ) {
             case    1:
@@ -896,7 +910,7 @@ bool Exp2::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 #if defined(USE_FAST_MATH) && !defined(WOLFSSL_SP_MATH) && !defined(WOLFSSL_SP_MATH_ALL)
     CF_CHECK_LT(*exponent / DIGIT_BIT, FP_SIZE);
 #endif
-    CF_CHECK_EQ(mp_2expt(res.GetPtr(), *exponent), MP_OKAY);
+    MP_CHECK_EQ(mp_2expt(res.GetPtr(), *exponent), MP_OKAY);
 
     ret = true;
 
@@ -958,7 +972,7 @@ bool CondSet::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     const int doCopy = mp_iszero(bn[1].GetPtr()) ? 0 : 1;
-    CF_CHECK_EQ(mp_cond_copy(bn[0].GetPtr(), doCopy, res.GetPtr()), MP_OKAY);
+    MP_CHECK_EQ(mp_cond_copy(bn[0].GetPtr(), doCopy, res.GetPtr()), MP_OKAY);
 
     ret = true;
 
@@ -976,14 +990,14 @@ bool Rand::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
         case    0:
             {
                 const auto len = ds.Get<uint16_t>() % 512;
-                CF_CHECK_EQ(mp_rand(res.GetPtr(), len, wolfCrypt_detail::GetRNG()), MP_OKAY);
+                MP_CHECK_EQ(mp_rand(res.GetPtr(), len, wolfCrypt_detail::GetRNG()), MP_OKAY);
                 ret = true;
             }
             break;
         case    1:
             {
                 const auto len = ds.Get<uint16_t>() % 100;
-                CF_CHECK_EQ(mp_rand_prime(res.GetPtr(), len, wolfCrypt_detail::GetRNG(), nullptr), MP_OKAY);
+                MP_CHECK_EQ(mp_rand_prime(res.GetPtr(), len, wolfCrypt_detail::GetRNG(), nullptr), MP_OKAY);
                 ret = true;
             }
             break;
