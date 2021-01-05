@@ -16,8 +16,26 @@ namespace wolfCrypt_detail {
 namespace wolfCrypt_bignum {
 
 namespace wolfCrypt_bignum_detail {
-    static int compare(Bignum& A, Bignum& B) {
-        return mp_cmp(A.GetPtr(), B.GetPtr());
+    static int compare(Bignum& A, Bignum& B, Datasource& ds) {
+        bool swap = false;
+        try {
+            swap = ds.Get<bool>();
+        } catch ( ... ) { }
+
+        if ( swap == false ) {
+            return mp_cmp(A.GetPtr(), B.GetPtr());
+        } else {
+            const auto ret = mp_cmp(B.GetPtr(), A.GetPtr());
+
+            /* Because the operands were swapped, invert the result */
+            if ( ret == MP_LT ) {
+                return MP_GT;
+            } else if ( ret == MP_GT ) {
+                return MP_LT;
+            } else {
+                return ret;
+            }
+        }
     }
 
 #if !defined(WOLFSSL_SP_MATH) && (!defined(USE_FAST_MATH) || defined(WOLFSSL_SP_MATH_ALL))
@@ -31,7 +49,7 @@ namespace wolfCrypt_bignum_detail {
         CF_CHECK_EQ(mp_copy(A.GetPtr(), tmp.GetPtr()), MP_OKAY);
         /* noret */ mp_rshb(tmp.GetPtr(), numBits);
         CF_CHECK_EQ(mp_mul_2d(tmp.GetPtr(), numBits, tmp.GetPtr()), MP_OKAY);
-        CF_CHECK_EQ(compare(A, tmp), MP_EQ);
+        CF_CHECK_EQ(compare(A, tmp, ds), MP_EQ);
 
         ret = numBits;
 end:
@@ -73,7 +91,7 @@ bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
      * memory errors, but don't return the result.
      */
     bool negative = false;
-    if ( wolfCrypt_bignum_detail::compare(bn[0], bn[1]) == MP_LT) {
+    if ( wolfCrypt_bignum_detail::compare(bn[0], bn[1], ds) == MP_LT) {
         negative = true;
     }
 #endif
@@ -133,7 +151,7 @@ bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
                 wolfCrypt_bignum::Bignum multiplier(ds);
                 CF_CHECK_EQ(mp_2expt(multiplier.GetPtr(), numBits), MP_OKAY);
-                CF_CHECK_EQ(wolfCrypt_bignum_detail::compare(bn[1], multiplier), MP_EQ);
+                CF_CHECK_EQ(wolfCrypt_bignum_detail::compare(bn[1], multiplier, ds), MP_EQ);
 
                 CF_CHECK_EQ(mp_lshd(bn.GetDestPtr(0), numBits / DIGIT_BIT), MP_OKAY);
                 CF_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
@@ -311,7 +329,7 @@ bool Cmp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     int cmpRes = 0;
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            cmpRes = wolfCrypt_bignum_detail::compare(bn[0], bn[1]);
+            cmpRes = wolfCrypt_bignum_detail::compare(bn[0], bn[1], ds);
             break;
         case    1:
             {
