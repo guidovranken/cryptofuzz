@@ -201,11 +201,19 @@ template<> void CTX_Copier<EVP_MD_CTX>::freeCTX(EVP_MD_CTX* ctx) const { EVP_MD_
 template<> void CTX_Copier<EVP_MD_CTX>::freeCTX(EVP_MD_CTX* ctx) const { EVP_MD_CTX_cleanup(ctx); free(ctx); }
 #endif
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 template<> EVP_CIPHER_CTX* CTX_Copier<EVP_CIPHER_CTX>::newCTX(void) const { return EVP_CIPHER_CTX_new(); }
-template<> int CTX_Copier<EVP_CIPHER_CTX>::copyCTX(EVP_CIPHER_CTX* dest, EVP_CIPHER_CTX* src) const { return EVP_CIPHER_CTX_copy(dest, src); }
-template<> void CTX_Copier<EVP_CIPHER_CTX>::freeCTX(EVP_CIPHER_CTX* ctx) const { return EVP_CIPHER_CTX_free(ctx); }
+template<> int CTX_Copier<EVP_CIPHER_CTX>::copyCTX(EVP_CIPHER_CTX* dest, EVP_CIPHER_CTX* src) const {
+#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
+    return EVP_CIPHER_CTX_copy(dest, src);
+#else
+    (void)dest;
+    (void)src;
+
+    /* EVP_CIPHER_CTX_copy is not implemented in wolfCrypt; return failure */
+    return 0;
 #endif
+}
+template<> void CTX_Copier<EVP_CIPHER_CTX>::freeCTX(EVP_CIPHER_CTX* ctx) const { return EVP_CIPHER_CTX_free(ctx); }
 
 #if !defined(CRYPTOFUZZ_OPENSSL_102)
 template<> HMAC_CTX* CTX_Copier<HMAC_CTX>::newCTX(void) const { return HMAC_CTX_new(); }

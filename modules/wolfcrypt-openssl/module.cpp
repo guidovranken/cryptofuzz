@@ -276,6 +276,384 @@ std::optional<component::MAC> wolfCrypt_OpenSSL::OpHMAC(operation::HMAC& op) {
     return {};
 }
 
+namespace wolfCrypt_OpenSSL_detail {
+
+const EVP_CIPHER* toEVPCIPHER(const component::SymmetricCipherType cipherType) {
+    using fuzzing::datasource::ID;
+
+    switch ( cipherType.Get() ) {
+        case CF_CIPHER("AES_128_CBC"):
+            return EVP_aes_128_cbc();
+        case CF_CIPHER("AES_128_CFB1"):
+            return EVP_aes_128_cfb1();
+        case CF_CIPHER("AES_128_CFB8"):
+            return EVP_aes_128_cfb8();
+        case CF_CIPHER("AES_128_CTR"):
+            return EVP_aes_128_ctr();
+        case CF_CIPHER("AES_128_ECB"):
+            return EVP_aes_128_ecb();
+        case CF_CIPHER("AES_128_GCM"):
+            return EVP_aes_128_gcm();
+        case CF_CIPHER("AES_128_OFB"):
+            return EVP_aes_128_ofb();
+        case CF_CIPHER("AES_128_XTS"):
+            return EVP_aes_128_xts();
+        case CF_CIPHER("AES_192_CBC"):
+            return EVP_aes_192_cbc();
+        case CF_CIPHER("AES_192_CFB1"):
+            return EVP_aes_192_cfb1();
+        case CF_CIPHER("AES_192_CFB8"):
+            return EVP_aes_192_cfb8();
+        case CF_CIPHER("AES_192_CTR"):
+            return EVP_aes_192_ctr();
+        case CF_CIPHER("AES_192_ECB"):
+            return EVP_aes_192_ecb();
+        case CF_CIPHER("AES_192_GCM"):
+            return EVP_aes_192_gcm();
+        case CF_CIPHER("AES_192_OFB"):
+            return EVP_aes_192_ofb();
+        case CF_CIPHER("AES_256_CBC"):
+            return EVP_aes_256_cbc();
+        case CF_CIPHER("AES_256_CFB1"):
+            return EVP_aes_256_cfb1();
+        case CF_CIPHER("AES_256_CFB8"):
+            return EVP_aes_256_cfb8();
+        case CF_CIPHER("AES_256_CTR"):
+            return EVP_aes_256_ctr();
+        case CF_CIPHER("AES_256_ECB"):
+            return EVP_aes_256_ecb();
+        case CF_CIPHER("AES_256_GCM"):
+            return EVP_aes_256_gcm();
+        case CF_CIPHER("AES_256_OFB"):
+            return EVP_aes_256_ofb();
+        case CF_CIPHER("AES_256_XTS"):
+            return EVP_aes_256_xts();
+        case CF_CIPHER("DES_CBC"):
+            return EVP_des_cbc();
+        case CF_CIPHER("DES_ECB"):
+            return EVP_des_ecb();
+        case CF_CIPHER("DES_EDE3_CBC"):
+            return EVP_des_ede3_cbc();
+        case CF_CIPHER("IDEA_CBC"):
+            return EVP_idea_cbc();
+        case CF_CIPHER("RC4"):
+            return EVP_rc4();
+        default:
+            return nullptr;
+    }
+}
+
+inline bool isAEAD(const EVP_CIPHER* ctx) {
+    return (EVP_CIPHER_flags(ctx) & EVP_CIPH_GCM_MODE) == EVP_CIPH_GCM_MODE;
+}
+
+bool checkSetIVLength(const uint64_t cipherType, const EVP_CIPHER* cipher, EVP_CIPHER_CTX* ctx, const size_t inputIvLength) {
+    bool ret = false;
+
+    const size_t ivLength = EVP_CIPHER_iv_length(cipher);
+    const bool ivLengthMismatch = ivLength != inputIvLength;
+
+    return !ivLengthMismatch;
+    if ( isAEAD(cipher) == false ) {
+        /* Return true (success) if input IV length is expected IV length */
+        return !ivLengthMismatch;
+    }
+
+    const bool isCCM = repository::IsCCM( cipherType );
+
+    /* Only AEAD ciphers past this point */
+
+    /* EVP_CIPHER_iv_length may return the wrong default IV length for CCM ciphers.
+     * Eg. EVP_CIPHER_iv_length returns 12 for EVP_aes_128_ccm() even though the
+     * IV length is actually.
+     *
+     * Hence, with CCM ciphers set the desired IV length always.
+     */
+
+    if ( isCCM || ivLengthMismatch ) {
+        CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, inputIvLength, nullptr), 1);
+    }
+
+    ret = true;
+end:
+
+    return ret;
+}
+
+bool checkSetKeyLength(const EVP_CIPHER* cipher, EVP_CIPHER_CTX* ctx, const size_t inputKeyLength) {
+    (void)ctx;
+
+    bool ret = false;
+
+    const size_t keyLength = EVP_CIPHER_key_length(cipher);
+    if ( keyLength != inputKeyLength ) {
+        return false;
+        CF_CHECK_EQ(EVP_CIPHER_CTX_set_key_length(ctx, inputKeyLength), 1);
+    }
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+std::optional<component::Ciphertext> OpSymmetricEncrypt_EVP(operation::SymmetricEncrypt& op, Datasource& ds) {
+    std::optional<component::Ciphertext> ret = std::nullopt;
+
+    util::Multipart partsCleartext, partsAAD;
+
+    const EVP_CIPHER* cipher = nullptr;
+    CF_EVP_CIPHER_CTX ctx(ds);
+
+    size_t out_size = op.ciphertextSize;
+    size_t outIdx = 0;
+    uint8_t* out = util::malloc(out_size);
+    uint8_t* outTag = op.tagSize != std::nullopt ? util::malloc(*op.tagSize) : nullptr;
+
+    /* Initialize */
+    {
+        CF_CHECK_NE(cipher = wolfCrypt_OpenSSL_detail::toEVPCIPHER(op.cipher.cipherType), nullptr);
+        if ( op.tagSize != std::nullopt || op.aad != std::nullopt ) {
+            /* Trying to treat non-AEAD with AEAD-specific features (tag, aad)
+             * leads to all kinds of gnarly memory bugs in OpenSSL.
+             * It is quite arguably misuse of the OpenSSL API, so don't do this.
+             */
+            CF_CHECK_EQ(isAEAD(cipher), true);
+        }
+
+        CF_CHECK_EQ(EVP_EncryptInit_ex(ctx.GetPtr(), cipher, nullptr, nullptr, nullptr), 1);
+
+        /* Must be a multiple of the block size of this cipher */
+        //CF_CHECK_EQ(op.cleartext.GetSize() % EVP_CIPHER_block_size(cipher), 0);
+
+        /* Convert cleartext to parts */
+        partsCleartext = util::CipherInputTransform(ds, op.cipher.cipherType, out, out_size, op.cleartext.GetPtr(), op.cleartext.GetSize());
+
+        if ( op.aad != std::nullopt ) {
+            if ( repository::IsCCM( op.cipher.cipherType.Get() ) ) {
+                /* CCM does not support chunked AAD updating.
+                 * See: https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption#Authenticated_Encryption_using_CCM_mode
+                 */
+                partsAAD = { {op.aad->GetPtr(), op.aad->GetSize()} };
+            } else {
+                partsAAD = util::ToParts(ds, *(op.aad));
+            }
+        }
+
+        if ( op.cipher.cipherType.Get() != CF_CIPHER("CHACHA20") ) {
+            CF_CHECK_EQ(checkSetIVLength(op.cipher.cipherType.Get(), cipher, ctx.GetPtr(), op.cipher.iv.GetSize()), true);
+        } else {
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 12);
+        }
+        CF_CHECK_EQ(checkSetKeyLength(cipher, ctx.GetPtr(), op.cipher.key.GetSize()), true);
+
+        if ( op.cipher.cipherType.Get() != CF_CIPHER("CHACHA20") ) {
+            CF_CHECK_EQ(EVP_EncryptInit_ex(ctx.GetPtr(), nullptr, nullptr, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr()), 1);
+        } else {
+            /* Prepend the 32 bit counter (which is 0) to the iv */
+            uint8_t cc20IV[16];
+            memset(cc20IV, 0, 4);
+            memcpy(cc20IV + 4, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize());
+            CF_CHECK_EQ(EVP_EncryptInit_ex(ctx.GetPtr(), nullptr, nullptr, op.cipher.key.GetPtr(), cc20IV), 1);
+        }
+
+        /* Disable ECB padding for consistency with mbed TLS */
+        if ( repository::IsECB(op.cipher.cipherType.Get()) ) {
+            CF_CHECK_EQ(EVP_CIPHER_CTX_set_padding(ctx.GetPtr(), 0), 1);
+        }
+    }
+
+    /* Process */
+    {
+        /* If the cipher is CCM, the total cleartext size needs to be indicated explicitly
+         * https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption
+         */
+        if ( repository::IsCCM(op.cipher.cipherType.Get()) == true ) {
+            int len;
+            CF_CHECK_EQ(EVP_EncryptUpdate(ctx.GetPtr(), nullptr, &len, nullptr, op.cleartext.GetSize()), 1);
+        }
+
+        /* Set AAD */
+        if ( op.aad != std::nullopt ) {
+            for (const auto& part : partsAAD) {
+                int len;
+                CF_CHECK_EQ(EVP_EncryptUpdate(ctx.GetPtr(), nullptr, &len, part.first, part.second), 1);
+            }
+        }
+
+        for (const auto& part : partsCleartext) {
+            /* "the amount of data written may be anything from zero bytes to (inl + cipher_block_size - 1)" */
+            CF_CHECK_GTE(out_size, part.second + EVP_CIPHER_block_size(cipher) - 1);
+
+            int len = -1;
+            CF_CHECK_EQ(EVP_EncryptUpdate(ctx.GetPtr(), out + outIdx, &len, part.first, part.second), 1);
+            outIdx += len;
+            out_size -= len;
+        }
+    }
+
+    /* Finalize */
+    {
+        CF_CHECK_GTE(out_size, static_cast<size_t>(EVP_CIPHER_block_size(cipher)));
+
+        int len = -1;
+        CF_CHECK_EQ(EVP_EncryptFinal_ex(ctx.GetPtr(), out + outIdx, &len), 1);
+        outIdx += len;
+
+        if ( op.tagSize != std::nullopt ) {
+            /* Get tag.
+             *
+             * See comments around EVP_CTRL_AEAD_SET_TAG in OpSymmetricDecrypt_EVP for reasons
+             * as to why this is disabled for LibreSSL.
+             */
+            CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx.GetPtr(), EVP_CTRL_AEAD_GET_TAG, *op.tagSize, outTag), 1);
+            ret = component::Ciphertext(Buffer(out, outIdx), Buffer(outTag, *op.tagSize));
+        } else {
+            ret = component::Ciphertext(Buffer(out, outIdx));
+        }
+    }
+
+end:
+
+    util::free(out);
+    util::free(outTag);
+
+    return ret;
+}
+
+}
+
+std::optional<component::Ciphertext> wolfCrypt_OpenSSL::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    return wolfCrypt_OpenSSL_detail::OpSymmetricEncrypt_EVP(op, ds);
+}
+
+namespace wolfCrypt_OpenSSL_detail {
+
+std::optional<component::Cleartext> OpSymmetricDecrypt_EVP(operation::SymmetricDecrypt& op, Datasource& ds) {
+    std::optional<component::Cleartext> ret = std::nullopt;
+
+    util::Multipart partsCiphertext, partsAAD;
+
+    const EVP_CIPHER* cipher = nullptr;
+    CF_EVP_CIPHER_CTX ctx(ds);
+
+    size_t out_size = op.cleartextSize;
+    size_t outIdx = 0;
+    uint8_t* out = util::malloc(out_size);
+
+    /* Initialize */
+    {
+        CF_CHECK_NE(cipher = toEVPCIPHER(op.cipher.cipherType), nullptr);
+        if ( op.tag != std::nullopt || op.aad != std::nullopt ) {
+            /* Trying to treat non-AEAD with AEAD-specific features (tag, aad)
+             * leads to all kinds of gnarly memory bugs in OpenSSL.
+             * It is quite arguably misuse of the OpenSSL API, so don't do this.
+             */
+            CF_CHECK_EQ(isAEAD(cipher), true);
+        }
+        CF_CHECK_EQ(EVP_DecryptInit_ex(ctx.GetPtr(), cipher, nullptr, nullptr, nullptr), 1);
+
+        /* Must be a multiple of the block size of this cipher */
+        //CF_CHECK_EQ(op.ciphertext.GetSize() % EVP_CIPHER_block_size(cipher), 0);
+
+        /* Convert ciphertext to parts */
+        //partsCiphertext = util::CipherInputTransform(ds, op.cipher.cipherType, out, out_size, op.ciphertext.GetPtr(), op.ciphertext.GetSize());
+        partsCiphertext = { {op.ciphertext.GetPtr(), op.ciphertext.GetSize()} };
+
+        if ( op.aad != std::nullopt ) {
+            if ( repository::IsCCM( op.cipher.cipherType.Get() ) ) {
+                /* CCM does not support chunked AAD updating.
+                 * See: https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption#Authenticated_Encryption_using_CCM_mode
+                 */
+                partsAAD = { {op.aad->GetPtr(), op.aad->GetSize()} };
+            } else {
+                partsAAD = util::ToParts(ds, *(op.aad));
+            }
+        }
+
+        if ( op.cipher.cipherType.Get() != CF_CIPHER("CHACHA20") ) {
+            CF_CHECK_EQ(checkSetIVLength(op.cipher.cipherType.Get(), cipher, ctx.GetPtr(), op.cipher.iv.GetSize()), true);
+        } else {
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 12);
+        }
+        CF_CHECK_EQ(checkSetKeyLength(cipher, ctx.GetPtr(), op.cipher.key.GetSize()), true);
+
+        if ( op.cipher.cipherType.Get() != CF_CIPHER("CHACHA20") ) {
+            CF_CHECK_EQ(EVP_DecryptInit_ex(ctx.GetPtr(), nullptr, nullptr, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr()), 1);
+        } else {
+            /* Prepend the 32 bit counter (which is 0) to the iv */
+            uint8_t cc20IV[16];
+            memset(cc20IV, 0, 4);
+            memcpy(cc20IV + 4, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize());
+            CF_CHECK_EQ(EVP_DecryptInit_ex(ctx.GetPtr(), nullptr, nullptr, op.cipher.key.GetPtr(), cc20IV), 1);
+        }
+
+        /* Disable ECB padding for consistency with mbed TLS */
+        if ( repository::IsECB(op.cipher.cipherType.Get()) ) {
+            CF_CHECK_EQ(EVP_CIPHER_CTX_set_padding(ctx.GetPtr(), 0), 1);
+        }
+    }
+
+    /* Process */
+    {
+        /* If the cipher is CCM, the total cleartext size needs to be indicated explicitly
+         * https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption
+         */
+        if ( repository::IsCCM(op.cipher.cipherType.Get()) == true ) {
+            int len;
+            CF_CHECK_EQ(EVP_DecryptUpdate(ctx.GetPtr(), nullptr, &len, nullptr, op.ciphertext.GetSize()), 1);
+        }
+
+        /* Set AAD */
+        if ( op.aad != std::nullopt ) {
+            for (const auto& part : partsAAD) {
+                int len;
+                CF_CHECK_EQ(EVP_DecryptUpdate(ctx.GetPtr(), nullptr, &len, part.first, part.second), 1);
+            }
+        }
+
+        /* Set ciphertext */
+        for (const auto& part : partsCiphertext) {
+            CF_CHECK_GTE(out_size, part.second + EVP_CIPHER_block_size(cipher));
+
+            int len = -1;
+            CF_CHECK_EQ(EVP_DecryptUpdate(ctx.GetPtr(), out + outIdx, &len, part.first, part.second), 1);
+
+            outIdx += len;
+            out_size -= len;
+        }
+
+        if ( op.tag != std::nullopt ) {
+            CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx.GetPtr(), EVP_CTRL_AEAD_SET_TAG, op.tag->GetSize(), (void*)op.tag->GetPtr()), 1);
+        }
+    }
+
+    /* Finalize */
+    {
+        CF_CHECK_GTE(out_size, static_cast<size_t>(EVP_CIPHER_block_size(cipher)));
+
+        int len = -1;
+        CF_CHECK_EQ(EVP_DecryptFinal_ex(ctx.GetPtr(), out + outIdx, &len), 1);
+        outIdx += len;
+
+        ret = component::Cleartext(out, outIdx);
+    }
+
+end:
+
+    util::free(out);
+
+    return ret;
+}
+
+}
+
+std::optional<component::Cleartext> wolfCrypt_OpenSSL::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    return wolfCrypt_OpenSSL_detail::OpSymmetricDecrypt_EVP(op, ds);
+}
+
 std::optional<component::Bignum> wolfCrypt_OpenSSL::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
