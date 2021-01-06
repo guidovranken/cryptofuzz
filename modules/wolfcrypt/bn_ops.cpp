@@ -63,6 +63,16 @@ namespace wolfCrypt_bignum_detail {
         MP_CHECK_EQ(mp_copy(A.GetPtr(), tmp.GetPtr()), MP_OKAY);
         /* noret */ mp_rshb(tmp.GetPtr(), numBits);
         MP_CHECK_EQ(mp_mul_2d(tmp.GetPtr(), numBits, tmp.GetPtr()), MP_OKAY);
+
+        {
+            /* Use the nearest exponent of 2 as a hint for the mutator */
+            const auto s = tmp.ToDecString();
+
+            if ( s != std::nullopt ) {
+                util::HintBignum(*s);
+            }
+        }
+
         CF_CHECK_EQ(compare(A, tmp, ds), MP_EQ);
 
         ret = numBits;
@@ -152,6 +162,7 @@ bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             break;
 #if !defined(USE_FAST_MATH) && !defined(WOLFSSL_SP_MATH)
         case    2:
+            util::HintBignum("2");
             CF_CHECK_EQ(mp_cmp_d(bn[1].GetPtr(), 2), MP_EQ);
             MP_CHECK_EQ(mp_mul_2(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
             ret = true;
@@ -192,11 +203,13 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             MP_CHECK_EQ(mp_div(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr(), GET_OPTIONAL_BN()), MP_OKAY);
             break;
         case    1:
+            util::HintBignum("2");
             CF_CHECK_EQ(mp_cmp_d(bn[1].GetPtr(), 2), MP_EQ);
             MP_CHECK_EQ(mp_div_2(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
 #if !defined(USE_FAST_MATH)
         case    2:
+            util::HintBignum("3");
             CF_CHECK_EQ(mp_cmp_d(bn[1].GetPtr(), 3), MP_EQ);
             MP_CHECK_EQ(mp_div_3(bn[0].GetPtr(), res.GetPtr(), nullptr), MP_OKAY);
             break;
