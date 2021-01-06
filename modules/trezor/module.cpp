@@ -14,6 +14,21 @@ extern "C" {
     #include <pbkdf2.h>
 }
 
+fuzzing::datasource::Datasource* global_ds = nullptr;
+
+extern "C" uint32_t random32(void) {
+    if ( global_ds == nullptr ) {
+        /* Should not happen */
+        return 0;
+    }
+
+    try {
+        return global_ds->Get<uint32_t>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+    return 0;
+}
+
 namespace cryptofuzz {
 namespace module {
 
@@ -32,7 +47,7 @@ namespace trezor_firmware_detail {
 
         memset(out, 0, 32);
         memcpy(out + diff, v.data(), v.size());
-        
+
         return true;
     }
 
@@ -404,7 +419,11 @@ std::optional<component::Key> trezor_firmware::OpKDF_PBKDF2(operation::KDF_PBKDF
 }
 
 std::optional<component::ECC_PublicKey> trezor_firmware::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
-    return trezor_firmware_detail::OpECC_PrivateToPublic(op.curveType, op.priv);
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    global_ds = &ds;
+    const auto ret = trezor_firmware_detail::OpECC_PrivateToPublic(op.curveType, op.priv);
+    global_ds = nullptr;
+    return ret;
 }
 
 std::optional<bool> trezor_firmware::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
@@ -427,10 +446,13 @@ end:
     return ret;
 }
 
-
 std::optional<component::ECDSA_Signature> trezor_firmware::OpECDSA_Sign(operation::ECDSA_Sign& op) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    global_ds = &ds;
+
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
     if ( op.UseRFC6979Nonce() == false ) {
+        global_ds = nullptr;
         return ret;
     }
 
@@ -472,10 +494,14 @@ std::optional<component::ECDSA_Signature> trezor_firmware::OpECDSA_Sign(operatio
     }
 
 end:
+    global_ds = nullptr;
     return ret;
 }
 
 std::optional<bool> trezor_firmware::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    global_ds = &ds;
+
     std::optional<bool> ret = std::nullopt;
     uint8_t pubkey_bytes[65];
     uint8_t sig_bytes[64];
@@ -514,6 +540,7 @@ std::optional<bool> trezor_firmware::OpECDSA_Verify(operation::ECDSA_Verify& op)
     }
 
 end:
+    global_ds = nullptr;
     return ret;
 }
 } /* namespace module */
