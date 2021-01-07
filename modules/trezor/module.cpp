@@ -19,14 +19,14 @@ fuzzing::datasource::Datasource* global_ds = nullptr;
 extern "C" uint32_t random32(void) {
     if ( global_ds == nullptr ) {
         /* Should not happen */
-        return 0;
+        return 1;
     }
 
     try {
         return global_ds->Get<uint32_t>();
     } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
-    return 0;
+    return 1;
 }
 
 namespace cryptofuzz {
