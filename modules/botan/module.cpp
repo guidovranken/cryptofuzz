@@ -831,6 +831,30 @@ end:
     return ret;
 }
 
+std::optional<bool> Botan::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    Botan_detail::Fuzzer_RNG rng(ds);
+    std::unique_ptr<::Botan::Public_Key> pub = nullptr;
+
+    try {
+        std::optional<std::string> curveString;
+        CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
+
+        ::Botan::EC_Group group(*curveString);
+        const ::Botan::BigInt pub_x(op.pub.first.ToString(ds));
+        const ::Botan::BigInt pub_y(op.pub.second.ToString(ds));
+        const ::Botan::PointGFp public_point = group.point(pub_x, pub_y);
+        pub = std::make_unique<::Botan::ECDSA_PublicKey>(::Botan::ECDSA_PublicKey(group, public_point));
+
+        ret = pub->check_key(rng, true);
+    } catch ( ... ) { }
+
+end:
+    return ret;
+}
+
 std::optional<component::ECC_PublicKey> Botan::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
