@@ -822,6 +822,11 @@ std::optional<component::ECC_KeyPair> Botan::OpECC_GenerateKeyPair(operation::EC
         const auto pub_x = priv.public_point().get_affine_x();
         const auto pub_y = priv.public_point().get_affine_y();
 
+        {
+            const auto pub = std::make_unique<::Botan::ECDSA_PublicKey>(::Botan::ECDSA_PublicKey(group, priv.public_point()));
+            CF_ASSERT(pub->check_key(rng, true) == true, "Generated pubkey fails validation");
+        }
+
         ret = { priv.private_value().to_dec_string(), { pub_x.to_dec_string(), pub_y.to_dec_string() } };
 
       /* Catch exception thrown from Botan_detail::Fuzzer_RNG::randomize */
