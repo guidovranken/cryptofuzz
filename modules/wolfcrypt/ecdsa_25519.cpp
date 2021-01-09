@@ -13,6 +13,10 @@ namespace cryptofuzz {
 namespace module {
 namespace wolfCrypt_detail {
 
+#if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
+    extern bool haveAllocFailure;
+#endif
+
 static bool ed25519LoadPrivateKey(ed25519_key& key, component::Bignum priv, Datasource& ds) {
     bool ret = false;
 
@@ -124,6 +128,52 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Ed25519(operation:
     ret = ed25519GetPublicKey(key, ds);
 
 end:
+    wolfCrypt_detail::UnsetGlobalDs();
+    return ret;
+}
+
+std::optional<bool> OpECC_ValidatePubkey_Curve25519(operation::ECC_ValidatePubkey& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    wolfCrypt_bignum::Bignum pub(ds);
+    uint8_t pub_bytes[CURVE25519_KEYSIZE];
+
+    CF_CHECK_EQ(pub.Set(op.pub.first.ToString(ds)), true);
+    CF_CHECK_EQ(mp_to_unsigned_bin_len(pub.GetPtr(), pub_bytes, sizeof(pub_bytes)), MP_OKAY);
+
+    haveAllocFailure = false;
+    ret = wc_curve25519_check_public(pub_bytes, sizeof(pub_bytes), EC25519_BIG_ENDIAN) == 0;
+    if ( *ret == false && haveAllocFailure == true ) {
+        ret = std::nullopt;
+    }
+
+end:
+
+    wolfCrypt_detail::UnsetGlobalDs();
+    return ret;
+}
+
+std::optional<bool> OpECC_ValidatePubkey_Ed25519(operation::ECC_ValidatePubkey& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    ed25519_key key;
+
+    memset(&key, 0, sizeof(key));
+
+    CF_CHECK_EQ(ed25519LoadPublicKey(key, op.pub.first, ds), true);
+
+    haveAllocFailure = false;
+    ret = wc_ed25519_check_key(&key) == 0;
+    if ( *ret == false && haveAllocFailure == true ) {
+        ret = std::nullopt;
+    }
+
+end:
+
     wolfCrypt_detail::UnsetGlobalDs();
     return ret;
 }

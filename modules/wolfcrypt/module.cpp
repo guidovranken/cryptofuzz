@@ -2675,13 +2675,13 @@ std::optional<component::ECC_PublicKey> wolfCrypt::OpECC_PrivateToPublic(operati
 
 std::optional<bool> wolfCrypt::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
     if ( op.curveType.Get() == CF_ECC_CURVE("x25519") ) {
-        return std::nullopt; /* TODO */
+        return wolfCrypt_detail::OpECC_ValidatePubkey_Curve25519(op);
     } else if ( op.curveType.Get() == CF_ECC_CURVE("x448") ) {
-        return std::nullopt; /* TODO */
+        return wolfCrypt_detail::OpECC_ValidatePubkey_Curve448(op);
     } else if ( op.curveType.Get() == CF_ECC_CURVE("ed25519") ) {
-        return std::nullopt; /* TODO */
+        return wolfCrypt_detail::OpECC_ValidatePubkey_Ed25519(op);
     } else if ( op.curveType.Get() == CF_ECC_CURVE("ed448") ) {
-        return std::nullopt; /* TODO */
+        return wolfCrypt_detail::OpECC_ValidatePubkey_Ed448(op);
     } else {
         return wolfCrypt_detail::OpECC_ValidatePubkey_Generic(op);
     }

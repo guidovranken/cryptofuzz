@@ -13,6 +13,10 @@ namespace cryptofuzz {
 namespace module {
 namespace wolfCrypt_detail {
 
+#if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
+    extern bool haveAllocFailure;
+#endif
+
 static bool ed448LoadPrivateKey(ed448_key& key, component::Bignum priv, Datasource& ds) {
     bool ret = false;
 
@@ -140,6 +144,52 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Ed448(operation::E
     }
 
 end:
+    wolfCrypt_detail::UnsetGlobalDs();
+    return ret;
+}
+
+std::optional<bool> OpECC_ValidatePubkey_Ed448(operation::ECC_ValidatePubkey& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    ed448_key key;
+
+    memset(&key, 0, sizeof(key));
+
+    CF_CHECK_EQ(ed448LoadPublicKey(key, op.pub.first, ds), true);
+
+    haveAllocFailure = false;
+    ret = wc_ed448_check_key(&key) == 0;
+    if ( *ret == false && haveAllocFailure == true ) {
+        ret = std::nullopt;
+    }
+
+end:
+
+    wolfCrypt_detail::UnsetGlobalDs();
+    return ret;
+}
+
+std::optional<bool> OpECC_ValidatePubkey_Curve448(operation::ECC_ValidatePubkey& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    wolfCrypt_bignum::Bignum pub(ds);
+    uint8_t pub_bytes[CURVE448_KEY_SIZE];
+
+    CF_CHECK_EQ(pub.Set(op.pub.first.ToString(ds)), true);
+    CF_CHECK_EQ(mp_to_unsigned_bin_len(pub.GetPtr(), pub_bytes, sizeof(pub_bytes)), MP_OKAY);
+
+    haveAllocFailure = false;
+    ret = wc_curve448_check_public(pub_bytes, sizeof(pub_bytes), EC448_BIG_ENDIAN) == 0;
+    if ( *ret == false && haveAllocFailure == true ) {
+        ret = std::nullopt;
+    }
+
+end:
+
     wolfCrypt_detail::UnsetGlobalDs();
     return ret;
 }
