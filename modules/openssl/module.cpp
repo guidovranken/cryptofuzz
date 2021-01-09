@@ -3167,7 +3167,12 @@ static std::optional<int> toCurveNID(const component::CurveType& curveType) {
         { CF_ECC_CURVE("wap_wsg_idm_ecid_wtls4"), NID_wap_wsg_idm_ecid_wtls4 },
         { CF_ECC_CURVE("wap_wsg_idm_ecid_wtls5"), NID_wap_wsg_idm_ecid_wtls5 },
         { CF_ECC_CURVE("wap_wsg_idm_ecid_wtls6"), NID_wap_wsg_idm_ecid_wtls6 },
+#if 0
+        /* Incorrectly implemented by OpenSSL:
+         * https://github.com/openssl/openssl/issues/6317
+         */
         { CF_ECC_CURVE("wap_wsg_idm_ecid_wtls7"), NID_wap_wsg_idm_ecid_wtls7 },
+#endif
         { CF_ECC_CURVE("wap_wsg_idm_ecid_wtls8"), NID_wap_wsg_idm_ecid_wtls8 },
         { CF_ECC_CURVE("wap_wsg_idm_ecid_wtls9"), NID_wap_wsg_idm_ecid_wtls9 },
         { CF_ECC_CURVE("x962_c2pnb163v1"), NID_X9_62_c2pnb163v1 },
