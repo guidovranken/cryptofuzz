@@ -877,7 +877,6 @@ end:
     return ret;
 }
 
-#if 0
 std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_Sign& op) {
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -922,7 +921,7 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
             /* Retrieve R and S */
             {
                 ::Botan::BER_Decoder decoder(signature);
-                ::Botan::BER_Decoder ber_sig = decoder.start_cons(::Botan::SEQUENCE);
+                ::Botan::BER_Decoder ber_sig = decoder.start_cons(::Botan::ASN1_Tag::SEQUENCE);
 
                 size_t count = 0;
 
@@ -973,7 +972,6 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
 end:
     return ret;
 }
-#endif
 
 std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
