@@ -7,6 +7,8 @@ namespace cryptofuzz {
 namespace module {
 namespace wolfCrypt_detail {
 
+#include "custom_curves.h"
+
 #if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
     extern bool haveAllocFailure;
 #endif
@@ -32,6 +34,11 @@ ecc_key* ECCKey::GetPtr(void) {
     try {
         exportToX963 = ds.Get<bool>();
     } catch ( ... ) { }
+
+    /* TODO OOB access */
+    if ( this->curveID == ECC_CURVE_CUSTOM ) {
+        exportToX963 = false;
+    }
 
     if ( exportToX963 == true ) {
         CF_CHECK_NE(newKey = wc_ecc_key_new(nullptr), nullptr);
@@ -66,12 +73,26 @@ end:
 
 bool ECCKey::SetCurve(const Type& curveType) {
     bool ret = false;
-    std::optional<int> curveID;
 
-    CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(curveType), std::nullopt);
-    this->curveID = *curveID;
+    bool useCustomCurve = false;
 
-    CF_CHECK_EQ(wc_ecc_set_curve(GetPtr(), 0, *curveID), 0);
+    try {
+        useCustomCurve = ds.Get<uint8_t>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+    if ( useCustomCurve == false ) {
+        std::optional<int> curveID;
+
+        CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(curveType), std::nullopt);
+        this->curveID = *curveID;
+
+        CF_CHECK_EQ(wc_ecc_set_curve(GetPtr(), 0, *curveID), 0);
+    } else {
+        const ecc_set_type* curveSpec;
+        CF_CHECK_NE(curveSpec = GetCustomCurve(curveType.Get()), nullptr);
+        CF_CHECK_EQ(wc_ecc_set_custom_curve(GetPtr(), curveSpec), 0);
+        this->curveID = ECC_CURVE_CUSTOM;
+    }
 
     ret = true;
 
@@ -353,7 +374,6 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     wolfCrypt_detail::SetGlobalDs(&ds);
 
-    std::optional<int> curveID;
     uint8_t* sig = nullptr;
     word32 sigSz = ECC_MAX_SIG_SIZE;
     uint8_t* hash = nullptr;
@@ -372,13 +392,6 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_
 
     try {
         ECCKey key(ds);
-        const char* name = nullptr;
-
-        CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
-
-        CF_CHECK_NE(name = wc_ecc_get_name(*curveID), nullptr);
-        CF_CHECK_EQ(wc_ecc_set_curve(key.GetPtr(), 0, *curveID), 0);
-
         CF_CHECK_EQ(key.SetCurve(op.curveType), true);
         CF_CHECK_EQ(key.LoadPrivateKey(op.priv), true);
         key.GetPtr()->type = ECC_PRIVATEKEY_ONLY;

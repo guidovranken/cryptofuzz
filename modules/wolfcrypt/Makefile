@@ -14,7 +14,7 @@ bn_ops.o : bn_ops.cpp bn_ops.h bn_helper.h
 	$(CXX) $(CXXFLAGS) -I $(WOLFCRYPT_INCLUDE_PATH) -fPIC -c bn_ops.cpp -o bn_ops.o
 bn_helper.o : bn_helper.cpp bn_helper.h
 	$(CXX) $(CXXFLAGS) -I $(WOLFCRYPT_INCLUDE_PATH) -fPIC -c bn_helper.cpp -o bn_helper.o
-ecdsa_generic.o : ecdsa_generic.cpp ecdsa_generic.h
+ecdsa_generic.o : ecdsa_generic.cpp ecdsa_generic.h custom_curves.h
 	$(CXX) $(CXXFLAGS) -I $(WOLFCRYPT_INCLUDE_PATH) -fPIC -c ecdsa_generic.cpp -o ecdsa_generic.o
 ecdsa_448.o : ecdsa_448.cpp ecdsa_448.h
 	$(CXX) $(CXXFLAGS) -I $(WOLFCRYPT_INCLUDE_PATH) -fPIC -c ecdsa_448.cpp -o ecdsa_448.o
