@@ -922,10 +922,6 @@ const ecc_set_type* GetCustomCurve(const uint64_t id) {
             return &ecc_dp_brainpoolP512t1;
         case    CF_ECC_CURVE("frp256v1"):
             return &ecc_dp_FRP256v1;
-        case    CF_ECC_CURVE("gost_256A"):
-            return &ecc_dp_gost256;
-        case    CF_ECC_CURVE("gost_512A"):
-            return &ecc_dp_gost512;
         case    CF_ECC_CURVE("tc26_gost_3410_12_512_a"):
             return &ecc_dp_id_tc26_gost_3410_12_512_paramSetA;
         case    CF_ECC_CURVE("tc26_gost_3410_12_512_b"):
