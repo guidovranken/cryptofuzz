@@ -112,14 +112,12 @@ static void OPENSSL_custom_free(void* ptr, const char* file, int line) {
 OpenSSL::OpenSSL(void) :
     Module("OpenSSL") {
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
-#if 1
-    if ( CRYPTO_set_mem_functions(
+    CF_ASSERT(
+            CRYPTO_set_mem_functions(
                 OPENSSL_custom_malloc,
                 OPENSSL_custom_realloc,
-                OPENSSL_custom_free) != 1 ) {
-        abort();
-    }
-#endif
+                OPENSSL_custom_free) == 1,
+    "Cannot set memory functions");
 #endif
 
 #if !defined(CRYPTOFUZZ_OPENSSL_102)
@@ -1588,11 +1586,9 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_BIO(operation::
         int num;
         CF_CHECK_GTE(num = BIO_read(bio_cipher, out, op.ciphertextSize), 0);
 
-        /* BIO_read shouldn't report more written bytes than the buffer can hold */
-        if ( num > (int)op.ciphertextSize ) {
-            printf("Error: BIO_read reports more written bytes than the buffer can hold\n");
-            abort();
-        }
+        CF_ASSERT(
+                num <= (int)op.ciphertextSize,
+                "BIO_read reports more written bytes than the buffer can hold");
 
         {
             /* Check if more data can be read. If yes, then the buffer is too small.
@@ -2007,11 +2003,9 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_BIO(operation::S
         int num;
         CF_CHECK_GTE(num = BIO_read(bio_cipher, out, op.cleartextSize), 0);
 
-        /* BIO_read shouldn't report more written bytes than the buffer can hold */
-        if ( num > (int)op.cleartextSize ) {
-            printf("Error: BIO_read reports more written bytes than the buffer can hold\n");
-            abort();
-        }
+        CF_ASSERT(
+                num <= (int)op.cleartextSize,
+                "BIO_read reports more written bytes than the buffer can hold");
 
         {
             /* Check if more data can be read. If yes, then the buffer is too small.
@@ -2921,7 +2915,7 @@ std::optional<component::Key> OpenSSL::OpKDF_SP_800_108(operation::KDF_SP_800_10
         } else if ( op.mode == 1 ) {
             *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_MODE, feedbackStr.data(), 0);
         } else {
-            abort();
+            CF_UNREACHABLE();
         }
 
         auto secretCopy = op.secret.Get();

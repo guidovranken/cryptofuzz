@@ -43,9 +43,8 @@ class CTX_Copier {
         CTX_Copier(Datasource& ds) :
             ds(ds) {
             ctx = newCTX();
-            if ( ctx == nullptr ) {
-                abort();
-            }
+
+            CF_ASSERT(ctx != nullptr, "Cannot create ctx");
         }
 
         T* GetPtr(void) {
@@ -157,7 +156,7 @@ class EC_POINT_Copier {
             } else if ( form == 2 ) {
                 return POINT_CONVERSION_HYBRID;
             } else {
-                abort();
+                CF_UNREACHABLE();
             }
         }
 
@@ -277,9 +276,8 @@ class EC_POINT_Copier {
         EC_POINT_Copier(Datasource& ds, std::shared_ptr<EC_GROUP_Copier> group) :
             group(group), ds(ds) {
             point = newPoint();
-            if ( point == nullptr ) {
-                abort();
-            }
+
+            CF_ASSERT(point != nullptr, "Cannot create EC_POINT");
         }
 
         EC_POINT* GetPtr(void) {

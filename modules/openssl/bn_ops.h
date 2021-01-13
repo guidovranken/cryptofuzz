@@ -44,10 +44,7 @@ class Bignum {
         }
 
         bool New(void) {
-            if ( locked == true ) {
-                printf("Cannot renew locked Bignum\n");
-                abort();
-            }
+            CF_ASSERT(locked == false, "Cannot renew locked Bignum");
 
             BN_free(bn);
             bn = BN_new();
@@ -66,10 +63,7 @@ end:
         }
 
         bool Set(const std::string s) {
-            if ( locked == true ) {
-                printf("Cannot set locked Bignum\n");
-                abort();
-            }
+            CF_ASSERT(locked == false, "Cannot set locked Bignum");
 
             bool ret = false;
 
@@ -305,9 +299,7 @@ class BignumCluster {
         { }
 
         Bignum& operator[](const size_t index) {
-            if ( index >= bn.size() ) {
-                abort();
-            }
+            CF_ASSERT(index < bn.size(), "Accessing bignum with illegal index");
 
             try {
                 /* Rewire? */
@@ -334,9 +326,7 @@ class BignumCluster {
         }
 
         Bignum& Get(const size_t index) {
-            if ( index >= bn.size() ) {
-                abort();
-            }
+            CF_ASSERT(index < bn.size(), "Accessing bignum with illegal index");
 
             return bn[index];
         }
@@ -346,17 +336,13 @@ class BignumCluster {
         }
 
         bool New(const size_t index) {
-            if ( index >= bn.size() ) {
-                abort();
-            }
+            CF_ASSERT(index < bn.size(), "Accessing bignum with illegal index");
 
             return bn[index].New();
         }
 
         bool Set(const size_t index, const std::string s) {
-            if ( index >= bn.size() ) {
-                abort();
-            }
+            CF_ASSERT(index < bn.size(), "Accessing bignum with illegal index");
 
             return bn[index].Set(s);
         }
@@ -370,9 +356,8 @@ class BN_CTX {
             ctx(BN_CTX_new())
         {
             (void)ds;
-            if ( ctx == nullptr ) {
-                abort();
-            }
+
+            CF_ASSERT(ctx != nullptr, "BN_CTX_new() returned NULL");
         }
 
         ::BN_CTX* GetPtr() {
@@ -391,9 +376,8 @@ class BN_MONT_CTX {
             ctx(BN_MONT_CTX_new())
         {
             (void)ds;
-            if ( ctx == nullptr ) {
-                abort();
-            }
+
+            CF_ASSERT(ctx != nullptr, "BN_MONT_CTX_new() returned NULL");
         }
 
         ::BN_MONT_CTX* GetPtr() {
