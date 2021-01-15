@@ -34,7 +34,7 @@ extern "C" {
             abort();
         }
 
-        if ( size > 0 ) {
+        if ( size == 0 ) {
             return SYMCRYPT_NO_ERROR;
         }
 
