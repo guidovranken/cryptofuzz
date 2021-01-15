@@ -4,6 +4,11 @@
 #include <fuzzing/datasource/id.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <symcrypt.h>
+#include <symcrypt_low_level.h>
+
+namespace SymCrypt_detail {
+    fuzzing::datasource::Datasource* ds = nullptr;
+}
 
 extern "C" {
     void SymCryptFatal(UINT32 fatalCode) {
@@ -24,8 +29,26 @@ extern "C" {
         free(pMem);
     }
 
-    SYMCRYPT_ERROR SymCryptCallbackRandom(PBYTE   pbBuffer, SIZE_T  cbBuffer ) {
-        abort();
+    SYMCRYPT_ERROR SymCryptCallbackRandom(PBYTE out, SIZE_T size) {
+        if ( SymCrypt_detail::ds == nullptr ) {
+            abort();
+        }
+
+        if ( size > 0 ) {
+            return SYMCRYPT_NO_ERROR;
+        }
+
+        try {
+            const auto data = SymCrypt_detail::ds->GetData(0, size, size);
+            CF_ASSERT(data.size() == size, "Unexpected data size");
+            memcpy(out, data.data(), size);
+
+            return SYMCRYPT_NO_ERROR;
+        } catch ( ... ) {
+        }
+
+        memset(out, 0xAA, size);
+        return SYMCRYPT_NO_ERROR;
     }
 
     SYMCRYPT_CPU_FEATURES
@@ -1137,9 +1160,8 @@ std::optional<component::ECC_PublicKey> SymCrypt::OpECC_PrivateToPublic(operatio
 
     {
         const auto pub_size = SymCryptEckeySizeofPublicKey(key, SYMCRYPT_ECPOINT_FORMAT_XY);
-        if ( (pub_size % 2) != 0 ) {
-            abort();
-        }
+        CF_ASSERT((pub_size % 2) == 0, "SymCryptEckeySizeofPublicKey returns odd value");
+
         std::vector<uint8_t> pub_bytes(pub_size);
 
         CF_CHECK_EQ(SymCryptEckeyGetValue(
@@ -1168,6 +1190,214 @@ end:
     }
     return ret;
 #endif
+}
+
+std::optional<component::ECDSA_Signature> SymCrypt::OpECDSA_Sign(operation::ECDSA_Sign& op) {
+    std::optional<component::ECDSA_Signature> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    SYMCRYPT_ECURVE* curve = nullptr;
+    SYMCRYPT_ECKEY* key = nullptr;
+    const SYMCRYPT_ECURVE_PARAMS* curveParams = nullptr;
+    SYMCRYPT_INT* nonce = NULL;
+
+    std::vector<uint8_t> hash;
+
+    CF_CHECK_TRUE(op.UseSpecifiedNonce());
+    CF_CHECK_NE(curveParams = SymCrypt_detail::toCurveParams(op.curveType.Get()), nullptr);
+    CF_CHECK_NE(curve = SymCryptEcurveAllocate(curveParams, 0), nullptr);
+    CF_CHECK_NE(key = SymCryptEckeyAllocate(curve), nullptr);
+    CF_CHECK_NE(nonce = SymCryptIntAllocate(SymCryptEcurveDigitsofScalarMultiplier(curve)), nullptr);
+    {
+        const auto nonce_bytes = util::DecToBin(op.nonce.ToTrimmedString());
+        CF_CHECK_NE(nonce_bytes, std::nullopt);
+        CF_CHECK_EQ(SymCryptIntSetValue(nonce_bytes->data(), nonce_bytes->size(), SYMCRYPT_NUMBER_FORMAT_MSB_FIRST, nonce), SYMCRYPT_NO_ERROR);
+    }
+
+    if ( op.digestType.Is(CF_DIGEST("NULL")) ) {
+        hash = op.cleartext.Get();
+    } else {
+        const SYMCRYPT_HASH* hasher = nullptr;
+        CF_CHECK_NE(hasher = SymCrypt_detail::to_SYMCRYPT_HASH(op.digestType), nullptr);
+
+        uint8_t* state = util::malloc(hasher->stateSize);
+        /* noret */ hasher->initFunc(state);
+        /* noret */ hasher->appendFunc(state, op.cleartext.GetPtr(), op.cleartext.GetSize());
+        unsigned char result[hasher->resultSize];
+        /* noret */ hasher->resultFunc(state, result);
+
+        hash = std::vector<uint8_t>(result, result + hasher->resultSize);
+
+        util::free(state);
+    }
+
+    {
+        const auto priv_size = SymCryptEckeySizeofPrivateKey(key);
+        std::vector<uint8_t> priv_bytes(priv_size);
+
+        CF_CHECK_EQ(SymCrypt_detail::EncodeBignum(
+                    op.priv.ToTrimmedString(),
+                    priv_bytes.data(),
+                    priv_size), true);
+
+        CF_CHECK_EQ(SymCryptEckeySetValue(
+                priv_bytes.data(), priv_size,
+                NULL, 0,
+                SYMCRYPT_NUMBER_FORMAT_MSB_FIRST, SYMCRYPT_ECPOINT_FORMAT_XY,
+                0, key), SYMCRYPT_NO_ERROR);
+    }
+
+    {
+        const auto sigHalfSize = SymCryptEcurveSizeofScalarMultiplier(curve);
+        const auto sigSize = sigHalfSize * 2;
+        std::vector<uint8_t> sig_bytes(sigSize);
+
+        ::SymCrypt_detail::ds = &ds;
+        CF_CHECK_EQ(SymCryptEcDsaSignEx(
+                    key,
+                    hash.data(),
+                    hash.size(),
+                    nonce,
+                    SYMCRYPT_NUMBER_FORMAT_MSB_FIRST,
+                    0,
+                    sig_bytes.data(),
+                    sigSize), SYMCRYPT_NO_ERROR);
+
+        const auto pubSize = SymCryptEckeySizeofPublicKey(key, SYMCRYPT_ECPOINT_FORMAT_XY);
+        CF_ASSERT((pubSize % 2) == 0, "SymCryptEckeySizeofPublicKey returns odd value");
+
+        const auto pubHalfSize = pubSize / 2;
+        std::vector<uint8_t> pub_bytes(pubSize);
+
+        CF_CHECK_EQ(SymCryptEckeyGetValue(
+                    key,
+                    NULL, 0,
+                    pub_bytes.data(), pubSize,
+                    SYMCRYPT_NUMBER_FORMAT_MSB_FIRST, SYMCRYPT_ECPOINT_FORMAT_XY,
+                    0), SYMCRYPT_NO_ERROR);
+
+        const auto X = util::BinToDec({pub_bytes.data(), pub_bytes.data() + pubHalfSize});
+        const auto Y = util::BinToDec({pub_bytes.data() + pubHalfSize, pub_bytes.data() + pubSize});
+        const auto R = util::BinToDec({sig_bytes.data(), sig_bytes.data() + sigHalfSize});
+        const auto S = util::BinToDec({sig_bytes.data() + sigHalfSize, sig_bytes.data() + sigSize});
+
+        CF_CHECK_FALSE(op.curveType.Is(CF_ECC_CURVE("secp256r1")));
+
+        ret = { {R,S}, {X,Y} };
+    }
+
+end:
+    ::SymCrypt_detail::ds = nullptr;
+
+    if ( key ) {
+        /* noret */ SymCryptEckeyFree(key);
+    }
+    if ( curve ) {
+        /* noret */ SymCryptEcurveFree(curve);
+    }
+    if ( nonce ) {
+        /* noret */ SymCryptIntFree(nonce);
+    }
+
+    return ret;
+}
+
+std::optional<bool> SymCrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+
+    SYMCRYPT_ECURVE* curve = nullptr;
+    SYMCRYPT_ECKEY* key = nullptr;
+    const SYMCRYPT_ECURVE_PARAMS* curveParams = nullptr;
+
+    std::vector<uint8_t> hash;
+
+    if ( op.digestType.Is(CF_DIGEST("NULL")) ) {
+        hash = op.cleartext.Get();
+        /* Workaround for OOB read bug */
+        if ( hash.empty() || !hash[0] ) {
+            return ret;
+        }
+    } else {
+        const SYMCRYPT_HASH* hasher = nullptr;
+        CF_CHECK_NE(hasher = SymCrypt_detail::to_SYMCRYPT_HASH(op.digestType), nullptr);
+
+        uint8_t* state = util::malloc(hasher->stateSize);
+        /* noret */ hasher->initFunc(state);
+        /* noret */ hasher->appendFunc(state, op.cleartext.GetPtr(), op.cleartext.GetSize());
+        unsigned char result[hasher->resultSize];
+        /* noret */ hasher->resultFunc(state, result);
+
+        hash = std::vector<uint8_t>(result, result + hasher->resultSize);
+
+        util::free(state);
+    }
+
+    CF_CHECK_NE(curveParams = SymCrypt_detail::toCurveParams(op.curveType.Get()), nullptr);
+    CF_CHECK_NE(curve = SymCryptEcurveAllocate(curveParams, 0), nullptr);
+    CF_CHECK_NE(key = SymCryptEckeyAllocate(curve), nullptr);
+
+    {
+        const auto pub_size = SymCryptEckeySizeofPublicKey(key, SYMCRYPT_ECPOINT_FORMAT_XY);
+        CF_ASSERT((pub_size % 2) == 0, "SymCryptEckeySizeofPublicKey returns odd value");
+
+        CF_CHECK_NE(op.signature.pub.first.ToTrimmedString(), "0");
+        const auto X = util::DecToBin(op.signature.pub.first.ToTrimmedString(), pub_size / 2);
+        CF_CHECK_NE(X, std::nullopt);
+
+        const auto Y = util::DecToBin(op.signature.pub.second.ToTrimmedString(), pub_size / 2);
+        CF_CHECK_NE(Y, std::nullopt);
+
+        const auto pub = util::Append(*X, *Y);
+
+        CF_CHECK_EQ(SymCryptEckeySetValue(
+                    NULL, 0,
+                    pub.data(), pub.size(),
+                    SYMCRYPT_NUMBER_FORMAT_MSB_FIRST, SYMCRYPT_ECPOINT_FORMAT_XY,
+                    0, key), SYMCRYPT_NO_ERROR);
+    }
+
+    {
+        const auto pub_size = SymCryptEckeySizeofPublicKey(key, SYMCRYPT_ECPOINT_FORMAT_XY);
+        CF_ASSERT((pub_size % 2) == 0, "SymCryptEckeySizeofPublicKey returns odd value");
+
+        const auto R = util::DecToBin(op.signature.signature.first.ToTrimmedString(), pub_size / 2);
+        CF_CHECK_NE(R, std::nullopt);
+
+        const auto S = util::DecToBin(op.signature.signature.second.ToTrimmedString(), pub_size / 2);
+        CF_CHECK_NE(S, std::nullopt);
+
+        const auto sig = util::Append(*R, *S);
+
+        const auto r = SymCryptEcDsaVerify(
+                    key,
+                    hash.data(),
+                    hash.size(),
+                    sig.data(),
+                    sig.size(),
+                    SYMCRYPT_NUMBER_FORMAT_MSB_FIRST,
+                    0 );
+
+        (void)r;
+        /* Currently disabled due to discrepancy */
+#if 0
+        if ( r == SYMCRYPT_NO_ERROR ) {
+            ret = true;
+        } else if ( r == SYMCRYPT_SIGNATURE_VERIFICATION_FAILURE ) {
+            ret = false;
+        } else {
+            /* Do not set ret if SymCryptEcDsaVerify returns any other result */
+        }
+#endif
+    }
+
+end:
+    if ( key ) {
+        /* noret */ SymCryptEckeyFree(key);
+    }
+    if ( curve ) {
+        /* noret */ SymCryptEcurveFree(curve);
+    }
+    return ret;
 }
 
 } /* namespace module */

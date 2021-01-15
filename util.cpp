@@ -620,5 +620,15 @@ void HintBignum(const std::string bn) {
     }
 }
 
+std::vector<uint8_t> Append(const std::vector<uint8_t> A, const std::vector<uint8_t> B) {
+    std::vector<uint8_t> ret;
+
+    ret.reserve(A.size() + B.size());
+    ret.insert(ret.end(), A.begin(), A.end());
+    ret.insert(ret.end(), B.begin(), B.end());
+
+    return ret;
+}
+
 } /* namespace util */
 } /* namespace cryptofuzz */
