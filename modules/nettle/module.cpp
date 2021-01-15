@@ -1521,5 +1521,49 @@ end:
     return ret;
 }
 
+std::optional<bool> Nettle::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+
+#if !defined(HAVE_LIBHOGWEED)
+    (void)op;
+#else
+    if ( !op.digestType.Is(CF_DIGEST("NULL")) ) {
+        return ret;
+    }
+
+    mpz_t pub_x, pub_y;
+    struct ecc_point pub;
+    struct dsa_signature signature;
+    bool initialized = false;
+
+    const struct ecc_curve* curve = nullptr;
+
+    CF_CHECK_NE(curve = Nettle_detail::to_ecc_curve(op.curveType.Get()), nullptr);
+
+    /* noret */ ecc_point_init(&pub, curve);
+    /* noret */ mpz_init(pub_x);
+    /* noret */ mpz_init(pub_y);
+    /* noret */ dsa_signature_init(&signature);
+    initialized = true;
+
+    CF_CHECK_EQ(mpz_init_set_str(pub_x, op.signature.pub.first.ToTrimmedString().c_str(), 0), 0);
+    CF_CHECK_EQ(mpz_init_set_str(pub_y, op.signature.pub.second.ToTrimmedString().c_str(), 0), 0);
+    CF_CHECK_EQ(ecc_point_set(&pub, pub_x, pub_y), 1);
+    CF_CHECK_EQ(mpz_set_str(signature.r, op.signature.signature.first.ToTrimmedString().c_str(), 0), 0);
+    CF_CHECK_EQ(mpz_set_str(signature.s, op.signature.signature.second.ToTrimmedString().c_str(), 0), 0);
+
+    ret = ecdsa_verify(&pub, op.cleartext.GetSize(), op.cleartext.GetPtr(), &signature);
+end:
+    if ( initialized == true ) {
+        /* noret */ mpz_clear(pub_x);
+        /* noret */ mpz_clear(pub_y);
+        /* noret */ ecc_point_clear(&pub);
+        /* noret */ dsa_signature_clear(&signature);
+    }
+#endif
+
+    return ret;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */
