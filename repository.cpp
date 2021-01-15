@@ -148,6 +148,54 @@ std::optional<uint64_t> ECC_CurveFromString(const std::string& s) {
     return std::nullopt;
 }
 
+std::optional<std::string> ECC_CurveToPrime(const uint64_t id) {
+    try {
+        return ECC_CurveLUTMap.at(id).prime;
+    } catch ( std::out_of_range ) {
+        return std::nullopt;
+    }
+}
+
+std::optional<std::string> ECC_CurveToA(const uint64_t id) {
+    try {
+        return ECC_CurveLUTMap.at(id).a;
+    } catch ( std::out_of_range ) {
+        return std::nullopt;
+    }
+}
+
+std::optional<std::string> ECC_CurveToB(const uint64_t id) {
+    try {
+        return ECC_CurveLUTMap.at(id).b;
+    } catch ( std::out_of_range ) {
+        return std::nullopt;
+    }
+}
+
+std::optional<std::string> ECC_CurveToX(const uint64_t id) {
+    try {
+        return ECC_CurveLUTMap.at(id).x;
+    } catch ( std::out_of_range ) {
+        return std::nullopt;
+    }
+}
+
+std::optional<std::string> ECC_CurveToY(const uint64_t id) {
+    try {
+        return ECC_CurveLUTMap.at(id).y;
+    } catch ( std::out_of_range ) {
+        return std::nullopt;
+    }
+}
+
+std::optional<std::string> ECC_CurveToOrderMin1(const uint64_t id) {
+    try {
+        return ECC_CurveLUTMap.at(id).order_min_1;
+    } catch ( std::out_of_range ) {
+        return std::nullopt;
+    }
+}
+
 std::optional<std::string> ECC_CurveToOrder(const uint64_t id) {
     try {
         return ECC_CurveLUTMap.at(id).order;
