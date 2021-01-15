@@ -950,7 +950,7 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
             /* Retrieve R and S */
             {
                 ::Botan::BER_Decoder decoder(signature);
-                ::Botan::BER_Decoder ber_sig = decoder.start_cons(::Botan::ASN1_Type::SEQUENCE);
+                ::Botan::BER_Decoder ber_sig = decoder.start_sequence();
 
                 size_t count = 0;
 
