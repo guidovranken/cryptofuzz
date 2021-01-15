@@ -1754,16 +1754,6 @@ std::optional<component::Ciphertext> OpenSSL::AEAD_Encrypt(operation::SymmetricE
 
     std::optional<component::Ciphertext> ret = std::nullopt;
 
-    /* The AEAD API will use the default tag size if a tag size of 0
-     * is specified, unless the cipher is GCM_SIV
-     */
-    if (    !op.cipher.cipherType.Is(CF_CIPHER("AES_128_GCM_SIV")) &&
-            !op.cipher.cipherType.Is(CF_CIPHER("AES_256_GCM_SIV")) ) {
-        if ( op.tagSize == std::nullopt || *op.tagSize == 0 ) {
-            return ret;
-        }
-    }
-
     const EVP_AEAD* aead = nullptr;
     EVP_AEAD_CTX ctx;
     bool ctxInitialized = false;
@@ -1804,14 +1794,29 @@ std::optional<component::Ciphertext> OpenSSL::AEAD_Encrypt(operation::SymmetricE
 
     /* Finalize */
     {
+        size_t tagSize2 = tagSize;
+#if defined(CRYPTOFUZZ_BORINGSSL)
+        if ( tagSize == 0 ) {
+            CF_CHECK_EQ(EVP_AEAD_CTX_tag_len(&ctx, &tagSize2, op.cleartext.GetSize(), 0), 1);
+        }
+#elif defined(CRYPTOFUZZ_LIBRESSL)
+        /* LibreSSL does not have EVP_AEAD_CTX_tag_len */
+        CF_CHECK_NE(tagSize, 0);
+#endif
+
         /* The tag should be part of the output.
          * Hence, the total output size should be equal or greater than the tag size.
          * Note that removing this check will lead to an overflow below. */
-        CF_ASSERT(op.cleartext.GetSize() + tagSize == len, "input + tag size != output length");
+        CF_ASSERT(op.cleartext.GetSize() + tagSize2 == len, "input + tag size != output length");
 
-        const size_t ciphertextSize = len - tagSize;
-
-        ret = component::Ciphertext(Buffer(out, ciphertextSize), Buffer(out + ciphertextSize, tagSize));
+        if ( tagSize != 0 ) {
+            const size_t ciphertextSize = len - tagSize2;
+            ret = component::Ciphertext(Buffer(out, ciphertextSize), Buffer(out + ciphertextSize, tagSize));
+        } else {
+            /* Do not set ret if tag size is 0; the AEAD API cannot decrypt inputs whose tag size is 0,
+             * because it interprets a tag size of 0 as the default tag size
+             */
+        }
     }
 
 end:
