@@ -1582,5 +1582,76 @@ end:
     return ret;
 }
 
+std::optional<component::ECDSA_Signature> Nettle::OpECDSA_Sign(operation::ECDSA_Sign& op) {
+    std::optional<component::ECDSA_Signature> ret = std::nullopt;
+
+#if !defined(HAVE_LIBHOGWEED)
+    (void)op;
+#else
+    if ( op.UseRandomNonce() == false ) {
+        return ret;
+    }
+    if ( !op.digestType.Is(CF_DIGEST("NULL")) ) {
+        return ret;
+    }
+
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    mpz_t priv_mpz, pub_x, pub_y;
+    struct ecc_scalar priv_scalar;
+    struct ecc_point pub;
+    struct dsa_signature signature;
+    char *pub_x_str = nullptr, *pub_y_str = nullptr, *sig_r_str = nullptr, *sig_s_str = nullptr;
+    bool initialized = false;
+
+    const struct ecc_curve* curve = nullptr;
+
+    CF_CHECK_NE(curve = Nettle_detail::to_ecc_curve(op.curveType.Get()), nullptr);
+
+    /* noret */ ecc_point_init(&pub, curve);
+    /* noret */ mpz_init(pub_x);
+    /* noret */ mpz_init(pub_y);
+    /* noret */ dsa_signature_init(&signature);
+    /* noret */ ecc_scalar_init(&priv_scalar, curve);
+    /* noret */ mpz_init(priv_mpz);
+    initialized = true;
+
+    CF_CHECK_EQ(mpz_init_set_str(priv_mpz, op.priv.ToTrimmedString().c_str(), 0), 0);
+    CF_CHECK_EQ(ecc_scalar_set(&priv_scalar, priv_mpz), 1);
+
+    Nettle_detail::ds = &ds;
+    /* noret */ ecdsa_sign(
+            &priv_scalar,
+            nullptr, Nettle_detail::nettle_fuzzer_random_func,
+            op.cleartext.GetSize(), op.cleartext.GetPtr(), &signature);
+    Nettle_detail::ds = nullptr;
+
+    sig_r_str = mpz_get_str(nullptr, 10, signature.r);
+    sig_s_str = mpz_get_str(nullptr, 10, signature.s);
+
+    /* noret */ ecc_point_mul_g(&pub, &priv_scalar);
+    /* noret */ ecc_point_get(&pub, pub_x, pub_y);
+
+    pub_x_str = mpz_get_str(nullptr, 10, pub_x);
+    pub_y_str = mpz_get_str(nullptr, 10, pub_y);
+
+    ret = { {sig_r_str, sig_s_str}, {pub_x_str, pub_y_str} };
+
+end:
+    if ( initialized == true ) {
+        /* noret */ ecc_scalar_clear(&priv_scalar);
+        /* noret */ dsa_signature_clear(&signature);
+        /* noret */ mpz_clear(priv_mpz);
+        /* noret */ ecc_point_clear(&pub);
+        free(pub_x_str);
+        free(pub_y_str);
+        free(sig_r_str);
+        free(sig_s_str);
+    }
+#endif
+
+    return ret;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */
