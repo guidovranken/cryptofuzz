@@ -97,3 +97,5 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - LibreSSL: [ECDSA verification succeeds with invalid public key](https://github.com/openbsd/src/commit/ea076652f78324977b6dc08890965b6823672c02)
 - SymCrypt: Uninitialized memory used as array index in ECDSA verification if hash is 0
 - TBA: TBA
+- NSS: TBA
+- mbed TLS: [mbedtls_mpi_sub_abs memory corruption](https://github.com/ARMmbed/mbedtls/issues/4042)
