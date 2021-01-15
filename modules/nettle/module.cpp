@@ -1409,6 +1409,27 @@ namespace Nettle_detail {
                 return nullptr;
         }
     }
+
+    fuzzing::datasource::Datasource* ds = nullptr;
+
+    static void nettle_fuzzer_random_func(void *ctx, size_t size, uint8_t *out) {
+        (void)ctx;
+
+        CF_ASSERT(ds != nullptr, "ds is nullptr in PRNG");
+
+        if ( size == 0 ) {
+            return;
+        }
+
+        try {
+            const auto data = ds->GetData(0, size, size);
+            CF_ASSERT(data.size() == size, "Unexpected data size");
+            memcpy(out, data.data(), size);
+            return;
+        } catch ( ... ) { }
+
+        memset(out, 1, size);
+    }
 }
 #endif
 
@@ -1424,15 +1445,9 @@ std::optional<component::ECC_KeyPair> Nettle::OpECC_GenerateKeyPair(operation::E
     struct ecc_scalar priv_scalar;
     struct ecc_point pub;
     char* priv_str = nullptr, *pub_x_str = nullptr, *pub_y_str = nullptr;
-    struct knuth_lfib_ctx rctx;
     bool initialized = false;
-    uint32_t seed = 0;
 
     CF_CHECK_NE(curve = Nettle_detail::to_ecc_curve(op.curveType.Get()), nullptr);
-    try {
-        seed = ds.Get<uint32_t>();
-    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
-    /* noret */ knuth_lfib_init(&rctx, seed);
 
     /* noret */ ecc_point_init(&pub, curve);
     /* noret */ ecc_scalar_init(&priv_scalar, curve);
@@ -1442,7 +1457,9 @@ std::optional<component::ECC_KeyPair> Nettle::OpECC_GenerateKeyPair(operation::E
 
     initialized = true;
 
-    /* noret */ ecdsa_generate_keypair(&pub, &priv_scalar, &rctx, (nettle_random_func *) knuth_lfib_random);
+    Nettle_detail::ds = &ds;
+    /* noret */ ecdsa_generate_keypair(&pub, &priv_scalar, nullptr, Nettle_detail::nettle_fuzzer_random_func);
+    Nettle_detail::ds = nullptr;
 
     /* noret */ ecc_scalar_get(&priv_scalar, priv_mpz);
     priv_str = mpz_get_str(nullptr, 10, priv_mpz);
