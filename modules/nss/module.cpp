@@ -945,7 +945,7 @@ std::optional<component::ECDSA_Signature> NSS::OpECDSA_Sign(operation::ECDSA_Sig
 
         const auto pubkey = nss_detail::ToPublicKey(privKey);
 
-        ret = {{pubkey.first, pubkey.second}, {R, S} };
+        ret = {{R, S}, {pubkey.first, pubkey.second} };
     }
 end:
     if ( privKey ) {
