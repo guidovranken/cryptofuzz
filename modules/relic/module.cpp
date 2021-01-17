@@ -66,7 +66,12 @@ std::optional<component::ECC_PublicKey> relic::OpECC_PrivateToPublic(operation::
     CF_CHECK_EQ(bn_is_zero(priv.Get()), 0);
 
     /* Compute pubkey */
-    /* noret */ ec_mul_gen(pub, priv.Get());
+    /* noret */ ec_new(pub);
+	RLC_TRY {
+        /* noret */ ec_mul_gen(pub, priv.Get());
+    } RLC_CATCH_ANY {
+        goto end;
+    }
     CF_CHECK_NE(ec_is_infty(pub), 1);
 
     {
