@@ -1639,6 +1639,8 @@ std::optional<component::ECDSA_Signature> Nettle::OpECDSA_Sign(operation::ECDSA_
 
 end:
     if ( initialized == true ) {
+        /* noret */ mpz_clear(pub_x);
+        /* noret */ mpz_clear(pub_y);
         /* noret */ ecc_scalar_clear(&priv_scalar);
         /* noret */ dsa_signature_clear(&signature);
         /* noret */ mpz_clear(priv_mpz);
