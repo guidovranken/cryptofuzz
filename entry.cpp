@@ -8,6 +8,10 @@
 #error "libtommath and NSS cannot be used together due to symbol collisions"
 #endif
 
+#if defined(CRYPTOFUZZ_TREZOR_FIRMWARE) && defined(CRYPTOFUZZ_RELIC)
+#error "trezor-firmware and relic cannot be used together due to symbol collisions"
+#endif
+
 #if !defined(CRYPTOFUZZ_NO_OPENSSL)
   #include <modules/openssl/module.h>
 #endif
