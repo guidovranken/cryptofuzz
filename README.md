@@ -99,3 +99,6 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - TBA: TBA
 - NSS: TBA
 - mbed TLS: [mbedtls_mpi_sub_abs memory corruption](https://github.com/ARMmbed/mbedtls/issues/4042)
+- relic: [Out-of-bounds read via bn_sqr_basic](https://github.com/relic-toolkit/relic/issues/172)
+- relic: [Wrong square root computation](https://github.com/relic-toolkit/relic/issues/173)
+- relic: [ec_mul_gen hangs with curve SECG_K256](https://github.com/relic-toolkit/relic/issues/174)
