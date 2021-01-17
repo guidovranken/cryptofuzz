@@ -9,11 +9,38 @@ extern "C" {
 
 namespace cryptofuzz {
 namespace module {
+namespace relic_detail {
+    Datasource* global_ds = nullptr;
+
+    void relic_fuzzer_rng(uint8_t* out, int size, void*) {
+        CF_ASSERT(global_ds != nullptr, "Global datasource is NULL");
+
+        if ( size == 0 ) {
+            return;
+        }
+
+        try {
+            const auto data = global_ds->GetData(0, size, size);
+            CF_ASSERT(data.size() == (size_t)size, "Unexpected data size");
+            memcpy(out, data.data(), size);
+
+            return;
+        } catch ( ... ) { }
+
+        memset(out, 0xAA, size);
+    }
+}
+}
+}
+
+namespace cryptofuzz {
+namespace module {
 
 relic::relic(void) :
     Module("relic") {
 
     CF_ASSERT(core_init() == RLC_OK, "Cannot initialize relic");
+    /* noret */ rand_seed(relic_detail::relic_fuzzer_rng, nullptr);
 }
 
 namespace relic_detail {
@@ -93,6 +120,73 @@ std::optional<component::ECC_PublicKey> relic::OpECC_PrivateToPublic(operation::
     }
 
 end:
+    return ret;
+}
+
+std::optional<component::ECDSA_Signature> relic::OpECDSA_Sign(operation::ECDSA_Sign& op) {
+    std::optional<component::ECDSA_Signature> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    if ( op.UseRandomNonce() == false ) {
+        return ret;
+    }
+    if ( op.digestType.Get() != CF_DIGEST("NULL") ) {
+        return ret;
+    }
+
+    relic_detail::global_ds = &ds;
+
+    ec_t pub;
+    relic_bignum::Bignum priv, r, s;
+    std::optional<std::string> R, S;
+    std::string X, Y;
+
+    /* Set curve */
+    CF_CHECK_TRUE(relic_detail::SetCurve(op.curveType));
+
+    /* Set privkey */
+    CF_CHECK_TRUE(priv.Set(op.priv.ToString()));
+    CF_CHECK_EQ(bn_is_zero(priv.Get()), 0);
+
+    {
+        auto CT = op.cleartext.Get();
+        //CF_CHECK_EQ(cp_ecdsa_sig(r.Get(), s.Get(), op.cleartext.GetPtr(), op.cleartext.GetSize(), 0, priv.Get()), 0);
+        CF_CHECK_EQ(cp_ecdsa_sig(r.Get(), s.Get(), CT.data(), CT.size(), 0, priv.Get()), 0);
+    }
+
+    CF_CHECK_NE(R = r.ToString(), std::nullopt);
+    CF_CHECK_NE(S = s.ToString(), std::nullopt);
+
+    /* Compute pubkey */
+    /* noret */ ec_new(pub);
+	RLC_TRY {
+        /* noret */ ec_mul_gen(pub, priv.Get());
+    } RLC_CATCH_ANY {
+        goto end;
+    }
+    CF_CHECK_NE(ec_is_infty(pub), 1);
+
+    {
+        const int size = ec_size_bin(pub, 0);
+        CF_ASSERT(size > 1, "Pubkey has invalid size");
+        CF_ASSERT((size % 2) == 1, "Pubkey has invalid size");
+        uint8_t* out = util::malloc(size);
+        ec_write_bin(out, size, pub, 0);
+
+        CF_ASSERT(out[0] == 0x04, "pubkey not DER encoded");
+
+        const auto halfSize = (size-1) / 2;
+        X = util::BinToDec(out + 1, halfSize);
+        Y = util::BinToDec(out + 1 + halfSize, halfSize);
+
+        util::free(out);
+    }
+
+    ret = { {*R, *S}, {X, Y} };
+
+end:
+    relic_detail::global_ds = nullptr;
+
     return ret;
 }
 
