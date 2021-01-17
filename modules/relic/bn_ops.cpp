@@ -335,9 +335,6 @@ bool Sqrt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 
 	RLC_TRY {
         /* noret */ bn_srt(res.Get(), bn[0].Get());
-
-        /* Says SQRT(16) is 5 */
-        return false;
     } RLC_CATCH_ANY {
         return false;
     }
