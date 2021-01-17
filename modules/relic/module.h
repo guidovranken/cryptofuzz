@@ -11,6 +11,7 @@ class relic : public Module {
     public:
         relic(void);
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
+        std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) override;
 };
 
 } /* namespace module */
