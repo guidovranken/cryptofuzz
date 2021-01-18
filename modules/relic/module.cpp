@@ -135,6 +135,57 @@ end:
     return ret;
 }
 
+std::optional<bool> relic::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    if ( op.digestType.Get() != CF_DIGEST("NULL") ) {
+        return ret;
+    }
+
+    ec_t pub;
+    relic_bignum::Bignum r, s;
+    std::vector<uint8_t> pub_bytes;
+
+    /* Set curve */
+    CF_CHECK_TRUE(relic_detail::SetCurve(op.curveType));
+
+    /* Set signature */
+    CF_CHECK_TRUE(r.Set(op.signature.signature.first.ToString()));
+    CF_CHECK_TRUE(s.Set(op.signature.signature.second.ToString()));
+
+    /* Set pubkey */
+    {
+        /* noret */ ec_new(pub);
+#if 0
+        /* noret */ ec_set_infty(pub);
+        const int size = ec_size_bin(pub, 0);
+        CF_ASSERT(size > 1, "Pubkey has invalid size");
+        CF_ASSERT((size % 2) == 1, "Pubkey has invalid size");
+#endif
+        const int size = 65;
+        const auto halfSize = (size-1) / 2;
+
+        std::optional<std::vector<uint8_t>> pub_x, pub_y;
+        CF_CHECK_NE(pub_x = util::DecToBin(op.signature.pub.first.ToTrimmedString(), halfSize), std::nullopt);
+        CF_CHECK_NE(pub_y = util::DecToBin(op.signature.pub.second.ToTrimmedString(), halfSize), std::nullopt);
+
+        pub_bytes.push_back(0x04);
+        pub_bytes.insert(std::end(pub_bytes), std::begin(*pub_x), std::end(*pub_x));
+        pub_bytes.insert(std::end(pub_bytes), std::begin(*pub_y), std::end(*pub_y));
+
+        /* noret */ ec_read_bin(pub, pub_bytes.data(), size);
+    }
+
+    {
+        auto CT = op.cleartext.Get();
+        ret = cp_ecdsa_ver(r.Get(), s.Get(), CT.data(), CT.size(), 1, pub) == 1;
+    }
+
+end:
+    return ret;
+}
+
 std::optional<component::ECDSA_Signature> relic::OpECDSA_Sign(operation::ECDSA_Sign& op) {
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
