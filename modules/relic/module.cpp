@@ -332,6 +332,24 @@ std::optional<component::Bignum> relic::OpBignumCalc(operation::BignumCalc& op) 
         case    CF_CALCOP("ExpMod(A,B,C)"):
             opRunner = std::make_unique<relic_bignum::ExpMod>();
             break;
+        case    CF_CALCOP("NumBits(A)"):
+            opRunner = std::make_unique<relic_bignum::NumBits>();
+            break;
+        case    CF_CALCOP("CmpAbs(A,B)"):
+            opRunner = std::make_unique<relic_bignum::CmpAbs>();
+            break;
+        case    CF_CALCOP("RShift(A,B)"):
+            opRunner = std::make_unique<relic_bignum::RShift>();
+            break;
+        case    CF_CALCOP("Bit(A,B)"):
+            opRunner = std::make_unique<relic_bignum::Bit>();
+            break;
+        case    CF_CALCOP("SetBit(A,B)"):
+            opRunner = std::make_unique<relic_bignum::SetBit>();
+            break;
+        case    CF_CALCOP("ClearBit(A,B)"):
+            opRunner = std::make_unique<relic_bignum::ClearBit>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

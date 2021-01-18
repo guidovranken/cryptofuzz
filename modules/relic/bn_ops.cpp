@@ -8,7 +8,7 @@ namespace relic_bignum {
 bool Add::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-	RLC_TRY {
+    RLC_TRY {
         /* noret */ bn_add(res.Get(), bn[0].Get(), bn[1].Get());
     } RLC_CATCH_ANY {
         return false;
@@ -20,7 +20,7 @@ bool Add::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 bool Sub::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-	RLC_TRY {
+    RLC_TRY {
         /* noret */ bn_sub(res.Get(), bn[0].Get(), bn[1].Get());
     } RLC_CATCH_ANY {
         return false;
@@ -106,7 +106,7 @@ bool Sqr::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 bool Div::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-	RLC_TRY {
+    RLC_TRY {
         /* noret */ bn_div(res.Get(), bn[0].Get(), bn[1].Get());
     } RLC_CATCH_ANY {
         return false;
@@ -155,7 +155,7 @@ bool GCD::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 bool LCM::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-	RLC_TRY {
+    RLC_TRY {
         /* noret */ bn_lcm(res.Get(), bn[0].Get(), bn[1].Get());
     } RLC_CATCH_ANY {
         return false;
@@ -167,7 +167,7 @@ bool LCM::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-	RLC_TRY {
+    RLC_TRY {
         /* noret */ bn_mod_inv(res.Get(), bn[0].Get(), bn[1].Get());
     } RLC_CATCH_ANY {
         return false;
@@ -202,7 +202,7 @@ bool LShift1::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 bool Jacobi::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-	RLC_TRY {
+    RLC_TRY {
         /* noret */ bn_smb_jac(res.Get(), bn[0].Get(), bn[1].Get());
     } RLC_CATCH_ANY {
         return false;
@@ -215,7 +215,7 @@ bool Cmp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     bool ret = false;
     (void)ds;
 
-	RLC_TRY {
+    RLC_TRY {
         const auto r = bn_cmp(bn[0].Get(), bn[1].Get());
 
         if ( r == RLC_EQ ) {
@@ -240,7 +240,7 @@ end:
 bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-	RLC_TRY {
+    RLC_TRY {
         /* noret */ bn_mod(res.Get(), bn[0].Get(), bn[1].Get());
     } RLC_CATCH_ANY {
         return false;
@@ -253,7 +253,7 @@ bool IsEven::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     bool ret = false;
     (void)ds;
 
-	RLC_TRY {
+    RLC_TRY {
         const auto r = bn_is_even(bn[0].Get());
         if ( r == 1 ) {
             CF_CHECK_TRUE(res.Set("1"));
@@ -276,7 +276,7 @@ bool IsOdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     bool ret = false;
     (void)ds;
 
-	RLC_TRY {
+    RLC_TRY {
         const auto r = bn_is_even(bn[0].Get());
         if ( r == 1 ) {
             CF_CHECK_TRUE(res.Set("0"));
@@ -299,7 +299,7 @@ bool IsZero::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     bool ret = false;
     (void)ds;
 
-	RLC_TRY {
+    RLC_TRY {
         const auto r = bn_is_zero(bn[0].Get());
         if ( r == 1 ) {
             CF_CHECK_TRUE(res.Set("1"));
@@ -321,7 +321,7 @@ end:
 bool Neg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-	RLC_TRY {
+    RLC_TRY {
         /* noret */ bn_neg(res.Get(), bn[0].Get());
     } RLC_CATCH_ANY {
         return false;
@@ -333,7 +333,7 @@ bool Neg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 bool Sqrt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-	RLC_TRY {
+    RLC_TRY {
         /* noret */ bn_srt(res.Get(), bn[0].Get());
     } RLC_CATCH_ANY {
         return false;
@@ -345,7 +345,7 @@ bool Sqrt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 bool Abs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-	RLC_TRY {
+    RLC_TRY {
         /* noret */ bn_abs(res.Get(), bn[0].Get());
     } RLC_CATCH_ANY {
         return false;
@@ -389,6 +389,131 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     } catch ( ... ) { }
 
     return false;
+}
+
+bool NumBits::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    RLC_TRY {
+        CF_CHECK_TRUE(res.Set( std::to_string( bn_bits(bn[0].Get()) ) ));
+        ret = true;
+    } RLC_CATCH_ANY {
+        return false;
+    }
+
+end:
+    return ret;
+}
+
+bool CmpAbs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    bool ret = false;
+    (void)ds;
+
+    RLC_TRY {
+        const auto r = bn_cmp_abs(bn[0].Get(), bn[1].Get());
+
+        if ( r == RLC_EQ ) {
+            CF_CHECK_TRUE(res.Set("0"));
+        } else if ( r == RLC_LT ) {
+            CF_CHECK_TRUE(res.Set("-1"));
+        } else if ( r == RLC_GT ) {
+            CF_CHECK_TRUE(res.Set("1"));
+        } else {
+            CF_UNREACHABLE();
+        }
+
+        ret = true;
+    } RLC_CATCH_ANY {
+        /* Fall through */
+    }
+
+end:
+    return ret;
+}
+
+bool RShift::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    auto bits = bn[1].ToInt();
+    if ( bits == std::nullopt ) {
+        return false;
+    }
+
+    /* Not expected to throw */
+    /* noret */ bn_rsh(res.Get(), bn[0].Get(), *bits);
+
+    return true;
+}
+
+bool Bit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    auto bit = bn[1].ToInt();
+    if ( bit == std::nullopt ) {
+        return false;
+    }
+
+    if ( (*bit+1) > bn_bits(bn[0].Get()) ) {
+        return false;
+    }
+
+    /* Not expected to throw */
+    const auto r = bn_get_bit(bn[0].Get(), *bit);
+
+    if ( r == 1 ) {
+        CF_CHECK_TRUE(res.Set("1"));
+    } else if ( r == 0 ) {
+        CF_CHECK_TRUE(res.Set("0"));
+    } else {
+        CF_UNREACHABLE();
+    }
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool SetBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    auto bit = bn[1].ToInt();
+    if ( bit == std::nullopt ) {
+        return false;
+    }
+
+    if ( (*bit+1) > bn_bits(bn[0].Get()) ) {
+        return false;
+    }
+
+    bn_copy(res.Get(), bn[0].Get());
+
+    /* Not expected to throw */
+    /* noret */ bn_set_bit(res.Get(), *bit, 1);
+
+    return true;
+}
+
+bool ClearBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    auto bit = bn[1].ToInt();
+    if ( bit == std::nullopt ) {
+        return false;
+    }
+
+    if ( (*bit+1) > bn_bits(bn[0].Get()) ) {
+        return false;
+    }
+
+    bn_copy(res.Get(), bn[0].Get());
+
+    /* Not expected to throw */
+    /* noret */ bn_set_bit(res.Get(), *bit, 0);
+
+    return true;
 }
 
 } /* namespace relic_bignum */

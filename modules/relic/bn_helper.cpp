@@ -88,6 +88,34 @@ end:
     return ret;
 }
 
+std::optional<int> Bignum::ToInt(void) {
+    static_assert(sizeof(int) == 4);
+
+    std::optional<int> ret = std::nullopt;
+
+    uint8_t b[sizeof(int)];
+
+    CF_CHECK_LTE((size_t)bn_size_bin(bn), sizeof(b));
+
+    /* Throws only if the buffer capacity is unsufficient, so it shouldn't throw */
+    /* noret */ bn_write_bin(b, sizeof(b), bn);
+
+    /* Check if sign bit is not set */
+    CF_CHECK_EQ(b[0] & 0x80, 0);
+
+    /* Convert to int */
+    {
+        int r = 0;
+        r += b[3];
+        r += ((size_t)b[2]) << 8;
+        r += ((size_t)b[1]) << 16;
+        r += ((size_t)b[0]) << 24;
+        ret = r;
+    }
+end:
+    return ret;
+}
+
 bn_t& Bignum::Get(void) {
     {
         /* Optionally convert to a random base and back */
