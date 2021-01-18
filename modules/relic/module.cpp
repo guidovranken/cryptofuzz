@@ -107,7 +107,7 @@ std::optional<component::ECC_PublicKey> relic::OpECC_PrivateToPublic(operation::
 
     /* Compute pubkey */
     /* noret */ ec_new(pub);
-	RLC_TRY {
+    RLC_TRY {
         /* noret */ ec_mul_gen(pub, priv.Get());
     } RLC_CATCH_ANY {
         goto end;
@@ -223,7 +223,7 @@ std::optional<component::ECDSA_Signature> relic::OpECDSA_Sign(operation::ECDSA_S
 
     /* Compute pubkey */
     /* noret */ ec_new(pub);
-	RLC_TRY {
+    RLC_TRY {
         /* noret */ ec_mul_gen(pub, priv.Get());
     } RLC_CATCH_ANY {
         goto end;

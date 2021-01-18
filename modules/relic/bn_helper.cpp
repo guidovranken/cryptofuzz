@@ -47,7 +47,7 @@ void Bignum::baseConversion(void) {
         /* noret */ bn_write_str(str, size, bn, base);
     }
 
-	RLC_TRY {
+    RLC_TRY {
         /* noret */ bn_read_str(bn, str, strlen(str), base);
     } RLC_CATCH_ANY {
         CF_ASSERT(0, "Cannot read converted string");
@@ -59,7 +59,7 @@ void Bignum::baseConversion(void) {
 }
 
 bool Bignum::Set(const std::string& s) {
-	RLC_TRY {
+    RLC_TRY {
         /* noret */ bn_read_str(bn, s.c_str(), s.size(), 10);
     } RLC_CATCH_ANY {
         return false;
