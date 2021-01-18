@@ -12,9 +12,13 @@ namespace relic_bignum {
 
 class Bignum {
     private:
+        Datasource& ds;
         bn_t bn;
+        void baseConversion(void);
     public:
-        Bignum(void);
+        Bignum(Datasource& ds);
+        Bignum(const Bignum& other);
+        Bignum(const Bignum&& other);
         bool Set(const std::string& s);
         std::optional<std::string> ToString(void);
         std::optional<component::Bignum> ToComponentBignum(void);

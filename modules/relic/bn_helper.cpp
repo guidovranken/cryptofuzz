@@ -5,9 +5,57 @@ namespace cryptofuzz {
 namespace module {
 namespace relic_bignum {
 
-Bignum::Bignum(void) {
+Bignum::Bignum(Datasource& ds) :
+    ds(ds) {
     bn_null(bn);
     bn_new(bn);
+}
+
+Bignum::Bignum(const Bignum& other) :
+    ds(other.ds) {
+    bn_null(bn);
+    bn_new(bn);
+
+    /* noret */ bn_copy(bn, other.bn);
+}
+
+Bignum::Bignum(const Bignum&& other) :
+    ds(other.ds) {
+    bn_null(bn);
+    bn_new(bn);
+
+    /* noret */ bn_copy(bn, other.bn);
+}
+
+void Bignum::baseConversion(void) {
+    uint8_t base = 2;
+    char* str = nullptr;
+
+    try { base = ds.Get<uint8_t>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+    if ( base > 64 ) {
+        base = 64;
+    }
+
+    if ( base < 2 ) {
+        base = 2;
+    }
+
+    {
+        const auto size = bn_size_str(bn, base);
+        str = (char*)util::malloc(size+1);
+        /* noret */ bn_write_str(str, size, bn, base);
+    }
+
+	RLC_TRY {
+        /* noret */ bn_read_str(bn, str, strlen(str), base);
+    } RLC_CATCH_ANY {
+        CF_ASSERT(0, "Cannot read converted string");
+    }
+
+    util::free(str);
+
+    return;
 }
 
 bool Bignum::Set(const std::string& s) {
@@ -41,6 +89,18 @@ end:
 }
 
 bn_t& Bignum::Get(void) {
+    {
+        /* Optionally convert to a random base and back */
+
+        bool convert = false;
+
+        try { convert = ds.Get<bool>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+        if ( convert ) {
+            baseConversion();
+        }
+    }
+
     return bn;
 }
 

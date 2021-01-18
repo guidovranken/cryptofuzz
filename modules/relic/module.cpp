@@ -93,9 +93,10 @@ namespace relic_detail {
 
 std::optional<component::ECC_PublicKey> relic::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     ec_t pub;
-    relic_bignum::Bignum priv;
+    relic_bignum::Bignum priv(ds);
 
     /* Set curve */
     CF_CHECK_TRUE(relic_detail::SetCurve(op.curveType));
@@ -144,7 +145,7 @@ std::optional<bool> relic::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     }
 
     ec_t pub;
-    relic_bignum::Bignum r, s;
+    relic_bignum::Bignum r(ds), s(ds);
     std::vector<uint8_t> pub_bytes;
 
     /* Set curve */
@@ -200,7 +201,7 @@ std::optional<component::ECDSA_Signature> relic::OpECDSA_Sign(operation::ECDSA_S
     relic_detail::global_ds = &ds;
 
     ec_t pub;
-    relic_bignum::Bignum priv, r, s;
+    relic_bignum::Bignum priv(ds), r(ds), s(ds);
     std::optional<std::string> R, S;
     std::string X, Y;
 
@@ -257,8 +258,13 @@ std::optional<component::Bignum> relic::OpBignumCalc(operation::BignumCalc& op) 
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    relic_bignum::Bignum res;
-    std::vector<relic_bignum::Bignum> bn(4);
+    relic_bignum::Bignum res(ds);
+    std::vector<relic_bignum::Bignum> bn = {
+        std::move(relic_bignum::Bignum(ds)),
+        std::move(relic_bignum::Bignum(ds)),
+        std::move(relic_bignum::Bignum(ds)),
+        std::move(relic_bignum::Bignum(ds)),
+    };
 
     std::unique_ptr<relic_bignum::Operation> opRunner = nullptr;
 
