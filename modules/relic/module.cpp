@@ -67,9 +67,21 @@ namespace relic_detail {
                 /* noret */ ep_param_set(NIST_P384);
                 return true;
 #endif
+#if 0
             case    CF_ECC_CURVE("secp521r1"):
                 /* noret */ ep_param_set(NIST_P521);
                 return true;
+#endif
+#if 0
+            case    CF_ECC_CURVE("secp160k1"):
+                /* noret */ ep_param_set(SECG_K160);
+                return true;
+#endif
+#if 0
+            case    CF_ECC_CURVE("secp192k1"):
+                /* noret */ ep_param_set(SECG_K192);
+                return true;
+#endif
             case    CF_ECC_CURVE("secp256k1"):
                 /* noret */ ep_param_set(SECG_K256);
                 return true;
