@@ -8,7 +8,7 @@
 #endif
 
 extern "C" {
-    #include "xxhash/xxhash.h"
+    #include "xxHash/xxhash.h"
 }
 
 extern "C" {

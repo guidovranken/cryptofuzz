@@ -8,8 +8,8 @@ module.a: module.o xxhash.o groestl.o groestl-cryptofuzz.o whirlpool.o argon2/li
 	rm -rf tmpargon2/
 	ranlib module.a
 
-xxhash.o : xxhash/xxhash.c xxhash/xxhash.h
-	$(CC) $(CFLAGS) -I -fPIC -c xxhash/xxhash.c -o xxhash.o
+xxhash.o : xxHash/xxhash.c xxHash/xxhash.h
+	$(CC) $(CFLAGS) -I -fPIC -c xxHash/xxhash.c -o xxhash.o
 
 groestl.o : groestl/Groestl-ref.c groestl/Groestl-ref.h
 	$(CC) $(CFLAGS) -I -fPIC -c groestl/Groestl-ref.c -o groestl.o
