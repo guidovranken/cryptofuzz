@@ -101,3 +101,6 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - mbed TLS: [mbedtls_mpi_sub_abs memory corruption](https://github.com/ARMmbed/mbedtls/issues/4042)
 - relic: [Out-of-bounds read via bn_sqr_basic](https://github.com/relic-toolkit/relic/issues/172)
 - relic: [Wrong square root computation](https://github.com/relic-toolkit/relic/issues/173)
+- relic: [ECDSA verification discrepancies](https://github.com/relic-toolkit/relic/issues/175)
+- relic: [bn_write_str buffer overflow](https://github.com/relic-toolkit/relic/issues/176)
+- Nettle: TBA
