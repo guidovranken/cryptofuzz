@@ -43,7 +43,7 @@ void Bignum::baseConversion(void) {
 
     {
         const auto size = bn_size_str(bn, base);
-        str = (char*)util::malloc(size+1);
+        str = (char*)util::malloc(size);
         /* noret */ bn_write_str(str, size, bn, base);
     }
 
