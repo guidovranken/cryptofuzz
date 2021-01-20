@@ -11,7 +11,24 @@ namespace libecc_detail {
     Datasource* global_ds = nullptr;
     FILE* fp_dev_urandom = nullptr;
 	const ec_sig_mapping *sm;
-    const ec_str_params *curve_params;
+
+    std::map<uint64_t, const ec_str_params*> curveLUT;
+
+    static void AddCurve(const uint64_t curveID, const std::string& curveName) {
+        const ec_str_params *curve_params = ec_get_curve_params_by_name((const u8*)curveName.c_str(), curveName.size() + 1);
+
+        CF_ASSERT(curve_params != nullptr, "Cannot initialize curve");
+
+        curveLUT[curveID] = curve_params;
+    }
+
+    static const ec_str_params* GetCurve(const component::CurveType& curveType) {
+        if ( curveLUT.find(curveType.Get()) == curveLUT.end() ) {
+            return nullptr;
+        }
+
+        return curveLUT.at(curveType.Get());
+    }
 }
 }
 }
@@ -39,10 +56,26 @@ namespace module {
 
 libecc::libecc(void) :
     Module("libecc") {
-    const char* curveName = "BRAINPOOLP512R1";
     CF_ASSERT((libecc_detail::fp_dev_urandom = fopen("/dev/urandom", "rb")) != NULL, "Failed to open /dev/urandom");
     CF_ASSERT((libecc_detail::sm = get_sig_by_name("ECDSA")) != nullptr, "Cannot initialize ECDSA");
-    CF_ASSERT((libecc_detail::curve_params = ec_get_curve_params_by_name((const u8*)curveName, strlen(curveName) + 1)) != nullptr, "Cannot initialize curve");
+
+    /* Load curves */
+    libecc_detail::AddCurve(CF_ECC_CURVE("brainpool224r1"), "BRAINPOOLP224R1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("brainpool256r1"), "BRAINPOOLP256R1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("brainpool384r1"), "BRAINPOOLP384R1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("brainpool512r1"), "BRAINPOOLP512R1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("secp192r1"), "SECP192R1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("secp224r1"), "SECP224R1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("secp256r1"), "SECP256R1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("secp384r1"), "SECP384R1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("secp521r1"), "SECP521R1");
+
+    /* TODO */
+#if 0
+    "FRP256V1"
+    "GOST256"
+    "GOST512"
+#endif
 }
 
 std::optional<component::ECC_PublicKey> libecc::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
@@ -57,9 +90,12 @@ std::optional<component::ECC_PublicKey> libecc::OpECC_PrivateToPublic(operation:
 	ec_params params;
     ec_sig_alg_type sig_type;
     std::optional<std::vector<uint8_t>> priv_bytes;
+    const ec_str_params* curve_params;
 
-    CF_CHECK_EQ(op.curveType.Get(), CF_ECC_CURVE("brainpool512r1"));
-    /* noret */ import_params(&params, libecc_detail::curve_params);
+    /* Load curve */
+    CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
+    /* noret */ import_params(&params, curve_params);
+
     sig_type = libecc_detail::sm->type;
 
     {
