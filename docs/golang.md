@@ -13,4 +13,5 @@ go get golang.org/x/crypto/blake2b
 go get golang.org/x/crypto/blake2s
 go get golang.org/x/crypto/md4
 go get golang.org/x/crypto/ripemd160
+export CXXFLAGS="$CXXFLAGS -DCRYPTOFUZZ_GOLANG"
 ```
