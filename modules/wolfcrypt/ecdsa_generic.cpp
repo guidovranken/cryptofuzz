@@ -377,6 +377,7 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_
     uint8_t* sig = nullptr;
     word32 sigSz = ECC_MAX_SIG_SIZE;
     uint8_t* hash = nullptr;
+    size_t hashSize = 0;
     uint8_t* nonce_bytes = nullptr;
     wolfCrypt_bignum::Bignum nonce(ds), r(ds), s(ds);
 
@@ -413,17 +414,30 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_
         CF_CHECK_NE(pub, std::nullopt);
 
         if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
-            CF_CHECK_EQ(wc_ecc_sign_hash(op.cleartext.GetPtr(), op.cleartext.GetSize(), sig, &sigSz, wolfCrypt_detail::GetRNG(), key.GetPtr()), 0);
+            hashSize = op.cleartext.GetSize();
+            hash = util::malloc(hashSize);
+            if ( hashSize ) {
+                memcpy(hash, op.cleartext.GetPtr(), hashSize);
+            }
         } else {
             std::optional<wc_HashType> hashType;
             CF_CHECK_NE(hashType = wolfCrypt_detail::toHashType(op.digestType), std::nullopt);
 
-            const auto hashSize = wc_HashGetDigestSize(*hashType);
+            hashSize = wc_HashGetDigestSize(*hashType);
             hash = util::malloc(hashSize);
 
             CF_CHECK_EQ(wc_Hash(*hashType, op.cleartext.GetPtr(), op.cleartext.GetSize(), hash, hashSize), 0);
+        }
 
-            CF_CHECK_EQ(wc_ecc_sign_hash(hash, hashSize, sig, &sigSz, wolfCrypt_detail::GetRNG(), key.GetPtr()), 0);
+        /* Sign */
+        CF_CHECK_EQ(wc_ecc_sign_hash(hash, hashSize, sig, &sigSz, wolfCrypt_detail::GetRNG(), key.GetPtr()), 0);
+
+        /* Verify */
+        {
+            int verify;
+            if ( wc_ecc_verify_hash(sig, sigSz, hash, hashSize, &verify, key.GetPtr()) == 0 ) {
+                CF_ASSERT(verify, "Cannot verify generated signature");
+            }
         }
 
         CF_CHECK_EQ(DecodeECC_DSA_Sig(sig, sigSz, r.GetPtr(), s.GetPtr()), 0);
