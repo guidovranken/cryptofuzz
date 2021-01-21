@@ -97,10 +97,10 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - LibreSSL: [ECDSA verification succeeds with invalid public key](https://github.com/openbsd/src/commit/ea076652f78324977b6dc08890965b6823672c02)
 - SymCrypt: Uninitialized memory used as array index in ECDSA verification if hash is 0
 - TBA: TBA
-- NSS: TBA
+- NSS/ecckiila: [ECDSA verification fails for all-zero hash](https://gitlab.com/nisec/ecckiila/-/commit/ec77867e336827705e67bb9b10538a7980b850fa)
 - mbed TLS: [mbedtls_mpi_sub_abs memory corruption](https://github.com/ARMmbed/mbedtls/issues/4042)
 - relic: [Out-of-bounds read via bn_sqr_basic](https://github.com/relic-toolkit/relic/issues/172)
 - relic: [Wrong square root computation](https://github.com/relic-toolkit/relic/issues/173)
 - relic: [ECDSA verification discrepancies](https://github.com/relic-toolkit/relic/issues/175)
 - relic: [bn_write_str buffer overflow](https://github.com/relic-toolkit/relic/issues/176)
-- Nettle: TBA
+- Nettle: [ECDSA verification fails for all-zero hash](https://github.com/gnutls/nettle/commit/b3d0bcf5a185842d2c717927eef03577fd61a912)
