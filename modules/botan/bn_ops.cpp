@@ -11,6 +11,12 @@ namespace cryptofuzz {
 namespace module {
 namespace Botan_bignum {
 
+#if !defined(CRYPTOFUZZ_BOTAN_IS_ORACLE)
+ #define GET_UINT8_FOR_SWITCH() ds.Get<uint8_t>()
+#else
+ #define GET_UINT8_FOR_SWITCH() 0
+#endif /* CRYPTOFUZZ_BOTAN_IS_ORACLE */
+
 bool Add::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
     (void)ds;
 
@@ -37,7 +43,7 @@ bool Mul::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
 
 bool Div::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
     try {
-        switch ( ds.Get<uint8_t>() ) {
+        switch ( GET_UINT8_FOR_SWITCH() ) {
             case    0:
                 CF_CHECK_TRUE(bn[1] != 0);
                 res = ::Botan::ct_divide(bn[0], bn[1]);
@@ -69,7 +75,7 @@ end:
 
 bool Mod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
     try {
-        switch ( ds.Get<uint8_t>() ) {
+        switch ( GET_UINT8_FOR_SWITCH() ) {
             case    0:
                 {
                     const Botan::Modular_Reducer reducer(bn[1]);
@@ -127,7 +133,7 @@ bool SqrMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     } else if ( bn[1].is_negative() ) {
         res = 0;
     } else {
-        switch ( ds.Get<uint8_t>() ) {
+        switch ( GET_UINT8_FOR_SWITCH() ) {
             case    0:
                 {
                     ::Botan::Modular_Reducer mod(bn[1]);
@@ -278,7 +284,7 @@ bool IsOne::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigIn
 }
 
 bool MulMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
-    switch ( ds.Get<uint8_t>() ) {
+    switch ( GET_UINT8_FOR_SWITCH() ) {
         case    0:
             {
                 ::Botan::Modular_Reducer mod(bn[2]);

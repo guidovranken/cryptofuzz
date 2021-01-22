@@ -27,8 +27,15 @@ Botan::Botan(void) :
     }
 }
 
+#if !defined(CRYPTOFUZZ_BOTAN_IS_ORACLE)
+ #define BOTAN_FUZZER_RNG Botan_detail::Fuzzer_RNG rng(ds);
+#else
+ #define BOTAN_FUZZER_RNG ::Botan::System_RNG rng;
+#endif /* CRYPTOFUZZ_BOTAN_IS_ORACLE */
+
 namespace Botan_detail {
 
+#if !defined(CRYPTOFUZZ_BOTAN_IS_ORACLE)
     class Fuzzer_RNG final : public ::Botan::RandomNumberGenerator {
         private:
             Datasource& ds;
@@ -58,6 +65,7 @@ namespace Botan_detail {
 
             std::string name() const override { return "Fuzzer_RNG"; }
     };
+#endif /* CRYPTOFUZZ_BOTAN_IS_ORACLE */
 
     const std::string parenthesize(const std::string parent, const std::string child) {
         static const std::string pOpen("(");
@@ -115,9 +123,10 @@ again:
 
         if ( numClears < 3 ) {
             try {
+#if !defined(CRYPTOFUZZ_BOTAN_IS_ORACLE)
                 clear = ds.Get<bool>();
-            } catch ( ... ) {
-            }
+#endif /* CRYPTOFUZZ_BOTAN_IS_ORACLE */
+            } catch ( ... ) { }
         }
 
         if ( clear == true ) {
@@ -811,7 +820,7 @@ std::optional<component::ECC_KeyPair> Botan::OpECC_GenerateKeyPair(operation::EC
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     std::optional<std::string> curveString;
-    Botan_detail::Fuzzer_RNG rng(ds);
+    BOTAN_FUZZER_RNG;
 
     CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
 
@@ -840,7 +849,7 @@ std::optional<bool> Botan::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& o
     std::optional<bool> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    Botan_detail::Fuzzer_RNG rng(ds);
+    BOTAN_FUZZER_RNG;
     std::unique_ptr<::Botan::Public_Key> pub = nullptr;
 
     try {
@@ -864,7 +873,7 @@ std::optional<component::ECC_PublicKey> Botan::OpECC_PrivateToPublic(operation::
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    Botan_detail::Fuzzer_RNG rng(ds);
+    BOTAN_FUZZER_RNG;
 
     try {
         std::optional<std::string> curveString;
@@ -914,7 +923,7 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
     std::unique_ptr<::Botan::Public_Key> pub = nullptr;
     std::unique_ptr<::Botan::PK_Signer> signer;
 
-    Botan_detail::Fuzzer_RNG rng(ds);
+    BOTAN_FUZZER_RNG;
 
     CF_CHECK_EQ(op.UseRFC6979Nonce(), true);
     CF_CHECK_EQ(op.digestType.Get(), CF_DIGEST("SHA256"));
@@ -1055,7 +1064,7 @@ std::optional<component::Bignum> Botan::OpDH_Derive(operation::DH_Derive& op) {
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    Botan_detail::Fuzzer_RNG rng(ds);
+    BOTAN_FUZZER_RNG;
 
     try {
         CF_CHECK_NE(op.priv.ToTrimmedString(), "0");
