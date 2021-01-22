@@ -94,7 +94,7 @@ static std::string getBignum(const bool positive = false) {
         return ret;
     }
 end:
-    return numbers[PRNG() % (sizeof(numbers) / sizeof(numbers[0]))];
+    return cryptofuzz::numbers.at(PRNG() % cryptofuzz::numbers.size());
 }
 
 extern "C" size_t LLVMFuzzerMutate(uint8_t* data, size_t size, size_t maxSize);
