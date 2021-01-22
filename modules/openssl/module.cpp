@@ -2367,6 +2367,8 @@ std::optional<component::Key> OpenSSL::OpKDF_SCRYPT_EVP_PKEY(operation::KDF_SCRY
     {
         CF_CHECK_EQ(EVP_PKEY_derive(pctx, out, &out_size) , 1);
 
+        CF_CHECK_NE(out, nullptr);
+
         ret = component::Key(out, out_size);
     }
 
@@ -2544,6 +2546,8 @@ end:
     {
         CF_CHECK_EQ(EVP_PKEY_derive(pctx, out, &out_size) , 1);
 
+        CF_CHECK_NE(out, nullptr);
+
         ret = component::Key(out, out_size);
     }
 
@@ -2579,6 +2583,15 @@ std::optional<component::Key> OpenSSL::OpKDF_TLS1_PRF(operation::KDF_TLS1_PRF& o
     /* Process/finalize */
     {
         CF_CHECK_EQ(EVP_PKEY_derive(pctx, out, &out_size) , 1);
+
+        /* Documentation:
+         *
+         * "If key is NULL then the maximum size of the output buffer is written to the keylen parameter."
+         *
+         * So in this case 'out_size' should not be interpreted as containing the output size,
+         * and we shouldn't attempt to construct a result from it.
+         */
+        CF_CHECK_NE(out, nullptr);
 
         ret = component::Key(out, out_size);
     }
