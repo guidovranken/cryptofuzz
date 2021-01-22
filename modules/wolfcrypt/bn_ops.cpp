@@ -633,7 +633,11 @@ bool Bit::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)bn;
 #else
     std::optional<uint64_t> _bitPos;
+#if defined(WOLFSSL_SP_MATH_ALL)
+    unsigned int bitPos;
+#else
     mp_digit bitPos;
+#endif
     int isBitSet;
 
     CF_CHECK_NE(_bitPos = bn[1].AsUint64(), std::nullopt);
