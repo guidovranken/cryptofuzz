@@ -2,6 +2,7 @@
 #include "shared.h"
 #include "bn_ops.h"
 #include <cryptofuzz/util.h>
+#include <iostream>
 
 namespace cryptofuzz {
 namespace module {
@@ -81,6 +82,9 @@ bool ECCKey::SetCurve(const Type& curveType) {
     } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
     if ( useCustomCurve == false ) {
+#if defined(CRYPTOFUZZ_WOLFCRYPT_DEBUG)
+        std::cout << "Using native curve" << std::endl;
+#endif
         std::optional<int> curveID;
 
         CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(curveType), std::nullopt);
@@ -88,6 +92,9 @@ bool ECCKey::SetCurve(const Type& curveType) {
 
         CF_CHECK_EQ(wc_ecc_set_curve(GetPtr(), 0, *curveID), 0);
     } else {
+#if defined(CRYPTOFUZZ_WOLFCRYPT_DEBUG)
+        std::cout << "Using custom curve" << std::endl;
+#endif
         const ecc_set_type* curveSpec;
         CF_CHECK_NE(curveSpec = GetCustomCurve(curveType.Get()), nullptr);
         CF_CHECK_EQ(wc_ecc_set_custom_curve(GetPtr(), curveSpec), 0);
@@ -187,12 +194,25 @@ ecc_point* ECCPoint::GetPtr() {
 
             CF_CHECK_EQ(wc_ecc_export_point_der(curveIdx, point, out, &outSz), 0);
 
-            haveAllocFailure = false;
-            CF_ASSERT(wc_ecc_import_point_der(out, outSz, curveIdx, newPoint) == 0 || haveAllocFailure, "Cannot import DER-exported ECC point");
+            {
+                haveAllocFailure = false;
+                const bool success = wc_ecc_import_point_der(out, outSz, curveIdx, newPoint) == 0;
 
-            /* noret */ wc_ecc_del_point(point);
-            point = newPoint;
-            newPoint = nullptr;
+                if ( success ) {
+                    /* Point imported. Replace old point with new point. */
+
+                    /* noret */ wc_ecc_del_point(point);
+                    point = newPoint;
+                    newPoint = nullptr;
+                } else {
+                    /* Failure */
+
+                    if ( haveAllocFailure == false ) {
+                        /* Failure is only acceptable if an allocation failure occured, crash otherwise */
+                        CF_ASSERT(0, "Cannot import DER-exported ECC point");
+                    }
+                }
+            }
         }
     }
 

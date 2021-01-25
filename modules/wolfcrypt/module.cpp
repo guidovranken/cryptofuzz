@@ -2,6 +2,7 @@
 #include <cryptofuzz/util.h>
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
+#include <iostream>
 
 #if defined(CRYPTOFUZZ_WOLFCRYPT_MMAP_FIXED)
  #if UINTPTR_MAX != 0xFFFFFFFF
@@ -152,6 +153,9 @@ namespace wolfCrypt_detail {
         bool fail = false;
         if ( ds == nullptr ) {
             if ( fail ) {
+#if defined(CRYPTOFUZZ_WOLFCRYPT_DEBUG)
+                std::cout << "Have allocation failure" << std::endl;
+#endif
                 haveAllocFailure = true;
             }
             return fail;
@@ -161,6 +165,9 @@ namespace wolfCrypt_detail {
         } catch ( ... ) { }
 
         if ( fail ) {
+#if defined(CRYPTOFUZZ_WOLFCRYPT_DEBUG)
+            std::cout << "Have allocation failure" << std::endl;
+#endif
             haveAllocFailure = true;
         }
         return fail;

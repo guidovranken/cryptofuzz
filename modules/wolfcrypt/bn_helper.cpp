@@ -1,4 +1,5 @@
 #include "bn_ops.h"
+#include <iostream>
 
 namespace cryptofuzz {
 namespace module {
@@ -18,6 +19,9 @@ void Bignum::baseConversion(void) const {
 
     try { base = ds.Get<uint8_t>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
+#if defined(CRYPTOFUZZ_WOLFCRYPT_DEBUG)
+    std::cout << "Convert to base " << std::to_string(base) << " and back" << std::endl;
+#endif
     {
         int size;
         CF_CHECK_EQ(mp_radix_size(mp, base, &size), MP_OKAY);
