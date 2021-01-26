@@ -36,11 +36,6 @@ ecc_key* ECCKey::GetPtr(void) {
         exportToX963 = ds.Get<bool>();
     } catch ( ... ) { }
 
-    /* TODO OOB access */
-    if ( this->curveID == ECC_CURVE_CUSTOM ) {
-        exportToX963 = false;
-    }
-
     if ( exportToX963 == true ) {
         CF_CHECK_NE(newKey = wc_ecc_key_new(nullptr), nullptr);
 
