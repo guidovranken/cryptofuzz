@@ -2743,6 +2743,48 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
             pub_x_str = pub->ToTrimmedString();
             pub_y_str = "0";
         }
+    } else if ( op.curveType.Get() == CF_ECC_CURVE("x25519") ) {
+        curve25519_key key;
+
+        CF_CHECK_EQ(wc_curve25519_make_key(wolfCrypt_detail::GetRNG(), CURVE25519_KEYSIZE, &key), 0);
+
+        wolfCrypt_detail::haveAllocFailure = false;
+        if ( wc_curve25519_check_public(key.p.point, CURVE25519_KEYSIZE, EC25519_LITTLE_ENDIAN) != 0 && wolfCrypt_detail::haveAllocFailure == false ) {
+            CF_ASSERT(0, "Key created with wc_curve25519_make_key() fails validation");
+        }
+
+        {
+            std::optional<component::Bignum> priv = std::nullopt;
+            std::optional<component::Bignum> pub = std::nullopt;
+
+            CF_CHECK_NE(pub = wolfCrypt_bignum::Bignum::BinToBignum(ds, key.p.point, CURVE25519_KEYSIZE), std::nullopt);
+            CF_CHECK_NE(priv = wolfCrypt_bignum::Bignum::BinToBignum(ds, key.k.point, CURVE25519_KEYSIZE), std::nullopt);
+
+            priv_str = priv->ToTrimmedString();
+            pub_x_str = pub->ToTrimmedString();
+            pub_y_str = "0";
+        }
+    } else if ( op.curveType.Get() == CF_ECC_CURVE("x448") ) {
+        curve448_key key;
+
+        CF_CHECK_EQ(wc_curve448_make_key(wolfCrypt_detail::GetRNG(), CURVE448_KEY_SIZE, &key), 0);
+
+        wolfCrypt_detail::haveAllocFailure = false;
+        if ( wc_curve448_check_public(key.p, CURVE448_KEY_SIZE, EC448_BIG_ENDIAN) != 0 && wolfCrypt_detail::haveAllocFailure == false ) {
+            CF_ASSERT(0, "Key created with wc_curve448_make_key() fails validation");
+        }
+
+        {
+            std::optional<component::Bignum> priv = std::nullopt;
+            std::optional<component::Bignum> pub = std::nullopt;
+
+            CF_CHECK_NE(pub = wolfCrypt_bignum::Bignum::BinToBignum(ds, key.p, CURVE448_KEY_SIZE), std::nullopt);
+            CF_CHECK_NE(priv = wolfCrypt_bignum::Bignum::BinToBignum(ds, key.k, CURVE448_KEY_SIZE), std::nullopt);
+
+            priv_str = priv->ToTrimmedString();
+            pub_x_str = pub->ToTrimmedString();
+            pub_y_str = "0";
+        }
     } else {
         std::optional<int> curveID;
 
