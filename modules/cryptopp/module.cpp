@@ -2282,6 +2282,11 @@ std::optional<component::Bignum> CryptoPP::OpBignumCalc(operation::BignumCalc& o
             opRunner = std::make_unique<CryptoPP_bignum::Div>();
             break;
         case    CF_CALCOP("ExpMod(A,B,C)"):
+            /* Too slow with larger values */
+            CF_CHECK_LT(op.bn0.GetSize(), 1000);
+            CF_CHECK_LT(op.bn1.GetSize(), 1000);
+            CF_CHECK_LT(op.bn2.GetSize(), 1000);
+
             opRunner = std::make_unique<CryptoPP_bignum::ExpMod>();
             break;
         case    CF_CALCOP("Sqr(A)"):

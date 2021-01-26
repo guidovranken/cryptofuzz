@@ -1,6 +1,7 @@
 #include "executor.h"
 #include "tests.h"
 #include "mutatorpool.h"
+#include "config.h"
 #include <cryptofuzz/util.h>
 #include <fuzzing/memory.hpp>
 #include <algorithm>
@@ -642,8 +643,8 @@ template<> void ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToP
         Pool_CurvePrivkey.Set({ curveID, privkey });
         Pool_CurveKeypair.Set({ curveID, privkey, pub_x, pub_y });
 
-        if ( pub_x.size() <= 1000 ) { Pool_Bignum.Set(pub_x); }
-        if ( pub_y.size() <= 1000 ) { Pool_Bignum.Set(pub_y); }
+        if ( pub_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_x); }
+        if ( pub_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_y); }
     }
 }
 
@@ -761,10 +762,10 @@ template<> void ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>:
 
         Pool_CurveECDSASignature.Set({ curveID, cleartext, pub_x, pub_y, sig_r, sig_s});
 
-        if ( pub_x.size() <= 1000 ) { Pool_Bignum.Set(pub_x); }
-        if ( pub_y.size() <= 1000 ) { Pool_Bignum.Set(pub_y); }
-        if ( sig_r.size() <= 1000 ) { Pool_Bignum.Set(sig_r); }
-        if ( sig_s.size() <= 1000 ) { Pool_Bignum.Set(sig_s); }
+        if ( pub_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_x); }
+        if ( pub_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_y); }
+        if ( sig_r.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(sig_r); }
+        if ( sig_s.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(sig_s); }
     }
 }
 
@@ -915,10 +916,10 @@ template<> void ExecutorBase<component::Bignum, operation::DH_Derive>::postproce
 }
 
 template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, operation::DH_Derive>::callModule(std::shared_ptr<Module> module, operation::DH_Derive& op) const {
-    if ( op.prime.GetSize() > 1000 ) return std::nullopt;
-    if ( op.base.GetSize() > 1000 ) return std::nullopt;
-    if ( op.pub.GetSize() > 1000 ) return std::nullopt;
-    if ( op.priv.GetSize() > 1000 ) return std::nullopt;
+    if ( op.prime.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.base.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.pub.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.priv.GetSize() > config::kMaxBignumSize ) return std::nullopt;
 
     return module->OpDH_Derive(op);
 }
@@ -946,8 +947,8 @@ template<> void ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPai
 }
 
 template<> std::optional<component::DH_KeyPair> ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>::callModule(std::shared_ptr<Module> module, operation::DH_GenerateKeyPair& op) const {
-    if ( op.prime.GetSize() > 1000 ) return std::nullopt;
-    if ( op.base.GetSize() > 1000 ) return std::nullopt;
+    if ( op.prime.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.base.GetSize() > config::kMaxBignumSize ) return std::nullopt;
 
     return module->OpDH_GenerateKeyPair(op);
 }
@@ -967,7 +968,7 @@ template<> void ExecutorBase<component::Bignum, operation::BignumCalc>::postproc
     if ( result.second != std::nullopt  ) {
         const auto bignum = result.second->ToTrimmedString();
 
-        if ( bignum.size() <= 1000 ) {
+        if ( bignum.size() <= config::kMaxBignumSize ) {
             Pool_Bignum.Set(bignum);
         }
     }
@@ -985,10 +986,10 @@ template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, oper
     }
 
     /* Prevent timeouts */
-    if ( op.bn0.GetSize() > 1000 ) return std::nullopt;
-    if ( op.bn1.GetSize() > 1000 ) return std::nullopt;
-    if ( op.bn2.GetSize() > 1000 ) return std::nullopt;
-    if ( op.bn3.GetSize() > 1000 ) return std::nullopt;
+    if ( op.bn0.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn1.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn2.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn3.GetSize() > config::kMaxBignumSize ) return std::nullopt;
 
     switch ( op.calcOp.Get() ) {
         case    CF_CALCOP("SetBit(A,B)"):
