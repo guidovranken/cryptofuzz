@@ -2701,6 +2701,8 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
 
     std::optional<std::string> priv_str, pub_x_str, pub_y_str;
     ecc_key* key = nullptr;
+    uint8_t* priv_bytes = nullptr, *pub_bytes = nullptr;
+    word32 outSize = 0;
 
     if ( op.curveType.Get() == CF_ECC_CURVE("ed25519") ) {
         ed25519_key key;
@@ -2712,14 +2714,37 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
             CF_ASSERT(0, "Key created with wc_ed25519_make_key() fails validation");
         }
 
+        /* Export private key */
         {
             std::optional<component::Bignum> priv = std::nullopt;
-            std::optional<component::Bignum> pub = std::nullopt;
 
-            CF_CHECK_NE(pub = wolfCrypt_bignum::Bignum::BinToBignum(ds, key.p, ED25519_PUB_KEY_SIZE), std::nullopt);
-            CF_CHECK_NE(priv = wolfCrypt_bignum::Bignum::BinToBignum(ds, key.k, ED25519_KEY_SIZE), std::nullopt);
+            outSize = 0;
+            try { outSize = ds.Get<uint16_t>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            priv_bytes = util::malloc(outSize);
+
+            CF_CHECK_EQ(wc_ed25519_export_private_only(&key, priv_bytes, &outSize), 0);
+            CF_ASSERT(outSize = ED25519_KEY_SIZE,
+                    "Private key exported with wc_ed25519_export_private_only() is not of length ED25519_KEY_SIZE");
+
+            CF_CHECK_NE(priv = wolfCrypt_bignum::Bignum::BinToBignum(ds, priv_bytes, outSize), std::nullopt);
 
             priv_str = priv->ToTrimmedString();
+        }
+
+        /* Export public key */
+        {
+            std::optional<component::Bignum> pub = std::nullopt;
+
+            outSize = 0;
+            try { outSize = ds.Get<uint16_t>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            pub_bytes = util::malloc(outSize);
+
+            CF_CHECK_EQ(wc_ed25519_export_public(&key, pub_bytes, &outSize), 0);
+            CF_ASSERT(outSize = ED25519_PUB_KEY_SIZE,
+                    "Public key exported with wc_ed25519_export_public() is not of length ED25519_PUB_KEY_SIZE");
+
+            CF_CHECK_NE(pub = wolfCrypt_bignum::Bignum::BinToBignum(ds, pub_bytes, outSize), std::nullopt);
+
             pub_x_str = pub->ToTrimmedString();
             pub_y_str = "0";
         }
@@ -2732,14 +2757,37 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
             CF_ASSERT(0, "Key created with wc_ed448_make_key() fails validation");
         }
 
+        /* Export private key */
         {
             std::optional<component::Bignum> priv = std::nullopt;
-            std::optional<component::Bignum> pub = std::nullopt;
 
-            CF_CHECK_NE(pub = wolfCrypt_bignum::Bignum::BinToBignum(ds, key.p, ED448_PUB_KEY_SIZE), std::nullopt);
-            CF_CHECK_NE(priv = wolfCrypt_bignum::Bignum::BinToBignum(ds, key.k, ED448_KEY_SIZE), std::nullopt);
+            outSize = 0;
+            try { outSize = ds.Get<uint16_t>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            priv_bytes = util::malloc(outSize);
+
+            CF_CHECK_EQ(wc_ed448_export_private_only(&key, priv_bytes, &outSize), 0);
+            CF_ASSERT(outSize = ED448_KEY_SIZE,
+                    "Private key exported with wc_ed448_export_private_only() is not of length ED448_KEY_SIZE");
+
+            CF_CHECK_NE(priv = wolfCrypt_bignum::Bignum::BinToBignum(ds, priv_bytes, outSize), std::nullopt);
 
             priv_str = priv->ToTrimmedString();
+        }
+
+        /* Export public key */
+        {
+            std::optional<component::Bignum> pub = std::nullopt;
+
+            outSize = 0;
+            try { outSize = ds.Get<uint16_t>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            pub_bytes = util::malloc(outSize);
+
+            CF_CHECK_EQ(wc_ed448_export_public(&key, pub_bytes, &outSize), 0);
+            CF_ASSERT(outSize = ED448_PUB_KEY_SIZE,
+                    "Public key exported with wc_ed448_export_public() is not of length ED448_PUB_KEY_SIZE");
+
+            CF_CHECK_NE(pub = wolfCrypt_bignum::Bignum::BinToBignum(ds, pub_bytes, outSize), std::nullopt);
+
             pub_x_str = pub->ToTrimmedString();
             pub_y_str = "0";
         }
@@ -2753,14 +2801,37 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
             CF_ASSERT(0, "Key created with wc_curve25519_make_key() fails validation");
         }
 
+        /* Export private key */
         {
             std::optional<component::Bignum> priv = std::nullopt;
-            std::optional<component::Bignum> pub = std::nullopt;
 
-            CF_CHECK_NE(pub = wolfCrypt_bignum::Bignum::BinToBignum(ds, key.p.point, CURVE25519_KEYSIZE), std::nullopt);
-            CF_CHECK_NE(priv = wolfCrypt_bignum::Bignum::BinToBignum(ds, key.k.point, CURVE25519_KEYSIZE), std::nullopt);
+            outSize = 0;
+            try { outSize = ds.Get<uint16_t>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            priv_bytes = util::malloc(outSize);
+
+            CF_CHECK_EQ(wc_curve25519_export_private_raw_ex(&key, priv_bytes, &outSize, EC25519_LITTLE_ENDIAN), 0);
+            CF_ASSERT(outSize = CURVE25519_KEYSIZE,
+                    "Private key exported with wc_curve25519_export_private_raw_ex() is not of length CURVE25519_KEYSIZE");
+
+            CF_CHECK_NE(priv = wolfCrypt_bignum::Bignum::BinToBignum(ds, priv_bytes, outSize), std::nullopt);
 
             priv_str = priv->ToTrimmedString();
+        }
+
+        /* Export public key */
+        {
+            std::optional<component::Bignum> pub = std::nullopt;
+
+            outSize = 0;
+            try { outSize = ds.Get<uint16_t>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            pub_bytes = util::malloc(outSize);
+
+            CF_CHECK_EQ(wc_curve25519_export_public_ex(&key, pub_bytes, &outSize, EC25519_LITTLE_ENDIAN), 0);
+            CF_ASSERT(outSize = CURVE25519_KEYSIZE,
+                    "Public key exported with wc_curve25519_export_public_ex() is not of length CURVE25519_KEYSIZE");
+
+            CF_CHECK_NE(pub = wolfCrypt_bignum::Bignum::BinToBignum(ds, pub_bytes, outSize), std::nullopt);
+
             pub_x_str = pub->ToTrimmedString();
             pub_y_str = "0";
         }
@@ -2774,14 +2845,37 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
             CF_ASSERT(0, "Key created with wc_curve448_make_key() fails validation");
         }
 
+        /* Export private key */
         {
             std::optional<component::Bignum> priv = std::nullopt;
-            std::optional<component::Bignum> pub = std::nullopt;
 
-            CF_CHECK_NE(pub = wolfCrypt_bignum::Bignum::BinToBignum(ds, key.p, CURVE448_KEY_SIZE), std::nullopt);
-            CF_CHECK_NE(priv = wolfCrypt_bignum::Bignum::BinToBignum(ds, key.k, CURVE448_KEY_SIZE), std::nullopt);
+            outSize = 0;
+            try { outSize = ds.Get<uint16_t>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            priv_bytes = util::malloc(outSize);
+
+            CF_CHECK_EQ(wc_curve448_export_private_raw_ex(&key, priv_bytes, &outSize, EC448_LITTLE_ENDIAN), 0);
+            CF_ASSERT(outSize = CURVE448_KEY_SIZE,
+                    "Private key exported with wc_curve448_export_private_raw_ex() is not of length CURVE448_KEY_SIZE");
+
+            CF_CHECK_NE(priv = wolfCrypt_bignum::Bignum::BinToBignum(ds, priv_bytes, outSize), std::nullopt);
 
             priv_str = priv->ToTrimmedString();
+        }
+
+        /* Export public key */
+        {
+            std::optional<component::Bignum> pub = std::nullopt;
+
+            outSize = 0;
+            try { outSize = ds.Get<uint16_t>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            pub_bytes = util::malloc(outSize);
+
+            CF_CHECK_EQ(wc_curve448_export_public_ex(&key, pub_bytes, &outSize, EC448_LITTLE_ENDIAN), 0);
+            CF_ASSERT(outSize = CURVE448_KEY_SIZE,
+                    "Public key exported with wc_curve448_export_public_ex() is not of length CURVE448_KEY_SIZE");
+
+            CF_CHECK_NE(pub = wolfCrypt_bignum::Bignum::BinToBignum(ds, pub_bytes, outSize), std::nullopt);
+
             pub_x_str = pub->ToTrimmedString();
             pub_y_str = "0";
         }
@@ -2824,6 +2918,8 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
         };
     }
 end:
+    util::free(priv_bytes);
+    util::free(pub_bytes);
     /* noret */ wc_ecc_key_free(key);
 
     wolfCrypt_detail::UnsetGlobalDs();
