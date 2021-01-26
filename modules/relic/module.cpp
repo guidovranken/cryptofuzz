@@ -96,14 +96,23 @@ std::optional<component::ECC_PublicKey> relic::OpECC_PrivateToPublic(operation::
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     ec_t pub;
-    relic_bignum::Bignum priv(ds);
+    relic_bignum::Bignum priv(ds), order(ds);
 
     /* Set curve */
     CF_CHECK_TRUE(relic_detail::SetCurve(op.curveType));
 
-    /* Set privkey */
+    /* Set private key */
     CF_CHECK_TRUE(priv.Set(op.priv.ToString()));
-    CF_CHECK_EQ(bn_is_zero(priv.Get()), 0);
+
+    /* Check if private key is valid */
+    {
+        /* Must not be zero */
+        CF_CHECK_EQ(bn_is_zero(priv.Get()), 0);
+
+        /* Must be less than curve order */
+        /* noret */ ec_curve_get_ord(order.Get());
+        CF_CHECK_EQ(bn_cmp(priv.Get(), order.Get()), RLC_LT);
+    }
 
     /* Compute pubkey */
     /* noret */ ec_new(pub);
