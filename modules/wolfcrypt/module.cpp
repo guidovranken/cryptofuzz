@@ -913,9 +913,6 @@ std::optional<component::MAC> wolfCrypt::OpHMAC(operation::HMAC& op) {
     {
         CF_CHECK_EQ(wc_HmacFinal(&ctx, out), 0);
 
-        CF_CHECK_NE(op.digestType.Get(), CF_DIGEST("BLAKE2B512"));
-        CF_CHECK_NE(op.digestType.Get(), CF_DIGEST("BLAKE2S256"));
-
         ret = component::MAC(out, *hashSize);
     }
 
@@ -2439,9 +2436,6 @@ std::optional<component::Key> wolfCrypt::OpKDF_PBKDF1(operation::KDF_PBKDF1& op)
                 op.keySize,
                 *hashType), 0);
 
-    CF_CHECK_NE(op.digestType.Get(), CF_DIGEST("BLAKE2B512"));
-    CF_CHECK_NE(op.digestType.Get(), CF_DIGEST("BLAKE2S256"));
-
     ret = component::Key(out, op.keySize);
 
 end:
@@ -2473,9 +2467,6 @@ std::optional<component::Key> wolfCrypt::OpKDF_PBKDF2(operation::KDF_PBKDF2& op)
                 op.iterations,
                 op.keySize,
                 *hashType), 0);
-
-    CF_CHECK_NE(op.digestType.Get(), CF_DIGEST("BLAKE2B512"));
-    CF_CHECK_NE(op.digestType.Get(), CF_DIGEST("BLAKE2S256"));
 
     ret = component::Key(out, op.keySize);
 
@@ -2541,9 +2532,6 @@ std::optional<component::Key> wolfCrypt::OpKDF_HKDF(operation::KDF_HKDF& op) {
                 op.info.GetSize(),
                 out,
                 op.keySize), 0);
-
-    CF_CHECK_NE(op.digestType.Get(), CF_DIGEST("BLAKE2B512"));
-    CF_CHECK_NE(op.digestType.Get(), CF_DIGEST("BLAKE2S256"));
 
     ret = component::Key(out, op.keySize);
 
