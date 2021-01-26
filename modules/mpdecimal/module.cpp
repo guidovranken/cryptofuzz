@@ -96,6 +96,11 @@ std::optional<component::Bignum> mpdecimal::OpBignumCalc(operation::BignumCalc& 
             opRunner = std::make_unique<mpdecimal_bignum::Cmp>();
             break;
         case    CF_CALCOP("ExpMod(A,B,C)"):
+            /* Too slow with larger values */
+            CF_CHECK_LT(op.bn0.GetSize(), 1000);
+            CF_CHECK_LT(op.bn1.GetSize(), 1000);
+            CF_CHECK_LT(op.bn2.GetSize(), 1000);
+
             opRunner = std::make_unique<mpdecimal_bignum::ExpMod>();
             break;
         case    CF_CALCOP("Sqrt(A)"):

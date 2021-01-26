@@ -13,6 +13,7 @@
 #include <boost/algorithm/hex.hpp>
 #include "third_party/cpu_features/include/cpuinfo_x86.h"
 #include "mutatorpool.h"
+#include "config.h"
 
 namespace cryptofuzz {
 namespace util {
@@ -615,7 +616,7 @@ std::string SHA1(const std::vector<uint8_t> data) {
 }
 
 void HintBignum(const std::string bn) {
-    if ( bn.size() < 1000 ) {
+    if ( bn.size() < config::kMaxBignumSize ) {
         Pool_Bignum.Set(bn);
     }
 }
