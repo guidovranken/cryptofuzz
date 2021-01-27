@@ -8,7 +8,9 @@ namespace cryptofuzz {
 namespace module {
 namespace wolfCrypt_detail {
 
+#if !defined(WOLFSSL_SP_MATH)
 #include "custom_curves.h"
+#endif
 
 #if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
     extern bool haveAllocFailure;
@@ -70,13 +72,16 @@ end:
 bool ECCKey::SetCurve(const Type& curveType) {
     bool ret = false;
 
+#if !defined(WOLFSSL_SP_MATH)
     bool useCustomCurve = false;
 
     try {
         useCustomCurve = ds.Get<uint8_t>();
     } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
-    if ( useCustomCurve == false ) {
+    if ( useCustomCurve == false )
+#endif
+    {
 #if defined(CRYPTOFUZZ_WOLFCRYPT_DEBUG)
         std::cout << "Using native curve" << std::endl;
 #endif
@@ -86,15 +91,18 @@ bool ECCKey::SetCurve(const Type& curveType) {
         this->curveID = *curveID;
 
         CF_CHECK_EQ(wc_ecc_set_curve(GetPtr(), 0, *curveID), 0);
-    } else {
-#if defined(CRYPTOFUZZ_WOLFCRYPT_DEBUG)
+    }
+#if !defined(WOLFSSL_SP_MATH)
+    else {
+ #if defined(CRYPTOFUZZ_WOLFCRYPT_DEBUG)
         std::cout << "Using custom curve" << std::endl;
-#endif
+ #endif
         const ecc_set_type* curveSpec;
         CF_CHECK_NE(curveSpec = GetCustomCurve(curveType.Get()), nullptr);
         CF_CHECK_EQ(wc_ecc_set_custom_curve(GetPtr(), curveSpec), 0);
         this->curveID = ECC_CURVE_CUSTOM;
     }
+#endif
 
     ret = true;
 

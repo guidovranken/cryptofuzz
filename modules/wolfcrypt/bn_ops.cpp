@@ -556,6 +556,7 @@ bool AddMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
 #if defined(WOLFSSL_SP_MATH)
+    (void)ds;
     (void)res;
     (void)bn;
 #else
@@ -583,6 +584,7 @@ bool SubMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
 #if defined(WOLFSSL_SP_MATH)
+    (void)ds;
     (void)res;
     (void)bn;
 #else
