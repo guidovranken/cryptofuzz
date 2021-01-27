@@ -1,5 +1,6 @@
 #include "bn_ops.h"
 #include <cryptofuzz/util.h>
+#include <limits>
 
 namespace cryptofuzz {
 namespace module {
@@ -455,7 +456,8 @@ bool Bit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
         return false;
     }
 
-    if ( (*bit+1) > bn_bits(bn[0].Get()) ) {
+    if ( *bit == std::numeric_limits<int>::max() ||
+         (*bit+1) > bn_bits(bn[0].Get()) ) {
         return false;
     }
 
@@ -484,7 +486,8 @@ bool SetBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
         return false;
     }
 
-    if ( (*bit+1) > bn_bits(bn[0].Get()) ) {
+    if ( *bit == std::numeric_limits<int>::max() ||
+         (*bit+1) > bn_bits(bn[0].Get()) ) {
         return false;
     }
 
@@ -504,7 +507,8 @@ bool ClearBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
         return false;
     }
 
-    if ( (*bit+1) > bn_bits(bn[0].Get()) ) {
+    if ( *bit == std::numeric_limits<int>::max() ||
+         (*bit+1) > bn_bits(bn[0].Get()) ) {
         return false;
     }
 
