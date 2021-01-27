@@ -237,11 +237,9 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             MP_CHECK_EQ(mp_exptmod_nct(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
 #endif
-#if !defined(WOLFSSL_SP_MATH)
         case    2:
             MP_CHECK_EQ(mp_exptmod_ex(bn[0].GetPtr(), bn[1].GetPtr(), bn[1].GetPtr()->used, bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
-#endif
 #if defined(WOLFSSL_SP_MATH)
         case    3:
             MP_CHECK_EQ(sp_ModExp_1024(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
@@ -298,16 +296,11 @@ bool Sqr::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-#if defined(WOLFSSL_SP_MATH)
-    (void)res;
-    (void)bn;
-#else
     MP_CHECK_EQ(mp_sqr(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
 
     ret = true;
 
 end:
-#endif
     return ret;
 }
 
@@ -613,16 +606,11 @@ bool SqrMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-#if defined(WOLFSSL_SP_MATH)
-    (void)res;
-    (void)bn;
-#else
     MP_CHECK_EQ(mp_sqrmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
 
     ret = true;
 
 end:
-#endif
     return ret;
 }
 
@@ -943,7 +931,7 @@ bool NumLSZeroBits::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-#if defined(WOLFSSL_SP_MATH) || (defined(USE_FAST_MATH) && !defined(HAVE_COMP_KEY))
+#if (defined(USE_FAST_MATH) && !defined(HAVE_COMP_KEY))
     (void)res;
     (void)bn;
 #else
