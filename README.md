@@ -104,3 +104,6 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - relic: [ECDSA verification discrepancies](https://github.com/relic-toolkit/relic/issues/175)
 - relic: [bn_write_str buffer overflow](https://github.com/relic-toolkit/relic/issues/176)
 - Nettle: [ECDSA verification fails for all-zero hash](https://github.com/gnutls/nettle/commit/b3d0bcf5a185842d2c717927eef03577fd61a912)
+- relic: [Buffer overflow via bn_mxp_slide](https://github.com/relic-toolkit/relic/commit/bba5b5fa5489706ab4eaf5d7d0c2550e0a9722c0)
+- relic: [bn_mxp_monty incorrect result](https://github.com/relic-toolkit/relic/commit/d411fabf2358553937fffb3242a57ee711746859)
+- NSS: TBA
