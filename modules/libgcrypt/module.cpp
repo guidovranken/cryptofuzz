@@ -58,6 +58,82 @@ namespace libgcrypt_detail {
 end:
         return ret;
     }
+
+    class MD_Handle {
+        private:
+            gcry_md_hd_t h;
+            bool hOpen = false;
+            Datasource& ds;
+        public:
+            MD_Handle(Datasource& ds) :
+                ds(ds)
+            { }
+            ~MD_Handle() {
+                if ( hOpen == true ) {
+                    /* noret */ gcry_md_close(h);
+                }
+            }
+            bool Open(const int digestType) {
+                bool ret = false;
+
+                bool useSecMem = false;
+                try {
+                    useSecMem = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                CF_CHECK_EQ(gcry_md_open(&h, digestType, useSecMem ? GCRY_MD_FLAG_SECURE : 0), GPG_ERR_NO_ERROR);
+
+                hOpen = true;
+
+                ret = true;
+end:
+                return ret;
+            }
+            gcry_md_hd_t Get(void) {
+                bool copy = false;
+                try {
+                    copy = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                if ( copy == true ) {
+                    gcry_md_hd_t h2;
+                    if ( gcry_md_copy(&h2, h) == GPG_ERR_NO_ERROR ) {
+                        /* noret */ gcry_md_close(h);
+                        h = h2;
+                    }
+                }
+                return h;
+            }
+            void Write(const uint8_t* data, const size_t size) {
+                bool usePutc = false;
+
+                /* gcry_md_putc is too slow for large amounts of data */
+                if ( size < 1000 ) {
+                    try {
+                        usePutc = ds.Get<bool>();
+                    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+                }
+
+                if ( usePutc == true ) {
+                    for (size_t i = 0; i < size; i++) {
+                        /* noret */ gcry_md_putc(Get(), data[i]);
+                    }
+                } else {
+                    /* noret */ gcry_md_write(Get(), data, size);
+                }
+            }
+            void Final(void) {
+                bool callFinal = false;
+                try {
+                    callFinal = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                if ( callFinal == true ) {
+                    /* gcry_md_final does not return a value */
+                    gcry_md_final(Get());
+                }
+            }
+    };
 } /* namespace libgcrypt_detail */
 
 std::optional<component::Digest> libgcrypt::OpDigest(operation::Digest& op) {
@@ -66,62 +142,33 @@ std::optional<component::Digest> libgcrypt::OpDigest(operation::Digest& op) {
     std::optional<component::Digest> ret = std::nullopt;
     util::Multipart parts;
 
-    gcry_md_hd_t h;
-    bool hOpen = false;
+    libgcrypt_detail::MD_Handle h(ds);
     std::optional<int> digestType = std::nullopt;
 
     /* Initialize */
     {
         CF_CHECK_NE(digestType = libgcrypt_detail::DigestIDToID(op.digestType.Get()), std::nullopt);
 
-        bool useSecMem = false;
-        try {
-            useSecMem = ds.Get<bool>();
-        } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
-
-        CF_CHECK_EQ(gcry_md_open(&h, *digestType, useSecMem ? GCRY_MD_FLAG_SECURE : 0), GPG_ERR_NO_ERROR);
-        hOpen = true;
+        CF_CHECK_TRUE(h.Open(*digestType));
 
         parts = util::ToParts(ds, op.cleartext);
     }
 
     /* Process */
     for (const auto& part : parts) {
-        bool usePutc = false;
-        try {
-            usePutc = ds.Get<bool>();
-        } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
-
-        if ( usePutc == true ) {
-            for (size_t i = 0; i < part.second; i++) {
-                /* gcry_md_pubc does not return a value */
-                gcry_md_putc(h, part.first[i]);
-            }
-        } else {
-            /* gcry_md_write does not return a value */
-            gcry_md_write(h, part.first, part.second);
-        }
+        /* noret */ h.Write(part.first, part.second);
     }
 
     /* Finalize */
     {
-
-        bool callFinal = false;
-        try {
-            callFinal = ds.Get<bool>();
-        } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
-
-        if ( callFinal == true ) {
-            /* gcry_md_final does not return a value */
-            gcry_md_final(h);
-        }
+        /* noret */ h.Final();
 
         switch ( op.digestType.Get() ) {
             case    CF_DIGEST("SHAKE128"):
                 {
                     /* Same output size as OpenSSL with SHAKE128 by default */
                     uint8_t out[16];
-                    CF_CHECK_EQ(gcry_md_extract(h, *digestType, out, sizeof(out)), GPG_ERR_NO_ERROR);
+                    CF_CHECK_EQ(gcry_md_extract(h.Get(), *digestType, out, sizeof(out)), GPG_ERR_NO_ERROR);
                     ret = component::Digest(out, sizeof(out));
                 }
                 break;
@@ -129,13 +176,13 @@ std::optional<component::Digest> libgcrypt::OpDigest(operation::Digest& op) {
                 {
                     /* Same output size as OpenSSL with SHAKE256 by default */
                     uint8_t out[32];
-                    CF_CHECK_EQ(gcry_md_extract(h, *digestType, out, sizeof(out)), GPG_ERR_NO_ERROR);
+                    CF_CHECK_EQ(gcry_md_extract(h.Get(), *digestType, out, sizeof(out)), GPG_ERR_NO_ERROR);
                     ret = component::Digest(out, sizeof(out));
                 }
                 break;
             default:
                 {
-                    auto out = gcry_md_read(h, *digestType);
+                    auto out = gcry_md_read(h.Get(), *digestType);
                     CF_CHECK_NE(out, nullptr);
                     ret = component::Digest(out, gcry_md_get_algo_dlen(*digestType));
                 }
@@ -151,16 +198,15 @@ std::optional<component::Digest> libgcrypt::OpDigest(operation::Digest& op) {
         try {
             while ( ds.Get<bool>() ) {
                 const auto size = ds.Get<uint16_t>();
+
                 std::vector<uint8_t> data(size);
-                gcry_md_write(h, data.data(), size);
+
+                /* noret */ h.Write(data.data(), size);
             }
         } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
     }
 
 end:
-    if ( hOpen == true ) {
-        gcry_md_close(h);
-    }
 
     return ret;
 }
