@@ -701,6 +701,70 @@ end:
     return ret;
 }
 
+std::optional<bool> libgcrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    gcry_sexp_t sig_sexp, data_sexp, pub_sexp;
+    bool sig_sexp_set = false;
+    bool data_sexp_set = false;
+    bool pub_sexp_set = false;
+
+    /* Currently only secp256r1 supported */
+    CF_CHECK_TRUE(op.curveType.Is(CF_ECC_CURVE("secp256r1")));
+    CF_CHECK_EQ(op.cleartext.GetSize(), 32);
+
+    CF_CHECK_TRUE(op.digestType.Is(CF_DIGEST("NULL")));
+
+    /* Set signature */
+    {
+        libgcrypt_bignum::Bignum r, s;
+        CF_CHECK_EQ(r.Set(op.signature.signature.first.ToString(ds)), true);
+        CF_CHECK_EQ(s.Set(op.signature.signature.second.ToString(ds)), true);
+        CF_CHECK_EQ(gcry_sexp_build(&sig_sexp, nullptr, "(sig-val (ecdsa (r %M) (s %M)))", r.GetPtr(), s.GetPtr()), GPG_ERR_NO_ERROR)
+    }
+    sig_sexp_set = true;
+
+    /* Set data */
+    if ( op.cleartext.GetSize() > 32 ) {
+        CF_CHECK_EQ(gcry_sexp_build(&data_sexp, nullptr, "(data (flags raw ) (value %b))", 32, op.cleartext.GetPtr() + op.cleartext.GetSize() - 32), GPG_ERR_NO_ERROR);
+    } else {
+        CF_CHECK_EQ(gcry_sexp_build(&data_sexp, nullptr, "(data (flags raw ) (value %b))", op.cleartext.GetSize(), op.cleartext.GetPtr()), GPG_ERR_NO_ERROR);
+    }
+    data_sexp_set = true;
+
+    /* Set pubkey */
+    {
+        std::optional<std::vector<uint8_t>> pub_x, pub_y;
+        CF_CHECK_NE(pub_x = util::DecToBin(op.signature.pub.first.ToTrimmedString(), 32), std::nullopt);
+        CF_CHECK_NE(pub_y = util::DecToBin(op.signature.pub.second.ToTrimmedString(), 32), std::nullopt);
+
+        std::vector<uint8_t> pub;
+
+        pub.push_back(0x04);
+        pub.insert(std::end(pub), std::begin(*pub_x), std::end(*pub_x));
+        pub.insert(std::end(pub), std::begin(*pub_y), std::end(*pub_y));
+
+        CF_CHECK_EQ(gcry_sexp_build(&pub_sexp, NULL,
+            "(public-key (ecdsa (curve \"secp256r1\") (q %b)))", pub.size(), pub.data()), GPG_ERR_NO_ERROR);
+        pub_sexp_set = true;
+    }
+
+    ret = gcry_pk_verify(sig_sexp, data_sexp, pub_sexp) == GPG_ERR_NO_ERROR;
+
+end:
+    if ( sig_sexp_set ) {
+        gcry_sexp_release(sig_sexp);
+    }
+    if ( data_sexp_set ) {
+        gcry_sexp_release(data_sexp);
+    }
+    if ( pub_sexp_set ) {
+        gcry_sexp_release(pub_sexp);
+    }
+    return ret;
+}
+
 std::optional<component::Bignum> libgcrypt::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
