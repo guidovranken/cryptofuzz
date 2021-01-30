@@ -324,6 +324,20 @@ end:
     return ret;
 }
 
+bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+    CF_CHECK_NE(gcry_mpi_cmp_ui(bn[1].GetPtr(), 0), 0);
+    /* noret */ gcry_mpi_mod(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+
+    ret = true;
+
+end:
+    return ret;
+}
+
 } /* namespace libgcrypt_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */
