@@ -141,6 +141,20 @@ std::optional<component::Digest> libgcrypt::OpDigest(operation::Digest& op) {
                 }
                 break;
         }
+
+        /* Write a buffer of random size a random amount of times.
+         *
+         * This is to catch the buffer overflow in libgcrypt 1.90.0:
+         *
+         * https://dev.gnupg.org/rC512c0c75276949f13b6373b5c04f7065af750b08
+         */
+        try {
+            while ( ds.Get<bool>() ) {
+                const auto size = ds.Get<uint16_t>();
+                std::vector<uint8_t> data(size);
+                gcry_md_write(h, data.data(), size);
+            }
+        } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
     }
 
 end:
