@@ -36,6 +36,7 @@ class Bignum {
         bool Set(const std::string s);
         bool Set(const component::Bignum i);
         mp_int* GetPtr(void) const;
+        mp_int* GetPtrDirect(void) const;
         std::optional<uint64_t> AsUint64(void) const;
 
         template <class T>
@@ -70,12 +71,22 @@ class BignumCluster {
     private:
         Datasource& ds;
         std::array<Bignum, 4> bn;
+
+        struct {
+            bool invalid = false;
+            std::array<mp_int*, 4> bn = {0};
+        } cache;
     public:
         BignumCluster(Datasource& ds, Bignum bn0, Bignum bn1, Bignum bn2, Bignum bn3);
+        ~BignumCluster();
         Bignum& operator[](const size_t index);
 
         bool Set(const size_t index, const std::string s);
         mp_int* GetDestPtr(const size_t index);
+
+        void Save(void);
+        void InvalidateCache(void);
+        bool EqualsCache(void) const;
 };
 
 } /* namespace wolfCrypt_bignum */

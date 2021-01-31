@@ -835,6 +835,9 @@ bool Set::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             break;
         case    2:
             {
+                /* mp_exch alters the value of bn[0], so invalidate the cache. */
+                bn.InvalidateCache();
+
                 /* mp_exch only returns a value when wolfCrypt is compiled
                  * with fast math; it does not return a value when compiled
                  * with --disable-fastmath or SP math.
@@ -962,6 +965,10 @@ bool MulAdd::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     CF_CHECK_EQ(mul->Run(ds, res, bn), true);
 
     CF_CHECK_NE(mulRes = res.ToDecString(), std::nullopt);
+
+    /* bn[0] and bn[1] are altered, so invalidate the cache. */
+    bn.InvalidateCache();
+
     CF_CHECK_EQ(bn.Set(0, *mulRes), true);
 
     CF_CHECK_EQ(bn.Set(1, *toAdd), true);

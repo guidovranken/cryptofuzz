@@ -6,6 +6,7 @@ namespace module {
 
 namespace wolfCrypt_detail {
 #if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
+    extern bool disableAllocationFailures;
     extern bool haveAllocFailure;
 #endif
 } /* namespace wolfCrypt_detail */
@@ -161,6 +162,10 @@ mp_int* Bignum::GetPtr(void) const {
         }
     }
 
+    return mp;
+}
+
+mp_int* Bignum::GetPtrDirect(void) const {
     return mp;
 }
         
@@ -343,6 +348,17 @@ BignumCluster::BignumCluster(Datasource& ds, Bignum bn0, Bignum bn1, Bignum bn2,
     bn({bn0, bn1, bn2, bn3})
 { }
 
+BignumCluster::~BignumCluster() {
+    for (size_t i = 0; i < 4; i++) {
+        if ( cache.bn[i] == nullptr ) {
+            continue;
+        }
+
+        mp_clear(cache.bn[i]);
+        util::free(cache.bn[i]);
+    }
+}
+
 Bignum& BignumCluster::operator[](const size_t index) {
     CF_ASSERT(index < bn.size(), "Invalid index requested in BignumCluster::operator[]");
 
@@ -372,7 +388,70 @@ bool BignumCluster::Set(const size_t index, const std::string s) {
 }
 
 mp_int* BignumCluster::GetDestPtr(const size_t index) {
+    /* Because it is requested as a destination pointer,
+     * this bignum will be altered, hence invalidate
+     * the cache
+     */
+    InvalidateCache();
+
     return bn[index].GetPtr();
+}
+
+void BignumCluster::Save(void) {
+    for (size_t i = 0; i < 4; i++) {
+        mp_int* cached_mp = (mp_int*)util::malloc(sizeof(mp_int));
+
+        wolfCrypt_detail::disableAllocationFailures = true;
+
+        CF_ASSERT(mp_init(cached_mp) == MP_OKAY, "mp_init failed unexpectedly");
+        CF_ASSERT(mp_copy(bn[i].GetPtrDirect(), cached_mp) == MP_OKAY, "mp_copy failed unexpectedly");
+
+        wolfCrypt_detail::disableAllocationFailures = false;
+
+        cache.bn[i] = cached_mp;
+    }
+}
+
+void BignumCluster::InvalidateCache(void) {
+    cache.invalid = true;
+}
+
+bool BignumCluster::EqualsCache(void) const {
+    if ( cache.invalid == true ) {
+        return true;
+    }
+
+    for (size_t i = 0; i < 4; i++) {
+        if ( cache.bn[i] == nullptr ) {
+            continue;
+        }
+
+        wolfCrypt_detail::disableAllocationFailures = true;
+
+        if ( mp_cmp(bn[i].GetPtrDirect(), cache.bn[i]) != MP_EQ ) {
+#if defined(CRYPTOFUZZ_WOLFCRYPT_DEBUG)
+            char str[8192];
+
+            std::cout << "Bignum with index " << std::to_string(i) << " was changed" << std::endl;
+
+            wolfCrypt_detail::disableAllocationFailures = true;
+
+            CF_ASSERT(mp_tohex(cache.bn[i], str) == MP_OKAY, "mp_tohex failed unexpectedly");
+            printf("it was: %s\n", str);
+
+            CF_ASSERT(mp_tohex(bn[i].GetPtrDirect(), str) == MP_OKAY, "mp_tohex failed unexpectedly");
+            printf("it is now %s\n", str);
+
+#endif
+            wolfCrypt_detail::disableAllocationFailures = false;
+
+            return false;
+        }
+
+        wolfCrypt_detail::disableAllocationFailures = false;
+    }
+
+    return true;
 }
 
 } /* namespace wolfCrypt_bignum */

@@ -112,6 +112,7 @@ namespace wolfCrypt_detail {
 #endif /* WOLF_CRYPTO_CB */
 
 #if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
+    bool disableAllocationFailures;
     bool haveAllocFailure;
 #endif
 
@@ -150,6 +151,10 @@ namespace wolfCrypt_detail {
 
     inline bool AllocationFailure(void) {
 #if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
+        if ( disableAllocationFailures == true ) {
+            return false;
+        }
+
         bool fail = false;
         if ( ds == nullptr ) {
             if ( fail ) {
@@ -284,6 +289,10 @@ static void wolfCrypt_custom_free(void* ptr) {
 
 wolfCrypt::wolfCrypt(void) :
     Module("wolfCrypt") {
+
+#if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
+    wolfCrypt_detail::disableAllocationFailures = false;
+#endif
 
     CF_ASSERT(wc_InitRng(&wolfCrypt_detail::rng) == 0, "Cannot initialize wolfCrypt RNG");
 
@@ -3065,6 +3074,9 @@ std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& 
     CF_CHECK_EQ(bn.Set(2, op.bn2.ToString(ds)), true);
     CF_CHECK_EQ(bn.Set(3, op.bn3.ToString(ds)), true);
 
+    /* Save the current values of bn[0..3] */
+    /* noret */ bn.Save();
+
     switch ( op.calcOp.Get() ) {
         case    CF_CALCOP("Add(A,B)"):
             opRunner = std::make_unique<wolfCrypt_bignum::Add>();
@@ -3183,6 +3195,10 @@ std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& 
     CF_CHECK_EQ(opRunner->Run(ds, res, bn), true);
 
     ret = res.ToComponentBignum();
+
+    /* Verify that no parameter (bn[0..3]) was altered during the operation */
+    CF_ASSERT(bn.EqualsCache() == true, "Bignum parameters were changed");
+
 #if defined(CRYPTOFUZZ_WOLFCRYPT_ALLOCATION_FAILURES)
     } catch ( std::exception ) { }
 #endif
