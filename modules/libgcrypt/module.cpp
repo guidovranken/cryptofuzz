@@ -984,6 +984,12 @@ std::optional<component::Bignum> libgcrypt::OpBignumCalc(operation::BignumCalc& 
         case    CF_CALCOP("Mod(A,B)"):
             opRunner = std::make_unique<libgcrypt_bignum::Mod>();
             break;
+        case    CF_CALCOP("Sqr(A)"):
+            opRunner = std::make_unique<libgcrypt_bignum::Sqr>();
+            break;
+        case    CF_CALCOP("NumBits(A)"):
+            opRunner = std::make_unique<libgcrypt_bignum::NumBits>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

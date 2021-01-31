@@ -338,6 +338,22 @@ end:
     return ret;
 }
 
+bool Sqr::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    (void)ds;
+
+    /* noret */ gcry_mpi_mul(res.GetPtr(), bn[0].GetPtr(), bn[0].GetPtr());
+
+    return true;
+}
+
+bool NumBits::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    (void)ds;
+
+    res.Set( std::to_string(gcry_mpi_get_nbits(bn[0].GetPtr())) );
+
+    return true;
+}
+
 } /* namespace libgcrypt_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */
