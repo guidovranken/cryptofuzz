@@ -134,6 +134,159 @@ end:
                 }
             }
     };
+
+    template <class HandleType>
+    class Handle {
+        protected:
+            HandleType h;
+            bool hOpen = false;
+            Datasource& ds;
+            virtual bool open(const int digestType, const bool useSecMem) = 0;
+            virtual void copy(void) = 0;
+            virtual void _close(void) = 0;
+            virtual bool write(const uint8_t* data, const size_t size) = 0;
+            virtual void _final(void) = 0;
+        public:
+            Handle(Datasource& ds) :
+                ds(ds)
+            { }
+            ~Handle() {
+            }
+            bool Open(const int digestType) {
+                bool ret = false;
+
+                bool useSecMem = false;
+                try {
+                    useSecMem = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                CF_CHECK_TRUE(open(digestType, useSecMem));
+
+                hOpen = true;
+
+                ret = true;
+end:
+                return ret;
+            }
+            HandleType Get(void) {
+                bool copy = false;
+                try {
+                    copy = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                if ( copy == true ) {
+                    this->copy();
+                }
+                return h;
+            }
+            bool Write(const uint8_t* data, const size_t size) {
+                return write(data, size);
+            }
+            void Final(void) {
+                bool callFinal = false;
+                try {
+                    callFinal = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                if ( callFinal == true ) {
+                    _final();
+                }
+            }
+            void WriteRandom(void) {
+                /* Write a buffer of random size a random amount of times.
+                 *
+                 * This is to catch the buffer overflow in libgcrypt 1.90.0:
+                 *
+                 * https://dev.gnupg.org/rC512c0c75276949f13b6373b5c04f7065af750b08
+                 */
+                try {
+                    while ( ds.Get<bool>() ) {
+                        const auto size = ds.Get<uint16_t>();
+
+                        std::vector<uint8_t> data(size);
+
+                        /* ignore result */ Write(data.data(), size);
+                    }
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            }
+    };
+
+    class DigestHandle : public Handle<gcry_md_hd_t> {
+        private:
+            bool open(const int digestType, const bool useSecMem) override {
+                return gcry_md_open(&h, digestType, useSecMem ? GCRY_MD_FLAG_SECURE : 0) == GPG_ERR_NO_ERROR;
+            }
+            void copy(void) override {
+                gcry_md_hd_t h2;
+                if ( gcry_md_copy(&h2, h) == GPG_ERR_NO_ERROR ) {
+                    /* noret */ gcry_md_close(h);
+                    h = h2;
+                }
+            }
+            void _close(void) override {
+                /* noret */ gcry_md_close(h);
+            }
+            bool write(const uint8_t* data, const size_t size) override {
+                bool usePutc = false;
+
+                /* gcry_md_putc is too slow for large amounts of data */
+                if ( size < 1000 ) {
+                    try {
+                        usePutc = ds.Get<bool>();
+                    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+                }
+
+                if ( usePutc == true ) {
+                    for (size_t i = 0; i < size; i++) {
+                        /* noret */ gcry_md_putc(Get(), data[i]);
+                    }
+                } else {
+                    /* noret */ gcry_md_write(Get(), data, size);
+                }
+
+                return true;
+            }
+            void _final(void) override {
+                /* noret */ gcry_md_final(Get());
+            }
+        public:
+            DigestHandle(Datasource& ds) :
+                Handle<gcry_md_hd_t>(ds)
+            { }
+            ~DigestHandle() {
+                if ( hOpen == true ) {
+                    /* noret */ gcry_md_close(h);
+                }
+            }
+    };
+
+    class MACHandle : public Handle<gcry_mac_hd_t> {
+        private:
+            bool open(const int digestType, const bool useSecMem) override {
+                return gcry_mac_open(&h, digestType, useSecMem ? GCRY_MD_FLAG_SECURE : 0, nullptr) == GPG_ERR_NO_ERROR;
+            }
+            void copy(void) override {
+                /* There is no copy function for MAC */
+            }
+            void _close(void) override {
+                /* noret */ gcry_mac_close(h);
+            }
+            bool write(const uint8_t* data, const size_t size) override {
+                return gcry_mac_write(Get(), data, size) == GPG_ERR_NO_ERROR;
+            }
+            void _final(void) override {
+                /* There is no final function for MAC */
+            }
+        public:
+            MACHandle(Datasource& ds) :
+                Handle<gcry_mac_hd_t>(ds)
+            { }
+            ~MACHandle() {
+                if ( hOpen == true ) {
+                    /* noret */ gcry_mac_close(h);
+                }
+            }
+    };
 } /* namespace libgcrypt_detail */
 
 std::optional<component::Digest> libgcrypt::OpDigest(operation::Digest& op) {
@@ -142,7 +295,7 @@ std::optional<component::Digest> libgcrypt::OpDigest(operation::Digest& op) {
     std::optional<component::Digest> ret = std::nullopt;
     util::Multipart parts;
 
-    libgcrypt_detail::MD_Handle h(ds);
+    libgcrypt_detail::DigestHandle h(ds);
     std::optional<int> digestType = std::nullopt;
 
     /* Initialize */
@@ -156,7 +309,7 @@ std::optional<component::Digest> libgcrypt::OpDigest(operation::Digest& op) {
 
     /* Process */
     for (const auto& part : parts) {
-        /* noret */ h.Write(part.first, part.second);
+        CF_CHECK_TRUE(h.Write(part.first, part.second));
     }
 
     /* Finalize */
@@ -189,25 +342,10 @@ std::optional<component::Digest> libgcrypt::OpDigest(operation::Digest& op) {
                 break;
         }
 
-        /* Write a buffer of random size a random amount of times.
-         *
-         * This is to catch the buffer overflow in libgcrypt 1.90.0:
-         *
-         * https://dev.gnupg.org/rC512c0c75276949f13b6373b5c04f7065af750b08
-         */
-        try {
-            while ( ds.Get<bool>() ) {
-                const auto size = ds.Get<uint16_t>();
-
-                std::vector<uint8_t> data(size);
-
-                /* noret */ h.Write(data.data(), size);
-            }
-        } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+        /* noret */ h.WriteRandom();
     }
 
 end:
-
     return ret;
 }
 
@@ -234,8 +372,7 @@ std::optional<component::MAC> libgcrypt::OpHMAC(operation::HMAC& op) {
     std::optional<component::MAC> ret = std::nullopt;
     util::Multipart parts;
 
-    gcry_mac_hd_t h;
-    bool hOpen = false;
+    libgcrypt_detail::MACHandle h(ds);
     int hmacType = -1;
 
     /* Initialize */
@@ -243,22 +380,16 @@ std::optional<component::MAC> libgcrypt::OpHMAC(operation::HMAC& op) {
         CF_CHECK_NE(LUT.find(op.digestType.Get()), LUT.end());
         hmacType = LUT.at(op.digestType.Get());
 
-        bool useSecMem = false;
-        try {
-            useSecMem = ds.Get<bool>();
-        } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+        CF_CHECK_TRUE(h.Open(hmacType));
 
-        CF_CHECK_EQ(gcry_mac_open(&h, hmacType, useSecMem ? GCRY_MD_FLAG_SECURE : 0, nullptr), GPG_ERR_NO_ERROR);
-        hOpen = true;
-
-        CF_CHECK_EQ(gcry_mac_setkey(h, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), GPG_ERR_NO_ERROR);
+        CF_CHECK_EQ(gcry_mac_setkey(h.Get(), op.cipher.key.GetPtr(), op.cipher.key.GetSize()), GPG_ERR_NO_ERROR);
 
         parts = util::ToParts(ds, op.cleartext);
     }
 
     /* Process */
     for (const auto& part : parts) {
-        CF_CHECK_EQ(gcry_mac_write(h, part.first, part.second), GPG_ERR_NO_ERROR);
+        CF_CHECK_TRUE(h.Write(part.first, part.second));
     }
 
     /* Finalize */
@@ -266,15 +397,13 @@ std::optional<component::MAC> libgcrypt::OpHMAC(operation::HMAC& op) {
         size_t length = gcry_mac_get_algo_maclen(hmacType);
         CF_CHECK_GTE(length, 0);
         uint8_t out[length];
-        CF_CHECK_EQ(gcry_mac_read(h, out, &length), GPG_ERR_NO_ERROR);
-        ret = component::Digest(out, length);
+        CF_CHECK_EQ(gcry_mac_read(h.Get(), out, &length), GPG_ERR_NO_ERROR);
+        ret = component::MAC(out, length);
+
+        /* noret */ h.WriteRandom();
     }
 
 end:
-    if ( hOpen == true ) {
-        gcry_mac_close(h);
-    }
-
     return ret;
 }
 
@@ -734,6 +863,7 @@ std::optional<bool> libgcrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     data_sexp_set = true;
 
     /* Set pubkey */
+
     {
         std::optional<std::vector<uint8_t>> pub_x, pub_y;
         CF_CHECK_NE(pub_x = util::DecToBin(op.signature.pub.first.ToTrimmedString(), 32), std::nullopt);
