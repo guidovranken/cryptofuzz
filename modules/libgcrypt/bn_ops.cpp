@@ -354,6 +354,25 @@ bool NumBits::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     return true;
 }
 
+bool Exp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    (void)ds;
+
+    bool ret = false;
+    unsigned int exponent;
+    Bignum one;
+
+    CF_CHECK_EQ(gcry_mpi_cmp_ui(bn[0].GetPtr(), 2), 0);
+    CF_CHECK_EQ(gcry_mpi_get_ui(&exponent, bn[1].GetPtr()), 0);
+    CF_CHECK_EQ(one.Set("1"), true);
+
+    /* noret */ gcry_mpi_mul_2exp(res.GetPtr(), one.GetPtr(), exponent);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
 } /* namespace libgcrypt_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

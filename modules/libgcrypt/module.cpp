@@ -990,6 +990,9 @@ std::optional<component::Bignum> libgcrypt::OpBignumCalc(operation::BignumCalc& 
         case    CF_CALCOP("NumBits(A)"):
             opRunner = std::make_unique<libgcrypt_bignum::NumBits>();
             break;
+        case    CF_CALCOP("Exp(A,B)"):
+            opRunner = std::make_unique<libgcrypt_bignum::Exp>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
