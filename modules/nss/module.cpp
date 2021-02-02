@@ -845,6 +845,10 @@ std::optional<bool> NSS::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         ecpub.ecParams.arena = PORT_NewArena(DER_DEFAULT_CHUNKSIZE);
         CF_CHECK_EQ(EC_CopyParams(ecpub.ecParams.arena, &ecpub.ecParams, ecparams), SECSuccess);
         ecpub.publicValue = {siBuffer, pub.data(), static_cast<unsigned int>(pub.size())};
+        if ( EC_ValidatePublicKey(ecparams, &ecpub.publicValue) != SECSuccess ) {
+            ret = false;
+            goto end;
+        }
     }
 
     hash_item = {siBuffer, ct.data(), static_cast<unsigned int>(ct.size())};
