@@ -96,6 +96,7 @@ std::optional<component::ECC_PublicKey> relic::OpECC_PrivateToPublic(operation::
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     ec_t pub;
+    bool pub_initialized = false;
     relic_bignum::Bignum priv(ds), order(ds);
 
     /* Set curve */
@@ -116,6 +117,8 @@ std::optional<component::ECC_PublicKey> relic::OpECC_PrivateToPublic(operation::
 
     /* Compute pubkey */
     /* noret */ ec_new(pub);
+    pub_initialized = true;
+
     RLC_TRY {
         /* noret */ ec_mul_gen(pub, priv.Get());
     } RLC_CATCH_ANY {
@@ -142,6 +145,9 @@ std::optional<component::ECC_PublicKey> relic::OpECC_PrivateToPublic(operation::
     }
 
 end:
+    if ( pub_initialized ) {
+        ec_free(pub);
+    }
     return ret;
 }
 
@@ -154,6 +160,7 @@ std::optional<bool> relic::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     }
 
     ec_t pub;
+    bool pub_initialized = false;
     relic_bignum::Bignum r(ds), s(ds);
     std::vector<uint8_t> pub_bytes;
 
@@ -167,6 +174,7 @@ std::optional<bool> relic::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     /* Set pubkey */
     {
         /* noret */ ec_new(pub);
+        pub_initialized = true;
 #if 0
         /* noret */ ec_set_infty(pub);
         const int size = ec_size_bin(pub, 0);
@@ -193,6 +201,9 @@ std::optional<bool> relic::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     }
 
 end:
+    if ( pub_initialized ) {
+        ec_free(pub);
+    }
     return ret;
 }
 
@@ -210,6 +221,7 @@ std::optional<component::ECDSA_Signature> relic::OpECDSA_Sign(operation::ECDSA_S
     relic_detail::global_ds = &ds;
 
     ec_t pub;
+    bool pub_initialized = false;
     relic_bignum::Bignum priv(ds), r(ds), s(ds);
     std::optional<std::string> R, S;
     std::string X, Y;
@@ -232,6 +244,7 @@ std::optional<component::ECDSA_Signature> relic::OpECDSA_Sign(operation::ECDSA_S
 
     /* Compute pubkey */
     /* noret */ ec_new(pub);
+    pub_initialized = true;
     RLC_TRY {
         /* noret */ ec_mul_gen(pub, priv.Get());
     } RLC_CATCH_ANY {
@@ -258,6 +271,9 @@ std::optional<component::ECDSA_Signature> relic::OpECDSA_Sign(operation::ECDSA_S
     ret = { {*R, *S}, {X, Y} };
 
 end:
+    if ( pub_initialized ) {
+        ec_free(pub);
+    }
     relic_detail::global_ds = nullptr;
 
     return ret;

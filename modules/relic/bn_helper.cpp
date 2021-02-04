@@ -133,7 +133,7 @@ bn_t& Bignum::Get(void) {
 }
 
 Bignum::~Bignum(void) {
-    bn_free(a);
+    bn_free(bn);
 }
 
 } /* namespace relic_bignum */
