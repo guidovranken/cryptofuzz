@@ -139,6 +139,14 @@ end:
 
 mp_int* Bignum::GetPtr(void) const {
     {
+#if defined(WOLFSSL_SP_MATH) || defined(WOLFSSL_SP_MATH_ALL)
+        CF_ASSERT(mp->used <= mp->size, "used is larger than size");
+#elif !defined(USE_FAST_MATH)
+        CF_ASSERT(mp->used <= mp->alloc, "used is larger than size");
+#endif
+    }
+
+    {
         /* Optionally clamp the bignum. This should not affect its value. */
 
         bool clamp = false;
