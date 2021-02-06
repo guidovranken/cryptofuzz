@@ -2805,9 +2805,17 @@ std::optional<component::Key> OpenSSL::OpKDF_SSH(operation::KDF_SSH& op) {
                 session_idCopy.data(),
                 session_idCopy.size());
 
-        char type = *(op.type.GetPtr());
+
+        /* Must be null-terminated even if size is specified.
+         *
+         * See also https://github.com/openssl/openssl/issues/14027
+         */
+        char type[2];
+        type[0] = *(op.type.GetPtr());
+        type[1] = 0;
+
         *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_SSHKDF_TYPE,
-                &type, sizeof(type));
+                type, sizeof(type));
 
         *p = OSSL_PARAM_construct_end();
 
