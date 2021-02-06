@@ -42,6 +42,12 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorDH_GenerateKeyPair executorDH_GenerateKeyPair(CF_OPERATION("DH_GenerateKeyPair"), modules, options);
     static ExecutorDH_Derive executorDH_Derive(CF_OPERATION("DH_Derive"), modules, options);
     static ExecutorBignumCalc executorBignumCalc(CF_OPERATION("BignumCalc"), modules, options);
+    static ExecutorBLS_PrivateToPublic executorBLS_PrivateToPublic(CF_OPERATION("BLS_PrivateToPublic"), modules, options);
+    static ExecutorBLS_Sign executorBLS_Sign(CF_OPERATION("BLS_Sign"), modules, options);
+    static ExecutorBLS_Verify executorBLS_Verify(CF_OPERATION("BLS_Verify"), modules, options);
+    static ExecutorBLS_Pairing executorBLS_Pairing(CF_OPERATION("BLS_Pairing"), modules, options);
+    static ExecutorBLS_HashToG1 executorBLS_HashToG1(CF_OPERATION("BLS_HashToG1"), modules, options);
+    static ExecutorBLS_HashToG2 executorBLS_HashToG2(CF_OPERATION("BLS_HashToG2"), modules, options);
 
     try {
 
@@ -146,6 +152,24 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("BignumCalc"):
                 executorBignumCalc.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_PrivateToPublic"):
+                executorBLS_PrivateToPublic.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_Sign"):
+                executorBLS_Sign.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_Verify"):
+                executorBLS_Verify.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_Pairing"):
+                executorBLS_Pairing.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_HashToG1"):
+                executorBLS_HashToG1.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_HashToG2"):
+                executorBLS_HashToG2.Run(ds, payload.data(), payload.size());
                 break;
         }
     } catch ( Datasource::OutOfData ) {

@@ -116,5 +116,32 @@ class MACType {
 using DH_Key = BignumPair;
 using DH_KeyPair = BignumPair;
 
+class G2 {
+    public:
+        BignumPair first, second;
+
+        G2(Datasource& ds) :
+            first(ds),
+            second(ds)
+        { }
+
+        G2(const std::string a_first, const std::string a_second, const std::string b_first, const std::string b_second) :
+            first(a_first, a_second),
+            second(b_first, b_second)
+        { }
+
+        inline bool operator==(const G2& rhs) const {
+            return
+                (first == rhs.first) &&
+                (second == rhs.second);
+        }
+        nlohmann::json ToJSON(void) const;
+};
+
+using BLS_PrivateKey = Bignum;
+using BLS_PublicKey = BignumPair;
+using BLS_Signature = BignumPair;
+using G1 = BignumPair;
+
 } /* namespace component */
 } /* namespace cryptofuzz */

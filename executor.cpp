@@ -1018,6 +1018,139 @@ template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, oper
     return module->OpBignumCalc(op);
 }
 
+/* Specialization for operation::BLS_PrivateToPublic */
+template<> void ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>::updateExtraCounters(const uint64_t moduleID, operation::BLS_PrivateToPublic& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>::postprocess(std::shared_ptr<Module> module, operation::BLS_PrivateToPublic& op, const ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::BLS_PublicKey> ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>::callModule(std::shared_ptr<Module> module, operation::BLS_PrivateToPublic& op) const {
+    const size_t size = op.priv.ToTrimmedString().size();
+
+    if ( size == 0 || size > 4096 ) {
+        return std::nullopt;
+    }
+
+    return module->OpBLS_PrivateToPublic(op);
+}
+
+/* Specialization for operation::BLS_Sign */
+template<> void ExecutorBase<component::BLS_Signature, operation::BLS_Sign>::updateExtraCounters(const uint64_t moduleID, operation::BLS_Sign& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::BLS_Signature, operation::BLS_Sign>::postprocess(std::shared_ptr<Module> module, operation::BLS_Sign& op, const ExecutorBase<component::BLS_Signature, operation::BLS_Sign>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::BLS_Signature> ExecutorBase<component::BLS_Signature, operation::BLS_Sign>::callModule(std::shared_ptr<Module> module, operation::BLS_Sign& op) const {
+    const size_t size = op.priv.ToTrimmedString().size();
+
+    if ( size == 0 || size > 4096 ) {
+        return std::nullopt;
+    }
+
+    return module->OpBLS_Sign(op);
+}
+
+/* Specialization for operation::BLS_Verify */
+template<> void ExecutorBase<bool, operation::BLS_Verify>::updateExtraCounters(const uint64_t moduleID, operation::BLS_Verify& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<bool, operation::BLS_Verify>::postprocess(std::shared_ptr<Module> module, operation::BLS_Verify& op, const ExecutorBase<bool, operation::BLS_Verify>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<bool> ExecutorBase<bool, operation::BLS_Verify>::callModule(std::shared_ptr<Module> module, operation::BLS_Verify& op) const {
+    const std::vector<size_t> sizes = {
+        op.pub.first.ToTrimmedString().size(),
+        op.pub.second.ToTrimmedString().size(),
+        op.signature.first.ToTrimmedString().size(),
+        op.signature.second.ToTrimmedString().size(),
+    };
+
+    for (const auto& size : sizes) {
+        if ( size == 0 || size > 4096 ) {
+            return std::nullopt;
+        }
+    }
+
+    return module->OpBLS_Verify(op);
+}
+
+/* Specialization for operation::BLS_Pairing */
+template<> void ExecutorBase<bool, operation::BLS_Pairing>::updateExtraCounters(const uint64_t moduleID, operation::BLS_Pairing& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<bool, operation::BLS_Pairing>::postprocess(std::shared_ptr<Module> module, operation::BLS_Pairing& op, const ExecutorBase<bool, operation::BLS_Pairing>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<bool> ExecutorBase<bool, operation::BLS_Pairing>::callModule(std::shared_ptr<Module> module, operation::BLS_Pairing& op) const {
+    return module->OpBLS_Pairing(op);
+}
+
+/* Specialization for operation::BLS_HashToG1 */
+template<> void ExecutorBase<component::G1, operation::BLS_HashToG1>::updateExtraCounters(const uint64_t moduleID, operation::BLS_HashToG1& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::G1, operation::BLS_HashToG1>::postprocess(std::shared_ptr<Module> module, operation::BLS_HashToG1& op, const ExecutorBase<component::G1, operation::BLS_HashToG1>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::G1> ExecutorBase<component::G1, operation::BLS_HashToG1>::callModule(std::shared_ptr<Module> module, operation::BLS_HashToG1& op) const {
+    return module->OpBLS_HashToG1(op);
+}
+
+/* Specialization for operation::BLS_HashToG2 */
+template<> void ExecutorBase<component::G2, operation::BLS_HashToG2>::updateExtraCounters(const uint64_t moduleID, operation::BLS_HashToG2& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::G2, operation::BLS_HashToG2>::postprocess(std::shared_ptr<Module> module, operation::BLS_HashToG2& op, const ExecutorBase<component::G2, operation::BLS_HashToG2>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::G2> ExecutorBase<component::G2, operation::BLS_HashToG2>::callModule(std::shared_ptr<Module> module, operation::BLS_HashToG2& op) const {
+    return module->OpBLS_HashToG2(op);
+}
+
 template <class ResultType, class OperationType>
 ExecutorBase<ResultType, OperationType>::ExecutorBase(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
     operationID(operationID),
@@ -1414,5 +1547,11 @@ template class ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>;
 template class ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>;
 template class ExecutorBase<component::Bignum, operation::DH_Derive>;
 template class ExecutorBase<component::Bignum, operation::BignumCalc>;
+template class ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>;
+template class ExecutorBase<component::BLS_Signature, operation::BLS_Sign>;
+template class ExecutorBase<bool, operation::BLS_Verify>;
+template class ExecutorBase<bool, operation::BLS_Pairing>;
+template class ExecutorBase<component::G1, operation::BLS_HashToG1>;
+template class ExecutorBase<component::G2, operation::BLS_HashToG2>;
 
 } /* namespace cryptofuzz */

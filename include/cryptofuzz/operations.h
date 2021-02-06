@@ -1326,5 +1326,215 @@ class BignumCalc : public Operation {
         }
 };
 
+class BLS_PrivateToPublic : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::BLS_PrivateKey priv;
+
+        BLS_PrivateToPublic(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            priv(ds)
+        { }
+        BLS_PrivateToPublic(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            priv(json["priv"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_PrivateToPublic& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (priv == rhs.priv) &&
+                (modifier == rhs.modifier);
+        }
+};
+
+class BLS_Sign : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::BLS_PrivateKey priv;
+        const component::Cleartext cleartext;
+
+        BLS_Sign(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            priv(ds),
+            cleartext(ds)
+        { }
+        BLS_Sign(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            priv(json["priv"]),
+            cleartext(json["cleartext"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_Sign& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (priv == rhs.priv) &&
+                (cleartext == rhs.cleartext) &&
+                (modifier == rhs.modifier);
+        }
+};
+
+class BLS_Verify : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::BLS_PublicKey pub;
+        const component::Cleartext cleartext;
+        const component::BLS_Signature signature;
+
+        BLS_Verify(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            pub(ds),
+            cleartext(ds),
+            signature(ds)
+        { }
+        BLS_Verify(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            pub(json["pub_x"], json["pub_z"]),
+            cleartext(json["cleartext"]),
+            signature(json["sig_r"], json["sig_y"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_Verify& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (pub == rhs.pub) &&
+                (cleartext == rhs.cleartext) &&
+                (signature == rhs.signature) &&
+                (modifier == rhs.modifier);
+        }
+};
+
+class BLS_Pairing : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::G1 q;
+        const component::G2 p;
+        std::optional<component::Cleartext> hashInput;
+
+        BLS_Pairing(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            q(ds),
+            p(ds),
+            hashInput(ds.Get<bool>() ? std::nullopt : std::make_optional<component::Cleartext>(ds))
+        { }
+        /*
+        BLS_Pairing(const component::CurveType curveType, const component::G1 q, const component::G2 p, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(curveType),
+            q(std::move(q)),
+            p(std::move(p))
+        { }
+        */
+        BLS_Pairing(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            q(json["q_x"], json["q_y"]),
+            p(json["p_v"], json["p_w"], json["p_x"], json["p_y"]),
+            hashInput(
+                    json["hashInput"].get<bool>() ?
+                        std::optional<component::AAD>(json["hashInput"]) :
+                        std::optional<component::AAD>(std::nullopt)
+            )
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_Pairing& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (p == rhs.p) &&
+                (q == rhs.q) &&
+                (hashInput == rhs.hashInput) &&
+                (modifier == rhs.modifier);
+        }
+};
+
+class BLS_HashToG1 : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::Cleartext cleartext;
+
+        BLS_HashToG1(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            cleartext(ds)
+        { }
+        BLS_HashToG1(const component::CurveType curveType, const component::Cleartext cleartext, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(curveType),
+            cleartext(cleartext)
+        { }
+        BLS_HashToG1(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            cleartext(json["cleartext"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_HashToG1& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (cleartext == rhs.cleartext) &&
+                (modifier == rhs.modifier);
+        }
+};
+
+class BLS_HashToG2 : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::Cleartext cleartext;
+
+        BLS_HashToG2(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            cleartext(ds)
+        { }
+        BLS_HashToG2(const component::CurveType curveType, const component::Cleartext cleartext, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(curveType),
+            cleartext(cleartext)
+        { }
+        BLS_HashToG2(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            cleartext(json["cleartext"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_HashToG2& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (cleartext == rhs.cleartext) &&
+                (modifier == rhs.modifier);
+        }
+};
+
 } /* namespace operation */
 } /* namespace cryptofuzz */

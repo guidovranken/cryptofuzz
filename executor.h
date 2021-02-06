@@ -76,5 +76,11 @@ using ExecutorECIES_Encrypt = ExecutorBase<component::Ciphertext, operation::ECI
 using ExecutorDH_GenerateKeyPair = ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>;
 using ExecutorDH_Derive = ExecutorBase<component::Bignum, operation::DH_Derive>;
 using ExecutorBignumCalc = ExecutorBase<component::Bignum, operation::BignumCalc>;
+using ExecutorBLS_PrivateToPublic = ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>;
+using ExecutorBLS_Sign = ExecutorBase<component::BLS_Signature, operation::BLS_Sign>;
+using ExecutorBLS_Verify = ExecutorBase<bool, operation::BLS_Verify>;
+using ExecutorBLS_Pairing = ExecutorBase<bool, operation::BLS_Pairing>;
+using ExecutorBLS_HashToG1 = ExecutorBase<component::G1, operation::BLS_HashToG1>;
+using ExecutorBLS_HashToG2 = ExecutorBase<component::G2, operation::BLS_HashToG2>;
 
 } /* namespace cryptofuzz */

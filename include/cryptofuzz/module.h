@@ -132,6 +132,30 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::BLS_PublicKey> OpBLS_PrivateToPublic(operation::BLS_PrivateToPublic& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::BLS_Signature> OpBLS_Sign(operation::BLS_Sign& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<bool> OpBLS_Verify(operation::BLS_Verify& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<bool> OpBLS_Pairing(operation::BLS_Pairing& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::G1> OpBLS_HashToG1(operation::BLS_HashToG1& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::G2> OpBLS_HashToG2(operation::BLS_HashToG2& op) {
+            (void)op;
+            return std::nullopt;
+        }
 };
 
 } /* namespace cryptofuzz */

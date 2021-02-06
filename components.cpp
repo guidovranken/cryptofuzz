@@ -367,6 +367,13 @@ void MACType::Serialize(Datasource& ds) const {
     type.Serialize(ds);
 }
 
+nlohmann::json G2::ToJSON(void) const {
+    return std::vector<nlohmann::json>{
+        first.first.ToJSON(), first.second.ToJSON(),
+        second.first.ToJSON(), second.second.ToJSON()
+    };
+}
+
 } /* namespace component */
 
 } /* namespace cryptofuzz */
