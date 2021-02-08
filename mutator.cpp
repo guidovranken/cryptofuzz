@@ -8,6 +8,7 @@
 #include <cryptofuzz/util.h>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/lexical_cast.hpp>
+#include "config.h"
 #include "repository_tbl.h"
 #include "numbers.h"
 #include "mutatorpool.h"
@@ -85,16 +86,24 @@ static std::string getBuffer(size_t size, const bool alternativeSize = false) {
     return ret;
 }
 
+static bool getIsNegative(void) {
+    if ( cryptofuzz::config::kNegativeIntegers == false ) {
+        return false;
+    } else {
+        return getBool();
+    }
+}
+
 static std::string getBignum(const bool positive = false) {
     if ( Pool_Bignum.Have() && getBool() ) {
         const auto ret = Pool_Bignum.Get();
         if ( positive && !ret.empty() && ret[0] == '-' ) {
             goto end;
         }
-        return ret;
+        return (getIsNegative() ? "-" : "") + ret;
     }
 end:
-    return cryptofuzz::numbers.at(PRNG() % cryptofuzz::numbers.size());
+    return (getIsNegative() ? "-" : "") + cryptofuzz::numbers.at(PRNG() % cryptofuzz::numbers.size());
 }
 
 extern "C" size_t LLVMFuzzerMutate(uint8_t* data, size_t size, size_t maxSize);

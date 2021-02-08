@@ -2,6 +2,7 @@
 #include <cryptofuzz/components.h>
 #include <cryptofuzz/util.h>
 #include "third_party/json/json.hpp"
+#include "config.h"
 
 namespace cryptofuzz {
 
@@ -85,6 +86,10 @@ std::vector<uint8_t>& Buffer::GetVectorPtr(void) {
     return data;
 }
 
+const std::vector<uint8_t>& Buffer::GetConstVectorPtr(void) const {
+    return data;
+}
+
 size_t Buffer::GetSize(void) const {
     return data.size();
 }
@@ -136,6 +141,9 @@ void Bignum::transform(void) {
 
     for (size_t i = 0; i < ptr.size(); i++) {
         if ( isdigit(ptr[i]) ) continue;
+        if ( config::kNegativeIntegers == true ) {
+            if ( i == 0 && ptr[i] == '-') continue;
+        }
         ptr[i] %= 10;
         ptr[i] += '0';
     }
@@ -147,6 +155,10 @@ bool Bignum::operator==(const Bignum& rhs) const {
 
 size_t Bignum::GetSize(void) const {
     return data.GetSize();
+}
+
+bool Bignum::IsNegative(void) const {
+    return data.GetSize() && data.GetConstVectorPtr()[0] == '-';
 }
 
 std::string Bignum::ToString(void) const {
@@ -174,7 +186,12 @@ std::string Bignum::ToString(Datasource& ds) const {
         }
     } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
-    return zeros + ToTrimmedString();
+    auto s = ToTrimmedString();
+    const bool isNegative = IsNegative();
+    if ( s.size() && s[0] == '-' ) {
+        s.erase(0, 1);
+    }
+    return (isNegative ? "-" : "") + zeros + s;
 }
 
 nlohmann::json Bignum::ToJSON(void) const {

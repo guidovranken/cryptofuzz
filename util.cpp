@@ -453,15 +453,13 @@ std::string HexToDec(std::string s) {
 }
 
 std::string DecToHex(std::string s, const std::optional<size_t> padTo) {
+    bool negative = false;
+    if ( s.size() && s[0] == '-' ) {
+        s.erase(0, 1);
+        negative = true;
+    }
     s.erase(0, s.find_first_not_of('0'));
     boost::multiprecision::cpp_int i(s);
-    bool negative;
-    if ( i < 0 ) {
-        negative = true;
-        i -= (i*2);
-    } else {
-        negative = false;
-    }
     std::stringstream ss;
     if ( negative == true ) {
         ss << "-";

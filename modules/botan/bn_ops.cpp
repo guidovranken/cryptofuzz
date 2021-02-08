@@ -131,7 +131,7 @@ bool SqrMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     if ( bn[0] == 0 ) {
         res = ::Botan::square(bn[0]);
     } else if ( bn[1].is_negative() ) {
-        res = 0;
+        return false;
     } else {
         switch ( GET_UINT8_FOR_SWITCH() ) {
             case    0:

@@ -218,6 +218,11 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             goto end;
     }
 
+    /* wolfCrypt uses different rounding logic with negative divisior.
+     * The result is still computed, but don't return it
+     */
+    CF_CHECK_EQ(mp_isneg(bn[0].GetPtr()), 0);
+
     ret = true;
 
 end:

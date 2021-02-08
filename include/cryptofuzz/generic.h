@@ -41,6 +41,7 @@ class Buffer {
         std::vector<uint8_t> Get(void) const;
         const uint8_t* GetPtr(fuzzing::datasource::Datasource* ds = nullptr) const;
         std::vector<uint8_t>& GetVectorPtr(void);
+        const std::vector<uint8_t>& GetConstVectorPtr(void) const;
         size_t GetSize(void) const;
         bool operator==(const Buffer& rhs) const;
         nlohmann::json ToJSON(void) const;
@@ -60,6 +61,7 @@ class Bignum {
 
         bool operator==(const Bignum& rhs) const;
         size_t GetSize(void) const;
+        bool IsNegative(void) const;
         std::string ToString(void) const;
         std::string ToTrimmedString(void) const;
         std::string ToString(Datasource& ds) const;

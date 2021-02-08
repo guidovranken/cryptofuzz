@@ -438,6 +438,13 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
 
     const auto calcOp = op.calcOp.Get();
 
+    /* Negative numbers are not supported yet */
+    if (    op.bn0.IsNegative() ||
+            op.bn1.IsNegative() ||
+            op.bn2.IsNegative() ) {
+        return;
+    }
+
     switch ( calcOp ) {
         case    CF_CALCOP("Add(A,B)"):
             if (    SmallerThan(*result, op.bn0) ||
