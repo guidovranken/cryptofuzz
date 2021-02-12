@@ -106,4 +106,7 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Nettle: [ECDSA verification fails for all-zero hash](https://github.com/gnutls/nettle/commit/b3d0bcf5a185842d2c717927eef03577fd61a912)
 - relic: [Buffer overflow via bn_mxp_slide](https://github.com/relic-toolkit/relic/commit/bba5b5fa5489706ab4eaf5d7d0c2550e0a9722c0)
 - relic: [bn_mxp_monty incorrect result](https://github.com/relic-toolkit/relic/commit/d411fabf2358553937fffb3242a57ee711746859)
-- NSS: TBA
+- relic: Several other memory and correctness bugs
+- libgcrypt: [ECDSA verification succeeds with invalid public key](https://lists.gnupg.org/pipermail/gcrypt-devel/2021-January/005091.html)
+- libgcrypt: [Out-of-bounds read in SHA256](https://lists.gnupg.org/pipermail/gcrypt-devel/2021-February/005105.html)
+- SymCrypt: [Invalid ECDSA signature and public key for private key that is curve order](https://github.com/microsoft/SymCrypt/issues/12)
