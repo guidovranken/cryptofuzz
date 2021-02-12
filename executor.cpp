@@ -974,7 +974,7 @@ template<> void ExecutorBase<component::Bignum, operation::BignumCalc>::postproc
     }
 }
 
-template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, operation::BignumCalc>::callModule(std::shared_ptr<Module> module, operation::BignumCalc& op) const {
+std::optional<component::Bignum> ExecutorBignumCalc::callModule(std::shared_ptr<Module> module, operation::BignumCalc& op) const {
     /* Only run whitelisted calcops, if specified */
     if ( options.calcOps != std::nullopt ) {
         if ( std::find(
@@ -990,6 +990,10 @@ template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, oper
     if ( op.bn1.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.bn2.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.bn3.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+
+    if ( op.modulo != std::nullopt && !module->SupportsModularBignumCalc() ) {
+        return std::nullopt;
+    }
 
     switch ( op.calcOp.Get() ) {
         case    CF_CALCOP("SetBit(A,B)"):

@@ -18,7 +18,7 @@ namespace Botan_bignum {
 #endif /* CRYPTOFUZZ_BOTAN_IS_ORACLE */
 
 #define RETURN_IF_MODULO if (modulo != std::nullopt) return false;
-#define APPLY_MODULO res %= *modulo
+#define APPLY_MODULO if (modulo != std::nullopt) res %= *modulo
 
 bool Add::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
     (void)ds;

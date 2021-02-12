@@ -12,6 +12,7 @@ class blst : public Module {
         blst(void);
         std::optional<component::BLS_PublicKey> OpBLS_PrivateToPublic(operation::BLS_PrivateToPublic& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
+        bool SupportsModularBignumCalc(void) const override;
 };
 
 } /* namespace module */

@@ -1267,5 +1267,9 @@ end:
     return ret;
 }
 
+bool Botan::SupportsModularBignumCalc(void) const {
+    return true;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */

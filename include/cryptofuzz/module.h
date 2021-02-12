@@ -132,6 +132,9 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual bool SupportsModularBignumCalc(void) const {
+            return false;
+        }
         virtual std::optional<component::BLS_PublicKey> OpBLS_PrivateToPublic(operation::BLS_PrivateToPublic& op) {
             (void)op;
             return std::nullopt;

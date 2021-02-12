@@ -133,5 +133,9 @@ end:
     return ret;
 }
 
+bool blst::SupportsModularBignumCalc(void) const {
+    return true;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */
