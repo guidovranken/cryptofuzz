@@ -445,6 +445,11 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
         return;
     }
 
+    /* Modular calculations are not supported yet */
+    if ( op.modulo != std::nullopt ) {
+        return;
+    }
+
     switch ( calcOp ) {
         case    CF_CALCOP("Add(A,B)"):
             if (    SmallerThan(*result, op.bn0) ||

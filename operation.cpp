@@ -731,6 +731,9 @@ nlohmann::json BignumCalc::ToJSON(void) const {
     return j;
 }
 
+void BignumCalc::SetModulo(component::Bignum& modulo) {
+    this->modulo = modulo;
+}
 std::string BLS_PrivateToPublic::Name(void) const { return "BLS_PrivateToPublic"; }
 std::string BLS_PrivateToPublic::ToString(void) const {
     std::stringstream ss;

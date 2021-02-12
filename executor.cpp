@@ -1151,6 +1151,18 @@ template<> std::optional<component::G2> ExecutorBase<component::G2, operation::B
     return module->OpBLS_HashToG2(op);
 }
 
+ExecutorBignumCalc::ExecutorBignumCalc(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBase<component::Bignum, operation::BignumCalc>::ExecutorBase(operationID, modules, options)
+{ }
+void ExecutorBignumCalc::SetModulo(const std::string& modulo) {
+    this->modulo = component::Bignum(modulo);
+}
+
+ExecutorBignumCalc_Mod_BLS12_381::ExecutorBignumCalc_Mod_BLS12_381(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
+    /* noret */ SetModulo("52435875175126190479447740508185965837690552500527637822603658699938581184513");
+}
+
 template <class ResultType, class OperationType>
 ExecutorBase<ResultType, OperationType>::ExecutorBase(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
     operationID(operationID),
@@ -1339,6 +1351,12 @@ operation::ECDH_Derive ExecutorBase<component::Secret, operation::ECDH_Derive>::
 
 end:
     /* Return the original operaton unmodified */
+    return op;
+}
+
+operation::BignumCalc ExecutorBignumCalc_Mod_BLS12_381::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
+    (void)parentDs;
+    op.modulo = modulo;
     return op;
 }
 

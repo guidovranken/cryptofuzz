@@ -26,7 +26,7 @@ class ExecutorBase {
         bool dontCompare(const OperationType& operation) const;
         void compare(const std::vector< std::pair<std::shared_ptr<Module>, OperationType> >& operations, const ResultSet& results, const uint8_t* data, const size_t size) const;
         OperationType getOp(Datasource* parentDs, const uint8_t* data, const size_t size) const;
-        OperationType getOpPostprocess(Datasource* parentDs, OperationType op) const;
+        virtual OperationType getOpPostprocess(Datasource* parentDs, OperationType op) const;
         std::shared_ptr<Module> getModule(Datasource& ds) const;
         void updateExtraCounters(
                 const uint64_t moduleID,
@@ -45,6 +45,20 @@ class ExecutorBase {
         void Run(Datasource& parentDs, const uint8_t* data, const size_t size) const;
         ExecutorBase(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options);
         virtual ~ExecutorBase();
+};
+
+class ExecutorBignumCalc : public ExecutorBase<component::Bignum, operation::BignumCalc> {
+    protected:
+        std::optional<component::Bignum> modulo = std::nullopt;
+    public:
+        ExecutorBignumCalc(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options);
+        void SetModulo(const std::string& modulo);
+};
+
+class ExecutorBignumCalc_Mod_BLS12_381 : public ExecutorBignumCalc {
+    public:
+        ExecutorBignumCalc_Mod_BLS12_381(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options);
+        operation::BignumCalc getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const override;
 };
 
 /* Declare aliases */
@@ -75,7 +89,6 @@ using ExecutorECDH_Derive = ExecutorBase<component::Secret, operation::ECDH_Deri
 using ExecutorECIES_Encrypt = ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>;
 using ExecutorDH_GenerateKeyPair = ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>;
 using ExecutorDH_Derive = ExecutorBase<component::Bignum, operation::DH_Derive>;
-using ExecutorBignumCalc = ExecutorBase<component::Bignum, operation::BignumCalc>;
 using ExecutorBLS_PrivateToPublic = ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>;
 using ExecutorBLS_Sign = ExecutorBase<component::BLS_Signature, operation::BLS_Sign>;
 using ExecutorBLS_Verify = ExecutorBase<bool, operation::BLS_Verify>;

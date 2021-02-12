@@ -178,6 +178,10 @@
   #include <modules/chia_bls/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_BLST)
+  #include <modules/blst/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -376,6 +380,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_CHIA_BLS)
     driver->LoadModule( std::make_shared<cryptofuzz::module::chia_bls>() );
+#endif
+
+#if defined(CRYPTOFUZZ_BLST)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::blst>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is

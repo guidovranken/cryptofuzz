@@ -1248,7 +1248,13 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
     CF_CHECK_NE(opRunner, nullptr);
 
     try {
-        CF_CHECK_EQ(opRunner->Run(ds, res, bn), true);
+        CF_CHECK_EQ(opRunner->Run(
+                    ds,
+                    res,
+                    bn,
+                    op.modulo ?
+                        std::optional<::Botan::BigInt>(::Botan::BigInt(op.modulo->ToTrimmedString())) :
+                        std::nullopt), true);
     } catch ( ... ) {
         goto end;
     }

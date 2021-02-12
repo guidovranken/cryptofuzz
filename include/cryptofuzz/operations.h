@@ -1271,6 +1271,7 @@ class BignumCalc : public Operation {
         const component::Bignum bn1;
         const component::Bignum bn2;
         const component::Bignum bn3;
+        std::optional<component::Bignum> modulo;
 
         BignumCalc(Datasource& ds, component::Modifier modifier) :
             Operation(std::move(modifier)),
@@ -1324,6 +1325,7 @@ class BignumCalc : public Operation {
             bn2.Serialize(ds);
             bn3.Serialize(ds);
         }
+        void SetModulo(component::Bignum& modulo);
 };
 
 class BLS_PrivateToPublic : public Operation {

@@ -17,31 +17,41 @@ namespace Botan_bignum {
  #define GET_UINT8_FOR_SWITCH() 0
 #endif /* CRYPTOFUZZ_BOTAN_IS_ORACLE */
 
-bool Add::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+#define RETURN_IF_MODULO if (modulo != std::nullopt) return false;
+#define APPLY_MODULO res %= *modulo
+
+bool Add::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
     (void)ds;
 
     res = bn[0] + bn[1];
 
+    APPLY_MODULO;
+
     return true;
 }
 
-bool Sub::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Sub::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
     (void)ds;
 
     res = bn[0] - bn[1];
 
+    APPLY_MODULO;
+
     return true;
 }
 
-bool Mul::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Mul::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
     (void)ds;
 
     res = bn[0] * bn[1];
 
+    APPLY_MODULO;
+
     return true;
 }
 
-bool Div::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Div::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     try {
         switch ( GET_UINT8_FOR_SWITCH() ) {
             case    0:
@@ -73,7 +83,8 @@ end:
     return false;
 }
 
-bool Mod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Mod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     try {
         switch ( GET_UINT8_FOR_SWITCH() ) {
             case    0:
@@ -94,7 +105,8 @@ bool Mod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
     return false;
 }
 
-bool ExpMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool ExpMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     /* Exponent and modulus must be positive, according to the documentation */
@@ -107,15 +119,18 @@ bool ExpMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     return true;
 }
 
-bool Sqr::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Sqr::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
     (void)ds;
 
     res = ::Botan::square(bn[0]);
 
+    APPLY_MODULO;
+
     return true;
 }
 
-bool GCD::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool GCD::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     if ( bn[0] == 0 || bn[1] == 0 ) {
@@ -127,7 +142,8 @@ bool GCD::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
     return true;
 }
 
-bool SqrMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool SqrMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     if ( bn[0] == 0 ) {
         res = ::Botan::square(bn[0]);
     } else if ( bn[1].is_negative() ) {
@@ -151,15 +167,20 @@ bool SqrMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     return true;
 }
 
-bool InvMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool InvMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
     (void)ds;
 
-    res = ::Botan::inverse_mod(bn[0], bn[1]);
+    if ( modulo == std::nullopt ) {
+        res = ::Botan::inverse_mod(bn[0], bn[1]);
+    } else {
+        res = ::Botan::inverse_mod(bn[0], *modulo);
+    }
 
     return true;
 }
 
-bool Cmp::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Cmp::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     if ( bn[0] < bn[1] ) {
@@ -173,7 +194,8 @@ bool Cmp::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
     return true;
 }
 
-bool LCM::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool LCM::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = ::Botan::lcm(bn[0], bn[1]);
@@ -181,7 +203,8 @@ bool LCM::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
     return true;
 }
 
-bool Abs::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Abs::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = ::Botan::abs(bn[0]);
@@ -189,7 +212,8 @@ bool Abs::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
     return true;
 }
 
-bool Jacobi::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Jacobi::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     const int resInt = ::Botan::jacobi(bn[0], bn[1]);
@@ -202,7 +226,8 @@ bool Jacobi::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     return true;
 }
 
-bool Neg::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Neg::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = -bn[0];
@@ -210,7 +235,8 @@ bool Neg::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
     return true;
 }
 
-bool IsPrime::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool IsPrime::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
     (void)res;
     (void)bn;
@@ -219,7 +245,8 @@ bool IsPrime::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::Big
     return false;
 }
 
-bool RShift::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool RShift::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = bn[0] >> bn[1].to_u32bit();
@@ -227,15 +254,18 @@ bool RShift::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     return true;
 }
 
-bool LShift1::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool LShift1::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
     (void)ds;
 
     res = bn[0] << 1;
 
+    APPLY_MODULO;
+
     return true;
 }
 
-bool IsNeg::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool IsNeg::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = bn[0] < 0 ? 1 : 0;
@@ -243,7 +273,8 @@ bool IsNeg::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigIn
     return true;
 }
 
-bool IsEq::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool IsEq::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = bn[0] == bn[1] ? 1 : 0;
@@ -251,7 +282,8 @@ bool IsEq::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt
     return true;
 }
 
-bool IsEven::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool IsEven::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = !(bn[0] % 2) ? 1 : 0;
@@ -259,7 +291,8 @@ bool IsEven::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     return true;
 }
 
-bool IsOdd::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool IsOdd::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = (bn[0] % 2) ? 1 : 0;
@@ -267,7 +300,8 @@ bool IsOdd::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigIn
     return true;
 }
 
-bool IsZero::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool IsZero::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = bn[0] == 0 ? 1 : 0;
@@ -275,7 +309,8 @@ bool IsZero::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     return true;
 }
 
-bool IsOne::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool IsOne::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = bn[0] == 1 ? 1 : 0;
@@ -283,7 +318,8 @@ bool IsOne::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigIn
     return true;
 }
 
-bool MulMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool MulMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     switch ( GET_UINT8_FOR_SWITCH() ) {
         case    0:
             {
@@ -301,7 +337,8 @@ bool MulMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     return true;
 }
 
-bool Bit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Bit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = bn[0].get_bit(bn[1].to_u32bit()) ? 1 : 0;
@@ -309,14 +346,16 @@ bool Bit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
     return true;
 }
 
-bool CmpAbs::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool CmpAbs::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     std::vector<::Botan::BigInt> bnAbs = {bn[0].abs(), bn[1].abs()};
     auto cmp = std::make_unique<Cmp>();
 
-    return cmp->Run(ds, res, bnAbs);
+    return cmp->Run(ds, res, bnAbs, modulo);
 }
 
-bool SetBit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool SetBit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = bn[0];
@@ -325,7 +364,8 @@ bool SetBit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     return true;
 }
 
-bool Mod_NIST_192::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Mod_NIST_192::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = bn[0] % ::Botan::BigInt("6277101735386680763835789423207666416083908700390324961279");
@@ -333,7 +373,8 @@ bool Mod_NIST_192::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan
     return true;
 }
 
-bool Mod_NIST_224::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Mod_NIST_224::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = bn[0] % ::Botan::BigInt("26959946667150639794667015087019630673557916260026308143510066298881");
@@ -341,7 +382,8 @@ bool Mod_NIST_224::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan
     return true;
 }
 
-bool Mod_NIST_256::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Mod_NIST_256::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = bn[0] % ::Botan::BigInt("115792089210356248762697446949407573530086143415290314195533631308867097853951");
@@ -349,7 +391,8 @@ bool Mod_NIST_256::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan
     return true;
 }
 
-bool Mod_NIST_384::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Mod_NIST_384::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = bn[0] % ::Botan::BigInt("39402006196394479212279040100143613805079739270465446667948293404245721771496870329047266088258938001861606973112319");
@@ -357,7 +400,8 @@ bool Mod_NIST_384::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan
     return true;
 }
 
-bool Mod_NIST_521::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Mod_NIST_521::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = bn[0] % ::Botan::BigInt("6864797660130609714981900799081393217269435300143305409394463459185543183397656052122559640661454554977296311391480858037121987999716643812574028291115057151");
@@ -365,7 +409,8 @@ bool Mod_NIST_521::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan
     return true;
 }
 
-bool ClearBit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool ClearBit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = bn[0];
@@ -374,7 +419,8 @@ bool ClearBit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::Bi
     return true;
 }
 
-bool MulAdd::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool MulAdd::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = (bn[0]*bn[1]) + bn[2];
@@ -382,7 +428,8 @@ bool MulAdd::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     return true;
 }
 
-bool Exp2::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Exp2::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     if ( bn[0] < 1 ) {
@@ -396,7 +443,8 @@ bool Exp2::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt
     return true;
 }
 
-bool NumLSZeroBits::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool NumLSZeroBits::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = ::Botan::low_zero_bits(bn[0]);
@@ -404,7 +452,8 @@ bool NumLSZeroBits::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Bota
     return true;
 }
 
-bool Sqrt::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Sqrt::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     const auto res2 = ::Botan::is_perfect_square(bn[0]);
@@ -418,7 +467,8 @@ bool Sqrt::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt
     return true;
 }
 
-bool AddMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool AddMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = (bn[0] + bn[1]) % bn[2];
@@ -426,7 +476,8 @@ bool AddMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     return true;
 }
 
-bool SubMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool SubMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = (bn[0] - bn[1]) % bn[2];
@@ -434,7 +485,8 @@ bool SubMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     return true;
 }
 
-bool NumBits::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool NumBits::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = bn[0].bits();
@@ -442,7 +494,8 @@ bool NumBits::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::Big
     return true;
 }
 
-bool Set::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Set::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res = bn[0];
@@ -450,7 +503,8 @@ bool Set::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
     return true;
 }
 
-bool CondSet::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool CondSet::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
 
     res.ct_cond_assign(bn[1] != 0, bn[0]);
@@ -458,7 +512,8 @@ bool CondSet::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::Big
     return true;
 }
 
-bool Ressol::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Ressol::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
+    RETURN_IF_MODULO;
     (void)ds;
     (void)res;
     (void)bn;
