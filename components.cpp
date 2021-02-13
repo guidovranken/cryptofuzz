@@ -1,6 +1,7 @@
 #include <cryptofuzz/generic.h>
 #include <cryptofuzz/components.h>
 #include <cryptofuzz/util.h>
+#include <boost/multiprecision/cpp_int.hpp>
 #include "third_party/json/json.hpp"
 #include "config.h"
 
@@ -159,6 +160,12 @@ size_t Bignum::GetSize(void) const {
 
 bool Bignum::IsNegative(void) const {
     return data.GetSize() && data.GetConstVectorPtr()[0] == '-';
+}
+
+bool Bignum::IsLessThan(const std::string& other) const {
+    boost::multiprecision::cpp_int A(ToTrimmedString());
+    boost::multiprecision::cpp_int B(other);
+    return A < B;
 }
 
 std::string Bignum::ToString(void) const {

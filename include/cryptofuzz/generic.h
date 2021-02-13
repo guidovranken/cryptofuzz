@@ -62,6 +62,7 @@ class Bignum {
         bool operator==(const Bignum& rhs) const;
         size_t GetSize(void) const;
         bool IsNegative(void) const;
+        bool IsLessThan(const std::string& other) const;
         std::string ToString(void) const;
         std::string ToTrimmedString(void) const;
         std::string ToString(Datasource& ds) const;

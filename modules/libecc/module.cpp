@@ -1,5 +1,6 @@
 #include "module.h"
 #include <cryptofuzz/util.h>
+#include <cryptofuzz/repository.h>
 
 extern "C" {
     #include <libsig.h>
@@ -101,7 +102,9 @@ std::optional<component::ECC_PublicKey> libecc::OpECC_PrivateToPublic(operation:
     {
         const auto priv_str = op.priv.ToTrimmedString();
         CF_CHECK_NE(priv_str, "0");
-        CF_CHECK_NE(priv_bytes = util::DecToBin(priv_str, 96), std::nullopt);
+        CF_CHECK_NE(priv_str, *cryptofuzz::repository::ECC_CurveToOrder(op.curveType.Get()));
+        CF_CHECK_NE(priv_bytes = util::DecToBin(priv_str), std::nullopt);
+        CF_CHECK_LTE(priv_bytes->size(), NN_MAX_BYTE_LEN);
         /* noret */ ec_priv_key_import_from_buf(&priv, &params, priv_bytes->data(), priv_bytes->size(), sig_type);
         memset(&pub, 0, sizeof(pub));
         CF_CHECK_EQ(init_pubkey_from_privkey(&pub, &priv), 0);
@@ -114,11 +117,14 @@ std::optional<component::ECC_PublicKey> libecc::OpECC_PrivateToPublic(operation:
     {
         const size_t outSize = EC_PUB_KEY_EXPORT_SIZE(&pub);
         CF_ASSERT((outSize % 2) == 0, "Public key byte size is not even");
+        CF_ASSERT((outSize % 3) == 0, "Public key byte size is not multiple of 3");
         out = util::malloc(outSize);
         CF_CHECK_EQ(ec_pub_key_export_to_buf(&pub, out, outSize), 0);
-        const size_t halfSize = outSize / 2;
-        const auto X = util::BinToDec(out, halfSize);
-        const auto Y = util::BinToDec(out + halfSize, halfSize);
+        const size_t pointSize = outSize / 3;
+        const auto X = util::BinToDec(out, pointSize);
+        const auto Y = util::BinToDec(out + pointSize, pointSize);
+
+        CF_CHECK_TRUE(op.priv.IsLessThan(*cryptofuzz::repository::ECC_CurveToOrder(op.curveType.Get())));
 
         ret = {X, Y};
     }
