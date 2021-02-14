@@ -42,7 +42,8 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorDH_GenerateKeyPair executorDH_GenerateKeyPair(CF_OPERATION("DH_GenerateKeyPair"), modules, options);
     static ExecutorDH_Derive executorDH_Derive(CF_OPERATION("DH_Derive"), modules, options);
     static ExecutorBignumCalc executorBignumCalc(CF_OPERATION("BignumCalc"), modules, options);
-    static ExecutorBignumCalc_Mod_BLS12_381 executorBignumCalc_mod_bls12_381(CF_OPERATION("BignumCalc_Mod_BLS12_381"), modules, options);
+    static ExecutorBignumCalc_Mod_BLS12_381_R executorBignumCalc_mod_bls12_381_r(CF_OPERATION("BignumCalc_Mod_BLS12_381_R"), modules, options);
+    static ExecutorBignumCalc_Mod_BLS12_381_P executorBignumCalc_mod_bls12_381_p(CF_OPERATION("BignumCalc_Mod_BLS12_381_P"), modules, options);
     static ExecutorBLS_PrivateToPublic executorBLS_PrivateToPublic(CF_OPERATION("BLS_PrivateToPublic"), modules, options);
     static ExecutorBLS_Sign executorBLS_Sign(CF_OPERATION("BLS_Sign"), modules, options);
     static ExecutorBLS_Verify executorBLS_Verify(CF_OPERATION("BLS_Verify"), modules, options);
@@ -154,8 +155,11 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
             case CF_OPERATION("BignumCalc"):
                 executorBignumCalc.Run(ds, payload.data(), payload.size());
                 break;
-            case CF_OPERATION("BignumCalc_Mod_BLS12_381"):
-                executorBignumCalc_mod_bls12_381.Run(ds, payload.data(), payload.size());
+            case CF_OPERATION("BignumCalc_Mod_BLS12_381_R"):
+                executorBignumCalc_mod_bls12_381_r.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BignumCalc_Mod_BLS12_381_P"):
+                executorBignumCalc_mod_bls12_381_p.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("BLS_PrivateToPublic"):
                 executorBLS_PrivateToPublic.Run(ds, payload.data(), payload.size());

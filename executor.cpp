@@ -1162,9 +1162,14 @@ void ExecutorBignumCalc::SetModulo(const std::string& modulo) {
     this->modulo = component::Bignum(modulo);
 }
 
-ExecutorBignumCalc_Mod_BLS12_381::ExecutorBignumCalc_Mod_BLS12_381(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+ExecutorBignumCalc_Mod_BLS12_381_R::ExecutorBignumCalc_Mod_BLS12_381_R(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
     ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
     /* noret */ SetModulo("52435875175126190479447740508185965837690552500527637822603658699938581184513");
+}
+
+ExecutorBignumCalc_Mod_BLS12_381_P::ExecutorBignumCalc_Mod_BLS12_381_P(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
+    /* noret */ SetModulo("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787");
 }
 
 template <class ResultType, class OperationType>
@@ -1358,7 +1363,13 @@ end:
     return op;
 }
 
-operation::BignumCalc ExecutorBignumCalc_Mod_BLS12_381::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
+operation::BignumCalc ExecutorBignumCalc_Mod_BLS12_381_R::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
+    (void)parentDs;
+    op.modulo = modulo;
+    return op;
+}
+
+operation::BignumCalc ExecutorBignumCalc_Mod_BLS12_381_P::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
     (void)parentDs;
     op.modulo = modulo;
     return op;

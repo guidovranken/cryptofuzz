@@ -246,10 +246,11 @@ bool IsPrime::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::Big
 }
 
 bool RShift::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
-    RETURN_IF_MODULO;
     (void)ds;
 
     res = bn[0] >> bn[1].to_u32bit();
+
+    APPLY_MODULO;
 
     return true;
 }
@@ -453,7 +454,6 @@ bool NumLSZeroBits::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Bota
 }
 
 bool Sqrt::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn, const std::optional<::Botan::BigInt>& modulo) const {
-    RETURN_IF_MODULO;
     (void)ds;
 
     const auto res2 = ::Botan::is_perfect_square(bn[0]);
@@ -463,6 +463,8 @@ bool Sqrt::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt
     }
 
     res = res2;
+
+    APPLY_MODULO;
 
     return true;
 }
