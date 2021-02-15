@@ -458,7 +458,8 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_
         /* Verify */
         {
             int verify;
-            if ( wc_ecc_verify_hash(sig, sigSz, hash, hashSize, &verify, key.GetPtr()) == 0 ) {
+            haveAllocFailure = false;
+            if ( wc_ecc_verify_hash(sig, sigSz, hash, hashSize, &verify, key.GetPtr()) == 0 && haveAllocFailure == false ) {
                 CF_ASSERT(verify, "Cannot verify generated signature");
             }
         }
