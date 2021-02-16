@@ -40,6 +40,9 @@ void Bignum::baseConversion(void) const {
                     base < 2 ||
                     base > 64,
                     "wolfCrypt cannot convert mp to string");
+
+        /* If allocation failure occurred, then do not use 'str' */
+        CF_CHECK_FALSE(wolfCrypt_detail::haveAllocFailure);
 #endif
 
         wolfCrypt_detail::haveAllocFailure = false;
