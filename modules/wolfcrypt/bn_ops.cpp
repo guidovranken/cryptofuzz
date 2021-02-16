@@ -217,7 +217,7 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             }
             break;
 #endif
-#if defined(WOLFSSL_SP_MATH)
+#if defined(WOLFSSL_SP_MATH_ALL)
         case    3:
             {
                 const auto divisor = bn[1].AsUnsigned<mp_digit>();
