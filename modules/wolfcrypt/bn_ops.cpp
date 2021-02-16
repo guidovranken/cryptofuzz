@@ -209,10 +209,22 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             break;
 #if !defined(USE_FAST_MATH)
         case    2:
-            util::HintBignum("3");
-            CF_CHECK_EQ(mp_cmp_d(bn[1].GetPtr(), 3), MP_EQ);
-            MP_CHECK_EQ(mp_div_3(bn[0].GetPtr(), res.GetPtr(), nullptr), MP_OKAY);
+            {
+                mp_digit remainder;
+                util::HintBignum("3");
+                CF_CHECK_EQ(mp_cmp_d(bn[1].GetPtr(), 3), MP_EQ);
+                MP_CHECK_EQ(mp_div_3(bn[0].GetPtr(), res.GetPtr(), ds.Get<bool>() ? &remainder : nullptr), MP_OKAY);
+            }
             break;
+#endif
+#if defined(WOLFSSL_SP_MATH)
+        case    3:
+            {
+                const auto divisor = bn[1].AsUnsigned<mp_digit>();
+                mp_digit remainder;
+                CF_CHECK_NE(divisor, std::nullopt);
+                MP_CHECK_EQ(mp_div_d(bn[0].GetPtr(), *divisor, res.GetPtr(), ds.Get<bool>() ? &remainder : nullptr), MP_OKAY);
+            }
 #endif
         default:
             goto end;
