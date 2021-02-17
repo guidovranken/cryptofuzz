@@ -52,6 +52,41 @@ end:
 
         return ret;
     }
+
+    bool To_nn_t(const component::Bignum& bn, nn_t nn) {
+        const auto data = util::DecToBin(bn.ToTrimmedString());
+        if ( data == std::nullopt ) {
+            return false;
+        }
+        if ( data->size() > NN_MAX_BYTE_LEN ) {
+            return false;
+        }
+
+        /* noret */ nn_init_from_buf(nn, data->data(), data->size());
+
+        return true;
+    }
+
+    component::Bignum To_Component_Bignum(const nn_src_t nn) {
+        std::vector<uint8_t> data(nn->wlen * WORD_BYTES);
+
+        if ( data.size() == 0 ) {
+            data.resize(1);
+        }
+
+        /* noret */ nn_export_to_buf(data.data(), data.size(), nn);
+
+        return util::BinToDec(data.data(), data.size());
+    }
+
+    std::optional<uint16_t> To_uint16_t(const component::Bignum& bn) {
+        const auto data = util::DecToBin(bn.ToTrimmedString(), sizeof(uint16_t));
+        if ( data == std::nullopt ) {
+            return std::nullopt;
+        }
+
+        return (((size_t)data->data()[0]) << 8) + data->data()[1];
+    }
 }
 }
 }
@@ -226,6 +261,170 @@ end:
     libecc_detail::global_ds = nullptr;
     return ret;
 }
+
+std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op) {
+    std::optional<component::Bignum> ret = std::nullopt;
+
+    nn result, a, b;
+
+#define NN_SAFE_SIZE 10
+
+    switch ( op.calcOp.Get() ) {
+        case    CF_CALCOP("Add(A,B)"):
+            /* noret */ nn_init(&result, 0);
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+
+            /* Ensure no overflow will occur */
+            CF_CHECK_LT(a.wlen, NN_MAX_WORD_LEN);
+            CF_CHECK_LT(b.wlen, NN_MAX_WORD_LEN);
+
+            /* noret */ nn_add(&result, &a, &b);
+
+            ret = libecc_detail::To_Component_Bignum(&result);
+            break;
+        case    CF_CALCOP("Sub(A,B)"):
+            /* noret */ nn_init(&result, 0);
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+
+            CF_CHECK_GT(nn_cmp(&a, &b), 0);
+
+            /* noret */ nn_sub(&result, &a, &b);
+            ret = libecc_detail::To_Component_Bignum(&result);
+            break;
+        case    CF_CALCOP("Mul(A,B)"):
+            /* noret */ nn_init(&result, 0);
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+
+            /* Ensure no overflow will occur */
+            CF_CHECK_LTE(
+                    ((size_t)a.wlen + (size_t)b.wlen) * WORD_BYTES,
+                    NN_MAX_BYTE_LEN);
+
+            /* noret */ nn_mul(&result, &a, &b);
+
+            ret = libecc_detail::To_Component_Bignum(&result);
+            break;
+        case    CF_CALCOP("Mod(A,B)"):
+            /* noret */ nn_init(&result, 0);
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+
+            CF_CHECK_EQ(nn_iszero(&b), 0);
+
+            /* TODO better preconditions */
+            CF_CHECK_LT(a.wlen, NN_SAFE_SIZE);
+            CF_CHECK_LT(b.wlen, NN_SAFE_SIZE);
+
+            /* noret */ nn_mod(&result, &a, &b);
+
+            ret = libecc_detail::To_Component_Bignum(&result);
+            break;
+        case    CF_CALCOP("InvMod(A,B)"):
+            /* noret */ nn_init(&result, 0);
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+
+            /* TODO preconditions */
+
+            //CF_CHECK_EQ(nn_modinv(&result, &a, &b), 1);
+
+            //ret = libecc_detail::To_Component_Bignum(&result);
+            break;
+        case    CF_CALCOP("LShift1(A)"):
+            /* noret */ nn_init(&result, 0);
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+
+            /* TODO better preconditions */
+            CF_CHECK_LT(a.wlen, NN_SAFE_SIZE);
+
+            /* noret */ nn_lshift(&result, &a, 1);
+
+            ret = libecc_detail::To_Component_Bignum(&result);
+            break;
+        case    CF_CALCOP("RShift(A,B)"):
+            {
+                std::optional<uint16_t> count;
+                /* noret */ nn_init(&result, 0);
+                CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+                CF_CHECK_NE(count = libecc_detail::To_uint16_t(op.bn1), std::nullopt);
+
+                /* noret */ nn_rshift(&result, &a, *count);
+
+                ret = libecc_detail::To_Component_Bignum(&result);
+            }
+            break;
+        case    CF_CALCOP("GCD(A,B)"):
+            /* noret */ nn_init(&result, 0);
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+
+            /* TODO better preconditions */
+            CF_CHECK_LT(a.wlen, NN_SAFE_SIZE);
+            CF_CHECK_LT(b.wlen, NN_SAFE_SIZE);
+
+            nn_gcd(&result, &a, &b);
+
+            ret = libecc_detail::To_Component_Bignum(&result);
+            break;
+        case    CF_CALCOP("Sqr(A)"):
+            /* noret */ nn_init(&result, 0);
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+
+            CF_CHECK_LTE(
+                    (size_t)a.wlen * 2 * WORD_BYTES,
+                    NN_MAX_BYTE_LEN);
+
+            nn_sqr(&result, &a);
+
+            ret = libecc_detail::To_Component_Bignum(&result);
+            break;
+        case    CF_CALCOP("IsZero(A)"):
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            ret = std::to_string( nn_iszero(&a) );
+            break;
+        case    CF_CALCOP("IsOne(A)"):
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            ret = std::to_string( nn_isone(&a) );
+            break;
+        case    CF_CALCOP("IsOdd(A)"):
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            ret = std::to_string( nn_isodd(&a) );
+            break;
+        case    CF_CALCOP("And(A,B)"):
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+
+            nn_and(&result, &a, &b);
+
+            ret = libecc_detail::To_Component_Bignum(&result);
+            break;
+        case    CF_CALCOP("Or(A,B)"):
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+
+            nn_or(&result, &a, &b);
+
+            ret = libecc_detail::To_Component_Bignum(&result);
+            break;
+        case    CF_CALCOP("Xor(A,B)"):
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+
+            nn_xor(&result, &a, &b);
+
+            ret = libecc_detail::To_Component_Bignum(&result);
+            break;
+    }
+
+#undef NN_SAFE_SIZE
+
+end:
+    return ret;
+}
+
 
 } /* namespace module */
 } /* namespace cryptofuzz */
