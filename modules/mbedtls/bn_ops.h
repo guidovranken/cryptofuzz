@@ -279,6 +279,11 @@ class Mod : public Operation {
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;
 };
 
+class Set : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;
+};
+
 } /* namespace mbedTLS_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

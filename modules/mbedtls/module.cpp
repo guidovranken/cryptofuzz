@@ -1026,6 +1026,9 @@ std::optional<component::Bignum> mbedTLS::OpBignumCalc(operation::BignumCalc& op
         case    CF_CALCOP("Mod(A,B)"):
             opRunner = std::make_unique<mbedTLS_bignum::Mod>();
             break;
+        case    CF_CALCOP("Set(A)"):
+            opRunner = std::make_unique<mbedTLS_bignum::Set>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
