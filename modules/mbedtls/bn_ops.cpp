@@ -150,6 +150,17 @@ bool Cmp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 res.Set( std::to_string(mbedtls_mpi_cmp_int(bn[0].GetPtr(), *bn1)) );
             }
             return true;
+        case    2:
+            {
+                unsigned ret;
+                CF_CHECK_EQ(mbedtls_mpi_lt_mpi_ct(bn[0].GetPtr(), bn[1].GetPtr(), &ret), 0);
+                if ( ret ) {
+                    res.Set("-1");
+                } else {
+                    return false;
+                }
+            }
+            return true;
     }
 
 end:
