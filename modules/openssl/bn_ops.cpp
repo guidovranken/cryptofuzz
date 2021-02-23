@@ -23,6 +23,13 @@ extern "C" {
 }
 #endif
 
+/* Not included in public headers */
+#if !defined(CRYPTOFUZZ_BORINGSSL) || !defined(CRYPTOFUZZ_LIBRESSL)
+extern "C" {
+    int bn_mod_sub_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m);
+}
+#endif
+
 namespace cryptofuzz {
 namespace module {
 namespace OpenSSL_bignum {
@@ -336,6 +343,19 @@ bool SubMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
                 CF_CHECK_EQ(BN_mod_sub_quick(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr()), 1);
                 break;
             }
+#if !defined(CRYPTOFUZZ_BORINGSSL) || !defined(CRYPTOFUZZ_LIBRESSL)
+        case    2:
+            /*
+               "BN_mod_sub variant that may be used if both a and b are non-negative,
+               a is less than m, while b is of same bit width as m. It's implemented
+               as subtraction followed by two conditional additions."
+               */
+
+            CF_CHECK_LT(bn[0].GetPtr(), bn[2].GetPtr());
+            CF_CHECK_EQ(BN_num_bits(bn[1].GetPtr()), BN_num_bits(bn[2].GetPtr()));
+            CF_CHECK_EQ(bn_mod_sub_fixed_top(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr()), 1);
+            break;
+#endif
         default:
             goto end;
             break;
