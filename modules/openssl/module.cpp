@@ -3537,7 +3537,11 @@ std::optional<component::ECDSA_Signature> OpenSSL::OpECDSA_Sign(operation::ECDSA
         OpenSSL_bignum::Bignum pub_y(ds);
         const BIGNUM *R = nullptr, *S = nullptr;
 
+#if defined(CRYPTOFUZZ_BORINGSSL)
+        CF_CHECK_TRUE(op.UseRandomNonce() || op.UseSpecifiedNonce());
+#else
         CF_CHECK_TRUE(op.UseRandomNonce());
+#endif
         CF_CHECK_TRUE(op.digestType.Is(CF_DIGEST("NULL")));
 
         {
@@ -3572,18 +3576,29 @@ std::optional<component::ECDSA_Signature> OpenSSL::OpECDSA_Sign(operation::ECDSA
         CF_CHECK_NE(pub_x_str = BN_bn2dec(pub_x.GetPtr()), nullptr);
         CF_CHECK_NE(pub_y_str = BN_bn2dec(pub_y.GetPtr()), nullptr);
 
-        CF_CHECK_NE(signature = ECDSA_do_sign(op.cleartext.GetPtr(), op.cleartext.GetSize(), key.GetPtr()), nullptr);
-#if 0
-        CF_CHECK_NE(R = ECDSA_SIG_get0_r(signature), nullptr);
-        CF_CHECK_NE(S = ECDSA_SIG_get0_s(signature), nullptr);
+#if defined(CRYPTOFUZZ_BORINGSSL)
+        if ( op.UseSpecifiedNonce() ) {
+            std::optional<std::vector<uint8_t>> nonce_bytes;
+            CF_CHECK_NE(nonce_bytes = util::DecToBin(op.nonce.ToTrimmedString()), std::nullopt);
+
+            CF_CHECK_NE(signature = ECDSA_sign_with_nonce_and_leak_private_key_for_testing(op.cleartext.GetPtr(), op.cleartext.GetSize(), key.GetPtr(), nonce_bytes->data(), nonce_bytes->size()), nullptr);
+        }
+        else
 #endif
+        CF_CHECK_NE(signature = ECDSA_do_sign(op.cleartext.GetPtr(), op.cleartext.GetSize(), key.GetPtr()), nullptr);
+
+#if defined(CRYPTOFUZZ_LIBRESSL)
         /* noret */ ECDSA_SIG_get0(signature, &R, &S);
         CF_CHECK_NE(R, nullptr);
         CF_CHECK_NE(S, nullptr);
+#else
+        CF_CHECK_NE(R = ECDSA_SIG_get0_r(signature), nullptr);
+        CF_CHECK_NE(S = ECDSA_SIG_get0_s(signature), nullptr);
+#endif
 
         /* Convert bignum x/y to strings */
         CF_CHECK_NE(sig_r_str = BN_bn2dec(R), nullptr);
-        CF_CHECK_NE(sig_s_str  = BN_bn2dec(S), nullptr);
+        CF_CHECK_NE(sig_s_str = BN_bn2dec(S), nullptr);
 
         ret = { {sig_r_str, sig_s_str}, {pub_x_str, pub_y_str} };
     } catch ( ... ) { }
