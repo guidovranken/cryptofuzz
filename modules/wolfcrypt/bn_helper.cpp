@@ -97,7 +97,7 @@ Bignum::Bignum(const Bignum&& other) :
 
 Bignum::~Bignum() {
     if ( noFree == false ) {
-        /* noret */ mp_clear(mp);
+        CF_NORET(mp_clear(mp));
         util::free(mp);
     }
 }
@@ -157,6 +157,7 @@ mp_int* Bignum::GetPtr(void) const {
         try { clamp = ds.Get<bool>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
         if ( clamp ) {
+            /* Implemented as a macro so CF_NORET cannot be used here */
             /* noret */ mp_clamp(mp);
         }
     }

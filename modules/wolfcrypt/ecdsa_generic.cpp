@@ -26,7 +26,7 @@ ECCKey::ECCKey(Datasource& ds) :
 }
 
 ECCKey::~ECCKey() {
-    /* noret */ wc_ecc_key_free(key);
+    CF_NORET(wc_ecc_key_free(key));
 }
 
 ecc_key* ECCKey::GetPtr(void) {
@@ -57,14 +57,14 @@ ecc_key* ECCKey::GetPtr(void) {
         haveAllocFailure = false;
         CF_ASSERT(wc_ecc_import_x963_ex(x963, outLen, newKey, curveID) == 0 || haveAllocFailure, "Cannot import X963-exported ECC key");
 
-        /* noret */ wc_ecc_key_free(key);
+        CF_NORET(wc_ecc_key_free(key));
         key = newKey;
         newKey = nullptr;
     }
 
 end:
     util::free(x963);
-    /* noret */ wc_ecc_key_free(newKey);
+    CF_NORET(wc_ecc_key_free(newKey));
 
     return key;
 }
@@ -167,13 +167,13 @@ ECCPoint::ECCPoint(const ECCPoint& other) :
     }
 
     if ( wc_ecc_copy_point(other.point, point) != 0 ) {
-        /* noret */ wc_ecc_del_point(point);
+        CF_NORET(wc_ecc_del_point(point));
         throw std::exception();
     }
 }
 
 ECCPoint::~ECCPoint() {
-    /* noret */ wc_ecc_del_point(point);
+    CF_NORET(wc_ecc_del_point(point));
 }
 
 ecc_point* ECCPoint::GetPtr() {
@@ -204,7 +204,7 @@ ecc_point* ECCPoint::GetPtr() {
                 if ( success ) {
                     /* Point imported. Replace old point with new point. */
 
-                    /* noret */ wc_ecc_del_point(point);
+                    CF_NORET(wc_ecc_del_point(point));
                     point = newPoint;
                     newPoint = nullptr;
                 } else {
@@ -221,7 +221,7 @@ ecc_point* ECCPoint::GetPtr() {
 
 end:
     util::free(out);
-    /* noret */ wc_ecc_del_point(newPoint);
+    CF_NORET(wc_ecc_del_point(newPoint));
 
     return point;
 }

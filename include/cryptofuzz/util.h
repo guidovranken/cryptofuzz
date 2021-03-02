@@ -18,6 +18,7 @@
 #define CF_CHECK_FALSE(expr) if ( (expr) ) { goto end; }
 #define CF_ASSERT(expr, msg) if ( !(expr) ) { printf("Cryptofuzz assertion failure: %s\n", msg); abort(); }
 #define CF_UNREACHABLE() CF_ASSERT(0, "This code is supposed to be unreachable")
+#define CF_NORET(expr) static_assert(std::is_same<decltype(expr), void>::value, "void");
 
 namespace cryptofuzz {
 namespace util {

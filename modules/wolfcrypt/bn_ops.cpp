@@ -61,7 +61,7 @@ namespace wolfCrypt_bignum_detail {
         CF_CHECK_GTE(numBits, 1);
         numBits--;
         MP_CHECK_EQ(mp_copy(A.GetPtr(), tmp.GetPtr()), MP_OKAY);
-        /* noret */ mp_rshb(tmp.GetPtr(), numBits);
+        CF_NORET(mp_rshb(tmp.GetPtr(), numBits));
         MP_CHECK_EQ(mp_mul_2d(tmp.GetPtr(), numBits, tmp.GetPtr()), MP_OKAY);
 
         {
@@ -445,7 +445,7 @@ bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     switch ( ds.Get<uint8_t>() ) {
         case    0:
             MP_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
-            /* noret */ mp_rshb(res.GetPtr(), numBits);
+            CF_NORET(mp_rshb(res.GetPtr(), numBits));
             ret = true;
             break;
 #if !defined(WOLFSSL_SP_MATH)
@@ -462,7 +462,7 @@ bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 MP_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
 
                 const auto numDigits = numBits / (sizeof(mp_digit) * 8);
-                /* noret */ mp_rshd(res.GetPtr(), numDigits);
+                CF_NORET(mp_rshd(res.GetPtr(), numDigits));
 
                 ret = true;
             }
@@ -859,11 +859,12 @@ bool Set::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                  * with fast math; it does not return a value when compiled
                  * with --disable-fastmath or SP math.
                  */
-#if defined(USE_FAST_MATH)
+#if defined(USE_FAST_MATH) || defined(WOLFSSL_SP_MATH)
                 MP_CHECK_EQ(mp_exch(res.GetPtr(), bn[0].GetPtr()), MP_OKAY);
 #else
-                /* noret */ mp_exch(res.GetPtr(), bn[0].GetPtr());
+                CF_NORET(mp_exch(res.GetPtr(), bn[0].GetPtr()));
 #endif
+
                 ret = true;
             }
             break;

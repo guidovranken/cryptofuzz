@@ -297,7 +297,7 @@ wolfCrypt::wolfCrypt(void) :
     CF_ASSERT(wc_InitRng(&wolfCrypt_detail::rng) == 0, "Cannot initialize wolfCrypt RNG");
 
 #if defined(WOLF_CRYPTO_CB)
-    /* noret */ wc_CryptoCb_Init();
+    CF_NORET(wc_CryptoCb_Init());
 
     CF_ASSERT(wc_CryptoCb_RegisterDevice(0xAABBCC, wolfCrypt_detail::CryptoCB, nullptr) == 0, "Cannot initialize CryptoCB");
     CF_ASSERT(wc_InitRng_ex(&wolfCrypt_detail::rng_deterministic, nullptr, 0xAABBCC) == 0, "Cannot initialize deterministic wolfCrypt RNG");
@@ -376,7 +376,7 @@ end:
             ~Init_Void() { }
 
             bool Initialize(CTXType* ctx) override {
-                /* noret */ init(ctx);
+                CF_NORET(init(ctx));
                 return true;
             }
     };
@@ -461,7 +461,7 @@ end:
             ~DigestUpdate_Void() { }
 
             bool Update(CTXType* ctx, const uint8_t* data, unsigned int size) override {
-                /* noret */ update(ctx, data, size);
+                CF_NORET(update(ctx, data, size));
                 return true;
             }
     };
@@ -508,7 +508,7 @@ end:
             ~DigestFinalize_Void() { }
 
             bool Finalize(CTXType* ctx, uint8_t* data) override {
-                /* noret */ finalize(ctx, data);
+                CF_NORET(finalize(ctx, data));
                 return true;
             }
     };
@@ -2917,7 +2917,7 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
 end:
     util::free(priv_bytes);
     util::free(pub_bytes);
-    /* noret */ wc_ecc_key_free(key);
+    CF_NORET(wc_ecc_key_free(key));
 
     wolfCrypt_detail::UnsetGlobalDs();
 
@@ -3075,7 +3075,7 @@ std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& 
     CF_CHECK_EQ(bn.Set(3, op.bn3.ToString(ds)), true);
 
     /* Save the current values of bn[0..3] */
-    /* noret */ bn.Save();
+    CF_NORET(bn.Save());
 
     switch ( op.calcOp.Get() ) {
         case    CF_CALCOP("Add(A,B)"):
