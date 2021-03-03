@@ -698,6 +698,12 @@ end:
 }
 
 bool LCM::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+#if defined(WOLFSSL_SP_MATH)
+    (void)ds;
+    (void)res;
+    (void)bn;
+    return false;
+#else
     (void)ds;
 
     bool ret = false;
@@ -708,6 +714,7 @@ bool LCM::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
 end:
     return ret;
+#endif
 }
 
 bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
