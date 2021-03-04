@@ -328,6 +328,10 @@ bool GCD::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
+    /* mp_gcd does not support negative numbers */
+    CF_CHECK_NE(mp_cmp_d(bn[0].GetPtr(), 0), MP_LT);
+    CF_CHECK_NE(mp_cmp_d(bn[1].GetPtr(), 0), MP_LT);
+
     MP_CHECK_EQ(mp_gcd(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
 
     ret = true;
@@ -604,9 +608,9 @@ bool SubMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             break;
         case    1:
             /* mp_submod_ct does not support negative numbers */
-            CF_CHECK_EQ(mp_cmp_d(bn[0].GetPtr(), 0), MP_GT);
-            CF_CHECK_EQ(mp_cmp_d(bn[1].GetPtr(), 0), MP_GT);
-            CF_CHECK_EQ(mp_cmp_d(bn[2].GetPtr(), 0), MP_GT);
+            CF_CHECK_NE(mp_cmp_d(bn[0].GetPtr(), 0), MP_LT);
+            CF_CHECK_NE(mp_cmp_d(bn[1].GetPtr(), 0), MP_LT);
+            CF_CHECK_NE(mp_cmp_d(bn[2].GetPtr(), 0), MP_LT);
 
             /* mp_submod_ct documentation states that:
              *
@@ -718,6 +722,10 @@ bool LCM::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
+
+    /* mp_lcm does not support negative numbers */
+    CF_CHECK_NE(mp_cmp_d(bn[0].GetPtr(), 0), MP_LT);
+    CF_CHECK_NE(mp_cmp_d(bn[1].GetPtr(), 0), MP_LT);
 
     MP_CHECK_EQ(mp_lcm(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
 
