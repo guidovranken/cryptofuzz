@@ -114,3 +114,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - TBA: TBA
 - TBA: TBA
 - TBA: TBA
+- Botan: [Incorrect comparison of negative values](https://github.com/randombit/botan/issues/2638)
