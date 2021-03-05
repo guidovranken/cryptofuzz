@@ -13,6 +13,10 @@ namespace wolfCrypt_detail {
 
 namespace wolfCrypt_bignum {
 
+Bignum::read_radix_error_t Bignum::read_radix(mp_int* dest, const std::string& str, const size_t base) {
+    return read_radix(dest, str.c_str(), base);
+}
+
 Bignum::read_radix_error_t Bignum::read_radix(mp_int* dest, const char* str, const size_t base) {
     Bignum::read_radix_error_t ret;
 
@@ -156,10 +160,9 @@ bool Bignum::Set(const std::string s) {
 #endif
 
     if ( hex == true ) {
-        const auto asHex = util::DecToHex(s);
-        CF_CHECK_EQ(read_radix(mp, asHex.c_str(), 16), READ_RADIX_OK);
+        CF_CHECK_EQ(read_radix(mp, util::DecToHex(s), 16), READ_RADIX_OK);
     } else {
-        CF_CHECK_EQ(read_radix(mp, s.c_str(), 10), READ_RADIX_OK);
+        CF_CHECK_EQ(read_radix(mp, s, 10), READ_RADIX_OK);
     }
 
     ret = true;
