@@ -579,6 +579,11 @@ bool AddMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             MP_CHECK_EQ(mp_addmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
         case    1:
+            /* mp_addmod_ct does not support negative numbers */
+            CF_CHECK_NE(mp_cmp_d(bn[0].GetPtr(), 0), MP_LT);
+            CF_CHECK_NE(mp_cmp_d(bn[1].GetPtr(), 0), MP_LT);
+            CF_CHECK_NE(mp_cmp_d(bn[2].GetPtr(), 0), MP_LT);
+
             CF_CHECK_EQ(wolfCrypt_bignum_detail::compare(bn[0], bn[1], ds), MP_LT)
             CF_CHECK_EQ(wolfCrypt_bignum_detail::compare(bn[1], bn[2], ds), MP_LT)
             MP_CHECK_EQ(mp_addmod_ct(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
