@@ -23,6 +23,13 @@ class Bignum {
         Datasource& ds;
         bool noFree = false;
 
+        typedef enum {
+            READ_RADIX_OK,
+            READ_RADIX_FAIL_MEMORY,
+            READ_RADIX_FAIL_OTHER,
+        } read_radix_error_t;
+
+        static read_radix_error_t read_radix(mp_int* dest, const char* str, const size_t base);
         void baseConversion(void) const;
     public:
 

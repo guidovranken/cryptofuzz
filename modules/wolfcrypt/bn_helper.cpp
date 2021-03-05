@@ -13,6 +13,41 @@ namespace wolfCrypt_detail {
 
 namespace wolfCrypt_bignum {
 
+Bignum::read_radix_error_t Bignum::read_radix(mp_int* dest, const char* str, const size_t base) {
+    Bignum::read_radix_error_t ret;
+
+    /* Create a temporary variable for storing the result of mp_read_radix,
+     * because if mp_read_radix fails (e.g. due to allocation failure),
+     * it will set the value of the destination variable to 0.
+     *
+     * See OSS-Fuzz 31709 / ZD 11834 for discussion. */
+    auto newMp = (mp_int*)util::malloc(sizeof(mp_int));
+    if ( mp_init(newMp) != MP_OKAY ) {
+        util::free(newMp);
+        return READ_RADIX_FAIL_MEMORY;
+    }
+
+    wolfCrypt_detail::haveAllocFailure = false;
+    if ( mp_read_radix(newMp, str, base) != MP_OKAY ) {
+        ret = wolfCrypt_detail::haveAllocFailure ? READ_RADIX_FAIL_MEMORY : READ_RADIX_FAIL_OTHER;
+        goto end;
+    }
+
+    wolfCrypt_detail::haveAllocFailure = false;
+    if ( mp_copy(newMp, dest) != MP_OKAY ) {
+        ret = wolfCrypt_detail::haveAllocFailure ? READ_RADIX_FAIL_MEMORY : READ_RADIX_FAIL_OTHER;
+        goto end;
+    }
+
+    ret = READ_RADIX_OK;
+
+end:
+    CF_NORET(mp_clear(newMp));
+    util::free(newMp);
+
+    return ret;
+}
+
 void Bignum::baseConversion(void) const {
 #if !defined(WOLFSSL_SP_MATH)
     uint8_t base = 2;
@@ -45,8 +80,10 @@ void Bignum::baseConversion(void) const {
         CF_CHECK_FALSE(wolfCrypt_detail::haveAllocFailure);
 #endif
 
-        wolfCrypt_detail::haveAllocFailure = false;
-        CF_ASSERT(mp_read_radix(mp, str, base) == MP_OKAY || wolfCrypt_detail::haveAllocFailure, "wolfCrypt cannot parse the output of mp_toradix");
+        {
+            const auto ret = read_radix(mp, str, base);
+            CF_ASSERT(ret == READ_RADIX_OK || ret == READ_RADIX_FAIL_MEMORY, "wolfCrypt cannot parse the output of mp_toradix");
+        }
     }
 
 end:
@@ -119,10 +156,10 @@ bool Bignum::Set(const std::string s) {
 #endif
 
     if ( hex == true ) {
-        const auto asDec = util::DecToHex(s);
-        CF_CHECK_EQ(mp_read_radix(mp, asDec.c_str(), 16), MP_OKAY);
+        const auto asHex = util::DecToHex(s);
+        CF_CHECK_EQ(read_radix(mp, asHex.c_str(), 16), READ_RADIX_OK);
     } else {
-        CF_CHECK_EQ(mp_read_radix(mp, s.c_str(), 10), MP_OKAY);
+        CF_CHECK_EQ(read_radix(mp, s.c_str(), 10), READ_RADIX_OK);
     }
 
     ret = true;
