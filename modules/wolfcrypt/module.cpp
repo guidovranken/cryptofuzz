@@ -1031,6 +1031,31 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
             out = util::malloc(op.cleartext.GetSize());
             outTag = util::malloc(*op.tagSize);
 
+#ifdef WOLFSSL_AESGCM_STREAM
+            /* Workaround for bug */
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
+
+            CF_CHECK_EQ(wc_AesGcmInit(&ctx,
+                        op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize(),
+                        op.cipher.iv.GetPtr(&ds), op.cipher.iv.GetSize()), 0);
+            {
+                const auto parts = util::ToParts(ds, op.cleartext);
+                size_t pos = 0;
+                for (const auto& part : parts) {
+                    /* Workaround for bug */
+                    CF_CHECK_NE(part.second, 0);
+
+                    CF_CHECK_EQ(wc_AesGcmEncryptUpdate(&ctx,
+                                out + pos,
+                                part.first, part.second,
+                                op.aad->GetPtr(&ds),
+                                op.aad->GetSize()), 0);
+                    pos += part.second;
+                }
+            }
+
+            CF_CHECK_EQ(wc_AesGcmEncryptFinal(&ctx, outTag, *op.tagSize), 0);
+#else
             CF_CHECK_EQ(wc_AesInit(&ctx, nullptr, INVALID_DEVID), 0);
             CF_CHECK_EQ(wc_AesGcmSetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize()), 0);
             CF_CHECK_EQ(wc_AesGcmEncrypt(
@@ -1044,6 +1069,7 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
                         *op.tagSize,
                         op.aad->GetPtr(&ds),
                         op.aad->GetSize()), 0);
+#endif
 
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
         }
@@ -1725,6 +1751,31 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
 
             out = util::malloc(op.ciphertext.GetSize());
 
+#ifdef WOLFSSL_AESGCM_STREAM
+            /* Workaround for bug */
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
+
+            CF_CHECK_EQ(wc_AesGcmInit(&ctx,
+                        op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize(),
+                        op.cipher.iv.GetPtr(&ds), op.cipher.iv.GetSize()), 0);
+            {
+                const auto parts = util::ToParts(ds, op.ciphertext);
+                size_t pos = 0;
+                for (const auto& part : parts) {
+                    /* Workaround for bug */
+                    CF_CHECK_NE(part.second, 0);
+
+                    CF_CHECK_EQ(wc_AesGcmDecryptUpdate(&ctx,
+                                out + pos,
+                                part.first, part.second,
+                                op.aad->GetPtr(&ds),
+                                op.aad->GetSize()), 0);
+                    pos += part.second;
+                }
+            }
+
+            CF_CHECK_EQ(wc_AesGcmDecryptFinal(&ctx, op.tag->GetPtr(&ds), op.tag->GetSize()), 0);
+#else
             CF_CHECK_EQ(wc_AesInit(&ctx, nullptr, INVALID_DEVID), 0);
             CF_CHECK_EQ(wc_AesGcmSetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize()), 0);
             CF_CHECK_EQ(wc_AesGcmDecrypt(
@@ -1738,6 +1789,7 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
                         op.tag->GetSize(),
                         op.aad->GetPtr(&ds),
                         op.aad->GetSize()), 0);
+#endif
 
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
         }
