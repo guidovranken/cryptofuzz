@@ -2383,7 +2383,6 @@ std::optional<component::Key> OpenSSL::OpKDF_SCRYPT_EVP_KDF(operation::KDF_SCRYP
     OSSL_PARAM params[7], *p = params;
     uint8_t* out = util::malloc(op.keySize);
 
-    /* Initialize */
     {
 
         auto passwordCopy = op.password.Get();
@@ -2419,10 +2418,7 @@ std::optional<component::Key> OpenSSL::OpKDF_SCRYPT_EVP_KDF(operation::KDF_SCRYP
             EVP_KDF_free(kdf);
             CF_CHECK_NE(kctx, nullptr);
         }
-    }
 
-    /* Process */
-    {
         CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize, params), 0);
     }
 
@@ -2631,7 +2627,6 @@ end:
     OSSL_PARAM params[6], *p = params;
     uint8_t* out = util::malloc(op.keySize);
 
-    /* Initialize */
     {
         CF_CHECK_NE(md = toEVPMD(op.digestType), nullptr);
 
@@ -2665,10 +2660,7 @@ end:
             EVP_KDF_free(kdf);
             CF_CHECK_NE(kctx, nullptr);
         }
-    }
 
-    /* Process */
-    {
         CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize, params), 0);
     }
 
@@ -2770,7 +2762,6 @@ std::optional<component::Key> OpenSSL::OpKDF_SSH(operation::KDF_SSH& op) {
     OSSL_PARAM params[6], *p = params;
     uint8_t* out = util::malloc(op.keySize);
 
-    /* Initialize */
     {
         CF_CHECK_NE(md = toEVPMD(op.digestType), nullptr);
         CF_CHECK_EQ(op.type.GetSize(), 1);
@@ -2817,10 +2808,7 @@ std::optional<component::Key> OpenSSL::OpKDF_SSH(operation::KDF_SSH& op) {
             EVP_KDF_free(kdf);
             CF_CHECK_NE(kctx, nullptr);
         }
-    }
 
-    /* Process */
-    {
         CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize, params), 0);
     }
 
@@ -2844,7 +2832,6 @@ std::optional<component::Key> OpenSSL::OpKDF_X963(operation::KDF_X963& op) {
     OSSL_PARAM params[4], *p = params;
     uint8_t* out = util::malloc(op.keySize);
 
-    /* Initialize */
     {
         CF_CHECK_NE(md = toEVPMD(op.digestType), nullptr);
 
@@ -2872,10 +2859,7 @@ std::optional<component::Key> OpenSSL::OpKDF_X963(operation::KDF_X963& op) {
             EVP_KDF_free(kdf);
             CF_CHECK_NE(kctx, nullptr);
         }
-    }
 
-    /* Process */
-    {
         CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize, params), 0);
     }
 
@@ -2903,7 +2887,6 @@ std::optional<component::Key> OpenSSL::OpKDF_SP_800_108(operation::KDF_SP_800_10
     std::string counterStr = "COUNTER";
     std::string feedbackStr = "FEEDBACK";
 
-    /* Initialize */
     {
         if ( op.mode != 0 && op.mode != 1 ) {
             goto end;
@@ -2959,10 +2942,7 @@ std::optional<component::Key> OpenSSL::OpKDF_SP_800_108(operation::KDF_SP_800_10
             EVP_KDF_free(kdf);
             CF_CHECK_NE(kctx, nullptr);
         }
-    }
 
-    /* Process */
-    {
         CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize, params), 0);
     }
 
