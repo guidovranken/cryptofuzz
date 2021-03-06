@@ -74,13 +74,13 @@ end:
             char* str = nullptr;
             size_t olen;
 
-            CF_CHECK_EQ(mbedtls_mpi_write_string(&mpi, 10, nullptr, 0, &olen), MBEDTLS_ERR_MPI_BUFFER_TOO_SMALL);
+            CF_CHECK_EQ(mbedtls_mpi_write_string(&mpi, 16, nullptr, 0, &olen), MBEDTLS_ERR_MPI_BUFFER_TOO_SMALL);
 
             str = (char*)malloc(olen);
 
-            CF_CHECK_EQ(mbedtls_mpi_write_string(&mpi, 10, str, olen, &olen), 0);
+            CF_CHECK_EQ(mbedtls_mpi_write_string(&mpi, 16, str, olen, &olen), 0);
 
-            ret = { std::string(str) };
+            ret = { util::HexToDec(str) };
 end:
             free(str);
 
