@@ -1404,19 +1404,14 @@ namespace OpenSSL_detail {
             parts = util::ToParts(ds, op.cleartext);
             siphash = EVP_MAC_fetch(nullptr, "SIPHASH", nullptr);
             ctx = EVP_MAC_CTX_new(siphash);
-            CF_CHECK_EQ(EVP_MAC_init(ctx), 1);
-
-            auto keyCopy = op.cipher.key.Get();
-            *p++ = OSSL_PARAM_construct_octet_string(
-                    OSSL_MAC_PARAM_KEY,
-                    keyCopy.data(),
-                    keyCopy.size());
 
             unsigned int macSize_ui = macSize;
             *p++ = OSSL_PARAM_construct_uint(OSSL_MAC_PARAM_SIZE, &macSize_ui);
 
             *p = OSSL_PARAM_construct_end();
-            CF_CHECK_EQ(EVP_MAC_CTX_set_params(ctx, params), 1);
+
+            CF_CHECK_EQ(EVP_MAC_init(ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize(), params), 1);
+
             out = util::malloc(macSize);
         }
 
@@ -2424,13 +2419,11 @@ std::optional<component::Key> OpenSSL::OpKDF_SCRYPT_EVP_KDF(operation::KDF_SCRYP
             EVP_KDF_free(kdf);
             CF_CHECK_NE(kctx, nullptr);
         }
-
-        CF_CHECK_EQ(EVP_KDF_CTX_set_params(kctx, params), 1);
     }
 
     /* Process */
     {
-        CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize), 0);
+        CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize, params), 0);
     }
 
     /* Finalize */
@@ -2672,13 +2665,11 @@ end:
             EVP_KDF_free(kdf);
             CF_CHECK_NE(kctx, nullptr);
         }
-
-        CF_CHECK_EQ(EVP_KDF_CTX_set_params(kctx, params), 1);
     }
 
     /* Process */
     {
-        CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize), 0);
+        CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize, params), 0);
     }
 
     /* Finalize */
@@ -2826,13 +2817,11 @@ std::optional<component::Key> OpenSSL::OpKDF_SSH(operation::KDF_SSH& op) {
             EVP_KDF_free(kdf);
             CF_CHECK_NE(kctx, nullptr);
         }
-
-        CF_CHECK_EQ(EVP_KDF_CTX_set_params(kctx, params), 1);
     }
 
     /* Process */
     {
-        CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize), 0);
+        CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize, params), 0);
     }
 
     /* Finalize */
@@ -2883,13 +2872,11 @@ std::optional<component::Key> OpenSSL::OpKDF_X963(operation::KDF_X963& op) {
             EVP_KDF_free(kdf);
             CF_CHECK_NE(kctx, nullptr);
         }
-
-        CF_CHECK_EQ(EVP_KDF_CTX_set_params(kctx, params), 1);
     }
 
     /* Process */
     {
-        CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize), 0);
+        CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize, params), 0);
     }
 
     /* Finalize */
@@ -2972,13 +2959,11 @@ std::optional<component::Key> OpenSSL::OpKDF_SP_800_108(operation::KDF_SP_800_10
             EVP_KDF_free(kdf);
             CF_CHECK_NE(kctx, nullptr);
         }
-
-        CF_CHECK_EQ(EVP_KDF_CTX_set_params(kctx, params), 1);
     }
 
     /* Process */
     {
-        CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize), 0);
+        CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize, params), 0);
     }
 
     /* Finalize */
