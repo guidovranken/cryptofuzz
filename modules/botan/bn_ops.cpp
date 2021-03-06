@@ -98,7 +98,7 @@ bool ExpMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     (void)ds;
 
     /* Exponent and modulus must be positive, according to the documentation */
-    if ( bn[1] <= 0 || bn[2] <= 0 ) {
+    if ( bn[1] < 0 || bn[2] <= 0 ) {
         return false;
     }
 
