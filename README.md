@@ -115,3 +115,6 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - TBA: TBA
 - TBA: TBA
 - Botan: [Incorrect comparison of negative values](https://github.com/randombit/botan/issues/2638)
+- TBA: TBA
+- Nettle: TBA
+- relic: [Modular exponentiation returns 1 if exponent is 0 and modulo is 1](https://github.com/relic-toolkit/relic/issues/185)
