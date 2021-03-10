@@ -1412,6 +1412,7 @@ namespace Nettle_detail {
 
     fuzzing::datasource::Datasource* ds = nullptr;
 
+    static uint8_t PRNG_return_value;
     static void nettle_fuzzer_random_func(void *ctx, size_t size, uint8_t *out) {
         (void)ctx;
 
@@ -1428,7 +1429,8 @@ namespace Nettle_detail {
             return;
         } catch ( ... ) { }
 
-        memset(out, 1, size);
+        PRNG_return_value++;
+        memset(out, PRNG_return_value, size);
     }
 }
 #endif
@@ -1458,6 +1460,7 @@ std::optional<component::ECC_KeyPair> Nettle::OpECC_GenerateKeyPair(operation::E
     initialized = true;
 
     Nettle_detail::ds = &ds;
+    Nettle_detail::PRNG_return_value = 0;
     /* noret */ ecdsa_generate_keypair(&pub, &priv_scalar, nullptr, Nettle_detail::nettle_fuzzer_random_func);
     Nettle_detail::ds = nullptr;
 
@@ -1620,6 +1623,7 @@ std::optional<component::ECDSA_Signature> Nettle::OpECDSA_Sign(operation::ECDSA_
     CF_CHECK_EQ(ecc_scalar_set(&priv_scalar, priv_mpz), 1);
 
     Nettle_detail::ds = &ds;
+    Nettle_detail::PRNG_return_value = 0;
     /* noret */ ecdsa_sign(
             &priv_scalar,
             nullptr, Nettle_detail::nettle_fuzzer_random_func,
