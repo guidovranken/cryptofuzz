@@ -1383,6 +1383,18 @@ std::optional<component::Key> Nettle::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
                 ret = component::Key(out, op.keySize);
             }
             break;
+        case CF_DIGEST("SHA384"):
+            {
+                /* noret */ pbkdf2_hmac_sha384(op.password.GetSize(), op.password.GetPtr(), op.iterations, op.salt.GetSize(), op.salt.GetPtr(), op.keySize, out);
+                ret = component::Key(out, op.keySize);
+            }
+            break;
+        case CF_DIGEST("SHA512"):
+            {
+                /* noret */ pbkdf2_hmac_sha512(op.password.GetSize(), op.password.GetPtr(), op.iterations, op.salt.GetSize(), op.salt.GetPtr(), op.keySize, out);
+                ret = component::Key(out, op.keySize);
+            }
+            break;
     }
 
 end:
