@@ -1405,6 +1405,8 @@ namespace Nettle_detail {
                 return nettle_get_secp_384r1();
             case    CF_ECC_CURVE("secp521r1"):
                 return nettle_get_secp_521r1();
+            case    CF_ECC_CURVE("gost_512A"):
+                return nettle_get_gost_gc512a();
             default:
                 return nullptr;
         }
