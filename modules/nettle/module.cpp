@@ -10,6 +10,8 @@
 #include <nettle/des.h>
 #include <nettle/eax.h>
 #if defined(HAVE_LIBHOGWEED)
+#include <nettle/curve25519.h>
+#include <nettle/curve448.h>
 #include <nettle/ecc-curve.h>
 #include <nettle/ecc.h>
 #include <nettle/ecdsa.h>
@@ -1452,6 +1454,32 @@ namespace Nettle_detail {
         PRNG_return_value++;
         memset(out, PRNG_return_value, size);
     }
+
+    std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_curve25519(operation::ECC_PrivateToPublic& op) {
+        uint8_t pub_bytes[CURVE25519_SIZE];
+        std::optional<std::vector<uint8_t>> priv_bytes;
+
+        CF_CHECK_NE(priv_bytes = util::DecToBin(op.priv.ToTrimmedString(), CURVE25519_SIZE), std::nullopt);
+
+        CF_NORET(curve25519_mul_g(pub_bytes, priv_bytes->data()));
+
+        return component::ECC_PublicKey{util::BinToDec(pub_bytes, CURVE25519_SIZE), "0"};
+end:
+        return std::nullopt;
+    }
+
+    std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_curve448(operation::ECC_PrivateToPublic& op) {
+        uint8_t pub_bytes[CURVE448_SIZE];
+        std::optional<std::vector<uint8_t>> priv_bytes;
+
+        CF_CHECK_NE(priv_bytes = util::DecToBin(op.priv.ToTrimmedString(), CURVE448_SIZE), std::nullopt);
+
+        CF_NORET(curve448_mul_g(pub_bytes, priv_bytes->data()));
+
+        return component::ECC_PublicKey{util::BinToDec(pub_bytes, CURVE448_SIZE), "0"};
+end:
+        return std::nullopt;
+    }
 }
 #endif
 
@@ -1517,6 +1545,12 @@ std::optional<component::ECC_PublicKey> Nettle::OpECC_PrivateToPublic(operation:
 #if !defined(HAVE_LIBHOGWEED)
     (void)op;
 #else
+    if ( op.curveType.Is(CF_ECC_CURVE("x25519")) ) {
+        return Nettle_detail::OpECC_PrivateToPublic_curve25519(op);
+    } else if ( op.curveType.Is(CF_ECC_CURVE("x448")) ) {
+        return Nettle_detail::OpECC_PrivateToPublic_curve448(op);
+    }
+
     mpz_t priv_mpz, pub_x, pub_y;
     struct ecc_scalar priv_scalar;
     struct ecc_point pub;
