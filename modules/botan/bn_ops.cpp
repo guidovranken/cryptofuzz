@@ -419,17 +419,51 @@ bool Sqrt::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt
 }
 
 bool AddMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
-    (void)ds;
+    switch ( GET_UINT8_FOR_SWITCH() ) {
+        case    0:
+            res = (bn[0] + bn[1]) % bn[2];
+            break;
+        case    1:
+            {
+                if ( bn[0] >= bn[2] ) {
+                    return false;
+                }
+                if ( bn[1] >= bn[2] ) {
+                    return false;
+                }
 
-    res = (bn[0] + bn[1]) % bn[2];
+                ::Botan::secure_vector<::Botan::word> ws;
+                res = bn[0].mod_add(bn[1], bn[2], ws);
+            }
+            break;
+        default:
+            return false;
+    }
 
     return true;
 }
 
 bool SubMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
-    (void)ds;
+    switch ( GET_UINT8_FOR_SWITCH() ) {
+        case    0:
+            res = (bn[0] - bn[1]) % bn[2];
+            break;
+        case    1:
+            {
+                if ( bn[0] >= bn[2] ) {
+                    return false;
+                }
+                if ( bn[1] >= bn[2] ) {
+                    return false;
+                }
 
-    res = (bn[0] - bn[1]) % bn[2];
+                ::Botan::secure_vector<::Botan::word> ws;
+                res = bn[0].mod_sub(bn[1], bn[2], ws);
+            }
+            break;
+        default:
+            return false;
+    }
 
     return true;
 }
