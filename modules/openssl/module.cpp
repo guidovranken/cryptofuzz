@@ -19,8 +19,10 @@ extern "C" { void x25519_public_from_private(uint8_t out_public_value[32], const
 #define X25519_public_from_private x25519_public_from_private
 #else
 /* OpenSSL */
-extern "C" { void X25519_public_from_private(uint8_t out_public_value[32], const uint8_t private_key[32]); }
-extern "C" { void X448_public_from_private(uint8_t out_public_value[56], const uint8_t private_key[56]); }
+extern "C" { void ossl_x25519_public_from_private(uint8_t out_public_value[32], const uint8_t private_key[32]); }
+extern "C" { void ossl_x448_public_from_private(uint8_t out_public_value[56], const uint8_t private_key[56]); }
+#define X25519_public_from_private ossl_x25519_public_from_private
+#define X448_public_from_private ossl_x448_public_from_private
 #endif
 
 #include "module_internal.h"
