@@ -1034,7 +1034,7 @@ std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         std::vector<uint8_t> CT;
         if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
             CT = op.cleartext.Get();
-        } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
+        } else {
             std::optional<std::string> algoString;
             CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
 
@@ -1042,9 +1042,6 @@ std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
             hash->update(op.cleartext.GetPtr(), op.cleartext.GetSize());
             const auto _CT = hash->final();
             CT = {_CT.data(), _CT.data() + _CT.size()};
-        } else {
-            /* TODO other digests */
-            goto end;
         }
 
         const ::Botan::BigInt R(op.signature.signature.first.ToString(ds));
