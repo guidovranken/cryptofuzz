@@ -74,6 +74,10 @@
   #include <modules/golang/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_RING)
+  #include <modules/ring/module.h>
+#endif
+
 #if defined(CRYPTOFUZZ_NSS)
   #include <modules/nss/module.h>
 #endif
@@ -272,6 +276,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_GOLANG)
     driver->LoadModule( std::make_shared<cryptofuzz::module::Golang>() );
+#endif
+
+#if defined(CRYPTOFUZZ_RING)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::Ring>() );
 #endif
 
 #if defined(CRYPTOFUZZ_NSS)

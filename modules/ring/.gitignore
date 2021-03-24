@@ -1,0 +1,5 @@
+target
+generate_ids
+*.o
+*.a
+src/ids.rs
