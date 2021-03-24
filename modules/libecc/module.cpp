@@ -262,6 +262,71 @@ end:
     return ret;
 }
 
+std::optional<bool> libecc::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    if ( op.digestType.Get() != CF_DIGEST("NULL") ) {
+        return std::nullopt;
+    }
+
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    libecc_detail::global_ds = &ds;
+
+    const ec_str_params* curve_params;
+	ec_params params;
+    struct ec_verify_context ctx;
+	ec_key_pair kp;
+    std::vector<uint8_t> pub;
+    std::vector<uint8_t> sig;
+
+    /* Load curve */
+    CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
+    /* noret */ import_params(&params, curve_params);
+
+    {
+	    const size_t signature_size = ECDSA_SIGLEN(params.ec_gen_order_bitlen);
+        CF_ASSERT((signature_size % 2) == 0, "Signature size is not multiple of 2");
+
+        std::optional<std::vector<uint8_t>> R, S;
+        CF_CHECK_NE(R = util::DecToBin(op.signature.signature.first.ToTrimmedString(), signature_size / 2), std::nullopt);
+        CF_CHECK_NE(S = util::DecToBin(op.signature.signature.second.ToTrimmedString(), signature_size / 2), std::nullopt);
+
+        sig.insert(std::end(sig), std::begin(*R), std::end(*R));
+        sig.insert(std::end(sig), std::begin(*S), std::end(*S));
+    }
+    {
+        const size_t pubSize = BYTECEIL(params.ec_curve.a.ctx->p_bitlen) * 3;
+        CF_ASSERT((pubSize % 2) == 0, "Public key byte size is not even");
+        CF_ASSERT((pubSize % 3) == 0, "Public key byte size is not multiple of 3");
+        pub.resize(pubSize, 0);
+
+        const size_t pointSize = pubSize / 3;
+        std::optional<std::vector<uint8_t>> X, Y, Z;
+        CF_CHECK_NE(X = util::DecToBin(op.signature.pub.first.ToTrimmedString(), pointSize), std::nullopt);
+        CF_CHECK_NE(Y = util::DecToBin(op.signature.pub.second.ToTrimmedString(), pointSize), std::nullopt);
+        CF_CHECK_NE(Z = util::DecToBin("1", pointSize), std::nullopt);
+
+        memcpy(pub.data(), X->data(), pointSize);
+        memcpy(pub.data() + pointSize, Y->data(), pointSize);
+        memcpy(pub.data() + pointSize * 2, Z->data(), pointSize);
+
+        CF_CHECK_EQ(ec_pub_key_import_from_buf(
+                    &kp.pub_key,
+                    &params,
+                    pub.data(), pub.size(),
+                    libecc_detail::sm->type), 0);
+
+        CF_CHECK_EQ(prj_pt_is_on_curve(&kp.pub_key.y), 1);
+    }
+
+    CF_CHECK_EQ(ec_verify_init(&ctx, &(kp.pub_key), sig.data(), sig.size(), ECDSA, SHA256), 0);
+    ret = ecdsa_verify_raw(&ctx, op.cleartext.GetPtr(), op.cleartext.GetSize()) == 0;
+
+end:
+    libecc_detail::global_ds = nullptr;
+
+    return ret;
+}
+
 std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
 
