@@ -91,6 +91,56 @@ namespace relic_detail {
     }
 }
 
+std::optional<component::Digest> relic::OpDigest(operation::Digest& op) {
+    std::optional<component::Digest> ret = std::nullopt;
+    switch ( op.digestType.Get() ) {
+        case    CF_DIGEST("SHA224"):
+            {
+                uint8_t out[28];
+                CF_NORET(md_map_sh224(out, op.cleartext.GetPtr(), op.cleartext.GetSize()));
+                ret = component::Digest(out, 28);
+            }
+            break;
+        case    CF_DIGEST("SHA256"):
+            {
+                uint8_t out[32];
+                CF_NORET(md_map_sh256(out, op.cleartext.GetPtr(), op.cleartext.GetSize()));
+                ret = component::Digest(out, 32);
+            }
+            break;
+        case    CF_DIGEST("SHA384"):
+            {
+                uint8_t out[48];
+                CF_NORET(md_map_sh384(out, op.cleartext.GetPtr(), op.cleartext.GetSize()));
+                ret = component::Digest(out, 48);
+            }
+            break;
+        case    CF_DIGEST("SHA512"):
+            {
+                uint8_t out[64];
+                CF_NORET(md_map_sh512(out, op.cleartext.GetPtr(), op.cleartext.GetSize()));
+                ret = component::Digest(out, 64);
+            }
+            break;
+        case    CF_DIGEST("BLAKE2S160"):
+            {
+                uint8_t out[20];
+                CF_NORET(md_map_b2s160(out, op.cleartext.GetPtr(), op.cleartext.GetSize()));
+                ret = component::Digest(out, 20);
+            }
+            break;
+        case    CF_DIGEST("BLAKE2S256"):
+            {
+                uint8_t out[32];
+                CF_NORET(md_map_b2s256(out, op.cleartext.GetPtr(), op.cleartext.GetSize()));
+                ret = component::Digest(out, 32);
+            }
+            break;
+    }
+
+    return ret;
+}
+
 std::optional<component::ECC_PublicKey> relic::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());

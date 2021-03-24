@@ -10,6 +10,7 @@ namespace module {
 class relic : public Module {
     public:
         relic(void);
+        std::optional<component::Digest> OpDigest(operation::Digest& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
         std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) override;
         std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) override;
