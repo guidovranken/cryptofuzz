@@ -93,6 +93,26 @@ class IsEq : public Operation {
         bool Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const override;
 };
 
+class IsGt : public Operation {
+    public:
+        bool Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const override;
+};
+
+class IsGte : public Operation {
+    public:
+        bool Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const override;
+};
+
+class IsLt : public Operation {
+    public:
+        bool Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const override;
+};
+
+class IsLte : public Operation {
+    public:
+        bool Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const override;
+};
+
 class IsZero : public Operation {
     public:
         bool Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const override;

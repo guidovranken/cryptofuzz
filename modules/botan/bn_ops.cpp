@@ -251,6 +251,38 @@ bool IsEq::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt
     return true;
 }
 
+bool IsGt::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
+    res = bn[0] > bn[1] ? 1 : 0;
+
+    return true;
+}
+
+bool IsGte::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
+    res = bn[0] >= bn[1] ? 1 : 0;
+
+    return true;
+}
+
+bool IsLt::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
+    res = bn[0] < bn[1] ? 1 : 0;
+
+    return true;
+}
+
+bool IsLte::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
+    res = bn[0] <= bn[1] ? 1 : 0;
+
+    return true;
+}
+
 bool IsEven::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
     (void)ds;
 

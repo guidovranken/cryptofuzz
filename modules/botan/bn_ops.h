@@ -112,6 +112,26 @@ class IsEq : public Operation {
         bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
 };
 
+class IsGt : public Operation {
+    public:
+        bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
+};
+
+class IsGte : public Operation {
+    public:
+        bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
+};
+
+class IsLt : public Operation {
+    public:
+        bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
+};
+
+class IsLte : public Operation {
+    public:
+        bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;
+};
+
 class IsEven: public Operation {
     public:
         bool Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const override;

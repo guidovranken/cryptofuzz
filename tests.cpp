@@ -501,6 +501,18 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
         case    CF_CALCOP("IsEq(A,B)"):
             BignumCalc::AssertBinary(*result, "IsEq");
             break;
+        case    CF_CALCOP("IsGt(A,B)"):
+            BignumCalc::AssertBinary(*result, "IsGt");
+            break;
+        case    CF_CALCOP("IsGte(A,B)"):
+            BignumCalc::AssertBinary(*result, "IsGte");
+            break;
+        case    CF_CALCOP("IsLt(A,B)"):
+            BignumCalc::AssertBinary(*result, "IsLt");
+            break;
+        case    CF_CALCOP("IsLte(A,B)"):
+            BignumCalc::AssertBinary(*result, "IsLte");
+            break;
         case    CF_CALCOP("IsEven(A)"):
             BignumCalc::AssertBinary(*result, "IsEven");
             break;

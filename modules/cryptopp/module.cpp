@@ -2325,6 +2325,18 @@ std::optional<component::Bignum> CryptoPP::OpBignumCalc(operation::BignumCalc& o
         case    CF_CALCOP("IsEq(A,B)"):
             opRunner = std::make_unique<CryptoPP_bignum::IsEq>();
             break;
+        case    CF_CALCOP("IsGt(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::IsGt>();
+            break;
+        case    CF_CALCOP("IsGte(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::IsGte>();
+            break;
+        case    CF_CALCOP("IsLt(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::IsLt>();
+            break;
+        case    CF_CALCOP("IsLte(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::IsLte>();
+            break;
         case    CF_CALCOP("IsZero(A)"):
             opRunner = std::make_unique<CryptoPP_bignum::IsZero>();
             break;

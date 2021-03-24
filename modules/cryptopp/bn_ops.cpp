@@ -156,6 +156,39 @@ bool IsEq::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP:
     return true;
 }
 
+bool IsGt::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const {
+    (void)ds;
+
+    res = bn[0] > bn[1] ? 1 : 0;
+
+    return true;
+}
+
+bool IsGte::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const {
+    (void)ds;
+
+    res = bn[0] >= bn[1] ? 1 : 0;
+
+    return true;
+}
+
+bool IsLt::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const {
+    (void)ds;
+
+    res = bn[0] < bn[1] ? 1 : 0;
+
+    return true;
+}
+
+bool IsLte::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const {
+    (void)ds;
+
+    res = bn[0] <= bn[1] ? 1 : 0;
+
+    return true;
+}
+
+
 bool IsZero::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const {
     (void)ds;
 

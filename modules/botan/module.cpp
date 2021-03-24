@@ -1168,6 +1168,18 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
         case    CF_CALCOP("IsEq(A,B)"):
             opRunner = std::make_unique<Botan_bignum::IsEq>();
             break;
+        case    CF_CALCOP("IsGt(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::IsGt>();
+            break;
+        case    CF_CALCOP("IsGte(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::IsGte>();
+            break;
+        case    CF_CALCOP("IsLt(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::IsLt>();
+            break;
+        case    CF_CALCOP("IsLte(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::IsLte>();
+            break;
         case    CF_CALCOP("IsEven(A)"):
             opRunner = std::make_unique<Botan_bignum::IsEven>();
             break;

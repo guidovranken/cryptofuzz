@@ -1469,6 +1469,10 @@ calcops.Add( CalcOp("InvMod(A,B)") )
 calcops.Add( CalcOp("IsCoprime(A,B)") )
 calcops.Add( CalcOp("IsEq(A,B)") )
 calcops.Add( CalcOp("IsEven(A)") )
+calcops.Add( CalcOp("IsGt(A,B)") )
+calcops.Add( CalcOp("IsGte(A,B)") )
+calcops.Add( CalcOp("IsLt(A,B)") )
+calcops.Add( CalcOp("IsLte(A,B)") )
 calcops.Add( CalcOp("IsNeg(A)") )
 calcops.Add( CalcOp("IsOdd(A)") )
 calcops.Add( CalcOp("IsOne(A)") )
@@ -1509,7 +1513,6 @@ calcops.Add( CalcOp("SqrtMod(A,B)") )
 calcops.Add( CalcOp("Sub(A,B)") )
 calcops.Add( CalcOp("SubMod(A,B,C)") )
 calcops.Add( CalcOp("Xor(A,B)") )
-
 
 tables = [modules, operations, ciphers, digests, ecc_curves, calcops]
 
