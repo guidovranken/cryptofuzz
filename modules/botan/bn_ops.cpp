@@ -42,6 +42,8 @@ bool Mul::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
 }
 
 bool Div::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
     try {
         switch ( GET_UINT8_FOR_SWITCH() ) {
             case    0:
@@ -74,6 +76,8 @@ end:
 }
 
 bool Mod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
     try {
         switch ( GET_UINT8_FOR_SWITCH() ) {
             case    0:
@@ -128,6 +132,8 @@ bool GCD::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
 }
 
 bool SqrMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
     if ( bn[0] == 0 ) {
         res = ::Botan::square(bn[0]);
     } else if ( bn[1].is_negative() ) {
@@ -316,6 +322,8 @@ bool IsOne::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigIn
 }
 
 bool MulMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
     switch ( GET_UINT8_FOR_SWITCH() ) {
         case    0:
             {
@@ -451,6 +459,8 @@ bool Sqrt::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt
 }
 
 bool AddMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
     switch ( GET_UINT8_FOR_SWITCH() ) {
         case    0:
             res = (bn[0] + bn[1]) % bn[2];
@@ -476,6 +486,8 @@ bool AddMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
 }
 
 bool SubMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+    (void)ds;
+
     switch ( GET_UINT8_FOR_SWITCH() ) {
         case    0:
             res = (bn[0] - bn[1]) % bn[2];
