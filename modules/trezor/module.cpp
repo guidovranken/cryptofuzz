@@ -82,7 +82,7 @@ namespace trezor_firmware_detail {
         static const std::map<uint64_t, HasherType> LUT = {
             { CF_DIGEST("SHA256"), HASHER_SHA2 },
             { CF_DIGEST("SHA3-256"), HASHER_SHA3 },
-            { CF_DIGEST("BLAKE2B512"), HASHER_BLAKE2B },
+            { CF_DIGEST("BLAKE2B256"), HASHER_BLAKE2B },
         };
 
         if ( LUT.find(digestType.Get()) == LUT.end() ) {
