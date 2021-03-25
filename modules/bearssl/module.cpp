@@ -51,6 +51,8 @@ namespace BearSSL_detail {
                 return &br_md5_vtable;
             case    CF_DIGEST("SHA1"):
                 return &br_sha1_vtable;
+            case    CF_DIGEST("MD5_SHA1"):
+                return &br_md5sha1_vtable;
             case    CF_DIGEST("SHA224"):
                 return &br_sha224_vtable;
             case    CF_DIGEST("SHA256"):
