@@ -87,6 +87,33 @@ end:
 
         return (((size_t)data->data()[0]) << 8) + data->data()[1];
     }
+
+    const hash_mapping* To_hash_mapping(const uint64_t digestType) {
+        switch ( digestType ) {
+            case    CF_DIGEST("SHA224"):
+                return get_hash_by_type(SHA224);
+            case    CF_DIGEST("SHA256"):
+                return get_hash_by_type(SHA256);
+            case    CF_DIGEST("SHA384"):
+                return get_hash_by_type(SHA384);
+            case    CF_DIGEST("SHA512"):
+                return get_hash_by_type(SHA512);
+            case    CF_DIGEST("SHA512-224"):
+                return get_hash_by_type(SHA512_224);
+            case    CF_DIGEST("SHA512-256"):
+                return get_hash_by_type(SHA512_256);
+            case    CF_DIGEST("SHA3-224"):
+                return get_hash_by_type(SHA3_224);
+            case    CF_DIGEST("SHA3-256"):
+                return get_hash_by_type(SHA3_256);
+            case    CF_DIGEST("SHA3-384"):
+                return get_hash_by_type(SHA3_384);
+            case    CF_DIGEST("SHA3-512"):
+                return get_hash_by_type(SHA3_512);
+            default:
+                return nullptr;
+        }
+    }
 }
 }
 }
@@ -134,6 +161,43 @@ libecc::libecc(void) :
     "GOST256"
     "GOST512"
 #endif
+}
+
+std::optional<component::Digest> libecc::OpDigest(operation::Digest& op) {
+    std::optional<component::Digest> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    hash_context ctx;
+    uint8_t* out = nullptr;
+    const hash_mapping* hash;
+
+    CF_CHECK_NE(hash = libecc_detail::To_hash_mapping(op.digestType.Get()), nullptr);
+
+    /* Initialize */
+    CF_NORET(hash->hfunc_init(&ctx));
+
+    {
+    /* Process */
+        const auto parts = util::ToParts(ds, op.cleartext);
+        for (const auto& part : parts) {
+            if ( part.first == nullptr ) {
+                continue;
+            }
+            CF_NORET(hash->hfunc_update(&ctx, part.first, part.second));
+        }
+    }
+
+    /* Finalize */
+    {
+        out = util::malloc(hash->digest_size);
+        CF_NORET(hash->hfunc_finalize(&ctx, out));
+        ret = component::Digest(out, hash->digest_size);
+    }
+
+end:
+    util::free(out);
+
+    return ret;
 }
 
 std::optional<component::ECC_PublicKey> libecc::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
