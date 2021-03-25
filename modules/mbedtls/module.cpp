@@ -863,9 +863,12 @@ end:
 
 
 std::optional<bool> mbedTLS::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    if ( !op.digestType.Is(CF_DIGEST("SHA256")) &&
+         !op.digestType.Is(CF_DIGEST("NULL")) ) {
+        return std::nullopt;
+    }
+
     std::optional<bool> ret = std::nullopt;
-    (void)op;
-#if 0
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     mbedTLS_detail::SetGlobalDs(&ds);
 
@@ -891,13 +894,27 @@ std::optional<bool> mbedTLS::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     CF_CHECK_EQ(mbedtls_mpi_lset(&ctx.Q.Z, 1), 0);
 
     /* Signature */
-    CF_CHECK_EQ(mbedtls_mpi_read_string(&sig_s, 10, op.signature.signature.first.ToString(ds).c_str()), 0);
-    CF_CHECK_EQ(mbedtls_mpi_read_string(&sig_r, 10, op.signature.signature.second.ToString(ds).c_str()), 0);
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&sig_r, 10, op.signature.signature.first.ToString(ds).c_str()), 0);
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&sig_s, 10, op.signature.signature.second.ToString(ds).c_str()), 0);
 
     {
-        uint8_t CT[32];
-        CF_CHECK_EQ(mbedtls_sha256_ret(op.cleartext.GetPtr(), op.cleartext.GetSize(), CT, 0), 0);
-        const auto verifyRes = mbedtls_ecdsa_verify(&ctx.grp, CT, sizeof(CT), &ctx.Q, &sig_r, &sig_s);
+        int verifyRes;
+
+        switch ( op.digestType.Get() ) {
+            case    CF_DIGEST("SHA256"):
+                {
+                    uint8_t CT[32];
+                    CF_CHECK_EQ(mbedtls_sha256_ret(op.cleartext.GetPtr(), op.cleartext.GetSize(), CT, 0), 0);
+                    verifyRes = mbedtls_ecdsa_verify(&ctx.grp, CT, sizeof(CT), &ctx.Q, &sig_r, &sig_s);
+                }
+                break;
+            case    CF_DIGEST("NULL"):
+                verifyRes = mbedtls_ecdsa_verify(&ctx.grp, op.cleartext.GetPtr(), op.cleartext.GetSize(), &ctx.Q, &sig_r, &sig_s);
+                break;
+            default:
+                CF_UNREACHABLE();
+        }
+
         if ( verifyRes == 0 ) {
             ret = true;
         } else if ( verifyRes == MBEDTLS_ERR_ECP_VERIFY_FAILED ) {
@@ -912,7 +929,6 @@ end:
 
     mbedTLS_detail::UnsetGlobalDs();
 
-#endif
     return ret;
 }
 
