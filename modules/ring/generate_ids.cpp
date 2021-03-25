@@ -36,7 +36,7 @@ int main(void)
     fprintf(fp, "#[repr(u64)]\n");
     fprintf(fp, "#[allow(non_camel_case_types)]\n");
     fprintf(fp, "pub enum CurveType {\n");
-    for (const auto curve : ECC_CurveLUTMap ) {
+    for (const auto& curve : ECC_CurveLUTMap ) {
        auto curveStr = std::string(curve.second.name);
         curveStr = std::regex_replace(curveStr, std::regex("[.-]"), "_");
         fprintf(fp, "  %s = %s,\n", curveStr.c_str(), std::to_string(curve.first).c_str());
