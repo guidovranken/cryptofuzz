@@ -155,6 +155,25 @@ std::optional<component::MAC> relic::OpHMAC(operation::HMAC& op) {
     return ret;
 }
 
+std::optional<component::Key> relic::OpKDF_X963(operation::KDF_X963& op) {
+    std::optional<component::Key> ret = std::nullopt;
+#if MD_MAP == SH256
+    uint8_t* key = nullptr;
+
+    if ( op.digestType.Is(CF_DIGEST("SHA256")) ) {
+        if ( op.info.GetSize() == 0 ) {
+            key = util::malloc(op.keySize);
+            CF_NORET(md_kdf(key, op.keySize, op.secret.GetPtr(), op.secret.GetSize()));
+            ret = component::Key(key, op.keySize);
+        }
+    }
+
+    util::free(key);
+#else
+    (void)op;
+#endif
+    return ret;
+}
 
 std::optional<component::ECC_PublicKey> relic::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
