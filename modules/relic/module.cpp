@@ -141,6 +141,21 @@ std::optional<component::Digest> relic::OpDigest(operation::Digest& op) {
     return ret;
 }
 
+std::optional<component::MAC> relic::OpHMAC(operation::HMAC& op) {
+    std::optional<component::MAC> ret = std::nullopt;
+#if MD_MAP == SH256
+    if ( op.digestType.Is(CF_DIGEST("SHA256")) ) {
+        uint8_t mac[RLC_MD_LEN];
+        CF_NORET(md_hmac(mac, op.cleartext.GetPtr(), op.cleartext.GetSize(), op.cipher.key.GetPtr(), op.cipher.key.GetSize()));
+        ret = component::MAC(mac, sizeof(mac));
+    }
+#else
+    (void)op;
+#endif
+    return ret;
+}
+
+
 std::optional<component::ECC_PublicKey> relic::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
