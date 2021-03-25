@@ -257,6 +257,43 @@ end:
     return ret;
 }
 
+std::optional<bool> relic::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
+    std::optional<bool> ret = std::nullopt;
+
+    ec_t pub;
+    bool pub_initialized = false;
+    std::vector<uint8_t> pub_bytes;
+
+    /* Set curve */
+    CF_CHECK_TRUE(relic_detail::SetCurve(op.curveType));
+
+    /* Set pubkey */
+    {
+        /* noret */ ec_new(pub);
+        pub_initialized = true;
+        const int size = 65;
+        const auto halfSize = (size-1) / 2;
+
+        std::optional<std::vector<uint8_t>> pub_x, pub_y;
+        CF_CHECK_NE(pub_x = util::DecToBin(op.pub.first.ToTrimmedString(), halfSize), std::nullopt);
+        CF_CHECK_NE(pub_y = util::DecToBin(op.pub.second.ToTrimmedString(), halfSize), std::nullopt);
+
+        pub_bytes.push_back(0x04);
+        pub_bytes.insert(std::end(pub_bytes), std::begin(*pub_x), std::end(*pub_x));
+        pub_bytes.insert(std::end(pub_bytes), std::begin(*pub_y), std::end(*pub_y));
+
+        /* noret */ ec_read_bin(pub, pub_bytes.data(), size);
+    }
+
+    ret = ec_on_curve(pub);
+
+end:
+    if ( pub_initialized ) {
+        ec_free(pub);
+    }
+    return ret;
+}
+
 std::optional<component::ECDSA_Signature> relic::OpECDSA_Sign(operation::ECDSA_Sign& op) {
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
