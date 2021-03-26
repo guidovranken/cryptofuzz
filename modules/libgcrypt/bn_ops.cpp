@@ -133,7 +133,10 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     CF_CHECK_NE(gcry_mpi_cmp_ui(bn[1].GetPtr(), 0), 0);
-    CF_CHECK_EQ(gcry_mpi_invm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
+    if ( gcry_mpi_invm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr()) == 0 ) {
+        /* Modular inverse does not exist */
+        res.Set("0");
+    }
 
     ret = true;
 

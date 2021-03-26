@@ -129,11 +129,17 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(mbedtls_mpi_inv_mod(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
+    {
+        const auto r = mbedtls_mpi_inv_mod(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+        if ( r == 0 ) {
+            ret = true;
+        } else if ( r == MBEDTLS_ERR_MPI_NOT_ACCEPTABLE ) {
+            /* Modular inverse does not exist */
+            res.Set("0");
+            ret = true;
+        }
+    }
 
-    ret = true;
-
-end:
     return ret;
 }
 

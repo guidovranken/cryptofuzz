@@ -171,7 +171,10 @@ bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     RLC_TRY {
         /* noret */ bn_mod_inv(res.Get(), bn[0].Get(), bn[1].Get());
     } RLC_CATCH_ANY {
-        return false;
+        /* Modular inverse does not exist */
+        if ( res.Set("0") == false ) {
+            return false;
+        }
     }
 
     return true;

@@ -358,7 +358,10 @@ bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     /* "The behaviour of this function is undefined when op2 is zero." */
     CF_CHECK_NE(mpz_sgn(bn[1].GetPtr()), 0);
 
-    CF_CHECK_NE(mpz_invert(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
+    if ( mpz_invert(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr()) == 0 ) {
+        /* Modular inverse does not exist */
+        res.Set("0");
+    }
 
     ret = true;
 
