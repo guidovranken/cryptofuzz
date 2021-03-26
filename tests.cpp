@@ -584,6 +584,14 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
                 Abort("Result is larger than input", repository::CalcOpToString(calcOp));
             }
             break;
+        case    CF_CALCOP("And(A,B)"):
+            AssertNotLargerThan(*result, op.bn0, repository::CalcOpToString(calcOp));
+            AssertNotLargerThan(*result, op.bn1, repository::CalcOpToString(calcOp));
+            break;
+        case    CF_CALCOP("Or(A,B)"):
+            AssertNotSmallerThan(*result, op.bn0, repository::CalcOpToString(calcOp));
+            AssertNotSmallerThan(*result, op.bn1, repository::CalcOpToString(calcOp));
+            break;
     }
 }
 
