@@ -21,6 +21,13 @@ bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 CF_CHECK_EQ(mbedtls_mpi_add_int(res.GetDestPtr(), bn[0].GetPtr(), *bn1), 0);
             }
             return true;
+        case    2:
+            {
+                CF_CHECK_NE(mbedtls_mpi_cmp_int(bn[0].GetPtr(), 0), -1);
+                CF_CHECK_NE(mbedtls_mpi_cmp_int(bn[1].GetPtr(), 0), -1);
+                CF_CHECK_EQ(mbedtls_mpi_add_abs(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
+            }
+            return true;
     }
 
 end:
