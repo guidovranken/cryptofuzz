@@ -4,6 +4,10 @@
 
 #include "bn_ops.h"
 
+extern "C" {
+void _gcry_mpi_mulpowm( gcry_mpi_t res, gcry_mpi_t *basearray, gcry_mpi_t *exparray, gcry_mpi_t mod);
+}
+
 namespace cryptofuzz {
 namespace module {
 namespace libgcrypt_bignum {
@@ -87,18 +91,27 @@ end:
 }
 
 bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
-    (void)ds;
-
-    bool ret = false;
-
     /* Avoid division by zero */
     CF_CHECK_NE(gcry_mpi_cmp_ui(bn[2].GetPtr(), 0), 0);
-    /* noret */ gcry_mpi_powm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
 
-    ret = true;
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            /* noret */ gcry_mpi_powm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+            return true;
+        case    1:
+            {
+                CF_CHECK_NE(gcry_mpi_cmp_ui(bn[1].GetPtr(), 0), 0);
+
+                gcry_mpi_t base[2] = { bn[0].GetPtr(), nullptr };
+                gcry_mpi_t exp[2] = { bn[1].GetPtr(), nullptr };
+
+                /* noret */ _gcry_mpi_mulpowm(res.GetPtr(), base, exp, bn[2].GetPtr());
+            }
+            return true;
+    }
 
 end:
-    return ret;
+    return false;
 }
 
 bool GCD::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
