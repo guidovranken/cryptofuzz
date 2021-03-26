@@ -155,6 +155,66 @@ std::optional<component::MAC> relic::OpHMAC(operation::HMAC& op) {
     return ret;
 }
 
+std::optional<component::Ciphertext> relic::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
+    std::optional<component::Ciphertext> ret = std::nullopt;
+
+    uint8_t* out = nullptr;
+
+    switch ( op.cipher.cipherType.Get() ) {
+        case CF_CIPHER("AES_128_CBC"):
+        case CF_CIPHER("AES_192_CBC"):
+        case CF_CIPHER("AES_256_CBC"):
+            {
+                CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
+                int outSize = static_cast<int>(op.ciphertextSize);
+                out = util::malloc(op.ciphertextSize);
+                CF_CHECK_EQ(
+                        bc_aes_cbc_enc(
+                            out, &outSize,
+                            (uint8_t*)op.cleartext.GetPtr(), op.cleartext.GetSize(),
+                            (uint8_t*)op.cipher.key.GetPtr(), op.cipher.key.GetSize(),
+                            (uint8_t*)op.cipher.iv.GetPtr()), RLC_OK);
+                ret = component::Ciphertext(Buffer(out, outSize));
+            }
+            break;
+    }
+
+end:
+    util::free(out);
+
+    return ret;
+}
+
+std::optional<component::Cleartext> relic::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
+    std::optional<component::Cleartext> ret = std::nullopt;
+
+    uint8_t* out = nullptr;
+
+    switch ( op.cipher.cipherType.Get() ) {
+        case CF_CIPHER("AES_128_CBC"):
+        case CF_CIPHER("AES_192_CBC"):
+        case CF_CIPHER("AES_256_CBC"):
+            {
+                CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
+                int outSize = static_cast<int>(op.cleartextSize);
+                out = util::malloc(op.cleartextSize);
+                CF_CHECK_EQ(
+                        bc_aes_cbc_dec(
+                            out, &outSize,
+                            (uint8_t*)op.ciphertext.GetPtr(), op.ciphertext.GetSize(),
+                            (uint8_t*)op.cipher.key.GetPtr(), op.cipher.key.GetSize(),
+                            (uint8_t*)op.cipher.iv.GetPtr()), RLC_OK);
+                ret = component::Cleartext(Buffer(out, outSize));
+            }
+            break;
+    }
+
+end:
+    util::free(out);
+
+    return ret;
+}
+
 std::optional<component::Key> relic::OpKDF_X963(operation::KDF_X963& op) {
     std::optional<component::Key> ret = std::nullopt;
 #if MD_MAP == SH256
