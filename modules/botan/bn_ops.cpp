@@ -69,7 +69,17 @@ bool Div::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
                 res = bn[0] / bn[1];
                 return true;
         }
-    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+        return false;
+    } catch ( ::Botan::Invalid_Argument& e ) {
+        /* Botan is expected to throw an exception when divisor is 0 */
+        if ( bn[1] == 0 ) {
+            return false;
+        }
+
+        /* Rethrow */
+        throw e;
+    }
 
 end:
     return false;
@@ -82,8 +92,18 @@ bool Mod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
         switch ( GET_UINT8_FOR_SWITCH() ) {
             case    0:
                 {
-                    const Botan::Modular_Reducer reducer(bn[1]);
-                    res = reducer.reduce(bn[0]);
+                    try {
+                        const Botan::Modular_Reducer reducer(bn[1]);
+                        res = reducer.reduce(bn[0]);
+                    } catch ( ::Botan::Invalid_State& e ) {
+                        /* Modular reducer is expected to throw an exception when modulo is 0 */
+                        if ( bn[1] == 0 ) {
+                            return false;
+                        }
+
+                        /* Rethrow */
+                        throw e;
+                    }
                 }
                 return true;
             case    1:
@@ -93,7 +113,17 @@ bool Mod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
                 res = bn[0] % bn[1];
                 return true;
         }
-    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+        return false;
+    } catch ( ::Botan::Invalid_Argument& e ) {
+        /* Botan is expected to throw an exception when modulo is 0 */
+        if ( bn[1] == 0 ) {
+            return false;
+        }
+
+        /* Rethrow */
+        throw e;
+    }
 
     return false;
 }
@@ -122,10 +152,6 @@ bool Sqr::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
 bool GCD::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
     (void)ds;
 
-    if ( bn[0] == 0 || bn[1] == 0 ) {
-        return false;
-    }
-
     res = ::Botan::gcd(bn[0], bn[1]);
 
     return true;
@@ -134,23 +160,43 @@ bool GCD::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
 bool SqrMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
     (void)ds;
 
-    if ( bn[0] == 0 ) {
-        res = ::Botan::square(bn[0]);
-    } else if ( bn[1].is_negative() ) {
+    if ( bn[1].is_negative() ) {
         return false;
     } else {
-        switch ( GET_UINT8_FOR_SWITCH() ) {
-            case    0:
-                {
-                    ::Botan::Modular_Reducer mod(bn[1]);
-                    res = mod.square(bn[0]);
-                }
-                break;
-            case    1:
-                res = ::Botan::square(bn[0]) % bn[1];
-                break;
-            default:
+        try {
+            switch ( GET_UINT8_FOR_SWITCH() ) {
+                case    0:
+                    {
+                        try {
+                            ::Botan::Modular_Reducer mod(bn[1]);
+                            res = mod.square(bn[0]);
+                        } catch ( ::Botan::Invalid_State& e ) {
+                            /* Modular reducer is expected to throw an exception when modulo is 0 */
+                            if ( bn[1] == 0 ) {
+                                return false;
+                            }
+
+                            /* Rethrow */
+                            throw e;
+                        }
+                    }
+                    break;
+                case    1:
+                    res = ::Botan::square(bn[0]) % bn[1];
+                    break;
+                default:
+                    return false;
+            }
+        } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+            return false;
+        } catch ( ::Botan::Invalid_Argument& e ) {
+            /* Botan is expected to throw an exception when modulo is 0 */
+            if ( bn[1] == 0 ) {
                 return false;
+            }
+
+            /* Rethrow */
+            throw e;
         }
     }
 
@@ -160,7 +206,17 @@ bool SqrMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
 bool InvMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
     (void)ds;
 
-    res = ::Botan::inverse_mod(bn[0], bn[1]);
+    try {
+        res = ::Botan::inverse_mod(bn[0], bn[1]);
+    } catch ( ::Botan::Invalid_Argument& e ) {
+        /* inverse_mod() is expected to throw an exception when modulo is 0 */
+        if ( bn[1] == 0 ) {
+            return false;
+        }
+
+        /* Rethrow */
+        throw e;
+    }
 
     return true;
 }
@@ -198,7 +254,21 @@ bool Abs::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
 bool Jacobi::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
     (void)ds;
 
-    const int resInt = ::Botan::jacobi(bn[0], bn[1]);
+
+    int resInt;
+
+    try {
+        resInt = ::Botan::jacobi(bn[0], bn[1]);
+    } catch ( ::Botan::Invalid_Argument& e ) {
+        /* jacobi() is expected to throw in these cases */
+        if ( (bn[1] % 2) == 0 || bn[1] <= 1 ) {
+            return false;
+        }
+
+        /* Rethrow */
+        throw e;
+    }
+
     if ( resInt == -1 ) {
         res = ::Botan::BigInt("-1");
     } else {
@@ -228,7 +298,15 @@ bool IsPrime::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::Big
 bool RShift::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
     (void)ds;
 
-    res = bn[0] >> bn[1].to_u32bit();
+    uint32_t count;
+    try {
+        count = bn[1].to_u32bit();
+    } catch ( ::Botan::Encoding_Error ) {
+        /* to_u32bit will throw if value doesn't fit in u32 */
+        return false;
+    }
+
+    res = bn[0] >> count;
 
     return true;
 }
@@ -324,18 +402,40 @@ bool IsOne::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigIn
 bool MulMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
     (void)ds;
 
-    switch ( GET_UINT8_FOR_SWITCH() ) {
-        case    0:
-            {
-                ::Botan::Modular_Reducer mod(bn[2]);
-                res = mod.multiply(bn[0], bn[1]);
-            }
-            break;
-        case    1:
-            res = (bn[0] * bn[1]) % bn[2];
-            break;
-        default:
+    try {
+        switch ( GET_UINT8_FOR_SWITCH() ) {
+            case    0:
+                {
+                    try {
+                        ::Botan::Modular_Reducer mod(bn[2]);
+                        res = mod.multiply(bn[0], bn[1]);
+                    } catch ( ::Botan::Invalid_State& e ) {
+                        /* Modular reducer is expected to throw an exception when modulo is 0 */
+                        if ( bn[2] == 0 ) {
+                            return false;
+                        }
+
+                        /* Rethrow */
+                        throw e;
+                    }
+                }
+                break;
+            case    1:
+                res = (bn[0] * bn[1]) % bn[2];
+                break;
+            default:
+                return false;
+        }
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+        return false;
+    } catch ( ::Botan::Invalid_Argument& e ) {
+        /* Botan is expected to throw an exception when modulo is 0 */
+        if ( bn[2] == 0 ) {
             return false;
+        }
+
+        /* Rethrow */
+        throw e;
     }
 
     return true;
@@ -344,7 +444,15 @@ bool MulMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
 bool Bit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
     (void)ds;
 
-    res = bn[0].get_bit(bn[1].to_u32bit()) ? 1 : 0;
+    uint32_t pos;
+    try {
+        pos  = bn[1].to_u32bit();
+    } catch ( ::Botan::Encoding_Error ) {
+        /* to_u32bit will throw if value doesn't fit in u32 */
+        return false;
+    }
+
+    res = bn[0].get_bit(pos) ? 1 : 0;
 
     return true;
 }
@@ -360,7 +468,16 @@ bool SetBit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     (void)ds;
 
     res = bn[0];
-    res.set_bit(bn[1].to_u32bit());
+
+    uint32_t pos;
+    try {
+        pos  = bn[1].to_u32bit();
+    } catch ( ::Botan::Encoding_Error ) {
+        /* to_u32bit will throw if value doesn't fit in u32 */
+        return false;
+    }
+
+    res.set_bit(pos);
 
     return true;
 }
@@ -409,7 +526,16 @@ bool ClearBit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::Bi
     (void)ds;
 
     res = bn[0];
-    res.clear_bit(bn[1].to_u32bit());
+
+    uint32_t pos;
+    try {
+        pos  = bn[1].to_u32bit();
+    } catch ( ::Botan::Encoding_Error ) {
+        /* to_u32bit will throw if value doesn't fit in u32 */
+        return false;
+    }
+
+    res.clear_bit(pos);
 
     return true;
 }
@@ -447,13 +573,23 @@ bool NumLSZeroBits::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Bota
 bool Sqrt::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
     (void)ds;
 
-    const auto res2 = ::Botan::is_perfect_square(bn[0]);
+    try {
+        const auto res2 = ::Botan::is_perfect_square(bn[0]);
+        if ( res2 == 0 ) {
+            return false;
+        }
 
-    if ( res2 == 0 ) {
-        return false;
+        res = res2;
+    } catch ( ::Botan::Invalid_Argument& e ) {
+        /* is_perfect_square() is expected to throw in this case */
+        if ( bn[0] < 1 ) {
+            return false;
+        }
+
+        /* Rethrow */
+        throw e;
     }
 
-    res = res2;
 
     return true;
 }
@@ -461,25 +597,37 @@ bool Sqrt::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt
 bool AddMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
     (void)ds;
 
-    switch ( GET_UINT8_FOR_SWITCH() ) {
-        case    0:
-            res = (bn[0] + bn[1]) % bn[2];
-            break;
-        case    1:
-            {
-                if ( bn[0] >= bn[2] ) {
-                    return false;
-                }
-                if ( bn[1] >= bn[2] ) {
-                    return false;
-                }
+    try {
+        switch ( GET_UINT8_FOR_SWITCH() ) {
+            case    0:
+                res = (bn[0] + bn[1]) % bn[2];
+                break;
+            case    1:
+                {
+                    if ( bn[0] >= bn[2] ) {
+                        return false;
+                    }
+                    if ( bn[1] >= bn[2] ) {
+                        return false;
+                    }
 
-                ::Botan::secure_vector<::Botan::word> ws;
-                res = bn[0].mod_add(bn[1], bn[2], ws);
-            }
-            break;
-        default:
+                    ::Botan::secure_vector<::Botan::word> ws;
+                    res = bn[0].mod_add(bn[1], bn[2], ws);
+                }
+                break;
+            default:
+                return false;
+        }
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+        return false;
+    } catch ( ::Botan::Invalid_Argument& e ) {
+        /* Botan is expected to throw an exception when modulo is 0 */
+        if ( bn[2] == 0 ) {
             return false;
+        }
+
+        /* Rethrow */
+        throw e;
     }
 
     return true;
@@ -488,25 +636,37 @@ bool AddMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
 bool SubMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
     (void)ds;
 
-    switch ( GET_UINT8_FOR_SWITCH() ) {
-        case    0:
-            res = (bn[0] - bn[1]) % bn[2];
-            break;
-        case    1:
-            {
-                if ( bn[0] >= bn[2] ) {
-                    return false;
-                }
-                if ( bn[1] >= bn[2] ) {
-                    return false;
-                }
+    try {
+        switch ( GET_UINT8_FOR_SWITCH() ) {
+            case    0:
+                res = (bn[0] - bn[1]) % bn[2];
+                break;
+            case    1:
+                {
+                    if ( bn[0] >= bn[2] ) {
+                        return false;
+                    }
+                    if ( bn[1] >= bn[2] ) {
+                        return false;
+                    }
 
-                ::Botan::secure_vector<::Botan::word> ws;
-                res = bn[0].mod_sub(bn[1], bn[2], ws);
-            }
-            break;
-        default:
+                    ::Botan::secure_vector<::Botan::word> ws;
+                    res = bn[0].mod_sub(bn[1], bn[2], ws);
+                }
+                break;
+            default:
+                return false;
+        }
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+        return false;
+    } catch ( ::Botan::Invalid_Argument& e ) {
+        /* Botan is expected to throw an exception when modulo is 0 */
+        if ( bn[2] == 0 ) {
             return false;
+        }
+
+        /* Rethrow */
+        throw e;
     }
 
     return true;

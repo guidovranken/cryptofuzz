@@ -1256,11 +1256,15 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
 
     CF_CHECK_NE(opRunner, nullptr);
 
+#if defined(CRYPTOFUZZ_BOTAN_IS_ORACLE)
     try {
+#endif
         CF_CHECK_EQ(opRunner->Run(ds, res, bn), true);
+#if defined(CRYPTOFUZZ_BOTAN_IS_ORACLE)
     } catch ( ... ) {
         goto end;
     }
+#endif
 
     ret = { res.is_negative() ?
             ("-" + util::HexToDec(res.to_hex_string())) :
