@@ -116,7 +116,23 @@ bool Mod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
                 res = ct_modulo(bn[0], bn[1]);
                 return true;
             case    2:
+                /* % operator */
                 res = bn[0] % bn[1];
+                return true;
+            case    3:
+                /* %= operator */
+                {
+                    res = bn[0];
+
+                    const ::Botan::word modulo = bn[1].word_at(0);
+
+                    /* Ensure no truncation occurred */
+                    if ( modulo != bn[1] ) {
+                        return false;
+                    }
+
+                    res = bn[0] %= modulo;
+                }
                 return true;
         }
     } catch ( fuzzing::datasource::Datasource::OutOfData ) {
