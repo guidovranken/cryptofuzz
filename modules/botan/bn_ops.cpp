@@ -66,7 +66,13 @@ bool Div::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
                 }
                 return true;
             case    3:
+                /* / operator */
                 res = bn[0] / bn[1];
+                return true;
+            case    4:
+                /* /= operator */
+                res = bn[0];
+                res /= bn[1];
                 return true;
         }
     } catch ( fuzzing::datasource::Datasource::OutOfData ) {
