@@ -1015,23 +1015,42 @@ std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
+    ::Botan::secure_vector<uint8_t> sig;
     std::unique_ptr<::Botan::Public_Key> pub = nullptr;
+    std::unique_ptr<::Botan::EC_Group> group = nullptr;
+    std::vector<uint8_t> CT;
 
-    try {
+    {
         std::optional<std::string> curveString;
         CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
-        ::Botan::EC_Group group(*curveString);
+        group = std::make_unique<::Botan::EC_Group>(*curveString);
+    }
 
-        {
-            const ::Botan::BigInt pub_x(op.signature.pub.first.ToString(ds));
-            const ::Botan::BigInt pub_y(op.signature.pub.second.ToString(ds));
-            const ::Botan::PointGFp public_point = group.point(pub_x, pub_y);
-            pub = std::make_unique<::Botan::ECDSA_PublicKey>(::Botan::ECDSA_PublicKey(group, public_point));
+    /* Construct signature */
+    {
+        const ::Botan::BigInt R(op.signature.signature.first.ToString(ds));
+        const ::Botan::BigInt S(op.signature.signature.second.ToString(ds));
+        try {
+            sig = ::Botan::BigInt::encode_fixed_length_int_pair(R, S, group->get_order_bytes());
+        } catch ( ::Botan::Encoding_Error ) {
+            /* Invalid signature */
+            return false;
         }
+    }
 
-        ::Botan::PK_Verifier verifier(*pub, "Raw");
+    /* Construct pubkey */
+    try {
+        const ::Botan::BigInt pub_x(op.signature.pub.first.ToString(ds));
+        const ::Botan::BigInt pub_y(op.signature.pub.second.ToString(ds));
+        const ::Botan::PointGFp public_point = group->point(pub_x, pub_y);
+        pub = std::make_unique<::Botan::ECDSA_PublicKey>(::Botan::ECDSA_PublicKey(*group, public_point));
+    } catch ( ::Botan::Invalid_Argument ) {
+        /* Invalid point */
+        return false;
+    }
 
-        std::vector<uint8_t> CT;
+    /* Construct input */
+    {
         if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
             CT = op.cleartext.Get();
         } else {
@@ -1043,15 +1062,9 @@ std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
             const auto _CT = hash->final();
             CT = {_CT.data(), _CT.data() + _CT.size()};
         }
+    }
 
-        const ::Botan::BigInt R(op.signature.signature.first.ToString(ds));
-        const ::Botan::BigInt S(op.signature.signature.second.ToString(ds));
-
-        /* XXX may throw: Encoding error: encode_fixed_length_int_pair: values too large to encode properly */
-        auto sig = ::Botan::BigInt::encode_fixed_length_int_pair(R, S, group.get_order_bytes());
-
-        ret = verifier.verify_message(CT, sig);
-    } catch ( ... ) { }
+    ret = ::Botan::PK_Verifier(*pub, "Raw").verify_message(CT, sig);
 
 end:
     return ret;
