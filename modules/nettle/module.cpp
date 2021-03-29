@@ -24,6 +24,9 @@
 #include <nettle/md2.h>
 #include <nettle/md4.h>
 #include <nettle/md5.h>
+#if defined(NETTLE_HAVE_AES_KEY_WRAP)
+#include <nettle/nist-keywrap.h>
+#endif
 #include <nettle/pbkdf2.h>
 #include <nettle/ripemd160.h>
 #include <nettle/salsa20.h>
@@ -819,6 +822,59 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
         }
         break;
+#if defined(NETTLE_HAVE_AES_KEY_WRAP)
+        case CF_CIPHER("AES_128_WRAP"):
+        {
+            struct aes128_ctx ctx;
+
+            CF_CHECK_GTE(op.cleartext.GetSize(), 16);
+            CF_CHECK_EQ(op.cleartext.GetSize() % 8, 0);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 128 / 8);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
+
+            out = util::malloc(op.cleartext.GetSize() + 8);
+
+            CF_NORET(aes128_set_encrypt_key(&ctx, op.cipher.key.GetPtr()));
+            CF_NORET(aes128_keywrap(&ctx, op.cipher.iv.GetPtr(), op.cleartext.GetSize() + 8, out, op.cleartext.GetPtr()));
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize() + 8));
+        }
+        break;
+        case CF_CIPHER("AES_192_WRAP"):
+        {
+            struct aes192_ctx ctx;
+
+            CF_CHECK_GTE(op.cleartext.GetSize(), 16);
+            CF_CHECK_EQ(op.cleartext.GetSize() % 8, 0);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 192 / 8);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
+
+            out = util::malloc(op.cleartext.GetSize() + 8);
+
+            CF_NORET(aes192_set_encrypt_key(&ctx, op.cipher.key.GetPtr()));
+            CF_NORET(aes192_keywrap(&ctx, op.cipher.iv.GetPtr(), op.cleartext.GetSize() + 8, out, op.cleartext.GetPtr()));
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize() + 8));
+        }
+        break;
+        case CF_CIPHER("AES_256_WRAP"):
+        {
+            struct aes256_ctx ctx;
+
+            CF_CHECK_GTE(op.cleartext.GetSize(), 16);
+            CF_CHECK_EQ(op.cleartext.GetSize() % 8, 0);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 256 / 8);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
+
+            out = util::malloc(op.cleartext.GetSize() + 8);
+
+            CF_NORET(aes256_set_encrypt_key(&ctx, op.cipher.key.GetPtr()));
+            CF_NORET(aes256_keywrap(&ctx, op.cipher.iv.GetPtr(), op.cleartext.GetSize() + 8, out, op.cleartext.GetPtr()));
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize() + 8));
+        }
+        break;
+#endif
     }
 
 end:
@@ -1288,6 +1344,59 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
         }
         break;
+#if defined(NETTLE_HAVE_AES_KEY_WRAP)
+        case CF_CIPHER("AES_128_WRAP"):
+        {
+            struct aes128_ctx ctx;
+
+            CF_CHECK_GTE(op.ciphertext.GetSize(), 16);
+            CF_CHECK_EQ(op.ciphertext.GetSize() % 8, 0);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 128 / 8);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
+
+            out = util::malloc(op.ciphertext.GetSize() - 8);
+
+            CF_NORET(aes128_set_decrypt_key(&ctx, op.cipher.key.GetPtr()));
+            CF_CHECK_EQ(aes128_keyunwrap(&ctx, op.cipher.iv.GetPtr(), op.ciphertext.GetSize() - 8, out, op.ciphertext.GetPtr()), 1);
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize() - 8));
+        }
+        break;
+        case CF_CIPHER("AES_192_WRAP"):
+        {
+            struct aes192_ctx ctx;
+
+            CF_CHECK_GTE(op.ciphertext.GetSize(), 16);
+            CF_CHECK_EQ(op.ciphertext.GetSize() % 8, 0);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 192 / 8);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
+
+            out = util::malloc(op.ciphertext.GetSize() - 8);
+
+            CF_NORET(aes192_set_decrypt_key(&ctx, op.cipher.key.GetPtr()));
+            CF_CHECK_EQ(aes192_keyunwrap(&ctx, op.cipher.iv.GetPtr(), op.ciphertext.GetSize() - 8, out, op.ciphertext.GetPtr()), 1);
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize() - 8));
+        }
+        break;
+        case CF_CIPHER("AES_256_WRAP"):
+        {
+            struct aes256_ctx ctx;
+
+            CF_CHECK_GTE(op.ciphertext.GetSize(), 16);
+            CF_CHECK_EQ(op.ciphertext.GetSize() % 8, 0);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 256 / 8);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
+
+            out = util::malloc(op.ciphertext.GetSize() - 8);
+
+            CF_NORET(aes256_set_decrypt_key(&ctx, op.cipher.key.GetPtr()));
+            CF_CHECK_EQ(aes256_keyunwrap(&ctx, op.cipher.iv.GetPtr(), op.ciphertext.GetSize() - 8, out, op.ciphertext.GetPtr()), 1);
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize() - 8));
+        }
+        break;
+#endif
     }
 
 end:
