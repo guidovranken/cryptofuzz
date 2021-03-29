@@ -2597,6 +2597,67 @@ end:
 }
 #endif
 
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110)
+std::optional<component::Key> OpenSSL::OpKDF_PBKDF(operation::KDF_PBKDF& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    EVP_KDF_CTX* kctx = nullptr;
+    const EVP_MD* md = nullptr;
+    OSSL_PARAM params[7], *p = params;
+    uint8_t* out = util::malloc(op.keySize);
+
+    {
+        CF_CHECK_NE(md = toEVPMD(op.digestType), nullptr);
+
+        auto passwordCopy = op.password.Get();
+        *p++ = OSSL_PARAM_construct_octet_string(
+                OSSL_KDF_PARAM_PASSWORD,
+                passwordCopy.data(),
+                passwordCopy.size());
+
+        auto saltCopy = op.salt.Get();
+        *p++ = OSSL_PARAM_construct_octet_string(
+                OSSL_KDF_PARAM_SALT,
+                saltCopy.data(),
+                saltCopy.size());
+
+        unsigned int iterations = op.iterations;
+        *p++ = OSSL_PARAM_construct_uint(OSSL_KDF_PARAM_ITER, &iterations);
+
+        unsigned int id = 1;
+        *p++ = OSSL_PARAM_construct_uint(OSSL_KDF_PARAM_PKCS12_ID, &id);
+
+        std::string mdName(EVP_MD_name(md));
+        *p++ = OSSL_PARAM_construct_utf8_string(OSSL_KDF_PARAM_DIGEST, mdName.data(), mdName.size() + 1);
+
+        int pkcs5 = 0;
+        *p++ = OSSL_PARAM_construct_int(OSSL_KDF_PARAM_PKCS5, &pkcs5);
+
+        *p = OSSL_PARAM_construct_end();
+
+        {
+            EVP_KDF* kdf = EVP_KDF_fetch(nullptr, "PKCS12KDF", nullptr);
+            CF_CHECK_NE(kdf, nullptr);
+            kctx = EVP_KDF_CTX_new(kdf);
+            EVP_KDF_free(kdf);
+            CF_CHECK_NE(kctx, nullptr);
+        }
+
+        CF_CHECK_GT(EVP_KDF_derive(kctx, out, op.keySize, params), 0);
+    }
+
+    /* Finalize */
+    {
+        ret = component::Key(out, op.keySize);
+    }
+end:
+    EVP_KDF_CTX_free(kctx);
+
+    util::free(out);
+
+    return ret;
+}
+#endif
+
 #if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110)
 std::optional<component::Key> OpenSSL::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
  #if defined(CRYPTOFUZZ_BORINGSSL)
