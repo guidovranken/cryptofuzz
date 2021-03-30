@@ -15,6 +15,7 @@ class libtomcrypt : public Module {
         std::optional<component::Ciphertext> OpSymmetricEncrypt(operation::SymmetricEncrypt& op) override;
         std::optional<component::Cleartext> OpSymmetricDecrypt(operation::SymmetricDecrypt& op) override;
         std::optional<component::Key> OpKDF_HKDF(operation::KDF_HKDF& op) override;
+        std::optional<component::Key> OpKDF_PBKDF(operation::KDF_PBKDF& op) override;
         std::optional<component::Key> OpKDF_PBKDF1(operation::KDF_PBKDF1& op) override;
         std::optional<component::Key> OpKDF_PBKDF2(operation::KDF_PBKDF2& op) override;
         std::optional<component::Key> OpKDF_BCRYPT(operation::KDF_BCRYPT& op) override;

@@ -1498,6 +1498,42 @@ end:
     return ret;
 }
 
+extern "C" {
+    int pkcs12_kdf(               int   hash_id,
+               const unsigned char *pw,         unsigned long pwlen,
+               const unsigned char *salt,       unsigned long saltlen,
+                     unsigned int   iterations, unsigned char purpose,
+                     unsigned char *out,        unsigned long outlen);
+}
+
+std::optional<component::Key> libtomcrypt::OpKDF_PBKDF(operation::KDF_PBKDF& op) {
+    std::optional<component::Key> ret = std::nullopt;
+
+    int hashIdx = -1;
+    uint8_t* out = util::malloc(op.keySize);
+
+    CF_CHECK_NE(out, nullptr);
+    CF_CHECK_NE(op.password.GetPtr(), nullptr);
+    CF_CHECK_NE(op.salt.GetPtr(), nullptr);
+
+    CF_CHECK_NE(hashIdx = libtomcrypt_detail::ToHashIdx(op.digestType.Get()), -1);
+
+    CF_CHECK_EQ(pkcs12_kdf(hashIdx,
+                op.password.GetPtr(),
+                op.password.GetSize(),
+                op.salt.GetPtr(),
+                op.salt.GetSize(),
+                op.iterations, 1,
+                out, op.keySize), CRYPT_OK);
+
+    ret = component::Key(out, op.keySize);
+
+end:
+    util::free(out);
+
+    return ret;
+}
+
 std::optional<component::Key> libtomcrypt::OpKDF_PBKDF1(operation::KDF_PBKDF1& op) {
     std::optional<component::Key> ret = std::nullopt;
     int hashIdx = -1;
