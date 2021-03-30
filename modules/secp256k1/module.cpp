@@ -83,20 +83,6 @@ end:
         return counter == 0;
     }
 
-    std::vector<uint8_t> ECDSAPadTruncate(std::vector<uint8_t> in) {
-        if ( in.size() == 32 ) {
-            return in;
-        } else if ( in.size() > 32 ) {
-            in.resize(32);
-            return in;
-        } else {
-            const size_t diff = 32 - in.size();
-            std::vector<uint8_t> ret(32, 0);
-            memcpy(ret.data() + diff, in.data(), in.size());
-            return ret;
-        }
-    }
-
 }
 
 std::optional<component::ECC_PublicKey> secp256k1::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
@@ -159,8 +145,8 @@ std::optional<component::ECDSA_Signature> secp256k1::OpECDSA_Sign(operation::ECD
                 key), true);
 
     if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
-        const auto ct = secp256k1_detail::ECDSAPadTruncate(op.cleartext.Get());
-        memcpy(hash, ct.data(), sizeof(hash));
+        const auto CT = op.cleartext.ECDSA_Pad(32);
+        memcpy(hash, CT.GetPtr(), sizeof(hash));
     } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
         const auto _hash = crypto::sha256(op.cleartext.Get());
         memcpy(hash, _hash.data(), _hash.size());
@@ -217,8 +203,8 @@ std::optional<bool> secp256k1::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     CF_CHECK_EQ(op.curveType.Get(), CF_ECC_CURVE("secp256k1"));
 
     if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
-        const auto ct = secp256k1_detail::ECDSAPadTruncate(op.cleartext.Get());
-        memcpy(hash, ct.data(), sizeof(hash));
+        const auto CT = op.cleartext.ECDSA_Pad(32);
+        memcpy(hash, CT.GetPtr(), sizeof(hash));
     } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
         const auto _hash = crypto::sha256(op.cleartext.Get());
         memcpy(hash, _hash.data(), _hash.size());

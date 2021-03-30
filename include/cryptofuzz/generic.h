@@ -48,6 +48,8 @@ class Buffer {
         std::string ToHex(void) const;
         void Serialize(Datasource& ds) const;
         Datasource AsDatasource(void) const;
+        Buffer ECDSA_Pad(const size_t size) const;
+        Buffer ECDSA_RandomPad(Datasource& ds, const Type& curveType) const;
 };
 
 class Bignum {

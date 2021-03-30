@@ -903,7 +903,10 @@ std::optional<component::ECDSA_Signature> mbedTLS::OpECDSA_Sign(operation::ECDSA
     /* Private key */
     CF_CHECK_EQ(mbedtls_mpi_read_string(&keypair.d, 10, op.priv.ToString(ds).c_str()), 0);
 
-    CF_CHECK_EQ(mbedtls_ecdsa_sign(&keypair.grp, &sig_r, &sig_s, &keypair.d, op.cleartext.GetPtr(), op.cleartext.GetSize(), mbedTLS_detail::RNG, nullptr), 0);
+    {
+        const auto CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
+        CF_CHECK_EQ(mbedtls_ecdsa_sign(&keypair.grp, &sig_r, &sig_s, &keypair.d, CT.GetPtr(), CT.GetSize(), mbedTLS_detail::RNG, nullptr), 0);
+    }
 
     CF_CHECK_EQ(mbedtls_ecp_mul(&keypair.grp, &keypair.Q, &keypair.d, &keypair.grp.G, nullptr, nullptr), 0);
 
@@ -980,7 +983,10 @@ std::optional<bool> mbedTLS::OpECDSA_Verify(operation::ECDSA_Verify& op) {
                 }
                 break;
             case    CF_DIGEST("NULL"):
-                verifyRes = mbedtls_ecdsa_verify(&ctx.grp, op.cleartext.GetPtr(), op.cleartext.GetSize(), &ctx.Q, &sig_r, &sig_s);
+                {
+                    const auto CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
+                    verifyRes = mbedtls_ecdsa_verify(&ctx.grp, CT.GetPtr(), CT.GetSize(), &ctx.Q, &sig_r, &sig_s);
+                }
                 break;
             default:
                 CF_UNREACHABLE();

@@ -464,9 +464,7 @@ std::optional<component::ECDSA_Signature> trezor_firmware::OpECDSA_Sign(operatio
 
     CF_CHECK_NE(op.priv.ToTrimmedString(), "0");
     CF_CHECK_NE(curve = trezor_firmware_detail::toCurve(op.curveType), std::nullopt);
-    if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
-        CF_CHECK_EQ(op.cleartext.GetSize(), 32);
-    } else {
+    if ( op.digestType.Get() != CF_DIGEST("NULL") ) {
         CF_CHECK_NE(hasherType = trezor_firmware_detail::toHasherType(op.digestType), std::nullopt);
     }
 
@@ -477,7 +475,7 @@ std::optional<component::ECDSA_Signature> trezor_firmware::OpECDSA_Sign(operatio
     if ( op.digestType.Get() != CF_DIGEST("NULL") ) {
         CF_CHECK_EQ(ecdsa_sign(*curve, *hasherType, key, op.cleartext.GetPtr(), op.cleartext.GetSize(), sig_bytes.data(), nullptr, nullptr), 0);
     } else {
-        CF_CHECK_EQ(ecdsa_sign_digest(*curve, key, op.cleartext.GetPtr(), sig_bytes.data(), nullptr, nullptr), 0);
+        CF_CHECK_EQ(ecdsa_sign_digest(*curve, key, op.cleartext.ECDSA_Pad(32).GetPtr(), sig_bytes.data(), nullptr, nullptr), 0);
     }
 
     CF_CHECK_NE(pubkey = trezor_firmware_detail::OpECC_PrivateToPublic(op.curveType, op.priv), std::nullopt);
@@ -509,9 +507,7 @@ std::optional<bool> trezor_firmware::OpECDSA_Verify(operation::ECDSA_Verify& op)
     std::optional<HasherType> hasherType = std::nullopt;
 
     CF_CHECK_NE(curve = trezor_firmware_detail::toCurve(op.curveType), std::nullopt);
-    if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
-        CF_CHECK_EQ(op.cleartext.GetSize(), 32);
-    } else {
+    if ( op.digestType.Get() != CF_DIGEST("NULL") ) {
         CF_CHECK_NE(hasherType = trezor_firmware_detail::toHasherType(op.digestType), std::nullopt);
     }
 
@@ -534,8 +530,9 @@ std::optional<bool> trezor_firmware::OpECDSA_Verify(operation::ECDSA_Verify& op)
         ret = ecdsa_verify(*curve, *hasherType, pubkey_bytes, sig_bytes, op.cleartext.GetPtr(), op.cleartext.GetSize()) == 0;
     } else {
         static uint8_t nulls[32] = { 0 };
-        const auto _ret = ecdsa_verify_digest(*curve, pubkey_bytes, sig_bytes, op.cleartext.GetPtr()) == 0;
-        CF_CHECK_NE(memcmp(nulls, op.cleartext.GetPtr(), 32), 0);
+        const auto CT = op.cleartext.ECDSA_Pad(32);
+        const auto _ret = ecdsa_verify_digest(*curve, pubkey_bytes, sig_bytes, CT.GetPtr()) == 0;
+        CF_CHECK_NE(memcmp(nulls, CT.GetPtr(), 32), 0);
         ret = _ret;
     }
 
