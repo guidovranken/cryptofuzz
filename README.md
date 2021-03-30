@@ -121,3 +121,5 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Chia bls-signatures: TBA
 - relic: BLAKE2S160, BLAKE2S256 functions leave output buffer uninitialized if input is empty
 - Botan: [BigInt right-shifting can cause std::vector to throw std::length_error](https://github.com/randombit/botan/issues/2672)
+- mbed TLS: [ECDSA signing of 0 produces unverifiable signature](https://github.com/ARMmbed/mbedtls/issues/4261)
+- mbed TLS: [PKCS12 KDF + MD2 incorrect result](https://github.com/ARMmbed/mbedtls/issues/4267)
