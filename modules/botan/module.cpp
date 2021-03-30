@@ -1018,7 +1018,7 @@ std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     ::Botan::secure_vector<uint8_t> sig;
     std::unique_ptr<::Botan::Public_Key> pub = nullptr;
     std::unique_ptr<::Botan::EC_Group> group = nullptr;
-    std::vector<uint8_t> CT;
+    Buffer CT;
 
     {
         std::optional<std::string> curveString;
@@ -1052,7 +1052,7 @@ std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     /* Construct input */
     {
         if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
-            CT = op.cleartext.Get();
+            CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
         } else {
             std::optional<std::string> algoString;
             CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
@@ -1060,11 +1060,11 @@ std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
             auto hash = ::Botan::HashFunction::create(*algoString);
             hash->update(op.cleartext.GetPtr(), op.cleartext.GetSize());
             const auto _CT = hash->final();
-            CT = {_CT.data(), _CT.data() + _CT.size()};
+            CT = Buffer(_CT.data(), _CT.size()).ECDSA_RandomPad(ds, op.curveType);
         }
     }
 
-    ret = ::Botan::PK_Verifier(*pub, "Raw").verify_message(CT, sig);
+    ret = ::Botan::PK_Verifier(*pub, "Raw").verify_message(CT.Get(), sig);
 
 end:
     return ret;

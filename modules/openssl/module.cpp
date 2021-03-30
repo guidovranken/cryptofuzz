@@ -3543,16 +3543,18 @@ std::optional<component::ECDSA_Signature> OpenSSL::OpECDSA_Sign(operation::ECDSA
         CF_CHECK_NE(pub_x_str = BN_bn2dec(pub_x.GetPtr()), nullptr);
         CF_CHECK_NE(pub_y_str = BN_bn2dec(pub_y.GetPtr()), nullptr);
 
+        const auto CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
+
 #if defined(CRYPTOFUZZ_BORINGSSL)
         if ( op.UseSpecifiedNonce() ) {
             std::optional<std::vector<uint8_t>> nonce_bytes;
             CF_CHECK_NE(nonce_bytes = util::DecToBin(op.nonce.ToTrimmedString()), std::nullopt);
 
-            CF_CHECK_NE(signature = ECDSA_sign_with_nonce_and_leak_private_key_for_testing(op.cleartext.GetPtr(), op.cleartext.GetSize(), key.GetPtr(), nonce_bytes->data(), nonce_bytes->size()), nullptr);
+            CF_CHECK_NE(signature = ECDSA_sign_with_nonce_and_leak_private_key_for_testing(CT.GetPtr(), CT.GetSize(), key.GetPtr(), nonce_bytes->data(), nonce_bytes->size()), nullptr);
         }
         else
 #endif
-        CF_CHECK_NE(signature = ECDSA_do_sign(op.cleartext.GetPtr(), op.cleartext.GetSize(), key.GetPtr()), nullptr);
+        CF_CHECK_NE(signature = ECDSA_do_sign(CT.GetPtr(), CT.GetSize(), key.GetPtr()), nullptr);
 
 #if defined(CRYPTOFUZZ_LIBRESSL)
         /* noret */ ECDSA_SIG_get0(signature, &R, &S);
@@ -3646,7 +3648,8 @@ std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         {
             int res;
             if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
-                res = ECDSA_do_verify(op.cleartext.GetPtr(), op.cleartext.GetSize(), signature, key.GetPtr());
+                const auto CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
+                res = ECDSA_do_verify(CT.GetPtr(), CT.GetSize(), signature, key.GetPtr());
             } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
                 uint8_t CT[32];
                 SHA256(op.cleartext.GetPtr(), op.cleartext.GetSize(), CT);

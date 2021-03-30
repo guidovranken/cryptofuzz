@@ -2,6 +2,7 @@
 #include <cryptofuzz/components.h>
 #include <cryptofuzz/util.h>
 #include <boost/multiprecision/cpp_int.hpp>
+#include <cryptofuzz/repository.h>
 #include "third_party/json/json.hpp"
 #include "config.h"
 
@@ -119,6 +120,99 @@ void Buffer::Serialize(Datasource& ds) const {
 
 Datasource Buffer::AsDatasource(void) const {
     return Datasource(data.data(), data.size());
+}
+
+Buffer Buffer::ECDSA_Pad(const size_t retSize) const {
+    size_t bufSize = GetSize();
+
+    if ( bufSize > retSize ) {
+        bufSize = retSize;
+    }
+
+    std::vector<uint8_t> ret(retSize);
+
+    if ( retSize != 0 ) {
+        const size_t delta = retSize - bufSize;
+
+        if ( delta != 0 ) {
+            memset(ret.data(), 0, delta);
+        }
+
+        if ( bufSize != 0 ) {
+            memcpy(ret.data() + delta, GetPtr(), bufSize);
+        }
+    }
+
+    return Buffer(ret);
+}
+
+/* Randomly modify an ECDSA input in such a way that it remains equivalent
+ * to ECDSA verify/sign functions
+ */
+Buffer Buffer::ECDSA_RandomPad(Datasource& ds, const Type& curveType) const {
+    const auto numBits = cryptofuzz::repository::ECC_CurveToBits(curveType.Get());
+    if ( numBits == std::nullopt ) {
+        /* The size of this curve is not known, so return the original buffer */
+        return Buffer(data);
+    }
+
+    if ( *numBits % 8 != 0 ) {
+        /* Curve sizes which are not a byte multiple are currently not supported,
+         * so return the original buffer
+         */
+        return Buffer(data);
+    }
+
+    const size_t numBytes = (*numBits + 7) / 8;
+
+    std::vector<uint8_t> stripped;
+    {
+        size_t startPos;
+        const size_t endPos = GetSize() > numBytes ? numBytes : GetSize();
+
+        for (startPos = 0; startPos < endPos; startPos++) {
+            if ( data[startPos] != 0 ) {
+                break;
+            }
+        }
+        const auto& ref = GetConstVectorPtr();
+
+        stripped.insert(std::end(stripped), std::begin(ref) + startPos, std::begin(ref) + endPos);
+    }
+
+    /* Decide how many bytes to insert */
+    uint16_t numInserts = 0;
+    try {
+        numInserts = ds.Get<uint16_t>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+    std::vector<uint8_t> ret;
+
+    /* Left-pad the input until it is the curve size */
+    {
+        if ( stripped.size() < numBytes ) {
+            const size_t needed = numBytes - stripped.size();
+            const std::vector<uint8_t> zeroes(numInserts > needed ? needed : numInserts, 0);
+            ret.insert(std::end(ret), std::begin(zeroes), std::end(zeroes));
+            numInserts -= zeroes.size();
+        }
+    }
+
+    /* Insert the input */
+    ret.insert(std::end(ret), std::begin(stripped), std::end(stripped));
+
+    /* Right-pad the input with random bytes (if available) or zeroes */
+    {
+        std::vector<uint8_t> toInsert;
+        try {
+            toInsert = ds.GetData(0, numInserts, numInserts);
+        } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+            toInsert = std::vector<uint8_t>(numInserts, 0);
+        }
+        ret.insert(std::end(ret), std::begin(toInsert), std::end(toInsert));
+    }
+
+    return Buffer(ret);
 }
 
 /* Bignum */

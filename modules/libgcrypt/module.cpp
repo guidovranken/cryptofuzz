@@ -839,9 +839,25 @@ std::optional<bool> libgcrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     bool data_sexp_set = false;
     bool pub_sexp_set = false;
 
-    /* Currently only secp256r1 supported */
-    CF_CHECK_TRUE(op.curveType.Is(CF_ECC_CURVE("secp256r1")));
-    CF_CHECK_EQ(op.cleartext.GetSize(), 32);
+    if (
+         /* TODO add more curves */
+         !op.curveType.Is(CF_ECC_CURVE("secp192r1")) &&
+         !op.curveType.Is(CF_ECC_CURVE("secp224r1")) &&
+         !op.curveType.Is(CF_ECC_CURVE("secp256r1")) &&
+         !op.curveType.Is(CF_ECC_CURVE("secp384r1")) &&
+         !op.curveType.Is(CF_ECC_CURVE("secp521r1")) &&
+         !op.curveType.Is(CF_ECC_CURVE("secp256k1")) &&
+         !op.curveType.Is(CF_ECC_CURVE("sm2p256v1")) ) {
+         return std::nullopt;
+    }
+
+    {
+        const auto numBits = cryptofuzz::repository::ECC_CurveToBits(op.curveType.Get());
+        CF_CHECK_NE(numBits, std::nullopt);
+        const size_t numBytes = (*numBits + 7) / 8;
+
+        CF_CHECK_EQ(op.cleartext.GetSize(), numBytes);
+    }
 
     CF_CHECK_TRUE(op.digestType.Is(CF_DIGEST("NULL")));
 
@@ -875,9 +891,15 @@ std::optional<bool> libgcrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         pub.insert(std::end(pub), std::begin(*pub_x), std::end(*pub_x));
         pub.insert(std::end(pub), std::begin(*pub_y), std::end(*pub_y));
 
-        CF_CHECK_EQ(gcry_sexp_build(&pub_sexp, NULL,
-            "(public-key (ecdsa (curve \"secp256r1\") (q %b)))", pub.size(), pub.data()), GPG_ERR_NO_ERROR);
-        pub_sexp_set = true;
+        {
+            std::string sexp_string;
+            sexp_string += "(public-key (ecdsa (curve \"";
+            sexp_string += repository::ECC_CurveToString(op.curveType.Get());
+            sexp_string += "\") (q %b)))";
+
+            CF_CHECK_EQ(gcry_sexp_build(&pub_sexp, NULL, sexp_string.c_str(), pub.size(), pub.data()), GPG_ERR_NO_ERROR);
+            pub_sexp_set = true;
+        }
     }
 
     ret = gcry_pk_verify(sig_sexp, data_sexp, pub_sexp) == GPG_ERR_NO_ERROR;

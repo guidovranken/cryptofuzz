@@ -22,6 +22,7 @@ std::optional<uint64_t> DigestFromString(const std::string& s);
 std::string CipherToString(const uint64_t id);
 std::string ECC_CurveToString(const uint64_t id);
 std::optional<uint64_t> ECC_CurveFromString(const std::string& s);
+std::optional<size_t> ECC_CurveToBits(const uint64_t id);
 std::optional<std::string> ECC_CurveToPrime(const uint64_t id);
 std::optional<std::string> ECC_CurveToA(const uint64_t id);
 std::optional<std::string> ECC_CurveToB(const uint64_t id);

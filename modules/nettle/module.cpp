@@ -1601,6 +1601,8 @@ std::optional<bool> Nettle::OpECDSA_Verify(operation::ECDSA_Verify& op) {
 #if !defined(HAVE_LIBHOGWEED)
     (void)op;
 #else
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
     if ( !op.digestType.Is(CF_DIGEST("NULL")) ) {
         return ret;
     }
@@ -1609,6 +1611,7 @@ std::optional<bool> Nettle::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     struct ecc_point pub;
     struct dsa_signature signature;
     bool initialized = false;
+    Buffer CT;
 
     const struct ecc_curve* curve = nullptr;
 
@@ -1626,7 +1629,8 @@ std::optional<bool> Nettle::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     CF_CHECK_EQ(mpz_set_str(signature.r, op.signature.signature.first.ToTrimmedString().c_str(), 0), 0);
     CF_CHECK_EQ(mpz_set_str(signature.s, op.signature.signature.second.ToTrimmedString().c_str(), 0), 0);
 
-    ret = ecdsa_verify(&pub, op.cleartext.GetSize(), op.cleartext.GetPtr(), &signature);
+    CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
+    ret = ecdsa_verify(&pub, CT.GetSize(), CT.GetPtr(), &signature);
 end:
     if ( initialized == true ) {
         /* noret */ mpz_clear(pub_x);
@@ -1659,6 +1663,7 @@ std::optional<component::ECDSA_Signature> Nettle::OpECDSA_Sign(operation::ECDSA_
     struct ecc_point pub;
     struct dsa_signature signature;
     char *pub_x_str = nullptr, *pub_y_str = nullptr, *sig_r_str = nullptr, *sig_s_str = nullptr;
+    Buffer CT;
     bool initialized = false;
 
     const struct ecc_curve* curve = nullptr;
@@ -1676,12 +1681,14 @@ std::optional<component::ECDSA_Signature> Nettle::OpECDSA_Sign(operation::ECDSA_
     CF_CHECK_EQ(mpz_init_set_str(priv_mpz, op.priv.ToTrimmedString().c_str(), 0), 0);
     CF_CHECK_EQ(ecc_scalar_set(&priv_scalar, priv_mpz), 1);
 
+    CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
+
     Nettle_detail::ds = &ds;
     Nettle_detail::PRNG_return_value = 0;
     /* noret */ ecdsa_sign(
             &priv_scalar,
             nullptr, Nettle_detail::nettle_fuzzer_random_func,
-            op.cleartext.GetSize(), op.cleartext.GetPtr(), &signature);
+            CT.GetSize(), CT.GetPtr(), &signature);
     Nettle_detail::ds = nullptr;
 
     sig_r_str = mpz_get_str(nullptr, 10, signature.r);

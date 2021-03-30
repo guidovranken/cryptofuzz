@@ -148,6 +148,14 @@ std::optional<uint64_t> ECC_CurveFromString(const std::string& s) {
     return std::nullopt;
 }
 
+std::optional<size_t> ECC_CurveToBits(const uint64_t id) {
+    try {
+        return ECC_CurveLUTMap.at(id).bits;
+    } catch ( std::out_of_range ) {
+        return std::nullopt;
+    }
+}
+
 std::optional<std::string> ECC_CurveToPrime(const uint64_t id) {
     try {
         return ECC_CurveLUTMap.at(id).prime;
