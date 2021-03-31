@@ -12,6 +12,38 @@ namespace cryptofuzz {
 namespace module {
 namespace Botan_bignum {
 
+namespace detail {
+    std::optional<size_t> To_size_t(const ::Botan::BigInt& bn) {
+        /* TODO use #if */
+
+        if ( sizeof(size_t) == 4 ) {
+            try {
+                return bn.to_u32bit();
+            } catch ( ::Botan::Encoding_Error ) {
+                return std::nullopt;
+            }
+        } else if ( sizeof(size_t) == 8 ) {
+            if( bn.is_negative() ) {
+                return std::nullopt;
+            }
+
+            if( bn.bits() > 64 ) {
+                return std::nullopt;
+            }
+
+            uint64_t out = 0;
+
+            for (size_t i = 0; i != 8; ++i) {
+                out = (out << 8) | bn.byte_at(7-i);
+            }
+
+            return out;
+        } else {
+            CF_UNREACHABLE();
+        }
+    }
+}
+
 #if !defined(CRYPTOFUZZ_BOTAN_IS_ORACLE)
  #define GET_UINT8_FOR_SWITCH() ds.Get<uint8_t>()
 #else
@@ -321,15 +353,13 @@ bool IsPrime::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::Big
 bool RShift::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
     (void)ds;
 
-    uint32_t count;
-    try {
-        count = bn[1].to_u32bit();
-    } catch ( ::Botan::Encoding_Error ) {
-        /* to_u32bit will throw if value doesn't fit in u32 */
+    const auto count = detail::To_size_t(bn[1]);
+
+    if ( count == std::nullopt ) {
         return false;
     }
 
-    res = bn[0] >> count;
+    res = bn[0] >> *count;
 
     return true;
 }
@@ -467,15 +497,13 @@ bool MulMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
 bool Bit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
     (void)ds;
 
-    uint32_t pos;
-    try {
-        pos  = bn[1].to_u32bit();
-    } catch ( ::Botan::Encoding_Error ) {
-        /* to_u32bit will throw if value doesn't fit in u32 */
+    const auto pos = detail::To_size_t(bn[1]);
+
+    if ( pos == std::nullopt ) {
         return false;
     }
 
-    res = bn[0].get_bit(pos) ? 1 : 0;
+    res = bn[0].get_bit(*pos) ? 1 : 0;
 
     return true;
 }
@@ -492,15 +520,13 @@ bool SetBit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
 
     res = bn[0];
 
-    uint32_t pos;
-    try {
-        pos  = bn[1].to_u32bit();
-    } catch ( ::Botan::Encoding_Error ) {
-        /* to_u32bit will throw if value doesn't fit in u32 */
+    const auto pos = detail::To_size_t(bn[1]);
+
+    if ( pos == std::nullopt ) {
         return false;
     }
 
-    res.set_bit(pos);
+    res.set_bit(*pos);
 
     return true;
 }
@@ -685,15 +711,13 @@ bool ClearBit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::Bi
 
     res = bn[0];
 
-    uint32_t pos;
-    try {
-        pos  = bn[1].to_u32bit();
-    } catch ( ::Botan::Encoding_Error ) {
-        /* to_u32bit will throw if value doesn't fit in u32 */
+    const auto pos = detail::To_size_t(bn[1]);
+
+    if ( pos == std::nullopt ) {
         return false;
     }
 
-    res.clear_bit(pos);
+    res.clear_bit(*pos);
 
     return true;
 }
