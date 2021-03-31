@@ -119,7 +119,7 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Nettle: [Crash, potential incorrect verification in ECDSA verification](https://lists.lysator.liu.se/pipermail/nettle-bugs/2021/009457.html)
 - relic: [Modular exponentiation returns 1 if exponent is 0 and modulo is 1](https://github.com/relic-toolkit/relic/issues/185)
 - Chia bls-signatures: TBA
-- relic: BLAKE2S160, BLAKE2S256 functions leave output buffer uninitialized if input is empty
+- relic: [BLAKE2S160, BLAKE2S256 functions leave output buffer uninitialized if input is empty](https://github.com/relic-toolkit/relic/commit/1885ae3b681c423c72b65ce1fe70910142cf941c)
 - Botan: [BigInt right-shifting can cause std::vector to throw std::length_error](https://github.com/randombit/botan/issues/2672)
 - mbed TLS: [ECDSA signing of 0 produces unverifiable signature](https://github.com/ARMmbed/mbedtls/issues/4261)
 - mbed TLS: [PKCS12 KDF + MD2 incorrect result](https://github.com/ARMmbed/mbedtls/issues/4267)
