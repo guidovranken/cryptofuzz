@@ -2102,6 +2102,13 @@ end:
 }
 
 std::optional<component::Key> CryptoPP::OpKDF_PBKDF(operation::KDF_PBKDF& op) {
+    /* XXX PBKDF + SHAKE produces different result than OpenSSL */
+    if (
+            op.digestType.Is(CF_DIGEST("SHAKE128")) ||
+            op.digestType.Is(CF_DIGEST("SHAKE256")) ) {
+        return std::nullopt;
+    }
+
     return CryptoPP_detail::InvokeByDigest<CryptoPP_detail::KDF_PBKDF, component::Key>(op);
 }
 
