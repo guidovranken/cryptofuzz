@@ -123,3 +123,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Botan: [BigInt right-shifting can cause std::vector to throw std::length_error](https://github.com/randombit/botan/issues/2672)
 - mbed TLS: [ECDSA signing of 0 produces unverifiable signature](https://github.com/ARMmbed/mbedtls/issues/4261)
 - mbed TLS: [PKCS12 KDF + MD2 incorrect result](https://github.com/ARMmbed/mbedtls/issues/4267)
+- libgcrypt [CMAC + SERPENT/IDEA/RC2 buffer overflow/crash with oversized key](https://lists.gnupg.org/pipermail/gcrypt-devel/2021-March/005130.html)
