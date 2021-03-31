@@ -433,33 +433,29 @@ end:
 } /* namespace Botan_detail */
 
 std::optional<component::MAC> Botan::OpCMAC(operation::CMAC& op) {
-    (void)op;
-
-    return std::nullopt;
-#if 0
-    if ( op.cipher.cipherType.Get() != CF_CIPHER("AES_128_CBC") ) {
-        return {};
+    if ( !repository::IsCBC(op.cipher.cipherType.Get()) ) {
+        return std::nullopt;
     }
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     std::optional<component::MAC> ret = std::nullopt;
-    std::unique_ptr<::Botan::CMAC> cmac = nullptr;
-    std::unique_ptr<::Botan::BlockCipher> cipher = nullptr;
+    std::unique_ptr<::Botan::MessageAuthenticationCode> cmac = nullptr;
     util::Multipart parts;
-
-    const ::Botan::SymmetricKey key(op.cipher.key.GetPtr(), op.cipher.key.GetSize());
 
     try {
         /* Initialize */
         {
-            {
-                std::optional<std::string> algoString;
-                CF_CHECK_NE(algoString = Botan_detail::CipherIDToString(op.cipher.cipherType.Get(), false), std::nullopt);
+            std::optional<std::string> algoString;
+            CF_CHECK_NE(algoString = Botan_detail::CipherIDToString(op.cipher.cipherType.Get(), false), std::nullopt);
 
-                CF_CHECK_NE(cipher = ::Botan::BlockCipher::create(*algoString), nullptr);
+            const std::string cmacString = Botan_detail::parenthesize("CMAC", *algoString);
+
+            CF_CHECK_NE(cmac = ::Botan::MessageAuthenticationCode::create(cmacString), nullptr);
+
+            try {
+                cmac->set_key(op.cipher.key.GetPtr(), op.cipher.key.GetSize());
+            } catch ( ... ) {
+                goto end;
             }
-
-            CF_CHECK_NE(cmac = std::make_unique<::Botan::CMAC>(cipher->clone()), nullptr);
-            cmac->set_key(key);
 
             parts = util::ToParts(ds, op.cleartext);
         }
@@ -479,7 +475,6 @@ std::optional<component::MAC> Botan::OpCMAC(operation::CMAC& op) {
 
 end:
     return ret;
-#endif
 }
 
 std::optional<component::Ciphertext> Botan::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
