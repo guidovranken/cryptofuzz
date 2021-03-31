@@ -263,7 +263,7 @@ end:
     class MACHandle : public Handle<gcry_mac_hd_t> {
         private:
             bool open(const int digestType, const bool useSecMem) override {
-                return gcry_mac_open(&h, digestType, useSecMem ? GCRY_MD_FLAG_SECURE : 0, nullptr) == GPG_ERR_NO_ERROR;
+                return gcry_mac_open(&h, digestType, useSecMem ? GCRY_CIPHER_SECURE : 0, nullptr) == GPG_ERR_NO_ERROR;
             }
             void copy(void) override {
                 /* There is no copy function for MAC */
@@ -287,6 +287,46 @@ end:
                 }
             }
     };
+
+    std::optional<component::MAC> MAC(
+            fuzzing::datasource::Datasource& ds,
+            const int macType,
+            const Buffer& cleartext,
+            const component::SymmetricCipher& cipher) {
+        std::optional<component::MAC> ret = std::nullopt;
+        util::Multipart parts;
+
+        libgcrypt_detail::MACHandle h(ds);
+
+        /* Initialize */
+        {
+            CF_CHECK_TRUE(h.Open(macType));
+
+            CF_CHECK_EQ(gcry_mac_setkey(h.Get(), cipher.key.GetPtr(), cipher.key.GetSize()), GPG_ERR_NO_ERROR);
+
+            parts = util::ToParts(ds, cleartext);
+        }
+
+        /* Process */
+        for (const auto& part : parts) {
+            CF_CHECK_TRUE(h.Write(part.first, part.second));
+        }
+
+        /* Finalize */
+        {
+            size_t length = gcry_mac_get_algo_maclen(macType);
+            CF_CHECK_GTE(length, 0);
+            uint8_t out[length];
+            CF_CHECK_EQ(gcry_mac_read(h.Get(), out, &length), GPG_ERR_NO_ERROR);
+            ret = component::MAC(out, length);
+
+            /* noret */ h.WriteRandom();
+        }
+
+end:
+        return ret;
+    }
+
 } /* namespace libgcrypt_detail */
 
 std::optional<component::Digest> libgcrypt::OpDigest(operation::Digest& op) {
@@ -350,6 +390,8 @@ end:
 }
 
 std::optional<component::MAC> libgcrypt::OpHMAC(operation::HMAC& op) {
+    int macType = -1;
+
     static const std::map<uint64_t, int> LUT = {
         { CF_DIGEST("SHA1"), GCRY_MAC_HMAC_SHA1 },
         { CF_DIGEST("SHA224"), GCRY_MAC_HMAC_SHA224 },
@@ -368,43 +410,70 @@ std::optional<component::MAC> libgcrypt::OpHMAC(operation::HMAC& op) {
         { CF_DIGEST("STREEBOG-512"), GCRY_MAC_HMAC_STRIBOG512 },
     };
 
-    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
-    std::optional<component::MAC> ret = std::nullopt;
-    util::Multipart parts;
+    CF_CHECK_NE(LUT.find(op.digestType.Get()), LUT.end());
+    macType = LUT.at(op.digestType.Get());
 
-    libgcrypt_detail::MACHandle h(ds);
-    int hmacType = -1;
-
-    /* Initialize */
     {
-        CF_CHECK_NE(LUT.find(op.digestType.Get()), LUT.end());
-        hmacType = LUT.at(op.digestType.Get());
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-        CF_CHECK_TRUE(h.Open(hmacType));
-
-        CF_CHECK_EQ(gcry_mac_setkey(h.Get(), op.cipher.key.GetPtr(), op.cipher.key.GetSize()), GPG_ERR_NO_ERROR);
-
-        parts = util::ToParts(ds, op.cleartext);
-    }
-
-    /* Process */
-    for (const auto& part : parts) {
-        CF_CHECK_TRUE(h.Write(part.first, part.second));
-    }
-
-    /* Finalize */
-    {
-        size_t length = gcry_mac_get_algo_maclen(hmacType);
-        CF_CHECK_GTE(length, 0);
-        uint8_t out[length];
-        CF_CHECK_EQ(gcry_mac_read(h.Get(), out, &length), GPG_ERR_NO_ERROR);
-        ret = component::MAC(out, length);
-
-        /* noret */ h.WriteRandom();
+        return libgcrypt_detail::MAC(ds, macType, op.cleartext, op.cipher);
     }
 
 end:
-    return ret;
+    return std::nullopt;
+}
+
+std::optional<component::MAC> libgcrypt::OpCMAC(operation::CMAC& op) {
+    int macType = -1;
+
+    static const std::map<uint64_t, int> LUT = {
+        { CF_CIPHER("AES_128_CBC"), GCRY_MAC_CMAC_AES },
+        { CF_CIPHER("AES_192_CBC"), GCRY_MAC_CMAC_AES },
+        { CF_CIPHER("AES_256_CBC"), GCRY_MAC_CMAC_AES },
+        { CF_CIPHER("CAMELLIA_128_CBC"), GCRY_MAC_CMAC_CAMELLIA },
+        { CF_CIPHER("CAMELLIA_192_CBC"), GCRY_MAC_CMAC_CAMELLIA },
+        { CF_CIPHER("CAMELLIA_256_CBC"), GCRY_MAC_CMAC_CAMELLIA },
+        { CF_CIPHER("CAST5_CBC"), GCRY_MAC_CMAC_CAST5 },
+        { CF_CIPHER("BLOWFISH_CBC"), GCRY_MAC_CMAC_BLOWFISH },
+        { CF_CIPHER("TWOFISH"), GCRY_MAC_CMAC_TWOFISH },
+        { CF_CIPHER("TWOFISH_CBC"), GCRY_MAC_CMAC_TWOFISH },
+        { CF_CIPHER("SERPENT"), GCRY_MAC_CMAC_SERPENT },
+        { CF_CIPHER("SERPENT_CBC"), GCRY_MAC_CMAC_SERPENT },
+        { CF_CIPHER("SEED_CBC"), GCRY_MAC_CMAC_SEED },
+        { CF_CIPHER("IDEA_CBC"), GCRY_MAC_CMAC_IDEA },
+        { CF_CIPHER("SM4_CBC"), GCRY_MAC_CMAC_SM4 },
+        { CF_CIPHER("RC2_40_CBC"), GCRY_MAC_CMAC_RFC2268 },
+        { CF_CIPHER("RC2_64_CBC"), GCRY_MAC_CMAC_RFC2268 },
+        { CF_CIPHER("RC2_CBC"), GCRY_MAC_CMAC_RFC2268 },
+        { CF_CIPHER("GOST-28147-89"), GCRY_MAC_CMAC_GOST28147 },
+        { CF_CIPHER("GOST-28147-89_CBC"), GCRY_MAC_CMAC_GOST28147 },
+    };
+
+    CF_CHECK_NE(LUT.find(op.cipher.cipherType.Get()), LUT.end());
+    macType = LUT.at(op.cipher.cipherType.Get());
+
+    {
+        /* Prevent the various crashes described here:
+         * https://lists.gnupg.org/pipermail/gcrypt-devel/2021-March/005130.html
+         */
+
+        if ( macType == GCRY_MAC_CMAC_IDEA && op.cipher.key.GetSize() != 16 ) {
+            goto end;
+        } else if ( macType == GCRY_MAC_CMAC_SERPENT && op.cipher.key.GetSize() > 32 ) {
+            goto end;
+        } else if ( macType == GCRY_MAC_CMAC_RFC2268 && op.cipher.key.GetSize() > 128 ) {
+            goto end;
+        }
+    }
+
+    {
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+        return libgcrypt_detail::MAC(ds, macType, op.cleartext, op.cipher);
+    }
+
+end:
+    return std::nullopt;
 }
 
 namespace libgcrypt_detail {

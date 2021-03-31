@@ -12,6 +12,7 @@ class libgcrypt : public Module {
         libgcrypt(void);
         std::optional<component::Digest> OpDigest(operation::Digest& op) override;
         std::optional<component::MAC> OpHMAC(operation::HMAC& op) override;
+        std::optional<component::MAC> OpCMAC(operation::CMAC& op) override;
         std::optional<component::Ciphertext> OpSymmetricEncrypt(operation::SymmetricEncrypt& op) override;
         std::optional<component::Cleartext> OpSymmetricDecrypt(operation::SymmetricDecrypt& op) override;
         std::optional<component::Key> OpKDF_SCRYPT(operation::KDF_SCRYPT& op) override;
