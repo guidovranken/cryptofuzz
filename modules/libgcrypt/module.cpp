@@ -1,6 +1,5 @@
 #include "module.h"
 #include <cryptofuzz/util.h>
-#include <cryptofuzz/repository.h>
 #include <gcrypt.h>
 #include "bn_ops.h"
 
@@ -903,22 +902,13 @@ std::optional<bool> libgcrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
+    std::optional<std::string> curveStr = std::nullopt;
     gcry_sexp_t sig_sexp, data_sexp, pub_sexp;
     bool sig_sexp_set = false;
     bool data_sexp_set = false;
     bool pub_sexp_set = false;
 
-    if (
-         /* TODO add more curves */
-         !op.curveType.Is(CF_ECC_CURVE("secp192r1")) &&
-         !op.curveType.Is(CF_ECC_CURVE("secp224r1")) &&
-         !op.curveType.Is(CF_ECC_CURVE("secp256r1")) &&
-         !op.curveType.Is(CF_ECC_CURVE("secp384r1")) &&
-         !op.curveType.Is(CF_ECC_CURVE("secp521r1")) &&
-         !op.curveType.Is(CF_ECC_CURVE("secp256k1")) &&
-         !op.curveType.Is(CF_ECC_CURVE("sm2p256v1")) ) {
-         return std::nullopt;
-    }
+    CF_CHECK_NE(curveStr = libgcrypt_detail::toCurveString(op.curveType), std::nullopt);
 
     {
         const auto numBits = cryptofuzz::repository::ECC_CurveToBits(op.curveType.Get());
@@ -963,7 +953,7 @@ std::optional<bool> libgcrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         {
             std::string sexp_string;
             sexp_string += "(public-key (ecdsa (curve \"";
-            sexp_string += repository::ECC_CurveToString(op.curveType.Get());
+            sexp_string += *curveStr;
             sexp_string += "\") (q %b)))";
 
             CF_CHECK_EQ(gcry_sexp_build(&pub_sexp, NULL, sexp_string.c_str(), pub.size(), pub.data()), GPG_ERR_NO_ERROR);
