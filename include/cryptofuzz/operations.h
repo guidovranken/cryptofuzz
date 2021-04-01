@@ -1170,6 +1170,69 @@ class ECIES_Encrypt : public Operation {
         }
 };
 
+class ECIES_Decrypt : public Operation {
+    public:
+        const Buffer ciphertext;
+        const component::CurveType curveType;
+        const component::ECC_PrivateKey priv;
+        const component::ECC_PublicKey pub;
+        const component::SymmetricCipherType cipherType;
+        const std::optional<component::SymmetricIV> iv;
+        /* TODO kdf type */
+        /* TODO mac type */
+
+        ECIES_Decrypt(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            ciphertext(ds),
+            curveType(ds),
+            priv(ds),
+            pub(ds),
+            cipherType(ds),
+            iv(ds.Get<bool>() ? std::nullopt : std::make_optional<component::SymmetricIV>(ds))
+        { }
+        ECIES_Decrypt(nlohmann::json json) :
+            Operation(json["modifier"]),
+            ciphertext(json["ciphertext"]),
+            curveType(json["curveType"]),
+            priv(json["priv"]),
+            pub(json["pub_x"], json["pub_y"]),
+            cipherType(json["cipherType"]),
+            iv(
+                    json["iv_enabled"].get<bool>() ?
+                        std::optional<component::SymmetricIV>(json["iv"]) :
+                        std::optional<component::SymmetricIV>(std::nullopt)
+            )
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const ECIES_Decrypt& rhs) const {
+            return
+                (ciphertext == rhs.ciphertext) &&
+                (curveType == rhs.curveType) &&
+                (priv == rhs.priv) &&
+                (pub == rhs.pub) &&
+                (cipherType == rhs.cipherType) &&
+                (iv == rhs.iv) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            ciphertext.Serialize(ds);
+            curveType.Serialize(ds);
+            priv.Serialize(ds);
+            pub.Serialize(ds);
+            cipherType.Serialize(ds);
+            if ( iv == std::nullopt ) {
+                ds.Put<bool>(true);
+            } else {
+                ds.Put<bool>(false);
+                iv->Serialize(ds);
+            }
+        }
+};
+
 class DH_GenerateKeyPair : public Operation {
     public:
         const component::Bignum prime;

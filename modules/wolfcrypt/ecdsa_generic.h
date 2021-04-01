@@ -51,6 +51,7 @@ std::optional<bool> OpECC_ValidatePubkey_Generic(operation::ECC_ValidatePubkey& 
 std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op);
 std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_Sign& op);
 std::optional<component::Ciphertext> OpECIES_Encrypt_Generic(operation::ECIES_Encrypt& op);
+std::optional<component::Cleartext> OpECIES_Decrypt_Generic(operation::ECIES_Decrypt& op);
 
 } /* namespace wolfCrypt_detail */
 } /* namespace module */

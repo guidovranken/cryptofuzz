@@ -901,6 +901,33 @@ template<> std::optional<component::Ciphertext> ExecutorBase<component::Cipherte
     return module->OpECIES_Encrypt(op);
 }
 
+/* Specialization for operation::ECIES_Decrypt */
+template<> void ExecutorBase<component::Cleartext, operation::ECIES_Decrypt>::updateExtraCounters(const uint64_t moduleID, operation::ECIES_Decrypt& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::Cleartext, operation::ECIES_Decrypt>::postprocess(std::shared_ptr<Module> module, operation::ECIES_Decrypt& op, const ExecutorBase<component::Cleartext, operation::ECIES_Decrypt>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::Cleartext> ExecutorBase<component::Cleartext, operation::ECIES_Decrypt>::callModule(std::shared_ptr<Module> module, operation::ECIES_Decrypt& op) const {
+    /* Only run whitelisted curves, if specified */
+    if ( options.curves != std::nullopt ) {
+        if ( std::find(
+                    options.curves->begin(),
+                    options.curves->end(),
+                    op.curveType.Get()) == options.curves->end() ) {
+            return std::nullopt;
+        }
+    }
+    return module->OpECIES_Decrypt(op);
+}
+
 /* Specialization for operation::DH_Derive */
 template<> void ExecutorBase<component::Bignum, operation::DH_Derive>::updateExtraCounters(const uint64_t moduleID, operation::DH_Derive& op) const {
     (void)moduleID;
@@ -1544,6 +1571,7 @@ template class ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>;
 template class ExecutorBase<bool, operation::ECDSA_Verify>;
 template class ExecutorBase<component::Secret, operation::ECDH_Derive>;
 template class ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>;
+template class ExecutorBase<component::Cleartext, operation::ECIES_Decrypt>;
 template class ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>;
 template class ExecutorBase<component::Bignum, operation::DH_Derive>;
 template class ExecutorBase<component::Bignum, operation::BignumCalc>;

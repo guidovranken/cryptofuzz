@@ -3287,5 +3287,9 @@ std::optional<component::Ciphertext> wolfCrypt::OpECIES_Encrypt(operation::ECIES
     return wolfCrypt_detail::OpECIES_Encrypt_Generic(op);
 }
 
+std::optional<component::Cleartext> wolfCrypt::OpECIES_Decrypt(operation::ECIES_Decrypt& op) {
+    return wolfCrypt_detail::OpECIES_Decrypt_Generic(op);
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */

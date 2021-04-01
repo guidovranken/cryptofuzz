@@ -343,6 +343,11 @@ void test(const operation::ECIES_Encrypt& op, const std::optional<component::Cip
     (void)result;
 }
 
+void test(const operation::ECIES_Decrypt& op, const std::optional<component::Cleartext>& result) {
+    (void)op;
+    (void)result;
+}
+
 void test(const operation::DH_GenerateKeyPair& op, const std::optional<component::DH_KeyPair>& result) {
     (void)op;
     (void)result;

@@ -120,6 +120,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::Cleartext> OpECIES_Decrypt(operation::ECIES_Decrypt& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::DH_KeyPair> OpDH_GenerateKeyPair(operation::DH_GenerateKeyPair& op) {
             (void)op;
             return std::nullopt;

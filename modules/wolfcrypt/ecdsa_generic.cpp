@@ -563,6 +563,63 @@ end:
     return ret;
 }
 
+std::optional<component::Cleartext> OpECIES_Decrypt_Generic(operation::ECIES_Decrypt& op) {
+    std::optional<component::Cleartext> ret = std::nullopt;
+#if !defined(HAVE_ECC_ENCRYPT)
+    (void)op;
+#else
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+    uint8_t* out = nullptr;
+
+    CF_CHECK_TRUE(op.cipherType.Is(CF_CIPHER("AES_128_CBC")));
+    CF_CHECK_EQ(op.iv, std::nullopt);
+
+    try {
+        ECCKey priv(ds), pub(ds);
+        word32 outSz = ds.Get<uint32_t>() % 0xFFFFFF;
+
+        /* Initialize private key */
+        {
+            CF_CHECK_TRUE(priv.SetCurve(op.curveType));
+            CF_CHECK_TRUE(priv.LoadPrivateKey(op.priv));
+            CF_CHECK_TRUE(priv.SetRNG());
+        }
+
+        /* Initialize public key */
+        {
+            std::optional<int> curveID;
+            const char* name = nullptr;
+
+            CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
+
+            CF_CHECK_NE(name = wc_ecc_get_name(*curveID), nullptr);
+
+            CF_CHECK_EQ(wc_ecc_import_raw(
+                        pub.GetPtr(),
+                        util::DecToHex(op.pub.first.ToTrimmedString()).c_str(),
+                        util::DecToHex(op.pub.second.ToTrimmedString()).c_str(),
+                        nullptr,
+                        name), 0);
+
+            CF_CHECK_TRUE(pub.SetRNG());
+        }
+
+        out = util::malloc(outSz);
+
+        CF_CHECK_EQ(wc_ecc_decrypt(priv.GetPtr(), pub.GetPtr(), op.ciphertext.GetPtr(), op.ciphertext.GetSize(), out, &outSz, nullptr), 0);
+
+        ret = component::Cleartext(Buffer(out, outSz));
+    } catch ( ... ) { }
+
+end:
+    util::free(out);
+
+    wolfCrypt_detail::UnsetGlobalDs();
+#endif
+    return ret;
+}
+
 } /* namespace wolfCrypt_detail */
 } /* namespace module */
 } /* namespace cryptofuzz */
