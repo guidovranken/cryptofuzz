@@ -362,7 +362,8 @@ std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op) {
                     sig, &sigSz), 0);
 
         if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
-            CF_CHECK_EQ(wc_ecc_verify_hash(sig, sigSz, op.cleartext.GetPtr(), op.cleartext.GetSize(), &verify, key.GetPtr()), 0);
+            const auto CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
+            CF_CHECK_EQ(wc_ecc_verify_hash(sig, sigSz, CT.GetPtr(), CT.GetSize(), &verify, key.GetPtr()), 0);
         } else {
             std::optional<wc_HashType> hashType;
             CF_CHECK_NE(hashType = wolfCrypt_detail::toHashType(op.digestType), std::nullopt);
@@ -372,7 +373,8 @@ std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op) {
 
             CF_CHECK_EQ(wc_Hash(*hashType, op.cleartext.GetPtr(), op.cleartext.GetSize(), hash, hashSize), 0);
 
-            CF_CHECK_EQ(wc_ecc_verify_hash(sig, sigSz, hash, hashSize, &verify, key.GetPtr()), 0);
+            const auto CT = Buffer(hash, hashSize).ECDSA_RandomPad(ds, op.curveType);
+            CF_CHECK_EQ(wc_ecc_verify_hash(sig, sigSz, CT.GetPtr(), CT.GetSize(), &verify, key.GetPtr()), 0);
         }
 
         ret = verify ? true : false;
@@ -399,6 +401,7 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_
 
     uint8_t* sig = nullptr;
     word32 sigSz = ECC_MAX_SIG_SIZE;
+    Buffer CT;
     uint8_t* hash = nullptr;
     size_t hashSize = 0;
     uint8_t* nonce_bytes = nullptr;
@@ -437,11 +440,7 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_
         CF_CHECK_NE(pub, std::nullopt);
 
         if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
-            hashSize = op.cleartext.GetSize();
-            hash = util::malloc(hashSize);
-            if ( hashSize ) {
-                memcpy(hash, op.cleartext.GetPtr(), hashSize);
-            }
+            CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
         } else {
             std::optional<wc_HashType> hashType;
             CF_CHECK_NE(hashType = wolfCrypt_detail::toHashType(op.digestType), std::nullopt);
@@ -450,16 +449,18 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_
             hash = util::malloc(hashSize);
 
             CF_CHECK_EQ(wc_Hash(*hashType, op.cleartext.GetPtr(), op.cleartext.GetSize(), hash, hashSize), 0);
+
+            CT = Buffer(hash, hashSize).ECDSA_RandomPad(ds, op.curveType);
         }
 
         /* Sign */
-        CF_CHECK_EQ(wc_ecc_sign_hash(hash, hashSize, sig, &sigSz, wolfCrypt_detail::GetRNG(), key.GetPtr()), 0);
+        CF_CHECK_EQ(wc_ecc_sign_hash(CT.GetPtr(), CT.GetSize(), sig, &sigSz, wolfCrypt_detail::GetRNG(), key.GetPtr()), 0);
 
         /* Verify */
         {
             int verify;
             haveAllocFailure = false;
-            if ( wc_ecc_verify_hash(sig, sigSz, hash, hashSize, &verify, key.GetPtr()) == 0 && haveAllocFailure == false ) {
+            if ( wc_ecc_verify_hash(sig, sigSz, CT.GetPtr(), CT.GetSize(), &verify, key.GetPtr()) == 0 && haveAllocFailure == false ) {
                 CF_ASSERT(verify, "Cannot verify generated signature");
             }
         }
