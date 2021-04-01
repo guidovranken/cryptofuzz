@@ -111,11 +111,11 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - libgcrypt: [Out-of-bounds read in SHA256](https://lists.gnupg.org/pipermail/gcrypt-devel/2021-February/005105.html)
 - SymCrypt: [Invalid ECDSA signature and public key for private key that is curve order](https://github.com/microsoft/SymCrypt/issues/12)
 - SymCrypt: [ECDSA signing branches on uninitialized memory](https://github.com/microsoft/SymCrypt/issues/13)
-- TBA: TBA
-- TBA: TBA
-- TBA: TBA
+- blst: [Modular inverse incorrect result](https://github.com/supranational/blst/security/advisories/GHSA-x279-68rr-jp4p)
+- blst: [Inverse modulo hangs on i386 if input is 0 or multiple of modulo](https://github.com/supranational/blst/commit/dd980e7f81397895705c49fcb4f52e485bb45e21)
+- blst  [Using non-standard 'dst' parameter branches on uninitialized memory](https://github.com/supranational/blst/commit/2bfee87adcf45c9d544bbc9486a8b6060044d93c)
 - Botan: [Incorrect comparison of negative values](https://github.com/randombit/botan/issues/2638)
-- TBA: TBA
+- blst: [NULL pointer dereference if msg is empty and aug is non-empty](https://github.com/supranational/blst/commit/02d63dac1459d6f9bee5043159c9c0908c1229ac)
 - Nettle: [Crash, potential incorrect verification in ECDSA verification](https://lists.lysator.liu.se/pipermail/nettle-bugs/2021/009457.html)
 - relic: [Modular exponentiation returns 1 if exponent is 0 and modulo is 1](https://github.com/relic-toolkit/relic/issues/185)
 - Chia bls-signatures: TBA
@@ -124,3 +124,5 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - mbed TLS: [ECDSA signing of 0 produces unverifiable signature](https://github.com/ARMmbed/mbedtls/issues/4261)
 - mbed TLS: [PKCS12 KDF + MD2 incorrect result](https://github.com/ARMmbed/mbedtls/issues/4267)
 - libgcrypt [CMAC + SERPENT/IDEA/RC2 buffer overflow/crash with oversized key](https://lists.gnupg.org/pipermail/gcrypt-devel/2021-March/005130.html)
+- TBA: TBA
+- TBA: TBA
