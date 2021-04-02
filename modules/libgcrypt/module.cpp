@@ -452,20 +452,6 @@ std::optional<component::MAC> libgcrypt::OpCMAC(operation::CMAC& op) {
     macType = LUT.at(op.cipher.cipherType.Get());
 
     {
-        /* Prevent the various crashes described here:
-         * https://lists.gnupg.org/pipermail/gcrypt-devel/2021-March/005130.html
-         */
-
-        if ( macType == GCRY_MAC_CMAC_IDEA && op.cipher.key.GetSize() != 16 ) {
-            goto end;
-        } else if ( macType == GCRY_MAC_CMAC_SERPENT && op.cipher.key.GetSize() > 32 ) {
-            goto end;
-        } else if ( macType == GCRY_MAC_CMAC_RFC2268 && op.cipher.key.GetSize() > 128 ) {
-            goto end;
-        }
-    }
-
-    {
         Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
         return libgcrypt_detail::MAC(ds, macType, op.cleartext, op.cipher);
