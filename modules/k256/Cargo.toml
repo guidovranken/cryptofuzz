@@ -1,0 +1,13 @@
+[package]
+name = "cryptofuzz-k256"
+version = "0.1.0"
+authors = ["Guido Vranken <guidovranken@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+sha2 = {version = "0.9.3"}
+
+k256 = {version = "0.7.2", features = ["ecdsa", "sha256"]}
