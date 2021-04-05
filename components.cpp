@@ -202,7 +202,7 @@ Buffer Buffer::ECDSA_RandomPad(Datasource& ds, const Type& curveType) const {
     ret.insert(std::end(ret), std::begin(stripped), std::end(stripped));
 
     /* Right-pad the input with random bytes (if available) or zeroes */
-    {
+    if ( numInserts > 0 ) {
         std::vector<uint8_t> toInsert;
         try {
             toInsert = ds.GetData(0, numInserts, numInserts);
