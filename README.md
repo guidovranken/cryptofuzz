@@ -125,4 +125,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - mbed TLS: [PKCS12 KDF + MD2 incorrect result](https://github.com/ARMmbed/mbedtls/issues/4267)
 - libgcrypt [CMAC + SERPENT/IDEA/RC2 buffer overflow/crash with oversized key](https://lists.gnupg.org/pipermail/gcrypt-devel/2021-March/005130.html)
 - TBA: TBA
-- TBA: TBA
+- Botan: [ECDSA pubkey recovery succeeds with invalid parameters](https://github.com/randombit/botan/issues/2698)
