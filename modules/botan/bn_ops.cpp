@@ -171,8 +171,8 @@ bool Mod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
     } catch ( fuzzing::datasource::Datasource::OutOfData ) {
         return false;
     } catch ( ::Botan::Invalid_Argument& e ) {
-        /* Botan is expected to throw an exception when modulo is 0 */
-        if ( bn[1] == 0 ) {
+        /* Botan is expected to throw an exception when modulo is <= 0 */
+        if ( bn[1] <= 0 ) {
             return false;
         }
 
@@ -266,6 +266,11 @@ bool InvMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     } catch ( ::Botan::Invalid_Argument& e ) {
         /* inverse_mod() is expected to throw an exception when modulo is 0 */
         if ( bn[1] == 0 ) {
+            return false;
+        }
+
+        /* inverse_mod() is expected to throw an exception when either argument is negative */
+        if ( bn[0] < 0 || bn[1] < 0 ) {
             return false;
         }
 
@@ -482,8 +487,8 @@ bool MulMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     } catch ( fuzzing::datasource::Datasource::OutOfData ) {
         return false;
     } catch ( ::Botan::Invalid_Argument& e ) {
-        /* Botan is expected to throw an exception when modulo is 0 */
-        if ( bn[2] == 0 ) {
+        /* Botan is expected to throw an exception when modulo is <= 0 */
+        if ( bn[2] <= 0 ) {
             return false;
         }
 
@@ -803,8 +808,8 @@ bool AddMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     } catch ( fuzzing::datasource::Datasource::OutOfData ) {
         return false;
     } catch ( ::Botan::Invalid_Argument& e ) {
-        /* Botan is expected to throw an exception when modulo is 0 */
-        if ( bn[2] == 0 ) {
+        /* Botan is expected to throw an exception when modulo is <= 0 */
+        if ( bn[2] <= 0 ) {
             return false;
         }
 
@@ -833,7 +838,17 @@ bool SubMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
                     }
 
                     ::Botan::secure_vector<::Botan::word> ws;
-                    res = bn[0].mod_sub(bn[1], bn[2], ws);
+                    try {
+                        res = bn[0].mod_sub(bn[1], bn[2], ws);
+                    } catch ( ::Botan::Invalid_Argument& e ) {
+                        /* mod_sub is expected to throw an exception when any argument is negative */
+                        if ( bn[0] < 0 || bn[1] < 0 || bn[2] < 0) {
+                            return false;
+                        }
+
+                        /* Rethrow */
+                        throw e;
+                    }
                 }
                 break;
             default:
@@ -842,8 +857,8 @@ bool SubMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     } catch ( fuzzing::datasource::Datasource::OutOfData ) {
         return false;
     } catch ( ::Botan::Invalid_Argument& e ) {
-        /* Botan is expected to throw an exception when modulo is 0 */
-        if ( bn[2] == 0 ) {
+        /* Botan is expected to throw an exception when modulo is <= 0 */
+        if ( bn[2] <= 0 ) {
             return false;
         }
 
