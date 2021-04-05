@@ -95,6 +95,55 @@ end:
 #endif
 }
 
+void Bignum::binaryConversion(void) const {
+    mp_int* res = nullptr;
+    uint8_t* out = nullptr;
+    uint16_t outSize = 0;
+
+    try {
+        outSize = ds.Get<uint16_t>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+        return;
+    }
+
+    res = (mp_int*)util::malloc(sizeof(mp_int));
+    CF_CHECK_EQ(mp_init(res), MP_OKAY);
+
+    out = util::malloc(outSize);
+
+#if defined(CRYPTOFUZZ_WOLFCRYPT_DEBUG)
+    std::cout << "Convert to binary into buffer of size " << std::to_string(outSize) << " and back" << std::endl;
+#endif
+
+#if defined(CRYPTOFUZZ_WOLFCRYPT_DEBUG)
+    {
+        char str[8192];
+
+        wolfCrypt_detail::disableAllocationFailures = true;
+        CF_ASSERT(mp_toradix(mp, str, 10) == MP_OKAY, "mp_toradix failed unexpectedly");
+        wolfCrypt_detail::disableAllocationFailures = false;
+
+        std::cout << "Before conversion: " << str << std::endl;
+
+    }
+#endif
+
+    /* Convert back and forth */
+    CF_CHECK_EQ(mp_to_unsigned_bin_len(mp, out, outSize), MP_OKAY);
+    CF_CHECK_EQ(mp_read_unsigned_bin(res, out, outSize), MP_OKAY);
+
+    CF_ASSERT(mp_cmp(res, mp) == MP_EQ, "Value changed after binary conversion");
+
+    CF_CHECK_EQ(mp_copy(res, mp), MP_OKAY);
+
+end:
+
+    CF_NORET(mp_clear(res));
+    util::free(res);
+    util::free(out);
+    return;
+}
+
 Bignum::Bignum(Datasource& ds) :
     ds(ds) {
     mp = (mp_int*)util::malloc(sizeof(mp_int));
@@ -211,6 +260,18 @@ mp_int* Bignum::GetPtr(void) const {
 
         if ( convert ) {
             baseConversion();
+        }
+    }
+
+    {
+        /* Optionally convert to binary and back */
+
+        bool convert = false;
+
+        try { convert = ds.Get<bool>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+        if ( convert ) {
+            binaryConversion();
         }
     }
 

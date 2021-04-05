@@ -32,6 +32,7 @@ class Bignum {
         static read_radix_error_t read_radix(mp_int* dest, const std::string& str, const size_t base);
         static read_radix_error_t read_radix(mp_int* dest, const char* str, const size_t base);
         void baseConversion(void) const;
+        void binaryConversion(void) const;
     public:
 
         Bignum(Datasource& ds);
