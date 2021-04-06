@@ -23,13 +23,6 @@ extern "C" {
 }
 #endif
 
-/* Not included in public headers */
-#if !defined(CRYPTOFUZZ_BORINGSSL) || !defined(CRYPTOFUZZ_LIBRESSL)
-extern "C" {
-    int bn_mod_sub_fixed_top(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, const BIGNUM *m);
-}
-#endif
-
 namespace cryptofuzz {
 namespace module {
 namespace OpenSSL_bignum {
@@ -343,7 +336,12 @@ bool SubMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
                 CF_CHECK_EQ(BN_mod_sub_quick(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr()), 1);
                 break;
             }
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL)
+            /* bn_mod_sub_fixed_top is disabled because it puts the output bignum
+             * in a state that is not compatible with the rest of the bignum API.
+             *
+             * Discussion: https://github.com/openssl/openssl/issues/14767
+             */
+#if 0
         case    2:
             /*
                "BN_mod_sub variant that may be used if both a and b are non-negative,
