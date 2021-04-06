@@ -263,7 +263,8 @@ bool Bignum::IsLessThan(const std::string& other) const {
 }
 
 std::string Bignum::ToString(void) const {
-    return std::string(data.GetPtr(), data.GetPtr() + data.GetSize());
+    const auto ptr = data.GetPtr();
+    return std::string(ptr, ptr + data.GetSize());
 }
 
 std::string Bignum::ToTrimmedString(void) const {

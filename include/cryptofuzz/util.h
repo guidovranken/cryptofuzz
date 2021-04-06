@@ -16,7 +16,7 @@
 #define CF_CHECK_LTE(expr, res) if ( (expr) > (res) ) { goto end; }
 #define CF_CHECK_TRUE(expr) if ( !(expr) ) { goto end; }
 #define CF_CHECK_FALSE(expr) if ( (expr) ) { goto end; }
-#define CF_ASSERT(expr, msg) if ( !(expr) ) { printf("Cryptofuzz assertion failure: %s\n", msg); abort(); }
+#define CF_ASSERT(expr, msg) if ( !(expr) ) { printf("Cryptofuzz assertion failure: %s\n", msg); ::abort(); }
 #define CF_UNREACHABLE() CF_ASSERT(0, "This code is supposed to be unreachable")
 #define CF_NORET(expr) {static_assert(std::is_same<decltype(expr), void>::value, "void"); (expr);}
 
@@ -50,6 +50,8 @@ nlohmann::json ToJSON(const component::ECC_KeyPair& val);
 nlohmann::json ToJSON(const component::ECDSA_Signature& val);
 nlohmann::json ToJSON(const component::Bignum& val);
 nlohmann::json ToJSON(const component::G2& val);
+void SetGlobalDs(fuzzing::datasource::Datasource* ds);
+void UnsetGlobalDs(void);
 uint8_t* GetNullPtr(fuzzing::datasource::Datasource* ds = nullptr);
 uint8_t* malloc(const size_t n);
 uint8_t* realloc(void* ptr, const size_t n);

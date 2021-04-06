@@ -359,7 +359,25 @@ class HaveBadPointer {
 
 static HaveBadPointer haveBadPointer;
 
+fuzzing::datasource::Datasource* global_ds = nullptr;
+
+void SetGlobalDs(fuzzing::datasource::Datasource* ds) {
+    CF_ASSERT(global_ds == nullptr, "global_ds was already set");
+
+    global_ds = ds;
+}
+
+void UnsetGlobalDs(void) {
+    CF_ASSERT(global_ds != nullptr, "Trying to unset empty global_ds");
+
+    global_ds = nullptr;
+}
+
 uint8_t* GetNullPtr(fuzzing::datasource::Datasource* ds) {
+    if ( global_ds != nullptr ) {
+        ds = global_ds;
+    }
+
     if ( ds != nullptr ) {
         try {
             return ds->Get<uint8_t*>();
