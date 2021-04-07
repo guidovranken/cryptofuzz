@@ -126,3 +126,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - libgcrypt [CMAC + SERPENT/IDEA/RC2 buffer overflow/crash with oversized key](https://lists.gnupg.org/pipermail/gcrypt-devel/2021-March/005130.html)
 - TBA: TBA
 - Botan: [ECDSA pubkey recovery succeeds with invalid parameters](https://github.com/randombit/botan/issues/2698)
+- mbed TLS: [CHACHA20-POLY1305 succeeds with invalid IV size](https://github.com/ARMmbed/mbedtls/issues/4301)
