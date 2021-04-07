@@ -5,7 +5,7 @@
 ```sh
 git clone --depth 1 https://github.com/randombit/botan.git
 cd botan/
-./configure.py --cc-bin=$CXX --cc-abi-flags="$CXXFLAGS" --disable-shared --disable-modules=locking_allocator --build-targets=static --without-documentation
+./configure.py --cc-bin=$CXX --cc-abi-flags="$CXXFLAGS" --disable-shared --disable-modules=locking_allocator,x509,tls --build-targets=static --without-documentation
 make -j$(nproc)
 export CXXFLAGS="$CXXFLAGS -DCRYPTOFUZZ_BOTAN"
 export LIBBOTAN_A_PATH=`realpath libbotan-3.a`
