@@ -300,7 +300,7 @@ static void test_ECDSA_Signature(const uint64_t curveID, const std::string R, co
         ::abort();
     }
     if ( s < 1 ) {
-        std::cout << "ECDSA signature invalid: R < 1" << std::endl;
+        std::cout << "ECDSA signature invalid: S < 1" << std::endl;
         ::abort();
     }
 }
