@@ -1,3 +1,4 @@
+#include <cryptofuzz/crypto.h>
 #include <cryptofuzz/generic.h>
 #include <cryptofuzz/components.h>
 #include <cryptofuzz/util.h>
@@ -213,6 +214,11 @@ Buffer Buffer::ECDSA_RandomPad(Datasource& ds, const Type& curveType) const {
     }
 
     return Buffer(ret);
+}
+
+Buffer Buffer::SHA256(void) const {
+    const auto hash = crypto::sha256(Get());
+    return Buffer(hash);
 }
 
 /* Bignum */
