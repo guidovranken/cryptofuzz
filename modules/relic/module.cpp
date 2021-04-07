@@ -299,7 +299,7 @@ std::optional<bool> relic::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    if ( op.digestType.Get() != CF_DIGEST("NULL") ) {
+    if ( !op.digestType.Is({CF_DIGEST("NULL"), CF_DIGEST("SHA256")}) ) {
         return ret;
     }
 
@@ -319,12 +319,6 @@ std::optional<bool> relic::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     {
         /* noret */ ec_new(pub);
         pub_initialized = true;
-#if 0
-        /* noret */ ec_set_infty(pub);
-        const int size = ec_size_bin(pub, 0);
-        CF_ASSERT(size > 1, "Pubkey has invalid size");
-        CF_ASSERT((size % 2) == 1, "Pubkey has invalid size");
-#endif
         const int size = 65;
         const auto halfSize = (size-1) / 2;
 
@@ -340,8 +334,17 @@ std::optional<bool> relic::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     }
 
     {
-        auto CT = op.cleartext.Get();
-        ret = cp_ecdsa_ver(r.Get(), s.Get(), CT.data(), CT.size(), 1, pub) == 1;
+        Buffer CT = op.cleartext;
+
+        if ( op.digestType.Is(CF_DIGEST("SHA256")) ) {
+            CT = CT.SHA256();
+        }
+
+        CT = CT.ECDSA_RandomPad(ds, op.curveType);
+
+        auto CTref = CT.GetVectorPtr();
+
+        ret = cp_ecdsa_ver(r.Get(), s.Get(), CTref.data(), CTref.size(), 1, pub) == 1;
     }
 
 end:
@@ -395,7 +398,7 @@ std::optional<component::ECDSA_Signature> relic::OpECDSA_Sign(operation::ECDSA_S
     if ( op.UseRandomNonce() == false ) {
         return ret;
     }
-    if ( op.digestType.Get() != CF_DIGEST("NULL") ) {
+    if ( !op.digestType.Is({CF_DIGEST("NULL"), CF_DIGEST("SHA256")}) ) {
         return ret;
     }
 
@@ -414,10 +417,20 @@ std::optional<component::ECDSA_Signature> relic::OpECDSA_Sign(operation::ECDSA_S
     CF_CHECK_TRUE(priv.Set(op.priv.ToString()));
     CF_CHECK_EQ(bn_is_zero(priv.Get()), 0);
 
+
+
     {
-        auto CT = op.cleartext.Get();
-        //CF_CHECK_EQ(cp_ecdsa_sig(r.Get(), s.Get(), op.cleartext.GetPtr(), op.cleartext.GetSize(), 0, priv.Get()), 0);
-        CF_CHECK_EQ(cp_ecdsa_sig(r.Get(), s.Get(), CT.data(), CT.size(), 0, priv.Get()), 0);
+        Buffer CT = op.cleartext;
+
+        if ( op.digestType.Is(CF_DIGEST("SHA256")) ) {
+            CT = CT.SHA256();
+        }
+
+        CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
+
+        auto CTref = CT.GetVectorPtr();
+
+        CF_CHECK_EQ(cp_ecdsa_sig(r.Get(), s.Get(), CTref.data(), CTref.size(), 1, priv.Get()), 0);
     }
 
     CF_CHECK_NE(R = r.ToString(), std::nullopt);
@@ -432,6 +445,12 @@ std::optional<component::ECDSA_Signature> relic::OpECDSA_Sign(operation::ECDSA_S
         goto end;
     }
     CF_CHECK_NE(ec_is_infty(pub), 1);
+
+    {
+        auto ct = op.cleartext.Get();
+
+        CF_ASSERT(cp_ecdsa_ver(r.Get(), s.Get(), ct.data(), ct.size(), 1, pub) == 1, "Cannot verify generated signature");
+    }
 
     {
         const int size = ec_size_bin(pub, 0);
