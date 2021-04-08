@@ -1187,12 +1187,12 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    ::Botan::BigInt res("0");
-    std::vector<::Botan::BigInt> bn{
-        ::Botan::BigInt(op.bn0.ToString(ds)),
-        ::Botan::BigInt(op.bn1.ToString(ds)),
-        ::Botan::BigInt(op.bn2.ToString(ds)),
-        ::Botan::BigInt(op.bn3.ToString(ds))
+    Botan_bignum::Bignum res(&ds, "0");
+    std::vector<Botan_bignum::Bignum> bn{
+        Botan_bignum::Bignum(&ds, op.bn0.ToString(ds)),
+        Botan_bignum::Bignum(&ds, op.bn1.ToString(ds)),
+        Botan_bignum::Bignum(&ds, op.bn2.ToString(ds)),
+        Botan_bignum::Bignum(&ds, op.bn3.ToString(ds))
     };
     std::unique_ptr<Botan_bignum::Operation> opRunner = nullptr;
 
@@ -1360,9 +1360,9 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
     }
 #endif
 
-    ret = { res.is_negative() ?
-            ("-" + util::HexToDec(res.to_hex_string())) :
-            util::HexToDec(res.to_hex_string()) };
+    ret = { res.Ref().is_negative() ?
+            ("-" + util::HexToDec(res.Ref().to_hex_string())) :
+            util::HexToDec(res.Ref().to_hex_string()) };
 
 end:
     return ret;

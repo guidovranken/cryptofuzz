@@ -13,28 +13,28 @@ namespace module {
 namespace Botan_bignum {
 
 namespace detail {
-    std::optional<size_t> To_size_t(const ::Botan::BigInt& bn) {
+    std::optional<size_t> To_size_t(const Bignum& bn) {
         /* TODO use #if */
 
         if ( sizeof(size_t) == 4 ) {
             try {
-                return bn.to_u32bit();
+                return bn.ConstRef().to_u32bit();
             } catch ( ::Botan::Encoding_Error ) {
                 return std::nullopt;
             }
         } else if ( sizeof(size_t) == 8 ) {
-            if( bn.is_negative() ) {
+            if( bn.ConstRef().is_negative() ) {
                 return std::nullopt;
             }
 
-            if( bn.bits() > 64 ) {
+            if( bn.ConstRef().bits() > 64 ) {
                 return std::nullopt;
             }
 
             uint64_t out = 0;
 
             for (size_t i = 0; i != 8; ++i) {
-                out = (out << 8) | bn.byte_at(7-i);
+                out = (out << 8) | bn.ConstRef().byte_at(7-i);
             }
 
             return out;
@@ -50,69 +50,70 @@ namespace detail {
  #define GET_UINT8_FOR_SWITCH() 0
 #endif /* CRYPTOFUZZ_BOTAN_IS_ORACLE */
 
-bool Add::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Add::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = bn[0] + bn[1];
+    res = bn[0].Ref() + bn[1].Ref();
 
     return true;
 }
 
-bool Sub::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Sub::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = bn[0] - bn[1];
+    res = bn[0].Ref() - bn[1].Ref();
 
     return true;
 }
 
-bool Mul::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Mul::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = bn[0] * bn[1];
+    res = bn[0].Ref() * bn[1].Ref();
 
     return true;
 }
 
-bool Div::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Div::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
     try {
         switch ( GET_UINT8_FOR_SWITCH() ) {
             case    0:
-                CF_CHECK_TRUE(bn[1] != 0);
-                res = ::Botan::ct_divide(bn[0], bn[1]);
+                CF_CHECK_TRUE(bn[1].Ref() != 0);
+                res = ::Botan::ct_divide(bn[0].Ref(), bn[1].Ref());
                 return true;
             case    1:
                 {
-                    CF_CHECK_TRUE(bn[1] != 0);
-                    ::Botan::BigInt dummy;
-                    /* noret */ ::Botan::vartime_divide(bn[0], bn[1], res, dummy);
+                    CF_CHECK_TRUE(bn[1].Ref() != 0);
+                    Bignum dummy;
+                    /* noret */ ::Botan::vartime_divide(bn[0].Ref(), bn[1].Ref(), res.Ref(), dummy.Ref());
                 }
                 return true;
+                /* TODO */
             case    2:
                 {
-                    CF_CHECK_TRUE(bn[1] != 0);
-                    CF_CHECK_TRUE(bn[1] < 256);
+                    CF_CHECK_TRUE(bn[1].Ref() != 0);
+                    CF_CHECK_TRUE(bn[1].Ref() < 256);
                     uint8_t dummy;
-                    /* noret */ ::Botan::ct_divide_u8(bn[0], bn[1].byte_at(0), res, dummy);
+                    /* noret */ ::Botan::ct_divide_u8(bn[0].Ref(), bn[1].Ref().byte_at(0), res.Ref(), dummy);
                 }
                 return true;
             case    3:
                 /* / operator */
-                res = bn[0] / bn[1];
+                res = bn[0].Ref() / bn[1].Ref();
                 return true;
             case    4:
                 /* /= operator */
-                res = bn[0];
-                res /= bn[1];
+                res = bn[0].Ref();
+                res.Ref() /= bn[1].Ref();
                 return true;
         }
     } catch ( fuzzing::datasource::Datasource::OutOfData ) {
         return false;
     } catch ( ::Botan::Invalid_Argument& e ) {
         /* Botan is expected to throw an exception when divisor is 0 */
-        if ( bn[1] == 0 ) {
+        if ( bn[1].Ref() == 0 ) {
             return false;
         }
 
@@ -124,7 +125,7 @@ end:
     return false;
 }
 
-bool Mod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
     try {
@@ -132,11 +133,11 @@ bool Mod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
             case    0:
                 {
                     try {
-                        const Botan::Modular_Reducer reducer(bn[1]);
-                        res = reducer.reduce(bn[0]);
+                        const Botan::Modular_Reducer reducer(bn[1].Ref());
+                        res = reducer.reduce(bn[0].Ref());
                     } catch ( ::Botan::Invalid_State& e ) {
                         /* Modular reducer is expected to throw an exception when modulo is 0 */
-                        if ( bn[1] == 0 ) {
+                        if ( bn[1].Ref() == 0 ) {
                             return false;
                         }
 
@@ -146,25 +147,25 @@ bool Mod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
                 }
                 return true;
             case    1:
-                res = ct_modulo(bn[0], bn[1]);
+                res = ct_modulo(bn[0].Ref(), bn[1].Ref());
                 return true;
             case    2:
                 /* % operator */
-                res = bn[0] % bn[1];
+                res = bn[0].Ref() % bn[1].Ref();
                 return true;
             case    3:
                 /* %= operator */
                 {
-                    res = bn[0];
+                    res = bn[0].Ref();
 
-                    const ::Botan::word modulo = bn[1].word_at(0);
+                    const ::Botan::word modulo = bn[1].Ref().word_at(0);
 
                     /* Ensure no truncation occurred */
-                    if ( modulo != bn[1] ) {
+                    if ( modulo != bn[1].Ref() ) {
                         return false;
                     }
 
-                    res = bn[0] %= modulo;
+                    res = bn[0].Ref() %= modulo;
                 }
                 return true;
         }
@@ -172,7 +173,7 @@ bool Mod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
         return false;
     } catch ( ::Botan::Invalid_Argument& e ) {
         /* Botan is expected to throw an exception when modulo is <= 0 */
-        if ( bn[1] <= 0 ) {
+        if ( bn[1].Ref() <= 0 ) {
             return false;
         }
 
@@ -183,39 +184,39 @@ bool Mod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
     return false;
 }
 
-bool ExpMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
     /* Exponent and modulus must be positive, according to the documentation */
-    if ( bn[1] < 0 || bn[2] <= 0 ) {
+    if ( bn[1].Ref() < 0 || bn[2].Ref() <= 0 ) {
         return false;
     }
 
-    res = ::Botan::power_mod(bn[0], bn[1], bn[2]);
+    res = ::Botan::power_mod(bn[0].Ref(), bn[1].Ref(), bn[2].Ref());
 
     return true;
 }
 
-bool Sqr::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Sqr::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = ::Botan::square(bn[0]);
+    res = ::Botan::square(bn[0].Ref());
 
     return true;
 }
 
-bool GCD::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool GCD::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = ::Botan::gcd(bn[0], bn[1]);
+    res = ::Botan::gcd(bn[0].Ref(), bn[1].Ref());
 
     return true;
 }
 
-bool SqrMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool SqrMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    if ( bn[1].is_negative() ) {
+    if ( bn[1].Ref().is_negative() ) {
         return false;
     } else {
         try {
@@ -223,11 +224,11 @@ bool SqrMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
                 case    0:
                     {
                         try {
-                            ::Botan::Modular_Reducer mod(bn[1]);
-                            res = mod.square(bn[0]);
+                            ::Botan::Modular_Reducer mod(bn[1].Ref());
+                            res = mod.square(bn[0].Ref());
                         } catch ( ::Botan::Invalid_State& e ) {
                             /* Modular reducer is expected to throw an exception when modulo is 0 */
-                            if ( bn[1] == 0 ) {
+                            if ( bn[1].Ref() == 0 ) {
                                 return false;
                             }
 
@@ -237,7 +238,7 @@ bool SqrMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
                     }
                     break;
                 case    1:
-                    res = ::Botan::square(bn[0]) % bn[1];
+                    res = ::Botan::square(bn[0].Ref()) % bn[1].Ref();
                     break;
                 default:
                     return false;
@@ -246,7 +247,7 @@ bool SqrMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
             return false;
         } catch ( ::Botan::Invalid_Argument& e ) {
             /* Botan is expected to throw an exception when modulo is 0 */
-            if ( bn[1] == 0 ) {
+            if ( bn[1].Ref() == 0 ) {
                 return false;
             }
 
@@ -258,19 +259,19 @@ bool SqrMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     return true;
 }
 
-bool InvMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
     try {
-        res = ::Botan::inverse_mod(bn[0], bn[1]);
+        res = ::Botan::inverse_mod(bn[0].Ref(), bn[1].Ref());
     } catch ( ::Botan::Invalid_Argument& e ) {
         /* inverse_mod() is expected to throw an exception when modulo is 0 */
-        if ( bn[1] == 0 ) {
+        if ( bn[1].Ref() == 0 ) {
             return false;
         }
 
         /* inverse_mod() is expected to throw an exception when either argument is negative */
-        if ( bn[0] < 0 || bn[1] < 0 ) {
+        if ( bn[0].Ref() < 0 || bn[1].Ref() < 0 ) {
             return false;
         }
 
@@ -281,12 +282,12 @@ bool InvMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     return true;
 }
 
-bool Cmp::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Cmp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    if ( bn[0] < bn[1] ) {
-        res = ::Botan::BigInt("-1");
-    } else if ( bn[0] > bn[1] ) {
+    if ( bn[0].Ref() < bn[1].Ref() ) {
+        res = Bignum("-1");
+    } else if ( bn[0].Ref() > bn[1].Ref() ) {
         res = 1;
     } else {
         res = 0;
@@ -295,33 +296,33 @@ bool Cmp::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>
     return true;
 }
 
-bool LCM::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool LCM::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = ::Botan::lcm(bn[0], bn[1]);
+    res = ::Botan::lcm(bn[0].Ref(), bn[1].Ref());
 
     return true;
 }
 
-bool Abs::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Abs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = ::Botan::abs(bn[0]);
+    res = ::Botan::abs(bn[0].Ref());
 
     return true;
 }
 
-bool Jacobi::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Jacobi::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
 
     int resInt;
 
     try {
-        resInt = ::Botan::jacobi(bn[0], bn[1]);
+        resInt = ::Botan::jacobi(bn[0].Ref(), bn[1].Ref());
     } catch ( ::Botan::Invalid_Argument& e ) {
         /* jacobi() is expected to throw in these cases */
-        if ( (bn[1] % 2) == 0 || bn[1] <= 1 ) {
+        if ( (bn[1].Ref() % 2) == 0 || bn[1].Ref() <= 1 ) {
             return false;
         }
 
@@ -330,7 +331,7 @@ bool Jacobi::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     }
 
     if ( resInt == -1 ) {
-        res = ::Botan::BigInt("-1");
+        res = Bignum("-1");
     } else {
         res = resInt;
     }
@@ -338,15 +339,15 @@ bool Jacobi::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     return true;
 }
 
-bool Neg::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Neg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = -bn[0];
+    res = -bn[0].Ref();
 
     return true;
 }
 
-bool IsPrime::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool IsPrime::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
     (void)res;
     (void)bn;
@@ -355,109 +356,109 @@ bool IsPrime::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::Big
     return false;
 }
 
-bool RShift::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool RShift::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    const auto count = detail::To_size_t(bn[1]);
+    const auto count = detail::To_size_t(bn[1].Ref());
 
     if ( count == std::nullopt ) {
         return false;
     }
 
-    res = bn[0] >> *count;
+    res = bn[0].Ref() >> *count;
 
     return true;
 }
 
-bool LShift1::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool LShift1::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = bn[0] << 1;
+    res = bn[0].Ref() << 1;
 
     return true;
 }
 
-bool IsNeg::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool IsNeg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = bn[0] < 0 ? 1 : 0;
+    res = bn[0].Ref() < 0 ? 1 : 0;
 
     return true;
 }
 
-bool IsEq::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool IsEq::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = bn[0] == bn[1] ? 1 : 0;
+    res = bn[0].Ref() == bn[1].Ref() ? 1 : 0;
 
     return true;
 }
 
-bool IsGt::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool IsGt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = bn[0] > bn[1] ? 1 : 0;
+    res = bn[0].Ref() > bn[1].Ref() ? 1 : 0;
 
     return true;
 }
 
-bool IsGte::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool IsGte::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = bn[0] >= bn[1] ? 1 : 0;
+    res = bn[0].Ref() >= bn[1].Ref() ? 1 : 0;
 
     return true;
 }
 
-bool IsLt::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool IsLt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = bn[0] < bn[1] ? 1 : 0;
+    res = bn[0].Ref() < bn[1].Ref() ? 1 : 0;
 
     return true;
 }
 
-bool IsLte::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool IsLte::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = bn[0] <= bn[1] ? 1 : 0;
+    res = bn[0].Ref() <= bn[1].Ref() ? 1 : 0;
 
     return true;
 }
 
-bool IsEven::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool IsEven::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = !(bn[0] % 2) ? 1 : 0;
+    res = !(bn[0].Ref() % 2) ? 1 : 0;
 
     return true;
 }
 
-bool IsOdd::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool IsOdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = (bn[0] % 2) ? 1 : 0;
+    res = (bn[0].Ref() % 2) ? 1 : 0;
 
     return true;
 }
 
-bool IsZero::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool IsZero::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = bn[0] == 0 ? 1 : 0;
+    res = bn[0].Ref() == 0 ? 1 : 0;
 
     return true;
 }
 
-bool IsOne::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool IsOne::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = bn[0] == 1 ? 1 : 0;
+    res = bn[0].Ref() == 1 ? 1 : 0;
 
     return true;
 }
 
-bool MulMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool MulMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
     try {
@@ -465,11 +466,11 @@ bool MulMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
             case    0:
                 {
                     try {
-                        ::Botan::Modular_Reducer mod(bn[2]);
-                        res = mod.multiply(bn[0], bn[1]);
+                        ::Botan::Modular_Reducer mod(bn[2].Ref());
+                        res = mod.multiply(bn[0].Ref(), bn[1].Ref());
                     } catch ( ::Botan::Invalid_State& e ) {
                         /* Modular reducer is expected to throw an exception when modulo is 0 */
-                        if ( bn[2] == 0 ) {
+                        if ( bn[2].Ref() == 0 ) {
                             return false;
                         }
 
@@ -479,7 +480,7 @@ bool MulMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
                 }
                 break;
             case    1:
-                res = (bn[0] * bn[1]) % bn[2];
+                res = (bn[0].Ref() * bn[1].Ref()) % bn[2].Ref();
                 break;
             default:
                 return false;
@@ -488,7 +489,7 @@ bool MulMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
         return false;
     } catch ( ::Botan::Invalid_Argument& e ) {
         /* Botan is expected to throw an exception when modulo is <= 0 */
-        if ( bn[2] <= 0 ) {
+        if ( bn[2].Ref() <= 0 ) {
             return false;
         }
 
@@ -499,44 +500,44 @@ bool MulMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     return true;
 }
 
-bool Bit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Bit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    const auto pos = detail::To_size_t(bn[1]);
+    const auto pos = detail::To_size_t(bn[1].Ref());
 
     if ( pos == std::nullopt ) {
         return false;
     }
 
-    res = bn[0].get_bit(*pos) ? 1 : 0;
+    res = bn[0].Ref().get_bit(*pos) ? 1 : 0;
 
     return true;
 }
 
-bool CmpAbs::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
-    std::vector<::Botan::BigInt> bnAbs = {bn[0].abs(), bn[1].abs()};
+bool CmpAbs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    std::vector<Bignum> bnAbs = {bn[0].Ref().abs(), bn[1].Ref().abs()};
     auto cmp = std::make_unique<Cmp>();
 
     return cmp->Run(ds, res, bnAbs);
 }
 
-bool SetBit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool SetBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = bn[0];
+    res = bn[0].Ref();
 
-    const auto pos = detail::To_size_t(bn[1]);
+    const auto pos = detail::To_size_t(bn[1].Ref());
 
     if ( pos == std::nullopt ) {
         return false;
     }
 
-    res.set_bit(*pos);
+    res.Ref().set_bit(*pos);
 
     return true;
 }
 
-bool Mod_NIST_192::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Mod_NIST_192::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
     static const auto prime = ::Botan::prime_p192();
@@ -545,22 +546,22 @@ bool Mod_NIST_192::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan
     try {
         switch ( GET_UINT8_FOR_SWITCH() ) {
             case    0:
-                res = bn[0] % ::Botan::BigInt("6277101735386680763835789423207666416083908700390324961279");
+                res = bn[0].Ref() % Bignum("6277101735386680763835789423207666416083908700390324961279").Ref();
                 return true;
             case    1:
                 {
-                    if( bn[0] >= limit ) {
+                    if( bn[0].Ref() >= limit ) {
                         return false;
                     }
-                    res = bn[0];
+                    res = bn[0].Ref();
                     ::Botan::secure_vector<::Botan::word> ws;
-                    CF_NORET(redc_p192(res, ws));
+                    CF_NORET(redc_p192(res.Ref(), ws));
                 }
                 return true;
             case    2:
                 {
                     ::Botan::Modular_Reducer prime_redc(prime);
-                    res = prime_redc.reduce(bn[0]);
+                    res = prime_redc.reduce(bn[0].Ref());
                 }
                 return true;
         }
@@ -571,7 +572,7 @@ bool Mod_NIST_192::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan
     return false;
 }
 
-bool Mod_NIST_224::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Mod_NIST_224::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
     static const auto prime = ::Botan::prime_p224();
@@ -580,22 +581,22 @@ bool Mod_NIST_224::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan
     try {
         switch ( GET_UINT8_FOR_SWITCH() ) {
             case    0:
-                res = bn[0] % ::Botan::BigInt("26959946667150639794667015087019630673557916260026308143510066298881");
+                res = bn[0].Ref() % Bignum("26959946667150639794667015087019630673557916260026308143510066298881").Ref();
                 return true;
             case    1:
                 {
-                    if( bn[0] >= limit ) {
+                    if( bn[0].Ref() >= limit ) {
                         return false;
                     }
-                    res = bn[0];
+                    res = bn[0].Ref();
                     ::Botan::secure_vector<::Botan::word> ws;
-                    CF_NORET(redc_p224(res, ws));
+                    CF_NORET(redc_p224(res.Ref(), ws));
                 }
                 return true;
             case    2:
                 {
                     ::Botan::Modular_Reducer prime_redc(prime);
-                    res = prime_redc.reduce(bn[0]);
+                    res = prime_redc.reduce(bn[0].Ref());
                 }
                 return true;
         }
@@ -606,7 +607,7 @@ bool Mod_NIST_224::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan
     return false;
 }
 
-bool Mod_NIST_256::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Mod_NIST_256::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
     static const auto prime = ::Botan::prime_p256();
@@ -615,22 +616,22 @@ bool Mod_NIST_256::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan
     try {
         switch ( GET_UINT8_FOR_SWITCH() ) {
             case    0:
-                res = bn[0] % ::Botan::BigInt("115792089210356248762697446949407573530086143415290314195533631308867097853951");
+                res = bn[0].Ref() % Bignum("115792089210356248762697446949407573530086143415290314195533631308867097853951").Ref();
                 return true;
             case    1:
                 {
-                    if( bn[0] >= limit ) {
+                    if( bn[0].Ref() >= limit ) {
                         return false;
                     }
-                    res = bn[0];
+                    res = bn[0].Ref();
                     ::Botan::secure_vector<::Botan::word> ws;
-                    CF_NORET(redc_p256(res, ws));
+                    CF_NORET(redc_p256(res.Ref(), ws));
                 }
                 return true;
             case    2:
                 {
                     ::Botan::Modular_Reducer prime_redc(prime);
-                    res = prime_redc.reduce(bn[0]);
+                    res = prime_redc.reduce(bn[0].Ref());
                 }
                 return true;
         }
@@ -641,7 +642,7 @@ bool Mod_NIST_256::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan
     return false;
 }
 
-bool Mod_NIST_384::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Mod_NIST_384::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
     static const auto prime = ::Botan::prime_p384();
@@ -650,22 +651,22 @@ bool Mod_NIST_384::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan
     try {
         switch ( GET_UINT8_FOR_SWITCH() ) {
             case    0:
-                res = bn[0] % ::Botan::BigInt("39402006196394479212279040100143613805079739270465446667948293404245721771496870329047266088258938001861606973112319");
+                res = bn[0].Ref() % Bignum("39402006196394479212279040100143613805079739270465446667948293404245721771496870329047266088258938001861606973112319").Ref();
                 return true;
             case    1:
                 {
-                    if( bn[0] >= limit ) {
+                    if( bn[0].Ref() >= limit ) {
                         return false;
                     }
-                    res = bn[0];
+                    res = bn[0].Ref();
                     ::Botan::secure_vector<::Botan::word> ws;
-                    CF_NORET(redc_p384(res, ws));
+                    CF_NORET(redc_p384(res.Ref(), ws));
                 }
                 return true;
             case    2:
                 {
                     ::Botan::Modular_Reducer prime_redc(prime);
-                    res = prime_redc.reduce(bn[0]);
+                    res = prime_redc.reduce(bn[0].Ref());
                 }
                 return true;
         }
@@ -676,7 +677,7 @@ bool Mod_NIST_384::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan
     return false;
 }
 
-bool Mod_NIST_521::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Mod_NIST_521::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
     static const auto prime = ::Botan::prime_p521();
@@ -685,22 +686,22 @@ bool Mod_NIST_521::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan
     try {
         switch ( GET_UINT8_FOR_SWITCH() ) {
             case    0:
-                res = bn[0] % ::Botan::BigInt("6864797660130609714981900799081393217269435300143305409394463459185543183397656052122559640661454554977296311391480858037121987999716643812574028291115057151");
+                res = bn[0].Ref() % Bignum("6864797660130609714981900799081393217269435300143305409394463459185543183397656052122559640661454554977296311391480858037121987999716643812574028291115057151").Ref();
                 return true;
             case    1:
                 {
-                    if( bn[0] >= limit ) {
+                    if( bn[0].Ref() >= limit ) {
                         return false;
                     }
-                    res = bn[0];
+                    res = bn[0].Ref();
                     ::Botan::secure_vector<::Botan::word> ws;
-                    CF_NORET(redc_p521(res, ws));
+                    CF_NORET(redc_p521(res.Ref(), ws));
                 }
                 return true;
             case    2:
                 {
                     ::Botan::Modular_Reducer prime_redc(prime);
-                    res = prime_redc.reduce(bn[0]);
+                    res = prime_redc.reduce(bn[0].Ref());
                 }
                 return true;
         }
@@ -711,57 +712,57 @@ bool Mod_NIST_521::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan
     return false;
 }
 
-bool ClearBit::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool ClearBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = bn[0];
+    res = bn[0].Ref();
 
-    const auto pos = detail::To_size_t(bn[1]);
+    const auto pos = detail::To_size_t(bn[1].Ref());
 
     if ( pos == std::nullopt ) {
         return false;
     }
 
-    res.clear_bit(*pos);
+    res.Ref().clear_bit(*pos);
 
     return true;
 }
 
-bool MulAdd::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool MulAdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = (bn[0]*bn[1]) + bn[2];
+    res = (bn[0].Ref()*bn[1].Ref()) + bn[2].Ref();
 
     return true;
 }
 
-bool Exp2::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Exp2::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    if ( bn[0] < 1 ) {
+    if ( bn[0].Ref() < 1 ) {
         return false;
     }
 
-    const size_t exponent = bn[0].word_at(0) - 1;
+    const size_t exponent = bn[0].Ref().word_at(0) - 1;
 
-    res = ::Botan::BigInt(2) << exponent;
+    res = Bignum(2).Ref() << exponent;
 
     return true;
 }
 
-bool NumLSZeroBits::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool NumLSZeroBits::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = ::Botan::low_zero_bits(bn[0]);
+    res = ::Botan::low_zero_bits(bn[0].Ref());
 
     return true;
 }
 
-bool Sqrt::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Sqrt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
     try {
-        const auto res2 = ::Botan::is_perfect_square(bn[0]);
+        const auto res2 = ::Botan::is_perfect_square(bn[0].Ref());
         if ( res2 == 0 ) {
             return false;
         }
@@ -769,7 +770,7 @@ bool Sqrt::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt
         res = res2;
     } catch ( ::Botan::Invalid_Argument& e ) {
         /* is_perfect_square() is expected to throw in this case */
-        if ( bn[0] < 1 ) {
+        if ( bn[0].Ref() < 1 ) {
             return false;
         }
 
@@ -781,25 +782,25 @@ bool Sqrt::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt
     return true;
 }
 
-bool AddMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool AddMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
     try {
         switch ( GET_UINT8_FOR_SWITCH() ) {
             case    0:
-                res = (bn[0] + bn[1]) % bn[2];
+                res = (bn[0].Ref() + bn[1].Ref()) % bn[2].Ref();
                 break;
             case    1:
                 {
-                    if ( bn[0] >= bn[2] ) {
+                    if ( bn[0].Ref() >= bn[2].Ref() ) {
                         return false;
                     }
-                    if ( bn[1] >= bn[2] ) {
+                    if ( bn[1].Ref() >= bn[2].Ref() ) {
                         return false;
                     }
 
                     ::Botan::secure_vector<::Botan::word> ws;
-                    res = bn[0].mod_add(bn[1], bn[2], ws);
+                    res = bn[0].Ref().mod_add(bn[1].Ref(), bn[2].Ref(), ws);
                 }
                 break;
             default:
@@ -809,7 +810,7 @@ bool AddMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
         return false;
     } catch ( ::Botan::Invalid_Argument& e ) {
         /* Botan is expected to throw an exception when modulo is <= 0 */
-        if ( bn[2] <= 0 ) {
+        if ( bn[2].Ref() <= 0 ) {
             return false;
         }
 
@@ -820,29 +821,29 @@ bool AddMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     return true;
 }
 
-bool SubMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool SubMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
     try {
         switch ( GET_UINT8_FOR_SWITCH() ) {
             case    0:
-                res = (bn[0] - bn[1]) % bn[2];
+                res = (bn[0].Ref() - bn[1].Ref()) % bn[2].Ref();
                 break;
             case    1:
                 {
-                    if ( bn[0] >= bn[2] ) {
+                    if ( bn[0].Ref() >= bn[2].Ref() ) {
                         return false;
                     }
-                    if ( bn[1] >= bn[2] ) {
+                    if ( bn[1].Ref() >= bn[2].Ref() ) {
                         return false;
                     }
 
                     ::Botan::secure_vector<::Botan::word> ws;
                     try {
-                        res = bn[0].mod_sub(bn[1], bn[2], ws);
+                        res = bn[0].Ref().mod_sub(bn[1].Ref(), bn[2].Ref(), ws);
                     } catch ( ::Botan::Invalid_Argument& e ) {
                         /* mod_sub is expected to throw an exception when any argument is negative */
-                        if ( bn[0] < 0 || bn[1] < 0 || bn[2] < 0) {
+                        if ( bn[0].Ref() < 0 || bn[1].Ref() < 0 || bn[2].Ref() < 0) {
                             return false;
                         }
 
@@ -858,7 +859,7 @@ bool SubMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
         return false;
     } catch ( ::Botan::Invalid_Argument& e ) {
         /* Botan is expected to throw an exception when modulo is <= 0 */
-        if ( bn[2] <= 0 ) {
+        if ( bn[2].Ref() <= 0 ) {
             return false;
         }
 
@@ -869,38 +870,38 @@ bool SubMod::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigI
     return true;
 }
 
-bool NumBits::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool NumBits::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = bn[0].bits();
+    res = bn[0].Ref().bits();
 
     return true;
 }
 
-bool Set::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Set::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res = bn[0];
+    res = bn[0].Ref();
 
     return true;
 }
 
-bool CondSet::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool CondSet::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    res.ct_cond_assign(bn[1] != 0, bn[0]);
+    res.Ref().ct_cond_assign(bn[1].Ref() != 0, bn[0].Ref());
 
     return true;
 }
 
-bool Ressol::Run(Datasource& ds, ::Botan::BigInt& res, std::vector<::Botan::BigInt>& bn) const {
+bool Ressol::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
     (void)res;
     (void)bn;
 
     return false;
 #if 0
-    res = ::Botan::ressol(bn[0], bn[1]);
+    res = ::Botan::ressol(bn[0].Ref(), bn[1].Ref());
 
     return true;
 #endif
