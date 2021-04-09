@@ -1165,6 +1165,12 @@ std::optional<component::Bignum> Botan::OpDH_Derive(operation::DH_Derive& op) {
         const ::Botan::DL_Group grp(p, g);
 
         const ::Botan::BigInt _priv(op.priv.ToString(ds));
+
+        /* Prevent time-out */
+        CF_CHECK_LT(g.bytes(), 80);
+        CF_CHECK_LT(p.bytes(), 80);
+        CF_CHECK_LT(_priv.bytes(), 80);
+
         std::unique_ptr<::Botan::Private_Key> priv(new ::Botan::DH_PrivateKey(rng, grp, _priv));
 
         const ::Botan::BigInt _pub(op.pub.ToString(ds));
