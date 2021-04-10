@@ -18,6 +18,7 @@ class Bignum {
         Bignum(Datasource* ds, const ::Botan::BigInt& other);
         Bignum(const ::Botan::BigInt& other);
         Bignum(const int i);
+        Bignum(const ::Botan::word w);
         ::Botan::BigInt& Ref(void);
         const ::Botan::BigInt& ConstRef(void) const;
 };

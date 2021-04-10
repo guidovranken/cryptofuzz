@@ -45,6 +45,10 @@ Bignum::Bignum(const int i) :
     bn(i)
 { }
 
+Bignum::Bignum(const ::Botan::word w) :
+    bn(w)
+{ }
+
 Bignum::Bignum(Datasource* ds, const std::string s) :
     ds(ds), bn(s) {
 }
