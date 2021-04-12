@@ -1,6 +1,7 @@
 #include "module.h"
 #include <cryptofuzz/util.h>
 #include <cryptofuzz/repository.h>
+#include <boost/lexical_cast.hpp>
 
 extern "C" {
     #include <libsig.h>
@@ -200,9 +201,9 @@ end:
     return ret;
 }
 
-std::optional<component::ECC_PublicKey> libecc::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
+namespace libecc_detail {
+std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, const component::CurveType& curveType, const component::Bignum& _priv) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
-    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     libecc_detail::global_ds = &ds;
 
@@ -215,15 +216,15 @@ std::optional<component::ECC_PublicKey> libecc::OpECC_PrivateToPublic(operation:
     const ec_str_params* curve_params;
 
     /* Load curve */
-    CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
+    CF_CHECK_NE(curve_params = libecc_detail::GetCurve(curveType), nullptr);
     /* noret */ import_params(&params, curve_params);
 
     sig_type = libecc_detail::sm->type;
 
     {
-        const auto priv_str = op.priv.ToTrimmedString();
+        const auto priv_str = _priv.ToTrimmedString();
         CF_CHECK_NE(priv_str, "0");
-        CF_CHECK_NE(priv_str, *cryptofuzz::repository::ECC_CurveToOrder(op.curveType.Get()));
+        CF_CHECK_NE(priv_str, *cryptofuzz::repository::ECC_CurveToOrder(curveType.Get()));
         CF_CHECK_NE(priv_bytes = util::DecToBin(priv_str), std::nullopt);
         CF_CHECK_LTE(priv_bytes->size(), NN_MAX_BYTE_LEN);
         /* noret */ ec_priv_key_import_from_buf(&priv, &params, priv_bytes->data(), priv_bytes->size(), sig_type);
@@ -238,7 +239,7 @@ std::optional<component::ECC_PublicKey> libecc::OpECC_PrivateToPublic(operation:
 
     {
         const auto _ret = libecc_detail::To_Component_BignumPair(pub);
-        CF_CHECK_TRUE(op.priv.IsLessThan(*cryptofuzz::repository::ECC_CurveToOrder(op.curveType.Get())));
+        CF_CHECK_TRUE(_priv.IsLessThan(*cryptofuzz::repository::ECC_CurveToOrder(curveType.Get())));
         ret = _ret;
     }
 
@@ -247,6 +248,13 @@ end:
 
     libecc_detail::global_ds = nullptr;
     return ret;
+}
+}
+
+std::optional<component::ECC_PublicKey> libecc::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    return libecc_detail::OpECC_PrivateToPublic(ds, op.curveType, op.priv);
 }
 
 std::optional<component::ECDSA_Signature> libecc::OpECDSA_Sign(operation::ECDSA_Sign& op) {
@@ -259,9 +267,9 @@ std::optional<component::ECDSA_Signature> libecc::OpECDSA_Sign(operation::ECDSA_
     }
 
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
-    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
-    libecc_detail::global_ds = &ds;
 
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    std::optional<component::ECC_PublicKey> pub = std::nullopt;
     const ec_str_params* curve_params;
     std::optional<std::vector<uint8_t>> priv_bytes;
 	ec_params params;
@@ -270,6 +278,10 @@ std::optional<component::ECDSA_Signature> libecc::OpECDSA_Sign(operation::ECDSA_
     size_t signature_size = 0;
     uint8_t* signature = nullptr;
     std::optional<std::vector<uint8_t>> nonce_bytes;
+
+    CF_CHECK_NE(pub = libecc_detail::OpECC_PrivateToPublic(ds, op.curveType, op.priv), std::nullopt);
+
+    libecc_detail::global_ds = &ds;
 
     /* Load curve */
     CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
@@ -300,26 +312,25 @@ std::optional<component::ECDSA_Signature> libecc::OpECDSA_Sign(operation::ECDSA_
         CF_CHECK_NE(nonce_bytes = util::DecToBin(op.nonce.ToTrimmedString()), std::nullopt);
     }
 
+    CF_INSTALL_JMP();
+
     CF_CHECK_EQ(ecdsa_sign_raw(
                 &ctx,
                 op.cleartext.GetPtr(), op.cleartext.GetSize(),
                 signature, signature_size,
                 op.UseSpecifiedNonce() ? nonce_bytes->data() : nullptr,
                 op.UseSpecifiedNonce() ? nonce_bytes->size() : 0), 0);
-    {
-        const auto pub = libecc_detail::To_Component_BignumPair(kp.pub_key);
-        CF_CHECK_NE(pub, std::nullopt);
-
-        ret = {
-            {
-                util::BinToDec(signature, signature_size / 2),
-                util::BinToDec(signature + (signature_size / 2), signature_size / 2),
-            },
-            *pub
-        };
-    }
+    ret = {
+        {
+            util::BinToDec(signature, signature_size / 2),
+            util::BinToDec(signature + (signature_size / 2), signature_size / 2),
+        },
+        *pub
+    };
 
 end:
+    CF_RESTORE_JMP();
+
     util::free(signature);
 
     libecc_detail::global_ds = nullptr;
@@ -373,6 +384,8 @@ std::optional<bool> libecc::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         memcpy(pub.data() + pointSize, Y->data(), pointSize);
         memcpy(pub.data() + pointSize * 2, Z->data(), pointSize);
 
+        CF_INSTALL_JMP();
+
         CF_CHECK_EQ(ec_pub_key_import_from_buf(
                     &kp.pub_key,
                     &params,
@@ -382,10 +395,13 @@ std::optional<bool> libecc::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         CF_CHECK_EQ(prj_pt_is_on_curve(&kp.pub_key.y), 1);
     }
 
+
     CF_CHECK_EQ(ec_verify_init(&ctx, &(kp.pub_key), sig.data(), sig.size(), ECDSA, SHA256), 0);
     ret = ecdsa_verify_raw(&ctx, op.cleartext.GetPtr(), op.cleartext.GetSize()) == 0;
 
 end:
+    CF_RESTORE_JMP();
+
     libecc_detail::global_ds = nullptr;
 
     return ret;
@@ -394,19 +410,15 @@ end:
 std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
 
-    nn result, a, b;
+    nn result, a, b, c;
 
-#define NN_SAFE_SIZE 10
+    CF_INSTALL_JMP();
 
     switch ( op.calcOp.Get() ) {
         case    CF_CALCOP("Add(A,B)"):
             /* noret */ nn_init(&result, 0);
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
-
-            /* Ensure no overflow will occur */
-            CF_CHECK_LT(a.wlen, NN_MAX_WORD_LEN);
-            CF_CHECK_LT(b.wlen, NN_MAX_WORD_LEN);
 
             /* noret */ nn_add(&result, &a, &b);
 
@@ -427,11 +439,6 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
 
-            /* Ensure no overflow will occur */
-            CF_CHECK_LTE(
-                    ((size_t)a.wlen + (size_t)b.wlen) * WORD_BYTES,
-                    NN_MAX_BYTE_LEN);
-
             /* noret */ nn_mul(&result, &a, &b);
 
             ret = libecc_detail::To_Component_Bignum(&result);
@@ -443,10 +450,6 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
 
             CF_CHECK_EQ(nn_iszero(&b), 0);
 
-            /* TODO better preconditions */
-            CF_CHECK_LT(a.wlen, NN_SAFE_SIZE);
-            CF_CHECK_LT(b.wlen, NN_SAFE_SIZE);
-
             /* noret */ nn_mod(&result, &a, &b);
 
             ret = libecc_detail::To_Component_Bignum(&result);
@@ -456,20 +459,17 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
 
-            /* TODO preconditions */
+            CF_CHECK_EQ(nn_modinv(&result, &a, &b), 1);
 
-            //CF_CHECK_EQ(nn_modinv(&result, &a, &b), 1);
-
-            //ret = libecc_detail::To_Component_Bignum(&result);
+            ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("LShift1(A)"):
             /* noret */ nn_init(&result, 0);
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
 
-            /* TODO better preconditions */
-            CF_CHECK_LT(a.wlen, NN_SAFE_SIZE);
-
             /* noret */ nn_lshift(&result, &a, 1);
+
+            CF_CHECK_LT(nn_bitlen(&a), NN_MAX_BIT_LEN);
 
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
@@ -490,10 +490,6 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
 
-            /* TODO better preconditions */
-            CF_CHECK_LT(a.wlen, NN_SAFE_SIZE);
-            CF_CHECK_LT(b.wlen, NN_SAFE_SIZE);
-
             nn_gcd(&result, &a, &b);
 
             ret = libecc_detail::To_Component_Bignum(&result);
@@ -501,10 +497,6 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("Sqr(A)"):
             /* noret */ nn_init(&result, 0);
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-
-            CF_CHECK_LTE(
-                    (size_t)a.wlen * 2 * WORD_BYTES,
-                    NN_MAX_BYTE_LEN);
 
             nn_sqr(&result, &a);
 
@@ -546,14 +538,69 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
 
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
+        case    CF_CALCOP("NumBits(A)"):
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+
+            ret = std::to_string( nn_bitlen(&a) );
+            break;
+        case    CF_CALCOP("MulMod(A,B,C)"):
+            /* noret */ nn_init(&result, 0);
+
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn2, &c));
+
+            CF_CHECK_TRUE(nn_isodd(&c));
+            CF_CHECK_GT(nn_cmp(&c, &a), 0);
+            CF_CHECK_GT(nn_cmp(&c, &b), 0);
+
+            nn_mul_mod(&result, &a, &b, &c);
+
+            ret = libecc_detail::To_Component_Bignum(&result);
+            break;
+        case    CF_CALCOP("AddMod(A,B,C)"):
+            /* noret */ nn_init(&result, 0);
+
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn2, &c));
+
+            CF_CHECK_GT(nn_cmp(&c, &a), 0);
+            CF_CHECK_GT(nn_cmp(&c, &b), 0);
+
+            nn_mod_add(&result, &a, &b, &c);
+
+            ret = libecc_detail::To_Component_Bignum(&result);
+            break;
+        case    CF_CALCOP("SubMod(A,B,C)"):
+            /* noret */ nn_init(&result, 0);
+
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn2, &c));
+
+            CF_CHECK_GT(nn_cmp(&c, &a), 0);
+            CF_CHECK_GT(nn_cmp(&c, &b), 0);
+
+            nn_mod_sub(&result, &a, &b, &c);
+
+            ret = libecc_detail::To_Component_Bignum(&result);
+            break;
+        case    CF_CALCOP("Bit(A,B)"):
+            try {
+                CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+                const auto count = boost::lexical_cast<bitcnt_t>(op.bn1.ToTrimmedString());
+                ret = std::to_string( nn_getbit(&a, count) );
+            } catch ( const boost::bad_lexical_cast &e ) {
+            }
+            break;
     }
 
-#undef NN_SAFE_SIZE
-
 end:
+    CF_RESTORE_JMP();
+
     return ret;
 }
-
 
 } /* namespace module */
 } /* namespace cryptofuzz */

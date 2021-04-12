@@ -15,6 +15,11 @@
 #include "mutatorpool.h"
 #include "config.h"
 
+extern "C" {
+    sigjmp_buf cryptofuzz_jmpbuf;
+    unsigned char cryptofuzz_longjmp_triggered = 0;
+}
+
 namespace cryptofuzz {
 namespace util {
 
