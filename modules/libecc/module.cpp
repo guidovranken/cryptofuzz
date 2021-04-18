@@ -266,6 +266,11 @@ std::optional<component::ECDSA_Signature> libecc::OpECDSA_Sign(operation::ECDSA_
         return std::nullopt;
     }
 
+    /* ecdsa_sign_raw supports messages up to 255 bytes */
+    if ( op.cleartext.GetSize() > 255 ) {
+        return std::nullopt;
+    }
+
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
 
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -310,6 +315,9 @@ std::optional<component::ECDSA_Signature> libecc::OpECDSA_Sign(operation::ECDSA_
         CF_CHECK_NE(op.nonce.ToTrimmedString(), "0");
 
         CF_CHECK_NE(nonce_bytes = util::DecToBin(op.nonce.ToTrimmedString()), std::nullopt);
+
+        /* ecdsa_sign_raw supports nonce up to 255 bytes */
+        CF_CHECK_LTE(nonce_bytes->size(), 255);
     }
 
     CF_INSTALL_JMP();
@@ -339,6 +347,11 @@ end:
 
 std::optional<bool> libecc::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     if ( op.digestType.Get() != CF_DIGEST("NULL") ) {
+        return std::nullopt;
+    }
+
+    /* ecdsa_verify_raw supports messages up to 255 bytes */
+    if ( op.cleartext.GetSize() > 255 ) {
         return std::nullopt;
     }
 
