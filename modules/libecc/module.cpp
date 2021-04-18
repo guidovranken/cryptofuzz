@@ -365,6 +365,7 @@ std::optional<bool> libecc::OpECDSA_Verify(operation::ECDSA_Verify& op) {
 	ec_key_pair kp;
     std::vector<uint8_t> pub;
     std::vector<uint8_t> sig;
+    std::optional<std::vector<uint8_t>> X, Y, Z;
 
     /* Load curve */
     CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
@@ -388,7 +389,6 @@ std::optional<bool> libecc::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         pub.resize(pubSize, 0);
 
         const size_t pointSize = pubSize / 3;
-        std::optional<std::vector<uint8_t>> X, Y, Z;
         CF_CHECK_NE(X = util::DecToBin(op.signature.pub.first.ToTrimmedString(), pointSize), std::nullopt);
         CF_CHECK_NE(Y = util::DecToBin(op.signature.pub.second.ToTrimmedString(), pointSize), std::nullopt);
         CF_CHECK_NE(Z = util::DecToBin("1", pointSize), std::nullopt);
