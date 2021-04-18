@@ -155,10 +155,10 @@ libecc::libecc(void) :
     libecc_detail::AddCurve(CF_ECC_CURVE("secp256r1"), "SECP256R1");
     libecc_detail::AddCurve(CF_ECC_CURVE("secp384r1"), "SECP384R1");
     libecc_detail::AddCurve(CF_ECC_CURVE("secp521r1"), "SECP521R1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("frp256v1"), "FRP256V1");
 
     /* TODO */
 #if 0
-    "FRP256V1"
     "GOST256"
     "GOST512"
 #endif
