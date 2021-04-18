@@ -214,6 +214,8 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, co
     ec_sig_alg_type sig_type;
     std::optional<std::vector<uint8_t>> priv_bytes;
     const ec_str_params* curve_params;
+    std::string priv_str;
+    aff_pt Q_aff;
 
     /* Load curve */
     CF_CHECK_NE(curve_params = libecc_detail::GetCurve(curveType), nullptr);
@@ -221,21 +223,21 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, co
 
     sig_type = libecc_detail::sm->type;
 
-    {
-        const auto priv_str = _priv.ToTrimmedString();
-        CF_CHECK_NE(priv_str, "0");
-        CF_CHECK_NE(priv_str, *cryptofuzz::repository::ECC_CurveToOrder(curveType.Get()));
-        CF_CHECK_NE(priv_bytes = util::DecToBin(priv_str), std::nullopt);
-        CF_CHECK_LTE(priv_bytes->size(), NN_MAX_BYTE_LEN);
-        CF_NORET(ec_priv_key_import_from_buf(&priv, &params, priv_bytes->data(), priv_bytes->size(), sig_type));
-        memset(&pub, 0, sizeof(pub));
-        CF_CHECK_EQ(init_pubkey_from_privkey(&pub, &priv), 0);
-        CF_CHECK_EQ(pub.magic, PUB_KEY_MAGIC);
+    priv_str = _priv.ToTrimmedString();
+    CF_CHECK_NE(priv_str, "0");
+    CF_CHECK_NE(priv_str, *cryptofuzz::repository::ECC_CurveToOrder(curveType.Get()));
+    CF_CHECK_NE(priv_bytes = util::DecToBin(priv_str), std::nullopt);
+    CF_CHECK_LTE(priv_bytes->size(), NN_MAX_BYTE_LEN);
 
-        aff_pt Q_aff;
-        prj_pt_to_aff(&Q_aff, &pub.y);
-        ec_shortw_aff_to_prj(&pub.y, &Q_aff);
-    }
+    CF_INSTALL_JMP();
+
+    CF_NORET(ec_priv_key_import_from_buf(&priv, &params, priv_bytes->data(), priv_bytes->size(), sig_type));
+    memset(&pub, 0, sizeof(pub));
+    CF_CHECK_EQ(init_pubkey_from_privkey(&pub, &priv), 0);
+    CF_CHECK_EQ(pub.magic, PUB_KEY_MAGIC);
+
+    prj_pt_to_aff(&Q_aff, &pub.y);
+    ec_shortw_aff_to_prj(&pub.y, &Q_aff);
 
     {
         const auto _ret = libecc_detail::To_Component_BignumPair(pub);
@@ -244,9 +246,12 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, co
     }
 
 end:
+    CF_RESTORE_JMP();
+
     util::free(out);
 
     libecc_detail::global_ds = nullptr;
+
     return ret;
 }
 }
