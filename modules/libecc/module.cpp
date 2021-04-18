@@ -490,7 +490,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
 
-            nn_gcd(&result, &a, &b);
+            CF_NORET(nn_gcd(&result, &a, &b));
 
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
@@ -498,7 +498,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             CF_NORET(nn_init(&result, 0));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
 
-            nn_sqr(&result, &a);
+            CF_NORET(nn_sqr(&result, &a));
 
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
@@ -518,7 +518,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
 
-            nn_and(&result, &a, &b);
+            CF_NORET(nn_and(&result, &a, &b));
 
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
@@ -526,7 +526,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
 
-            nn_or(&result, &a, &b);
+            CF_NORET(nn_or(&result, &a, &b));
 
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
@@ -534,7 +534,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
 
-            nn_xor(&result, &a, &b);
+            CF_NORET(nn_xor(&result, &a, &b));
 
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
@@ -554,7 +554,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             CF_CHECK_GT(nn_cmp(&c, &a), 0);
             CF_CHECK_GT(nn_cmp(&c, &b), 0);
 
-            nn_mul_mod(&result, &a, &b, &c);
+            CF_NORET(nn_mul_mod(&result, &a, &b, &c));
 
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
@@ -568,7 +568,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             CF_CHECK_GT(nn_cmp(&c, &a), 0);
             CF_CHECK_GT(nn_cmp(&c, &b), 0);
 
-            nn_mod_add(&result, &a, &b, &c);
+            CF_NORET(nn_mod_add(&result, &a, &b, &c));
 
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
@@ -582,7 +582,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             CF_CHECK_GT(nn_cmp(&c, &a), 0);
             CF_CHECK_GT(nn_cmp(&c, &b), 0);
 
-            nn_mod_sub(&result, &a, &b, &c);
+            CF_NORET(nn_mod_sub(&result, &a, &b, &c));
 
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
