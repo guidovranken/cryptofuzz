@@ -63,7 +63,7 @@ end:
             return false;
         }
 
-        /* noret */ nn_init_from_buf(nn, data->data(), data->size());
+        CF_NORET(nn_init_from_buf(nn, data->data(), data->size()));
 
         return true;
     }
@@ -75,7 +75,7 @@ end:
             data.resize(1);
         }
 
-        /* noret */ nn_export_to_buf(data.data(), data.size(), nn);
+        CF_NORET(nn_export_to_buf(data.data(), data.size(), nn));
 
         return util::BinToDec(data.data(), data.size());
     }
@@ -217,7 +217,7 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, co
 
     /* Load curve */
     CF_CHECK_NE(curve_params = libecc_detail::GetCurve(curveType), nullptr);
-    /* noret */ import_params(&params, curve_params);
+    CF_NORET(import_params(&params, curve_params));
 
     sig_type = libecc_detail::sm->type;
 
@@ -227,7 +227,7 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, co
         CF_CHECK_NE(priv_str, *cryptofuzz::repository::ECC_CurveToOrder(curveType.Get()));
         CF_CHECK_NE(priv_bytes = util::DecToBin(priv_str), std::nullopt);
         CF_CHECK_LTE(priv_bytes->size(), NN_MAX_BYTE_LEN);
-        /* noret */ ec_priv_key_import_from_buf(&priv, &params, priv_bytes->data(), priv_bytes->size(), sig_type);
+        CF_NORET(ec_priv_key_import_from_buf(&priv, &params, priv_bytes->data(), priv_bytes->size(), sig_type));
         memset(&pub, 0, sizeof(pub));
         CF_CHECK_EQ(init_pubkey_from_privkey(&pub, &priv), 0);
         CF_CHECK_EQ(pub.magic, PUB_KEY_MAGIC);
@@ -285,7 +285,7 @@ std::optional<component::ECDSA_Signature> libecc::OpECDSA_Sign(operation::ECDSA_
 
     /* Load curve */
     CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
-    /* noret */ import_params(&params, curve_params);
+    CF_NORET(import_params(&params, curve_params));
 
     {
         const auto priv_str = op.priv.ToTrimmedString();
@@ -355,7 +355,7 @@ std::optional<bool> libecc::OpECDSA_Verify(operation::ECDSA_Verify& op) {
 
     /* Load curve */
     CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
-    /* noret */ import_params(&params, curve_params);
+    CF_NORET(import_params(&params, curve_params));
 
     {
 	    const size_t signature_size = ECDSA_SIGLEN(params.ec_gen_order_bitlen);
@@ -416,46 +416,46 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
 
     switch ( op.calcOp.Get() ) {
         case    CF_CALCOP("Add(A,B)"):
-            /* noret */ nn_init(&result, 0);
+            CF_NORET(nn_init(&result, 0));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
 
-            /* noret */ nn_add(&result, &a, &b);
+            CF_NORET(nn_add(&result, &a, &b));
 
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("Sub(A,B)"):
-            /* noret */ nn_init(&result, 0);
+            CF_NORET(nn_init(&result, 0));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
 
             CF_CHECK_GT(nn_cmp(&a, &b), 0);
 
-            /* noret */ nn_sub(&result, &a, &b);
+            CF_NORET(nn_sub(&result, &a, &b));
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("Mul(A,B)"):
-            /* noret */ nn_init(&result, 0);
+            CF_NORET(nn_init(&result, 0));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
 
-            /* noret */ nn_mul(&result, &a, &b);
+            CF_NORET(nn_mul(&result, &a, &b));
 
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("Mod(A,B)"):
-            /* noret */ nn_init(&result, 0);
+            CF_NORET(nn_init(&result, 0));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
 
             CF_CHECK_EQ(nn_iszero(&b), 0);
 
-            /* noret */ nn_mod(&result, &a, &b);
+            CF_NORET(nn_mod(&result, &a, &b));
 
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("InvMod(A,B)"):
-            /* noret */ nn_init(&result, 0);
+            CF_NORET(nn_init(&result, 0));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
 
@@ -464,10 +464,10 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("LShift1(A)"):
-            /* noret */ nn_init(&result, 0);
+            CF_NORET(nn_init(&result, 0));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
 
-            /* noret */ nn_lshift(&result, &a, 1);
+            CF_NORET(nn_lshift(&result, &a, 1));
 
             CF_CHECK_LT(nn_bitlen(&a), NN_MAX_BIT_LEN);
 
@@ -476,17 +476,17 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("RShift(A,B)"):
             {
                 std::optional<uint16_t> count;
-                /* noret */ nn_init(&result, 0);
+                CF_NORET(nn_init(&result, 0));
                 CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
                 CF_CHECK_NE(count = libecc_detail::To_uint16_t(op.bn1), std::nullopt);
 
-                /* noret */ nn_rshift(&result, &a, *count);
+                CF_NORET(nn_rshift(&result, &a, *count));
 
                 ret = libecc_detail::To_Component_Bignum(&result);
             }
             break;
         case    CF_CALCOP("GCD(A,B)"):
-            /* noret */ nn_init(&result, 0);
+            CF_NORET(nn_init(&result, 0));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
 
@@ -495,7 +495,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("Sqr(A)"):
-            /* noret */ nn_init(&result, 0);
+            CF_NORET(nn_init(&result, 0));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
 
             nn_sqr(&result, &a);
@@ -544,7 +544,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = std::to_string( nn_bitlen(&a) );
             break;
         case    CF_CALCOP("MulMod(A,B,C)"):
-            /* noret */ nn_init(&result, 0);
+            CF_NORET(nn_init(&result, 0));
 
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
@@ -559,7 +559,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("AddMod(A,B,C)"):
-            /* noret */ nn_init(&result, 0);
+            CF_NORET(nn_init(&result, 0));
 
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
@@ -573,7 +573,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("SubMod(A,B,C)"):
-            /* noret */ nn_init(&result, 0);
+            CF_NORET(nn_init(&result, 0));
 
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
