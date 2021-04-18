@@ -840,7 +840,7 @@ std::optional<component::ECC_PublicKey> mbedTLS::OpECC_PrivateToPublic(operation
     mbedtls_ecp_keypair keypair;
     const mbedtls_ecp_curve_info* curve_info = nullptr;
 
-    /* noret */ mbedtls_ecp_keypair_init(&keypair);
+    CF_NORET(mbedtls_ecp_keypair_init(&keypair));
 
     {
         std::optional<uint16_t> tls_id;
@@ -866,7 +866,7 @@ std::optional<component::ECC_PublicKey> mbedTLS::OpECC_PrivateToPublic(operation
     }
 
 end:
-    /* noret */ mbedtls_ecp_keypair_free(&keypair);
+    CF_NORET(mbedtls_ecp_keypair_free(&keypair));
 
     mbedTLS_detail::UnsetGlobalDs();
 
@@ -886,9 +886,9 @@ std::optional<component::ECDSA_Signature> mbedTLS::OpECDSA_Sign(operation::ECDSA
     mbedtls_ecp_keypair keypair;
     mbedtls_mpi sig_r, sig_s;
 
-    /* noret */ mbedtls_ecp_keypair_init(&keypair);
-    /* noret */ mbedtls_mpi_init(&sig_r);
-    /* noret */ mbedtls_mpi_init(&sig_s);
+    CF_NORET(mbedtls_ecp_keypair_init(&keypair));
+    CF_NORET(mbedtls_mpi_init(&sig_r));
+    CF_NORET(mbedtls_mpi_init(&sig_s));
 
     CF_CHECK_EQ(op.UseRandomNonce(), true);
 
@@ -926,12 +926,12 @@ std::optional<component::ECDSA_Signature> mbedTLS::OpECDSA_Sign(operation::ECDSA
     }
 
 end:
-    /* noret */ mbedtls_ecp_keypair_free(&keypair);
+    CF_NORET(mbedtls_ecp_keypair_free(&keypair));
 
     mbedTLS_detail::UnsetGlobalDs();
 
-    /* noret */ mbedtls_mpi_free(&sig_r);
-    /* noret */ mbedtls_mpi_free(&sig_s);
+    CF_NORET(mbedtls_mpi_free(&sig_r));
+    CF_NORET(mbedtls_mpi_free(&sig_s));
 
     return ret;
 }
@@ -950,9 +950,9 @@ std::optional<bool> mbedTLS::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     mbedtls_mpi sig_r, sig_s;
     const mbedtls_ecp_curve_info* curve_info = nullptr;
 
-    /* noret */ mbedtls_ecdsa_init(&ctx);
-    /* noret */ mbedtls_mpi_init(&sig_r);
-    /* noret */ mbedtls_mpi_init(&sig_s);
+    CF_NORET(mbedtls_ecdsa_init(&ctx));
+    CF_NORET(mbedtls_mpi_init(&sig_r));
+    CF_NORET(mbedtls_mpi_init(&sig_s));
 
     {
         std::optional<uint16_t> tls_id;
@@ -1000,9 +1000,9 @@ std::optional<bool> mbedTLS::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     }
 
 end:
-    /* noret */ mbedtls_ecdsa_free(&ctx);
-    /* noret */ mbedtls_mpi_free(&sig_r);
-    /* noret */ mbedtls_mpi_free(&sig_s);
+    CF_NORET(mbedtls_ecdsa_free(&ctx));
+    CF_NORET(mbedtls_mpi_free(&sig_r));
+    CF_NORET(mbedtls_mpi_free(&sig_s));
 
     mbedTLS_detail::UnsetGlobalDs();
 

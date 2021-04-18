@@ -387,7 +387,7 @@ end:
 bool Set::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     switch ( ds.Get<uint8_t>() ) {
         case    0:
-            /* noret */ mbedtls_mpi_swap(res.GetDestPtr(), bn[0].GetDestPtr());
+            CF_NORET(mbedtls_mpi_swap(res.GetDestPtr(), bn[0].GetDestPtr()));
             return true;
         case    1:
             CF_CHECK_EQ(mbedtls_mpi_safe_cond_assign(res.GetDestPtr(), bn[0].GetPtr(), 1), 0);
