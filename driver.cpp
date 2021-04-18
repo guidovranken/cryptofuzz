@@ -49,6 +49,7 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorBLS_Pairing executorBLS_Pairing(CF_OPERATION("BLS_Pairing"), modules, options);
     static ExecutorBLS_HashToG1 executorBLS_HashToG1(CF_OPERATION("BLS_HashToG1"), modules, options);
     static ExecutorBLS_HashToG2 executorBLS_HashToG2(CF_OPERATION("BLS_HashToG2"), modules, options);
+    static ExecutorSR25519_Verify executorSR25519_Verify(CF_OPERATION("SR25519_Verify"), modules, options);
 
     try {
 
@@ -174,6 +175,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("BLS_HashToG2"):
                 executorBLS_HashToG2.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("SR25519_Verify"):
+                executorSR25519_Verify.Run(ds, payload.data(), payload.size());
                 break;
         }
     } catch ( Datasource::OutOfData ) {

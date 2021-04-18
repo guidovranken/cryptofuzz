@@ -807,6 +807,21 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     op.Serialize(dsOut2);
                 }
                 break;
+            case    CF_OPERATION("SR25519_Verify"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1024);
+
+                    parameters["signature"]["pub"] = getBignum();
+
+                    parameters["signature"]["signature"][0] = getBignum();
+                    parameters["signature"]["signature"][1] = getBignum();
+
+                    parameters["cleartext"] = cryptofuzz::util::DecToHex(getBignum(true), (PRNG() % 64) * 2);
+
+                    cryptofuzz::operation::SR25519_Verify op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
             default:
                 goto end;
         }

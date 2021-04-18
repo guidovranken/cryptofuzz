@@ -1,0 +1,11 @@
+[package]
+name = "cryptofuzz-schnorrkel"
+version = "0.1.0"
+authors = ["Guido Vranken <guidovranken@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+schnorrkel = { git = "https://github.com/w3f/schnorrkel" }

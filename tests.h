@@ -41,6 +41,7 @@ void test(const operation::BLS_Verify& op, const std::optional<bool>& result);
 void test(const operation::BLS_Pairing& op, const std::optional<bool>& result);
 void test(const operation::BLS_HashToG1& op, const std::optional<component::G1>& result);
 void test(const operation::BLS_HashToG2& op, const std::optional<component::G2>& result);
+void test(const operation::SR25519_Verify& op, const std::optional<bool>& result);
 
 } /* namespace tests */
 } /* namespace cryptofuzz */

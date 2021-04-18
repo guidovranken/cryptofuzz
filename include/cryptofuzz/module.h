@@ -160,6 +160,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<bool> OpSR25519_Verify(operation::SR25519_Verify& op) {
+            (void)op;
+            return std::nullopt;
+        }
 };
 
 } /* namespace cryptofuzz */

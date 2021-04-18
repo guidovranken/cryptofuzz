@@ -83,5 +83,6 @@ using ExecutorBLS_Verify = ExecutorBase<bool, operation::BLS_Verify>;
 using ExecutorBLS_Pairing = ExecutorBase<bool, operation::BLS_Pairing>;
 using ExecutorBLS_HashToG1 = ExecutorBase<component::G1, operation::BLS_HashToG1>;
 using ExecutorBLS_HashToG2 = ExecutorBase<component::G2, operation::BLS_HashToG2>;
+using ExecutorSR25519_Verify = ExecutorBase<bool, operation::SR25519_Verify>;
 
 } /* namespace cryptofuzz */

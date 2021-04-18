@@ -499,6 +499,37 @@ nlohmann::json G2::ToJSON(void) const {
     };
 }
 
+/* SR25519_Signature */
+SR25519_Signature::SR25519_Signature(Datasource& ds) :
+    signature(ds),
+    pub(ds)
+{ }
+
+SR25519_Signature::SR25519_Signature(BignumPair signature, Bignum pub) :
+    signature(signature),
+    pub(pub)
+{ }
+
+SR25519_Signature::SR25519_Signature(nlohmann::json json) :
+    signature(json["signature"]),
+    pub(json["pub"])
+{ }
+
+bool SR25519_Signature::operator==(const SR25519_Signature& rhs) const {
+    return
+        (signature == rhs.signature) &&
+        (pub == rhs.pub);
+}
+
+void SR25519_Signature::Serialize(Datasource& ds) const {
+    signature.Serialize(ds);
+    pub.Serialize(ds);
+}
+
+nlohmann::json SR25519_Signature::ToJSON(void) const {
+    return std::vector<nlohmann::json>{signature.ToJSON(), pub.ToJSON()};
+}
+
 } /* namespace component */
 
 } /* namespace cryptofuzz */

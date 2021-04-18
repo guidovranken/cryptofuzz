@@ -143,5 +143,19 @@ using BLS_PublicKey = BignumPair;
 using BLS_Signature = BignumPair;
 using G1 = BignumPair;
 
+class SR25519_Signature {
+    public:
+        BignumPair signature;
+        Bignum pub;
+
+        SR25519_Signature(Datasource& ds);
+        SR25519_Signature(BignumPair signature, Bignum pub);
+        SR25519_Signature(nlohmann::json json);
+
+        bool operator==(const SR25519_Signature& rhs) const;
+        void Serialize(Datasource& ds) const;
+        nlohmann::json ToJSON(void) const;
+};
+
 } /* namespace component */
 } /* namespace cryptofuzz */

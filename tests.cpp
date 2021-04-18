@@ -388,6 +388,11 @@ void test(const operation::BLS_HashToG2& op, const std::optional<component::G2>&
     (void)result;
 }
 
+void test(const operation::SR25519_Verify& op, const std::optional<bool>& result) {
+    (void)op;
+    (void)result;
+}
+
 namespace BignumCalc {
     static void Abort(const std::string& message, const std::string& opStr) {
         std::cout << "BignumCalc ( " << opStr << " ): " << message << std::endl;

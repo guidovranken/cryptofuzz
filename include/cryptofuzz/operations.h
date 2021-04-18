@@ -1599,5 +1599,37 @@ class BLS_HashToG2 : public Operation {
         }
 };
 
+class SR25519_Verify : public Operation {
+    public:
+        const component::Cleartext cleartext;
+        const component::SR25519_Signature signature;
+
+        SR25519_Verify(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            cleartext(ds),
+            signature(ds)
+        { }
+        SR25519_Verify(nlohmann::json json) :
+            Operation(json["modifier"]),
+            cleartext(json["cleartext"]),
+            signature(json["signature"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const SR25519_Verify& rhs) const {
+            return
+                (cleartext == rhs.cleartext) &&
+                (signature == rhs.signature) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            cleartext.Serialize(ds);
+            signature.Serialize(ds);
+        }
+};
+
 } /* namespace operation */
 } /* namespace cryptofuzz */

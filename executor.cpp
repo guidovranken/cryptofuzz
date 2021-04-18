@@ -1186,6 +1186,24 @@ ExecutorBase<ResultType, OperationType>::ExecutorBase(const uint64_t operationID
 {
 }
 
+/* Specialization for operation::SR25519_Verify */
+template<> void ExecutorBase<bool, operation::SR25519_Verify>::updateExtraCounters(const uint64_t moduleID, operation::SR25519_Verify& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<bool, operation::SR25519_Verify>::postprocess(std::shared_ptr<Module> module, operation::SR25519_Verify& op, const ExecutorBase<bool, operation::SR25519_Verify>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<bool> ExecutorBase<bool, operation::SR25519_Verify>::callModule(std::shared_ptr<Module> module, operation::SR25519_Verify& op) const {
+    return module->OpSR25519_Verify(op);
+}
+
 template <class ResultType, class OperationType>
 ExecutorBase<ResultType, OperationType>::~ExecutorBase() {
 }
@@ -1581,5 +1599,6 @@ template class ExecutorBase<bool, operation::BLS_Verify>;
 template class ExecutorBase<bool, operation::BLS_Pairing>;
 template class ExecutorBase<component::G1, operation::BLS_HashToG1>;
 template class ExecutorBase<component::G2, operation::BLS_HashToG2>;
+template class ExecutorBase<bool, operation::SR25519_Verify>;
 
 } /* namespace cryptofuzz */

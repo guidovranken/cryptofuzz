@@ -880,5 +880,29 @@ nlohmann::json BLS_HashToG2::ToJSON(void) const {
     return j;
 }
 
+std::string SR25519_Verify::Name(void) const { return "ECDSA_Verify"; }
+std::string SR25519_Verify::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: SR25519_Verify" << std::endl;
+    ss << "public key: " << signature.pub.ToString() << std::endl;
+    ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+    ss << "signature R: " << signature.signature.first.ToString() << std::endl;
+    ss << "signature S: " << signature.signature.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json SR25519_Verify::ToJSON(void) const {
+    nlohmann::json j;
+    j["operation"] = "SR25519_Verify";
+    j["pub"] = signature.pub.ToJSON();
+    j["cleartext"] = cleartext.ToJSON();
+    j["sig_r"] = signature.signature.first.ToJSON();
+    j["sig_s"] = signature.signature.second.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 } /* namespace operation */
 } /* namespace cryptofuzz */
