@@ -13,11 +13,11 @@ class Bignum {
     public:
 
         Bignum(void) {
-            /* noret */ mbedtls_mpi_init(&mpi);
+            CF_NORET(mbedtls_mpi_init(&mpi));
         }
 
         ~Bignum() {
-            /* noret */ mbedtls_mpi_free(&mpi);
+            CF_NORET(mbedtls_mpi_free(&mpi));
         }
 
         bool Set(const std::string s) {
