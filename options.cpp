@@ -10,7 +10,11 @@
 namespace cryptofuzz {
 
 bool EnabledTypes::Have(const uint64_t id) const {
-    return types.empty() || (types.find(id) != types.end());
+    return types.empty() || HaveExplicit(id);
+}
+
+bool EnabledTypes::HaveExplicit(const uint64_t id) const {
+    return types.find(id) != types.end();
 }
 
 void EnabledTypes::Add(const uint64_t id) {

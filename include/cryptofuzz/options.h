@@ -14,6 +14,7 @@ class EnabledTypes {
         std::set<uint64_t> types;
     public:
         bool Have(const uint64_t id) const;
+        bool HaveExplicit(const uint64_t id) const;
         void Add(const uint64_t id);
         uint64_t At(const size_t index) const;
         bool Empty(void) const;

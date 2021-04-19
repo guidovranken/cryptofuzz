@@ -930,7 +930,7 @@ std::shared_ptr<Module> ExecutorBase<ResultType, OperationType>::getModule(Datas
     }
 
     /* Skip if this is a disabled module */
-    if ( options.disableModules.Have(moduleID) ) {
+    if ( options.disableModules.HaveExplicit(moduleID) ) {
         return nullptr;
     }
 
@@ -974,7 +974,7 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
             const auto moduleID = m.first;
 
             /* Skip if this is a disabled module */
-            if ( options.disableModules.Have(moduleID) ) {
+            if ( options.disableModules.HaveExplicit(moduleID) ) {
                 continue;
             }
 
