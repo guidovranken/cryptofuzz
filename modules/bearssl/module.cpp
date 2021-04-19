@@ -81,7 +81,7 @@ namespace BearSSL_detail {
         if ( reverse == true ) {
             std::reverse(out, out + maxSize);
         }
-        
+
         return true;
     }
 
@@ -457,7 +457,7 @@ std::optional<component::MAC> BearSSL::OpHMAC(operation::HMAC& op) {
     for (const auto& part : parts) {
         br_hmac_update(&ctx, part.first, part.second);
     }
-    
+
     {
         const auto size = br_hmac_out(&ctx, out);
 

@@ -14,27 +14,27 @@ namespace cryptofuzz {
 Type::Type(Datasource& ds) :
     type ( ds.Get<uint64_t>(0) )
 { }
-        
+
 Type::Type(const Type& other) :
     type(other.type)
 { }
-        
+
 Type::Type(nlohmann::json json) :
     type(json.get<uint64_t>())
 { }
-        
+
 uint64_t Type::Get(void) const {
     return type;
 }
-        
+
 bool Type::Is(const uint64_t t) const {
     return type == t;
 }
-        
+
 bool Type::Is(const std::vector<uint64_t> t) const {
     return std::find(t.begin(), t.end(), type) != t.end();
 }
-        
+
 nlohmann::json Type::ToJSON(void) const {
     nlohmann::json j;
     /* Store as string, not as number, because JavaScript's number
@@ -43,11 +43,11 @@ nlohmann::json Type::ToJSON(void) const {
     j = std::to_string(type);
     return j;
 }
-        
+
 bool Type::operator==(const Type& rhs) const {
     return type == rhs.type;
 }
-        
+
 void Type::Serialize(Datasource& ds) const {
     ds.Put<>(type);
 }

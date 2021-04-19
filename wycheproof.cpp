@@ -13,7 +13,7 @@ Wycheproof::Wycheproof(const std::string filename, const std::string outDir) :
     std::ifstream ifs(filename);
     j = nlohmann::json::parse(ifs);
 }
-        
+
 void Wycheproof::Run(void) {
     const auto& groups = j["testGroups"];
 
@@ -23,7 +23,7 @@ void Wycheproof::Run(void) {
         EDDSA_Verify(groups);
     }
 }
-        
+
 void Wycheproof::write(const uint64_t operation, fuzzing::datasource::Datasource& dsOut2) {
     fuzzing::datasource::Datasource dsOut(nullptr, 0);
 

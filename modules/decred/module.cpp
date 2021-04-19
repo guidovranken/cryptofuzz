@@ -2,7 +2,7 @@
 #include <cryptofuzz/util.h>
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
-#include <boost/lexical_cast.hpp>  
+#include <boost/lexical_cast.hpp>
 
 extern "C" {
     #include "cryptofuzz.h"

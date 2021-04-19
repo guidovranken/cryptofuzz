@@ -103,7 +103,7 @@ Bignum::Bignum(Datasource& ds) :
         throw std::exception();
     }
 }
-        
+
 Bignum::Bignum(mp_int* mp, Datasource& ds) :
     mp(mp),
     ds(ds),
@@ -220,7 +220,7 @@ mp_int* Bignum::GetPtr(void) const {
 mp_int* Bignum::GetPtrDirect(void) const {
     return mp;
 }
-        
+
 std::optional<uint64_t> Bignum::AsUint64(void) const {
     std::optional<uint64_t> ret = std::nullopt;
     uint64_t v = 0;
@@ -390,7 +390,7 @@ std::optional<component::BignumPair> Bignum::BinToBignumPair(Datasource& ds, con
 end:
     return ret;
 }
-        
+
 bool Bignum::operator==(const Bignum& rhs) const {
     return mp_cmp(GetPtr(), rhs.GetPtr()) == MP_EQ;
 }

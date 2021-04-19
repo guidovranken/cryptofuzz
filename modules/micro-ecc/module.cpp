@@ -42,7 +42,7 @@ namespace micro_ecc_detail {
 
         memset(out, 0, maxSize);
         memcpy(out + diff, v.data(), v.size());
-        
+
         return true;
     }
 

@@ -51,7 +51,7 @@ end:
 
     return ret;
 }
-        
+
 std::optional<bool> elliptic::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
 

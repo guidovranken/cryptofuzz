@@ -43,7 +43,7 @@ std::optional<component::Bignum> bignumber_js::OpBignumCalc(operation::BignumCal
     const auto res = ((JS*)js)->Run(json.dump());
 
     if ( res != std::nullopt ) {
-        ret = { *res }; 
+        ret = { *res };
     }
 
     return ret;

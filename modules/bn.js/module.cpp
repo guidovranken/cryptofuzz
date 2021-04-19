@@ -30,7 +30,7 @@ std::optional<component::Bignum> bn_js::OpBignumCalc(operation::BignumCalc& op) 
     const auto res = ((JS*)js)->Run(json);
 
     if ( res != std::nullopt ) {
-        ret = { *res }; 
+        ret = { *res };
     }
 
     return ret;

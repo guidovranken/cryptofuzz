@@ -48,4 +48,4 @@ int main(void)
     //    fprintf(fp, "func is%s(id Type) bool { return id == %s }\n", bnOpStr.c_str(), std::to_string(bnOp.first).c_str());
     //}
     fclose(fp);
-} 
+}
