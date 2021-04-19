@@ -9,23 +9,9 @@
 
 uint32_t PRNG(void);
 
-extern "C" {
-//__attribute__((section("__libfuzzer_extra_counters")))
-struct {
-    uint64_t moduleID;
-    uint64_t operation;
-    uint64_t operationDetail[3];
-} extraCounterData;
-}
-
 namespace cryptofuzz {
 
 /* Specialization for operation::Digest */
-template<> void ExecutorBase<component::Digest, operation::Digest>::updateExtraCounters(const uint64_t moduleID, operation::Digest& op) const {
-    using fuzzing::datasource::ID;
-    updateExtraCounters(moduleID, operationID, op.cleartext.Get().size(), op.digestType.Get());
-}
-
 template<> void ExecutorBase<component::Digest, operation::Digest>::postprocess(std::shared_ptr<Module> module, operation::Digest& op, const ExecutorBase<component::Digest, operation::Digest>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -49,11 +35,6 @@ template<> std::optional<component::Digest> ExecutorBase<component::Digest, oper
 }
 
 /* Specialization for operation::HMAC */
-template<> void ExecutorBase<component::MAC, operation::HMAC>::updateExtraCounters(const uint64_t moduleID, operation::HMAC& op) const {
-    using fuzzing::datasource::ID;
-    updateExtraCounters(moduleID, operationID, op.cleartext.Get().size(), op.digestType.Get(), op.cipher.cipherType.Get());
-}
-
 template<> void ExecutorBase<component::MAC, operation::HMAC>::postprocess(std::shared_ptr<Module> module, operation::HMAC& op, const ExecutorBase<component::MAC, operation::HMAC>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -77,11 +58,6 @@ template<> std::optional<component::MAC> ExecutorBase<component::MAC, operation:
 }
 
 /* Specialization for operation::CMAC */
-template<> void ExecutorBase<component::MAC, operation::CMAC>::updateExtraCounters(const uint64_t moduleID, operation::CMAC& op) const {
-    using fuzzing::datasource::ID;
-    updateExtraCounters(moduleID, operationID, op.cleartext.Get().size(), op.cipher.cipherType.Get());
-}
-
 template<> void ExecutorBase<component::MAC, operation::CMAC>::postprocess(std::shared_ptr<Module> module, operation::CMAC& op, const ExecutorBase<component::MAC, operation::CMAC>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -105,11 +81,6 @@ template<> std::optional<component::MAC> ExecutorBase<component::MAC, operation:
 }
 
 /* Specialization for operation::SymmetricEncrypt */
-template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>::updateExtraCounters(const uint64_t moduleID, operation::SymmetricEncrypt& op) const {
-    using fuzzing::datasource::ID;
-    updateExtraCounters(moduleID, operationID, op.cleartext.Get().size(), op.cipher.cipherType.Get(), op.cipher.iv.Get().size());
-}
-
 template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>::postprocess(std::shared_ptr<Module> module, operation::SymmetricEncrypt& op, const ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>::ResultPair& result) const {
     if ( options.noDecrypt == true ) {
         return;
@@ -222,11 +193,6 @@ template<> std::optional<component::Ciphertext> ExecutorBase<component::Cipherte
 }
 
 /* Specialization for operation::SymmetricDecrypt */
-template<> void ExecutorBase<component::MAC, operation::SymmetricDecrypt>::updateExtraCounters(const uint64_t moduleID, operation::SymmetricDecrypt& op) const {
-    using fuzzing::datasource::ID;
-    updateExtraCounters(moduleID, operationID, op.ciphertext.Get().size(), op.cipher.cipherType.Get());
-}
-
 template<> void ExecutorBase<component::MAC, operation::SymmetricDecrypt>::postprocess(std::shared_ptr<Module> module, operation::SymmetricDecrypt& op, const ExecutorBase<component::MAC, operation::SymmetricDecrypt>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -250,13 +216,6 @@ template<> std::optional<component::MAC> ExecutorBase<component::MAC, operation:
 }
 
 /* Specialization for operation::KDF_SCRYPT */
-template<> void ExecutorBase<component::Key, operation::KDF_SCRYPT>::updateExtraCounters(const uint64_t moduleID, operation::KDF_SCRYPT& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::Key, operation::KDF_SCRYPT>::postprocess(std::shared_ptr<Module> module, operation::KDF_SCRYPT& op, const ExecutorBase<component::Key, operation::KDF_SCRYPT>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -271,13 +230,6 @@ template<> std::optional<component::Key> ExecutorBase<component::Key, operation:
 }
 
 /* Specialization for operation::KDF_HKDF */
-template<> void ExecutorBase<component::Key, operation::KDF_HKDF>::updateExtraCounters(const uint64_t moduleID, operation::KDF_HKDF& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::Key, operation::KDF_HKDF>::postprocess(std::shared_ptr<Module> module, operation::KDF_HKDF& op, const ExecutorBase<component::Key, operation::KDF_HKDF>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -301,13 +253,6 @@ template<> std::optional<component::Key> ExecutorBase<component::Key, operation:
 }
 
 /* Specialization for operation::KDF_PBKDF */
-template<> void ExecutorBase<component::Key, operation::KDF_PBKDF>::updateExtraCounters(const uint64_t moduleID, operation::KDF_PBKDF& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::Key, operation::KDF_PBKDF>::postprocess(std::shared_ptr<Module> module, operation::KDF_PBKDF& op, const ExecutorBase<component::Key, operation::KDF_PBKDF>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -331,13 +276,6 @@ template<> std::optional<component::Key> ExecutorBase<component::Key, operation:
 }
 
 /* Specialization for operation::KDF_PBKDF1 */
-template<> void ExecutorBase<component::Key, operation::KDF_PBKDF1>::updateExtraCounters(const uint64_t moduleID, operation::KDF_PBKDF1& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::Key, operation::KDF_PBKDF1>::postprocess(std::shared_ptr<Module> module, operation::KDF_PBKDF1& op, const ExecutorBase<component::Key, operation::KDF_PBKDF1>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -361,13 +299,6 @@ template<> std::optional<component::Key> ExecutorBase<component::Key, operation:
 }
 
 /* Specialization for operation::KDF_PBKDF2 */
-template<> void ExecutorBase<component::Key, operation::KDF_PBKDF2>::updateExtraCounters(const uint64_t moduleID, operation::KDF_PBKDF2& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::Key, operation::KDF_PBKDF2>::postprocess(std::shared_ptr<Module> module, operation::KDF_PBKDF2& op, const ExecutorBase<component::Key, operation::KDF_PBKDF2>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -391,21 +322,6 @@ template<> std::optional<component::Key> ExecutorBase<component::Key, operation:
 }
 
 /* Specialization for operation::KDF_ARGON2 */
-template<> void ExecutorBase<component::Key, operation::KDF_ARGON2>::updateExtraCounters(const uint64_t moduleID, operation::KDF_ARGON2& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
-/* Specialization for operation::KDF_SSH */
-template<> void ExecutorBase<component::Key, operation::KDF_SSH>::updateExtraCounters(const uint64_t moduleID, operation::KDF_SSH& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::Key, operation::KDF_ARGON2>::postprocess(std::shared_ptr<Module> module, operation::KDF_ARGON2& op, const ExecutorBase<component::Key, operation::KDF_ARGON2>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -419,6 +335,7 @@ template<> std::optional<component::Key> ExecutorBase<component::Key, operation:
     return module->OpKDF_ARGON2(op);
 }
 
+/* Specialization for operation::KDF_SSH */
 template<> void ExecutorBase<component::Key, operation::KDF_SSH>::postprocess(std::shared_ptr<Module> module, operation::KDF_SSH& op, const ExecutorBase<component::Key, operation::KDF_SSH>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -442,13 +359,6 @@ template<> std::optional<component::Key> ExecutorBase<component::Key, operation:
 }
 
 /* Specialization for operation::KDF_TLS1_PRF */
-template<> void ExecutorBase<component::Key, operation::KDF_TLS1_PRF>::updateExtraCounters(const uint64_t moduleID, operation::KDF_TLS1_PRF& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::Key, operation::KDF_TLS1_PRF>::postprocess(std::shared_ptr<Module> module, operation::KDF_TLS1_PRF& op, const ExecutorBase<component::Key, operation::KDF_TLS1_PRF>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -472,13 +382,6 @@ template<> std::optional<component::Key> ExecutorBase<component::Key, operation:
 }
 
 /* Specialization for operation::KDF_X963 */
-template<> void ExecutorBase<component::Key, operation::KDF_X963>::updateExtraCounters(const uint64_t moduleID, operation::KDF_X963& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::Key, operation::KDF_X963>::postprocess(std::shared_ptr<Module> module, operation::KDF_X963& op, const ExecutorBase<component::Key, operation::KDF_X963>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -502,13 +405,6 @@ template<> std::optional<component::Key> ExecutorBase<component::Key, operation:
 }
 
 /* Specialization for operation::KDF_BCRYPT */
-template<> void ExecutorBase<component::Key, operation::KDF_BCRYPT>::updateExtraCounters(const uint64_t moduleID, operation::KDF_BCRYPT& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::Key, operation::KDF_BCRYPT>::postprocess(std::shared_ptr<Module> module, operation::KDF_BCRYPT& op, const ExecutorBase<component::Key, operation::KDF_BCRYPT>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -532,13 +428,6 @@ template<> std::optional<component::Key> ExecutorBase<component::Key, operation:
 }
 
 /* Specialization for operation::KDF_SP_800_108 */
-template<> void ExecutorBase<component::Key, operation::KDF_SP_800_108>::updateExtraCounters(const uint64_t moduleID, operation::KDF_SP_800_108& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::Key, operation::KDF_SP_800_108>::postprocess(std::shared_ptr<Module> module, operation::KDF_SP_800_108& op, const ExecutorBase<component::Key, operation::KDF_SP_800_108>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -565,11 +454,6 @@ template<> std::optional<component::Key> ExecutorBase<component::Key, operation:
 
 
 /* Specialization for operation::Sign */
-template<> void ExecutorBase<component::Signature, operation::Sign>::updateExtraCounters(const uint64_t moduleID, operation::Sign& op) const {
-    using fuzzing::datasource::ID;
-    updateExtraCounters(moduleID, operationID, op.cleartext.Get().size(), op.digestType.Get());
-}
-
 template<> void ExecutorBase<component::Signature, operation::Sign>::postprocess(std::shared_ptr<Module> module, operation::Sign& op, const ExecutorBase<component::Signature, operation::Sign>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -606,11 +490,6 @@ template<> std::optional<component::Signature> ExecutorBase<component::Signature
 }
 
 /* Specialization for operation::Verify */
-template<> void ExecutorBase<bool, operation::Verify>::updateExtraCounters(const uint64_t moduleID, operation::Verify& op) const {
-    using fuzzing::datasource::ID;
-    updateExtraCounters(moduleID, operationID, op.cleartext.Get().size(), op.digestType.Get());
-}
-
 template<> void ExecutorBase<bool, operation::Verify>::postprocess(std::shared_ptr<Module> module, operation::Verify& op, const ExecutorBase<bool, operation::Verify>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -624,13 +503,6 @@ template<> std::optional<bool> ExecutorBase<bool, operation::Verify>::callModule
 }
 
 /* Specialization for operation::ECC_PrivateToPublic */
-template<> void ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>::updateExtraCounters(const uint64_t moduleID, operation::ECC_PrivateToPublic& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>::postprocess(std::shared_ptr<Module> module, operation::ECC_PrivateToPublic& op, const ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>::ResultPair& result) const {
     (void)module;
 
@@ -669,13 +541,6 @@ template<> std::optional<component::ECC_PublicKey> ExecutorBase<component::ECC_P
 }
 
 /* Specialization for operation::ECC_ValidatePubkey */
-template<> void ExecutorBase<bool, operation::ECC_ValidatePubkey>::updateExtraCounters(const uint64_t moduleID, operation::ECC_ValidatePubkey& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<bool, operation::ECC_ValidatePubkey>::postprocess(std::shared_ptr<Module> module, operation::ECC_ValidatePubkey& op, const ExecutorBase<bool, operation::ECC_ValidatePubkey>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -707,13 +572,6 @@ void ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>::compare
     (void)size;
 }
 
-template<> void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::updateExtraCounters(const uint64_t moduleID, operation::ECC_GenerateKeyPair& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::postprocess(std::shared_ptr<Module> module, operation::ECC_GenerateKeyPair& op, const ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::ResultPair& result) const {
     (void)module;
 
@@ -742,13 +600,6 @@ template<> std::optional<component::ECC_KeyPair> ExecutorBase<component::ECC_Key
 }
 
 /* Specialization for operation::ECDSA_Sign */
-template<> void ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::updateExtraCounters(const uint64_t moduleID, operation::ECDSA_Sign& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::postprocess(std::shared_ptr<Module> module, operation::ECDSA_Sign& op, const ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::ResultPair& result) const {
     (void)module;
 
@@ -800,13 +651,6 @@ template<> std::optional<component::ECDSA_Signature> ExecutorBase<component::ECD
 }
 
 /* Specialization for operation::ECDSA_Verify */
-template<> void ExecutorBase<bool, operation::ECDSA_Verify>::updateExtraCounters(const uint64_t moduleID, operation::ECDSA_Verify& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<bool, operation::ECDSA_Verify>::postprocess(std::shared_ptr<Module> module, operation::ECDSA_Verify& op, const ExecutorBase<bool, operation::ECDSA_Verify>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -848,13 +692,6 @@ template<> std::optional<bool> ExecutorBase<bool, operation::ECDSA_Verify>::call
 }
 
 /* Specialization for operation::ECDH_Derive */
-template<> void ExecutorBase<component::Secret, operation::ECDH_Derive>::updateExtraCounters(const uint64_t moduleID, operation::ECDH_Derive& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::Secret, operation::ECDH_Derive>::postprocess(std::shared_ptr<Module> module, operation::ECDH_Derive& op, const ExecutorBase<component::Secret, operation::ECDH_Derive>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -875,13 +712,6 @@ template<> std::optional<component::Secret> ExecutorBase<component::Secret, oper
 }
 
 /* Specialization for operation::ECIES_Encrypt */
-template<> void ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>::updateExtraCounters(const uint64_t moduleID, operation::ECIES_Encrypt& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>::postprocess(std::shared_ptr<Module> module, operation::ECIES_Encrypt& op, const ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -902,13 +732,6 @@ template<> std::optional<component::Ciphertext> ExecutorBase<component::Cipherte
 }
 
 /* Specialization for operation::ECIES_Decrypt */
-template<> void ExecutorBase<component::Cleartext, operation::ECIES_Decrypt>::updateExtraCounters(const uint64_t moduleID, operation::ECIES_Decrypt& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::Cleartext, operation::ECIES_Decrypt>::postprocess(std::shared_ptr<Module> module, operation::ECIES_Decrypt& op, const ExecutorBase<component::Cleartext, operation::ECIES_Decrypt>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -929,13 +752,6 @@ template<> std::optional<component::Cleartext> ExecutorBase<component::Cleartext
 }
 
 /* Specialization for operation::DH_Derive */
-template<> void ExecutorBase<component::Bignum, operation::DH_Derive>::updateExtraCounters(const uint64_t moduleID, operation::DH_Derive& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::Bignum, operation::DH_Derive>::postprocess(std::shared_ptr<Module> module, operation::DH_Derive& op, const ExecutorBase<component::Bignum, operation::DH_Derive>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -952,13 +768,6 @@ template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, oper
 }
 
 /* Specialization for operation::DH_GenerateKeyPair */
-template<> void ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>::updateExtraCounters(const uint64_t moduleID, operation::DH_GenerateKeyPair& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>::postprocess(std::shared_ptr<Module> module, operation::DH_GenerateKeyPair& op, const ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>::ResultPair& result) const {
     (void)result;
     (void)op;
@@ -981,13 +790,6 @@ template<> std::optional<component::DH_KeyPair> ExecutorBase<component::DH_KeyPa
 }
 
 /* Specialization for operation::BignumCalc */
-template<> void ExecutorBase<component::Bignum, operation::BignumCalc>::updateExtraCounters(const uint64_t moduleID, operation::BignumCalc& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::Bignum, operation::BignumCalc>::postprocess(std::shared_ptr<Module> module, operation::BignumCalc& op, const ExecutorBase<component::Bignum, operation::BignumCalc>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -1046,13 +848,6 @@ template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, oper
 }
 
 /* Specialization for operation::BLS_PrivateToPublic */
-template<> void ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>::updateExtraCounters(const uint64_t moduleID, operation::BLS_PrivateToPublic& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>::postprocess(std::shared_ptr<Module> module, operation::BLS_PrivateToPublic& op, const ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -1070,13 +865,6 @@ template<> std::optional<component::BLS_PublicKey> ExecutorBase<component::BLS_P
 }
 
 /* Specialization for operation::BLS_Sign */
-template<> void ExecutorBase<component::BLS_Signature, operation::BLS_Sign>::updateExtraCounters(const uint64_t moduleID, operation::BLS_Sign& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::BLS_Signature, operation::BLS_Sign>::postprocess(std::shared_ptr<Module> module, operation::BLS_Sign& op, const ExecutorBase<component::BLS_Signature, operation::BLS_Sign>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -1094,13 +882,6 @@ template<> std::optional<component::BLS_Signature> ExecutorBase<component::BLS_S
 }
 
 /* Specialization for operation::BLS_Verify */
-template<> void ExecutorBase<bool, operation::BLS_Verify>::updateExtraCounters(const uint64_t moduleID, operation::BLS_Verify& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<bool, operation::BLS_Verify>::postprocess(std::shared_ptr<Module> module, operation::BLS_Verify& op, const ExecutorBase<bool, operation::BLS_Verify>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -1125,13 +906,6 @@ template<> std::optional<bool> ExecutorBase<bool, operation::BLS_Verify>::callMo
 }
 
 /* Specialization for operation::BLS_Pairing */
-template<> void ExecutorBase<bool, operation::BLS_Pairing>::updateExtraCounters(const uint64_t moduleID, operation::BLS_Pairing& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<bool, operation::BLS_Pairing>::postprocess(std::shared_ptr<Module> module, operation::BLS_Pairing& op, const ExecutorBase<bool, operation::BLS_Pairing>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -1143,13 +917,6 @@ template<> std::optional<bool> ExecutorBase<bool, operation::BLS_Pairing>::callM
 }
 
 /* Specialization for operation::BLS_HashToG1 */
-template<> void ExecutorBase<component::G1, operation::BLS_HashToG1>::updateExtraCounters(const uint64_t moduleID, operation::BLS_HashToG1& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::G1, operation::BLS_HashToG1>::postprocess(std::shared_ptr<Module> module, operation::BLS_HashToG1& op, const ExecutorBase<component::G1, operation::BLS_HashToG1>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -1161,13 +928,6 @@ template<> std::optional<component::G1> ExecutorBase<component::G1, operation::B
 }
 
 /* Specialization for operation::BLS_HashToG2 */
-template<> void ExecutorBase<component::G2, operation::BLS_HashToG2>::updateExtraCounters(const uint64_t moduleID, operation::BLS_HashToG2& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<component::G2, operation::BLS_HashToG2>::postprocess(std::shared_ptr<Module> module, operation::BLS_HashToG2& op, const ExecutorBase<component::G2, operation::BLS_HashToG2>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -1187,13 +947,6 @@ ExecutorBase<ResultType, OperationType>::ExecutorBase(const uint64_t operationID
 }
 
 /* Specialization for operation::SR25519_Verify */
-template<> void ExecutorBase<bool, operation::SR25519_Verify>::updateExtraCounters(const uint64_t moduleID, operation::SR25519_Verify& op) const {
-    (void)moduleID;
-    (void)op;
-
-    /* TODO */
-}
-
 template<> void ExecutorBase<bool, operation::SR25519_Verify>::postprocess(std::shared_ptr<Module> module, operation::SR25519_Verify& op, const ExecutorBase<bool, operation::SR25519_Verify>::ResultPair& result) const {
     (void)module;
     (void)op;
@@ -1425,20 +1178,6 @@ std::shared_ptr<Module> ExecutorBase<ResultType, OperationType>::getModule(Datas
 }
 
 template <class ResultType, class OperationType>
-void ExecutorBase<ResultType, OperationType>::updateExtraCounters(
-        const uint64_t moduleID,
-        const uint64_t operation,
-        const uint64_t operationDetail0,
-        const uint64_t operationDetail1,
-        const uint64_t operationDetail2) const {
-    extraCounterData.moduleID += moduleID;
-    extraCounterData.operation = operation;
-    extraCounterData.operationDetail[0] = operationDetail0;
-    extraCounterData.operationDetail[2] = operationDetail1;
-    extraCounterData.operationDetail[1] = operationDetail2;
-}
-
-template <class ResultType, class OperationType>
 void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const uint8_t* data, const size_t size) const {
     typename ExecutorBase<ResultType, OperationType>::ResultSet results;
 
@@ -1533,8 +1272,6 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
         const auto& result = results.back();
 
         if ( result.second != std::nullopt ) {
-            updateExtraCounters(module->ID, op);
-
             if ( options.jsonDumpFP != std::nullopt ) {
                 nlohmann::json j;
                 j["operation"] = op.ToJSON();

@@ -28,12 +28,6 @@ class ExecutorBase {
         OperationType getOp(Datasource* parentDs, const uint8_t* data, const size_t size) const;
         OperationType getOpPostprocess(Datasource* parentDs, OperationType op) const;
         std::shared_ptr<Module> getModule(Datasource& ds) const;
-        void updateExtraCounters(
-                const uint64_t moduleID,
-                const uint64_t operation,
-                const uint64_t operationDetail0 = 0,
-                const uint64_t operationDetail1 = 0,
-                const uint64_t operationDetail2 = 0) const;
 
         /* To be implemented by specializations of ExecutorBase */
         void updateExtraCounters(const uint64_t moduleID, OperationType& op) const;
