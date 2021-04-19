@@ -128,6 +128,9 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual bool SupportsModularBignumCalc(void) const {
+            return false;
+        }
         virtual std::optional<component::BLS_PublicKey> OpBLS_PrivateToPublic(operation::BLS_PrivateToPublic& op) {
             (void)op;
             return std::nullopt;
@@ -149,6 +152,22 @@ class Module {
             return std::nullopt;
         }
         virtual std::optional<component::G2> OpBLS_HashToG2(operation::BLS_HashToG2& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<bool> OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<bool> OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::BLS_KeyPair> OpBLS_GenerateKeyPair(operation::BLS_GenerateKeyPair& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<Buffer> OpMisc(operation::Misc& op) {
             (void)op;
             return std::nullopt;
         }

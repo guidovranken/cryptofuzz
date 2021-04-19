@@ -580,7 +580,7 @@ template<> void ExecutorBase<component::Bignum, operation::BignumCalc>::postproc
     }
 }
 
-template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, operation::BignumCalc>::callModule(std::shared_ptr<Module> module, operation::BignumCalc& op) const {
+std::optional<component::Bignum> ExecutorBignumCalc::callModule(std::shared_ptr<Module> module, operation::BignumCalc& op) const {
     RETURN_IF_DISABLED(options.calcOps, op.calcOp.Get());
 
     /* Prevent timeouts */
@@ -588,6 +588,10 @@ template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, oper
     if ( op.bn1.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.bn2.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.bn3.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+
+    if ( op.modulo != std::nullopt && !module->SupportsModularBignumCalc() ) {
+        return std::nullopt;
+    }
 
     switch ( op.calcOp.Get() ) {
         case    CF_CALCOP("SetBit(A,B)"):
@@ -636,8 +640,34 @@ template<> std::optional<component::BLS_PublicKey> ExecutorBase<component::BLS_P
 /* Specialization for operation::BLS_Sign */
 template<> void ExecutorBase<component::BLS_Signature, operation::BLS_Sign>::postprocess(std::shared_ptr<Module> module, operation::BLS_Sign& op, const ExecutorBase<component::BLS_Signature, operation::BLS_Sign>::ResultPair& result) const {
     (void)module;
-    (void)op;
-    (void)result;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto point_v = op.hashOrPoint ? op.point.first.first.ToTrimmedString() : "";
+        const auto point_w = op.hashOrPoint ? op.point.first.second.ToTrimmedString() : "";
+        const auto point_x = op.hashOrPoint ? op.point.second.first.ToTrimmedString() : "";
+        const auto point_y = op.hashOrPoint ? op.point.second.second.ToTrimmedString() : "";
+        const auto cleartext = op.hashOrPoint ? op.cleartext.ToHex() : "";
+        const auto dest = op.dest.ToHex();
+        const auto aug = op.aug.ToHex();
+        const auto pub_x = result.second->pub.first.ToTrimmedString();
+        const auto pub_y = result.second->pub.second.ToTrimmedString();
+        const auto sig_v = result.second->signature.first.first.ToTrimmedString();
+        const auto sig_w = result.second->signature.first.second.ToTrimmedString();
+        const auto sig_x = result.second->signature.second.first.ToTrimmedString();
+        const auto sig_y = result.second->signature.second.second.ToTrimmedString();
+
+        Pool_CurveBLSG1.Set({ curveID, pub_x, pub_y });
+        Pool_CurveBLSG2.Set({ curveID, sig_v, sig_w, sig_x, sig_y });
+        Pool_CurveBLSSignature.Set({ curveID, op.hashOrPoint, point_v, point_w, point_x, point_y, cleartext, dest, aug, pub_x, pub_y, sig_v, sig_w, sig_x, sig_y});
+
+        if ( pub_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_x); }
+        if ( pub_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_y); }
+        if ( sig_v.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(sig_v); }
+        if ( sig_w.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(sig_w); }
+        if ( sig_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(sig_x); }
+        if ( sig_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(sig_y); }
+    }
 }
 
 template<> std::optional<component::BLS_Signature> ExecutorBase<component::BLS_Signature, operation::BLS_Sign>::callModule(std::shared_ptr<Module> module, operation::BLS_Sign& op) const {
@@ -658,6 +688,7 @@ template<> void ExecutorBase<bool, operation::BLS_Verify>::postprocess(std::shar
 }
 
 template<> std::optional<bool> ExecutorBase<bool, operation::BLS_Verify>::callModule(std::shared_ptr<Module> module, operation::BLS_Verify& op) const {
+#if 0
     const std::vector<size_t> sizes = {
         op.pub.first.ToTrimmedString().size(),
         op.pub.second.ToTrimmedString().size(),
@@ -670,6 +701,7 @@ template<> std::optional<bool> ExecutorBase<bool, operation::BLS_Verify>::callMo
             return std::nullopt;
         }
     }
+#endif
 
     return module->OpBLS_Verify(op);
 }
@@ -688,23 +720,125 @@ template<> std::optional<bool> ExecutorBase<bool, operation::BLS_Pairing>::callM
 /* Specialization for operation::BLS_HashToG1 */
 template<> void ExecutorBase<component::G1, operation::BLS_HashToG1>::postprocess(std::shared_ptr<Module> module, operation::BLS_HashToG1& op, const ExecutorBase<component::G1, operation::BLS_HashToG1>::ResultPair& result) const {
     (void)module;
-    (void)op;
-    (void)result;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto g1_x = result.second->first.ToTrimmedString();
+        const auto g1_y = result.second->second.ToTrimmedString();
+
+        Pool_CurveBLSG1.Set({ curveID, g1_x, g1_y });
+
+        if ( g1_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_x); }
+        if ( g1_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_y); }
+    }
 }
 
 template<> std::optional<component::G1> ExecutorBase<component::G1, operation::BLS_HashToG1>::callModule(std::shared_ptr<Module> module, operation::BLS_HashToG1& op) const {
     return module->OpBLS_HashToG1(op);
 }
 
-/* Specialization for operation::BLS_HashToG2 */
-template<> void ExecutorBase<component::G2, operation::BLS_HashToG2>::postprocess(std::shared_ptr<Module> module, operation::BLS_HashToG2& op, const ExecutorBase<component::G2, operation::BLS_HashToG2>::ResultPair& result) const {
+/* Specialization for operation::BLS_IsG1OnCurve */
+template<> void ExecutorBase<bool, operation::BLS_IsG1OnCurve>::postprocess(std::shared_ptr<Module> module, operation::BLS_IsG1OnCurve& op, const ExecutorBase<bool, operation::BLS_IsG1OnCurve>::ResultPair& result) const {
     (void)module;
     (void)op;
     (void)result;
 }
 
+template<> std::optional<bool> ExecutorBase<bool, operation::BLS_IsG1OnCurve>::callModule(std::shared_ptr<Module> module, operation::BLS_IsG1OnCurve& op) const {
+    if ( op.g1.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.g1.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+
+    return module->OpBLS_IsG1OnCurve(op);
+}
+
+/* Specialization for operation::BLS_IsG2OnCurve */
+template<> void ExecutorBase<bool, operation::BLS_IsG2OnCurve>::postprocess(std::shared_ptr<Module> module, operation::BLS_IsG2OnCurve& op, const ExecutorBase<bool, operation::BLS_IsG2OnCurve>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<bool> ExecutorBase<bool, operation::BLS_IsG2OnCurve>::callModule(std::shared_ptr<Module> module, operation::BLS_IsG2OnCurve& op) const {
+    if ( op.g2.first.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.g2.first.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.g2.second.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.g2.second.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+
+    return module->OpBLS_IsG2OnCurve(op);
+}
+
+/* Specialization for operation::BLS_GenerateKeyPair */
+template<> void ExecutorBase<component::BLS_KeyPair, operation::BLS_GenerateKeyPair>::postprocess(std::shared_ptr<Module> module, operation::BLS_GenerateKeyPair& op, const ExecutorBase<component::BLS_KeyPair, operation::BLS_GenerateKeyPair>::ResultPair& result) const {
+    (void)module;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto priv = result.second->priv.ToTrimmedString();
+        const auto g1_x = result.second->pub.first.ToTrimmedString();
+        const auto g1_y = result.second->pub.second.ToTrimmedString();
+
+        Pool_CurveBLSG1.Set({ curveID, g1_x, g1_y });
+
+        if ( priv.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(priv); }
+        if ( g1_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_x); }
+        if ( g1_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_y); }
+    }
+}
+
+template<> std::optional<component::BLS_KeyPair> ExecutorBase<component::BLS_KeyPair, operation::BLS_GenerateKeyPair>::callModule(std::shared_ptr<Module> module, operation::BLS_GenerateKeyPair& op) const {
+    return module->OpBLS_GenerateKeyPair(op);
+}
+
+/* Specialization for operation::Misc */
+template<> void ExecutorBase<Buffer, operation::Misc>::postprocess(std::shared_ptr<Module> module, operation::Misc& op, const ExecutorBase<Buffer, operation::Misc>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<Buffer> ExecutorBase<Buffer, operation::Misc>::callModule(std::shared_ptr<Module> module, operation::Misc& op) const {
+    return module->OpMisc(op);
+}
+
+/* Specialization for operation::BLS_HashToG2 */
+template<> void ExecutorBase<component::G2, operation::BLS_HashToG2>::postprocess(std::shared_ptr<Module> module, operation::BLS_HashToG2& op, const ExecutorBase<component::G2, operation::BLS_HashToG2>::ResultPair& result) const {
+    (void)module;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto g2_v = result.second->first.first.ToTrimmedString();
+        const auto g2_w = result.second->first.second.ToTrimmedString();
+        const auto g2_x = result.second->second.first.ToTrimmedString();
+        const auto g2_y = result.second->second.second.ToTrimmedString();
+
+        Pool_CurveBLSG2.Set({ curveID, g2_v, g2_w, g2_x, g2_y });
+
+        if ( g2_v.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_v); }
+        if ( g2_w.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_w); }
+        if ( g2_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_x); }
+        if ( g2_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_y); }
+    }
+}
+
 template<> std::optional<component::G2> ExecutorBase<component::G2, operation::BLS_HashToG2>::callModule(std::shared_ptr<Module> module, operation::BLS_HashToG2& op) const {
     return module->OpBLS_HashToG2(op);
+}
+
+ExecutorBignumCalc::ExecutorBignumCalc(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBase<component::Bignum, operation::BignumCalc>::ExecutorBase(operationID, modules, options)
+{ }
+void ExecutorBignumCalc::SetModulo(const std::string& modulo) {
+    this->modulo = component::Bignum(modulo);
+}
+
+ExecutorBignumCalc_Mod_BLS12_381_R::ExecutorBignumCalc_Mod_BLS12_381_R(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
+    /* noret */ SetModulo("52435875175126190479447740508185965837690552500527637822603658699938581184513");
+}
+
+ExecutorBignumCalc_Mod_BLS12_381_P::ExecutorBignumCalc_Mod_BLS12_381_P(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
+    /* noret */ SetModulo("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787");
 }
 
 template <class ResultType, class OperationType>
@@ -909,6 +1043,18 @@ end:
     return op;
 }
 
+operation::BignumCalc ExecutorBignumCalc_Mod_BLS12_381_R::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
+    (void)parentDs;
+    op.modulo = modulo;
+    return op;
+}
+
+operation::BignumCalc ExecutorBignumCalc_Mod_BLS12_381_P::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
+    (void)parentDs;
+    op.modulo = modulo;
+    return op;
+}
+
 template <class ResultType, class OperationType>
 OperationType ExecutorBase<ResultType, OperationType>::getOp(Datasource* parentDs, const uint8_t* data, const size_t size) const {
     Datasource ds(data, size);
@@ -1094,6 +1240,10 @@ template class ExecutorBase<bool, operation::BLS_Verify>;
 template class ExecutorBase<bool, operation::BLS_Pairing>;
 template class ExecutorBase<component::G1, operation::BLS_HashToG1>;
 template class ExecutorBase<component::G2, operation::BLS_HashToG2>;
+template class ExecutorBase<bool, operation::BLS_IsG1OnCurve>;
+template class ExecutorBase<bool, operation::BLS_IsG2OnCurve>;
+template class ExecutorBase<component::BLS_KeyPair, operation::BLS_GenerateKeyPair>;
+template class ExecutorBase<Buffer, operation::Misc>;
 template class ExecutorBase<bool, operation::SR25519_Verify>;
 
 } /* namespace cryptofuzz */

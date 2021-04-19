@@ -1191,6 +1191,29 @@ end:
 
 std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
+
+    if ( op.modulo ) {
+        switch ( op.calcOp.Get() ) {
+            case    CF_CALCOP("Add(A,B)"):
+            case    CF_CALCOP("Sub(A,B)"):
+            case    CF_CALCOP("Mul(A,B)"):
+            case    CF_CALCOP("Sqr(A)"):
+            case    CF_CALCOP("RShift(A,B)"):
+            case    CF_CALCOP("LShift1(A)"):
+            //case    CF_CALCOP("Sqrt(A)"):
+            case    CF_CALCOP("Not(A)"):
+            case    CF_CALCOP("Exp(A,B)"):
+            case    CF_CALCOP("IsEq(A,B)"):
+            case    CF_CALCOP("IsZero(A)"):
+            case    CF_CALCOP("IsOne(A)"):
+            case    CF_CALCOP("IsOdd(A)"):
+            case    CF_CALCOP("IsEven(A)"):
+            case    CF_CALCOP("Set(A)"):
+                break;
+            default:
+                return ret;
+        }
+    }
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     Botan_bignum::Bignum res(&ds, "0");
@@ -1225,6 +1248,9 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
             CF_CHECK_LT(op.bn2.GetSize(), 1000);
 
             opRunner = std::make_unique<Botan_bignum::ExpMod>();
+            break;
+        case    CF_CALCOP("Exp(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::Exp>();
             break;
         case    CF_CALCOP("Sqr(A)"):
             opRunner = std::make_unique<Botan_bignum::Sqr>();
@@ -1352,6 +1378,9 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
         case    CF_CALCOP("Ressol(A,B)"):
             opRunner = std::make_unique<Botan_bignum::Ressol>();
             break;
+        case    CF_CALCOP("Not(A)"):
+            opRunner = std::make_unique<Botan_bignum::Not>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
@@ -1359,7 +1388,13 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
 #if defined(CRYPTOFUZZ_BOTAN_IS_ORACLE)
     try {
 #endif
-        CF_CHECK_EQ(opRunner->Run(ds, res, bn), true);
+        CF_CHECK_EQ(opRunner->Run(
+                    ds,
+                    res,
+                    bn,
+                    op.modulo ?
+                        std::optional<Botan_bignum::Bignum>(Botan_bignum::Bignum(op.modulo->ToTrimmedString())) :
+                        std::nullopt), true);
 #if defined(CRYPTOFUZZ_BOTAN_IS_ORACLE)
     } catch ( ... ) {
         goto end;
@@ -1372,6 +1407,10 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
 
 end:
     return ret;
+}
+
+bool Botan::SupportsModularBignumCalc(void) const {
+    return true;
 }
 
 } /* namespace module */

@@ -135,13 +135,60 @@ class G2 {
                 (first == rhs.first) &&
                 (second == rhs.second);
         }
+        G2(nlohmann::json json);
+        nlohmann::json ToJSON(void) const;
+        void Serialize(Datasource& ds) const;
+};
+
+class BLS_Signature {
+    public:
+        G2 signature;
+        ECC_PublicKey pub;
+
+        BLS_Signature(Datasource& ds);
+        BLS_Signature(G2 signature, ECC_PublicKey pub);
+        BLS_Signature(nlohmann::json json);
+
+        bool operator==(const BLS_Signature& rhs) const;
+        void Serialize(Datasource& ds) const;
         nlohmann::json ToJSON(void) const;
 };
 
 using BLS_PrivateKey = Bignum;
 using BLS_PublicKey = BignumPair;
-using BLS_Signature = BignumPair;
 using G1 = BignumPair;
+
+class BLS_KeyPair {
+    public:
+        BLS_PrivateKey priv;
+        BLS_PublicKey pub;
+
+        BLS_KeyPair(Datasource& ds);
+        BLS_KeyPair(BLS_PrivateKey priv, BignumPair pub);
+
+        bool operator==(const BLS_KeyPair& rhs) const;
+        void Serialize(Datasource& ds) const;
+        nlohmann::json ToJSON(void) const;
+};
+
+class BLS_PairingComponents {
+    public:
+        typedef struct {
+            G2 sig;
+            BLS_PublicKey pub;
+            Cleartext msg;
+            Cleartext aug;
+        } Component;
+        std::vector<Component> c;
+
+        BLS_PairingComponents(Datasource& ds);
+        BLS_PairingComponents(G2 sig, BLS_PublicKey pub, Cleartext msg, Cleartext aug);
+        BLS_PairingComponents(nlohmann::json json);
+
+        bool operator==(const BLS_PairingComponents& rhs) const;
+        void Serialize(Datasource& ds) const;
+        nlohmann::json ToJSON(void) const;
+};
 
 class SR25519_Signature {
     public:

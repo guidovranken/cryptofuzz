@@ -4,7 +4,7 @@ cd bls-signatures/
 mkdir build/
 cd build/
 cmake ..
-make -j$(nproc) bls/
+make -j$(nproc)
 export CHIA_BLS_LIBBLS_A_PATH=$(realpath libbls.a)
 export CHIA_BLS_INCLUDE_PATH=$(realpath ../src/)
 export CHIA_BLS_RELIC_INCLUDE_PATH_1=$(realpath _deps/relic-build/include/)

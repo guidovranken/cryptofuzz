@@ -278,6 +278,54 @@ std::string ToString(const component::ECDSA_Signature& val) {
     return ret;
 }
 
+std::string ToString(const component::BLS_Signature& val) {
+    std::string ret;
+
+    ret += "Pub X: ";
+    ret += val.pub.first.ToString();
+    ret += "\n";
+
+    ret += "Pub Y: ";
+    ret += val.pub.second.ToString();
+    ret += "\n";
+
+    ret += "Sig v: ";
+    ret += val.signature.first.first.ToString();
+    ret += "\n";
+
+    ret += "Sig w: ";
+    ret += val.signature.first.second.ToString();
+    ret += "\n";
+
+    ret += "Sig x: ";
+    ret += val.signature.second.first.ToString();
+    ret += "\n";
+
+    ret += "Sig y: ";
+    ret += val.signature.second.second.ToString();
+    ret += "\n";
+
+    return ret;
+}
+
+std::string ToString(const component::BLS_KeyPair& val) {
+    std::string ret;
+
+    ret += "Priv : ";
+    ret += val.priv.ToString();
+    ret += "\n";
+
+    ret += "Pub X: ";
+    ret += val.pub.first.ToString();
+    ret += "\n";
+
+    ret += "Pub Y: ";
+    ret += val.pub.second.ToString();
+    ret += "\n";
+
+    return ret;
+}
+
 std::string ToString(const component::Bignum& val) {
     return val.ToString();
 }
@@ -341,6 +389,14 @@ nlohmann::json ToJSON(const component::Bignum& val) {
 }
 
 nlohmann::json ToJSON(const component::G2& val) {
+    return val.ToJSON();
+}
+
+nlohmann::json ToJSON(const component::BLS_Signature& val) {
+    return val.ToJSON();
+}
+
+nlohmann::json ToJSON(const component::BLS_KeyPair& val) {
     return val.ToJSON();
 }
 

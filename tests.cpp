@@ -378,6 +378,26 @@ void test(const operation::BLS_HashToG2& op, const std::optional<component::G2>&
     (void)result;
 }
 
+void test(const operation::BLS_IsG1OnCurve& op, const std::optional<bool>& result) {
+    (void)op;
+    (void)result;
+}
+
+void test(const operation::BLS_IsG2OnCurve& op, const std::optional<bool>& result) {
+    (void)op;
+    (void)result;
+}
+
+void test(const operation::BLS_GenerateKeyPair& op, const std::optional<component::BLS_KeyPair>& result) {
+    (void)op;
+    (void)result;
+}
+
+void test(const operation::Misc& op, const std::optional<Buffer>& result) {
+    (void)op;
+    (void)result;
+}
+
 void test(const operation::SR25519_Verify& op, const std::optional<bool>& result) {
     (void)op;
     (void)result;
@@ -442,6 +462,11 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
     if (    op.bn0.IsNegative() ||
             op.bn1.IsNegative() ||
             op.bn2.IsNegative() ) {
+        return;
+    }
+
+    /* Modular calculations are not supported yet */
+    if ( op.modulo != std::nullopt ) {
         return;
     }
 

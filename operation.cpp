@@ -749,7 +749,16 @@ std::string BLS_Sign::ToString(void) const {
     ss << "operation name: BLS_Sign" << std::endl;
     ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
     ss << "private key: " << priv.ToString() << std::endl;
-    ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+    if ( hashOrPoint == true ) {
+        ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+    } else {
+        ss << "point V: " << point.first.first.ToString() << std::endl;
+        ss << "point W: " << point.first.second.ToString() << std::endl;
+        ss << "point X: " << point.second.first.ToString() << std::endl;
+        ss << "point Y: " << point.second.second.ToString() << std::endl;
+    }
+    ss << "dest: " << util::HexDump(dest.Get()) << std::endl;
+    ss << "aug: " << util::HexDump(aug.Get()) << std::endl;
 
     return ss.str();
 }
@@ -757,7 +766,15 @@ std::string BLS_Sign::ToString(void) const {
 nlohmann::json BLS_Sign::ToJSON(void) const {
     nlohmann::json j;
 
-    /* TODO */
+    j["curveType"] = curveType.ToJSON();
+
+    j["priv"] = priv.ToJSON();
+
+    j["cleartext"] = cleartext.ToJSON();
+    j["dest"] = dest.ToJSON();
+    j["aug"] = aug.ToJSON();
+
+    j["modifier"] = modifier.ToJSON();
 
     return j;
 }
@@ -771,8 +788,10 @@ std::string BLS_Verify::ToString(void) const {
     ss << "public key X: " << pub.first.ToString() << std::endl;
     ss << "public key Y: " << pub.second.ToString() << std::endl;
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
-    ss << "signature R: " << signature.first.ToString() << std::endl;
-    ss << "signature S: " << signature.second.ToString() << std::endl;
+    ss << "signature V: " << signature.first.first.ToString() << std::endl;
+    ss << "signature W: " << signature.first.second.ToString() << std::endl;
+    ss << "signature X: " << signature.second.first.ToString() << std::endl;
+    ss << "signature Y: " << signature.second.second.ToString() << std::endl;
 
     return ss.str();
 }
@@ -780,6 +799,17 @@ std::string BLS_Verify::ToString(void) const {
 nlohmann::json BLS_Verify::ToJSON(void) const {
     nlohmann::json j;
     j["curveType"] = curveType.ToJSON();
+
+    j["cleartext"] = cleartext.ToJSON();
+
+    j["g1_x"] = pub.first.ToJSON();
+    j["g1_y"] = pub.second.ToJSON();
+
+    j["g2_v"] = signature.first.first.ToJSON();
+    j["g2_w"] = signature.first.second.ToJSON();
+    j["g2_x"] = signature.second.first.ToJSON();
+    j["g2_y"] = signature.second.second.ToJSON();
+
     j["modifier"] = modifier.ToJSON();
     return j;
 }
@@ -790,7 +820,10 @@ std::string BLS_Pairing::ToString(void) const {
 
     ss << "operation name: BLS_Pairing" << std::endl;
     ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
-    /* TODO q,p */
+    ss << "dest: " << util::HexDump(dest.Get()) << std::endl;
+    for (const auto& c : components.c) {
+        ss << "msg: " << util::HexDump(c.msg.Get()) << std::endl;
+    }
 
     return ss.str();
 }
@@ -810,6 +843,8 @@ std::string BLS_HashToG1::ToString(void) const {
     ss << "operation name: BLS_HashToG1" << std::endl;
     ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+    ss << "dest: " << util::HexDump(dest.Get()) << std::endl;
+    ss << "aug: " << util::HexDump(aug.Get()) << std::endl;
 
     return ss.str();
 }
@@ -818,6 +853,8 @@ nlohmann::json BLS_HashToG1::ToJSON(void) const {
     nlohmann::json j;
     j["curveType"] = curveType.ToJSON();
     j["cleartext"] = cleartext.ToJSON();
+    j["dest"] = dest.ToJSON();
+    j["aug"] = aug.ToJSON();
     j["modifier"] = modifier.ToJSON();
     return j;
 }
@@ -829,6 +866,8 @@ std::string BLS_HashToG2::ToString(void) const {
     ss << "operation name: BLS_HashToG2" << std::endl;
     ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+    ss << "dest: " << util::HexDump(dest.Get()) << std::endl;
+    ss << "aug: " << util::HexDump(aug.Get()) << std::endl;
 
     return ss.str();
 }
@@ -837,6 +876,96 @@ nlohmann::json BLS_HashToG2::ToJSON(void) const {
     nlohmann::json j;
     j["curveType"] = curveType.ToJSON();
     j["cleartext"] = cleartext.ToJSON();
+    j["dest"] = dest.ToJSON();
+    j["aug"] = aug.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string BLS_IsG1OnCurve::Name(void) const { return "BLS_IsG1OnCurve"; }
+std::string BLS_IsG1OnCurve::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_IsG1OnCurve" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "G1 X: " << g1.first.ToString() << std::endl;
+    ss << "G1 Y: " << g1.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_IsG1OnCurve::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+
+    j["g1_x"] = g1.first.ToJSON();
+    j["g1_y"] = g1.second.ToJSON();
+
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string BLS_IsG2OnCurve::Name(void) const { return "BLS_IsG2OnCurve"; }
+std::string BLS_IsG2OnCurve::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_IsG2OnCurve" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "G2 V: " << g2.first.first.ToString() << std::endl;
+    ss << "G2 W: " << g2.first.second.ToString() << std::endl;
+    ss << "G2 X: " << g2.second.first.ToString() << std::endl;
+    ss << "G2 Y: " << g2.second.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_IsG2OnCurve::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+
+    j["g2_v"] = g2.first.first.ToJSON();
+    j["g2_w"] = g2.first.second.ToJSON();
+    j["g2_x"] = g2.second.first.ToJSON();
+    j["g2_y"] = g2.second.second.ToJSON();
+
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string BLS_GenerateKeyPair::Name(void) const { return "BLS_GenerateKeyPair"; }
+std::string BLS_GenerateKeyPair::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_GenerateKeyPair" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "ikm: " << util::HexDump(ikm.Get()) << std::endl;
+    ss << "info: " << util::HexDump(info.Get()) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_GenerateKeyPair::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    j["ikm"] = ikm.ToJSON();
+    j["info"] = info.ToJSON();
+    return j;
+}
+
+std::string Misc::Name(void) const { return "Misc"; }
+std::string Misc::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: Misc" << std::endl;
+    ss << "operation: " << std::to_string(operation.Get()) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json Misc::ToJSON(void) const {
+    nlohmann::json j;
+    j["operation"] = operation.ToJSON();
     j["modifier"] = modifier.ToJSON();
     return j;
 }

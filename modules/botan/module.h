@@ -30,6 +30,7 @@ class Botan : public Module {
         std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) override;
         std::optional<component::Bignum> OpDH_Derive(operation::DH_Derive& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
+        bool SupportsModularBignumCalc(void) const override;
 };
 
 } /* namespace module */

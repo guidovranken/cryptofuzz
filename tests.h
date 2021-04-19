@@ -39,6 +39,10 @@ void test(const operation::BLS_Verify& op, const std::optional<bool>& result);
 void test(const operation::BLS_Pairing& op, const std::optional<bool>& result);
 void test(const operation::BLS_HashToG1& op, const std::optional<component::G1>& result);
 void test(const operation::BLS_HashToG2& op, const std::optional<component::G2>& result);
+void test(const operation::BLS_IsG1OnCurve& op, const std::optional<bool>& result);
+void test(const operation::BLS_IsG2OnCurve& op, const std::optional<bool>& result);
+void test(const operation::BLS_GenerateKeyPair& op, const std::optional<component::BLS_KeyPair>& result);
+void test(const operation::Misc& op, const std::optional<Buffer>& result);
 void test(const operation::SR25519_Verify& op, const std::optional<bool>& result);
 
 } /* namespace tests */
