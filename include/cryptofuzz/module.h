@@ -84,14 +84,6 @@ class Module {
             (void)op;
             return std::nullopt;
         }
-        virtual std::optional<component::Signature> OpSign(operation::Sign& op) {
-            (void)op;
-            return std::nullopt;
-        }
-        virtual std::optional<bool> OpVerify(operation::Verify& op) {
-            (void)op;
-            return std::nullopt;
-        }
         virtual std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
             (void)op;
             return std::nullopt;

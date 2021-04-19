@@ -810,60 +810,6 @@ class CMAC : public Operation {
         }
 };
 
-class Sign : public Operation {
-    public:
-        const component::Cleartext cleartext;
-        const component::DigestType digestType;
-        const component::PrivateKeyPEM pkeyPEM;
-
-        const uint64_t signatureSize;
-
-        Sign(Datasource& ds, component::Modifier modifier) :
-            Operation(std::move(modifier)),
-            cleartext(ds),
-            digestType(ds),
-            pkeyPEM(ds),
-            signatureSize(ds.Get<uint64_t>() % (10*1024*1024))
-        { }
-
-        static size_t MaxOperations(void) { return 20; }
-        std::string Name(void) const override;
-        std::string ToString(void) const override;
-        nlohmann::json ToJSON(void) const override;
-        inline bool operator==(const Sign& rhs) const {
-            (void)rhs;
-            /* TODO */
-            return false;
-        }
-};
-
-class Verify : public Operation {
-    public:
-        const component::Cleartext cleartext;
-        const component::DigestType digestType;
-        const component::PrivateKeyPEM pkeyPEM;
-        const component::Signature signature;
-
-        Verify(Datasource& ds, component::Modifier modifier) :
-            Operation(std::move(modifier)),
-            cleartext(ds),
-            digestType(ds),
-            pkeyPEM(ds),
-            signature(ds)
-        { }
-        Verify(const Sign& opSign, const component::Signature signature, component::Modifier modifier);
-
-        static size_t MaxOperations(void) { return 20; }
-        std::string Name(void) const override;
-        std::string ToString(void) const override;
-        nlohmann::json ToJSON(void) const override;
-        inline bool operator==(const Verify& rhs) const {
-            (void)rhs;
-            /* TODO */
-            return false;
-        }
-};
-
 class ECC_PrivateToPublic : public Operation {
     public:
         const component::CurveType curveType;

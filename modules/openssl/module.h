@@ -89,8 +89,6 @@ class OpenSSL : public Module {
         std::optional<component::Key> OpKDF_SP_800_108(operation::KDF_SP_800_108& op) override;
 #endif
         std::optional<component::MAC> OpCMAC(operation::CMAC& op) override;
-        std::optional<component::Signature> OpSign(operation::Sign& op) override;
-        std::optional<bool> OpVerify(operation::Verify& op) override;
 #if !(defined(CRYPTOFUZZ_LIBRESSL) && defined(SANITIZER_MSAN))
         std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) override;
         std::optional<bool> OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) override;

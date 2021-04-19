@@ -436,45 +436,6 @@ nlohmann::json CMAC::ToJSON(void) const {
     return j;
 }
 
-std::string Sign::Name(void) const { return "Sign"; }
-std::string Sign::ToString(void) const {
-    std::stringstream ss;
-
-    ss << "operation name: Sign" << std::endl;
-    ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
-    ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
-
-    return ss.str();
-}
-
-nlohmann::json Sign::ToJSON(void) const {
-    throw std::runtime_error("Not implemented");
-}
-
-std::string Verify::Name(void) const { return "Verify"; }
-std::string Verify::ToString(void) const {
-    std::stringstream ss;
-
-    ss << "operation name: Verify" << std::endl;
-    ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
-    ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
-
-    return ss.str();
-}
-
-nlohmann::json Verify::ToJSON(void) const {
-    throw std::runtime_error("Not implemented");
-}
-
-/* Construct Verify from Sign */
-Verify::Verify(const Sign& opSign, const component::Signature signature, component::Modifier modifier) :
-    Operation(std::move(modifier)),
-    cleartext(opSign.cleartext),
-    digestType(opSign.digestType),
-    pkeyPEM(opSign.pkeyPEM),
-    signature(signature)
-{ }
-
 std::string ECC_PrivateToPublic::Name(void) const { return "ECC_PrivateToPublic"; }
 std::string ECC_PrivateToPublic::ToString(void) const {
     std::stringstream ss;

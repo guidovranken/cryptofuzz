@@ -112,14 +112,6 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
             case CF_OPERATION("KDF_SP_800_108"):
                 executorKDF_SP_800_108.Run(ds, payload.data(), payload.size());
                 break;
-#if 0
-            case    ID("Cryptofuzz/Operation/Sign"):
-                executorSign.Run(ds, payload.data(), payload.size());
-                break;
-            case    ID("Cryptofuzz/Operation/Verify"):
-                executorVerify.Run(ds, payload.data(), payload.size());
-                break;
-#endif
             case CF_OPERATION("ECC_PrivateToPublic"):
                 executorECC_PrivateToPublic.Run(ds, payload.data(), payload.size());
                 break;
