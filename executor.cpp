@@ -9,6 +9,8 @@
 
 uint32_t PRNG(void);
 
+#define RETURN_IF_DISABLED(option, id) if ( !option.Have(id) ) return std::nullopt;
+
 namespace cryptofuzz {
 
 /* Specialization for operation::Digest */
@@ -22,15 +24,8 @@ template<> void ExecutorBase<component::Digest, operation::Digest>::postprocess(
 }
 
 template<> std::optional<component::Digest> ExecutorBase<component::Digest, operation::Digest>::callModule(std::shared_ptr<Module> module, operation::Digest& op) const {
-    /* Only run whitelisted digests, if specified */
-    if ( options.digests != std::nullopt ) {
-        if ( std::find(
-                    options.digests->begin(),
-                    options.digests->end(),
-                    op.digestType.Get()) == options.digests->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.digests, op.digestType.Get());
+
     return module->OpDigest(op);
 }
 
@@ -45,15 +40,8 @@ template<> void ExecutorBase<component::MAC, operation::HMAC>::postprocess(std::
 }
 
 template<> std::optional<component::MAC> ExecutorBase<component::MAC, operation::HMAC>::callModule(std::shared_ptr<Module> module, operation::HMAC& op) const {
-    /* Only run whitelisted digests, if specified */
-    if ( options.digests != std::nullopt ) {
-        if ( std::find(
-                    options.digests->begin(),
-                    options.digests->end(),
-                    op.digestType.Get()) == options.digests->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.digests, op.digestType.Get());
+
     return module->OpHMAC(op);
 }
 
@@ -68,15 +56,8 @@ template<> void ExecutorBase<component::MAC, operation::CMAC>::postprocess(std::
 }
 
 template<> std::optional<component::MAC> ExecutorBase<component::MAC, operation::CMAC>::callModule(std::shared_ptr<Module> module, operation::CMAC& op) const {
-    /* Only run whitelisted ciphers, if specified */
-    if ( options.ciphers != std::nullopt ) {
-        if ( std::find(
-                    options.ciphers->begin(),
-                    options.ciphers->end(),
-                    op.cipher.cipherType.Get()) == options.ciphers->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.ciphers, op.cipher.cipherType.Get());
+
     return module->OpCMAC(op);
 }
 
@@ -180,15 +161,8 @@ template<> void ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>
 }
 
 template<> std::optional<component::Ciphertext> ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>::callModule(std::shared_ptr<Module> module, operation::SymmetricEncrypt& op) const {
-    /* Only run whitelisted ciphers, if specified */
-    if ( options.ciphers != std::nullopt ) {
-        if ( std::find(
-                    options.ciphers->begin(),
-                    options.ciphers->end(),
-                    op.cipher.cipherType.Get()) == options.ciphers->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.ciphers , op.cipher.cipherType.Get());
+
     return module->OpSymmetricEncrypt(op);
 }
 
@@ -203,15 +177,8 @@ template<> void ExecutorBase<component::MAC, operation::SymmetricDecrypt>::postp
 }
 
 template<> std::optional<component::MAC> ExecutorBase<component::MAC, operation::SymmetricDecrypt>::callModule(std::shared_ptr<Module> module, operation::SymmetricDecrypt& op) const {
-    /* Only run whitelisted ciphers, if specified */
-    if ( options.ciphers != std::nullopt ) {
-        if ( std::find(
-                    options.ciphers->begin(),
-                    options.ciphers->end(),
-                    op.cipher.cipherType.Get()) == options.ciphers->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.ciphers , op.cipher.cipherType.Get());
+
     return module->OpSymmetricDecrypt(op);
 }
 
@@ -240,15 +207,8 @@ template<> void ExecutorBase<component::Key, operation::KDF_HKDF>::postprocess(s
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_HKDF>::callModule(std::shared_ptr<Module> module, operation::KDF_HKDF& op) const {
-    /* Only run whitelisted digests, if specified */
-    if ( options.digests != std::nullopt ) {
-        if ( std::find(
-                    options.digests->begin(),
-                    options.digests->end(),
-                    op.digestType.Get()) == options.digests->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.digests, op.digestType.Get());
+
     return module->OpKDF_HKDF(op);
 }
 
@@ -263,15 +223,8 @@ template<> void ExecutorBase<component::Key, operation::KDF_PBKDF>::postprocess(
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_PBKDF>::callModule(std::shared_ptr<Module> module, operation::KDF_PBKDF& op) const {
-    /* Only run whitelisted digests, if specified */
-    if ( options.digests != std::nullopt ) {
-        if ( std::find(
-                    options.digests->begin(),
-                    options.digests->end(),
-                    op.digestType.Get()) == options.digests->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.digests, op.digestType.Get());
+
     return module->OpKDF_PBKDF(op);
 }
 
@@ -286,15 +239,8 @@ template<> void ExecutorBase<component::Key, operation::KDF_PBKDF1>::postprocess
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_PBKDF1>::callModule(std::shared_ptr<Module> module, operation::KDF_PBKDF1& op) const {
-    /* Only run whitelisted digests, if specified */
-    if ( options.digests != std::nullopt ) {
-        if ( std::find(
-                    options.digests->begin(),
-                    options.digests->end(),
-                    op.digestType.Get()) == options.digests->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.digests, op.digestType.Get());
+
     return module->OpKDF_PBKDF1(op);
 }
 
@@ -309,15 +255,8 @@ template<> void ExecutorBase<component::Key, operation::KDF_PBKDF2>::postprocess
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_PBKDF2>::callModule(std::shared_ptr<Module> module, operation::KDF_PBKDF2& op) const {
-    /* Only run whitelisted digests, if specified */
-    if ( options.digests != std::nullopt ) {
-        if ( std::find(
-                    options.digests->begin(),
-                    options.digests->end(),
-                    op.digestType.Get()) == options.digests->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.digests, op.digestType.Get());
+
     return module->OpKDF_PBKDF2(op);
 }
 
@@ -346,15 +285,8 @@ template<> void ExecutorBase<component::Key, operation::KDF_SSH>::postprocess(st
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_SSH>::callModule(std::shared_ptr<Module> module, operation::KDF_SSH& op) const {
-    /* Only run whitelisted digests, if specified */
-    if ( options.digests != std::nullopt ) {
-        if ( std::find(
-                    options.digests->begin(),
-                    options.digests->end(),
-                    op.digestType.Get()) == options.digests->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.digests, op.digestType.Get());
+
     return module->OpKDF_SSH(op);
 }
 
@@ -369,15 +301,8 @@ template<> void ExecutorBase<component::Key, operation::KDF_TLS1_PRF>::postproce
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_TLS1_PRF>::callModule(std::shared_ptr<Module> module, operation::KDF_TLS1_PRF& op) const {
-    /* Only run whitelisted digests, if specified */
-    if ( options.digests != std::nullopt ) {
-        if ( std::find(
-                    options.digests->begin(),
-                    options.digests->end(),
-                    op.digestType.Get()) == options.digests->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.digests, op.digestType.Get());
+
     return module->OpKDF_TLS1_PRF(op);
 }
 
@@ -392,15 +317,8 @@ template<> void ExecutorBase<component::Key, operation::KDF_X963>::postprocess(s
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_X963>::callModule(std::shared_ptr<Module> module, operation::KDF_X963& op) const {
-    /* Only run whitelisted digests, if specified */
-    if ( options.digests != std::nullopt ) {
-        if ( std::find(
-                    options.digests->begin(),
-                    options.digests->end(),
-                    op.digestType.Get()) == options.digests->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.digests, op.digestType.Get());
+
     return module->OpKDF_X963(op);
 }
 
@@ -415,15 +333,8 @@ template<> void ExecutorBase<component::Key, operation::KDF_BCRYPT>::postprocess
 }
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_BCRYPT>::callModule(std::shared_ptr<Module> module, operation::KDF_BCRYPT& op) const {
-    /* Only run whitelisted digests, if specified */
-    if ( options.digests != std::nullopt ) {
-        if ( std::find(
-                    options.digests->begin(),
-                    options.digests->end(),
-                    op.digestType.Get()) == options.digests->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.digests, op.digestType.Get());
+
     return module->OpKDF_BCRYPT(op);
 }
 
@@ -439,16 +350,9 @@ template<> void ExecutorBase<component::Key, operation::KDF_SP_800_108>::postpro
 
 template<> std::optional<component::Key> ExecutorBase<component::Key, operation::KDF_SP_800_108>::callModule(std::shared_ptr<Module> module, operation::KDF_SP_800_108& op) const {
     if ( op.mech.mode == true ) {
-        /* Only run whitelisted digests, if specified */
-        if ( options.digests != std::nullopt ) {
-            if ( std::find(
-                        options.digests->begin(),
-                        options.digests->end(),
-                        op.mech.type.Get()) == options.digests->end() ) {
-                return std::nullopt;
-            }
-        }
+        RETURN_IF_DISABLED(options.digests, op.mech.type.Get());
     }
+
     return module->OpKDF_SP_800_108(op);
 }
 
@@ -521,15 +425,7 @@ template<> void ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToP
 }
 
 template<> std::optional<component::ECC_PublicKey> ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>::callModule(std::shared_ptr<Module> module, operation::ECC_PrivateToPublic& op) const {
-    /* Only run whitelisted curves, if specified */
-    if ( options.curves != std::nullopt ) {
-        if ( std::find(
-                    options.curves->begin(),
-                    options.curves->end(),
-                    op.curveType.Get()) == options.curves->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
 
     const size_t size = op.priv.ToTrimmedString().size();
 
@@ -548,15 +444,7 @@ template<> void ExecutorBase<bool, operation::ECC_ValidatePubkey>::postprocess(s
 }
 
 template<> std::optional<bool> ExecutorBase<bool, operation::ECC_ValidatePubkey>::callModule(std::shared_ptr<Module> module, operation::ECC_ValidatePubkey& op) const {
-    /* Only run whitelisted curves, if specified */
-    if ( options.curves != std::nullopt ) {
-        if ( std::find(
-                    options.curves->begin(),
-                    options.curves->end(),
-                    op.curveType.Get()) == options.curves->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
 
     return module->OpECC_ValidatePubkey(op);
 }
@@ -587,15 +475,8 @@ template<> void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyP
 }
 
 template<> std::optional<component::ECC_KeyPair> ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>::callModule(std::shared_ptr<Module> module, operation::ECC_GenerateKeyPair& op) const {
-    /* Only run whitelisted curves, if specified */
-    if ( options.curves != std::nullopt ) {
-        if ( std::find(
-                    options.curves->begin(),
-                    options.curves->end(),
-                    op.curveType.Get()) == options.curves->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
+
     return module->OpECC_GenerateKeyPair(op);
 }
 
@@ -621,25 +502,8 @@ template<> void ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>:
 }
 
 template<> std::optional<component::ECDSA_Signature> ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::callModule(std::shared_ptr<Module> module, operation::ECDSA_Sign& op) const {
-    /* Only run whitelisted curves, if specified */
-    if ( options.curves != std::nullopt ) {
-        if ( std::find(
-                    options.curves->begin(),
-                    options.curves->end(),
-                    op.curveType.Get()) == options.curves->end() ) {
-            return std::nullopt;
-        }
-    }
-
-    /* Only run whitelisted digests, if specified */
-    if ( options.digests != std::nullopt && op.digestType.Get() != 0 ) {
-        if ( std::find(
-                    options.digests->begin(),
-                    options.digests->end(),
-                    op.digestType.Get()) == options.digests->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
+    RETURN_IF_DISABLED(options.digests, op.digestType.Get());
 
     const size_t size = op.priv.ToTrimmedString().size();
 
@@ -658,25 +522,8 @@ template<> void ExecutorBase<bool, operation::ECDSA_Verify>::postprocess(std::sh
 }
 
 template<> std::optional<bool> ExecutorBase<bool, operation::ECDSA_Verify>::callModule(std::shared_ptr<Module> module, operation::ECDSA_Verify& op) const {
-    /* Only run whitelisted curves, if specified */
-    if ( options.curves != std::nullopt ) {
-        if ( std::find(
-                    options.curves->begin(),
-                    options.curves->end(),
-                    op.curveType.Get()) == options.curves->end() ) {
-            return std::nullopt;
-        }
-    }
-
-    /* Only run whitelisted digests, if specified */
-    if ( options.digests != std::nullopt && op.digestType.Get() != 0 ) {
-        if ( std::find(
-                    options.digests->begin(),
-                    options.digests->end(),
-                    op.digestType.Get()) == options.digests->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
+    RETURN_IF_DISABLED(options.digests, op.digestType.Get());
 
     /* Intentionally do not constrain the size of the public key or
      * signature (like we do for BignumCalc).
@@ -699,15 +546,8 @@ template<> void ExecutorBase<component::Secret, operation::ECDH_Derive>::postpro
 }
 
 template<> std::optional<component::Secret> ExecutorBase<component::Secret, operation::ECDH_Derive>::callModule(std::shared_ptr<Module> module, operation::ECDH_Derive& op) const {
-    /* Only run whitelisted curves, if specified */
-    if ( options.curves != std::nullopt ) {
-        if ( std::find(
-                    options.curves->begin(),
-                    options.curves->end(),
-                    op.curveType.Get()) == options.curves->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
+
     return module->OpECDH_Derive(op);
 }
 
@@ -719,15 +559,8 @@ template<> void ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>::p
 }
 
 template<> std::optional<component::Ciphertext> ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>::callModule(std::shared_ptr<Module> module, operation::ECIES_Encrypt& op) const {
-    /* Only run whitelisted curves, if specified */
-    if ( options.curves != std::nullopt ) {
-        if ( std::find(
-                    options.curves->begin(),
-                    options.curves->end(),
-                    op.curveType.Get()) == options.curves->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
+
     return module->OpECIES_Encrypt(op);
 }
 
@@ -739,15 +572,8 @@ template<> void ExecutorBase<component::Cleartext, operation::ECIES_Decrypt>::po
 }
 
 template<> std::optional<component::Cleartext> ExecutorBase<component::Cleartext, operation::ECIES_Decrypt>::callModule(std::shared_ptr<Module> module, operation::ECIES_Decrypt& op) const {
-    /* Only run whitelisted curves, if specified */
-    if ( options.curves != std::nullopt ) {
-        if ( std::find(
-                    options.curves->begin(),
-                    options.curves->end(),
-                    op.curveType.Get()) == options.curves->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
+
     return module->OpECIES_Decrypt(op);
 }
 
@@ -804,15 +630,7 @@ template<> void ExecutorBase<component::Bignum, operation::BignumCalc>::postproc
 }
 
 template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, operation::BignumCalc>::callModule(std::shared_ptr<Module> module, operation::BignumCalc& op) const {
-    /* Only run whitelisted calcops, if specified */
-    if ( options.calcOps != std::nullopt ) {
-        if ( std::find(
-                    options.calcOps->begin(),
-                    options.calcOps->end(),
-                    op.calcOp.Get()) == options.calcOps->end() ) {
-            return std::nullopt;
-        }
-    }
+    RETURN_IF_DISABLED(options.calcOps, op.calcOp.Get());
 
     /* Prevent timeouts */
     if ( op.bn0.GetSize() > config::kMaxBignumSize ) return std::nullopt;
@@ -1161,13 +979,8 @@ std::shared_ptr<Module> ExecutorBase<ResultType, OperationType>::getModule(Datas
     }
 
     /* Skip if this is a disabled module */
-    if ( options.disableModules != std::nullopt ) {
-        if ( std::find(
-                    options.disableModules->begin(),
-                    options.disableModules->end(),
-                    moduleID) != options.disableModules->end() ) {
-            return nullptr;
-        }
+    if ( options.disableModules.Have(moduleID) ) {
+        return nullptr;
     }
 
     if ( modules.find(moduleID) == modules.end() ) {
@@ -1210,14 +1023,10 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
             const auto moduleID = m.first;
 
             /* Skip if this is a disabled module */
-            if ( options.disableModules != std::nullopt ) {
-                if ( std::find(
-                            options.disableModules->begin(),
-                            options.disableModules->end(),
-                            moduleID) != options.disableModules->end() ) {
-                    continue;
-                }
+            if ( options.disableModules.Have(moduleID) ) {
+                continue;
             }
+
             moduleIDs.insert(moduleID);
         }
 

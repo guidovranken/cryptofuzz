@@ -5,8 +5,30 @@
 #include <stdlib.h>
 #include <cryptofuzz/repository.h>
 #include <cryptofuzz/wycheproof.h>
+#include <cryptofuzz/util.h>
 
 namespace cryptofuzz {
+
+bool EnabledTypes::Have(const uint64_t id) const {
+    return types.empty() || (types.find(id) != types.end());
+}
+
+void EnabledTypes::Add(const uint64_t id) {
+    types.insert(id);
+}
+
+uint64_t EnabledTypes::At(const size_t index) const {
+    CF_ASSERT(!Empty(), "Calling At on empty container");
+
+    std::set<uint64_t>::const_iterator it = types.begin();
+    std::advance(it, index % types.size());
+
+    return *it;
+}
+
+bool EnabledTypes::Empty(void) const {
+    return types.empty();
+}
 
 std::string Options::calcOpToBase(const std::string calcOp) {
     std::vector<std::string> calcOpParts;
@@ -41,13 +63,11 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
             std::vector<std::string> operationStrings;
             boost::split(operationStrings, parts[1], boost::is_any_of(","));
 
-            std::vector<uint64_t> operationIDs;
-
             for (const auto& curOpStr : operationStrings) {
                 bool found = false;
                 for (size_t i = 0; i < (sizeof(repository::OperationLUT) / sizeof(repository::OperationLUT[0])); i++) {
                     if ( boost::iequals(curOpStr, std::string(repository::OperationLUT[i].name)) ) {
-                        operationIDs.push_back(repository::OperationLUT[i].id);
+                        this->operations.Add(repository::OperationLUT[i].id);
                         found = true;
                         break;
                     }
@@ -58,8 +78,6 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
                     exit(1);
                 }
             }
-
-            this->operations = operationIDs;
         } else if ( !parts.empty() && parts[0] == "--ciphers" ) {
             if ( parts.size() != 2 ) {
                 std::cout << "Expected argument after --ciphers=" << std::endl;
@@ -69,13 +87,11 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
             std::vector<std::string> cipherStrings;
             boost::split(cipherStrings, parts[1], boost::is_any_of(","));
 
-            std::vector<uint64_t> cipherIDs;
-
             for (const auto& curOpStr : cipherStrings) {
                 bool found = false;
                 for (size_t i = 0; i < (sizeof(repository::CipherLUT) / sizeof(repository::CipherLUT[0])); i++) {
                     if ( boost::iequals(curOpStr, std::string(repository::CipherLUT[i].name)) ) {
-                        cipherIDs.push_back(repository::CipherLUT[i].id);
+                        this->ciphers.Add(repository::CipherLUT[i].id);
                         found = true;
                         break;
                     }
@@ -86,8 +102,6 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
                     exit(1);
                 }
             }
-
-            this->ciphers = cipherIDs;
         } else if ( !parts.empty() && parts[0] == "--digests" ) {
             if ( parts.size() != 2 ) {
                 std::cout << "Expected argument after --digests=" << std::endl;
@@ -97,13 +111,11 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
             std::vector<std::string> digestStrings;
             boost::split(digestStrings, parts[1], boost::is_any_of(","));
 
-            std::vector<uint64_t> digestIDs;
-
             for (const auto& curOpStr : digestStrings) {
                 bool found = false;
                 for (size_t i = 0; i < (sizeof(repository::DigestLUT) / sizeof(repository::DigestLUT[0])); i++) {
                     if ( boost::iequals(curOpStr, std::string(repository::DigestLUT[i].name)) ) {
-                        digestIDs.push_back(repository::DigestLUT[i].id);
+                        this->digests.Add(repository::DigestLUT[i].id);
                         found = true;
                         break;
                     }
@@ -114,8 +126,6 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
                     exit(1);
                 }
             }
-
-            this->digests = digestIDs;
         } else if ( !parts.empty() && parts[0] == "--curves" ) {
             if ( parts.size() != 2 ) {
                 std::cout << "Expected argument after --curves=" << std::endl;
@@ -125,13 +135,11 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
             std::vector<std::string> curveStrings;
             boost::split(curveStrings, parts[1], boost::is_any_of(","));
 
-            std::vector<uint64_t> curveIDs;
-
             for (const auto& curOpStr : curveStrings) {
                 bool found = false;
                 for (size_t i = 0; i < (sizeof(repository::ECC_CurveLUT) / sizeof(repository::ECC_CurveLUT[0])); i++) {
                     if ( boost::iequals(curOpStr, std::string(repository::ECC_CurveLUT[i].name)) ) {
-                        curveIDs.push_back(repository::ECC_CurveLUT[i].id);
+                        this->curves.Add(repository::ECC_CurveLUT[i].id);
                         found = true;
                         break;
                     }
@@ -142,8 +150,6 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
                     exit(1);
                 }
             }
-
-            this->curves = curveIDs;
         } else if ( !parts.empty() && parts[0] == "--force-module" ) {
             if ( parts.size() != 2 ) {
                 std::cout << "Expected argument after --force-module=" << std::endl;
@@ -177,13 +183,11 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
             std::vector<std::string> moduleStrings;
             boost::split(moduleStrings, parts[1], boost::is_any_of(","));
 
-            std::vector<uint64_t> moduleIDs;
-
             for (const auto& curModStr : moduleStrings) {
                 bool found = false;
                 for (size_t i = 0; i < (sizeof(repository::ModuleLUT) / sizeof(repository::ModuleLUT[0])); i++) {
                     if ( boost::iequals(curModStr, std::string(repository::ModuleLUT[i].name)) ) {
-                        moduleIDs.push_back(repository::ModuleLUT[i].id);
+                        this->disableModules.Add(repository::ModuleLUT[i].id);
                         found = true;
                         break;
                     }
@@ -194,8 +198,6 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
                     exit(1);
                 }
             }
-
-            this->disableModules = moduleIDs;
         } else if ( !parts.empty() && parts[0] == "--calcops" ) {
             if ( parts.size() != 2 ) {
                 std::cout << "Expected argument after --calcops=" << std::endl;
@@ -205,13 +207,11 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
             std::vector<std::string> calcOpStrings;
             boost::split(calcOpStrings, parts[1], boost::is_any_of(","));
 
-            std::vector<uint64_t> calcOps;
-
             for (const auto& curCalcOpStr : calcOpStrings) {
                 bool found = false;
                 for (size_t i = 0; i < (sizeof(repository::CalcOpLUT) / sizeof(repository::CalcOpLUT[0])); i++) {
                     if ( boost::iequals(curCalcOpStr, calcOpToBase(repository::CalcOpLUT[i].name)) ) {
-                        calcOps.push_back(repository::CalcOpLUT[i].id);
+                        this->calcOps.Add(repository::CalcOpLUT[i].id);
                         found = true;
                         break;
                     }
@@ -222,8 +222,6 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
                     exit(1);
                 }
             }
-
-            this->calcOps = calcOps;
         } else if ( !parts.empty() && parts[0] == "--min-modules" ) {
             if ( parts.size() != 2 ) {
                 std::cout << "Expected argument after --min-modules=" << std::endl;

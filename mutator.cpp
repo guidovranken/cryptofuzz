@@ -111,32 +111,32 @@ extern "C" size_t LLVMFuzzerMutate(uint8_t* data, size_t size, size_t maxSize);
 extern cryptofuzz::Options* cryptofuzz_options;
 
 static uint64_t getRandomCipher(void) {
-    if ( cryptofuzz_options && cryptofuzz_options->ciphers != std::nullopt ) {
-        return (*cryptofuzz_options->ciphers)[PRNG() % cryptofuzz_options->ciphers->size()];
+    if ( cryptofuzz_options && !cryptofuzz_options->ciphers.Empty() ) {
+        return cryptofuzz_options->ciphers.At(PRNG());
     } else {
         return CipherLUT[ PRNG() % (sizeof(CipherLUT) / sizeof(CipherLUT[0])) ].id;
     }
 }
 
 static uint64_t getRandomDigest(void) {
-    if ( cryptofuzz_options && cryptofuzz_options->digests != std::nullopt ) {
-        return (*cryptofuzz_options->digests)[PRNG() % cryptofuzz_options->digests->size()];
+    if ( cryptofuzz_options && !cryptofuzz_options->digests.Empty() ) {
+        return cryptofuzz_options->digests.At(PRNG());
     } else {
         return DigestLUT[ PRNG() % (sizeof(DigestLUT) / sizeof(DigestLUT[0])) ].id;
     }
 }
 
 static uint64_t getRandomCurve(void) {
-    if ( cryptofuzz_options && cryptofuzz_options->curves != std::nullopt ) {
-        return (*cryptofuzz_options->curves)[PRNG() % cryptofuzz_options->curves->size()];
+    if ( cryptofuzz_options && !cryptofuzz_options->curves.Empty() ) {
+        return cryptofuzz_options->curves.At(PRNG());
     } else {
         return ECC_CurveLUT[ PRNG() % (sizeof(ECC_CurveLUT) / sizeof(ECC_CurveLUT[0])) ].id;
     }
 }
 
 static uint64_t getRandomCalcOp(void) {
-    if ( cryptofuzz_options && cryptofuzz_options->calcOps != std::nullopt ) {
-        return (*cryptofuzz_options->calcOps)[PRNG() % cryptofuzz_options->calcOps->size()];
+    if ( cryptofuzz_options && !cryptofuzz_options->calcOps.Empty() ) {
+        return cryptofuzz_options->calcOps.At(PRNG());
     } else {
         return CalcOpLUT[ PRNG() % (sizeof(CalcOpLUT) / sizeof(CalcOpLUT[0])) ].id;
     }
@@ -152,8 +152,8 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
     {
         uint64_t operation;
 
-        if ( cryptofuzz_options && cryptofuzz_options->operations != std::nullopt ) {
-            operation = (*cryptofuzz_options->operations)[PRNG() % cryptofuzz_options->operations->size()];
+        if ( cryptofuzz_options && !cryptofuzz_options->operations.Empty() ) {
+            operation = cryptofuzz_options->operations.At(PRNG());
         } else {
             operation = OperationLUT[ PRNG() % (sizeof(OperationLUT) / sizeof(OperationLUT[0])) ].id;
         }

@@ -57,15 +57,10 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
 
         const auto operation = ds.Get<uint64_t>();
 
-        /* Only run whitelisted operations, if specified */
-        if ( options.operations != std::nullopt ) {
-            if ( std::find(
-                    options.operations->begin(),
-                    options.operations->end(),
-                    operation) == options.operations->end() ) {
-                return;
-            }
+        if ( !options.operations.Have(operation) ) {
+            return;
         }
+
         const auto payload = ds.GetData(0, 1);
 
         switch ( operation ) {
