@@ -111,7 +111,7 @@ extern "C" size_t LLVMFuzzerMutate(uint8_t* data, size_t size, size_t maxSize);
 extern cryptofuzz::Options* cryptofuzz_options;
 
 static uint64_t getRandomCipher(void) {
-    if ( cryptofuzz_options && !cryptofuzz_options->ciphers.Empty() ) {
+    if ( !cryptofuzz_options->ciphers.Empty() ) {
         return cryptofuzz_options->ciphers.At(PRNG());
     } else {
         return CipherLUT[ PRNG() % (sizeof(CipherLUT) / sizeof(CipherLUT[0])) ].id;
@@ -119,7 +119,7 @@ static uint64_t getRandomCipher(void) {
 }
 
 static uint64_t getRandomDigest(void) {
-    if ( cryptofuzz_options && !cryptofuzz_options->digests.Empty() ) {
+    if ( !cryptofuzz_options->digests.Empty() ) {
         return cryptofuzz_options->digests.At(PRNG());
     } else {
         return DigestLUT[ PRNG() % (sizeof(DigestLUT) / sizeof(DigestLUT[0])) ].id;
@@ -127,7 +127,7 @@ static uint64_t getRandomDigest(void) {
 }
 
 static uint64_t getRandomCurve(void) {
-    if ( cryptofuzz_options && !cryptofuzz_options->curves.Empty() ) {
+    if ( !cryptofuzz_options->curves.Empty() ) {
         return cryptofuzz_options->curves.At(PRNG());
     } else {
         return ECC_CurveLUT[ PRNG() % (sizeof(ECC_CurveLUT) / sizeof(ECC_CurveLUT[0])) ].id;
@@ -135,7 +135,7 @@ static uint64_t getRandomCurve(void) {
 }
 
 static uint64_t getRandomCalcOp(void) {
-    if ( cryptofuzz_options && !cryptofuzz_options->calcOps.Empty() ) {
+    if ( !cryptofuzz_options->calcOps.Empty() ) {
         return cryptofuzz_options->calcOps.At(PRNG());
     } else {
         return CalcOpLUT[ PRNG() % (sizeof(CalcOpLUT) / sizeof(CalcOpLUT[0])) ].id;
@@ -152,7 +152,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
     {
         uint64_t operation;
 
-        if ( cryptofuzz_options && !cryptofuzz_options->operations.Empty() ) {
+        if ( !cryptofuzz_options->operations.Empty() ) {
             operation = cryptofuzz_options->operations.At(PRNG());
         } else {
             operation = OperationLUT[ PRNG() % (sizeof(OperationLUT) / sizeof(OperationLUT[0])) ].id;
