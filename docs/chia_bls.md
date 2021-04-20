@@ -3,7 +3,7 @@ git clone --depth 1 https://github.com/Chia-Network/bls-signatures.git
 cd bls-signatures/
 mkdir build/
 cd build/
-cmake ..
+cmake .. -DBUILD_BLS_PYTHON_BINDINGS=0 -DBUILD_BLS_TESTS=0 -DBUILD_BLS_BENCHMARKS=0
 make -j$(nproc)
 export CHIA_BLS_LIBBLS_A_PATH=$(realpath libbls.a)
 export CHIA_BLS_INCLUDE_PATH=$(realpath ../src/)
