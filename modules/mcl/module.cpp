@@ -4,6 +4,8 @@
 #include <fuzzing/datasource/id.hpp>
 
 #include <mcl/bls12_381.hpp>
+#define MCL_DONT_USE_OPENSSL
+#include <cybozu/sha2.hpp>
 
 #include <iostream>
 #include <vector>
@@ -108,6 +110,40 @@ std::vector<std::string> split(const std::string& s, std::optional<size_t> expec
         ::mcl::bls12::G2::mul(sign, Hm, s); // sign = s H(m)
     }
 
+}
+
+std::optional<component::Digest> mcl::OpDigest(operation::Digest& op) {
+    std::optional<component::Digest> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    util::Multipart parts = util::ToParts(ds, op.cleartext);
+
+    switch ( op.digestType.Get() ) {
+        case    CF_DIGEST("SHA256"):
+            {
+                cybozu::Sha256 hasher;
+                for (const auto& part : parts) {
+                    CF_NORET(hasher.update(part.first, part.second));
+                }
+                uint8_t out[256 / 8];
+                CF_ASSERT(hasher.digest(out, sizeof(out), nullptr, 0) == sizeof(out), "Unexpected digest() output");
+                ret = {out, sizeof(out)};
+            }
+            break;
+        case    CF_DIGEST("SHA512"):
+            {
+                cybozu::Sha512 hasher;
+                for (const auto& part : parts) {
+                    CF_NORET(hasher.update(part.first, part.second));
+                }
+                uint8_t out[512 / 8];
+                CF_ASSERT(hasher.digest(out, sizeof(out), nullptr, 0) == sizeof(out), "Unexpected digest() output");
+                ret = {out, sizeof(out)};
+            }
+            break;
+    }
+
+    return ret;
 }
 
 std::optional<component::BLS_PublicKey> mcl::OpBLS_PrivateToPublic(operation::BLS_PrivateToPublic& op) {

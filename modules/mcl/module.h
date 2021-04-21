@@ -16,6 +16,7 @@ class mcl : public Module {
         std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op);
         */
 
+        std::optional<component::Digest> OpDigest(operation::Digest& op);
         std::optional<component::BLS_PublicKey> OpBLS_PrivateToPublic(operation::BLS_PrivateToPublic& op);
         std::optional<component::BLS_Signature> OpBLS_Sign(operation::BLS_Sign& op);
         std::optional<bool> OpBLS_Verify(operation::BLS_Verify& op);
