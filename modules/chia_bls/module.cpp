@@ -67,28 +67,23 @@ namespace chia_bls_detail {
 std::optional<component::BLS_KeyPair> chia_bls::OpBLS_GenerateKeyPair(operation::BLS_GenerateKeyPair& op) {
     std::optional<component::BLS_KeyPair> ret = std::nullopt;
 
-    if ( op.ikm.GetSize() < 33 ) {
+    if ( op.ikm.GetSize() < 32 ) {
         return ret;
     }
-    if ( op.ikm.GetPtr()[op.ikm.GetSize()-1] != 0 ) {
-        return ret;
-    }
-    const std::vector<uint8_t> ikm(op.ikm.GetPtr(), op.ikm.GetPtr() + op.ikm.GetSize() - 1);
-    //if ( op.info.GetSize() != 0 ) {
-    if ( op.info.Get() != std::vector<uint8_t>{0x00, 0x30} ) {
+    if ( op.info.GetSize() != 0 ) {
         return ret;
     }
 
-    //const auto priv = bls::HDKeys::KeyGen(op.ikm.Get());
-    const auto priv = bls::HDKeys::KeyGen(ikm);
+    const auto priv = bls::HDKeys::KeyGen(op.ikm.Get());
     const auto pub = priv.GetG1Element();
     uint8_t priv_bytes[bls::PrivateKey::PRIVATE_KEY_SIZE];
     priv.Serialize(priv_bytes);
     ret = {
-        util::BinToDec(priv_bytes, sizeof(priv_bytes)) + "1",
+        util::BinToDec(priv_bytes, sizeof(priv_bytes)),
         chia_bls_detail::G1_To_Component(pub)};
 
     ret = std::nullopt;
+
     return ret;
 }
 
