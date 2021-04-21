@@ -128,3 +128,5 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Botan: [ECDSA pubkey recovery succeeds with invalid parameters](https://github.com/randombit/botan/issues/2698)
 - mbed TLS: [CHACHA20-POLY1305 succeeds with invalid IV size](https://github.com/ARMmbed/mbedtls/issues/4301)
 - SymCrypt: [ECDSA signing produces invalid signature](https://github.com/microsoft/SymCrypt/issues/15)
+- TBA: TBA
+- Herumi mcl: [Incorrect results with dst larger than 255 bytes](https://github.com/herumi/mcl/commit/b01ef452a5a4acae584c0b27956cbf55b5275607)
