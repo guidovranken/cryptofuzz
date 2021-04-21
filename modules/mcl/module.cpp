@@ -347,16 +347,14 @@ std::optional<bool> mcl::OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) {
 std::optional<component::G1> mcl::OpBLS_HashToG1(operation::BLS_HashToG1& op) {
     std::optional<component::G1> ret = std::nullopt;
 
-    try {
-        using namespace ::mcl::bls12;
-        G1 P;
-        const auto msg = mcl_detail::MsgAug(op);
-		BN::param.mapTo.mapTo_WB19_.msgToG1(P, msg.data(), msg.size(), (const char*)op.dest.GetPtr(), op.dest.GetSize());
+    using namespace ::mcl::bls12;
+    G1 P;
+    const auto msg = mcl_detail::MsgAug(op);
+    BN::param.mapTo.mapTo_WB19_.msgToG1(P, msg.data(), msg.size(), (const char*)op.dest.GetPtr(), op.dest.GetSize());
 
-        /* Alternative: requires that op.dest == mcl_detail::DST */
-        ///* noret */ hashAndMapToG1(P, msg.data(), msg.size());
-        ret = mcl_detail::ToComponentG1(P);
-    } catch ( cybozu::Exception ) { }
+    /* Alternative: requires that op.dest == mcl_detail::DST */
+    ///* noret */ hashAndMapToG1(P, msg.data(), msg.size());
+    ret = mcl_detail::ToComponentG1(P);
 
     return ret;
 }
@@ -364,16 +362,14 @@ std::optional<component::G1> mcl::OpBLS_HashToG1(operation::BLS_HashToG1& op) {
 std::optional<component::G2> mcl::OpBLS_HashToG2(operation::BLS_HashToG2& op) {
     std::optional<component::G2> ret = std::nullopt;
 
-    try {
-        using namespace ::mcl::bls12;
-        G2 P;
-        const auto msg = mcl_detail::MsgAug(op);
-		BN::param.mapTo.mapTo_WB19_.msgToG2(P, msg.data(), msg.size(), (const char*)op.dest.GetPtr(), op.dest.GetSize());
+    using namespace ::mcl::bls12;
+    G2 P;
+    const auto msg = mcl_detail::MsgAug(op);
+    BN::param.mapTo.mapTo_WB19_.msgToG2(P, msg.data(), msg.size(), (const char*)op.dest.GetPtr(), op.dest.GetSize());
 
-        /* Alternative: requires that op.dest == mcl_detail::DST */
-        ///* noret */ hashAndMapToG2(P, msg.data(), msg.size());
-        ret = mcl_detail::ToComponentG2(P);
-    } catch ( cybozu::Exception ) { }
+    /* Alternative: requires that op.dest == mcl_detail::DST */
+    ///* noret */ hashAndMapToG2(P, msg.data(), msg.size());
+    ret = mcl_detail::ToComponentG2(P);
 
     return ret;
 }
