@@ -180,10 +180,6 @@ std::optional<component::BLS_Signature> mcl::OpBLS_Sign(operation::BLS_Sign& op)
         return std::nullopt;
     }
 
-    if ( op.dest.GetSize() > 255 ) {
-        return std::nullopt;
-    }
-
     try {
         using namespace ::mcl::bls12;
         Fr sec;
@@ -351,10 +347,6 @@ std::optional<bool> mcl::OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) {
 std::optional<component::G1> mcl::OpBLS_HashToG1(operation::BLS_HashToG1& op) {
     std::optional<component::G1> ret = std::nullopt;
 
-    if ( op.dest.GetSize() > 255 ) {
-        return std::nullopt;
-    }
-
     try {
         using namespace ::mcl::bls12;
         G1 P;
@@ -371,10 +363,6 @@ std::optional<component::G1> mcl::OpBLS_HashToG1(operation::BLS_HashToG1& op) {
 
 std::optional<component::G2> mcl::OpBLS_HashToG2(operation::BLS_HashToG2& op) {
     std::optional<component::G2> ret = std::nullopt;
-
-    if ( op.dest.GetSize() > 255 ) {
-        return std::nullopt;
-    }
 
     try {
         using namespace ::mcl::bls12;
