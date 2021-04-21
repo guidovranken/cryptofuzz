@@ -544,7 +544,13 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                         a.setStr(op.bn0.ToString(ds), 10);
                         return a.getStr();
             }
-        } catch ( cybozu::Exception ) { }
+        } catch ( cybozu::Exception ) {
+            if (
+                    !op.bn0.IsGreaterThan("52435875175126190479447740508185965837690552500527637822603658699938581184511") &&
+                    !op.bn1.IsGreaterThan("52435875175126190479447740508185965837690552500527637822603658699938581184511") ) {
+                CF_ASSERT(0, "BignumCalc_Mod_BLS12_381_R unexpectedly failed");
+            }
+        }
 
         return std::nullopt;
     } else if ( op.modulo->ToTrimmedString() == "4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787" ) {
@@ -685,7 +691,13 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                         a.setStr(op.bn0.ToString(ds), 10);
                         return a.getStr();
             }
-        } catch ( cybozu::Exception ) { }
+        } catch ( cybozu::Exception ) {
+            if (
+                    !op.bn0.IsGreaterThan("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559786") &&
+                    !op.bn1.IsGreaterThan("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559786") ) {
+                CF_ASSERT(0, "BignumCalc_Mod_BLS12_381_P unexpectedly failed");
+            }
+        }
         return std::nullopt;
     } else {
         return std::nullopt;
