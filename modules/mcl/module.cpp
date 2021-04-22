@@ -514,7 +514,10 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                         a.setStr(op.bn0.ToString(ds), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
-                        ::mcl::bn::Fr::squareRoot(*resultp, *ap);
+                        if ( ::mcl::bn::Fr::squareRoot(*resultp, *ap) == false ) {
+                            return std::string("0");
+                        }
+                        ::mcl::bn::Fr::sqr(*resultp, *resultp);
                         return resultp->getStr();
                     }
                 case    CF_CALCOP("Exp(A,B)"):
@@ -660,9 +663,11 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                         a.setStr(op.bn0.ToString(ds), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
-                        ::mcl::bn::Fp::squareRoot(*resultp, *ap);
-                        return std::nullopt;
-                        //return resultp->getStr();
+                        if ( ::mcl::bn::Fp::squareRoot(*resultp, *ap) == false ) {
+                            return std::string("0");
+                        }
+                        ::mcl::bn::Fp::sqr(*resultp, *resultp);
+                        return resultp->getStr();
                     }
                 case    CF_CALCOP("Exp(A,B)"):
                     {

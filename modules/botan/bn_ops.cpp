@@ -974,12 +974,24 @@ bool Ressol::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std
     (void)res;
     (void)bn;
 
-    return false;
-#if 0
-    res = ::Botan::ressol(bn[0].Ref(), bn[1].Ref());
+    auto mod = modulo == std::nullopt ? bn[1] : *modulo;
+
+    const auto r = ::Botan::ressol(bn[0].Ref(), mod.Ref());
+
+    if ( r < 1 ) {
+        if ( modulo != std::nullopt ) {
+            res = 0;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    if ( modulo != std::nullopt ) {
+        res = ::Botan::square(r) % mod.Ref();
+    }
 
     return true;
-#endif
 }
 
 bool Not::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {

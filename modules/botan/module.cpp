@@ -1200,7 +1200,7 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
             case    CF_CALCOP("Sqr(A)"):
             case    CF_CALCOP("RShift(A,B)"):
             case    CF_CALCOP("LShift1(A)"):
-            //case    CF_CALCOP("Sqrt(A)"):
+            case    CF_CALCOP("Sqrt(A)"):
             case    CF_CALCOP("Not(A)"):
             case    CF_CALCOP("Exp(A,B)"):
             case    CF_CALCOP("IsEq(A,B)"):
@@ -1358,7 +1358,11 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
             opRunner = std::make_unique<Botan_bignum::NumLSZeroBits>();
             break;
         case    CF_CALCOP("Sqrt(A)"):
-            opRunner = std::make_unique<Botan_bignum::Sqrt>();
+            if ( op.modulo == std::nullopt ) {
+                opRunner = std::make_unique<Botan_bignum::Sqrt>();
+            } else {
+                opRunner = std::make_unique<Botan_bignum::Ressol>();
+            }
             break;
         case    CF_CALCOP("AddMod(A,B,C)"):
             opRunner = std::make_unique<Botan_bignum::AddMod>();
