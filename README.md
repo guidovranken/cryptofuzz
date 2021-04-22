@@ -130,3 +130,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - SymCrypt: [ECDSA signing produces invalid signature](https://github.com/microsoft/SymCrypt/issues/15)
 - TBA: TBA
 - Herumi mcl: [Incorrect results with dst larger than 255 bytes](https://github.com/herumi/mcl/commit/b01ef452a5a4acae584c0b27956cbf55b5275607)
+- LibreSSL: [EC_POINT_point2oct / EC_POINT_oct2point asymmetry](https://cvsweb.openbsd.org/cgi-bin/cvsweb/src/lib/libcrypto/ec/ec2_oct.c?rev=1.13&content-type=text/x-cvsweb-markup)
