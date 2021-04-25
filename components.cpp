@@ -123,6 +123,10 @@ Datasource Buffer::AsDatasource(void) const {
     return Datasource(data.data(), data.size());
 }
 
+std::string Buffer::AsString(void) const {
+    return std::string(data.data(), data.data() + data.size());
+}
+
 Buffer Buffer::ECDSA_Pad(const size_t retSize) const {
     size_t bufSize = GetSize();
 

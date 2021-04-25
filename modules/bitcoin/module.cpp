@@ -7,15 +7,23 @@
 #include "crypto/sha1.cpp"
 #include "crypto/sha256.cpp"
 #include "crypto/sha512.cpp"
+#include "crypto/sha3.cpp"
 #include "crypto/ripemd160.cpp"
 
 #include "crypto/hmac_sha256.cpp"
 #include "crypto/hmac_sha512.cpp"
 
+#include "crypto/hkdf_sha256_32.cpp"
+
 #include "crypto/aes.cpp"
+#include "crypto/chacha20.cpp"
+#include "crypto/poly1305.cpp"
+#include "crypto/chacha_poly_aead.cpp"
 
 #include "crypto/siphash.cpp"
+
 #include "uint256.cpp"
+#include "cleanse.cpp"
 
 namespace cryptofuzz {
 namespace module {
@@ -23,22 +31,45 @@ namespace module {
 Bitcoin::Bitcoin(void) :
     Module("Bitcoin") { }
 
+namespace Bitcoin_detail {
+
 template <class Alg>
-std::optional<component::Digest> Bitcoin::digest(operation::Digest& op, Datasource& ds) {
+void digest_write(std::shared_ptr<Alg> alg, const uint8_t* data, const size_t size) {
+    alg->Write(data, size);
+}
+
+template <>
+void digest_write(std::shared_ptr<SHA3_256> alg, const uint8_t* data, const size_t size) {
+    alg->Write({data, size});
+}
+
+template <class Alg>
+std::optional<component::Digest> digest(operation::Digest& op, Datasource& ds) {
     std::optional<component::Digest> ret = std::nullopt;
 
+    size_t numResets = 0;
     util::Multipart parts;
-    std::unique_ptr<Alg> alg = nullptr;
+    std::shared_ptr<Alg> alg = nullptr;
 
     /* Initialize */
     {
         parts = util::ToParts(ds, op.cleartext);
-        alg = std::make_unique<Alg>();
+        alg = std::make_shared<Alg>();
     }
+
+again:
 
     /* Process */
     for (const auto& part : parts) {
-        alg->Write(part.first, part.second);
+        digest_write(alg, part.first, part.second);
+        try {
+            if ( numResets < 5 && ds.Get<bool>() ) {
+                alg->Reset();
+                numResets++;
+                goto again;
+            }
+        } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+        }
     }
 
     /* Finalize */
@@ -51,6 +82,8 @@ std::optional<component::Digest> Bitcoin::digest(operation::Digest& op, Datasour
     return ret;
 }
 
+} /* namespace Bitcoin_detail */
+
 std::optional<component::Digest> Bitcoin::OpDigest(operation::Digest& op) {
     std::optional<component::Digest> ret = std::nullopt;
 
@@ -58,20 +91,24 @@ std::optional<component::Digest> Bitcoin::OpDigest(operation::Digest& op) {
 
     switch ( op.digestType.Get() ) {
         case CF_DIGEST("SHA1"):
-            return digest<CSHA1>(op, ds);
+            return Bitcoin_detail::digest<CSHA1>(op, ds);
         case CF_DIGEST("SHA256"):
-            return digest<CSHA256>(op, ds);
+            return Bitcoin_detail::digest<CSHA256>(op, ds);
         case CF_DIGEST("SHA512"):
-            return digest<CSHA512>(op, ds);
+            return Bitcoin_detail::digest<CSHA512>(op, ds);
         case CF_DIGEST("RIPEMD160"):
-            return digest<CRIPEMD160>(op, ds);
+            return Bitcoin_detail::digest<CRIPEMD160>(op, ds);
+        case CF_DIGEST("SHA3-256"):
+            return Bitcoin_detail::digest<SHA3_256>(op, ds);
     }
 
     return ret;
 }
 
+namespace Bitcoin_detail {
+
 template <class Alg>
-std::optional<component::MAC> Bitcoin::hmac(operation::HMAC& op, Datasource& ds) {
+std::optional<component::MAC> hmac(operation::HMAC& op, Datasource& ds) {
     std::optional<component::MAC> ret = std::nullopt;
 
     util::Multipart parts;
@@ -97,6 +134,8 @@ std::optional<component::MAC> Bitcoin::hmac(operation::HMAC& op, Datasource& ds)
 
     return ret;
 }
+
+} /* namespace Bitcoin_detail */
 
 namespace Bitcoin_detail {
     static std::optional<component::Digest> SipHash64(operation::HMAC& op, Datasource& ds) {
@@ -192,9 +231,9 @@ std::optional<component::MAC> Bitcoin::OpHMAC(operation::HMAC& op) {
 
     switch ( op.digestType.Get() ) {
         case CF_DIGEST("SHA256"):
-            return hmac<CHMAC_SHA256>(op, ds);
+            return Bitcoin_detail::hmac<CHMAC_SHA256>(op, ds);
         case CF_DIGEST("SHA512"):
-            return hmac<CHMAC_SHA512>(op, ds);
+            return Bitcoin_detail::hmac<CHMAC_SHA512>(op, ds);
         case CF_DIGEST("SIPHASH64"):
             return Bitcoin_detail::SipHash64(op, ds);
     }
@@ -202,74 +241,222 @@ std::optional<component::MAC> Bitcoin::OpHMAC(operation::HMAC& op) {
     return ret;
 }
 
-std::optional<component::Ciphertext> Bitcoin::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
-    std::optional<component::Ciphertext> ret = std::nullopt;
+namespace Bitcoin_detail {
+    template <class T>
+    std::optional<T> chacha20(const Buffer& key, const Buffer& iv, const Buffer& in) {
+        std::optional<T> ret = std::nullopt;
 
-    if ( op.tagSize != std::nullopt || op.aad != std::nullopt ) {
+        if ( key.GetSize() != 16 && key.GetSize() != 32 ) {
+            return ret;
+        }
+        if ( iv.GetSize() != 8 ) {
+            return std::nullopt;
+        }
+
+        uint64_t iv_uint64_t;
+
+        ChaCha20 cc20(key.GetPtr(), key.GetSize());
+
+        memcpy(&iv_uint64_t, iv.GetPtr(), sizeof(iv_uint64_t));
+        cc20.SetIV(iv_uint64_t);
+
+        uint8_t* out = util::malloc(in.GetSize());
+
+        CF_NORET(cc20.Crypt(in.GetPtr(), out, in.GetSize()));
+
+        ret = T(Buffer(out, in.GetSize()));
+        util::free(out);
+
         return ret;
     }
 
-    std::unique_ptr<AES256CBCEncrypt> aes = nullptr;
-    uint8_t* out = util::malloc(op.cleartext.GetSize() + AES_BLOCKSIZE);
-    int numWritten;
+    std::optional<component::Ciphertext> chacha20_poly1305(const operation::SymmetricEncrypt& op) {
+        std::optional<component::Ciphertext> ret = std::nullopt;
 
-    /* Initialize */
-    {
-        CF_CHECK_EQ(op.cipher.cipherType.Get(), CF_CIPHER("AES_256_CBC"));
-        CF_CHECK_EQ(op.cipher.key.GetSize(), AES256_KEYSIZE);
-        CF_CHECK_EQ(op.cipher.iv.GetSize(), AES_BLOCKSIZE);
-        aes = std::make_unique<AES256CBCEncrypt>(op.cipher.key.GetPtr(), op.cipher.iv.GetPtr(), true);
-    }
+        if ( op.cipher.key.GetSize() != CHACHA20_POLY1305_AEAD_KEY_LEN ) {
+            return ret;
+        }
 
-    /* Process */
-    {
-        CF_CHECK_GT(numWritten = aes->Encrypt(op.cleartext.GetPtr(), op.cleartext.GetSize(), out), 0);
-    }
+        if ( op.aad == std::nullopt || op.aad->GetSize() != CHACHA20_POLY1305_AEAD_KEY_LEN ) {
+            return ret;
+        }
 
-    /* Finalize */
-    {
-        ret = component::Ciphertext(Buffer(out, numWritten));
-    }
+        if ( op.tagSize == std::nullopt || *op.tagSize != POLY1305_TAGLEN ) {
+            return ret;
+        }
+
+        if ( op.cipher.iv.GetSize() != 12 ) {
+            return ret;
+        }
+
+        uint64_t seqnr_payload, seqnr_aad;
+        memcpy(&seqnr_payload, op.cipher.iv.GetPtr(), sizeof(seqnr_payload));
+        memcpy(&seqnr_aad, op.cipher.iv.GetPtr() + sizeof(seqnr_payload), sizeof(seqnr_aad));
+
+        uint8_t* out = util::malloc(op.ciphertextSize);
+
+        ChaCha20Poly1305AEAD aead(op.cipher.key.GetPtr(), op.cipher.key.GetSize(), op.aad->GetPtr(), op.aad->GetSize());
+
+        CF_CHECK_TRUE(aead.Crypt(seqnr_payload, seqnr_aad, 0, out, op.ciphertextSize, op.cleartext.GetPtr(), op.cleartext.GetSize(), true));
+
+        CF_ASSERT(op.ciphertextSize >= op.cleartext.GetSize() + POLY1305_TAGLEN, "ChaCha20Poly1305AEAD succeeded with invalid output size");
+
+        ret = component::Ciphertext(
+                Buffer(out, op.cleartext.GetSize()),
+                Buffer(out + op.cleartext.GetSize(), POLY1305_TAGLEN));
 
 end:
-    util::free(out);
+        util::free(out);
 
-    return ret;
+        return ret;
+    }
+
+    std::optional<component::Cleartext> chacha20_poly1305(const operation::SymmetricDecrypt& op) {
+        std::optional<component::Cleartext> ret = std::nullopt;
+
+        if ( op.cipher.key.GetSize() != CHACHA20_POLY1305_AEAD_KEY_LEN ) {
+            return ret;
+        }
+
+        if ( op.aad == std::nullopt || op.aad->GetSize() != CHACHA20_POLY1305_AEAD_KEY_LEN ) {
+            return ret;
+        }
+
+        if ( op.tag == std::nullopt || op.tag->GetSize() != POLY1305_TAGLEN ) {
+            return ret;
+        }
+
+        if ( op.cipher.iv.GetSize() != 12 ) {
+            return ret;
+        }
+
+        uint8_t* out = util::malloc(op.cleartextSize);
+
+        ChaCha20Poly1305AEAD aead(op.cipher.key.GetPtr(), op.cipher.key.GetSize(), op.aad->GetPtr(), op.aad->GetSize());
+
+        const auto in = util::Append(op.ciphertext.Get(), op.tag->Get());
+        CF_CHECK_TRUE(aead.Crypt(0, 0, 0, out, op.cleartextSize, in.data(), in.size(), false));
+
+        CF_ASSERT(op.cleartextSize >= op.ciphertext.GetSize(), "ChaCha20Poly1305AEAD succeeded with invalid output size");
+
+        ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+
+end:
+        util::free(out);
+
+        return ret;
+    }
+
+    std::optional<component::Ciphertext> aes_256_cbc(const operation::SymmetricEncrypt& op) {
+        std::optional<component::Ciphertext> ret = std::nullopt;
+
+        std::unique_ptr<AES256CBCEncrypt> aes = nullptr;
+        uint8_t* out = util::malloc(op.cleartext.GetSize() + AES_BLOCKSIZE);
+        int numWritten;
+
+        /* Initialize */
+        {
+            CF_CHECK_EQ(op.cipher.key.GetSize(), AES256_KEYSIZE);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), AES_BLOCKSIZE);
+            aes = std::make_unique<AES256CBCEncrypt>(op.cipher.key.GetPtr(), op.cipher.iv.GetPtr(), true);
+        }
+
+        /* Process */
+        {
+            CF_CHECK_GT(numWritten = aes->Encrypt(op.cleartext.GetPtr(), op.cleartext.GetSize(), out), 0);
+        }
+
+        /* Finalize */
+        {
+            ret = component::Ciphertext(Buffer(out, numWritten));
+        }
+
+end:
+        util::free(out);
+
+        return ret;
+    }
+
+    std::optional<component::Cleartext> aes_256_cbc(const operation::SymmetricDecrypt& op) {
+        std::optional<component::Cleartext> ret = std::nullopt;
+
+        std::unique_ptr<AES256CBCDecrypt> aes = nullptr;
+        uint8_t* out = util::malloc(op.ciphertext.GetSize());
+        int numWritten;
+
+        /* Initialize */
+        {
+            CF_CHECK_EQ(op.cipher.cipherType.Get(), CF_CIPHER("AES_256_CBC"));
+            CF_CHECK_EQ(op.cipher.key.GetSize(), AES256_KEYSIZE);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), AES_BLOCKSIZE);
+            aes = std::make_unique<AES256CBCDecrypt>(op.cipher.key.GetPtr(), op.cipher.iv.GetPtr(), true);
+        }
+
+        /* Process */
+        {
+            CF_CHECK_GT(numWritten = aes->Decrypt(op.ciphertext.GetPtr(), op.ciphertext.GetSize(), out), 0);
+        }
+
+        /* Finalize */
+        {
+            ret = component::Cleartext(out, numWritten);
+        }
+
+end:
+        util::free(out);
+
+        return ret;
+    }
+
+} /* namespace Bitcoin_detail */
+
+std::optional<component::Ciphertext> Bitcoin::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
+    if ( op.cipher.cipherType.Is(CF_CIPHER("CHACHA20")) ) {
+        return Bitcoin_detail::chacha20<component::Ciphertext>(op.cipher.key, op.cipher.iv, op.cleartext);
+    } else if ( op.cipher.cipherType.Is(CF_CIPHER("CHACHA20_POLY1305")) ) {
+        return Bitcoin_detail::chacha20_poly1305(op);
+    } else if ( op.cipher.cipherType.Is(CF_CIPHER("AES_256_CBC")) ) {
+        return Bitcoin_detail::aes_256_cbc(op);
+    }
+
+    return std::nullopt;
+
 }
 
 std::optional<component::Cleartext> Bitcoin::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
-    std::optional<component::Cleartext> ret = std::nullopt;
-
-    if ( op.aad != std::nullopt || op.tag != std::nullopt ) {
-        return ret;
+    if ( op.cipher.cipherType.Is(CF_CIPHER("CHACHA20")) ) {
+        return Bitcoin_detail::chacha20<component::Cleartext>(op.cipher.key, op.cipher.iv, op.ciphertext);
+    } else if ( op.cipher.cipherType.Is(CF_CIPHER("CHACHA20_POLY1305")) ) {
+        return Bitcoin_detail::chacha20_poly1305(op);
+    } else if ( op.cipher.cipherType.Is(CF_CIPHER("AES_256_CBC")) ) {
+        return Bitcoin_detail::aes_256_cbc(op);
     }
 
-    std::unique_ptr<AES256CBCDecrypt> aes = nullptr;
-    uint8_t* out = util::malloc(op.ciphertext.GetSize());
-    int numWritten;
+    return std::nullopt;
+}
 
-    /* Initialize */
-    {
-        CF_CHECK_EQ(op.cipher.cipherType.Get(), CF_CIPHER("AES_256_CBC"));
-        CF_CHECK_EQ(op.cipher.key.GetSize(), AES256_KEYSIZE);
-        CF_CHECK_EQ(op.cipher.iv.GetSize(), AES_BLOCKSIZE);
-        aes = std::make_unique<AES256CBCDecrypt>(op.cipher.key.GetPtr(), op.cipher.iv.GetPtr(), true);
+std::optional<component::Key> Bitcoin::OpKDF_HKDF(operation::KDF_HKDF& op) {
+    if ( !op.digestType.Is(CF_DIGEST("SHA256")) ) {
+        return std::nullopt;
     }
 
-    /* Process */
-    {
-        CF_CHECK_GT(numWritten = aes->Decrypt(op.ciphertext.GetPtr(), op.ciphertext.GetSize(), out), 0);
+    if ( op.keySize != 32 ) {
+        return std::nullopt;
     }
 
-    /* Finalize */
-    {
-        ret = component::Cleartext(out, numWritten);
+    if ( op.info.GetSize() > 128 ) {
+        return std::nullopt;
     }
 
-end:
-    util::free(out);
+    uint8_t out[32];
 
-    return ret;
+    CHKDF_HMAC_SHA256_L32 hkdf(
+            op.password.GetPtr(), op.password.GetSize(),
+            op.salt.AsString());
+
+    CF_NORET(hkdf.Expand32(op.info.AsString(), out));
+
+    return component::Key(out, sizeof(out));
 }
 
 

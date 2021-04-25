@@ -48,6 +48,7 @@ class Buffer {
         std::string ToHex(void) const;
         void Serialize(Datasource& ds) const;
         Datasource AsDatasource(void) const;
+        std::string AsString(void) const;
         Buffer ECDSA_Pad(const size_t size) const;
         Buffer ECDSA_RandomPad(Datasource& ds, const Type& curveType) const;
         Buffer SHA256(void) const;

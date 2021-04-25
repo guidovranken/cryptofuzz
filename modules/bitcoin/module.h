@@ -8,15 +8,13 @@ namespace cryptofuzz {
 namespace module {
 
 class Bitcoin : public Module {
-    private:
-        template <class Alg> std::optional<component::Digest> digest(operation::Digest& op, Datasource& ds);
-        template <class Alg> std::optional<component::MAC> hmac(operation::HMAC& op, Datasource& ds);
     public:
         Bitcoin(void);
         std::optional<component::Digest> OpDigest(operation::Digest& op) override;
         std::optional<component::MAC> OpHMAC(operation::HMAC& op) override;
         std::optional<component::Ciphertext> OpSymmetricEncrypt(operation::SymmetricEncrypt& op) override;
         std::optional<component::Cleartext> OpSymmetricDecrypt(operation::SymmetricDecrypt& op) override;
+        std::optional<component::Key> OpKDF_HKDF(operation::KDF_HKDF& op) override;
 };
 
 } /* namespace module */
