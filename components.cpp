@@ -225,6 +225,16 @@ Buffer Buffer::SHA256(void) const {
     return Buffer(hash);
 }
 
+bool Buffer::IsZero(void) const {
+    for (size_t i = 0; i < data.size(); i++) {
+        if ( data[i] != 0 ) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 /* Bignum */
 
 Bignum::Bignum(Datasource& ds) :

@@ -52,6 +52,7 @@ class Buffer {
         Buffer ECDSA_Pad(const size_t size) const;
         Buffer ECDSA_RandomPad(Datasource& ds, const Type& curveType) const;
         Buffer SHA256(void) const;
+        bool IsZero(void) const;
 };
 
 class Bignum {
