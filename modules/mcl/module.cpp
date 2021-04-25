@@ -305,13 +305,6 @@ std::optional<bool> mcl::OpBLS_Pairing(operation::BLS_Pairing& op) {
 }
 
 std::optional<bool> mcl::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
-    if (
-            (op.g1.first.ToTrimmedString() == "0" || op.g1.first.ToTrimmedString() == "4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787") &&
-            (op.g1.second.ToTrimmedString() == "0" || op.g1.second.ToTrimmedString() == "4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787") ) {
-        /* Same behavior as blst */
-        return true;
-    }
-
     using namespace ::mcl::bls12;
 
     try {
@@ -324,15 +317,6 @@ std::optional<bool> mcl::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
 }
 
 std::optional<bool> mcl::OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) {
-    if (
-            (op.g2.first.first.ToTrimmedString() == "0" || op.g2.first.first.ToTrimmedString() == "4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787") &&
-            (op.g2.first.second.ToTrimmedString() == "0" || op.g2.first.second.ToTrimmedString() == "4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787") &&
-            (op.g2.second.first.ToTrimmedString() == "0" || op.g2.second.first.ToTrimmedString() == "4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787") &&
-            (op.g2.second.second.ToTrimmedString() == "0" || op.g2.second.second.ToTrimmedString() == "4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787") ) {
-        /* Same behavior as blst */
-        return true;
-    }
-
     using namespace ::mcl::bls12;
 
     try {
