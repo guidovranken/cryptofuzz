@@ -369,10 +369,10 @@ std::optional<bool> blst::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g1.second, g1_affine.y));
 
     if ( useAffine ) {
-        return blst_p1_affine_on_curve(&g1_affine);
+        return blst_p1_affine_on_curve(&g1_affine) && blst_p1_affine_in_g1(&g1_affine);
     } else {
         /* noret */ blst_p1_from_affine(&g1, &g1_affine);
-        return blst_p1_on_curve(&g1);
+        return blst_p1_on_curve(&g1) && blst_p1_in_g1(&g1);
     }
 
 end:
@@ -397,10 +397,10 @@ std::optional<bool> blst::OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) {
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g2.second.second, g2_affine.y.fp[1]));
 
     if ( useAffine ) {
-        return blst_p2_affine_on_curve(&g2_affine);
+        return blst_p2_affine_on_curve(&g2_affine) && blst_p2_affine_in_g2(&g2_affine);
     } else {
         /* noret */ blst_p2_from_affine(&g2, &g2_affine);
-        return blst_p2_on_curve(&g2);
+        return blst_p2_on_curve(&g2) && blst_p2_in_g2(&g2);
     }
 
 end:
