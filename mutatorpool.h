@@ -4,6 +4,8 @@
 #include <string>
 #include <cstdint>
 
+#include "config.h"
+
 template <class T, size_t Size>
 class MutatorPool {
 	private:
@@ -19,7 +21,7 @@ typedef struct {
     uint64_t curveID;
     std::string priv;
 } CurvePrivkey_Pair;
-extern MutatorPool<CurvePrivkey_Pair, 64> Pool_CurvePrivkey;
+extern MutatorPool<CurvePrivkey_Pair, cryptofuzz::config::kMutatorPoolSize> Pool_CurvePrivkey;
 
 typedef struct {
     uint64_t curveID;
@@ -27,7 +29,7 @@ typedef struct {
     std::string pub_x;
     std::string pub_y;
 } CurveKeypair_Pair;
-extern MutatorPool<CurveKeypair_Pair, 64> Pool_CurveKeypair;
+extern MutatorPool<CurveKeypair_Pair, cryptofuzz::config::kMutatorPoolSize> Pool_CurveKeypair;
 
 typedef struct {
     uint64_t curveID;
@@ -37,9 +39,44 @@ typedef struct {
     std::string sig_r;
     std::string sig_y;
 } CurveECDSASignature_Pair;
-extern MutatorPool<CurveECDSASignature_Pair, 64> Pool_CurveECDSASignature;
+extern MutatorPool<CurveECDSASignature_Pair, cryptofuzz::config::kMutatorPoolSize> Pool_CurveECDSASignature;
 
-extern MutatorPool<std::string, 64> Pool_Bignum;
+extern MutatorPool<std::string, cryptofuzz::config::kMutatorPoolSize> Pool_Bignum;
 
-extern MutatorPool<std::string, 64> Pool_DH_PrivateKey;
-extern MutatorPool<std::string, 64> Pool_DH_PublicKey;
+typedef struct {
+    uint64_t curveID;
+    bool hashOrPoint;
+    std::string point_v;
+    std::string point_w;
+    std::string point_x;
+    std::string point_y;
+    std::string cleartext;
+    std::string dest;
+    std::string aug;
+    std::string pub_x;
+    std::string pub_y;
+    std::string sig_v;
+    std::string sig_w;
+    std::string sig_x;
+    std::string sig_y;
+} CurveBLSSignature_Pair;
+extern MutatorPool<CurveBLSSignature_Pair, cryptofuzz::config::kMutatorPoolSize> Pool_CurveBLSSignature;
+
+typedef struct {
+    uint64_t curveID;
+    std::string g1_x;
+    std::string g1_y;
+} CurveBLSG1_Pair;
+extern MutatorPool<CurveBLSG1_Pair, cryptofuzz::config::kMutatorPoolSize> Pool_CurveBLSG1;
+
+typedef struct {
+    uint64_t curveID;
+    std::string g2_v;
+    std::string g2_w;
+    std::string g2_x;
+    std::string g2_y;
+} CurveBLSG2_Pair;
+extern MutatorPool<CurveBLSG2_Pair, cryptofuzz::config::kMutatorPoolSize> Pool_CurveBLSG2;
+
+extern MutatorPool<std::string, cryptofuzz::config::kMutatorPoolSize> Pool_DH_PrivateKey;
+extern MutatorPool<std::string, cryptofuzz::config::kMutatorPoolSize> Pool_DH_PublicKey;

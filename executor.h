@@ -17,8 +17,9 @@ class ExecutorBase {
     private:
         const uint64_t operationID;
         const std::map<uint64_t, std::shared_ptr<Module> > modules;
+    protected:
         const Options& options;
-
+    private:
         using ResultPair = std::pair< std::shared_ptr<Module>, std::optional<ResultType> >;
         using ResultSet = std::vector<ResultPair>;
 
@@ -26,19 +27,41 @@ class ExecutorBase {
         bool dontCompare(const OperationType& operation) const;
         void compare(const std::vector< std::pair<std::shared_ptr<Module>, OperationType> >& operations, const ResultSet& results, const uint8_t* data, const size_t size) const;
         OperationType getOp(Datasource* parentDs, const uint8_t* data, const size_t size) const;
-        OperationType getOpPostprocess(Datasource* parentDs, OperationType op) const;
+        virtual OperationType getOpPostprocess(Datasource* parentDs, OperationType op) const;
         std::shared_ptr<Module> getModule(Datasource& ds) const;
 
         /* To be implemented by specializations of ExecutorBase */
         void updateExtraCounters(const uint64_t moduleID, OperationType& op) const;
         void postprocess(std::shared_ptr<Module> module, OperationType& op, const ResultPair& result) const;
-        std::optional<ResultType> callModule(std::shared_ptr<Module> module, OperationType& op) const;
+        virtual std::optional<ResultType> callModule(std::shared_ptr<Module> module, OperationType& op) const { ::abort(); }
 
         void abort(std::vector<std::string> moduleNames, const std::string operation, const std::string algorithm, const std::string reason) const;
     public:
         void Run(Datasource& parentDs, const uint8_t* data, const size_t size) const;
         ExecutorBase(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options);
         virtual ~ExecutorBase();
+};
+
+class ExecutorBignumCalc : public ExecutorBase<component::Bignum, operation::BignumCalc> {
+    private:
+        std::optional<component::Bignum> callModule(std::shared_ptr<Module> module, operation::BignumCalc& op) const override;
+    protected:
+        std::optional<component::Bignum> modulo = std::nullopt;
+    public:
+        ExecutorBignumCalc(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options);
+        void SetModulo(const std::string& modulo);
+};
+
+class ExecutorBignumCalc_Mod_BLS12_381_R : public ExecutorBignumCalc {
+    public:
+        ExecutorBignumCalc_Mod_BLS12_381_R(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options);
+        operation::BignumCalc getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const override;
+};
+
+class ExecutorBignumCalc_Mod_BLS12_381_P : public ExecutorBignumCalc {
+    public:
+        ExecutorBignumCalc_Mod_BLS12_381_P(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options);
+        operation::BignumCalc getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const override;
 };
 
 /* Declare aliases */
@@ -68,13 +91,16 @@ using ExecutorECIES_Encrypt = ExecutorBase<component::Ciphertext, operation::ECI
 using ExecutorECIES_Decrypt = ExecutorBase<component::Cleartext, operation::ECIES_Decrypt>;
 using ExecutorDH_GenerateKeyPair = ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>;
 using ExecutorDH_Derive = ExecutorBase<component::Bignum, operation::DH_Derive>;
-using ExecutorBignumCalc = ExecutorBase<component::Bignum, operation::BignumCalc>;
 using ExecutorBLS_PrivateToPublic = ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>;
 using ExecutorBLS_Sign = ExecutorBase<component::BLS_Signature, operation::BLS_Sign>;
 using ExecutorBLS_Verify = ExecutorBase<bool, operation::BLS_Verify>;
 using ExecutorBLS_Pairing = ExecutorBase<bool, operation::BLS_Pairing>;
 using ExecutorBLS_HashToG1 = ExecutorBase<component::G1, operation::BLS_HashToG1>;
 using ExecutorBLS_HashToG2 = ExecutorBase<component::G2, operation::BLS_HashToG2>;
+using ExecutorBLS_IsG1OnCurve = ExecutorBase<bool, operation::BLS_IsG1OnCurve>;
+using ExecutorBLS_IsG2OnCurve = ExecutorBase<bool, operation::BLS_IsG2OnCurve>;
+using ExecutorBLS_GenerateKeyPair = ExecutorBase<component::BLS_KeyPair, operation::BLS_GenerateKeyPair>;
+using ExecutorMisc = ExecutorBase<Buffer, operation::Misc>;
 using ExecutorSR25519_Verify = ExecutorBase<bool, operation::SR25519_Verify>;
 
 } /* namespace cryptofuzz */

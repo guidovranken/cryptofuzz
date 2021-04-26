@@ -50,31 +50,40 @@ namespace detail {
  #define GET_UINT8_FOR_SWITCH() 0
 #endif /* CRYPTOFUZZ_BOTAN_IS_ORACLE */
 
-bool Add::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+#define APPLY_MODULO if (modulo != std::nullopt) res = (res.ConstRef() % modulo->ConstRef())
+
+bool Add::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
     (void)ds;
 
     res = bn[0].Ref() + bn[1].Ref();
 
+    APPLY_MODULO;
+
     return true;
 }
 
-bool Sub::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Sub::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
     (void)ds;
 
     res = bn[0].Ref() - bn[1].Ref();
 
+    APPLY_MODULO;
+
     return true;
 }
 
-bool Mul::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Mul::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
     (void)ds;
 
     res = bn[0].Ref() * bn[1].Ref();
 
+    APPLY_MODULO;
+
     return true;
 }
 
-bool Div::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Div::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     try {
@@ -125,7 +134,8 @@ end:
     return false;
 }
 
-bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     try {
@@ -184,7 +194,20 @@ bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return false;
 }
 
-bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Exp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)ds;
+
+    if ( modulo == std::nullopt ) {
+        return false;
+    }
+
+    res = ::Botan::power_mod(bn[0].Ref(), bn[1].Ref(), modulo->ConstRef());
+
+    return true;
+}
+
+bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     /* Exponent and modulus must be positive, according to the documentation */
@@ -197,15 +220,18 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool Sqr::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Sqr::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
     (void)ds;
 
     res = ::Botan::square(bn[0].Ref());
 
+    APPLY_MODULO;
+
     return true;
 }
 
-bool GCD::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool GCD::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = ::Botan::gcd(bn[0].Ref(), bn[1].Ref());
@@ -213,7 +239,8 @@ bool GCD::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool SqrMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool SqrMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     if ( bn[1].Ref().is_negative() ) {
@@ -259,7 +286,8 @@ bool SqrMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     try {
@@ -282,7 +310,8 @@ bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool Cmp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Cmp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     if ( bn[0].Ref() < bn[1].Ref() ) {
@@ -296,7 +325,8 @@ bool Cmp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool LCM::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool LCM::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = ::Botan::lcm(bn[0].Ref(), bn[1].Ref());
@@ -304,7 +334,8 @@ bool LCM::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool Abs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Abs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = ::Botan::abs(bn[0].Ref());
@@ -312,7 +343,8 @@ bool Abs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool Jacobi::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Jacobi::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
 
@@ -339,7 +371,8 @@ bool Jacobi::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool Neg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Neg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = -bn[0].Ref();
@@ -347,7 +380,8 @@ bool Neg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool IsPrime::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsPrime::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
     (void)res;
     (void)bn;
@@ -356,7 +390,7 @@ bool IsPrime::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return false;
 }
 
-bool RShift::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool RShift::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
     (void)ds;
 
     const auto count = detail::To_size_t(bn[1].Ref());
@@ -365,20 +399,30 @@ bool RShift::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
         return false;
     }
 
-    res = bn[0].Ref() >> *count;
+    Bignum toShift = bn[0];
+    if ( modulo && bn[0].Ref() % 2 ) {
+        toShift = toShift.Ref() + modulo->ConstRef();
+    }
+
+    res = toShift.Ref() >> *count;
+
+    APPLY_MODULO;
 
     return true;
 }
 
-bool LShift1::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool LShift1::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
     (void)ds;
 
     res = bn[0].Ref() << 1;
 
+    APPLY_MODULO;
+
     return true;
 }
 
-bool IsNeg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsNeg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = bn[0].Ref() < 0 ? 1 : 0;
@@ -386,7 +430,8 @@ bool IsNeg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool IsEq::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsEq::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = bn[0].Ref() == bn[1].Ref() ? 1 : 0;
@@ -394,7 +439,8 @@ bool IsEq::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool IsGt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsGt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = bn[0].Ref() > bn[1].Ref() ? 1 : 0;
@@ -402,7 +448,8 @@ bool IsGt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool IsGte::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsGte::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = bn[0].Ref() >= bn[1].Ref() ? 1 : 0;
@@ -410,7 +457,8 @@ bool IsGte::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool IsLt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsLt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = bn[0].Ref() < bn[1].Ref() ? 1 : 0;
@@ -418,7 +466,8 @@ bool IsLt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool IsLte::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsLte::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = bn[0].Ref() <= bn[1].Ref() ? 1 : 0;
@@ -426,7 +475,8 @@ bool IsLte::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool IsEven::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsEven::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = !(bn[0].Ref() % 2) ? 1 : 0;
@@ -434,7 +484,8 @@ bool IsEven::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool IsOdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsOdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = (bn[0].Ref() % 2) ? 1 : 0;
@@ -442,7 +493,8 @@ bool IsOdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool IsZero::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsZero::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = bn[0].Ref() == 0 ? 1 : 0;
@@ -450,7 +502,8 @@ bool IsZero::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool IsOne::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsOne::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = bn[0].Ref() == 1 ? 1 : 0;
@@ -458,7 +511,8 @@ bool IsOne::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool MulMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool MulMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     try {
@@ -500,7 +554,8 @@ bool MulMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool Bit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Bit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     const auto pos = detail::To_size_t(bn[1].Ref());
@@ -514,14 +569,16 @@ bool Bit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool CmpAbs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool CmpAbs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     std::vector<Bignum> bnAbs = {bn[0].Ref().abs(), bn[1].Ref().abs()};
     auto cmp = std::make_unique<Cmp>();
 
-    return cmp->Run(ds, res, bnAbs);
+    return cmp->Run(ds, res, bnAbs, modulo);
 }
 
-bool SetBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool SetBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = bn[0].Ref();
@@ -537,7 +594,8 @@ bool SetBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool Mod_NIST_192::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Mod_NIST_192::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     static const auto prime = ::Botan::prime_p192();
@@ -572,7 +630,8 @@ bool Mod_NIST_192::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) con
     return false;
 }
 
-bool Mod_NIST_224::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Mod_NIST_224::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     static const auto prime = ::Botan::prime_p224();
@@ -607,7 +666,8 @@ bool Mod_NIST_224::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) con
     return false;
 }
 
-bool Mod_NIST_256::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Mod_NIST_256::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     static const auto prime = ::Botan::prime_p256();
@@ -642,7 +702,8 @@ bool Mod_NIST_256::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) con
     return false;
 }
 
-bool Mod_NIST_384::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Mod_NIST_384::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     static const auto prime = ::Botan::prime_p384();
@@ -677,7 +738,8 @@ bool Mod_NIST_384::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) con
     return false;
 }
 
-bool Mod_NIST_521::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Mod_NIST_521::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     static const auto prime = ::Botan::prime_p521();
@@ -712,7 +774,8 @@ bool Mod_NIST_521::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) con
     return false;
 }
 
-bool ClearBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool ClearBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = bn[0].Ref();
@@ -728,7 +791,8 @@ bool ClearBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool MulAdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool MulAdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = (bn[0].Ref()*bn[1].Ref()) + bn[2].Ref();
@@ -736,7 +800,8 @@ bool MulAdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool Exp2::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Exp2::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     if ( bn[0].Ref() < 1 ) {
@@ -750,7 +815,8 @@ bool Exp2::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool NumLSZeroBits::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool NumLSZeroBits::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = ::Botan::low_zero_bits(bn[0].Ref());
@@ -758,7 +824,7 @@ bool NumLSZeroBits::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) co
     return true;
 }
 
-bool Sqrt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Sqrt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
     (void)ds;
 
     try {
@@ -778,11 +844,13 @@ bool Sqrt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
         throw e;
     }
 
+    APPLY_MODULO;
 
     return true;
 }
 
-bool AddMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool AddMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     try {
@@ -821,7 +889,8 @@ bool AddMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool SubMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool SubMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     try {
@@ -870,7 +939,8 @@ bool SubMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool NumBits::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool NumBits::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = bn[0].Ref().bits();
@@ -878,15 +948,19 @@ bool NumBits::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool Set::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Set::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res = bn[0].Ref();
 
+    APPLY_MODULO;
+
     return true;
 }
 
-bool CondSet::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool CondSet::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
     (void)ds;
 
     res.Ref().ct_cond_assign(bn[1].Ref() != 0, bn[0].Ref());
@@ -894,17 +968,57 @@ bool CondSet::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool Ressol::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Ressol::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
     (void)ds;
-    (void)res;
-    (void)bn;
 
-    return false;
-#if 0
-    res = ::Botan::ressol(bn[0].Ref(), bn[1].Ref());
+    try {
+        auto mod = modulo == std::nullopt ? bn[1] : *modulo;
+
+        const auto r = ::Botan::ressol(bn[0].Ref(), mod.Ref());
+
+        if ( r < 1 ) {
+            if ( modulo != std::nullopt ) {
+                res = 0;
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        if ( modulo != std::nullopt ) {
+            res = ::Botan::square(r) % mod.Ref();
+        }
+
+        return true;
+    } catch ( ::Botan::Invalid_Argument& e ) {
+        /* Expected to throw if called with non-prime argument */
+
+        return false;
+    }
+}
+
+bool Not::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)ds;
+
+    Bignum max;
+
+    if ( modulo ) {
+        max = *modulo;
+    } else {
+        const size_t numBits = bn[0].Ref().bits();
+
+        if ( numBits == 0 ) {
+            return false;
+        }
+
+        max = (::Botan::BigInt(1) << numBits) - 1;
+    }
+
+    res = max.Ref() - bn[0].Ref();
+
+    APPLY_MODULO;
 
     return true;
-#endif
 }
 
 } /* namespace Botan_bignum */

@@ -276,6 +276,29 @@ bool Bignum::IsNegative(void) const {
     return data.GetSize() && data.GetConstVectorPtr()[0] == '-';
 }
 
+bool Bignum::IsGreaterThan(const std::string& other) const {
+    CF_ASSERT(IsNegative() == false, "IsGreaterThan on negative numbers not supported");
+    const auto s = ToTrimmedString();
+    if ( s.size() > other.size() ) {
+        return true;
+    } else if ( s.size() < other.size() ) {
+        return false;
+    } else {
+        for (size_t i = 0; i < s.size(); i++) {
+            const int a = s[i];
+            const int b = other[i];
+            if ( a > b ) {
+                return true;
+            } else if ( a < b ) {
+                return false;
+            }
+        }
+    }
+
+    CF_ASSERT(s == other, "Logic error");
+    return false;
+}
+
 bool Bignum::IsLessThan(const std::string& other) const {
     boost::multiprecision::cpp_int A(ToTrimmedString());
     boost::multiprecision::cpp_int B(other);
@@ -506,11 +529,108 @@ void MACType::Serialize(Datasource& ds) const {
     type.Serialize(ds);
 }
 
+G2::G2(nlohmann::json json) :
+    first(json[0]),
+    second(json[1]) {
+}
+
 nlohmann::json G2::ToJSON(void) const {
     return std::vector<nlohmann::json>{
         first.first.ToJSON(), first.second.ToJSON(),
         second.first.ToJSON(), second.second.ToJSON()
     };
+}
+
+void G2::Serialize(Datasource& ds) const {
+    first.Serialize(ds);
+    second.Serialize(ds);
+}
+
+/* BLS_Signature */
+BLS_Signature::BLS_Signature(Datasource& ds) :
+    signature(ds),
+    pub(ds)
+{ }
+
+BLS_Signature::BLS_Signature(G2 signature, ECC_PublicKey pub) :
+    signature(signature),
+    pub(pub)
+{ }
+
+BLS_Signature::BLS_Signature(nlohmann::json json) :
+    signature(json["signature"]),
+    pub(json["pub"])
+{ }
+
+bool BLS_Signature::operator==(const BLS_Signature& rhs) const {
+    return
+        (signature == rhs.signature) &&
+        (pub == rhs.pub);
+}
+
+void BLS_Signature::Serialize(Datasource& ds) const {
+    signature.Serialize(ds);
+    pub.Serialize(ds);
+}
+
+nlohmann::json BLS_Signature::ToJSON(void) const {
+    return std::vector<nlohmann::json>{signature.ToJSON(), pub.ToJSON()};
+}
+
+/* BLS_KeyPair */
+
+BLS_KeyPair::BLS_KeyPair(Datasource& ds) :
+    priv(ds),
+    pub(ds)
+{ }
+
+BLS_KeyPair::BLS_KeyPair(BLS_PrivateKey priv, BignumPair pub) :
+    priv(priv),
+    pub(pub)
+{ }
+
+bool BLS_KeyPair::operator==(const BLS_KeyPair& rhs) const {
+    return
+        (priv == rhs.priv) &&
+        (pub == rhs.pub);
+}
+
+void BLS_KeyPair::Serialize(Datasource& ds) const {
+    priv.Serialize(ds);
+    pub.Serialize(ds);
+}
+
+nlohmann::json BLS_KeyPair::ToJSON(void) const {
+    return std::vector<nlohmann::json>{priv.ToJSON(), pub.ToJSON()};
+}
+
+/* BLS_PairingComponents */
+
+BLS_PairingComponents::BLS_PairingComponents(Datasource& ds) {
+    const auto num = ds.Get<uint32_t>(0);
+    for (size_t i = 0; i < num; i++) {
+        c.push_back( Component{{ds}, {ds}, {ds}, {ds}} );
+    }
+}
+
+BLS_PairingComponents::BLS_PairingComponents(nlohmann::json json) {
+    for (const auto& j : json) {
+        c.push_back( Component{
+                {j["sig_v"], j["sig_w"], j["sig_x"], j["sig_y"]},
+                {j["pub_x"], j["pub_y"]},
+                {j["msg"]},
+                {j["aug"]}});
+    }
+}
+
+void BLS_PairingComponents::Serialize(Datasource& ds) const {
+    ds.Put<uint32_t>(c.size());
+    for (const auto& component : c) {
+        component.sig.Serialize(ds);
+        component.pub.Serialize(ds);
+        component.msg.Serialize(ds);
+        component.aug.Serialize(ds);
+    }
 }
 
 /* SR25519_Signature */
