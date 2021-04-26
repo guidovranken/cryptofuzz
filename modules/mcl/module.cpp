@@ -430,23 +430,23 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
         try {
             switch ( op.calcOp.Get() ) {
                 case    CF_CALCOP("Add(A,B)"):
-                    a.setStr(op.bn0.ToString(ds), 10);
-                    b.setStr(op.bn1.ToString(ds), 10);
+                    a.setStr(op.bn0.ToTrimmedString(), 10);
+                    b.setStr(op.bn1.ToTrimmedString(), 10);
                     PREPARE_BN();
                     return (*ap+*bp).getStr();
                 case    CF_CALCOP("Sub(A,B)"):
-                    a.setStr(op.bn0.ToString(ds), 10);
-                    b.setStr(op.bn1.ToString(ds), 10);
+                    a.setStr(op.bn0.ToTrimmedString(), 10);
+                    b.setStr(op.bn1.ToTrimmedString(), 10);
                     PREPARE_BN();
                     return (*ap-*bp).getStr();
                 case    CF_CALCOP("Mul(A,B)"):
-                    a.setStr(op.bn0.ToString(ds), 10);
-                    b.setStr(op.bn1.ToString(ds), 10);
+                    a.setStr(op.bn0.ToTrimmedString(), 10);
+                    b.setStr(op.bn1.ToTrimmedString(), 10);
                     PREPARE_BN();
                     return ((*ap)*(*bp)).getStr();
                 case    CF_CALCOP("InvMod(A,B)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
                         ::mcl::bn::Fr::inv(*resultp, *ap);
@@ -454,7 +454,7 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                     }
                 case    CF_CALCOP("Sqr(A)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
                         ::mcl::bn::Fr::sqr(*resultp, *ap);
@@ -462,7 +462,7 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                     }
                 case    CF_CALCOP("Not(A)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
                         ::mcl::bn::Fr::neg(*resultp, *ap);
@@ -470,7 +470,7 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                     }
                 case    CF_CALCOP("LShift1(A)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
                         ::mcl::bn::Fr::mul2(*resultp, *ap);
@@ -478,42 +478,42 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                     }
                 case    CF_CALCOP("IsEq(A,B)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
-                        b.setStr(op.bn1.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
+                        b.setStr(op.bn1.ToTrimmedString(), 10);
                         PREPARE_BN();
                         return *ap == *bp ? std::string("1") : std::string("0");
                     }
                 case    CF_CALCOP("IsZero(A)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
                         return *ap == 0 ? std::string("1") : std::string("0");
                     }
                 case    CF_CALCOP("IsOne(A)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
                         return *ap == 1 ? std::string("1") : std::string("0");
                     }
                 case    CF_CALCOP("IsOdd(A)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
                         return ap->isOdd() ? std::string("1") : std::string("0");
                     }
                 case    CF_CALCOP("IsEven(A)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
                         return ap->isOdd() ? std::string("0") : std::string("1");
                     }
                 case    CF_CALCOP("Sqrt(A)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
                         if ( ::mcl::bn::Fr::squareRoot(*resultp, *ap) == false ) {
@@ -524,16 +524,16 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                     }
                 case    CF_CALCOP("Exp(A,B)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
-                        b.setStr(op.bn1.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
+                        b.setStr(op.bn1.ToTrimmedString(), 10);
                         PREPARE_BN();
                         ::mcl::bn::Fr::pow(*resultp, *ap, *bp);
                         return resultp->getStr();
                     }
                 case    CF_CALCOP("Cmp(A,B)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
-                        b.setStr(op.bn1.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
+                        b.setStr(op.bn1.ToTrimmedString(), 10);
                         PREPARE_BN();
                         if ( *ap == *bp ) {
                             return std::string("0");
@@ -546,7 +546,7 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                         }
                     }
                 case    CF_CALCOP("Set(A)"):
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         return a.getStr();
             }
         } catch ( cybozu::Exception ) {
@@ -565,23 +565,23 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
         try {
             switch ( op.calcOp.Get() ) {
                 case    CF_CALCOP("Add(A,B)"):
-                    a.setStr(op.bn0.ToString(ds), 10);
-                    b.setStr(op.bn1.ToString(ds), 10);
+                    a.setStr(op.bn0.ToTrimmedString(), 10);
+                    b.setStr(op.bn1.ToTrimmedString(), 10);
                     PREPARE_BN();
                     return (*ap+*bp).getStr();
                 case    CF_CALCOP("Sub(A,B)"):
-                    a.setStr(op.bn0.ToString(ds), 10);
-                    b.setStr(op.bn1.ToString(ds), 10);
+                    a.setStr(op.bn0.ToTrimmedString(), 10);
+                    b.setStr(op.bn1.ToTrimmedString(), 10);
                     PREPARE_BN();
                     return (*ap-*bp).getStr();
                 case    CF_CALCOP("Mul(A,B)"):
-                    a.setStr(op.bn0.ToString(ds), 10);
-                    b.setStr(op.bn1.ToString(ds), 10);
+                    a.setStr(op.bn0.ToTrimmedString(), 10);
+                    b.setStr(op.bn1.ToTrimmedString(), 10);
                     PREPARE_BN();
                     return ((*ap)*(*bp)).getStr();
                 case    CF_CALCOP("InvMod(A,B)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
                         ::mcl::bn::Fp::inv(*resultp, *ap);
@@ -589,7 +589,7 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                     }
                 case    CF_CALCOP("Sqr(A)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
                         ::mcl::bn::Fp::sqr(*resultp, *ap);
@@ -597,7 +597,7 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                     }
                 case    CF_CALCOP("Not(A)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
                         ::mcl::bn::Fp::neg(*resultp, *ap);
@@ -605,7 +605,7 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                     }
                 case    CF_CALCOP("LShift1(A)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
                         ::mcl::bn::Fp::mul2(*resultp, *ap);
@@ -613,43 +613,43 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                     }
                 case    CF_CALCOP("IsEq(A,B)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
-                        b.setStr(op.bn1.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
+                        b.setStr(op.bn1.ToTrimmedString(), 10);
                         PREPARE_BN();
                         return *ap == *bp ? std::string("1") : std::string("0");
                     }
                 case    CF_CALCOP("IsZero(A)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
                         return *ap == 0 ? std::string("1") : std::string("0");
                     }
                 case    CF_CALCOP("IsOne(A)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
                         return *ap == 1 ? std::string("1") : std::string("0");
                     }
                 case    CF_CALCOP("IsOdd(A)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
                         return ap->isOdd() ? std::string("1") : std::string("0");
                     }
                 case    CF_CALCOP("IsEven(A)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
                         return ap->isOdd() ? std::string("0") : std::string("1");
                     }
                 case    CF_CALCOP("RShift(A,B)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
-                        b.setStr(op.bn1.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
+                        b.setStr(op.bn1.ToTrimmedString(), 10);
                         PREPARE_BN();
                         if ( *bp != 1 ) {
                             return std::nullopt;
@@ -662,7 +662,7 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                         /* Compute the sqrt but don't return it, because blst may return
                          * a different (but also valid) result
                          */
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
                         if ( ::mcl::bn::Fp::squareRoot(*resultp, *ap) == false ) {
@@ -673,16 +673,16 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                     }
                 case    CF_CALCOP("Exp(A,B)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
-                        b.setStr(op.bn1.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
+                        b.setStr(op.bn1.ToTrimmedString(), 10);
                         PREPARE_BN();
                         ::mcl::bn::Fp::pow(*resultp, *ap, *bp);
                         return resultp->getStr();
                     }
                 case    CF_CALCOP("Cmp(A,B)"):
                     {
-                        a.setStr(op.bn0.ToString(ds), 10);
-                        b.setStr(op.bn1.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
+                        b.setStr(op.bn1.ToTrimmedString(), 10);
                         PREPARE_BN();
                         if ( *ap == *bp ) {
                             return std::string("0");
@@ -695,7 +695,7 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                         }
                     }
                 case    CF_CALCOP("Set(A)"):
-                        a.setStr(op.bn0.ToString(ds), 10);
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
                         return a.getStr();
             }
         } catch ( cybozu::Exception ) {
