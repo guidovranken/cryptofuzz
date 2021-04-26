@@ -307,25 +307,43 @@ std::optional<bool> mcl::OpBLS_Pairing(operation::BLS_Pairing& op) {
 std::optional<bool> mcl::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
     using namespace ::mcl::bls12;
 
+    ::mcl::bls12::Fp x, y;
+
     try {
-        return mcl_detail::Convert(op.g1).isValid();
+        x = Fp(op.g1.first.ToTrimmedString(), 10);
+        y = Fp(op.g1.second.ToTrimmedString(), 10);
+    } catch ( cybozu::Exception ) {
+        /* May throw exception if string represents value larger than curve order */
+        return std::nullopt;
+    }
+
+    try {
+        return ::mcl::bls12::G1(x, y).isValid();
     } catch ( cybozu::Exception ) {
         return false;
     }
-
-    return std::nullopt;
 }
 
 std::optional<bool> mcl::OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) {
     using namespace ::mcl::bls12;
 
+    ::mcl::bls12::Fp x1, y1, x2, y2;
+
     try {
-        return mcl_detail::Convert(op.g2).isValid();
+        x1 = Fp(op.g2.first.first.ToTrimmedString(), 10);
+        y1 = Fp(op.g2.first.second.ToTrimmedString(), 10);
+        x2 = Fp(op.g2.second.first.ToTrimmedString(), 10);
+        y2 = Fp(op.g2.second.second.ToTrimmedString(), 10);
+    } catch ( cybozu::Exception ) {
+        /* May throw exception if string represents value larger than curve order */
+        return std::nullopt;
+    }
+
+    try {
+        return ::mcl::bls12::G2({x1, y1}, {x2, y2}).isValid();
     } catch ( cybozu::Exception ) {
         return false;
     }
-
-    return std::nullopt;
 }
 
 std::optional<component::G1> mcl::OpBLS_HashToG1(operation::BLS_HashToG1& op) {
