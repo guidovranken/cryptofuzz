@@ -969,29 +969,32 @@ bool CondSet::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const st
 }
 
 bool Ressol::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
-    (void)modulo;
     (void)ds;
-    (void)res;
-    (void)bn;
 
-    auto mod = modulo == std::nullopt ? bn[1] : *modulo;
+    try {
+        auto mod = modulo == std::nullopt ? bn[1] : *modulo;
 
-    const auto r = ::Botan::ressol(bn[0].Ref(), mod.Ref());
+        const auto r = ::Botan::ressol(bn[0].Ref(), mod.Ref());
 
-    if ( r < 1 ) {
-        if ( modulo != std::nullopt ) {
-            res = 0;
-            return true;
-        } else {
-            return false;
+        if ( r < 1 ) {
+            if ( modulo != std::nullopt ) {
+                res = 0;
+                return true;
+            } else {
+                return false;
+            }
         }
-    }
 
-    if ( modulo != std::nullopt ) {
-        res = ::Botan::square(r) % mod.Ref();
-    }
+        if ( modulo != std::nullopt ) {
+            res = ::Botan::square(r) % mod.Ref();
+        }
 
-    return true;
+        return true;
+    } catch ( ::Botan::Invalid_Argument& e ) {
+        /* Expected to throw if called with non-prime argument */
+
+        return false;
+    }
 }
 
 bool Not::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
