@@ -431,10 +431,12 @@ bool IsNeg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std:
 }
 
 bool IsEq::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
-    (void)modulo;
     (void)ds;
 
-    res = bn[0].Ref() == bn[1].Ref() ? 1 : 0;
+    auto A = modulo == std::nullopt ? bn[0] : bn[0].Ref() % modulo->ConstRef();
+    auto B = modulo == std::nullopt ? bn[1] : bn[1].Ref() % modulo->ConstRef();
+
+    res = A.Ref() == B.Ref() ? 1 : 0;
 
     return true;
 }
@@ -940,10 +942,13 @@ bool SubMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std
 }
 
 bool NumBits::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
-    (void)modulo;
     (void)ds;
 
-    res = bn[0].Ref().bits();
+    if ( modulo ) {
+        res = (bn[0].Ref() % modulo->ConstRef()).bits();
+    } else {
+        res = bn[0].Ref().bits();
+    }
 
     return true;
 }

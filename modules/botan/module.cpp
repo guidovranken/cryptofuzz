@@ -1195,20 +1195,21 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
     if ( op.modulo ) {
         switch ( op.calcOp.Get() ) {
             case    CF_CALCOP("Add(A,B)"):
-            case    CF_CALCOP("Sub(A,B)"):
-            case    CF_CALCOP("Mul(A,B)"):
-            case    CF_CALCOP("Sqr(A)"):
-            case    CF_CALCOP("RShift(A,B)"):
-            case    CF_CALCOP("LShift1(A)"):
-            case    CF_CALCOP("Sqrt(A)"):
-            case    CF_CALCOP("Not(A)"):
             case    CF_CALCOP("Exp(A,B)"):
             case    CF_CALCOP("IsEq(A,B)"):
-            case    CF_CALCOP("IsZero(A)"):
-            case    CF_CALCOP("IsOne(A)"):
-            case    CF_CALCOP("IsOdd(A)"):
             case    CF_CALCOP("IsEven(A)"):
+            case    CF_CALCOP("IsOdd(A)"):
+            case    CF_CALCOP("IsOne(A)"):
+            case    CF_CALCOP("IsZero(A)"):
+            case    CF_CALCOP("LShift1(A)"):
+            case    CF_CALCOP("Mul(A,B)"):
+            case    CF_CALCOP("Not(A)"):
+            case    CF_CALCOP("NumBits(A)"):
+            case    CF_CALCOP("RShift(A,B)"):
             case    CF_CALCOP("Set(A)"):
+            case    CF_CALCOP("Sqr(A)"):
+            case    CF_CALCOP("Sqrt(A)"):
+            case    CF_CALCOP("Sub(A,B)"):
                 break;
             default:
                 return ret;

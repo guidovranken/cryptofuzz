@@ -23,7 +23,10 @@
 #include "crypto/siphash.cpp"
 
 #include "uint256.cpp"
+#include "arith_uint256.cpp"
+
 #include "cleanse.cpp"
+#include "util/strencodings.cpp"
 
 namespace cryptofuzz {
 namespace module {
@@ -459,6 +462,122 @@ std::optional<component::Key> Bitcoin::OpKDF_HKDF(operation::KDF_HKDF& op) {
     return component::Key(out, sizeof(out));
 }
 
+namespace Bitcoin_detail {
+    class Bignum {
+        private:
+            Datasource& ds;
+            arith_uint256 bn;
+        public:
+            Bignum(Datasource& ds) :
+                ds(ds) {
+            }
+            arith_uint256& Ref(void) {
+                {
+                    bool convert = false;
+                    try {
+                        convert = ds.Get<bool>();
+                    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                    if ( convert ) {
+                        bn = UintToArith256(ArithToUint256(bn));
+                    }
+                }
+
+                {
+                    bool getDouble = false;
+                    try {
+                        getDouble = ds.Get<bool>();
+                    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                    if ( getDouble ) {
+                        const auto d = bn.getdouble();
+                        (void)d;
+                    }
+                }
+
+                return bn;
+            }
+    };
+}
+
+std::optional<component::Bignum> Bitcoin::OpBignumCalc(operation::BignumCalc& op) {
+    if ( op.modulo == std::nullopt ) {
+        return std::nullopt;
+    }
+
+    if ( op.modulo->ToTrimmedString() != "115792089237316195423570985008687907853269984665640564039457584007913129639936" ) {
+        return std::nullopt;
+    }
+
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    std::optional<component::Bignum> ret = std::nullopt;
+
+    arith_uint256 res;
+    Bitcoin_detail::Bignum a(ds), b(ds);
+
+    a.Ref().SetHex(util::DecToHex(op.bn0.ToTrimmedString()));
+    b.Ref().SetHex(util::DecToHex(op.bn1.ToTrimmedString()));
+
+    switch ( op.calcOp.Get() ) {
+        case    CF_CALCOP("Add(A,B)"):
+            res = a.Ref() + b.Ref();
+            break;
+        case    CF_CALCOP("Sub(A,B)"):
+            res = a.Ref() - b.Ref();
+            break;
+        case    CF_CALCOP("Mul(A,B)"):
+            res = a.Ref() * b.Ref();
+            break;
+        case    CF_CALCOP("Div(A,B)"):
+            CF_CHECK_NE(b.Ref(), 0);
+            res = a.Ref() / b.Ref();
+            break;
+        case    CF_CALCOP("IsEq(A,B)"):
+            res = a.Ref() == b.Ref();
+            break;
+        case    CF_CALCOP("IsGt(A,B)"):
+            res = a.Ref() > b.Ref();
+            break;
+        case    CF_CALCOP("IsGte(A,B)"):
+            res = a.Ref() >= b.Ref();
+            break;
+        case    CF_CALCOP("IsLt(A,B)"):
+            res = a.Ref() < b.Ref();
+            break;
+        case    CF_CALCOP("IsLte(A,B)"):
+            res = a.Ref() <= b.Ref();
+            break;
+        case    CF_CALCOP("IsOdd(A)"):
+            res = a.Ref() & 1;
+            break;
+        case    CF_CALCOP("Set(A)"):
+            res = a.Ref();
+            break;
+        case    CF_CALCOP("And(A,B)"):
+            res = a.Ref() & b.Ref();
+            break;
+        case    CF_CALCOP("Or(A,B)"):
+            res = a.Ref() | b.Ref();
+            break;
+        case    CF_CALCOP("Xor(A,B)"):
+            res = a.Ref() ^ b.Ref();
+            break;
+        case    CF_CALCOP("NumBits(A)"):
+            res = a.Ref().bits();
+            break;
+        default:
+            goto end;
+    }
+
+    ret = util::HexToDec(res.GetHex());
+
+end:
+    return ret;
+}
+
+bool Bitcoin::SupportsModularBignumCalc(void) const {
+    return true;
+}
 
 } /* namespace module */
 } /* namespace cryptofuzz */

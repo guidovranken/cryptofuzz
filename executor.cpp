@@ -833,12 +833,17 @@ void ExecutorBignumCalc::SetModulo(const std::string& modulo) {
 
 ExecutorBignumCalc_Mod_BLS12_381_R::ExecutorBignumCalc_Mod_BLS12_381_R(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
     ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
-    /* noret */ SetModulo("52435875175126190479447740508185965837690552500527637822603658699938581184513");
+    CF_NORET(SetModulo("52435875175126190479447740508185965837690552500527637822603658699938581184513"));
 }
 
 ExecutorBignumCalc_Mod_BLS12_381_P::ExecutorBignumCalc_Mod_BLS12_381_P(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
     ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
-    /* noret */ SetModulo("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787");
+    CF_NORET(SetModulo("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787"));
+}
+
+ExecutorBignumCalc_Mod_2Exp256::ExecutorBignumCalc_Mod_2Exp256(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
+    CF_NORET(SetModulo("115792089237316195423570985008687907853269984665640564039457584007913129639936"));
 }
 
 template <class ResultType, class OperationType>
@@ -1050,6 +1055,12 @@ operation::BignumCalc ExecutorBignumCalc_Mod_BLS12_381_R::getOpPostprocess(Datas
 }
 
 operation::BignumCalc ExecutorBignumCalc_Mod_BLS12_381_P::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
+    (void)parentDs;
+    op.modulo = modulo;
+    return op;
+}
+
+operation::BignumCalc ExecutorBignumCalc_Mod_2Exp256::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
     (void)parentDs;
     op.modulo = modulo;
     return op;
