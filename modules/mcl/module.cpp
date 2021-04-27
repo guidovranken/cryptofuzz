@@ -333,8 +333,8 @@ std::optional<bool> mcl::OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) {
 
     try {
         x1 = Fp(op.g2.first.first.ToTrimmedString(), 10);
-        y1 = Fp(op.g2.first.second.ToTrimmedString(), 10);
-        x2 = Fp(op.g2.second.first.ToTrimmedString(), 10);
+        y1 = Fp(op.g2.second.first.ToTrimmedString(), 10);
+        x2 = Fp(op.g2.first.second.ToTrimmedString(), 10);
         y2 = Fp(op.g2.second.second.ToTrimmedString(), 10);
     } catch ( cybozu::Exception ) {
         /* May throw exception if string represents value larger than curve order */
