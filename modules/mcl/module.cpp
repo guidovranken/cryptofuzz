@@ -19,6 +19,8 @@ mcl::mcl(void) :
     Module("mcl") {
         ::mcl::bn::initPairing(::mcl::BLS12_381);
         ::mcl::bn::setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_07);
+        CF_NORET(::mcl::bn::verifyOrderG1(1));
+        CF_NORET(::mcl::bn::verifyOrderG2(1));
 }
 
 namespace mcl_detail {
