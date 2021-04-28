@@ -953,6 +953,92 @@ nlohmann::json BLS_GenerateKeyPair::ToJSON(void) const {
     return j;
 }
 
+std::string BLS_Decompress_G1::Name(void) const { return "BLS_Decompress_G1"; }
+std::string BLS_Decompress_G1::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_Decompress_G1" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "compressed: " << compressed.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_Decompress_G1::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+    j["compressed"] = compressed.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string BLS_Compress_G1::Name(void) const { return "BLS_Compress_G1"; }
+std::string BLS_Compress_G1::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_Compress_G1" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "uncompressed X:" << uncompressed.first.ToString() << std::endl;
+    ss << "uncompressed Y:" << uncompressed.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_Compress_G1::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+    j["g1_x"] = uncompressed.first.ToJSON();
+    j["g1_y"] = uncompressed.second.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string BLS_Decompress_G2::Name(void) const { return "BLS_Decompress_G2"; }
+std::string BLS_Decompress_G2::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_Decompress_G2" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "compressed X: " << compressed.first.ToString() << std::endl;
+    ss << "compressed Y: " << compressed.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_Decompress_G2::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+    j["g1_x"] = compressed.first.ToJSON();
+    j["g1_y"] = compressed.second.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string BLS_Compress_G2::Name(void) const { return "BLS_Compress_G2"; }
+std::string BLS_Compress_G2::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_Compress_G2" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "uncompressed V:" << uncompressed.first.first.ToString() << std::endl;
+    ss << "uncompressed W:" << uncompressed.first.second.ToString() << std::endl;
+    ss << "uncompressed X:" << uncompressed.second.first.ToString() << std::endl;
+    ss << "uncompressed Y:" << uncompressed.second.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_Compress_G2::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+    j["g2_v"] = uncompressed.first.first.ToJSON();
+    j["g2_w"] = uncompressed.first.second.ToJSON();
+    j["g2_x"] = uncompressed.second.first.ToJSON();
+    j["g2_y"] = uncompressed.second.second.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string Misc::Name(void) const { return "Misc"; }
 std::string Misc::ToString(void) const {
     std::stringstream ss;

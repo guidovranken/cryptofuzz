@@ -106,6 +106,10 @@ using ExecutorBLS_HashToG2 = ExecutorBase<component::G2, operation::BLS_HashToG2
 using ExecutorBLS_IsG1OnCurve = ExecutorBase<bool, operation::BLS_IsG1OnCurve>;
 using ExecutorBLS_IsG2OnCurve = ExecutorBase<bool, operation::BLS_IsG2OnCurve>;
 using ExecutorBLS_GenerateKeyPair = ExecutorBase<component::BLS_KeyPair, operation::BLS_GenerateKeyPair>;
+using ExecutorBLS_Decompress_G1 = ExecutorBase<component::G1, operation::BLS_Decompress_G1>;
+using ExecutorBLS_Compress_G1 = ExecutorBase<component::Bignum, operation::BLS_Compress_G1>;
+using ExecutorBLS_Decompress_G2 = ExecutorBase<component::G2, operation::BLS_Decompress_G2>;
+using ExecutorBLS_Compress_G2 = ExecutorBase<component::G1, operation::BLS_Compress_G2>;
 using ExecutorMisc = ExecutorBase<Buffer, operation::Misc>;
 using ExecutorSR25519_Verify = ExecutorBase<bool, operation::SR25519_Verify>;
 

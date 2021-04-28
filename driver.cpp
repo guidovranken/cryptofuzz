@@ -55,6 +55,10 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorBLS_IsG1OnCurve executorBLS_IsG1OnCurve(CF_OPERATION("BLS_IsG1OnCurve"), modules, options);
     static ExecutorBLS_IsG2OnCurve executorBLS_IsG2OnCurve(CF_OPERATION("BLS_IsG2OnCurve"), modules, options);
     static ExecutorBLS_GenerateKeyPair executorBLS_GenerateKeyPair(CF_OPERATION("BLS_GenerateKeyPair"), modules, options);
+    static ExecutorBLS_Decompress_G1 executorBLS_Decompress_G1(CF_OPERATION("BLS_Decompress_G1"), modules, options);
+    static ExecutorBLS_Compress_G1 executorBLS_Compress_G1(CF_OPERATION("BLS_Compress_G1"), modules, options);
+    static ExecutorBLS_Decompress_G2 executorBLS_Decompress_G2(CF_OPERATION("BLS_Decompress_G2"), modules, options);
+    static ExecutorBLS_Compress_G2 executorBLS_Compress_G2(CF_OPERATION("BLS_Compress_G2"), modules, options);
     static ExecutorMisc executorMisc(CF_OPERATION("Misc"), modules, options);
     static ExecutorSR25519_Verify executorSR25519_Verify(CF_OPERATION("SR25519_Verify"), modules, options);
 
@@ -187,6 +191,18 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("BLS_GenerateKeyPair"):
                 executorBLS_GenerateKeyPair.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_Decompress_G1"):
+                executorBLS_Decompress_G1.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_Compress_G1"):
+                executorBLS_Compress_G1.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_Decompress_G2"):
+                executorBLS_Decompress_G2.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_Compress_G2"):
+                executorBLS_Compress_G2.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("Misc"):
                 executorMisc.Run(ds, payload.data(), payload.size());

@@ -167,6 +167,22 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::G1> OpBLS_Decompress_G1(operation::BLS_Decompress_G1& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::Bignum> OpBLS_Compress_G1(operation::BLS_Compress_G1& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::G2> OpBLS_Decompress_G2(operation::BLS_Decompress_G2& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::G1> OpBLS_Compress_G2(operation::BLS_Compress_G2& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<Buffer> OpMisc(operation::Misc& op) {
             (void)op;
             return std::nullopt;

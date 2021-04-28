@@ -789,6 +789,85 @@ template<> std::optional<component::BLS_KeyPair> ExecutorBase<component::BLS_Key
     return module->OpBLS_GenerateKeyPair(op);
 }
 
+/* Specialization for operation::BLS_Decompress_G1 */
+template<> void ExecutorBase<component::G1, operation::BLS_Decompress_G1>::postprocess(std::shared_ptr<Module> module, operation::BLS_Decompress_G1& op, const ExecutorBase<component::G1, operation::BLS_Decompress_G1>::ResultPair& result) const {
+    (void)module;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto g1_x = result.second->first.ToTrimmedString();
+        const auto g1_y = result.second->second.ToTrimmedString();
+
+        Pool_CurveBLSG1.Set({ curveID, g1_x, g1_y });
+
+        if ( g1_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_x); }
+        if ( g1_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_y); }
+    }
+}
+
+template<> std::optional<component::G1> ExecutorBase<component::G1, operation::BLS_Decompress_G1>::callModule(std::shared_ptr<Module> module, operation::BLS_Decompress_G1& op) const {
+    return module->OpBLS_Decompress_G1(op);
+}
+
+/* Specialization for operation::BLS_Compress_G1 */
+template<> void ExecutorBase<component::Bignum, operation::BLS_Compress_G1>::postprocess(std::shared_ptr<Module> module, operation::BLS_Compress_G1& op, const ExecutorBase<component::Bignum, operation::BLS_Compress_G1>::ResultPair& result) const {
+    (void)module;
+
+    if ( result.second != std::nullopt  ) {
+        const auto compressed = result.second->ToTrimmedString();
+
+        if ( compressed.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(compressed); }
+    }
+}
+
+template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, operation::BLS_Compress_G1>::callModule(std::shared_ptr<Module> module, operation::BLS_Compress_G1& op) const {
+    return module->OpBLS_Compress_G1(op);
+}
+
+/* Specialization for operation::BLS_Decompress_G2 */
+template<> void ExecutorBase<component::G2, operation::BLS_Decompress_G2>::postprocess(std::shared_ptr<Module> module, operation::BLS_Decompress_G2& op, const ExecutorBase<component::G2, operation::BLS_Decompress_G2>::ResultPair& result) const {
+    (void)module;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto g2_v = result.second->first.first.ToTrimmedString();
+        const auto g2_w = result.second->first.second.ToTrimmedString();
+        const auto g2_x = result.second->second.first.ToTrimmedString();
+        const auto g2_y = result.second->second.second.ToTrimmedString();
+
+        Pool_CurveBLSG2.Set({ curveID, g2_v, g2_w, g2_x, g2_y });
+
+        if ( g2_v.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_v); }
+        if ( g2_w.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_w); }
+        if ( g2_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_x); }
+        if ( g2_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_y); }
+    }
+}
+
+template<> std::optional<component::G2> ExecutorBase<component::G2, operation::BLS_Decompress_G2>::callModule(std::shared_ptr<Module> module, operation::BLS_Decompress_G2& op) const {
+    return module->OpBLS_Decompress_G2(op);
+}
+
+/* Specialization for operation::BLS_Compress_G2 */
+template<> void ExecutorBase<component::G1, operation::BLS_Compress_G2>::postprocess(std::shared_ptr<Module> module, operation::BLS_Compress_G2& op, const ExecutorBase<component::G1, operation::BLS_Compress_G2>::ResultPair& result) const {
+    (void)module;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto g1_x = result.second->first.ToTrimmedString();
+        const auto g1_y = result.second->second.ToTrimmedString();
+
+        Pool_CurveBLSG1.Set({ curveID, g1_x, g1_y });
+
+        if ( g1_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_x); }
+        if ( g1_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_y); }
+    }
+}
+
+template<> std::optional<component::G1> ExecutorBase<component::G1, operation::BLS_Compress_G2>::callModule(std::shared_ptr<Module> module, operation::BLS_Compress_G2& op) const {
+    return module->OpBLS_Compress_G2(op);
+}
+
 /* Specialization for operation::Misc */
 template<> void ExecutorBase<Buffer, operation::Misc>::postprocess(std::shared_ptr<Module> module, operation::Misc& op, const ExecutorBase<Buffer, operation::Misc>::ResultPair& result) const {
     (void)module;
@@ -1254,6 +1333,10 @@ template class ExecutorBase<component::G2, operation::BLS_HashToG2>;
 template class ExecutorBase<bool, operation::BLS_IsG1OnCurve>;
 template class ExecutorBase<bool, operation::BLS_IsG2OnCurve>;
 template class ExecutorBase<component::BLS_KeyPair, operation::BLS_GenerateKeyPair>;
+template class ExecutorBase<component::G1, operation::BLS_Decompress_G1>;
+template class ExecutorBase<component::Bignum, operation::BLS_Compress_G1>;
+template class ExecutorBase<component::G2, operation::BLS_Decompress_G2>;
+template class ExecutorBase<component::G1, operation::BLS_Compress_G2>;
 template class ExecutorBase<Buffer, operation::Misc>;
 template class ExecutorBase<bool, operation::SR25519_Verify>;
 

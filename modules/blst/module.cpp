@@ -22,7 +22,7 @@ namespace blst_detail {
     }
 
     template <size_t Size>
-    std::optional<std::array<uint8_t, Size>> ToArray(const component::Bignum& bn) {
+    std::optional<std::array<uint8_t, Size>> ToArray(const component::Bignum& bn, const bool reverse = true) {
         const auto _ret = util::DecToBin(bn.ToTrimmedString(), Size);
         if ( _ret == std::nullopt ) {
             return std::nullopt;
@@ -30,7 +30,9 @@ namespace blst_detail {
 
         std::array<uint8_t, Size> ret;
         memcpy(ret.data(), _ret->data(), Size);
-        Reverse<>(ret);
+        if ( reverse == true ) {
+            Reverse<>(ret);
+        }
 
         return ret;
     }
@@ -149,7 +151,6 @@ namespace blst_detail {
 
         return false;
     }
-
     static size_t isMultipleOf2(const std::string s) {
         auto i = boost::multiprecision::cpp_int(s);
         if ( i == 0 || i == 1 ) {
@@ -165,6 +166,16 @@ namespace blst_detail {
         }
 
         return num - 1;
+    }
+    static bool IsZero(const blst_p1_affine* g1) {
+        blst_p1_affine zero;
+        memset(&zero, 0, sizeof(zero));
+        return memcmp(g1, &zero, sizeof(zero)) == 0;
+    }
+    static bool IsZero(const blst_p2_affine* g2) {
+        blst_p2_affine zero;
+        memset(&zero, 0, sizeof(zero));
+        return memcmp(g2, &zero, sizeof(zero)) == 0;
     }
 }
 
@@ -368,11 +379,7 @@ std::optional<bool> blst::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g1.first, g1_affine.x));
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g1.second, g1_affine.y));
 
-    {
-        blst_p1_affine zero;
-        memset(&zero, 0, sizeof(zero));
-        CF_CHECK_NE(memcmp(&g1_affine, &zero, sizeof(zero)), 0);
-    }
+    CF_CHECK_FALSE(blst_detail::IsZero(&g1_affine));
 
     if ( useAffine ) {
         return blst_p1_affine_on_curve(&g1_affine) && blst_p1_affine_in_g1(&g1_affine);
@@ -402,11 +409,7 @@ std::optional<bool> blst::OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) {
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g2.second.first, g2_affine.x.fp[1]));
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g2.second.second, g2_affine.y.fp[1]));
 
-    {
-        blst_p2_affine zero;
-        memset(&zero, 0, sizeof(zero));
-        CF_CHECK_NE(memcmp(&g2_affine, &zero, sizeof(zero)), 0);
-    }
+    CF_CHECK_FALSE(blst_detail::IsZero(&g2_affine));
 
     if ( useAffine ) {
         return blst_p2_affine_on_curve(&g2_affine) && blst_p2_affine_in_g2(&g2_affine);
@@ -772,6 +775,90 @@ std::optional<component::Bignum> blst::OpBignumCalc(operation::BignumCalc& op) {
     } else {
         return std::nullopt;
     }
+}
+
+std::optional<component::G1> blst::OpBLS_Decompress_G1(operation::BLS_Decompress_G1& op) {
+    std::optional<component::G1> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    blst_p1_affine point;
+    std::optional<std::array<uint8_t, 48>> compressed = std::nullopt;
+
+    CF_CHECK_NE(compressed = blst_detail::ToArray<48>(op.compressed, false), std::nullopt);
+
+    if ( blst_p1_uncompress(&point, compressed->data()) == BLST_SUCCESS ) {
+        blst_detail::G1 g1(point, ds);
+        ret = g1.To_Component_G1();
+    } else {
+        ret = component::G1{"0", "0"};
+    }
+
+end:
+    return ret;
+}
+
+std::optional<component::Bignum> blst::OpBLS_Compress_G1(operation::BLS_Compress_G1& op) {
+    std::optional<component::Bignum> ret = std::nullopt;
+
+    std::array<uint8_t, 48> out;
+    blst_p1_affine point;
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.uncompressed.first, point.x));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.uncompressed.second, point.y));
+    //CF_CHECK_FALSE(blst_detail::IsZero(&point));
+
+    CF_CHECK_TRUE(blst_p1_affine_on_curve(&point));
+
+    CF_NORET(blst_p1_affine_compress(out.data(), &point));
+    ret = util::BinToDec(out.data(), 48);
+
+end:
+    return ret;
+}
+
+std::optional<component::G2> blst::OpBLS_Decompress_G2(operation::BLS_Decompress_G2& op) {
+    std::optional<component::G2> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    blst_p2_affine point;
+    std::optional<std::array<uint8_t, 48>> compressed_x = std::nullopt;
+    std::optional<std::array<uint8_t, 48>> compressed_y = std::nullopt;
+    std::array<uint8_t, 96> compressed;
+
+    CF_CHECK_NE(compressed_x = blst_detail::ToArray<48>(op.compressed.first, false), std::nullopt);
+    CF_CHECK_NE(compressed_y = blst_detail::ToArray<48>(op.compressed.second, false), std::nullopt);
+
+    memcpy(compressed.data(), compressed_x->data(), 48);
+    memcpy(compressed.data() + 48, compressed_y->data(), 48);
+
+    if ( blst_p2_uncompress(&point, compressed.data()) == BLST_SUCCESS ) {
+        ret = blst_detail::To_G2(point);
+    } else {
+        ret = component::G2{"0", "0", "0", "0"};
+    }
+
+end:
+    return ret;
+}
+
+std::optional<component::G1> blst::OpBLS_Compress_G2(operation::BLS_Compress_G2& op) {
+    std::optional<component::G1> ret = std::nullopt;
+
+    std::array<uint8_t, 96> out;
+    blst_p2_affine point;
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.uncompressed.first.first, point.x.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.uncompressed.first.second, point.y.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.uncompressed.second.first, point.x.fp[1]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.uncompressed.second.second, point.y.fp[1]));
+
+    CF_CHECK_TRUE(blst_p2_affine_on_curve(&point));
+
+    CF_NORET(blst_p2_affine_compress(out.data(), &point));
+    ret = { util::BinToDec(out.data(), 48), util::BinToDec(out.data() + 48, 48) };
+
+end:
+    return ret;
 }
 
 std::optional<Buffer> blst::OpMisc(operation::Misc& op) {

@@ -393,6 +393,26 @@ void test(const operation::BLS_GenerateKeyPair& op, const std::optional<componen
     (void)result;
 }
 
+void test(const operation::BLS_Decompress_G1& op, const std::optional<component::G1>& result) {
+    (void)op;
+    (void)result;
+}
+
+void test(const operation::BLS_Compress_G1& op, const std::optional<component::Bignum>& result) {
+    (void)op;
+    (void)result;
+}
+
+void test(const operation::BLS_Decompress_G2& op, const std::optional<component::G2>& result) {
+    (void)op;
+    (void)result;
+}
+
+void test(const operation::BLS_Compress_G2& op, const std::optional<component::G1>& result) {
+    (void)op;
+    (void)result;
+}
+
 void test(const operation::Misc& op, const std::optional<Buffer>& result) {
     (void)op;
     (void)result;

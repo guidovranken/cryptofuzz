@@ -1716,6 +1716,134 @@ class BLS_GenerateKeyPair : public Operation {
         }
 };
 
+class BLS_Decompress_G1 : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::Bignum compressed;
+
+        BLS_Decompress_G1(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            compressed(ds)
+        { }
+        BLS_Decompress_G1(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            compressed(json["compressed"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_Decompress_G1& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (compressed == rhs.compressed) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            compressed.Serialize(ds);
+        }
+};
+
+class BLS_Compress_G1 : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::G1 uncompressed;
+
+        BLS_Compress_G1(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            uncompressed(ds)
+        { }
+        BLS_Compress_G1(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            uncompressed(json["g1_x"], json["g1_y"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_Compress_G1& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (uncompressed == rhs.uncompressed) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            uncompressed.Serialize(ds);
+        }
+};
+
+class BLS_Decompress_G2 : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::G1 compressed;
+
+        BLS_Decompress_G2(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            compressed(ds)
+        { }
+        BLS_Decompress_G2(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            compressed(json["g1_x"], json["g1_y"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_Decompress_G2& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (compressed == rhs.compressed) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            compressed.Serialize(ds);
+        }
+};
+
+class BLS_Compress_G2 : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::G2 uncompressed;
+
+        BLS_Compress_G2(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            uncompressed(ds)
+        { }
+        BLS_Compress_G2(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            uncompressed(json["g2_v"], json["g2_w"], json["g2_x"], json["g2_y"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_Compress_G2& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (uncompressed == rhs.uncompressed) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            uncompressed.Serialize(ds);
+        }
+};
+
 class Misc : public Operation {
     public:
         const Type operation;
