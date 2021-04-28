@@ -124,7 +124,7 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - mbed TLS: [ECDSA signing of 0 produces unverifiable signature](https://github.com/ARMmbed/mbedtls/issues/4261)
 - mbed TLS: [PKCS12 KDF + MD2 incorrect result](https://github.com/ARMmbed/mbedtls/issues/4267)
 - libgcrypt [CMAC + SERPENT/IDEA/RC2 buffer overflow/crash with oversized key](https://lists.gnupg.org/pipermail/gcrypt-devel/2021-March/005130.html)
-- TBA: TBA
+- Parity libsecp256k1: [Verifies signatures whose R,S > curve order](https://github.com/paritytech/libsecp256k1/commit/b525d5d318d9672a40250c1725fa1bb3156688b7)
 - Botan: [ECDSA pubkey recovery succeeds with invalid parameters](https://github.com/randombit/botan/issues/2698)
 - mbed TLS: [CHACHA20-POLY1305 succeeds with invalid IV size](https://github.com/ARMmbed/mbedtls/issues/4301)
 - SymCrypt: [ECDSA signing produces invalid signature](https://github.com/microsoft/SymCrypt/issues/15)
