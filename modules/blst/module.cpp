@@ -43,7 +43,7 @@ namespace blst_detail {
             return false;
         }
 
-        /* noret */ blst_fr_from_uint64(&out, (const uint64_t*)ret->data());
+        CF_NORET(blst_fr_from_uint64(&out, (const uint64_t*)ret->data()));
         return true;
     }
     bool To_blst_fp(const component::Bignum& bn, blst_fp& out) {
@@ -53,7 +53,7 @@ namespace blst_detail {
             return false;
         }
 
-        /* noret */ blst_fp_from_uint64(&out, (const uint64_t*)ret->data());
+        CF_NORET(blst_fp_from_uint64(&out, (const uint64_t*)ret->data()));
         return true;
     }
     component::Bignum To_component_bignum(const blst_fr& in) {
@@ -129,7 +129,7 @@ namespace blst_detail {
             return false;
         }
 
-        /* noret */ blst_scalar_from_uint64(&out, (const uint64_t*)ret->data());
+        CF_NORET(blst_scalar_from_uint64(&out, (const uint64_t*)ret->data()));
 
         return true;
     }
@@ -193,10 +193,10 @@ std::optional<component::BLS_PublicKey> blst::OpBLS_PrivateToPublic(operation::B
 
     CF_CHECK_TRUE(blst_detail::To_blst_scalar(op.priv, priv));
 
-    /* noret */ blst_sk_to_pk_in_g1(&pub, &priv);
+    CF_NORET(blst_sk_to_pk_in_g1(&pub, &priv));
     CF_ASSERT(blst_p1_on_curve(&pub) == true, "Generated pubkey not on curve");
 
-    /* noret */ blst_p1_to_affine(&pub_affine, &pub);
+    CF_NORET(blst_p1_to_affine(&pub_affine, &pub));
 
     {
         blst_detail::G1 g1(pub_affine, ds);
@@ -218,15 +218,15 @@ std::optional<component::G1> blst::OpBLS_HashToG1(operation::BLS_HashToG1& op) {
     blst_p1 g1;
     blst_p1_affine g1_affine;
 
-    /* noret */ blst_hash_to_g1(
+    CF_NORET(blst_hash_to_g1(
             &g1,
             op.cleartext.GetPtr(&ds), op.cleartext.GetSize(),
             op.dest.GetPtr(&ds), op.dest.GetSize(),
-            op.aug.GetPtr(&ds), op.aug.GetSize());
+            op.aug.GetPtr(&ds), op.aug.GetSize()));
 
     CF_ASSERT(blst_p1_on_curve(&g1) == true, "Generated g1 not on curve");
 
-    /* noret */ blst_p1_to_affine(&g1_affine, &g1);
+    CF_NORET(blst_p1_to_affine(&g1_affine, &g1));
 
     {
         blst_detail::G1 _g1(g1_affine, ds);
@@ -247,15 +247,15 @@ std::optional<component::G2> blst::OpBLS_HashToG2(operation::BLS_HashToG2& op) {
     blst_p2 g2;
     blst_p2_affine g2_affine;
 
-    /* noret */ blst_hash_to_g2(
+    CF_NORET(blst_hash_to_g2(
             &g2,
             op.cleartext.GetPtr(&ds), op.cleartext.GetSize(),
             op.dest.GetPtr(&ds), op.dest.GetSize(),
-            op.aug.GetPtr(&ds), op.aug.GetSize());
+            op.aug.GetPtr(&ds), op.aug.GetSize()));
 
     CF_ASSERT(blst_p2_on_curve(&g2) == true, "Generated g2 not on curve");
 
-    /* noret */ blst_p2_to_affine(&g2_affine, &g2);
+    CF_NORET(blst_p2_to_affine(&g2_affine, &g2));
 
     ret = blst_detail::To_G2(g2_affine);
 
@@ -281,24 +281,24 @@ std::optional<component::BLS_Signature> blst::OpBLS_Sign(operation::BLS_Sign& op
     CF_CHECK_TRUE(blst_detail::To_blst_scalar(op.priv, priv));
     CF_CHECK_TRUE(blst_sk_check(&priv));
 
-    /* noret */ blst_sk_to_pk_in_g1(&pub, &priv);
+    CF_NORET(blst_sk_to_pk_in_g1(&pub, &priv));
     CF_ASSERT(blst_p1_on_curve(&pub) == true, "Generated pubkey not on curve");
-    /* noret */ blst_p1_to_affine(&pub_affine, &pub);
+    CF_NORET(blst_p1_to_affine(&pub_affine, &pub));
 
     if ( op.hashOrPoint == true ) {
-        /* noret */ blst_hash_to_g2(
+        CF_NORET(blst_hash_to_g2(
                 &hash,
                 op.cleartext.GetPtr(&ds), op.cleartext.GetSize(),
                 op.dest.GetPtr(&ds), op.dest.GetSize(),
-                op.aug.GetPtr(&ds), op.aug.GetSize());
+                op.aug.GetPtr(&ds), op.aug.GetSize()));
     } else {
         CF_CHECK_TRUE(blst_detail::To_blst_fp(op.point.first.first, hash_affine.x.fp[0]));
         CF_CHECK_TRUE(blst_detail::To_blst_fp(op.point.first.second, hash_affine.y.fp[0]));
         CF_CHECK_TRUE(blst_detail::To_blst_fp(op.point.second.first, hash_affine.x.fp[1]));
         CF_CHECK_TRUE(blst_detail::To_blst_fp(op.point.second.second, hash_affine.y.fp[1]));
-        /* noret */ blst_p2_from_affine(&hash, &hash_affine);
+        CF_NORET(blst_p2_from_affine(&hash, &hash_affine));
     }
-    /* noret */ blst_sign_pk_in_g1(&signature, &hash, &priv);
+    CF_NORET(blst_sign_pk_in_g1(&signature, &hash, &priv));
 
     if ( op.hashOrPoint == true ) {
         CF_ASSERT(blst_p2_on_curve(&signature) == true, "Generated signature not on curve");
@@ -308,7 +308,7 @@ std::optional<component::BLS_Signature> blst::OpBLS_Sign(operation::BLS_Sign& op
         }
     }
 
-    /* noret */ blst_p2_to_affine(&signature_affine, &signature);
+    CF_NORET(blst_p2_to_affine(&signature_affine, &signature));
 
     {
         blst_detail::G1 g1(pub_affine, ds);
@@ -384,7 +384,7 @@ std::optional<bool> blst::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
     if ( useAffine ) {
         return blst_p1_affine_on_curve(&g1_affine) && blst_p1_affine_in_g1(&g1_affine);
     } else {
-        /* noret */ blst_p1_from_affine(&g1, &g1_affine);
+        CF_NORET(blst_p1_from_affine(&g1, &g1_affine));
         return blst_p1_on_curve(&g1) && blst_p1_in_g1(&g1);
     }
 
@@ -414,7 +414,7 @@ std::optional<bool> blst::OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) {
     if ( useAffine ) {
         return blst_p2_affine_on_curve(&g2_affine) && blst_p2_affine_in_g2(&g2_affine);
     } else {
-        /* noret */ blst_p2_from_affine(&g2, &g2_affine);
+        CF_NORET(blst_p2_from_affine(&g2, &g2_affine));
         return blst_p2_on_curve(&g2) && blst_p2_in_g2(&g2);
     }
 
@@ -434,15 +434,15 @@ std::optional<component::BLS_KeyPair> blst::OpBLS_GenerateKeyPair(operation::BLS
     blst_p1 pub;
     blst_p1_affine pub_affine;
 
-    /* noret */ blst_keygen(&priv, op.ikm.GetPtr(), op.ikm.GetSize(), op.info.GetPtr(), op.info.GetSize());
+    CF_NORET(blst_keygen(&priv, op.ikm.GetPtr(), op.ikm.GetSize(), op.info.GetPtr(), op.info.GetSize()));
     CF_ASSERT(blst_sk_check(&priv) == true, "blst_keygen generated invalid private key");
 
-    /* noret */ blst_sk_to_pk_in_g1(&pub, &priv);
-    /* noret */ blst_p1_to_affine(&pub_affine, &pub);
+    CF_NORET(blst_sk_to_pk_in_g1(&pub, &priv));
+    CF_NORET(blst_p1_to_affine(&pub_affine, &pub));
 
     {
         std::array<uint8_t, 32> priv_bytes;
-        /* noret */ blst_uint64_from_scalar((uint64_t*)priv_bytes.data(), &priv);
+        CF_NORET(blst_uint64_from_scalar((uint64_t*)priv_bytes.data(), &priv));
 
         blst_detail::Reverse<>(priv_bytes);
         blst_detail::G1 g1(pub_affine, ds);
@@ -468,7 +468,7 @@ std::optional<bool> blst::OpBLS_Pairing(operation::BLS_Pairing& op) {
     blst_p1_affine pub;
     blst_p2_affine sig;
 
-    /* noret */ blst_pairing_init(ctx, true, op.dest.GetPtr(), op.dest.GetSize());
+    CF_NORET(blst_pairing_init(ctx, true, op.dest.GetPtr(), op.dest.GetSize()));
     ///* noret */ blst_pairing_init(ctx, false, op.dest.GetPtr(), op.dest.GetSize());
 
     for (const auto& c : op.components.c) {
@@ -487,7 +487,7 @@ std::optional<bool> blst::OpBLS_Pairing(operation::BLS_Pairing& op) {
                     c.aug.GetPtr(), c.aug.GetSize()), BLST_SUCCESS);
     }
 
-    /* noret */ blst_pairing_commit(ctx);
+    CF_NORET(blst_pairing_commit(ctx));
 
     ret = blst_pairing_finalverify(ctx, nullptr);
 
@@ -555,14 +555,14 @@ namespace blst_detail {
                     case    0:
                         CF_CHECK_TRUE(blst_detail::To_blst_fr(op.bn1, B));
                         PREPARE_RESULT();
-                        /* noret */ blst_fr_mul(RESULT_PTR(), &A, PARAM_B());
+                        CF_NORET(blst_fr_mul(RESULT_PTR(), &A, PARAM_B()));
                         break;
                     case    1:
                         if ( op.bn1.ToTrimmedString() != "3" ) {
                             goto end;
                         }
                         PREPARE_RESULT();
-                        /* noret */ blst_fr_mul_by_3(RESULT_PTR(), &A);
+                        CF_NORET(blst_fr_mul_by_3(RESULT_PTR(), &A));
                         break;
                     case    2:
                         {
@@ -665,7 +665,7 @@ end:
                         case    0:
                             CF_CHECK_TRUE(blst_detail::To_blst_fp(op.bn1, B));
                             PREPARE_RESULT();
-                            /* noret */ blst_fp_mul(RESULT_PTR(), &A, PARAM_B());
+                            CF_NORET(blst_fp_mul(RESULT_PTR(), &A, PARAM_B()));
                             break;
                         case    1:
                             if ( op.bn1.ToTrimmedString() != "3" ) {
@@ -673,7 +673,7 @@ end:
                             }
 
                             PREPARE_RESULT();
-                            /* noret */ blst_fp_mul_by_3(RESULT_PTR(), &A);
+                            CF_NORET(blst_fp_mul_by_3(RESULT_PTR(), &A));
                             break;
                         case    2:
                             if ( op.bn1.ToTrimmedString() != "8" ) {
@@ -681,7 +681,7 @@ end:
                             }
 
                             PREPARE_RESULT();
-                            /* noret */ blst_fp_mul_by_8(RESULT_PTR(), &A);
+                            CF_NORET(blst_fp_mul_by_8(RESULT_PTR(), &A));
                             break;
                         case    3:
                             {
@@ -718,10 +718,10 @@ end:
                 try {
                     if ( ds.Get<bool>() ) {
                         PREPARE_RESULT();
-                        /* noret */ blst_fp_eucl_inverse(RESULT_PTR(), &A);
+                        CF_NORET(blst_fp_eucl_inverse(RESULT_PTR(), &A));
                     } else {
                         PREPARE_RESULT();
-                        /* noret */ blst_fp_inverse(RESULT_PTR(), &A);
+                        CF_NORET(blst_fp_inverse(RESULT_PTR(), &A));
                     }
                 } catch ( fuzzing::datasource::Base::OutOfData ) {
                     goto end;
@@ -872,7 +872,7 @@ std::optional<Buffer> blst::OpMisc(operation::Misc& op) {
                     blst_p1_affine point;
                     CF_CHECK_EQ(blst_p1_uncompress(&point, data.data()), BLST_SUCCESS);
                     uint8_t out[48];
-                    /* noret */ blst_p1_affine_compress(out, &point);
+                    CF_NORET(blst_p1_affine_compress(out, &point));
                     if ( blst_p1_affine_on_curve(&point) ) {
                         CF_ASSERT(memcmp(data.data(), out, data.size()) == 0, "Serialization asymmetry");
                     }
@@ -884,13 +884,13 @@ std::optional<Buffer> blst::OpMisc(operation::Misc& op) {
                     blst_p1_affine point;
                     CF_CHECK_EQ(blst_p1_deserialize(&point, data.data()), BLST_SUCCESS);
                     uint8_t out[96];
-                    /* noret */ blst_p1_affine_serialize(out, &point);
+                    CF_NORET(blst_p1_affine_serialize(out, &point));
                     if ( blst_p1_affine_on_curve(&point) ) {
                         blst_p1_affine point2;
                         CF_ASSERT(blst_p1_deserialize(&point2, out) == BLST_SUCCESS, "Cannot deserialize serialized point");
 
                         uint8_t out2[96];
-                        /* noret */ blst_p1_affine_serialize(out2, &point2);
+                        CF_NORET(blst_p1_affine_serialize(out2, &point2));
                         CF_ASSERT(memcmp(out, out2, sizeof(out)) == 0, "Serialization asymmetry");
                         //CF_ASSERT(memcmp(data.data(), out, data.size()) == 0, "Serialization asymmetry");
                     }
@@ -902,7 +902,7 @@ std::optional<Buffer> blst::OpMisc(operation::Misc& op) {
                     blst_p2_affine point;
                     CF_CHECK_EQ(blst_p2_uncompress(&point, data.data()), BLST_SUCCESS);
                     uint8_t out[96];
-                    /* noret */ blst_p2_affine_compress(out, &point);
+                    CF_NORET(blst_p2_affine_compress(out, &point));
                     if ( blst_p2_affine_on_curve(&point) ) {
                         CF_ASSERT(memcmp(data.data(), out, data.size()) == 0, "Serialization asymmetry");
                     }
@@ -914,13 +914,13 @@ std::optional<Buffer> blst::OpMisc(operation::Misc& op) {
                     blst_p2_affine point;
                     CF_CHECK_EQ(blst_p2_deserialize(&point, data.data()), BLST_SUCCESS);
                     uint8_t out[192];
-                    /* noret */ blst_p2_affine_serialize(out, &point);
+                    CF_NORET(blst_p2_affine_serialize(out, &point));
                     if ( blst_p2_affine_on_curve(&point) ) {
                         blst_p2_affine point2;
                         CF_ASSERT(blst_p2_deserialize(&point2, out) == BLST_SUCCESS, "Cannot deserialize serialized point");
 
                         uint8_t out2[192];
-                        /* noret */ blst_p2_affine_serialize(out2, &point2);
+                        CF_NORET(blst_p2_affine_serialize(out2, &point2));
                         CF_ASSERT(memcmp(out, out2, sizeof(out)) == 0, "Serialization asymmetry");
                         //CF_ASSERT(memcmp(data.data(), out, data.size()) == 0, "Serialization asymmetry");
                     }
@@ -941,7 +941,7 @@ std::optional<Buffer> blst::OpMisc(operation::Misc& op) {
                     }
 
                     blst_fp12 out;
-                    /* noret */ blst_miller_loop_lines(&out, Qlines, &point);
+                    CF_NORET(blst_miller_loop_lines(&out, Qlines, &point));
                 }
                 break;
             case    5:
@@ -953,7 +953,7 @@ std::optional<Buffer> blst::OpMisc(operation::Misc& op) {
                     }
 
                     blst_fp6 Qlines[68];
-                    /* noret */ blst_precompute_lines(Qlines, &point);
+                    CF_NORET(blst_precompute_lines(Qlines, &point));
                 }
                 break;
             case    6:
@@ -972,7 +972,7 @@ std::optional<Buffer> blst::OpMisc(operation::Misc& op) {
                         CF_CHECK_EQ(blst_p2_deserialize(&p2, data.data()), BLST_SUCCESS);
                     }
 
-                    /* noret */ blst_miller_loop(&out, &p2, &p1);
+                    CF_NORET(blst_miller_loop(&out, &p2, &p1));
                 }
                 break;
         }
