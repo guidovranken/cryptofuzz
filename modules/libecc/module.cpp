@@ -415,7 +415,18 @@ std::optional<bool> libecc::OpECDSA_Verify(operation::ECDSA_Verify& op) {
 
 
     CF_CHECK_EQ(ec_verify_init(&ctx, &(kp.pub_key), sig.data(), sig.size(), ECDSA, SHA256), 0);
-    ret = ecdsa_verify_raw(&ctx, op.cleartext.GetPtr(), op.cleartext.GetSize()) == 0;
+    {
+        const auto cleartext_ptr = op.cleartext.GetPtr();
+
+        /* libecc has an explicit check for NULL input which causes ecdsa_verify_raw
+         * to return false even if the signature is valid.
+         *
+         * See also OSS-Fuzz issue #33808
+         */
+        CF_CHECK_NE(cleartext_ptr, nullptr);
+
+        ret = ecdsa_verify_raw(&ctx, cleartext_ptr, op.cleartext.GetSize()) == 0;
+    }
 
 end:
     CF_RESTORE_JMP();
