@@ -500,7 +500,37 @@ namespace Bitcoin_detail {
     };
 }
 
+namespace Bitcoin_detail {
+    bool UseParamTwice(fuzzing::datasource::Datasource& ds, const arith_uint256& A, const arith_uint256& B) {
+        if ( A != B ) {
+            return false;
+        }
+
+        try {
+            return ds.Get<bool>();
+        } catch ( fuzzing::datasource::Base::OutOfData ) {
+        }
+
+        return false;
+    }
+
+    uint8_t GetMod3(fuzzing::datasource::Datasource& ds) {
+        try {
+            return ds.Get<uint8_t>() % 3;
+        } catch ( fuzzing::datasource::Base::OutOfData ) {
+        }
+
+        return 0;
+    }
+} /* namespace Bitcoin_detail */
+
+
 std::optional<component::Bignum> Bitcoin::OpBignumCalc(operation::BignumCalc& op) {
+#define PREPARE_RESULT() {resultIdx = Bitcoin_detail::GetMod3(ds);}
+#define RESULT_REF() (resultIdx == 0 ? result : (resultIdx == 1 ? &a : &b))
+#define RESULT() ((resultIdx == 0 ? result : (resultIdx == 1 ? a : b)).Ref())
+#define PARAM_B() ((Bitcoin_detail::UseParamTwice(ds, a.Ref(), b.Ref()) ? a : b).Ref())
+
     if ( op.modulo == std::nullopt ) {
         return std::nullopt;
     }
@@ -512,67 +542,75 @@ std::optional<component::Bignum> Bitcoin::OpBignumCalc(operation::BignumCalc& op
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     std::optional<component::Bignum> ret = std::nullopt;
 
-    arith_uint256 res;
-    Bitcoin_detail::Bignum a(ds), b(ds);
+    Bitcoin_detail::Bignum result(ds), a(ds), b(ds);
 
     a.Ref().SetHex(util::DecToHex(op.bn0.ToTrimmedString()));
     b.Ref().SetHex(util::DecToHex(op.bn1.ToTrimmedString()));
 
+    uint8_t resultIdx;
+
+    PREPARE_RESULT();
+
     switch ( op.calcOp.Get() ) {
         case    CF_CALCOP("Add(A,B)"):
-            res = a.Ref() + b.Ref();
+            RESULT() = a.Ref() + PARAM_B();
             break;
         case    CF_CALCOP("Sub(A,B)"):
-            res = a.Ref() - b.Ref();
+            RESULT() = a.Ref() - PARAM_B();
             break;
         case    CF_CALCOP("Mul(A,B)"):
-            res = a.Ref() * b.Ref();
+            RESULT() = a.Ref() * PARAM_B();
             break;
         case    CF_CALCOP("Div(A,B)"):
-            CF_CHECK_NE(b.Ref(), 0);
-            res = a.Ref() / b.Ref();
+            CF_CHECK_NE(PARAM_B(), 0);
+            RESULT() = a.Ref() / PARAM_B();
             break;
         case    CF_CALCOP("IsEq(A,B)"):
-            res = a.Ref() == b.Ref();
+            RESULT() = a.Ref() == PARAM_B();
             break;
         case    CF_CALCOP("IsGt(A,B)"):
-            res = a.Ref() > b.Ref();
+            RESULT() = a.Ref() > PARAM_B();
             break;
         case    CF_CALCOP("IsGte(A,B)"):
-            res = a.Ref() >= b.Ref();
+            RESULT() = a.Ref() >= PARAM_B();
             break;
         case    CF_CALCOP("IsLt(A,B)"):
-            res = a.Ref() < b.Ref();
+            RESULT() = a.Ref() < PARAM_B();
             break;
         case    CF_CALCOP("IsLte(A,B)"):
-            res = a.Ref() <= b.Ref();
+            RESULT() = a.Ref() <= PARAM_B();
             break;
         case    CF_CALCOP("IsOdd(A)"):
-            res = a.Ref() & 1;
+            RESULT() = a.Ref() & 1;
             break;
         case    CF_CALCOP("Set(A)"):
-            res = a.Ref();
+            RESULT() = a.Ref();
             break;
         case    CF_CALCOP("And(A,B)"):
-            res = a.Ref() & b.Ref();
+            RESULT() = a.Ref() & PARAM_B();
             break;
         case    CF_CALCOP("Or(A,B)"):
-            res = a.Ref() | b.Ref();
+            RESULT() = a.Ref() | PARAM_B();
             break;
         case    CF_CALCOP("Xor(A,B)"):
-            res = a.Ref() ^ b.Ref();
+            RESULT() = a.Ref() ^ PARAM_B();
             break;
         case    CF_CALCOP("NumBits(A)"):
-            res = a.Ref().bits();
+            RESULT() = a.Ref().bits();
             break;
         default:
             goto end;
     }
 
-    ret = util::HexToDec(res.GetHex());
+    ret = util::HexToDec(RESULT().GetHex());
 
 end:
     return ret;
+
+#undef PREPARE_RESULT
+#undef RESULT_PTR
+#undef RESULT
+#undef PARAM_B
 }
 
 bool Bitcoin::SupportsModularBignumCalc(void) const {
