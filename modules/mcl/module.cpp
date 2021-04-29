@@ -450,6 +450,7 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                     {
                         a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
+                        CF_CHECK_NE(a, b);
                         PREPARE_BN();
                         ::mcl::bn::Fr::inv(*resultp, *ap);
                         return resultp->getStr();
@@ -585,6 +586,7 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                     {
                         a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
+                        CF_CHECK_NE(a, b);
                         PREPARE_BN();
                         ::mcl::bn::Fp::inv(*resultp, *ap);
                         return resultp->getStr();
@@ -707,10 +709,12 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                 CF_ASSERT(0, "BignumCalc_Mod_BLS12_381_P unexpectedly failed");
             }
         }
-        return std::nullopt;
-    } else {
+
         return std::nullopt;
     }
+
+end:
+        return std::nullopt;
 }
 
 bool mcl::SupportsModularBignumCalc(void) const {
