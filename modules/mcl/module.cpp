@@ -176,7 +176,6 @@ std::optional<component::BLS_PublicKey> mcl::OpBLS_PrivateToPublic(operation::BL
 
 std::optional<component::BLS_Signature> mcl::OpBLS_Sign(operation::BLS_Sign& op) {
     std::optional<component::BLS_Signature> ret = std::nullopt;
-    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     if ( op.priv.ToTrimmedString() == "0" ) {
         return std::nullopt;
@@ -185,7 +184,7 @@ std::optional<component::BLS_Signature> mcl::OpBLS_Sign(operation::BLS_Sign& op)
     try {
         using namespace ::mcl::bls12;
         Fr sec;
-        sec.setStr(op.priv.ToString(ds), 10);
+        sec.setStr(op.priv.ToTrimmedString(), 10);
 
         G2 sign;
         if ( op.hashOrPoint == true ) {
