@@ -18,6 +18,8 @@ class chia_bls : public Module {
         std::optional<component::BLS_Signature> OpBLS_Sign(operation::BLS_Sign& op);
         std::optional<bool> OpBLS_Verify(operation::BLS_Verify& op);
         std::optional<component::Key> OpKDF_HKDF(operation::KDF_HKDF& op);
+        std::optional<component::G1> OpBLS_Decompress_G1(operation::BLS_Decompress_G1& op);
+        std::optional<component::G2> OpBLS_Decompress_G2(operation::BLS_Decompress_G2& op);
 };
 
 } /* namespace module */

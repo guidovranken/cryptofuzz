@@ -391,5 +391,48 @@ std::optional<component::Key> chia_bls::OpKDF_HKDF(operation::KDF_HKDF& op) {
     return ret;
 }
 
+std::optional<component::G1> chia_bls::OpBLS_Decompress_G1(operation::BLS_Decompress_G1& op) {
+    std::optional<component::G1> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    std::optional<std::vector<uint8_t>> compressed = std::nullopt;
+
+    CF_CHECK_NE(compressed = util::DecToBin(op.compressed.ToTrimmedString(), 48), std::nullopt);
+
+    try {
+        const auto g1 = bls::G1Element::FromBytes(::bls::Bytes(*compressed));
+        ret = chia_bls_detail::G1_To_Component(g1);
+    } catch ( std::invalid_argument ) {
+        //ret = component::G1{"0", "0"};
+    }
+
+end:
+    return ret;
+}
+
+std::optional<component::G2> chia_bls::OpBLS_Decompress_G2(operation::BLS_Decompress_G2& op) {
+    std::optional<component::G2> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    std::optional<std::vector<uint8_t>> compressed_x = std::nullopt;
+    std::optional<std::vector<uint8_t>> compressed_y = std::nullopt;
+    std::vector<uint8_t> compressed;
+
+
+    CF_CHECK_NE(compressed_x = util::DecToBin(op.compressed.first.ToTrimmedString(), 48), std::nullopt);
+    CF_CHECK_NE(compressed_y = util::DecToBin(op.compressed.second.ToTrimmedString(), 48), std::nullopt);
+    compressed = util::Append(*compressed_x, *compressed_y);
+
+    try {
+        const auto g2 = bls::G2Element::FromBytes(::bls::Bytes(compressed));
+        ret = chia_bls_detail::G2_To_Component(g2);
+    } catch ( std::invalid_argument ) {
+        //ret = component::G2{"0", "0"};
+    }
+
+end:
+    return ret;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */
