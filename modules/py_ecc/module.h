@@ -17,6 +17,10 @@ class py_ecc : public Module {
         std::optional<bool> OpBLS_Verify(operation::BLS_Verify& op) override;
         std::optional<component::BLS_Signature> OpBLS_Sign(operation::BLS_Sign& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
+        std::optional<component::G1> OpBLS_Decompress_G1(operation::BLS_Decompress_G1& op) override;
+        std::optional<component::Bignum> OpBLS_Compress_G1(operation::BLS_Compress_G1& op) override;
+        std::optional<component::G2> OpBLS_Decompress_G2(operation::BLS_Decompress_G2& op) override;
+        std::optional<component::G1> OpBLS_Compress_G2(operation::BLS_Compress_G2& op) override;
         std::optional<Buffer> OpMisc(operation::Misc& op) override;
         bool SupportsModularBignumCalc(void) const override;
 };

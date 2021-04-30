@@ -8,7 +8,7 @@ from py_ecc.optimized_bls12_381 import b, b2
 from py_ecc.utils import prime_field_inv
 from py_ecc.optimized_bls12_381.optimized_swu import sqrt_division_FQ2, iso_map_G2
 from py_ecc.optimized_bls12_381.optimized_curve import multiply
-from py_ecc.bls.point_compression import decompress_G1, decompress_G2
+from py_ecc.bls.point_compression import decompress_G1, compress_G1, decompress_G2, compress_G2
 from hashlib import sha256
 import json
 
@@ -234,21 +234,76 @@ def OpMisc_Multiply(arg):
 
     multiply(x, multiplier)
 
-def OpMisc_Decompress_G1(arg):
+def OpBLS_Decompress_G1(arg):
     op = json.loads(arg)
 
-    v = to_int_from_binary(op['v'])
+    compressed = to_int(op['compressed'])
     try:
-        decompress_G1(v)
+        point = decompress_G1(compressed)
     except ValueError:
-        pass
+        r = json.dumps(['0', '0'])
+        return bytes(r, 'utf-8')
 
-def OpMisc_Decompress_G2(arg):
+    point = [str(point[0]), str(point[1])]
+
+    if point == ['1', '1']:
+        point = ['0', '0']
+
+    r = json.dumps(point)
+    return bytes(r, 'utf-8')
+
+def OpBLS_Compress_G1(arg):
+    op = json.loads(arg)
+    x = to_int(op['g1_x'])
+    y = to_int(op['g1_y'])
+
+    if (x % MOD, y % MOD) == (0, 0):
+        return
+
+    g1 = [FQ(x), FQ(y), FQ.one()]
+
+    compressed = compress_G1(g1)
+    if is_valid([x,y]) == True and is_on_curve(g1, b):
+        decompressed = decompress_G1(compressed)
+        assert g1[0] == decompressed[0] and g1[1] == decompressed[1]
+
+    r = json.dumps(str(compressed))
+    return bytes(r, 'utf-8')
+
+def OpBLS_Decompress_G2(arg):
     op = json.loads(arg)
 
-    v1 = to_int_from_binary(op['v2'])
-    v2 = to_int_from_binary(op['v1'])
+    compressed = [to_int(op['g1_x']), to_int(op['g1_y'])]
     try:
-        decompress_G2([v1, v2])
+        point = decompress_G2(compressed)
     except ValueError:
-        pass
+        r = json.dumps([['0', '0'], ['0', '0']])
+        return bytes(r, 'utf-8')
+
+    x = point[0] / point[2]
+    y = point[1] / point[2]
+
+    point = [[str(x.coeffs[0]), str(y.coeffs[0])], [str(x.coeffs[1]), str(y.coeffs[1])]]
+
+    r = json.dumps(point)
+    return bytes(r, 'utf-8')
+
+def OpBLS_Compress_G2(arg):
+    op = json.loads(arg)
+
+    v = to_int(op['g2_v'])
+    w = to_int(op['g2_w'])
+    x = to_int(op['g2_x'])
+    y = to_int(op['g2_y'])
+
+    g2 = (FQ2((v, x)), FQ2((w, y)), FQ2.one())
+
+    try:
+        compressed = compress_G2(g2)
+    except ValueError:
+        return
+
+    point = [str(compressed[0]), str(compressed[1])]
+
+    r = json.dumps(point)
+    return bytes(r, 'utf-8')

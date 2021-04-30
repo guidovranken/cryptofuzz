@@ -22,8 +22,10 @@ namespace py_ecc_detail {
     void* OpMisc_Fq2_Sqrt = nullptr;
     void* OpMisc_Iso_Map_G2 = nullptr;
     void* OpMisc_Multiply = nullptr;
-    void* OpMisc_Decompress_G1 = nullptr;
-    void* OpMisc_Decompress_G2 = nullptr;
+    void* OpBLS_Decompress_G1 = nullptr;
+    void* OpBLS_Compress_G1 = nullptr;
+    void* OpBLS_Decompress_G2 = nullptr;
+    void* OpBLS_Compress_G2 = nullptr;
 }
 
 static void* LoadPythonFunction(PyObject* pModule, const std::string fn) {
@@ -154,8 +156,10 @@ static void ConfigurePython(void) {
     py_ecc_detail::OpMisc_Fq2_Sqrt = LoadPythonFunction(pModule, "OpMisc_Fq2_Sqrt");
     py_ecc_detail::OpMisc_Iso_Map_G2 = LoadPythonFunction(pModule, "OpMisc_Iso_Map_G2");
     py_ecc_detail::OpMisc_Multiply = LoadPythonFunction(pModule, "OpMisc_Multiply");
-    py_ecc_detail::OpMisc_Decompress_G1 = LoadPythonFunction(pModule, "OpMisc_Decompress_G1");
-    py_ecc_detail::OpMisc_Decompress_G2 = LoadPythonFunction(pModule, "OpMisc_Decompress_G2");
+    py_ecc_detail::OpBLS_Decompress_G1 = LoadPythonFunction(pModule, "OpBLS_Decompress_G1");
+    py_ecc_detail::OpBLS_Compress_G1 = LoadPythonFunction(pModule, "OpBLS_Compress_G1");
+    py_ecc_detail::OpBLS_Decompress_G2 = LoadPythonFunction(pModule, "OpBLS_Decompress_G2");
+    py_ecc_detail::OpBLS_Compress_G2 = LoadPythonFunction(pModule, "OpBLS_Compress_G2");
 }
 
 py_ecc::py_ecc(void) :
@@ -249,6 +253,38 @@ std::optional<component::Bignum> py_ecc::OpBignumCalc(operation::BignumCalc& op)
     return component::Bignum(nlohmann::json::parse(*ret));
 }
 
+std::optional<component::G1> py_ecc::OpBLS_Decompress_G1(operation::BLS_Decompress_G1& op) {
+    const auto ret = RunPythonFunction(py_ecc_detail::OpBLS_Decompress_G1, op.ToJSON().dump());
+    if ( ret == std::nullopt ) {
+        return std::nullopt;
+    }
+    return component::G1(nlohmann::json::parse(*ret));
+}
+
+std::optional<component::Bignum> py_ecc::OpBLS_Compress_G1(operation::BLS_Compress_G1& op) {
+    const auto ret = RunPythonFunction(py_ecc_detail::OpBLS_Compress_G1, op.ToJSON().dump());
+    if ( ret == std::nullopt ) {
+        return std::nullopt;
+    }
+    return component::Bignum(nlohmann::json::parse(*ret));
+}
+
+std::optional<component::G2> py_ecc::OpBLS_Decompress_G2(operation::BLS_Decompress_G2& op) {
+    const auto ret = RunPythonFunction(py_ecc_detail::OpBLS_Decompress_G2, op.ToJSON().dump());
+    if ( ret == std::nullopt ) {
+        return std::nullopt;
+    }
+    return component::G2(nlohmann::json::parse(*ret));
+}
+
+std::optional<component::G1> py_ecc::OpBLS_Compress_G2(operation::BLS_Compress_G2& op) {
+    const auto ret = RunPythonFunction(py_ecc_detail::OpBLS_Compress_G2, op.ToJSON().dump());
+    if ( ret == std::nullopt ) {
+        return std::nullopt;
+    }
+    return component::G1(nlohmann::json::parse(*ret));
+}
+
 std::optional<Buffer> py_ecc::OpMisc(operation::Misc& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     try {
@@ -286,21 +322,6 @@ std::optional<Buffer> py_ecc::OpMisc(operation::Misc& op) {
                     j["c_y"] = ds.GetData(0, 96, 96);
                     j["multiplier"] = ds.GetData(0, 96, 96);
                     RunPythonFunction(py_ecc_detail::OpMisc_Multiply, j.dump());
-                }
-                break;
-            case    3:
-                {
-                    nlohmann::json j;
-                    j["v"] = ds.GetData(0, 96, 96);
-                    RunPythonFunction(py_ecc_detail::OpMisc_Decompress_G1, j.dump());
-                }
-                break;
-            case    4:
-                {
-                    nlohmann::json j;
-                    j["v1"] = ds.GetData(0, 96, 96);
-                    j["v2"] = ds.GetData(0, 96, 96);
-                    RunPythonFunction(py_ecc_detail::OpMisc_Decompress_G2, j.dump());
                 }
                 break;
         }
