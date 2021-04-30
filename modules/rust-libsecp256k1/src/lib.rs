@@ -1,4 +1,4 @@
-use libsecp256k1::{SecretKey, PublicKey, Signature, Message, verify, sign};
+use libsecp256k1::{SecretKey, PublicKey, Signature, Message, RecoveryId, verify, sign, recover};
 
 #[no_mangle]
 pub extern "C" fn ecc_privatetopublic(sk_bytes: &[u8; 32], pk_bytes: &mut [u8; 65]) -> bool {
@@ -40,6 +40,22 @@ pub extern "C" fn validate_pubkey(pk_bytes: &[u8; 65]) -> bool {
         Ok(_v) => true,
         Err(_e) => false,
     }
+}
+
+#[no_mangle]
+pub extern "C" fn ecdsa_recover(msg_bytes: &[u8; 32], sig_bytes: &mut [u8; 64], id: u8, pk_bytes: &mut [u8; 65]) -> bool {
+    let msg = Message::parse(msg_bytes);
+    let sig = Signature::parse(sig_bytes);
+    let recovery_id = match RecoveryId::parse(id) {
+        Ok(_v) => _v,
+        Err(_e) => return false,
+    };
+    let pk = match recover(&msg, &sig, &recovery_id) {
+        Ok(_v) => _v,
+        Err(_e) => return false,
+    };
+    pk_bytes.copy_from_slice(&pk.serialize());
+    return true;
 }
 
 /*
