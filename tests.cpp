@@ -322,6 +322,20 @@ void test(const operation::ECDSA_Verify& op, const std::optional<bool>& result) 
     }
 }
 
+void test(const operation::ECDSA_Recover& op, const std::optional<component::ECC_PublicKey>& result) {
+    if ( result != std::nullopt ) {
+        if ( op.id > 3 ) {
+            std::cout << "Invalid recovery ID" << std::endl;
+            ::abort();
+        }
+    }
+    if ( result != std::nullopt ) {
+        test_ECDSA_Signature(op.curveType.Get(),
+                result->first.ToTrimmedString(),
+                result->second.ToTrimmedString());
+    }
+}
+
 void test(const operation::ECDH_Derive& op, const std::optional<component::Secret>& result) {
     (void)op;
     (void)result;

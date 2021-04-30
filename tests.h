@@ -27,6 +27,7 @@ void test(const operation::ECC_ValidatePubkey& op, const std::optional<bool>& re
 void test(const operation::ECC_GenerateKeyPair& op, const std::optional<component::ECC_KeyPair>& result);
 void test(const operation::ECDSA_Sign& op, const std::optional<component::ECDSA_Signature>& result);
 void test(const operation::ECDSA_Verify& op, const std::optional<bool>& result);
+void test(const operation::ECDSA_Recover& op, const std::optional<component::ECC_PublicKey>& result);
 void test(const operation::ECDH_Derive& op, const std::optional<component::Secret>& result);
 void test(const operation::ECIES_Encrypt& op, const std::optional<component::Ciphertext>& result);
 void test(const operation::ECIES_Decrypt& op, const std::optional<component::Cleartext>& result);

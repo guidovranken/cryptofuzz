@@ -1151,6 +1151,58 @@ end:
     return ret;
 }
 
+std::optional<component::ECC_PublicKey> Botan::OpECDSA_Recover(operation::ECDSA_Recover& op) {
+    std::optional<component::ECC_PublicKey> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    std::unique_ptr<::Botan::EC_Group> group = nullptr;
+    Buffer CT;
+
+    {
+        std::optional<std::string> curveString;
+        CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
+        group = std::make_unique<::Botan::EC_Group>(*curveString);
+    }
+
+    /* Construct input */
+    {
+        if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
+            CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
+        } else {
+            std::optional<std::string> algoString;
+            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
+
+            auto hash = ::Botan::HashFunction::create(*algoString);
+            hash->update(op.cleartext.GetPtr(), op.cleartext.GetSize());
+            const auto _CT = hash->final();
+            CT = Buffer(_CT.data(), _CT.size()).ECDSA_RandomPad(ds, op.curveType);
+        }
+    }
+
+    {
+        const ::Botan::BigInt R(op.signature.first.ToString(ds));
+        const ::Botan::BigInt S(op.signature.second.ToString(ds));
+
+        std::unique_ptr<::Botan::ECDSA_PublicKey> pub = nullptr;
+        try {
+            pub = std::make_unique<::Botan::ECDSA_PublicKey>(*group, CT.Get(), R, S, op.id);
+
+            ret = {
+                pub->public_point().get_affine_x().to_dec_string(),
+                pub->public_point().get_affine_y().to_dec_string()
+            };
+        } catch ( ::Botan::Invalid_State& e ) {
+        } catch ( ::Botan::Decoding_Error& ) {
+        } catch ( ::Botan::Invalid_Argument& ) {
+            //ret = {"0", "0"};
+        }
+
+    }
+
+end:
+    return ret;
+}
+
 std::optional<component::Bignum> Botan::OpDH_Derive(operation::DH_Derive& op) {
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());

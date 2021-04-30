@@ -1005,6 +1005,53 @@ class ECDSA_Verify : public Operation {
         }
 };
 
+class ECDSA_Recover : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::Cleartext cleartext;
+        const component::BignumPair signature;
+        const component::DigestType digestType;
+        const uint8_t id;
+
+        ECDSA_Recover(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            cleartext(ds),
+            signature(ds),
+            digestType(ds),
+            id(ds.Get<uint8_t>())
+        { }
+        ECDSA_Recover(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            cleartext(json["cleartext"]),
+            signature(json["signature"]),
+            digestType(json["digestType"]),
+            id(json["id"].get<uint8_t>())
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const ECDSA_Recover& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (cleartext == rhs.cleartext) &&
+                (signature == rhs.signature) &&
+                (digestType == rhs.digestType) &&
+                (id == rhs.id) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            cleartext.Serialize(ds);
+            signature.Serialize(ds);
+            digestType.Serialize(ds);
+            ds.Put<>(id);
+        }
+};
+
 class ECDH_Derive : public Operation {
     public:
         const component::CurveType curveType;

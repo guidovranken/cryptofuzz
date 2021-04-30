@@ -92,6 +92,7 @@ using ExecutorECC_ValidatePubkey = ExecutorBase<bool, operation::ECC_ValidatePub
 using ExecutorECC_GenerateKeyPair = ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>;
 using ExecutorECDSA_Sign = ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>;
 using ExecutorECDSA_Verify = ExecutorBase<bool, operation::ECDSA_Verify>;
+using ExecutorECDSA_Recover = ExecutorBase<component::ECC_PublicKey, operation::ECDSA_Recover>;
 using ExecutorECDH_Derive = ExecutorBase<component::Secret, operation::ECDH_Derive>;
 using ExecutorECIES_Encrypt = ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>;
 using ExecutorECIES_Decrypt = ExecutorBase<component::Cleartext, operation::ECIES_Decrypt>;

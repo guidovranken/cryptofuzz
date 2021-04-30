@@ -565,6 +565,33 @@ nlohmann::json ECDSA_Verify::ToJSON(void) const {
     return j;
 }
 
+std::string ECDSA_Recover::Name(void) const { return "ECDSA_Recover"; }
+std::string ECDSA_Recover::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: ECDSA_Recover" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+    ss << "signature R: " << signature.first.ToString() << std::endl;
+    ss << "signature S: " << signature.second.ToString() << std::endl;
+    ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
+    ss << "recovery ID: " << std::to_string(id) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json ECDSA_Recover::ToJSON(void) const {
+    nlohmann::json j;
+    j["operation"] = "ECDSA_Recover";
+    j["curveType"] = curveType.ToJSON();
+    j["cleartext"] = cleartext.ToJSON();
+    j["sig_r"] = signature.first.ToJSON();
+    j["sig_s"] = signature.second.ToJSON();
+    j["digestType"] = digestType.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string ECDH_Derive::Name(void) const { return "ECDH_Derive"; }
 std::string ECDH_Derive::ToString(void) const {
     std::stringstream ss;

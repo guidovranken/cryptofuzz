@@ -104,6 +104,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::ECC_PublicKey> OpECDSA_Recover(operation::ECDSA_Recover& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::Secret> OpECDH_Derive(operation::ECDH_Derive& op) {
             (void)op;
             return std::nullopt;

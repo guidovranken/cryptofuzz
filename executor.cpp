@@ -489,6 +489,19 @@ template<> std::optional<bool> ExecutorBase<bool, operation::ECDSA_Verify>::call
     return module->OpECDSA_Verify(op);
 }
 
+template<> void ExecutorBase<component::ECC_PublicKey, operation::ECDSA_Recover>::postprocess(std::shared_ptr<Module> module, operation::ECDSA_Recover& op, const ExecutorBase<component::ECC_PublicKey, operation::ECDSA_Recover>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::ECC_PublicKey> ExecutorBase<component::ECC_PublicKey, operation::ECDSA_Recover>::callModule(std::shared_ptr<Module> module, operation::ECDSA_Recover& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
+    RETURN_IF_DISABLED(options.digests, op.digestType.Get());
+
+    return module->OpECDSA_Recover(op);
+}
+
 /* Specialization for operation::ECDH_Derive */
 template<> void ExecutorBase<component::Secret, operation::ECDH_Derive>::postprocess(std::shared_ptr<Module> module, operation::ECDH_Derive& op, const ExecutorBase<component::Secret, operation::ECDH_Derive>::ResultPair& result) const {
     (void)module;
@@ -1318,6 +1331,7 @@ template class ExecutorBase<bool, operation::ECC_ValidatePubkey>;
 template class ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>;
 template class ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>;
 template class ExecutorBase<bool, operation::ECDSA_Verify>;
+template class ExecutorBase<component::ECC_PublicKey, operation::ECDSA_Recover>;
 template class ExecutorBase<component::Secret, operation::ECDH_Derive>;
 template class ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>;
 template class ExecutorBase<component::Cleartext, operation::ECIES_Decrypt>;

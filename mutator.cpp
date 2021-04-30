@@ -515,6 +515,37 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     op.Serialize(dsOut2);
                 }
                 break;
+            case    CF_OPERATION("ECDSA_Recover"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1024);
+
+                    if ( getBool() && Pool_CurveECDSASignature.Have() == true ) {
+                        const auto P = Pool_CurveECDSASignature.Get();
+                        parameters["curveType"] = P.curveID;
+
+                        parameters["signature"][0] = getBool() ? getBignum() : P.sig_r;
+                        parameters["signature"][1] = getBool() ? getBignum() : P.sig_y;
+
+                        if ( getBool() ) {
+                            parameters["cleartext"] = P.cleartext;
+                        } else {
+                            parameters["cleartext"] = cryptofuzz::util::DecToHex(getBignum(true), (PRNG() % 64) * 2);
+                        }
+                    } else {
+                        parameters["curveType"] = getRandomCurve();
+
+                        parameters["signature"][0] = getBignum();
+                        parameters["signature"][1] = getBignum();
+
+                        parameters["cleartext"] = cryptofuzz::util::DecToHex(getBignum(true), (PRNG() % 64) * 2);
+                    }
+
+                    parameters["id"] = PRNG() % 4;
+                    parameters["digestType"] = getRandomDigest();
+
+                    cryptofuzz::operation::ECDSA_Recover op(parameters);
+                    op.Serialize(dsOut2);
+                }
             case    CF_OPERATION("ECC_GenerateKeyPair"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 128);
