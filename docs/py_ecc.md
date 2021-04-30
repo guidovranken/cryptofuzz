@@ -13,7 +13,7 @@ cd ../
 $CRYPTOFUZZ_CPYTHON_PATH/bin/python3 -m venv venv
 export CRYPTOFUZZ_CPYTHON_VENV_PATH=$(realpath venv/)
 source venv/bin/activate
-pip install py_ecc
+pip install git+https://github.com/ethereum/py_ecc.git
 export CXXFLAGS="$CXXFLAGS -DCRYPTOFUZZ_PY_ECC"
 export PYTHON_CONFIG_PATH=$CRYPTOFUZZ_CPYTHON_PATH/bin/python3-config
 export CXXFLAGS="$CXXFLAGS $($PYTHON_CONFIG_PATH --cflags)"
