@@ -434,7 +434,7 @@ std::optional<component::BLS_KeyPair> blst::OpBLS_GenerateKeyPair(operation::BLS
     blst_p1 pub;
     blst_p1_affine pub_affine;
 
-    CF_NORET(blst_keygen(&priv, op.ikm.GetPtr(), op.ikm.GetSize(), op.info.GetPtr(), op.info.GetSize()));
+    CF_NORET(blst_keygen(&priv, op.ikm.GetPtr(&ds), op.ikm.GetSize(), op.info.GetPtr(&ds), op.info.GetSize()));
     CF_ASSERT(blst_sk_check(&priv) == true, "blst_keygen generated invalid private key");
 
     CF_NORET(blst_sk_to_pk_in_g1(&pub, &priv));
@@ -461,6 +461,7 @@ std::optional<component::BLS_KeyPair> blst::OpBLS_GenerateKeyPair(operation::BLS
 }
 
 std::optional<bool> blst::OpBLS_Pairing(operation::BLS_Pairing& op) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     std::optional<bool> ret = std::nullopt;
 
     blst_pairing* ctx = (blst_pairing*)util::malloc(blst_pairing_sizeof());
@@ -468,7 +469,7 @@ std::optional<bool> blst::OpBLS_Pairing(operation::BLS_Pairing& op) {
     blst_p1_affine pub;
     blst_p2_affine sig;
 
-    CF_NORET(blst_pairing_init(ctx, true, op.dest.GetPtr(), op.dest.GetSize()));
+    CF_NORET(blst_pairing_init(ctx, true, op.dest.GetPtr(&ds), op.dest.GetSize()));
     ///* noret */ blst_pairing_init(ctx, false, op.dest.GetPtr(), op.dest.GetSize());
 
     for (const auto& c : op.components.c) {
@@ -483,8 +484,8 @@ std::optional<bool> blst::OpBLS_Pairing(operation::BLS_Pairing& op) {
         CF_CHECK_EQ(blst_pairing_aggregate_pk_in_g1(ctx,
                     &pub,
                     &sig,
-                    c.msg.GetPtr(), c.msg.GetSize(),
-                    c.aug.GetPtr(), c.aug.GetSize()), BLST_SUCCESS);
+                    c.msg.GetPtr(&ds), c.msg.GetSize(),
+                    c.aug.GetPtr(&ds), c.aug.GetSize()), BLST_SUCCESS);
     }
 
     CF_NORET(blst_pairing_commit(ctx));
