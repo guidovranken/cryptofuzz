@@ -985,170 +985,184 @@ end:
     return ret;
 }
 
-std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_Sign& op) {
-    std::optional<component::ECDSA_Signature> ret = std::nullopt;
-    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+namespace Botan_detail {
+    template <class PrivkeyType, class Operation>
+        std::optional<component::ECDSA_Signature> ECxDSA_Sign(Operation& op) {
+            std::optional<component::ECDSA_Signature> ret = std::nullopt;
+            Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    std::unique_ptr<::Botan::ECDSA_PrivateKey> priv = nullptr;
-    std::unique_ptr<::Botan::Public_Key> pub = nullptr;
-    std::unique_ptr<::Botan::PK_Signer> signer;
+            std::unique_ptr<PrivkeyType> priv = nullptr;
+            std::unique_ptr<::Botan::Public_Key> pub = nullptr;
+            std::unique_ptr<::Botan::PK_Signer> signer;
 
-    BOTAN_FUZZER_RNG;
+            BOTAN_FUZZER_RNG;
 
-    BOTAN_SET_GLOBAL_DS
+            BOTAN_SET_GLOBAL_DS
 
-    CF_CHECK_EQ(op.UseRFC6979Nonce(), true);
-    CF_CHECK_EQ(op.digestType.Get(), CF_DIGEST("SHA256"));
+            CF_CHECK_EQ(op.UseRFC6979Nonce(), true);
+            CF_CHECK_EQ(op.digestType.Get(), CF_DIGEST("SHA256"));
 
-    try {
-        /* Initialize */
-        {
-
-            std::optional<std::string> curveString, algoString;
-
-            /* Botan appears to generate a new key if the input key is 0, so don't do this */
-            CF_CHECK_NE(op.priv.ToTrimmedString(), "0");
-
-            CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
-            ::Botan::EC_Group group(*curveString);
-
-            /* Private key */
-            {
-                const ::Botan::BigInt priv_bn(op.priv.ToString(ds));
-                priv = std::make_unique<::Botan::ECDSA_PrivateKey>(::Botan::ECDSA_PrivateKey(rng, group, priv_bn));
-            }
-
-            /* Prepare signer */
-            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
-
-            const std::string emsa1String = Botan_detail::parenthesize("EMSA1", *algoString);
-            signer.reset(new ::Botan::PK_Signer(*priv, rng, emsa1String, ::Botan::DER_SEQUENCE));
-        }
-
-        /* Process */
-        {
-            const auto signature = signer->sign_message(op.cleartext.Get(), rng);
-
-            /* Retrieve R and S */
-            {
-                ::Botan::BER_Decoder decoder(signature);
-                ::Botan::BER_Decoder ber_sig = decoder.start_sequence();
-
-                size_t count = 0;
-
-                ::Botan::BigInt R;
-                ::Botan::BigInt S;
-                while(ber_sig.more_items())
+            try {
+                /* Initialize */
                 {
-                    switch ( count ) {
-                        case    0:
-                            ber_sig.decode(R);
-                            break;
-                        case    1:
-                            ber_sig.decode(S);
-                            break;
-                        default:
-                            printf("Error: Too many parts in signature BER\n");
-                            abort();
+
+                    std::optional<std::string> curveString, algoString;
+
+                    /* Botan appears to generate a new key if the input key is 0, so don't do this */
+                    CF_CHECK_NE(op.priv.ToTrimmedString(), "0");
+
+                    CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
+                    ::Botan::EC_Group group(*curveString);
+
+                    /* Private key */
+                    {
+                        const ::Botan::BigInt priv_bn(op.priv.ToString(ds));
+                        priv = std::make_unique<PrivkeyType>(PrivkeyType(rng, group, priv_bn));
                     }
 
-                    ++count;
+                    /* Prepare signer */
+                    CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
+
+                    const std::string emsa1String = Botan_detail::parenthesize("EMSA1", *algoString);
+                    signer.reset(new ::Botan::PK_Signer(*priv, rng, emsa1String, ::Botan::DER_SEQUENCE));
                 }
 
-                if ( op.curveType.Get() == CF_ECC_CURVE("secp256k1") ) {
-                    /* For compatibility with the secp256k1 library.
-                     * See: https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#low-s-values-in-signatures
-                     */
-                    if (S > ::Botan::BigInt("57896044618658097711785492504343953926418782139537452191302581570759080747168")) {
-                        S = ::Botan::BigInt("115792089237316195423570985008687907852837564279074904382605163141518161494337") - S;
-                    }
-                } else if ( op.curveType.Get() == CF_ECC_CURVE("secp256r1") ) {
-                    /* Similar ECDSA signature malleability adjustment for compatibility with trezor-firmware */
-                    if (S > ::Botan::BigInt("57896044605178124381348723474703786764998477612067880171211129530534256022184")) {
-                        S = ::Botan::BigInt("115792089210356248762697446949407573529996955224135760342422259061068512044369") - S;
+                /* Process */
+                {
+                    const auto signature = signer->sign_message(op.cleartext.Get(), rng);
+
+                    /* Retrieve R and S */
+                    {
+                        ::Botan::BER_Decoder decoder(signature);
+                        ::Botan::BER_Decoder ber_sig = decoder.start_sequence();
+
+                        size_t count = 0;
+
+                        ::Botan::BigInt R;
+                        ::Botan::BigInt S;
+                        while(ber_sig.more_items())
+                        {
+                            switch ( count ) {
+                                case    0:
+                                    ber_sig.decode(R);
+                                    break;
+                                case    1:
+                                    ber_sig.decode(S);
+                                    break;
+                                default:
+                                    printf("Error: Too many parts in signature BER\n");
+                                    abort();
+                            }
+
+                            ++count;
+                        }
+
+                        if ( op.curveType.Get() == CF_ECC_CURVE("secp256k1") ) {
+                            /* For compatibility with the secp256k1 library.
+                             * See: https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#low-s-values-in-signatures
+                             */
+                            if (S > ::Botan::BigInt("57896044618658097711785492504343953926418782139537452191302581570759080747168")) {
+                                S = ::Botan::BigInt("115792089237316195423570985008687907852837564279074904382605163141518161494337") - S;
+                            }
+                        } else if ( op.curveType.Get() == CF_ECC_CURVE("secp256r1") ) {
+                            /* Similar ECDSA signature malleability adjustment for compatibility with trezor-firmware */
+                            if (S > ::Botan::BigInt("57896044605178124381348723474703786764998477612067880171211129530534256022184")) {
+                                S = ::Botan::BigInt("115792089210356248762697446949407573529996955224135760342422259061068512044369") - S;
+                            }
+                        }
+
+                        const auto pub_x = priv->public_point().get_affine_x().to_dec_string();
+                        const auto pub_y = priv->public_point().get_affine_y().to_dec_string();
+
+                        const auto R_str = R.to_dec_string();
+                        const auto S_str = S.to_dec_string();
+
+                        ret = component::ECDSA_Signature({ R_str, S_str }, { pub_x, pub_y });
                     }
                 }
-
-                const auto pub_x = priv->public_point().get_affine_x().to_dec_string();
-                const auto pub_y = priv->public_point().get_affine_y().to_dec_string();
-
-                const auto R_str = R.to_dec_string();
-                const auto S_str = S.to_dec_string();
-
-                ret = component::ECDSA_Signature({ R_str, S_str }, { pub_x, pub_y });
-            }
-        }
-    } catch ( ... ) { }
+            } catch ( ... ) { }
 
 end:
-    BOTAN_UNSET_GLOBAL_DS
+            BOTAN_UNSET_GLOBAL_DS
 
-    return ret;
+            return ret;
+        }
+} /* namespace Botan_detail */
+
+std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_Sign& op) {
+    return Botan_detail::ECxDSA_Sign<::Botan::ECDSA_PrivateKey, operation::ECDSA_Sign>(op);
 }
 
-std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
-    std::optional<bool> ret = std::nullopt;
-    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+namespace Botan_detail {
+    template <class PubkeyType, class Operation>
+        std::optional<bool> ECxDSA_Verify(Operation& op) {
+            std::optional<bool> ret = std::nullopt;
+            Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    ::Botan::secure_vector<uint8_t> sig;
-    std::unique_ptr<::Botan::Public_Key> pub = nullptr;
-    std::unique_ptr<::Botan::EC_Group> group = nullptr;
-    Buffer CT;
+            ::Botan::secure_vector<uint8_t> sig;
+            std::unique_ptr<::Botan::Public_Key> pub = nullptr;
+            std::unique_ptr<::Botan::EC_Group> group = nullptr;
+            Buffer CT;
 
-    {
-        BOTAN_SET_GLOBAL_DS
+            {
+                BOTAN_SET_GLOBAL_DS
 
-        std::optional<std::string> curveString;
-        CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
-        group = std::make_unique<::Botan::EC_Group>(*curveString);
-    }
+                std::optional<std::string> curveString;
+                CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
+                group = std::make_unique<::Botan::EC_Group>(*curveString);
+            }
 
-    /* Construct signature */
-    {
-        const ::Botan::BigInt R(op.signature.signature.first.ToString(ds));
-        const ::Botan::BigInt S(op.signature.signature.second.ToString(ds));
-        try {
-            sig = ::Botan::BigInt::encode_fixed_length_int_pair(R, S, group->get_order_bytes());
-        } catch ( ::Botan::Encoding_Error ) {
-            /* Invalid signature */
-            BOTAN_UNSET_GLOBAL_DS
-            return false;
-        }
-    }
+            /* Construct signature */
+            {
+                const ::Botan::BigInt R(op.signature.signature.first.ToString(ds));
+                const ::Botan::BigInt S(op.signature.signature.second.ToString(ds));
+                try {
+                    sig = ::Botan::BigInt::encode_fixed_length_int_pair(R, S, group->get_order_bytes());
+                } catch ( ::Botan::Encoding_Error ) {
+                    /* Invalid signature */
+                    BOTAN_UNSET_GLOBAL_DS
+                    return false;
+                }
+            }
 
-    /* Construct pubkey */
-    try {
-        const ::Botan::BigInt pub_x(op.signature.pub.first.ToString(ds));
-        const ::Botan::BigInt pub_y(op.signature.pub.second.ToString(ds));
-        const ::Botan::PointGFp public_point = group->point(pub_x, pub_y);
-        pub = std::make_unique<::Botan::ECDSA_PublicKey>(::Botan::ECDSA_PublicKey(*group, public_point));
-    } catch ( ::Botan::Invalid_Argument ) {
-        /* Invalid point */
-        BOTAN_UNSET_GLOBAL_DS
-        return false;
-    }
+            /* Construct pubkey */
+            try {
+                const ::Botan::BigInt pub_x(op.signature.pub.first.ToString(ds));
+                const ::Botan::BigInt pub_y(op.signature.pub.second.ToString(ds));
+                const ::Botan::PointGFp public_point = group->point(pub_x, pub_y);
+                pub = std::make_unique<PubkeyType>(PubkeyType(*group, public_point));
+            } catch ( ::Botan::Invalid_Argument ) {
+                /* Invalid point */
+                BOTAN_UNSET_GLOBAL_DS
+                return false;
+            }
 
-    /* Construct input */
-    {
-        if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
-            CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
-        } else {
-            std::optional<std::string> algoString;
-            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
+            /* Construct input */
+            {
+                if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
+                    CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
+                } else {
+                    std::optional<std::string> algoString;
+                    CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
 
-            auto hash = ::Botan::HashFunction::create(*algoString);
-            hash->update(op.cleartext.GetPtr(), op.cleartext.GetSize());
-            const auto _CT = hash->final();
-            CT = Buffer(_CT.data(), _CT.size()).ECDSA_RandomPad(ds, op.curveType);
-        }
-    }
+                    auto hash = ::Botan::HashFunction::create(*algoString);
+                    hash->update(op.cleartext.GetPtr(), op.cleartext.GetSize());
+                    const auto _CT = hash->final();
+                    CT = Buffer(_CT.data(), _CT.size()).ECDSA_RandomPad(ds, op.curveType);
+                }
+            }
 
-    ret = ::Botan::PK_Verifier(*pub, "Raw").verify_message(CT.Get(), sig);
+            ret = ::Botan::PK_Verifier(*pub, "Raw").verify_message(CT.Get(), sig);
 
 end:
-    BOTAN_UNSET_GLOBAL_DS
+            BOTAN_UNSET_GLOBAL_DS
 
-    return ret;
+            return ret;
+        }
+} /* namespace Botan_detail */
+
+std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    return Botan_detail::ECxDSA_Verify<::Botan::ECDSA_PublicKey, operation::ECDSA_Verify>(op);
 }
 
 std::optional<component::ECC_PublicKey> Botan::OpECDSA_Recover(operation::ECDSA_Recover& op) {
