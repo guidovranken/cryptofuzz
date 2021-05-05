@@ -12,7 +12,7 @@ namespace module {
 namespace libecc_detail {
     Datasource* global_ds = nullptr;
     FILE* fp_dev_urandom = nullptr;
-	const ec_sig_mapping *sm;
+	const ec_sig_mapping *sm_ecdsa, *sm_ecgdsa;
 
     std::map<uint64_t, const ec_str_params*> curveLUT;
 
@@ -143,7 +143,8 @@ namespace module {
 libecc::libecc(void) :
     Module("libecc") {
     CF_ASSERT((libecc_detail::fp_dev_urandom = fopen("/dev/urandom", "rb")) != NULL, "Failed to open /dev/urandom");
-    CF_ASSERT((libecc_detail::sm = get_sig_by_name("ECDSA")) != nullptr, "Cannot initialize ECDSA");
+    CF_ASSERT((libecc_detail::sm_ecdsa = get_sig_by_name("ECDSA")) != nullptr, "Cannot initialize ECDSA");
+    CF_ASSERT((libecc_detail::sm_ecgdsa = get_sig_by_name("ECGDSA")) != nullptr, "Cannot initialize ECGDSA");
 
     /* Load curves */
     libecc_detail::AddCurve(CF_ECC_CURVE("brainpool224r1"), "BRAINPOOLP224R1");
@@ -221,7 +222,7 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, co
     CF_CHECK_NE(curve_params = libecc_detail::GetCurve(curveType), nullptr);
     CF_NORET(import_params(&params, curve_params));
 
-    sig_type = libecc_detail::sm->type;
+    sig_type = libecc_detail::sm_ecdsa->type;
 
     priv_str = _priv.ToTrimmedString();
     CF_CHECK_NE(priv_str, "0");
@@ -262,178 +263,200 @@ std::optional<component::ECC_PublicKey> libecc::OpECC_PrivateToPublic(operation:
     return libecc_detail::OpECC_PrivateToPublic(ds, op.curveType, op.priv);
 }
 
-std::optional<component::ECDSA_Signature> libecc::OpECDSA_Sign(operation::ECDSA_Sign& op) {
-    if ( op.UseRandomNonce() == false && op.UseSpecifiedNonce() == false ) {
-        return std::nullopt;
-    }
 
-    if ( op.digestType.Get() != CF_DIGEST("NULL") ) {
-        return std::nullopt;
-    }
+namespace libecc_detail {
 
-    /* ecdsa_sign_raw supports messages up to 255 bytes */
-    if ( op.cleartext.GetSize() > 255 ) {
-        return std::nullopt;
-    }
+    template <class Operation, ec_sig_alg_type AlgType>
+    std::optional<component::ECDSA_Signature> ECxDSA_Sign(const Operation& op) {
+        if ( op.UseRandomNonce() == false && op.UseSpecifiedNonce() == false ) {
+            return std::nullopt;
+        }
 
-    std::optional<component::ECDSA_Signature> ret = std::nullopt;
+        if ( op.digestType.Get() != CF_DIGEST("NULL") ) {
+            return std::nullopt;
+        }
 
-    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
-    std::optional<component::ECC_PublicKey> pub = std::nullopt;
-    const ec_str_params* curve_params;
-    std::optional<std::vector<uint8_t>> priv_bytes;
-	ec_params params;
-	ec_key_pair kp;
-    struct ec_sign_context ctx;
-    size_t signature_size = 0;
-    uint8_t* signature = nullptr;
-    std::optional<std::vector<uint8_t>> nonce_bytes;
+        /* ecdsa_sign_raw supports messages up to 255 bytes */
+        if ( op.cleartext.GetSize() > 255 ) {
+            return std::nullopt;
+        }
 
-    CF_CHECK_NE(pub = libecc_detail::OpECC_PrivateToPublic(ds, op.curveType, op.priv), std::nullopt);
+        std::optional<component::ECDSA_Signature> ret = std::nullopt;
 
-    libecc_detail::global_ds = &ds;
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+        std::optional<component::ECC_PublicKey> pub = std::nullopt;
+        const ec_str_params* curve_params;
+        std::optional<std::vector<uint8_t>> priv_bytes;
+        ec_params params;
+        ec_key_pair kp;
+        struct ec_sign_context ctx;
+        size_t signature_size = 0;
+        uint8_t* signature = nullptr;
+        std::optional<std::vector<uint8_t>> nonce_bytes;
 
-    /* Load curve */
-    CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
-    CF_NORET(import_params(&params, curve_params));
+        CF_CHECK_NE(pub = libecc_detail::OpECC_PrivateToPublic(ds, op.curveType, op.priv), std::nullopt);
 
-    {
-        const auto priv_str = op.priv.ToTrimmedString();
-        CF_CHECK_NE(priv_str, "0");
-        CF_CHECK_NE(priv_str, *cryptofuzz::repository::ECC_CurveToOrder(op.curveType.Get()));
-        CF_CHECK_NE(priv_bytes = util::DecToBin(priv_str), std::nullopt);
-        CF_CHECK_LTE(priv_bytes->size(), NN_MAX_BYTE_LEN);
-        CF_CHECK_EQ(ec_key_pair_import_from_priv_key_buf(&kp,
-                    &params,
-                    priv_bytes->data(), priv_bytes->size(),
-                    ECDSA), 0);
-    }
+        libecc_detail::global_ds = &ds;
 
-    signature_size = ECDSA_SIGLEN(kp.priv_key.params->ec_gen_order_bitlen);
-    CF_ASSERT((signature_size % 2) == 0, "Signature size is not multiple of 2");
-    signature = util::malloc(signature_size);
+        /* Load curve */
+        CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
+        CF_NORET(import_params(&params, curve_params));
 
-    CF_CHECK_EQ(ec_sign_init(&ctx, &kp, ECDSA, SHA256), 0);
-
-    if ( op.UseSpecifiedNonce() == true ) {
-        /* ecdsa_sign_raw crashes if nonce is 0 */
-        CF_CHECK_NE(op.nonce.ToTrimmedString(), "0");
-
-        CF_CHECK_NE(nonce_bytes = util::DecToBin(op.nonce.ToTrimmedString()), std::nullopt);
-
-        /* ecdsa_sign_raw supports nonce up to 255 bytes */
-        CF_CHECK_LTE(nonce_bytes->size(), 255);
-    }
-
-    CF_INSTALL_JMP();
-
-    CF_CHECK_EQ(ecdsa_sign_raw(
-                &ctx,
-                op.cleartext.GetPtr(), op.cleartext.GetSize(),
-                signature, signature_size,
-                op.UseSpecifiedNonce() ? nonce_bytes->data() : nullptr,
-                op.UseSpecifiedNonce() ? nonce_bytes->size() : 0), 0);
-    ret = {
         {
-            util::BinToDec(signature, signature_size / 2),
-            util::BinToDec(signature + (signature_size / 2), signature_size / 2),
-        },
-        *pub
-    };
+            const auto priv_str = op.priv.ToTrimmedString();
+            CF_CHECK_NE(priv_str, "0");
+            CF_CHECK_NE(priv_str, *cryptofuzz::repository::ECC_CurveToOrder(op.curveType.Get()));
+            CF_CHECK_NE(priv_bytes = util::DecToBin(priv_str), std::nullopt);
+            CF_CHECK_LTE(priv_bytes->size(), NN_MAX_BYTE_LEN);
+            CF_CHECK_EQ(ec_key_pair_import_from_priv_key_buf(&kp,
+                        &params,
+                        priv_bytes->data(), priv_bytes->size(),
+                        ECDSA), 0);
+        }
 
-end:
-    CF_RESTORE_JMP();
-
-    util::free(signature);
-
-    libecc_detail::global_ds = nullptr;
-    return ret;
-}
-
-std::optional<bool> libecc::OpECDSA_Verify(operation::ECDSA_Verify& op) {
-    if ( op.digestType.Get() != CF_DIGEST("NULL") ) {
-        return std::nullopt;
-    }
-
-    /* ecdsa_verify_raw supports messages up to 255 bytes */
-    if ( op.cleartext.GetSize() > 255 ) {
-        return std::nullopt;
-    }
-
-    std::optional<bool> ret = std::nullopt;
-    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
-    libecc_detail::global_ds = &ds;
-
-    const ec_str_params* curve_params;
-	ec_params params;
-    struct ec_verify_context ctx;
-	ec_key_pair kp;
-    std::vector<uint8_t> pub;
-    std::vector<uint8_t> sig;
-    std::optional<std::vector<uint8_t>> X, Y, Z;
-
-    /* Load curve */
-    CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
-    CF_NORET(import_params(&params, curve_params));
-
-    {
-	    const size_t signature_size = ECDSA_SIGLEN(params.ec_gen_order_bitlen);
+        signature_size = ECDSA_SIGLEN(kp.priv_key.params->ec_gen_order_bitlen);
         CF_ASSERT((signature_size % 2) == 0, "Signature size is not multiple of 2");
+        signature = util::malloc(signature_size);
 
-        std::optional<std::vector<uint8_t>> R, S;
-        CF_CHECK_NE(R = util::DecToBin(op.signature.signature.first.ToTrimmedString(), signature_size / 2), std::nullopt);
-        CF_CHECK_NE(S = util::DecToBin(op.signature.signature.second.ToTrimmedString(), signature_size / 2), std::nullopt);
+        CF_CHECK_EQ(ec_sign_init(&ctx, &kp, AlgType, SHA256), 0);
 
-        sig.insert(std::end(sig), std::begin(*R), std::end(*R));
-        sig.insert(std::end(sig), std::begin(*S), std::end(*S));
-    }
-    {
-        const size_t pubSize = BYTECEIL(params.ec_curve.a.ctx->p_bitlen) * 3;
-        CF_ASSERT((pubSize % 2) == 0, "Public key byte size is not even");
-        CF_ASSERT((pubSize % 3) == 0, "Public key byte size is not multiple of 3");
-        pub.resize(pubSize, 0);
+        if ( op.UseSpecifiedNonce() == true ) {
+            /* ecdsa_sign_raw crashes if nonce is 0 */
+            CF_CHECK_NE(op.nonce.ToTrimmedString(), "0");
 
-        const size_t pointSize = pubSize / 3;
-        CF_CHECK_NE(X = util::DecToBin(op.signature.pub.first.ToTrimmedString(), pointSize), std::nullopt);
-        CF_CHECK_NE(Y = util::DecToBin(op.signature.pub.second.ToTrimmedString(), pointSize), std::nullopt);
-        CF_CHECK_NE(Z = util::DecToBin("1", pointSize), std::nullopt);
+            CF_CHECK_NE(nonce_bytes = util::DecToBin(op.nonce.ToTrimmedString()), std::nullopt);
 
-        memcpy(pub.data(), X->data(), pointSize);
-        memcpy(pub.data() + pointSize, Y->data(), pointSize);
-        memcpy(pub.data() + pointSize * 2, Z->data(), pointSize);
+            /* ecdsa_sign_raw supports nonce up to 255 bytes */
+            CF_CHECK_LTE(nonce_bytes->size(), 255);
+        }
 
         CF_INSTALL_JMP();
 
-        CF_CHECK_EQ(ec_pub_key_import_from_buf(
-                    &kp.pub_key,
-                    &params,
-                    pub.data(), pub.size(),
-                    libecc_detail::sm->type), 0);
-
-        CF_CHECK_EQ(prj_pt_is_on_curve(&kp.pub_key.y), 1);
-    }
-
-
-    CF_CHECK_EQ(ec_verify_init(&ctx, &(kp.pub_key), sig.data(), sig.size(), ECDSA, SHA256), 0);
-    {
-        const auto cleartext_ptr = op.cleartext.GetPtr();
-
-        /* libecc has an explicit check for NULL input which causes ecdsa_verify_raw
-         * to return false even if the signature is valid.
-         *
-         * See also OSS-Fuzz issue #33808
-         */
-        CF_CHECK_NE(cleartext_ptr, nullptr);
-
-        ret = ecdsa_verify_raw(&ctx, cleartext_ptr, op.cleartext.GetSize()) == 0;
-    }
+        CF_CHECK_EQ(ecdsa_sign_raw(
+                    &ctx,
+                    op.cleartext.GetPtr(), op.cleartext.GetSize(),
+                    signature, signature_size,
+                    op.UseSpecifiedNonce() ? nonce_bytes->data() : nullptr,
+                    op.UseSpecifiedNonce() ? nonce_bytes->size() : 0), 0);
+        ret = {
+            {
+                util::BinToDec(signature, signature_size / 2),
+                util::BinToDec(signature + (signature_size / 2), signature_size / 2),
+            },
+            *pub
+        };
 
 end:
-    CF_RESTORE_JMP();
+        CF_RESTORE_JMP();
 
-    libecc_detail::global_ds = nullptr;
+        util::free(signature);
 
-    return ret;
+        libecc_detail::global_ds = nullptr;
+        return ret;
+    }
+
+    template <class Operation, ec_sig_alg_type AlgType>
+    std::optional<bool> ECxDSA_Verify(const Operation& op, const ec_sig_mapping* sm) {
+        if ( op.digestType.Get() != CF_DIGEST("NULL") ) {
+            return std::nullopt;
+        }
+
+        /* ecdsa_verify_raw supports messages up to 255 bytes */
+        if ( op.cleartext.GetSize() > 255 ) {
+            return std::nullopt;
+        }
+
+        std::optional<bool> ret = std::nullopt;
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+        libecc_detail::global_ds = &ds;
+
+        const ec_str_params* curve_params;
+        ec_params params;
+        struct ec_verify_context ctx;
+        ec_key_pair kp;
+        std::vector<uint8_t> pub;
+        std::vector<uint8_t> sig;
+        std::optional<std::vector<uint8_t>> X, Y, Z;
+
+        /* Load curve */
+        CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
+        CF_NORET(import_params(&params, curve_params));
+
+        {
+            const size_t signature_size = ECDSA_SIGLEN(params.ec_gen_order_bitlen);
+            CF_ASSERT((signature_size % 2) == 0, "Signature size is not multiple of 2");
+
+            std::optional<std::vector<uint8_t>> R, S;
+            CF_CHECK_NE(R = util::DecToBin(op.signature.signature.first.ToTrimmedString(), signature_size / 2), std::nullopt);
+            CF_CHECK_NE(S = util::DecToBin(op.signature.signature.second.ToTrimmedString(), signature_size / 2), std::nullopt);
+
+            sig.insert(std::end(sig), std::begin(*R), std::end(*R));
+            sig.insert(std::end(sig), std::begin(*S), std::end(*S));
+        }
+        {
+            const size_t pubSize = BYTECEIL(params.ec_curve.a.ctx->p_bitlen) * 3;
+            CF_ASSERT((pubSize % 2) == 0, "Public key byte size is not even");
+            CF_ASSERT((pubSize % 3) == 0, "Public key byte size is not multiple of 3");
+            pub.resize(pubSize, 0);
+
+            const size_t pointSize = pubSize / 3;
+            CF_CHECK_NE(X = util::DecToBin(op.signature.pub.first.ToTrimmedString(), pointSize), std::nullopt);
+            CF_CHECK_NE(Y = util::DecToBin(op.signature.pub.second.ToTrimmedString(), pointSize), std::nullopt);
+            CF_CHECK_NE(Z = util::DecToBin("1", pointSize), std::nullopt);
+
+            memcpy(pub.data(), X->data(), pointSize);
+            memcpy(pub.data() + pointSize, Y->data(), pointSize);
+            memcpy(pub.data() + pointSize * 2, Z->data(), pointSize);
+
+            CF_INSTALL_JMP();
+
+            CF_CHECK_EQ(ec_pub_key_import_from_buf(
+                        &kp.pub_key,
+                        &params,
+                        pub.data(), pub.size(),
+                        sm->type), 0);
+
+            CF_CHECK_EQ(prj_pt_is_on_curve(&kp.pub_key.y), 1);
+        }
+
+
+        CF_CHECK_EQ(ec_verify_init(&ctx, &(kp.pub_key), sig.data(), sig.size(), AlgType, SHA256), 0);
+        {
+            const auto cleartext_ptr = op.cleartext.GetPtr();
+
+            /* libecc has an explicit check for NULL input which causes ecdsa_verify_raw
+             * to return false even if the signature is valid.
+             *
+             * See also OSS-Fuzz issue #33808
+             */
+            CF_CHECK_NE(cleartext_ptr, nullptr);
+
+            ret = ecdsa_verify_raw(&ctx, cleartext_ptr, op.cleartext.GetSize()) == 0;
+        }
+
+end:
+        CF_RESTORE_JMP();
+
+        libecc_detail::global_ds = nullptr;
+
+        return ret;
+    }
+} /* namespace libecc_detail */
+
+std::optional<component::ECDSA_Signature> libecc::OpECDSA_Sign(operation::ECDSA_Sign& op) {
+    return libecc_detail::ECxDSA_Sign<operation::ECDSA_Sign, ECDSA>(op);
+}
+
+std::optional<component::ECGDSA_Signature> libecc::OpECGDSA_Sign(operation::ECGDSA_Sign& op) {
+    return libecc_detail::ECxDSA_Sign<operation::ECGDSA_Sign, ECGDSA>(op);
+}
+
+std::optional<bool> libecc::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    return libecc_detail::ECxDSA_Verify<operation::ECDSA_Verify, ECDSA>(op, libecc_detail::sm_ecdsa);
+}
+
+std::optional<bool> libecc::OpECGDSA_Verify(operation::ECGDSA_Verify& op) {
+    return libecc_detail::ECxDSA_Verify<operation::ECGDSA_Verify, ECGDSA>(op, libecc_detail::sm_ecgdsa);
 }
 
 std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op) {
