@@ -101,6 +101,8 @@ class ECDSA_Signature {
         nlohmann::json ToJSON(void) const;
 };
 
+using ECGDSA_Signature = ECDSA_Signature;
+
 class MACType {
     public:
         bool mode;

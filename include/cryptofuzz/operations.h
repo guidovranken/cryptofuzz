@@ -963,6 +963,67 @@ class ECDSA_Sign : public Operation {
         }
 };
 
+class ECGDSA_Sign : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::ECC_PrivateKey priv;
+        const component::Bignum nonce;
+        const component::Cleartext cleartext;
+        const uint8_t nonceSource;
+        const component::DigestType digestType;
+
+        ECGDSA_Sign(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            priv(ds),
+            nonce(ds),
+            cleartext(ds),
+            nonceSource(ds.Get<uint8_t>()),
+            digestType(ds)
+        { }
+        ECGDSA_Sign(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            priv(json["priv"]),
+            nonce(json["nonce"]),
+            cleartext(json["cleartext"]),
+            nonceSource(json["nonceSource"].get<uint8_t>()),
+            digestType(json["digestType"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const ECGDSA_Sign& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (priv == rhs.priv) &&
+                (nonce == rhs.nonce) &&
+                (cleartext == rhs.cleartext) &&
+                (nonceSource == rhs.nonceSource ) &&
+                (digestType == rhs.digestType ) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            priv.Serialize(ds);
+            nonce.Serialize(ds);
+            cleartext.Serialize(ds);
+            ds.Put<>(nonceSource);
+            digestType.Serialize(ds);
+        }
+        bool UseRandomNonce(void) const {
+            return nonceSource == 0;
+        }
+        bool UseRFC6979Nonce(void) const {
+            return nonceSource == 1;
+        }
+        bool UseSpecifiedNonce(void) const {
+            return nonceSource == 2;
+        }
+};
+
 class ECDSA_Verify : public Operation {
     public:
         const component::CurveType curveType;
@@ -990,6 +1051,48 @@ class ECDSA_Verify : public Operation {
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
         inline bool operator==(const ECDSA_Verify& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (cleartext == rhs.cleartext) &&
+                (signature == rhs.signature) &&
+                (digestType == rhs.digestType) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            cleartext.Serialize(ds);
+            signature.Serialize(ds);
+            digestType.Serialize(ds);
+        }
+};
+
+class ECGDSA_Verify : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::Cleartext cleartext;
+        const component::ECGDSA_Signature signature;
+        const component::DigestType digestType;
+
+        ECGDSA_Verify(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            cleartext(ds),
+            signature(ds),
+            digestType(ds)
+        { }
+        ECGDSA_Verify(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            cleartext(json["cleartext"]),
+            signature(json["signature"]),
+            digestType(json["digestType"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const ECGDSA_Verify& rhs) const {
             return
                 (curveType == rhs.curveType) &&
                 (cleartext == rhs.cleartext) &&

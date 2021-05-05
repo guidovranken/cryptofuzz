@@ -36,7 +36,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorECC_ValidatePubkey executorECC_ValidatePubkey(CF_OPERATION("ECC_ValidatePubkey"), modules, options);
     static ExecutorECC_GenerateKeyPair executorECC_GenerateKeyPair(CF_OPERATION("ECC_GenerateKeyPair"), modules, options);
     static ExecutorECDSA_Sign executorECDSA_Sign(CF_OPERATION("ECDSA_Sign"), modules, options);
+    static ExecutorECGDSA_Sign executorECGDSA_Sign(CF_OPERATION("ECGDSA_Sign"), modules, options);
     static ExecutorECDSA_Verify executorECDSA_Verify(CF_OPERATION("ECDSA_Verify"), modules, options);
+    static ExecutorECGDSA_Verify executorECGDSA_Verify(CF_OPERATION("ECGDSA_Verify"), modules, options);
     static ExecutorECDSA_Recover executorECDSA_Recover(CF_OPERATION("ECDSA_Recover"), modules, options);
     static ExecutorECDH_Derive executorECDH_Derive(CF_OPERATION("ECDH_Derive"), modules, options);
     static ExecutorECIES_Encrypt executorECIES_Encrypt(CF_OPERATION("ECIES_Encrypt"), modules, options);
@@ -136,8 +138,14 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
             case CF_OPERATION("ECDSA_Sign"):
                 executorECDSA_Sign.Run(ds, payload.data(), payload.size());
                 break;
+            case CF_OPERATION("ECGDSA_Sign"):
+                executorECGDSA_Sign.Run(ds, payload.data(), payload.size());
+                break;
             case CF_OPERATION("ECDSA_Verify"):
                 executorECDSA_Verify.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("ECGDSA_Verify"):
+                executorECGDSA_Verify.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("ECDSA_Recover"):
                 executorECDSA_Recover.Run(ds, payload.data(), payload.size());

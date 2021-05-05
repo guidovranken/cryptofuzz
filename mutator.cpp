@@ -468,6 +468,28 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     op.Serialize(dsOut2);
                 }
                 break;
+            case    CF_OPERATION("ECGDSA_Sign"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+
+                    const auto P1 = Pool_CurvePrivkey.Get();
+
+                    parameters["curveType"] = P1.curveID;
+                    parameters["priv"] = P1.priv;
+                    parameters["nonce"] = getBignum();
+
+                    if ( getBool() ) {
+                        parameters["cleartext"] = cryptofuzz::util::DecToHex(getBignum(true), (PRNG() % 64) * 2);
+                    } else {
+                        parameters["cleartext"] = getBuffer(PRNG() % 32);
+                    }
+                    parameters["nonceSource"] = PRNG() % 3;
+                    parameters["digestType"] = getRandomDigest();
+
+                    cryptofuzz::operation::ECGDSA_Sign op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
             case    CF_OPERATION("ECDSA_Verify"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1024);
@@ -512,6 +534,53 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["digestType"] = getRandomDigest();
 
                     cryptofuzz::operation::ECDSA_Verify op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("ECGDSA_Verify"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1024);
+
+                    if ( Pool_CurveECDSASignature.Have() == true ) {
+                        const auto P = Pool_CurveECDSASignature.Get();
+                        parameters["curveType"] = P.curveID;
+
+                        parameters["signature"]["pub"][0] = getBool() ? getBignum() : P.pub_x;
+                        parameters["signature"]["pub"][1] = getBool() ? getBignum() : P.pub_y;
+
+                        parameters["signature"]["signature"][0] = getBool() ? getBignum() : P.sig_r;
+                        auto sigS = getBool() ? getBignum() : P.sig_y;
+
+                        if ( getBool() ) {
+                            /* Test ECGDSA signature malleability */
+
+                            const auto order = cryptofuzz::repository::ECC_CurveToOrder(P.curveID);
+                            if ( order != std::nullopt ) {
+                                const auto o = boost::multiprecision::cpp_int(*order);
+                                const auto s = boost::multiprecision::cpp_int(sigS);
+                                if ( o > s ) {
+                                    sigS = boost::lexical_cast<std::string>(o - s);
+                                }
+                            }
+                        }
+
+                        parameters["signature"]["signature"][1] = sigS;
+                        parameters["cleartext"] = P.cleartext;
+                    } else {
+                        parameters["curveType"] = getRandomCurve();
+
+                        parameters["signature"]["pub"][0] = getBignum();
+                        parameters["signature"]["pub"][1] = getBignum();
+
+                        parameters["signature"]["signature"][0] = getBignum();
+                        parameters["signature"]["signature"][1] = getBignum();
+
+                        parameters["cleartext"] = cryptofuzz::util::DecToHex(getBignum(true), (PRNG() % 64) * 2);
+                    }
+
+                    parameters["digestType"] = getRandomDigest();
+
+                    cryptofuzz::operation::ECGDSA_Verify op(parameters);
                     op.Serialize(dsOut2);
                 }
                 break;

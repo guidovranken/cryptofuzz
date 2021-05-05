@@ -8,6 +8,7 @@
 #include <botan/curve25519.h>
 #include <botan/dh.h>
 #include <botan/ecdsa.h>
+#include <botan/ecgdsa.h>
 #include <botan/hash.h>
 #include <botan/kdf.h>
 #include <botan/mac.h>
@@ -986,7 +987,7 @@ end:
 }
 
 namespace Botan_detail {
-    template <class PrivkeyType, class Operation>
+    template <class PrivkeyType, class Operation, bool RFC6979 = true>
         std::optional<component::ECDSA_Signature> ECxDSA_Sign(Operation& op) {
             std::optional<component::ECDSA_Signature> ret = std::nullopt;
             Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -999,7 +1000,12 @@ namespace Botan_detail {
 
             BOTAN_SET_GLOBAL_DS
 
-            CF_CHECK_EQ(op.UseRFC6979Nonce(), true);
+            if ( RFC6979 == true ) {
+                CF_CHECK_EQ(op.UseRFC6979Nonce(), true);
+            } else {
+                CF_CHECK_EQ(op.UseRandomNonce(), true);
+            }
+
             CF_CHECK_EQ(op.digestType.Get(), CF_DIGEST("SHA256"));
 
             try {
@@ -1093,6 +1099,10 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
     return Botan_detail::ECxDSA_Sign<::Botan::ECDSA_PrivateKey, operation::ECDSA_Sign>(op);
 }
 
+std::optional<component::ECGDSA_Signature> Botan::OpECGDSA_Sign(operation::ECGDSA_Sign& op) {
+    return Botan_detail::ECxDSA_Sign<::Botan::ECGDSA_PrivateKey, operation::ECGDSA_Sign, false>(op);
+}
+
 namespace Botan_detail {
     template <class PubkeyType, class Operation>
         std::optional<bool> ECxDSA_Verify(Operation& op) {
@@ -1163,6 +1173,10 @@ end:
 
 std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     return Botan_detail::ECxDSA_Verify<::Botan::ECDSA_PublicKey, operation::ECDSA_Verify>(op);
+}
+
+std::optional<bool> Botan::OpECGDSA_Verify(operation::ECGDSA_Verify& op) {
+    return Botan_detail::ECxDSA_Verify<::Botan::ECGDSA_PublicKey, operation::ECGDSA_Verify>(op);
 }
 
 std::optional<component::ECC_PublicKey> Botan::OpECDSA_Recover(operation::ECDSA_Recover& op) {
