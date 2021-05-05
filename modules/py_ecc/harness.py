@@ -1,5 +1,5 @@
 from py_ecc.bls import G2ProofOfPossession as bls_pop
-from py_ecc.bls.g2_primitives import pubkey_to_G1, G2_to_signature, signature_to_G2, G1_to_pubkey, G2_to_signature
+from py_ecc.bls.g2_primitives import pubkey_to_G1, G2_to_signature, signature_to_G2, G1_to_pubkey, G2_to_signature, subgroup_check
 from py_ecc.bls.hash_to_curve import hash_to_G2
 from py_ecc.fields import optimized_bls12_381_FQ as FQ
 from py_ecc.fields import optimized_bls12_381_FQ2 as FQ2
@@ -64,7 +64,7 @@ def OpBLS_IsG1OnCurve(arg):
         return
 
     #r = json.dumps(is_on_curve(g2, b2))
-    r = json.dumps(is_on_curve(g1, b))
+    r = json.dumps(is_on_curve(g1, b) and subgroup_check(g1))
     return bytes(r, 'utf-8')
 
 def OpBLS_IsG2OnCurve(arg):
@@ -79,7 +79,7 @@ def OpBLS_IsG2OnCurve(arg):
     if is_valid([v,w,x,y]) == False:
         return
 
-    r = json.dumps(is_on_curve(g2, b2))
+    r = json.dumps(is_on_curve(g2, b2) and subgroup_check(g2))
     return bytes(r, 'utf-8')
 
 def OpBLS_HashToG2(arg):
