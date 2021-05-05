@@ -6,6 +6,7 @@
 
 extern "C" {
     #include <secp256k1.h>
+    #include <secp256k1_recovery.h>
 }
 
 namespace cryptofuzz {
@@ -41,19 +42,11 @@ namespace secp256k1_detail {
         }
     }
 
-    std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(const std::string priv) {
+    std::optional<component::ECC_PublicKey> To_ECC_PublicKey(const secp256k1_context* ctx, const secp256k1_pubkey& pubkey) {
         std::optional<component::ECC_PublicKey> ret = std::nullopt;
-        secp256k1_context* ctx = nullptr;
-        secp256k1_pubkey pubkey;
         std::vector<uint8_t> pubkey_bytes(65);
         size_t pubkey_bytes_size = pubkey_bytes.size();
-        uint8_t key[32];
 
-        CF_CHECK_NE(ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN), nullptr);
-        CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
-                    priv,
-                    key), true);
-        CF_CHECK_EQ(secp256k1_ec_pubkey_create(ctx, &pubkey, key), 1);
         CF_CHECK_EQ(secp256k1_ec_pubkey_serialize(ctx, pubkey_bytes.data(), &pubkey_bytes_size, &pubkey, SECP256K1_FLAGS_TYPE_COMPRESSION), 1);
         CF_CHECK_EQ(pubkey_bytes_size, 65);
 
@@ -65,6 +58,25 @@ namespace secp256k1_detail {
 
             ret = {secp256k1_detail::toString(x), secp256k1_detail::toString(y)};
         }
+
+end:
+        return ret;
+    }
+
+    std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(const std::string priv) {
+        std::optional<component::ECC_PublicKey> ret = std::nullopt;
+        secp256k1_context* ctx = nullptr;
+        secp256k1_pubkey pubkey;
+        std::vector<uint8_t> pubkey_bytes(65);
+        uint8_t key[32];
+
+        CF_CHECK_NE(ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN), nullptr);
+        CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                    priv,
+                    key), true);
+        CF_CHECK_EQ(secp256k1_ec_pubkey_create(ctx, &pubkey, key), 1);
+
+        ret = To_ECC_PublicKey(ctx, pubkey);
 
 end:
         /* noret */ secp256k1_context_destroy(ctx);
@@ -238,6 +250,48 @@ std::optional<bool> secp256k1::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     secp256k1_ecdsa_signature_normalize(ctx, &sig, &sig);
 
     ret = secp256k1_ecdsa_verify(ctx, &sig, hash, &pubkey) == 1 ? true : false;
+
+end:
+    /* noret */ secp256k1_context_destroy(ctx);
+    return ret;
+}
+
+std::optional<component::ECC_PublicKey> secp256k1::OpECDSA_Recover(operation::ECDSA_Recover& op) {
+    std::optional<component::ECC_PublicKey> ret = std::nullopt;
+
+    secp256k1_context* ctx = nullptr;
+    secp256k1_pubkey pubkey;
+    secp256k1_ecdsa_recoverable_signature sig;
+    uint8_t sig_bytes[64];
+    uint8_t hash[32];
+
+    CF_CHECK_EQ(op.curveType.Get(), CF_ECC_CURVE("secp256k1"));
+    CF_CHECK_LTE(op.id, 3);
+
+    if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
+        const auto CT = op.cleartext.ECDSA_Pad(32);
+        memcpy(hash, CT.GetPtr(), sizeof(hash));
+    } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
+        const auto _hash = crypto::sha256(op.cleartext.Get());
+        memcpy(hash, _hash.data(), _hash.size());
+    } else {
+        goto end;
+    }
+
+    CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                op.signature.first.ToTrimmedString(),
+                sig_bytes), true);
+    CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                op.signature.second.ToTrimmedString(),
+                sig_bytes + 32), true);
+
+    CF_CHECK_NE(ctx = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY), nullptr);
+    CF_CHECK_EQ(secp256k1_ecdsa_recoverable_signature_parse_compact(ctx, &sig, sig_bytes, op.id), 1);
+    if ( secp256k1_ecdsa_recover(ctx, &pubkey, &sig, hash) == 1 ) {
+        ret = secp256k1_detail::To_ECC_PublicKey(ctx, pubkey);
+    } else {
+        //ret = {"0", "0"};
+    }
 
 end:
     /* noret */ secp256k1_context_destroy(ctx);
