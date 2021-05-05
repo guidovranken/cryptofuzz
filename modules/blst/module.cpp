@@ -193,6 +193,11 @@ std::optional<component::BLS_PublicKey> blst::OpBLS_PrivateToPublic(operation::B
 
     CF_CHECK_TRUE(blst_detail::To_blst_scalar(op.priv, priv));
 
+    /* blst_sk_to_pk_in_g1 does not reduce the private key,
+     * so check if it's valid first
+     */
+    CF_CHECK_TRUE(blst_sk_check(&priv));
+
     CF_NORET(blst_sk_to_pk_in_g1(&pub, &priv));
     CF_ASSERT(blst_p1_on_curve(&pub) == true, "Generated pubkey not on curve");
 
