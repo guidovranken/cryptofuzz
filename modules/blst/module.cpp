@@ -901,15 +901,20 @@ std::optional<component::G1> blst::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
 
     blst_p1_affine a, result_;
     blst_p1 a_, result;
-    std::optional<std::array<uint8_t, 32>> b;
+    std::optional<std::vector<uint8_t>> b;
 
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first, a.x));
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second, a.y));
-    CF_CHECK_NE(b = blst_detail::ToArray<32>(op.b), std::nullopt);
+    CF_CHECK_NE(b = util::DecToBin(op.b.ToTrimmedString()), std::nullopt);
+    CF_CHECK_LTE(b->size(), 32);
 
     CF_NORET(blst_p1_from_affine(&a_, &a));
 
-    CF_NORET(blst_p1_mult(&result, &a_, b->data(), 256));
+    {
+        std::vector<uint8_t> b_reversed = *b;
+        CF_NORET(std::reverse(b_reversed.begin(), b_reversed.end()));
+        CF_NORET(blst_p1_mult(&result, &a_, b_reversed.data(), b_reversed.size() * 8));
+    }
 
     CF_NORET(blst_p1_to_affine(&result_, &result));
 
@@ -957,17 +962,22 @@ std::optional<component::G2> blst::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
 
     blst_p2_affine a, result_;
     blst_p2 a_, result;
-    std::optional<std::array<uint8_t, 32>> b;
+    std::optional<std::vector<uint8_t>> b;
 
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first.first, a.x.fp[0]));
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first.second, a.y.fp[0]));
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second.first, a.x.fp[1]));
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second.second, a.y.fp[1]));
-    CF_CHECK_NE(b = blst_detail::ToArray<32>(op.b), std::nullopt);
+    CF_CHECK_NE(b = util::DecToBin(op.b.ToTrimmedString()), std::nullopt);
+    CF_CHECK_LTE(b->size(), 32);
 
     CF_NORET(blst_p2_from_affine(&a_, &a));
 
-    CF_NORET(blst_p2_mult(&result, &a_, b->data(), 256));
+    {
+        std::vector<uint8_t> b_reversed = *b;
+        CF_NORET(std::reverse(b_reversed.begin(), b_reversed.end()));
+        CF_NORET(blst_p2_mult(&result, &a_, b_reversed.data(), b_reversed.size() * 8));
+    }
 
     CF_NORET(blst_p2_to_affine(&result_, &result));
 
