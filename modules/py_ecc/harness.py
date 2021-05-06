@@ -7,7 +7,7 @@ from py_ecc.optimized_bls12_381 import is_on_curve
 from py_ecc.optimized_bls12_381 import b, b2
 from py_ecc.utils import prime_field_inv
 from py_ecc.optimized_bls12_381.optimized_swu import sqrt_division_FQ2, iso_map_G2
-from py_ecc.optimized_bls12_381.optimized_curve import multiply
+from py_ecc.optimized_bls12_381.optimized_curve import add, multiply
 from py_ecc.bls.point_compression import decompress_G1, compress_G1, decompress_G2, compress_G2
 from hashlib import sha256
 import json
@@ -306,4 +306,102 @@ def OpBLS_Compress_G2(arg):
     point = [str(compressed[0]), str(compressed[1])]
 
     r = json.dumps(point)
+    return bytes(r, 'utf-8')
+
+def OpBLS_G1_Add(arg):
+    op = json.loads(arg)
+    a_x = to_int(op['a_x'])
+    a_y = to_int(op['a_y'])
+    b_x = to_int(op['b_x'])
+    b_y = to_int(op['b_y'])
+
+    if (a_x % MOD, a_y % MOD) == (0, 0):
+        return
+    if (b_x % MOD, b_y % MOD) == (0, 0):
+        return
+
+    A = [FQ(a_x), FQ(a_y), FQ.one()]
+    B = [FQ(b_x), FQ(b_y), FQ.one()]
+
+    if not (is_on_curve(A, b) and subgroup_check(A)):
+        return
+    if not (is_on_curve(B, b) and subgroup_check(B)):
+        return
+
+    result = add(A, B)
+
+    result = [str(result[0] / result[2]), str(result[1] / result[2])]
+    r = json.dumps(result)
+    return bytes(r, 'utf-8')
+
+def OpBLS_G1_Mul(arg):
+    op = json.loads(arg)
+    a_x = to_int(op['a_x'])
+    a_y = to_int(op['a_y'])
+    B = to_int(op['b'])
+
+    if (a_x % MOD, a_y % MOD) == (0, 0):
+        return
+
+    A = [FQ(a_x), FQ(a_y), FQ.one()]
+
+    if not (is_on_curve(A, b) and subgroup_check(A)):
+        return
+
+    result = multiply(A, B)
+
+    result = [str(result[0] / result[2]), str(result[1] / result[2])]
+    r = json.dumps(result)
+    return bytes(r, 'utf-8')
+
+def OpBLS_G2_Add(arg):
+    op = json.loads(arg)
+    a_v = to_int(op['a_v'])
+    a_w = to_int(op['a_w'])
+    a_x = to_int(op['a_x'])
+    a_y = to_int(op['a_y'])
+    b_v = to_int(op['b_v'])
+    b_w = to_int(op['b_w'])
+    b_x = to_int(op['b_x'])
+    b_y = to_int(op['b_y'])
+
+    A = (FQ2((a_v, a_x)), FQ2((a_w, a_y)), FQ2.one())
+    B = (FQ2((b_v, b_x)), FQ2((b_w, b_y)), FQ2.one())
+
+    if not (is_on_curve(A, b2) and subgroup_check(A)):
+        return
+    if not (is_on_curve(B, b2) and subgroup_check(B)):
+        return
+
+    result = add(A, B)
+
+    x = result[0] / result[2]
+    y = result[1] / result[2]
+
+    result = [[str(x.coeffs[0]), str(y.coeffs[0])], [str(x.coeffs[1]), str(y.coeffs[1])]]
+
+    r = json.dumps(result)
+    return bytes(r, 'utf-8')
+
+def OpBLS_G2_Mul(arg):
+    op = json.loads(arg)
+    a_v = to_int(op['a_v'])
+    a_w = to_int(op['a_w'])
+    a_x = to_int(op['a_x'])
+    a_y = to_int(op['a_y'])
+    B = to_int(op['b'])
+
+    A = (FQ2((a_v, a_x)), FQ2((a_w, a_y)), FQ2.one())
+
+    if not (is_on_curve(A, b2) and subgroup_check(A)):
+        return
+
+    result = multiply(A, B)
+
+    x = result[0] / result[2]
+    y = result[1] / result[2]
+
+    result = [[str(x.coeffs[0]), str(y.coeffs[0])], [str(x.coeffs[1]), str(y.coeffs[1])]]
+
+    r = json.dumps(result)
     return bytes(r, 'utf-8')

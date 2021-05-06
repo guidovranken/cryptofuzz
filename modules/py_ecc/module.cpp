@@ -26,6 +26,10 @@ namespace py_ecc_detail {
     void* OpBLS_Compress_G1 = nullptr;
     void* OpBLS_Decompress_G2 = nullptr;
     void* OpBLS_Compress_G2 = nullptr;
+    void* OpBLS_G1_Add = nullptr;
+    void* OpBLS_G1_Mul = nullptr;
+    void* OpBLS_G2_Add = nullptr;
+    void* OpBLS_G2_Mul = nullptr;
 }
 
 static void* LoadPythonFunction(PyObject* pModule, const std::string fn) {
@@ -160,6 +164,10 @@ static void ConfigurePython(void) {
     py_ecc_detail::OpBLS_Compress_G1 = LoadPythonFunction(pModule, "OpBLS_Compress_G1");
     py_ecc_detail::OpBLS_Decompress_G2 = LoadPythonFunction(pModule, "OpBLS_Decompress_G2");
     py_ecc_detail::OpBLS_Compress_G2 = LoadPythonFunction(pModule, "OpBLS_Compress_G2");
+    py_ecc_detail::OpBLS_G1_Add = LoadPythonFunction(pModule, "OpBLS_G1_Add");
+    py_ecc_detail::OpBLS_G1_Mul = LoadPythonFunction(pModule, "OpBLS_G1_Mul");
+    py_ecc_detail::OpBLS_G2_Add = LoadPythonFunction(pModule, "OpBLS_G2_Add");
+    py_ecc_detail::OpBLS_G2_Mul = LoadPythonFunction(pModule, "OpBLS_G2_Mul");
 }
 
 py_ecc::py_ecc(void) :
@@ -283,6 +291,38 @@ std::optional<component::G1> py_ecc::OpBLS_Compress_G2(operation::BLS_Compress_G
         return std::nullopt;
     }
     return component::G1(nlohmann::json::parse(*ret));
+}
+
+std::optional<component::G1> py_ecc::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
+    const auto ret = RunPythonFunction(py_ecc_detail::OpBLS_G1_Add, op.ToJSON().dump());
+    if ( ret == std::nullopt ) {
+        return std::nullopt;
+    }
+    return component::G1(nlohmann::json::parse(*ret));
+}
+
+std::optional<component::G1> py_ecc::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
+    const auto ret = RunPythonFunction(py_ecc_detail::OpBLS_G1_Mul, op.ToJSON().dump());
+    if ( ret == std::nullopt ) {
+        return std::nullopt;
+    }
+    return component::G1(nlohmann::json::parse(*ret));
+}
+
+std::optional<component::G2> py_ecc::OpBLS_G2_Add(operation::BLS_G2_Add& op) {
+    const auto ret = RunPythonFunction(py_ecc_detail::OpBLS_G2_Add, op.ToJSON().dump());
+    if ( ret == std::nullopt ) {
+        return std::nullopt;
+    }
+    return component::G2(nlohmann::json::parse(*ret));
+}
+
+std::optional<component::G2> py_ecc::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
+    const auto ret = RunPythonFunction(py_ecc_detail::OpBLS_G2_Mul, op.ToJSON().dump());
+    if ( ret == std::nullopt ) {
+        return std::nullopt;
+    }
+    return component::G2(nlohmann::json::parse(*ret));
 }
 
 std::optional<Buffer> py_ecc::OpMisc(operation::Misc& op) {
