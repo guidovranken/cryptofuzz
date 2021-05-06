@@ -942,8 +942,17 @@ template<> std::optional<component::G1> ExecutorBase<component::G1, operation::B
 /* Specialization for operation::BLS_G1_Add */
 template<> void ExecutorBase<component::G1, operation::BLS_G1_Add>::postprocess(std::shared_ptr<Module> module, operation::BLS_G1_Add& op, const ExecutorBase<component::G1, operation::BLS_G1_Add>::ResultPair& result) const {
     (void)module;
-    (void)op;
-    (void)result;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto g1_x = result.second->first.ToTrimmedString();
+        const auto g1_y = result.second->second.ToTrimmedString();
+
+        Pool_CurveBLSG1.Set({ curveID, g1_x, g1_y });
+
+        if ( g1_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_x); }
+        if ( g1_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_y); }
+    }
 }
 
 template<> std::optional<component::G1> ExecutorBase<component::G1, operation::BLS_G1_Add>::callModule(std::shared_ptr<Module> module, operation::BLS_G1_Add& op) const {
@@ -958,8 +967,17 @@ template<> std::optional<component::G1> ExecutorBase<component::G1, operation::B
 /* Specialization for operation::BLS_G1_Mul */
 template<> void ExecutorBase<component::G1, operation::BLS_G1_Mul>::postprocess(std::shared_ptr<Module> module, operation::BLS_G1_Mul& op, const ExecutorBase<component::G1, operation::BLS_G1_Mul>::ResultPair& result) const {
     (void)module;
-    (void)op;
-    (void)result;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto g1_x = result.second->first.ToTrimmedString();
+        const auto g1_y = result.second->second.ToTrimmedString();
+
+        Pool_CurveBLSG1.Set({ curveID, g1_x, g1_y });
+
+        if ( g1_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_x); }
+        if ( g1_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_y); }
+    }
 }
 
 template<> std::optional<component::G1> ExecutorBase<component::G1, operation::BLS_G1_Mul>::callModule(std::shared_ptr<Module> module, operation::BLS_G1_Mul& op) const {
@@ -973,8 +991,21 @@ template<> std::optional<component::G1> ExecutorBase<component::G1, operation::B
 /* Specialization for operation::BLS_G2_Add */
 template<> void ExecutorBase<component::G2, operation::BLS_G2_Add>::postprocess(std::shared_ptr<Module> module, operation::BLS_G2_Add& op, const ExecutorBase<component::G2, operation::BLS_G2_Add>::ResultPair& result) const {
     (void)module;
-    (void)op;
-    (void)result;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto g2_v = result.second->first.first.ToTrimmedString();
+        const auto g2_w = result.second->first.second.ToTrimmedString();
+        const auto g2_x = result.second->second.first.ToTrimmedString();
+        const auto g2_y = result.second->second.second.ToTrimmedString();
+
+        Pool_CurveBLSG2.Set({ curveID, g2_v, g2_w, g2_x, g2_y });
+
+        if ( g2_v.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_v); }
+        if ( g2_w.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_w); }
+        if ( g2_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_x); }
+        if ( g2_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_y); }
+    }
 }
 
 template<> std::optional<component::G2> ExecutorBase<component::G2, operation::BLS_G2_Add>::callModule(std::shared_ptr<Module> module, operation::BLS_G2_Add& op) const {
@@ -993,8 +1024,21 @@ template<> std::optional<component::G2> ExecutorBase<component::G2, operation::B
 /* Specialization for operation::BLS_G2_Mul */
 template<> void ExecutorBase<component::G2, operation::BLS_G2_Mul>::postprocess(std::shared_ptr<Module> module, operation::BLS_G2_Mul& op, const ExecutorBase<component::G2, operation::BLS_G2_Mul>::ResultPair& result) const {
     (void)module;
-    (void)op;
-    (void)result;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto g2_v = result.second->first.first.ToTrimmedString();
+        const auto g2_w = result.second->first.second.ToTrimmedString();
+        const auto g2_x = result.second->second.first.ToTrimmedString();
+        const auto g2_y = result.second->second.second.ToTrimmedString();
+
+        Pool_CurveBLSG2.Set({ curveID, g2_v, g2_w, g2_x, g2_y });
+
+        if ( g2_v.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_v); }
+        if ( g2_w.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_w); }
+        if ( g2_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_x); }
+        if ( g2_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_y); }
+    }
 }
 
 template<> std::optional<component::G2> ExecutorBase<component::G2, operation::BLS_G2_Mul>::callModule(std::shared_ptr<Module> module, operation::BLS_G2_Mul& op) const {
