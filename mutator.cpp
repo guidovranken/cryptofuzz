@@ -1263,6 +1263,33 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     op.Serialize(dsOut2);
                 }
                 break;
+            case    CF_OPERATION("BLS_G1_IsEq"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+
+                    if ( getBool() && Pool_CurveBLSG1.Have() == true ) {
+                        const auto P = Pool_CurveBLSG1.Get();
+                        parameters["a_x"] = GET_OR_BIGNUM(P.g1_x);
+                        parameters["a_y"] = GET_OR_BIGNUM(P.g1_y);
+                    } else {
+                        parameters["a_x"] = getBignum();
+                        parameters["a_y"] = getBignum();
+                    }
+
+                    if ( getBool() && Pool_CurveBLSG1.Have() == true ) {
+                        const auto P = Pool_CurveBLSG1.Get();
+                        parameters["b_x"] = GET_OR_BIGNUM(P.g1_x);
+                        parameters["b_y"] = GET_OR_BIGNUM(P.g1_y);
+                    } else {
+                        parameters["b_x"] = getBignum();
+                        parameters["b_y"] = getBignum();
+                    }
+
+                    cryptofuzz::operation::BLS_G1_IsEq op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
             case    CF_OPERATION("BLS_G2_Add"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
@@ -1319,6 +1346,41 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["b"] = getBignum();
 
                     cryptofuzz::operation::BLS_G2_Mul op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("BLS_G2_IsEq"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+
+                    if ( getBool() && Pool_CurveBLSG2.Have() == true ) {
+                        const auto P = Pool_CurveBLSG2.Get();
+                        parameters["a_v"] = GET_OR_BIGNUM(P.g2_v);
+                        parameters["a_w"] = GET_OR_BIGNUM(P.g2_w);
+                        parameters["a_x"] = GET_OR_BIGNUM(P.g2_x);
+                        parameters["a_y"] = GET_OR_BIGNUM(P.g2_y);
+                    } else {
+                        parameters["a_v"] = getBignum();
+                        parameters["a_w"] = getBignum();
+                        parameters["a_x"] = getBignum();
+                        parameters["a_y"] = getBignum();
+                    }
+
+                    if ( getBool() && Pool_CurveBLSG2.Have() == true ) {
+                        const auto P = Pool_CurveBLSG2.Get();
+                        parameters["b_v"] = GET_OR_BIGNUM(P.g2_v);
+                        parameters["b_w"] = GET_OR_BIGNUM(P.g2_w);
+                        parameters["b_x"] = GET_OR_BIGNUM(P.g2_x);
+                        parameters["b_y"] = GET_OR_BIGNUM(P.g2_y);
+                    } else {
+                        parameters["b_v"] = getBignum();
+                        parameters["b_w"] = getBignum();
+                        parameters["b_x"] = getBignum();
+                        parameters["b_y"] = getBignum();
+                    }
+
+                    cryptofuzz::operation::BLS_G2_IsEq op(parameters);
                     op.Serialize(dsOut2);
                 }
                 break;

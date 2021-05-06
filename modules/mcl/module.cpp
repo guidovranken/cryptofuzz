@@ -436,6 +436,34 @@ std::optional<component::G1> mcl::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
     return ret;
 }
 
+std::optional<bool> mcl::OpBLS_G1_IsEq(operation::BLS_G1_IsEq& op) {
+    std::optional<bool> ret = std::nullopt;
+    using namespace ::mcl::bls12;
+
+    ::mcl::bls12::Fp a_x, a_y, b_x, b_y;
+
+    try {
+        a_x = Fp(op.a.first.ToTrimmedString(), 10);
+        a_y = Fp(op.a.second.ToTrimmedString(), 10);
+        b_x = Fp(op.b.first.ToTrimmedString(), 10);
+        b_y = Fp(op.b.second.ToTrimmedString(), 10);
+    } catch ( cybozu::Exception ) {
+        /* May throw exception if string represents value larger than curve order */
+        return std::nullopt;
+    }
+
+    try {
+        const auto a = ::mcl::bls12::G1(a_x, a_y);
+        const auto b = ::mcl::bls12::G1(b_x, b_y);
+
+        ret = a == b;
+    } catch ( cybozu::Exception ) {
+        return std::nullopt;
+    }
+
+    return ret;
+}
+
 std::optional<component::G2> mcl::OpBLS_G2_Add(operation::BLS_G2_Add& op) {
     std::optional<component::G2> ret = std::nullopt;
     using namespace ::mcl::bls12;
@@ -497,6 +525,40 @@ std::optional<component::G2> mcl::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
         const auto result = a * b;
 
         ret = mcl_detail::ToComponentG2(result);
+    } catch ( cybozu::Exception ) {
+        return std::nullopt;
+    }
+
+    return ret;
+}
+
+std::optional<bool> mcl::OpBLS_G2_IsEq(operation::BLS_G2_IsEq& op) {
+    std::optional<bool> ret = std::nullopt;
+    using namespace ::mcl::bls12;
+
+    ::mcl::bls12::Fp a_v, a_w, a_x, a_y;
+    ::mcl::bls12::Fp b_v, b_w, b_x, b_y;
+
+    try {
+        a_v = Fp(op.a.first.first.ToTrimmedString(), 10);
+        a_w = Fp(op.a.first.second.ToTrimmedString(), 10);
+        a_x = Fp(op.a.second.first.ToTrimmedString(), 10);
+        a_y = Fp(op.a.second.second.ToTrimmedString(), 10);
+
+        b_v = Fp(op.b.first.first.ToTrimmedString(), 10);
+        b_w = Fp(op.b.first.second.ToTrimmedString(), 10);
+        b_x = Fp(op.b.second.first.ToTrimmedString(), 10);
+        b_y = Fp(op.b.second.second.ToTrimmedString(), 10);
+    } catch ( cybozu::Exception ) {
+        /* May throw exception if string represents value larger than curve order */
+        return std::nullopt;
+    }
+
+    try {
+        const auto a = ::mcl::bls12::G2({a_v, a_x}, {a_w, a_y});
+        const auto b = ::mcl::bls12::G2({b_v, b_x}, {b_w, b_y});
+
+        ret = a == b;
     } catch ( cybozu::Exception ) {
         return std::nullopt;
     }

@@ -1189,6 +1189,34 @@ nlohmann::json BLS_G1_Mul::ToJSON(void) const {
     return j;
 }
 
+std::string BLS_G1_IsEq::Name(void) const { return "BLS_G1_IsEq"; }
+std::string BLS_G1_IsEq::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_G1_IsEq" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "A X: " << a.first.ToString() << std::endl;
+    ss << "A Y: " << a.second.ToString() << std::endl;
+    ss << "B X: " << b.first.ToString() << std::endl;
+    ss << "B Y: " << b.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_G1_IsEq::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+
+    j["a_x"] = a.first.ToJSON();
+    j["a_y"] = a.second.ToJSON();
+
+    j["b_x"] = b.first.ToJSON();
+    j["b_y"] = b.second.ToJSON();
+
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string BLS_G2_Add::Name(void) const { return "BLS_G2_Add"; }
 std::string BLS_G2_Add::ToString(void) const {
     std::stringstream ss;
@@ -1250,6 +1278,42 @@ nlohmann::json BLS_G2_Mul::ToJSON(void) const {
     j["a_y"] = a.second.second.ToJSON();
 
     j["b"] = b.ToJSON();
+
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string BLS_G2_IsEq::Name(void) const { return "BLS_G2_IsEq"; }
+std::string BLS_G2_IsEq::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_G2_IsEq" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "A V:" << a.first.first.ToString() << std::endl;
+    ss << "A W:" << a.first.second.ToString() << std::endl;
+    ss << "A X:" << a.second.first.ToString() << std::endl;
+    ss << "A Y:" << a.second.second.ToString() << std::endl;
+    ss << "B V:" << b.first.first.ToString() << std::endl;
+    ss << "B W:" << b.first.second.ToString() << std::endl;
+    ss << "B X:" << b.second.first.ToString() << std::endl;
+    ss << "B Y:" << b.second.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_G2_IsEq::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+
+    j["a_v"] = a.first.first.ToJSON();
+    j["a_w"] = a.first.second.ToJSON();
+    j["a_x"] = a.second.first.ToJSON();
+    j["a_y"] = a.second.second.ToJSON();
+
+    j["b_v"] = b.first.first.ToJSON();
+    j["b_w"] = b.first.second.ToJSON();
+    j["b_x"] = b.second.first.ToJSON();
+    j["b_y"] = b.second.second.ToJSON();
 
     j["modifier"] = modifier.ToJSON();
     return j;

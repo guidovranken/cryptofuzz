@@ -354,6 +354,24 @@ def OpBLS_G1_Mul(arg):
     r = json.dumps(result)
     return bytes(r, 'utf-8')
 
+def OpBLS_G1_IsEq(arg):
+    op = json.loads(arg)
+    a_x = to_int(op['a_x'])
+    a_y = to_int(op['a_y'])
+    b_x = to_int(op['b_x'])
+    b_y = to_int(op['b_y'])
+
+    if (a_x % MOD, a_y % MOD) == (0, 0):
+        return
+    if (b_x % MOD, b_y % MOD) == (0, 0):
+        return
+
+    A = [FQ(a_x), FQ(a_y), FQ.one()]
+    B = [FQ(b_x), FQ(b_y), FQ.one()]
+
+    r = json.dumps(A == B)
+    return bytes(r, 'utf-8')
+
 def OpBLS_G2_Add(arg):
     op = json.loads(arg)
     a_v = to_int(op['a_v'])
@@ -404,4 +422,21 @@ def OpBLS_G2_Mul(arg):
     result = [[str(x.coeffs[0]), str(y.coeffs[0])], [str(x.coeffs[1]), str(y.coeffs[1])]]
 
     r = json.dumps(result)
+    return bytes(r, 'utf-8')
+
+def OpBLS_G2_IsEq(arg):
+    op = json.loads(arg)
+    a_v = to_int(op['a_v'])
+    a_w = to_int(op['a_w'])
+    a_x = to_int(op['a_x'])
+    a_y = to_int(op['a_y'])
+    b_v = to_int(op['b_v'])
+    b_w = to_int(op['b_w'])
+    b_x = to_int(op['b_x'])
+    b_y = to_int(op['b_y'])
+
+    A = (FQ2((a_v, a_x)), FQ2((a_w, a_y)), FQ2.one())
+    B = (FQ2((b_v, b_x)), FQ2((b_w, b_y)), FQ2.one())
+
+    r = json.dumps(A == B)
     return bytes(r, 'utf-8')

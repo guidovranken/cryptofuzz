@@ -464,12 +464,22 @@ void test(const operation::BLS_G1_Mul& op, const std::optional<component::G1>& r
     (void)result;
 }
 
+void test(const operation::BLS_G1_IsEq& op, const std::optional<bool>& result) {
+    (void)op;
+    (void)result;
+}
+
 void test(const operation::BLS_G2_Add& op, const std::optional<component::G2>& result) {
     (void)op;
     (void)result;
 }
 
 void test(const operation::BLS_G2_Mul& op, const std::optional<component::G2>& result) {
+    (void)op;
+    (void)result;
+}
+
+void test(const operation::BLS_G2_IsEq& op, const std::optional<bool>& result) {
     (void)op;
     (void)result;
 }

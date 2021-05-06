@@ -203,11 +203,19 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<bool> OpBLS_G1_IsEq(operation::BLS_G1_IsEq& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::G2> OpBLS_G2_Add(operation::BLS_G2_Add& op) {
             (void)op;
             return std::nullopt;
         }
         virtual std::optional<component::G2> OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<bool> OpBLS_G2_IsEq(operation::BLS_G2_IsEq& op) {
             (void)op;
             return std::nullopt;
         }

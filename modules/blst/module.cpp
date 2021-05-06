@@ -927,6 +927,28 @@ end:
     return ret;
 }
 
+std::optional<bool> blst::OpBLS_G1_IsEq(operation::BLS_G1_IsEq& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    blst_p1_affine a, b;
+    blst_p1 a_, b_;
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first, a.x));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second, a.y));
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.b.first, b.x));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.b.second, b.y));
+
+    CF_NORET(blst_p1_from_affine(&a_, &a));
+    CF_NORET(blst_p1_from_affine(&b_, &b));
+
+    ret = blst_p1_is_equal(&a_, &b_);
+
+end:
+    return ret;
+}
+
 std::optional<component::G2> blst::OpBLS_G2_Add(operation::BLS_G2_Add& op) {
     std::optional<component::G2> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -982,6 +1004,31 @@ std::optional<component::G2> blst::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
     CF_NORET(blst_p2_to_affine(&result_, &result));
 
     ret = blst_detail::To_G2(result_);
+
+end:
+    return ret;
+}
+
+std::optional<bool> blst::OpBLS_G2_IsEq(operation::BLS_G2_IsEq& op) {
+    std::optional<bool> ret = std::nullopt;
+
+    blst_p2_affine a, b;
+    blst_p2 a_, b_;
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first.first, a.x.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first.second, a.y.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second.first, a.x.fp[1]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second.second, a.y.fp[1]));
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.b.first.first, b.x.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.b.first.second, b.y.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.b.second.first, b.x.fp[1]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.b.second.second, b.y.fp[1]));
+
+    CF_NORET(blst_p2_from_affine(&a_, &a));
+    CF_NORET(blst_p2_from_affine(&b_, &b));
+
+    ret = blst_p2_is_equal(&a_, &b_);
 
 end:
     return ret;

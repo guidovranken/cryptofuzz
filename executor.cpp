@@ -988,6 +988,22 @@ template<> std::optional<component::G1> ExecutorBase<component::G1, operation::B
     return module->OpBLS_G1_Mul(op);
 }
 
+/* Specialization for operation::BLS_G1_IsEq */
+template<> void ExecutorBase<bool, operation::BLS_G1_IsEq>::postprocess(std::shared_ptr<Module> module, operation::BLS_G1_IsEq& op, const ExecutorBase<bool, operation::BLS_G1_IsEq>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<bool> ExecutorBase<bool, operation::BLS_G1_IsEq>::callModule(std::shared_ptr<Module> module, operation::BLS_G1_IsEq& op) const {
+    if ( op.a.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.a.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.b.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.b.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+
+    return module->OpBLS_G1_IsEq(op);
+}
+
 /* Specialization for operation::BLS_G2_Add */
 template<> void ExecutorBase<component::G2, operation::BLS_G2_Add>::postprocess(std::shared_ptr<Module> module, operation::BLS_G2_Add& op, const ExecutorBase<component::G2, operation::BLS_G2_Add>::ResultPair& result) const {
     (void)module;
@@ -1049,6 +1065,26 @@ template<> std::optional<component::G2> ExecutorBase<component::G2, operation::B
     if ( op.b.GetSize() > config::kMaxBignumSize ) return std::nullopt;
 
     return module->OpBLS_G2_Mul(op);
+}
+
+/* Specialization for operation::BLS_G2_IsEq */
+template<> void ExecutorBase<bool, operation::BLS_G2_IsEq>::postprocess(std::shared_ptr<Module> module, operation::BLS_G2_IsEq& op, const ExecutorBase<bool, operation::BLS_G2_IsEq>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<bool> ExecutorBase<bool, operation::BLS_G2_IsEq>::callModule(std::shared_ptr<Module> module, operation::BLS_G2_IsEq& op) const {
+    if ( op.a.first.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.a.first.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.a.second.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.a.second.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.b.first.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.b.first.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.b.second.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.b.second.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+
+    return module->OpBLS_G2_IsEq(op);
 }
 
 /* Specialization for operation::Misc */
@@ -1539,8 +1575,10 @@ template class ExecutorBase<component::G2, operation::BLS_Decompress_G2>;
 template class ExecutorBase<component::G1, operation::BLS_Compress_G2>;
 template class ExecutorBase<component::G1, operation::BLS_G1_Add>;
 template class ExecutorBase<component::G1, operation::BLS_G1_Mul>;
+template class ExecutorBase<bool, operation::BLS_G1_IsEq>;
 template class ExecutorBase<component::G2, operation::BLS_G2_Add>;
 template class ExecutorBase<component::G2, operation::BLS_G2_Mul>;
+template class ExecutorBase<bool, operation::BLS_G2_IsEq>;
 template class ExecutorBase<Buffer, operation::Misc>;
 template class ExecutorBase<bool, operation::SR25519_Verify>;
 
