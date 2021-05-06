@@ -922,6 +922,61 @@ end:
     return ret;
 }
 
+std::optional<component::G2> blst::OpBLS_G2_Add(operation::BLS_G2_Add& op) {
+    std::optional<component::G2> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    blst_p2_affine a, b, result_;
+    blst_p2 a_, result;
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first.first, a.x.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first.second, a.y.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second.first, a.x.fp[1]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second.second, a.y.fp[1]));
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.b.first.first, b.x.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.b.first.second, b.y.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.b.second.first, b.x.fp[1]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.b.second.second, b.y.fp[1]));
+
+    CF_NORET(blst_p2_from_affine(&a_, &a));
+
+    CF_NORET(blst_p2_add_or_double_affine(&result, &a_, &b));
+
+    CF_NORET(blst_p2_to_affine(&result_, &result));
+
+    ret = blst_detail::To_G2(result_);
+
+end:
+    return ret;
+}
+
+std::optional<component::G2> blst::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
+    std::optional<component::G2> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    blst_p2_affine a, result_;
+    blst_p2 a_, result;
+    std::optional<std::vector<uint8_t>> b;
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first.first, a.x.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first.second, a.y.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second.first, a.x.fp[1]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second.second, a.y.fp[1]));
+    CF_CHECK_NE(b = util::DecToBin(op.b.ToTrimmedString(), 32), std::nullopt);
+
+    CF_NORET(blst_p2_from_affine(&a_, &a));
+
+    CF_NORET(blst_p2_mult(&result, &a_, b->data(), 256));
+
+    CF_NORET(blst_p2_to_affine(&result_, &result));
+
+    ret = blst_detail::To_G2(result_);
+
+end:
+    return ret;
+}
+
 std::optional<Buffer> blst::OpMisc(operation::Misc& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 

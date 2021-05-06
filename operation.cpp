@@ -1189,6 +1189,72 @@ nlohmann::json BLS_G1_Mul::ToJSON(void) const {
     return j;
 }
 
+std::string BLS_G2_Add::Name(void) const { return "BLS_G2_Add"; }
+std::string BLS_G2_Add::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_G2_Add" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "A V:" << a.first.first.ToString() << std::endl;
+    ss << "A W:" << a.first.second.ToString() << std::endl;
+    ss << "A X:" << a.second.first.ToString() << std::endl;
+    ss << "A Y:" << a.second.second.ToString() << std::endl;
+    ss << "B V:" << b.first.first.ToString() << std::endl;
+    ss << "B W:" << b.first.second.ToString() << std::endl;
+    ss << "B X:" << b.second.first.ToString() << std::endl;
+    ss << "B Y:" << b.second.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_G2_Add::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+
+    j["a_v"] = a.first.first.ToJSON();
+    j["a_w"] = a.first.second.ToJSON();
+    j["a_x"] = a.second.first.ToJSON();
+    j["a_y"] = a.second.second.ToJSON();
+
+    j["b_v"] = b.first.first.ToJSON();
+    j["b_w"] = b.first.second.ToJSON();
+    j["b_x"] = b.second.first.ToJSON();
+    j["b_y"] = b.second.second.ToJSON();
+
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string BLS_G2_Mul::Name(void) const { return "BLS_G2_Mul"; }
+std::string BLS_G2_Mul::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_G2_Mul" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "A V:" << a.first.first.ToString() << std::endl;
+    ss << "A W:" << a.first.second.ToString() << std::endl;
+    ss << "A X:" << a.second.first.ToString() << std::endl;
+    ss << "A Y:" << a.second.second.ToString() << std::endl;
+    ss << "B: " << b.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_G2_Mul::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+
+    j["a_v"] = a.first.first.ToJSON();
+    j["a_w"] = a.first.second.ToJSON();
+    j["a_x"] = a.second.first.ToJSON();
+    j["a_y"] = a.second.second.ToJSON();
+
+    j["b"] = b.ToJSON();
+
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string Misc::Name(void) const { return "Misc"; }
 std::string Misc::ToString(void) const {
     std::stringstream ss;
