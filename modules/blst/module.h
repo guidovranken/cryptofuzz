@@ -24,6 +24,8 @@ class blst : public Module {
         std::optional<component::Bignum> OpBLS_Compress_G1(operation::BLS_Compress_G1& op) override;
         std::optional<component::G2> OpBLS_Decompress_G2(operation::BLS_Decompress_G2& op) override;
         std::optional<component::G1> OpBLS_Compress_G2(operation::BLS_Compress_G2& op) override;
+        std::optional<component::G1> OpBLS_G1_Add(operation::BLS_G1_Add& op) override;
+        std::optional<component::G1> OpBLS_G1_Mul(operation::BLS_G1_Mul& op) override;
         std::optional<Buffer> OpMisc(operation::Misc& op) override;
         bool SupportsModularBignumCalc(void) const override;
 };

@@ -195,6 +195,14 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::G1> OpBLS_G1_Add(operation::BLS_G1_Add& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::G1> OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<Buffer> OpMisc(operation::Misc& op) {
             (void)op;
             return std::nullopt;

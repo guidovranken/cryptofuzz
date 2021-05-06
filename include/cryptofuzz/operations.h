@@ -1994,6 +1994,79 @@ class BLS_Compress_G2 : public Operation {
         }
 };
 
+class BLS_G1_Add : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::G1 a, b;
+
+        BLS_G1_Add(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            a(ds),
+            b(ds)
+        { }
+        BLS_G1_Add(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            a(json["a_x"], json["a_y"]),
+            b(json["b_x"], json["b_y"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_G1_Add& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (a == rhs.a) &&
+                (b == rhs.b) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            a.Serialize(ds);
+            b.Serialize(ds);
+        }
+};
+
+class BLS_G1_Mul : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::G1 a;
+        const component::Bignum b;
+
+        BLS_G1_Mul(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            a(ds),
+            b(ds)
+        { }
+        BLS_G1_Mul(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            a(json["a_x"], json["a_y"]),
+            b(json["b"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_G1_Mul& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (a == rhs.a) &&
+                (b == rhs.b) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            a.Serialize(ds);
+            b.Serialize(ds);
+        }
+};
+
 class Misc : public Operation {
     public:
         const Type operation;

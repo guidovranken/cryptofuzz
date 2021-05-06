@@ -867,6 +867,61 @@ end:
     return ret;
 }
 
+std::optional<component::G1> blst::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
+    std::optional<component::G1> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    blst_p1_affine a, b, result_;
+    blst_p1 a_, result;
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first, a.x));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second, a.y));
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.b.first, b.x));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.b.second, b.y));
+
+    CF_NORET(blst_p1_from_affine(&a_, &a));
+
+    CF_NORET(blst_p1_add_or_double_affine(&result, &a_, &b));
+
+    CF_NORET(blst_p1_to_affine(&result_, &result));
+
+    {
+        blst_detail::G1 g1(result_, ds);
+        ret = g1.To_Component_G1();
+    }
+
+end:
+    return ret;
+}
+
+std::optional<component::G1> blst::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
+    std::optional<component::G1> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    blst_p1_affine a, result_;
+    blst_p1 a_, result;
+    std::optional<std::vector<uint8_t>> b;
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first, a.x));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second, a.y));
+    CF_CHECK_NE(b = util::DecToBin(op.b.ToTrimmedString(), 32), std::nullopt);
+
+    CF_NORET(blst_p1_from_affine(&a_, &a));
+
+    CF_NORET(blst_p1_mult(&result, &a_, b->data(), 256));
+
+    CF_NORET(blst_p1_to_affine(&result_, &result));
+
+    {
+        blst_detail::G1 g1(result_, ds);
+        ret = g1.To_Component_G1();
+    }
+
+end:
+    return ret;
+}
+
 std::optional<Buffer> blst::OpMisc(operation::Misc& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 

@@ -454,6 +454,16 @@ void test(const operation::BLS_Compress_G2& op, const std::optional<component::G
     (void)result;
 }
 
+void test(const operation::BLS_G1_Add& op, const std::optional<component::G1>& result) {
+    (void)op;
+    (void)result;
+}
+
+void test(const operation::BLS_G1_Mul& op, const std::optional<component::G1>& result) {
+    (void)op;
+    (void)result;
+}
+
 void test(const operation::Misc& op, const std::optional<Buffer>& result) {
     (void)op;
     (void)result;

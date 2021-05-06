@@ -113,6 +113,8 @@ using ExecutorBLS_Decompress_G1 = ExecutorBase<component::G1, operation::BLS_Dec
 using ExecutorBLS_Compress_G1 = ExecutorBase<component::Bignum, operation::BLS_Compress_G1>;
 using ExecutorBLS_Decompress_G2 = ExecutorBase<component::G2, operation::BLS_Decompress_G2>;
 using ExecutorBLS_Compress_G2 = ExecutorBase<component::G1, operation::BLS_Compress_G2>;
+using ExecutorBLS_G1_Add = ExecutorBase<component::G1, operation::BLS_G1_Add>;
+using ExecutorBLS_G1_Mul = ExecutorBase<component::G1, operation::BLS_G1_Mul>;
 using ExecutorMisc = ExecutorBase<Buffer, operation::Misc>;
 using ExecutorSR25519_Verify = ExecutorBase<bool, operation::SR25519_Verify>;
 

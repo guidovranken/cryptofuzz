@@ -1135,6 +1135,60 @@ nlohmann::json BLS_Compress_G2::ToJSON(void) const {
     return j;
 }
 
+std::string BLS_G1_Add::Name(void) const { return "BLS_G1_Add"; }
+std::string BLS_G1_Add::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_G1_Add" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "A X: " << a.first.ToString() << std::endl;
+    ss << "A Y: " << a.second.ToString() << std::endl;
+    ss << "B X: " << b.first.ToString() << std::endl;
+    ss << "B Y: " << b.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_G1_Add::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+
+    j["a_x"] = a.first.ToJSON();
+    j["a_y"] = a.second.ToJSON();
+
+    j["b_x"] = b.first.ToJSON();
+    j["b_y"] = b.second.ToJSON();
+
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string BLS_G1_Mul::Name(void) const { return "BLS_G1_Mul"; }
+std::string BLS_G1_Mul::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_G1_Mul" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "A X: " << a.first.ToString() << std::endl;
+    ss << "A Y: " << a.second.ToString() << std::endl;
+    ss << "B: " << b.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_G1_Mul::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+
+    j["a_x"] = a.first.ToJSON();
+    j["a_y"] = a.second.ToJSON();
+
+    j["b"] = b.ToJSON();
+
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string Misc::Name(void) const { return "Misc"; }
 std::string Misc::ToString(void) const {
     std::stringstream ss;

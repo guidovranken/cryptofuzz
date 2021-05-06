@@ -1215,6 +1215,54 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     cryptofuzz::operation::BLS_Pairing op(parameters);
                     op.Serialize(dsOut2);
                 }
+                break;
+            case    CF_OPERATION("BLS_G1_Add"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+
+                    if ( getBool() && Pool_CurveBLSG1.Have() == true ) {
+                        const auto P = Pool_CurveBLSG1.Get();
+                        parameters["a_x"] = GET_OR_BIGNUM(P.g1_x);
+                        parameters["a_y"] = GET_OR_BIGNUM(P.g1_y);
+                    } else {
+                        parameters["a_x"] = getBignum();
+                        parameters["a_y"] = getBignum();
+                    }
+
+                    if ( getBool() && Pool_CurveBLSG1.Have() == true ) {
+                        const auto P = Pool_CurveBLSG1.Get();
+                        parameters["b_x"] = GET_OR_BIGNUM(P.g1_x);
+                        parameters["b_y"] = GET_OR_BIGNUM(P.g1_y);
+                    } else {
+                        parameters["b_x"] = getBignum();
+                        parameters["b_y"] = getBignum();
+                    }
+
+                    cryptofuzz::operation::BLS_G1_Add op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("BLS_G1_Mul"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+
+                    if ( getBool() && Pool_CurveBLSG1.Have() == true ) {
+                        const auto P = Pool_CurveBLSG1.Get();
+                        parameters["a_x"] = GET_OR_BIGNUM(P.g1_x);
+                        parameters["a_y"] = GET_OR_BIGNUM(P.g1_y);
+                    } else {
+                        parameters["a_x"] = getBignum();
+                        parameters["a_y"] = getBignum();
+                    }
+
+                    parameters["b"] = getBignum();
+
+                    cryptofuzz::operation::BLS_G1_Mul op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
             case    CF_OPERATION("SR25519_Verify"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1024);

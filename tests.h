@@ -49,6 +49,8 @@ void test(const operation::BLS_Decompress_G1& op, const std::optional<component:
 void test(const operation::BLS_Compress_G1& op, const std::optional<component::Bignum>& result);
 void test(const operation::BLS_Decompress_G2& op, const std::optional<component::G2>& result);
 void test(const operation::BLS_Compress_G2& op, const std::optional<component::G1>& result);
+void test(const operation::BLS_G1_Add& op, const std::optional<component::G1>& result);
+void test(const operation::BLS_G1_Mul& op, const std::optional<component::G1>& result);
 void test(const operation::Misc& op, const std::optional<Buffer>& result);
 void test(const operation::SR25519_Verify& op, const std::optional<bool>& result);
 

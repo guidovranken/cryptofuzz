@@ -62,6 +62,8 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorBLS_Compress_G1 executorBLS_Compress_G1(CF_OPERATION("BLS_Compress_G1"), modules, options);
     static ExecutorBLS_Decompress_G2 executorBLS_Decompress_G2(CF_OPERATION("BLS_Decompress_G2"), modules, options);
     static ExecutorBLS_Compress_G2 executorBLS_Compress_G2(CF_OPERATION("BLS_Compress_G2"), modules, options);
+    static ExecutorBLS_G1_Add executorBLS_G1_Add(CF_OPERATION("BLS_G1_Add"), modules, options);
+    static ExecutorBLS_G1_Mul executorBLS_G1_Mul(CF_OPERATION("BLS_G1_Mul"), modules, options);
     static ExecutorMisc executorMisc(CF_OPERATION("Misc"), modules, options);
     static ExecutorSR25519_Verify executorSR25519_Verify(CF_OPERATION("SR25519_Verify"), modules, options);
 
@@ -215,6 +217,12 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("BLS_Compress_G2"):
                 executorBLS_Compress_G2.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_G1_Add"):
+                executorBLS_G1_Add.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_G1_Mul"):
+                executorBLS_G1_Mul.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("Misc"):
                 executorMisc.Run(ds, payload.data(), payload.size());
