@@ -872,7 +872,8 @@ std::optional<component::G1> blst::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     blst_p1_affine a, b, result_;
-    blst_p1 a_, result;
+    blst_p1 a_, b_, result;
+    bool doDouble = false;
 
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first, a.x));
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second, a.y));
@@ -881,8 +882,20 @@ std::optional<component::G1> blst::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.b.second, b.y));
 
     CF_NORET(blst_p1_from_affine(&a_, &a));
+    CF_NORET(blst_p1_from_affine(&b_, &b));
 
-    CF_NORET(blst_p1_add_or_double_affine(&result, &a_, &b));
+    if ( blst_p1_is_equal(&a_, &b_) ) {
+        try {
+            doDouble = ds.Get<bool>();
+        } catch ( fuzzing::datasource::Base::OutOfData ) {
+        }
+    }
+
+    if ( doDouble == false ) {
+        CF_NORET(blst_p1_add_or_double_affine(&result, &a_, &b));
+    } else {
+        CF_NORET(blst_p1_double(&result, &a_));
+    }
 
     CF_NORET(blst_p1_to_affine(&result_, &result));
 
@@ -902,6 +915,7 @@ std::optional<component::G1> blst::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
     blst_p1_affine a, result_;
     blst_p1 a_, result;
     std::optional<std::vector<uint8_t>> b;
+    bool doDouble = false;
 
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first, a.x));
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second, a.y));
@@ -913,7 +927,14 @@ std::optional<component::G1> blst::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
 
     CF_NORET(blst_p1_from_affine(&a_, &a));
 
-    {
+    if ( op.b.ToTrimmedString() == "2" ) {
+        try {
+            doDouble = ds.Get<bool>();
+        } catch ( fuzzing::datasource::Base::OutOfData ) {
+        }
+    }
+
+    if ( doDouble == false ) {
         std::vector<uint8_t> b_reversed = util::AddLeadingZeroes(ds, *b);
         CF_NORET(std::reverse(b_reversed.begin(), b_reversed.end()));
 
@@ -922,6 +943,8 @@ std::optional<component::G1> blst::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
         CF_CHECK_NE(B.GetSize(), 0);
 
         CF_NORET(blst_p1_mult(&result, &a_, B.GetPtr(&ds), B.GetSize() * 8));
+    } else {
+        CF_NORET(blst_p1_double(&result, &a_));
     }
 
     CF_NORET(blst_p1_to_affine(&result_, &result));
@@ -962,7 +985,8 @@ std::optional<component::G2> blst::OpBLS_G2_Add(operation::BLS_G2_Add& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     blst_p2_affine a, b, result_;
-    blst_p2 a_, result;
+    blst_p2 a_, b_, result;
+    bool doDouble = false;
 
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first.first, a.x.fp[0]));
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first.second, a.y.fp[0]));
@@ -975,8 +999,21 @@ std::optional<component::G2> blst::OpBLS_G2_Add(operation::BLS_G2_Add& op) {
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.b.second.second, b.y.fp[1]));
 
     CF_NORET(blst_p2_from_affine(&a_, &a));
+    CF_NORET(blst_p2_from_affine(&b_, &b));
 
-    CF_NORET(blst_p2_add_or_double_affine(&result, &a_, &b));
+    if ( blst_p2_is_equal(&a_, &b_) ) {
+        try {
+            doDouble = ds.Get<bool>();
+        } catch ( fuzzing::datasource::Base::OutOfData ) {
+        }
+    }
+
+    if ( doDouble == false ) {
+        CF_NORET(blst_p2_add_or_double_affine(&result, &a_, &b));
+    } else {
+        CF_NORET(blst_p2_double(&result, &a_));
+    }
+
 
     CF_NORET(blst_p2_to_affine(&result_, &result));
 
@@ -993,6 +1030,7 @@ std::optional<component::G2> blst::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
     blst_p2_affine a, result_;
     blst_p2 a_, result;
     std::optional<std::vector<uint8_t>> b;
+    bool doDouble = false;
 
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first.first, a.x.fp[0]));
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first.second, a.y.fp[0]));
@@ -1006,7 +1044,14 @@ std::optional<component::G2> blst::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
 
     CF_NORET(blst_p2_from_affine(&a_, &a));
 
-    {
+    if ( op.b.ToTrimmedString() == "2" ) {
+        try {
+            doDouble = ds.Get<bool>();
+        } catch ( fuzzing::datasource::Base::OutOfData ) {
+        }
+    }
+
+    if ( doDouble == false ) {
         std::vector<uint8_t> b_reversed = util::AddLeadingZeroes(ds, *b);
         CF_NORET(std::reverse(b_reversed.begin(), b_reversed.end()));
 
@@ -1015,6 +1060,8 @@ std::optional<component::G2> blst::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
         CF_CHECK_NE(B.GetSize(), 0);
 
         CF_NORET(blst_p2_mult(&result, &a_, B.GetPtr(&ds), B.GetSize() * 8));
+    } else {
+        CF_NORET(blst_p2_double(&result, &a_));
     }
 
     CF_NORET(blst_p2_to_affine(&result_, &result));
