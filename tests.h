@@ -52,9 +52,11 @@ void test(const operation::BLS_Compress_G2& op, const std::optional<component::G
 void test(const operation::BLS_G1_Add& op, const std::optional<component::G1>& result);
 void test(const operation::BLS_G1_Mul& op, const std::optional<component::G1>& result);
 void test(const operation::BLS_G1_IsEq& op, const std::optional<bool>& result);
+void test(const operation::BLS_G1_Neg& op, const std::optional<component::G1>& result);
 void test(const operation::BLS_G2_Add& op, const std::optional<component::G2>& result);
 void test(const operation::BLS_G2_Mul& op, const std::optional<component::G2>& result);
 void test(const operation::BLS_G2_IsEq& op, const std::optional<bool>& result);
+void test(const operation::BLS_G2_Neg& op, const std::optional<component::G2>& result);
 void test(const operation::Misc& op, const std::optional<Buffer>& result);
 void test(const operation::SR25519_Verify& op, const std::optional<bool>& result);
 

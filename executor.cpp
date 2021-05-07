@@ -1004,6 +1004,29 @@ template<> std::optional<bool> ExecutorBase<bool, operation::BLS_G1_IsEq>::callM
     return module->OpBLS_G1_IsEq(op);
 }
 
+/* Specialization for operation::BLS_G1_Neg */
+template<> void ExecutorBase<component::G1, operation::BLS_G1_Neg>::postprocess(std::shared_ptr<Module> module, operation::BLS_G1_Neg& op, const ExecutorBase<component::G1, operation::BLS_G1_Neg>::ResultPair& result) const {
+    (void)module;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto g1_x = result.second->first.ToTrimmedString();
+        const auto g1_y = result.second->second.ToTrimmedString();
+
+        Pool_CurveBLSG1.Set({ curveID, g1_x, g1_y });
+
+        if ( g1_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_x); }
+        if ( g1_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_y); }
+    }
+}
+
+template<> std::optional<component::G1> ExecutorBase<component::G1, operation::BLS_G1_Neg>::callModule(std::shared_ptr<Module> module, operation::BLS_G1_Neg& op) const {
+    if ( op.a.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.a.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+
+    return module->OpBLS_G1_Neg(op);
+}
+
 /* Specialization for operation::BLS_G2_Add */
 template<> void ExecutorBase<component::G2, operation::BLS_G2_Add>::postprocess(std::shared_ptr<Module> module, operation::BLS_G2_Add& op, const ExecutorBase<component::G2, operation::BLS_G2_Add>::ResultPair& result) const {
     (void)module;
@@ -1085,6 +1108,35 @@ template<> std::optional<bool> ExecutorBase<bool, operation::BLS_G2_IsEq>::callM
     if ( op.b.second.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
 
     return module->OpBLS_G2_IsEq(op);
+}
+
+/* Specialization for operation::BLS_G2_Neg */
+template<> void ExecutorBase<component::G2, operation::BLS_G2_Neg>::postprocess(std::shared_ptr<Module> module, operation::BLS_G2_Neg& op, const ExecutorBase<component::G2, operation::BLS_G2_Neg>::ResultPair& result) const {
+    (void)module;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto g2_v = result.second->first.first.ToTrimmedString();
+        const auto g2_w = result.second->first.second.ToTrimmedString();
+        const auto g2_x = result.second->second.first.ToTrimmedString();
+        const auto g2_y = result.second->second.second.ToTrimmedString();
+
+        Pool_CurveBLSG2.Set({ curveID, g2_v, g2_w, g2_x, g2_y });
+
+        if ( g2_v.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_v); }
+        if ( g2_w.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_w); }
+        if ( g2_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_x); }
+        if ( g2_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_y); }
+    }
+}
+
+template<> std::optional<component::G2> ExecutorBase<component::G2, operation::BLS_G2_Neg>::callModule(std::shared_ptr<Module> module, operation::BLS_G2_Neg& op) const {
+    if ( op.a.first.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.a.first.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.a.second.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.a.second.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+
+    return module->OpBLS_G2_Neg(op);
 }
 
 /* Specialization for operation::Misc */
@@ -1576,9 +1628,11 @@ template class ExecutorBase<component::G1, operation::BLS_Compress_G2>;
 template class ExecutorBase<component::G1, operation::BLS_G1_Add>;
 template class ExecutorBase<component::G1, operation::BLS_G1_Mul>;
 template class ExecutorBase<bool, operation::BLS_G1_IsEq>;
+template class ExecutorBase<component::G1, operation::BLS_G1_Neg>;
 template class ExecutorBase<component::G2, operation::BLS_G2_Add>;
 template class ExecutorBase<component::G2, operation::BLS_G2_Mul>;
 template class ExecutorBase<bool, operation::BLS_G2_IsEq>;
+template class ExecutorBase<component::G2, operation::BLS_G2_Neg>;
 template class ExecutorBase<Buffer, operation::Misc>;
 template class ExecutorBase<bool, operation::SR25519_Verify>;
 

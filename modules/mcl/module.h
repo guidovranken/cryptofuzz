@@ -29,9 +29,11 @@ class mcl : public Module {
         std::optional<component::G1> OpBLS_G1_Add(operation::BLS_G1_Add& op);
         std::optional<component::G1> OpBLS_G1_Mul(operation::BLS_G1_Mul& op);
         std::optional<bool> OpBLS_G1_IsEq(operation::BLS_G1_IsEq& op);
+        std::optional<component::G1> OpBLS_G1_Neg(operation::BLS_G1_Neg& op);
         std::optional<component::G2> OpBLS_G2_Add(operation::BLS_G2_Add& op);
         std::optional<component::G2> OpBLS_G2_Mul(operation::BLS_G2_Mul& op);
         std::optional<bool> OpBLS_G2_IsEq(operation::BLS_G2_IsEq& op);
+        std::optional<component::G2> OpBLS_G2_Neg(operation::BLS_G2_Neg& op);
         bool SupportsModularBignumCalc(void) const;
 };
 

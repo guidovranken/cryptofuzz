@@ -2103,6 +2103,38 @@ class BLS_G1_Mul : public Operation {
         }
 };
 
+class BLS_G1_Neg : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::G1 a;
+
+        BLS_G1_Neg(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            a(ds)
+        { }
+        BLS_G1_Neg(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            a(json["a_x"], json["a_y"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_G1_Neg& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (a == rhs.a) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            a.Serialize(ds);
+        }
+};
+
 class BLS_G2_Add : public Operation {
     public:
         const component::CurveType curveType;
@@ -2209,6 +2241,38 @@ class BLS_G2_Mul : public Operation {
             curveType.Serialize(ds);
             a.Serialize(ds);
             b.Serialize(ds);
+        }
+};
+
+class BLS_G2_Neg : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::G2 a;
+
+        BLS_G2_Neg(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            a(ds)
+        { }
+        BLS_G2_Neg(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            a(json["a_v"], json["a_w"], json["a_x"], json["a_y"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_G2_Neg& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (a == rhs.a) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            a.Serialize(ds);
         }
 };
 

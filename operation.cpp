@@ -1217,6 +1217,29 @@ nlohmann::json BLS_G1_IsEq::ToJSON(void) const {
     return j;
 }
 
+std::string BLS_G1_Neg::Name(void) const { return "BLS_G1_Neg"; }
+std::string BLS_G1_Neg::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_G1_Neg" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "A X: " << a.first.ToString() << std::endl;
+    ss << "A Y: " << a.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_G1_Neg::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+
+    j["a_x"] = a.first.ToJSON();
+    j["a_y"] = a.second.ToJSON();
+
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string BLS_G2_Add::Name(void) const { return "BLS_G2_Add"; }
 std::string BLS_G2_Add::ToString(void) const {
     std::stringstream ss;
@@ -1314,6 +1337,33 @@ nlohmann::json BLS_G2_IsEq::ToJSON(void) const {
     j["b_w"] = b.first.second.ToJSON();
     j["b_x"] = b.second.first.ToJSON();
     j["b_y"] = b.second.second.ToJSON();
+
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string BLS_G2_Neg::Name(void) const { return "BLS_G2_Neg"; }
+std::string BLS_G2_Neg::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_G2_Neg" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "A V:" << a.first.first.ToString() << std::endl;
+    ss << "A W:" << a.first.second.ToString() << std::endl;
+    ss << "A X:" << a.second.first.ToString() << std::endl;
+    ss << "A Y:" << a.second.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_G2_Neg::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+
+    j["a_v"] = a.first.first.ToJSON();
+    j["a_w"] = a.first.second.ToJSON();
+    j["a_x"] = a.second.first.ToJSON();
+    j["a_y"] = a.second.second.ToJSON();
 
     j["modifier"] = modifier.ToJSON();
     return j;

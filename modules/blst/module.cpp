@@ -980,6 +980,31 @@ end:
     return ret;
 }
 
+std::optional<component::G1> blst::OpBLS_G1_Neg(operation::BLS_G1_Neg& op) {
+    std::optional<component::G1> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    blst_p1_affine a;
+    blst_p1 a_;
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first, a.x));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second, a.y));
+
+    CF_NORET(blst_p1_from_affine(&a_, &a));
+
+    CF_NORET(blst_p1_cneg(&a_, true));
+
+    CF_NORET(blst_p1_to_affine(&a, &a_));
+
+    {
+        blst_detail::G1 g1(a, ds);
+        ret = g1.To_Component_G1();
+    }
+
+end:
+    return ret;
+}
+
 std::optional<component::G2> blst::OpBLS_G2_Add(operation::BLS_G2_Add& op) {
     std::optional<component::G2> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -1092,6 +1117,30 @@ std::optional<bool> blst::OpBLS_G2_IsEq(operation::BLS_G2_IsEq& op) {
     CF_NORET(blst_p2_from_affine(&b_, &b));
 
     ret = blst_p2_is_equal(&a_, &b_);
+
+end:
+    return ret;
+}
+
+std::optional<component::G2> blst::OpBLS_G2_Neg(operation::BLS_G2_Neg& op) {
+    std::optional<component::G2> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    blst_p2_affine a;
+    blst_p2 a_;
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first.first, a.x.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first.second, a.y.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second.first, a.x.fp[1]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second.second, a.y.fp[1]));
+
+    CF_NORET(blst_p2_from_affine(&a_, &a));
+
+    CF_NORET(blst_p2_cneg(&a_, true));
+
+    CF_NORET(blst_p2_to_affine(&a, &a_));
+
+    ret = blst_detail::To_G2(a);
 
 end:
     return ret;
