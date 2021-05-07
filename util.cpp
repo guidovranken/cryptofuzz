@@ -8,6 +8,7 @@
 #include <sstream>
 #include <vector>
 #include <cstdlib>
+#include <algorithm>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/algorithm/hex.hpp>
@@ -732,6 +733,25 @@ std::vector<uint8_t> Append(const std::vector<uint8_t> A, const std::vector<uint
     ret.insert(ret.end(), B.begin(), B.end());
 
     return ret;
+}
+
+std::vector<uint8_t> RemoveLeadingZeroes(std::vector<uint8_t> v) {
+    const auto it = std::find_if(v.begin(), v.end(), [](const size_t v) { return v != 0; });
+    v.erase(v.begin(), it);
+    return v;
+}
+
+std::vector<uint8_t> AddLeadingZeroes(fuzzing::datasource::Datasource& ds, const std::vector<uint8_t>& v) {
+    const auto stripped = RemoveLeadingZeroes(v);
+
+    uint16_t numZeroes = 0;
+    try {
+        numZeroes = ds.Get<uint16_t>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    }
+    const std::vector<uint8_t> zeroes(numZeroes, 0);
+
+    return Append(zeroes, stripped);
 }
 
 } /* namespace util */

@@ -907,12 +907,21 @@ std::optional<component::G1> blst::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second, a.y));
     CF_CHECK_NE(b = util::DecToBin(op.b.ToTrimmedString()), std::nullopt);
 
+    if ( !(blst_p1_affine_on_curve(&a) && blst_p1_affine_in_g1(&a)) ) {
+        return ret;
+    }
+
     CF_NORET(blst_p1_from_affine(&a_, &a));
 
     {
-        std::vector<uint8_t> b_reversed = *b;
+        std::vector<uint8_t> b_reversed = util::AddLeadingZeroes(ds, *b);
         CF_NORET(std::reverse(b_reversed.begin(), b_reversed.end()));
-        CF_NORET(blst_p1_mult(&result, &a_, b_reversed.data(), b_reversed.size() * 8));
+
+        Buffer B(b_reversed);
+
+        CF_CHECK_NE(B.GetSize(), 0);
+
+        CF_NORET(blst_p1_mult(&result, &a_, B.GetPtr(&ds), B.GetSize() * 8));
     }
 
     CF_NORET(blst_p1_to_affine(&result_, &result));
@@ -991,12 +1000,21 @@ std::optional<component::G2> blst::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second.second, a.y.fp[1]));
     CF_CHECK_NE(b = util::DecToBin(op.b.ToTrimmedString()), std::nullopt);
 
+    if ( !(blst_p2_affine_on_curve(&a) && blst_p2_affine_in_g2(&a)) ) {
+        return ret;
+    }
+
     CF_NORET(blst_p2_from_affine(&a_, &a));
 
     {
-        std::vector<uint8_t> b_reversed = *b;
+        std::vector<uint8_t> b_reversed = util::AddLeadingZeroes(ds, *b);
         CF_NORET(std::reverse(b_reversed.begin(), b_reversed.end()));
-        CF_NORET(blst_p2_mult(&result, &a_, b_reversed.data(), b_reversed.size() * 8));
+
+        Buffer B(b_reversed);
+
+        CF_CHECK_NE(B.GetSize(), 0);
+
+        CF_NORET(blst_p2_mult(&result, &a_, B.GetPtr(&ds), B.GetSize() * 8));
     }
 
     CF_NORET(blst_p2_to_affine(&result_, &result));
