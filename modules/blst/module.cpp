@@ -906,7 +906,6 @@ std::optional<component::G1> blst::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first, a.x));
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second, a.y));
     CF_CHECK_NE(b = util::DecToBin(op.b.ToTrimmedString()), std::nullopt);
-    CF_CHECK_LTE(b->size(), 32);
 
     CF_NORET(blst_p1_from_affine(&a_, &a));
 
@@ -991,7 +990,6 @@ std::optional<component::G2> blst::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second.first, a.x.fp[1]));
     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second.second, a.y.fp[1]));
     CF_CHECK_NE(b = util::DecToBin(op.b.ToTrimmedString()), std::nullopt);
-    CF_CHECK_LTE(b->size(), 32);
 
     CF_NORET(blst_p2_from_affine(&a_, &a));
 
