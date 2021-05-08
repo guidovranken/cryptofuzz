@@ -108,6 +108,27 @@ end:
     return ret;
 }
 
+std::optional<component::G2> chia_bls::OpBLS_PrivateToPublic_G2(operation::BLS_PrivateToPublic_G2& op) {
+    if ( op.curveType.Get() != CF_ECC_CURVE("BLS12_381") ) {
+        //return std::nullopt;
+    }
+
+    std::optional<component::G2> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    try {
+        std::optional<std::vector<uint8_t>> priv_bytes;
+        CF_CHECK_NE(priv_bytes = util::DecToBin(op.priv.ToTrimmedString(), 32), std::nullopt);
+        bls::PrivateKey priv = bls::PrivateKey::FromBytes(bls::Bytes(*priv_bytes));
+        auto pub = priv.GetG2Element();
+
+        ret = chia_bls_detail::G2_To_Component(pub);
+    } catch ( std::invalid_argument ) { }
+
+end:
+    return ret;
+}
+
 std::optional<component::G1> chia_bls::OpBLS_HashToG1(operation::BLS_HashToG1& op) {
     std::optional<component::G1> ret = std::nullopt;
 
