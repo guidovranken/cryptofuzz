@@ -90,6 +90,14 @@ std::vector<std::string> split(const std::string& s, std::optional<size_t> expec
                 ::mcl::bls12::Fp("1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569", 10) );
     }
 
+    ::mcl::bls12::G2 Generator_G2(void) {
+        return ::mcl::bls12::G2(
+                {::mcl::bls12::Fp("352701069587466618187139116011060144890029952792775240219908644239793785735715026873347600343865175952761926303160", 10),
+                ::mcl::bls12::Fp("3059144344244213709971259814753781636986470325476647558659373206291635324768958432433509563104347017837885763365758", 10)},
+                {::mcl::bls12::Fp("1985150602287291935568054521177171638300868978215655730859378665066344726373823718423869104263333984641494340347905", 10),
+                ::mcl::bls12::Fp("927553665492332455747201965776037880757740193453592970025027978793976877002675564980949289727957565575433344219582", 10)} );
+    }
+
     void Hash(::mcl::bls12::G1& P, const std::string& m)
     {
         ::mcl::bls12::Fp t;
@@ -164,6 +172,32 @@ std::optional<component::BLS_PublicKey> mcl::OpBLS_PrivateToPublic(operation::BL
         G1::mul(pub, mcl_detail::Generator(), sec);
 
         ret = mcl_detail::ToComponentG1(pub);
+    } catch ( cybozu::Exception ) {
+        if ( !op.priv.IsGreaterThan("52435875175126190479447740508185965837690552500527637822603658699938581184512") ) {
+            CF_ASSERT(0, "Failed to sign");
+        }
+    }
+
+    return ret;
+}
+
+std::optional<component::G2> mcl::OpBLS_PrivateToPublic_G2(operation::BLS_PrivateToPublic_G2& op) {
+    std::optional<component::G2> ret = std::nullopt;
+
+    if ( op.priv.ToTrimmedString() == "0" ) {
+        return std::nullopt;
+    }
+
+    try {
+        using namespace ::mcl::bls12;
+
+        Fr sec;
+        sec.setStr(op.priv.ToTrimmedString(), 10);
+
+        G2 pub;
+        G2::mul(pub, mcl_detail::Generator_G2(), sec);
+
+        ret = mcl_detail::ToComponentG2(pub);
     } catch ( cybozu::Exception ) {
         if ( !op.priv.IsGreaterThan("52435875175126190479447740508185965837690552500527637822603658699938581184512") ) {
             CF_ASSERT(0, "Failed to sign");
