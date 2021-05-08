@@ -7,7 +7,7 @@ from py_ecc.optimized_bls12_381 import is_on_curve
 from py_ecc.optimized_bls12_381 import b, b2
 from py_ecc.utils import prime_field_inv
 from py_ecc.optimized_bls12_381.optimized_swu import sqrt_division_FQ2, iso_map_G2
-from py_ecc.optimized_bls12_381.optimized_curve import add, multiply
+from py_ecc.optimized_bls12_381.optimized_curve import add, multiply, neg
 from py_ecc.bls.point_compression import decompress_G1, compress_G1, decompress_G2, compress_G2
 from hashlib import sha256
 import json
@@ -372,6 +372,22 @@ def OpBLS_G1_IsEq(arg):
     r = json.dumps(A == B)
     return bytes(r, 'utf-8')
 
+def OpBLS_G1_Neg(arg):
+    op = json.loads(arg)
+    a_x = to_int(op['a_x'])
+    a_y = to_int(op['a_y'])
+
+    if (a_x % MOD, a_y % MOD) == (0, 0):
+        return
+
+    A = [FQ(a_x), FQ(a_y), FQ.one()]
+
+    result = neg(A)
+
+    result = [str(result[0] / result[2]), str(result[1] / result[2])]
+    r = json.dumps(result)
+    return bytes(r, 'utf-8')
+
 def OpBLS_G2_Add(arg):
     op = json.loads(arg)
     a_v = to_int(op['a_v'])
@@ -439,4 +455,23 @@ def OpBLS_G2_IsEq(arg):
     B = (FQ2((b_v, b_x)), FQ2((b_w, b_y)), FQ2.one())
 
     r = json.dumps(A == B)
+    return bytes(r, 'utf-8')
+
+def OpBLS_G2_Neg(arg):
+    op = json.loads(arg)
+    a_v = to_int(op['a_v'])
+    a_w = to_int(op['a_w'])
+    a_x = to_int(op['a_x'])
+    a_y = to_int(op['a_y'])
+
+    A = (FQ2((a_v, a_x)), FQ2((a_w, a_y)), FQ2.one())
+
+    result = neg(A)
+
+    x = result[0] / result[2]
+    y = result[1] / result[2]
+
+    result = [[str(x.coeffs[0]), str(y.coeffs[0])], [str(x.coeffs[1]), str(y.coeffs[1])]]
+
+    r = json.dumps(result)
     return bytes(r, 'utf-8')
