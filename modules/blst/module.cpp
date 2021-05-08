@@ -212,6 +212,36 @@ end:
     return ret;
 }
 
+std::optional<component::G2> blst::OpBLS_PrivateToPublic_G2(operation::BLS_PrivateToPublic_G2& op) {
+    if ( op.curveType.Get() != CF_ECC_CURVE("BLS12_381") ) {
+        //return std::nullopt;
+    }
+
+    std::optional<component::G2> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    blst_scalar priv;
+    blst_p2 pub;
+    blst_p2_affine pub_affine;
+
+    CF_CHECK_TRUE(blst_detail::To_blst_scalar(op.priv, priv));
+
+    /* blst_sk_to_pk_in_g2 does not reduce the private key,
+     * so check if it's valid first
+     */
+    CF_CHECK_TRUE(blst_sk_check(&priv));
+
+    CF_NORET(blst_sk_to_pk_in_g2(&pub, &priv));
+    CF_ASSERT(blst_p2_on_curve(&pub) == true, "Generated pubkey not on curve");
+
+    CF_NORET(blst_p2_to_affine(&pub_affine, &pub));
+
+    ret = blst_detail::To_G2(pub_affine);
+
+end:
+    return ret;
+}
+
 std::optional<component::G1> blst::OpBLS_HashToG1(operation::BLS_HashToG1& op) {
     if ( op.curveType.Get() != CF_ECC_CURVE("BLS12_381") ) {
         //return std::nullopt;

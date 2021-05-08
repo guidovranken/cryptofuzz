@@ -11,6 +11,7 @@ class blst : public Module {
     public:
         blst(void);
         std::optional<component::BLS_PublicKey> OpBLS_PrivateToPublic(operation::BLS_PrivateToPublic& op) override;
+        std::optional<component::G2> OpBLS_PrivateToPublic_G2(operation::BLS_PrivateToPublic_G2& op) override;
         std::optional<component::G1> OpBLS_HashToG1(operation::BLS_HashToG1& op) override;
         std::optional<component::G2> OpBLS_HashToG2(operation::BLS_HashToG2& op) override;
         std::optional<component::BLS_Signature> OpBLS_Sign(operation::BLS_Sign& op) override;

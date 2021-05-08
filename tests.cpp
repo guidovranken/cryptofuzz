@@ -394,6 +394,11 @@ void test(const operation::BLS_PrivateToPublic& op, const std::optional<componen
     (void)result;
 }
 
+void test(const operation::BLS_PrivateToPublic_G2& op, const std::optional<component::G2>& result) {
+    (void)op;
+    (void)result;
+}
+
 void test(const operation::BLS_Sign& op, const std::optional<component::BLS_Signature>& result) {
     (void)op;
     (void)result;

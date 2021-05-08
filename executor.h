@@ -101,6 +101,7 @@ using ExecutorECIES_Decrypt = ExecutorBase<component::Cleartext, operation::ECIE
 using ExecutorDH_GenerateKeyPair = ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>;
 using ExecutorDH_Derive = ExecutorBase<component::Bignum, operation::DH_Derive>;
 using ExecutorBLS_PrivateToPublic = ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>;
+using ExecutorBLS_PrivateToPublic_G2 = ExecutorBase<component::G2, operation::BLS_PrivateToPublic_G2>;
 using ExecutorBLS_Sign = ExecutorBase<component::BLS_Signature, operation::BLS_Sign>;
 using ExecutorBLS_Verify = ExecutorBase<bool, operation::BLS_Verify>;
 using ExecutorBLS_Pairing = ExecutorBase<bool, operation::BLS_Pairing>;

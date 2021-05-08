@@ -708,6 +708,23 @@ template<> std::optional<component::BLS_PublicKey> ExecutorBase<component::BLS_P
     return module->OpBLS_PrivateToPublic(op);
 }
 
+/* Specialization for operation::BLS_PrivateToPublic_G2 */
+template<> void ExecutorBase<component::G2, operation::BLS_PrivateToPublic_G2>::postprocess(std::shared_ptr<Module> module, operation::BLS_PrivateToPublic_G2& op, const ExecutorBase<component::G2, operation::BLS_PrivateToPublic_G2>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::G2> ExecutorBase<component::G2, operation::BLS_PrivateToPublic_G2>::callModule(std::shared_ptr<Module> module, operation::BLS_PrivateToPublic_G2& op) const {
+    const size_t size = op.priv.ToTrimmedString().size();
+
+    if ( size == 0 || size > 4096 ) {
+        return std::nullopt;
+    }
+
+    return module->OpBLS_PrivateToPublic_G2(op);
+}
+
 /* Specialization for operation::BLS_Sign */
 template<> void ExecutorBase<component::BLS_Signature, operation::BLS_Sign>::postprocess(std::shared_ptr<Module> module, operation::BLS_Sign& op, const ExecutorBase<component::BLS_Signature, operation::BLS_Sign>::ResultPair& result) const {
     (void)module;
@@ -1613,6 +1630,7 @@ template class ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair
 template class ExecutorBase<component::Bignum, operation::DH_Derive>;
 template class ExecutorBase<component::Bignum, operation::BignumCalc>;
 template class ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>;
+template class ExecutorBase<component::G2, operation::BLS_PrivateToPublic_G2>;
 template class ExecutorBase<component::BLS_Signature, operation::BLS_Sign>;
 template class ExecutorBase<bool, operation::BLS_Verify>;
 template class ExecutorBase<bool, operation::BLS_Pairing>;

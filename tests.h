@@ -37,6 +37,7 @@ void test(const operation::DH_GenerateKeyPair& op, const std::optional<component
 void test(const operation::DH_Derive& op, const std::optional<component::Bignum>& result);
 void test(const operation::BignumCalc& op, const std::optional<component::Bignum>& result);
 void test(const operation::BLS_PrivateToPublic& op, const std::optional<component::BLS_PublicKey>& result);
+void test(const operation::BLS_PrivateToPublic_G2& op, const std::optional<component::G2>& result);
 void test(const operation::BLS_Sign& op, const std::optional<component::BLS_Signature>& result);
 void test(const operation::BLS_Verify& op, const std::optional<bool>& result);
 void test(const operation::BLS_Pairing& op, const std::optional<bool>& result);

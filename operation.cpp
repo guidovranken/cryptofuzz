@@ -838,6 +838,25 @@ nlohmann::json BLS_PrivateToPublic::ToJSON(void) const {
     return j;
 }
 
+std::string BLS_PrivateToPublic_G2::Name(void) const { return "BLS_PrivateToPublic_G2"; }
+std::string BLS_PrivateToPublic_G2::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_PrivateToPublic_G2" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "private key: " << priv.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_PrivateToPublic_G2::ToJSON(void) const {
+    nlohmann::json j;
+    j["priv"] = priv.ToJSON();
+    j["curveType"] = curveType.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string BLS_Sign::Name(void) const { return "BLS_Sign"; }
 std::string BLS_Sign::ToString(void) const {
     std::stringstream ss;

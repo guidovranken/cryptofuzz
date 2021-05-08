@@ -1513,6 +1513,42 @@ class BLS_PrivateToPublic : public Operation {
                 (priv == rhs.priv) &&
                 (modifier == rhs.modifier);
         }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            priv.Serialize(ds);
+        }
+};
+
+class BLS_PrivateToPublic_G2 : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::BLS_PrivateKey priv;
+
+        BLS_PrivateToPublic_G2(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            priv(ds)
+        { }
+        BLS_PrivateToPublic_G2(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            priv(json["priv"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_PrivateToPublic_G2& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (priv == rhs.priv) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            priv.Serialize(ds);
+        }
 };
 
 class BLS_Sign : public Operation {

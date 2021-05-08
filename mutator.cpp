@@ -927,6 +927,28 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     op.Serialize(dsOut2);
                 }
                 break;
+            case    CF_OPERATION("BLS_PrivateToPublic"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+
+                    parameters["priv"] = getBignum();
+
+                    cryptofuzz::operation::BLS_PrivateToPublic op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("BLS_PrivateToPublic_G2"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+
+                    parameters["priv"] = getBignum();
+
+                    cryptofuzz::operation::BLS_PrivateToPublic_G2 op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
             case    CF_OPERATION("BLS_Sign"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);

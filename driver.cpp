@@ -50,6 +50,7 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorBignumCalc_Mod_BLS12_381_P executorBignumCalc_mod_bls12_381_p(CF_OPERATION("BignumCalc_Mod_BLS12_381_P"), modules, options);
     static ExecutorBignumCalc_Mod_2Exp256 executorBignumCalc_mod_2exp256(CF_OPERATION("BignumCalc_Mod_2Exp256"), modules, options);
     static ExecutorBLS_PrivateToPublic executorBLS_PrivateToPublic(CF_OPERATION("BLS_PrivateToPublic"), modules, options);
+    static ExecutorBLS_PrivateToPublic_G2 executorBLS_PrivateToPublic_G2(CF_OPERATION("BLS_PrivateToPublic_G2"), modules, options);
     static ExecutorBLS_Sign executorBLS_Sign(CF_OPERATION("BLS_Sign"), modules, options);
     static ExecutorBLS_Verify executorBLS_Verify(CF_OPERATION("BLS_Verify"), modules, options);
     static ExecutorBLS_Pairing executorBLS_Pairing(CF_OPERATION("BLS_Pairing"), modules, options);
@@ -187,6 +188,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("BLS_PrivateToPublic"):
                 executorBLS_PrivateToPublic.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_PrivateToPublic_G2"):
+                executorBLS_PrivateToPublic_G2.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("BLS_Sign"):
                 executorBLS_Sign.Run(ds, payload.data(), payload.size());

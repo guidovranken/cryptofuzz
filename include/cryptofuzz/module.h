@@ -147,6 +147,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::G2> OpBLS_PrivateToPublic_G2(operation::BLS_PrivateToPublic_G2& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::BLS_Signature> OpBLS_Sign(operation::BLS_Sign& op) {
             (void)op;
             return std::nullopt;
