@@ -266,8 +266,10 @@ std::optional<component::ECC_PublicKey> libecc::OpECC_PrivateToPublic(operation:
 
 namespace libecc_detail {
 
+    typedef int (*ecxdsa_sign_raw_t)(struct ec_sign_context *ctx, const u8 *input, u8 inputlen, u8 *sig, u8 siglen, const u8 *nonce, u8 noncelen);
+
     template <class Operation, ec_sig_alg_type AlgType>
-    std::optional<component::ECDSA_Signature> ECxDSA_Sign(const Operation& op) {
+    std::optional<component::ECDSA_Signature> ECxDSA_Sign(const Operation& op, const ecxdsa_sign_raw_t ecxdsa_sign_raw) {
         if ( op.UseRandomNonce() == false && op.UseSpecifiedNonce() == false ) {
             return std::nullopt;
         }
@@ -311,7 +313,7 @@ namespace libecc_detail {
             CF_CHECK_EQ(ec_key_pair_import_from_priv_key_buf(&kp,
                         &params,
                         priv_bytes->data(), priv_bytes->size(),
-                        ECDSA), 0);
+                        AlgType), 0);
         }
 
         signature_size = ECDSA_SIGLEN(kp.priv_key.params->ec_gen_order_bitlen);
@@ -332,7 +334,7 @@ namespace libecc_detail {
 
         CF_INSTALL_JMP();
 
-        CF_CHECK_EQ(ecdsa_sign_raw(
+        CF_CHECK_EQ(ecxdsa_sign_raw(
                     &ctx,
                     op.cleartext.GetPtr(), op.cleartext.GetSize(),
                     signature, signature_size,
@@ -355,8 +357,10 @@ end:
         return ret;
     }
 
+    typedef int (*ecxdsa_verify_raw_t)(struct ec_verify_context *ctx, const u8 *input, u8 inputlen);
+
     template <class Operation, ec_sig_alg_type AlgType>
-    std::optional<bool> ECxDSA_Verify(const Operation& op, const ec_sig_mapping* sm) {
+    std::optional<bool> ECxDSA_Verify(const Operation& op, const ec_sig_mapping* sm, const ecxdsa_verify_raw_t ecxdsa_verify_raw) {
         if ( op.digestType.Get() != CF_DIGEST("NULL") ) {
             return std::nullopt;
         }
@@ -431,7 +435,7 @@ end:
              */
             CF_CHECK_NE(cleartext_ptr, nullptr);
 
-            ret = ecdsa_verify_raw(&ctx, cleartext_ptr, op.cleartext.GetSize()) == 0;
+            ret = ecxdsa_verify_raw(&ctx, cleartext_ptr, op.cleartext.GetSize()) == 0;
         }
 
 end:
@@ -444,19 +448,19 @@ end:
 } /* namespace libecc_detail */
 
 std::optional<component::ECDSA_Signature> libecc::OpECDSA_Sign(operation::ECDSA_Sign& op) {
-    return libecc_detail::ECxDSA_Sign<operation::ECDSA_Sign, ECDSA>(op);
+    return libecc_detail::ECxDSA_Sign<operation::ECDSA_Sign, ECDSA>(op, ecdsa_sign_raw);
 }
 
 std::optional<component::ECGDSA_Signature> libecc::OpECGDSA_Sign(operation::ECGDSA_Sign& op) {
-    return libecc_detail::ECxDSA_Sign<operation::ECGDSA_Sign, ECGDSA>(op);
+    return libecc_detail::ECxDSA_Sign<operation::ECGDSA_Sign, ECGDSA>(op, ecgdsa_sign_raw);
 }
 
 std::optional<bool> libecc::OpECDSA_Verify(operation::ECDSA_Verify& op) {
-    return libecc_detail::ECxDSA_Verify<operation::ECDSA_Verify, ECDSA>(op, libecc_detail::sm_ecdsa);
+    return libecc_detail::ECxDSA_Verify<operation::ECDSA_Verify, ECDSA>(op, libecc_detail::sm_ecdsa, ecdsa_verify_raw);
 }
 
 std::optional<bool> libecc::OpECGDSA_Verify(operation::ECGDSA_Verify& op) {
-    return libecc_detail::ECxDSA_Verify<operation::ECGDSA_Verify, ECGDSA>(op, libecc_detail::sm_ecgdsa);
+    return libecc_detail::ECxDSA_Verify<operation::ECGDSA_Verify, ECGDSA>(op, libecc_detail::sm_ecgdsa, ecgdsa_verify_raw);
 }
 
 std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op) {
