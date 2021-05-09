@@ -132,3 +132,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Herumi mcl: [Incorrect results with dst larger than 255 bytes](https://github.com/herumi/mcl/commit/b01ef452a5a4acae584c0b27956cbf55b5275607)
 - LibreSSL: [EC_POINT_point2oct / EC_POINT_oct2point asymmetry](https://cvsweb.openbsd.org/cgi-bin/cvsweb/src/lib/libcrypto/ec/ec2_oct.c?rev=1.13&content-type=text/x-cvsweb-markup)
 - noble-secp256k1: Several ECDSA verification bugs: [1](https://github.com/paulmillr/noble-secp256k1/commit/13da0de79bf3b04f892f8d73bd4b5657a7329828) [2](https://github.com/paulmillr/noble-secp256k1/commit/9082b405a3d1958b5b6a699bb408215ae30eea5b) [3](https://github.com/paulmillr/noble-secp256k1/commit/c514f79ebdab1042dac214446f1ca32214a5edfd)
+- blst: [NULL pointer dereference if point multiplier is zero-stripped](https://github.com/supranational/blst/commit/9a9d57d5a11b52b46d358ffbb995013cd1ac1faa)
