@@ -49,13 +49,13 @@ std::vector<std::string> split(const std::string& s, std::optional<size_t> expec
         0x52, 0x4f, 0x5f, 0x50, 0x4f, 0x50, 0x5f};
 
     template <class T>
-    std::vector<uint8_t> MsgAug(const T& op) {
+    Buffer MsgAug(const T& op) {
         std::vector<uint8_t> msg;
         const auto aug = op.aug.Get();
         const auto ct = op.cleartext.Get();
         msg.insert(msg.end(), aug.begin(), aug.end());
         msg.insert(msg.end(), ct.begin(), ct.end());
-        return msg;
+        return Buffer(msg);
     }
 
     ::mcl::bls12::G1 Convert(const component::G1& g1) {
@@ -209,6 +209,7 @@ std::optional<component::G2> mcl::OpBLS_PrivateToPublic_G2(operation::BLS_Privat
 
 std::optional<component::BLS_Signature> mcl::OpBLS_Sign(operation::BLS_Sign& op) {
     std::optional<component::BLS_Signature> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     if ( op.priv.ToTrimmedString() == "0" ) {
         return std::nullopt;
@@ -223,7 +224,7 @@ std::optional<component::BLS_Signature> mcl::OpBLS_Sign(operation::BLS_Sign& op)
         if ( op.hashOrPoint == true ) {
             G2 hash;
             const auto msg = mcl_detail::MsgAug(op);
-            BN::param.mapTo.mapTo_WB19_.msgToG2(hash, msg.data(), msg.size(), (const char*)op.dest.GetPtr(), op.dest.GetSize());
+            BN::param.mapTo.mapTo_WB19_.msgToG2(hash, msg.GetPtr(&ds), msg.GetSize(), (const char*)op.dest.GetPtr(&ds), op.dest.GetSize());
             ::mcl::bls12::G2::mul(sign, hash, sec);
         } else {
             const auto g2 = mcl_detail::Convert(op.point);
@@ -382,11 +383,12 @@ std::optional<bool> mcl::OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) {
 
 std::optional<component::G1> mcl::OpBLS_HashToG1(operation::BLS_HashToG1& op) {
     std::optional<component::G1> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     using namespace ::mcl::bls12;
     G1 P;
     const auto msg = mcl_detail::MsgAug(op);
-    BN::param.mapTo.mapTo_WB19_.msgToG1(P, msg.data(), msg.size(), (const char*)op.dest.GetPtr(), op.dest.GetSize());
+    BN::param.mapTo.mapTo_WB19_.msgToG1(P, msg.GetPtr(&ds), msg.GetSize(), (const char*)op.dest.GetPtr(&ds), op.dest.GetSize());
 
     /* Alternative: requires that op.dest == mcl_detail::DST */
     ///* noret */ hashAndMapToG1(P, msg.data(), msg.size());
@@ -397,11 +399,12 @@ std::optional<component::G1> mcl::OpBLS_HashToG1(operation::BLS_HashToG1& op) {
 
 std::optional<component::G2> mcl::OpBLS_HashToG2(operation::BLS_HashToG2& op) {
     std::optional<component::G2> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     using namespace ::mcl::bls12;
     G2 P;
     const auto msg = mcl_detail::MsgAug(op);
-    BN::param.mapTo.mapTo_WB19_.msgToG2(P, msg.data(), msg.size(), (const char*)op.dest.GetPtr(), op.dest.GetSize());
+    BN::param.mapTo.mapTo_WB19_.msgToG2(P, msg.GetPtr(&ds), msg.GetSize(), (const char*)op.dest.GetPtr(&ds), op.dest.GetSize());
 
     /* Alternative: requires that op.dest == mcl_detail::DST */
     ///* noret */ hashAndMapToG2(P, msg.data(), msg.size());
