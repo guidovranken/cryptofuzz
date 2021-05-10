@@ -369,7 +369,7 @@ std::optional<bool> blst::OpBLS_Verify(operation::BLS_Verify& op) {
     if ( op.curveType.Get() != CF_ECC_CURVE("BLS12_381") ) {
         //return std::nullopt;
     }
-    if ( op.hashOrPoint == true ) {
+    if ( op.hashOrPoint == false ) {
         return std::nullopt;
     }
 
