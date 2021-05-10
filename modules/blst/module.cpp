@@ -970,8 +970,6 @@ std::optional<component::G1> blst::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
 
         Buffer B(b_reversed);
 
-        CF_CHECK_NE(B.GetSize(), 0);
-
         CF_NORET(blst_p1_mult(&result, &a_, B.GetPtr(&ds), B.GetSize() * 8));
     } else {
         CF_NORET(blst_p1_double(&result, &a_));
@@ -1111,8 +1109,6 @@ std::optional<component::G2> blst::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
         CF_NORET(std::reverse(b_reversed.begin(), b_reversed.end()));
 
         Buffer B(b_reversed);
-
-        CF_CHECK_NE(B.GetSize(), 0);
 
         CF_NORET(blst_p2_mult(&result, &a_, B.GetPtr(&ds), B.GetSize() * 8));
     } else {
