@@ -11,6 +11,7 @@ namespace module {
 
 chia_bls::chia_bls(void) :
     Module("chia_bls") {
+    CF_ASSERT(core_get(), "relic not properly initialized");
 }
 
 namespace chia_bls_detail {
@@ -171,14 +172,16 @@ std::optional<component::G2> chia_bls::OpBLS_HashToG2(operation::BLS_HashToG2& o
 
 std::optional<bool> chia_bls::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
     std::optional<bool> ret = std::nullopt;
-    return ret;
 
     g1_t g1;
     g1_new(g1);
     g1_null(g1);
 
-    CF_CHECK_LT(op.g1.first.ToTrimmedString().size(), 100);
-    CF_CHECK_LT(op.g1.second.ToTrimmedString().size(), 100);
+    CF_CHECK_NE(op.g1.first.ToTrimmedString(), "0");
+    CF_CHECK_NE(op.g1.second.ToTrimmedString(), "0");
+
+    CF_CHECK_LT(op.g1.first.ToTrimmedString().size(), 120);
+    CF_CHECK_LT(op.g1.second.ToTrimmedString().size(), 120);
 
     RLC_TRY {
         fp_read_str(g1->x, op.g1.first.ToTrimmedString().c_str(), op.g1.first.ToTrimmedString().size(), 10);
@@ -192,25 +195,18 @@ std::optional<bool> chia_bls::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) 
         goto end;
     }
 
-    ret = ep_on_curve(g1) != 0;
+    fp_read_str(g1->z, "1", 1, 10);
 
-    //ret = g1_is_valid(g1) != 0;
-
-    ///* XXX discrepancy */ ret = std::nullopt;
-
-    /* More extensive check: */
-#if 0
     {
         try {
             /* FromNative calls CheckValid */
-            const auto G1 = bls::G1Element::FromNative(&g1);
+            const auto G1 = bls::G1Element::FromNative(g1);
             (void)G1;
             ret = true;
         } catch ( std::invalid_argument ) {
             ret = false;
         }
     }
-#endif
 
 end:
     return ret;
@@ -266,19 +262,18 @@ end:
 }
 
 std::optional<bool> chia_bls::OpBLS_Verify(operation::BLS_Verify& op) {
-    (void)op;
-    return std::nullopt;
-#if 0
+    static const std::vector<uint8_t> dst{
+      0x42, 0x4c, 0x53, 0x5f, 0x53, 0x49, 0x47, 0x5f, 0x42, 0x4c, 0x53, 0x31,
+      0x32, 0x33, 0x38, 0x31, 0x47, 0x32, 0x5f, 0x58, 0x4d, 0x44, 0x3a, 0x53,
+      0x48, 0x41, 0x2d, 0x32, 0x35, 0x36, 0x5f, 0x53, 0x53, 0x57, 0x55, 0x5f,
+      0x52, 0x4f, 0x5f, 0x4e, 0x55, 0x4c, 0x5f};
+
     if ( op.curveType.Get() != CF_ECC_CURVE("BLS12_381") ) {
         //return std::nullopt;
     }
-
-    if ( op.pub.first.ToTrimmedString() == "0" ) return std::nullopt;
-    if ( op.pub.second.ToTrimmedString() == "0" ) return std::nullopt;
-    if ( op.signature.first.first.ToTrimmedString() == "0" ) return std::nullopt;
-    if ( op.signature.first.second.ToTrimmedString() == "0" ) return std::nullopt;
-    if ( op.signature.second.first.ToTrimmedString() == "0" ) return std::nullopt;
-    if ( op.signature.second.second.ToTrimmedString() == "0" ) return std::nullopt;
+    if ( op.hashOrPoint == false ) {
+        return std::nullopt;
+    }
 
     std::optional<bool> ret = std::nullopt;
 
@@ -290,97 +285,85 @@ std::optional<bool> chia_bls::OpBLS_Verify(operation::BLS_Verify& op) {
     g2_null(g2);
     g2_new(g2);
 
+    const auto pub_x = op.pub.first.ToTrimmedString();
+    const auto pub_y = op.pub.second.ToTrimmedString();
+    const auto sig_v = op.signature.first.first.ToTrimmedString();
+    const auto sig_w = op.signature.first.second.ToTrimmedString();
+    const auto sig_x = op.signature.second.first.ToTrimmedString();
+    const auto sig_y = op.signature.second.second.ToTrimmedString();
+
+    CF_CHECK_EQ(op.dest.Get(), dst);
+
+    CF_CHECK_NE(pub_x, "0");
+    CF_CHECK_NE(pub_y, "0");
+    CF_CHECK_NE(sig_v, "0");
+    CF_CHECK_NE(sig_w, "0");
+    CF_CHECK_NE(sig_x, "0");
+    CF_CHECK_NE(sig_y, "0");
+
+    CF_CHECK_LT(pub_x.size(), 120);
+    CF_CHECK_LT(pub_y.size(), 120);
+    CF_CHECK_LT(sig_v.size(), 120);
+    CF_CHECK_LT(sig_w.size(), 120);
+    CF_CHECK_LT(sig_x.size(), 120);
+    CF_CHECK_LT(sig_y.size(), 120);
+
     RLC_TRY {
-        fp_read_str(g1->x, op.pub.first.ToTrimmedString().c_str(), op.pub.first.ToTrimmedString().size(), 10);
+        fp_read_str(g1->x, pub_x.c_str(), pub_x.size(), 10);
     } RLC_CATCH_ANY {
         goto end;
     }
 
     RLC_TRY {
-        fp_read_str(g1->y, op.pub.first.ToTrimmedString().c_str(), op.pub.first.ToTrimmedString().size(), 10);
+        fp_read_str(g1->y, pub_y.c_str(), pub_y.size(), 10);
+    } RLC_CATCH_ANY {
+        goto end;
+    }
+
+    fp_read_str(g1->z, "1", 1, 10);
+
+    RLC_TRY {
+        fp_read_str(g2->x[0], sig_v.c_str(), sig_v.size(), 10);
     } RLC_CATCH_ANY {
         goto end;
     }
 
     RLC_TRY {
-        fp_read_str(g2->x[0], op.signature.first.first.ToTrimmedString().c_str(), op.pub.first.ToTrimmedString().size(), 10);
+        fp_read_str(g2->y[0], sig_w.c_str(), sig_w.size(), 10);
+    } RLC_CATCH_ANY {
+        goto end;
+    }
+
+    fp_read_str(g2->z[0], "1", 1, 10);
+
+    RLC_TRY {
+        fp_read_str(g2->x[1], sig_x.c_str(), sig_x.size(), 10);
     } RLC_CATCH_ANY {
         goto end;
     }
 
     RLC_TRY {
-        fp_read_str(g2->y[0], op.signature.first.second.ToTrimmedString().c_str(), op.pub.first.ToTrimmedString().size(), 10);
+        fp_read_str(g2->y[1], sig_y.c_str(), sig_y.size(), 10);
     } RLC_CATCH_ANY {
         goto end;
     }
 
-    RLC_TRY {
-        fp_read_str(g2->x[1], op.signature.second.first.ToTrimmedString().c_str(), op.pub.first.ToTrimmedString().size(), 10);
-    } RLC_CATCH_ANY {
-        goto end;
+    fp_read_str(g2->z[1], "0", 1, 10);
+
+    try {
+        const auto pub = bls::G1Element::FromNative(g1);
+        const auto sig = bls::G2Element::FromNative(g2);
+
+        ret = bls::BasicSchemeMPL().Verify(pub, op.cleartext.Get(), sig);
+    } catch ( ... ) {
+        ret = false;
     }
 
-    RLC_TRY {
-        fp_read_str(g2->y[1], op.signature.second.second.ToTrimmedString().c_str(), op.pub.first.ToTrimmedString().size(), 10);
-    } RLC_CATCH_ANY {
-        goto end;
-    }
-
-    {
-        try {
-            const auto pub = bls::G1Element::FromNative(&g1);
-            const auto sig = bls::G2Element::FromNative(&g2);
-
-            //ret = bls::BasicSchemeMPL().Verify(pub, op.cleartext.Get(), sig);
-            bls::G2Element hashedPoint = bls::G2Element::FromMessage(op.cleartext.Get(), op.dest.GetPtr(), op.dest.GetSize());
-
-            g1_t *g1s = new g1_t[2];
-            g2_t *g2s = new g2_t[2];
-
-            bls::G1Element::Generator().Negate().ToNative(g1s);
-            pub.ToNative(g1s + 1);
-            sig.ToNative(g2s);
-            hashedPoint.ToNative(g2s + 1);
-
-            //bool ans = bls::CoreMPL::NativeVerify(g1s, g2s, 2);
-            {
-                gt_t target, candidate, tmpPairing;
-                fp12_zero(target);
-                fp_set_dig(target[0][0][0], 1);
-                fp12_zero(candidate);
-                fp_set_dig(candidate[0][0][0], 1);
-
-                // prod e(pubkey[i], hash[i]) * e(-g1, aggSig)
-                // Performs pubKeys.size() pairings, 250 at a time
-
-                for (size_t i = 0; i < 2; i += 250) {
-                    size_t numPairings = std::min((2 - i), (size_t)250);
-                    pc_map_sim(tmpPairing, g1s + i, g2s + i, numPairings);
-                    fp12_mul(candidate, candidate, tmpPairing);
-                }
-
-                // 1 =? prod e(pubkey[i], hash[i]) * e(-g1, aggSig)
-                if (gt_cmp(target, candidate) != RLC_EQ || core_get()->code != RLC_OK) {
-                    core_get()->code = RLC_OK;
-                    ret = false;
-                }
-
-                if ( ret == std::nullopt ) {
-                    bls::BLS::CheckRelicErrors();
-                    ret = true;
-                }
-            }
-
-            delete[] g1s;
-            delete[] g2s;
-        } catch ( ... ) { }
-    }
 end:
     g1_free(g1);
     g2_free(g2);
 
     return ret;
-#endif
 }
 
 std::optional<component::Key> chia_bls::OpKDF_HKDF(operation::KDF_HKDF& op) {
