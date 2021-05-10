@@ -53,14 +53,13 @@ namespace chia_bls_detail {
     }
 
     template <class T>
-    //std::vector<uint8_t> MsgAug(const component::Cleartext& cleartext, const component::Cleartext& aug) {
-    std::vector<uint8_t> MsgAug(const T& op) {
+    Buffer MsgAug(const T& op) {
         std::vector<uint8_t> msg;
         const auto aug = op.aug.Get();
         const auto ct = op.cleartext.Get();
         msg.insert(msg.end(), aug.begin(), aug.end());
         msg.insert(msg.end(), ct.begin(), ct.end());
-        return msg;
+        return Buffer(msg);
     }
 }
 
@@ -131,6 +130,7 @@ end:
 
 std::optional<component::G1> chia_bls::OpBLS_HashToG1(operation::BLS_HashToG1& op) {
     std::optional<component::G1> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     if ( op.dest.GetSize() > 255 ) {
         return std::nullopt;
@@ -139,7 +139,7 @@ std::optional<component::G1> chia_bls::OpBLS_HashToG1(operation::BLS_HashToG1& o
     g1_st* g1 = bls::Util::SecAlloc<g1_st>(1);
 
     const auto msg = chia_bls_detail::MsgAug(op);
-    ep_map_dst(g1, msg.data(), msg.size(), op.dest.GetPtr(), op.dest.GetSize());
+    ep_map_dst(g1, msg.GetPtr(&ds), msg.GetSize(), op.dest.GetPtr(&ds), op.dest.GetSize());
 
     ret = chia_bls_detail::G1_To_Component(g1);
 
@@ -150,6 +150,7 @@ std::optional<component::G1> chia_bls::OpBLS_HashToG1(operation::BLS_HashToG1& o
 
 std::optional<component::G2> chia_bls::OpBLS_HashToG2(operation::BLS_HashToG2& op) {
     std::optional<component::G2> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     if ( op.dest.GetSize() > 255 ) {
         return std::nullopt;
@@ -159,7 +160,7 @@ std::optional<component::G2> chia_bls::OpBLS_HashToG2(operation::BLS_HashToG2& o
     g2_new(g2);
 
     const auto msg = chia_bls_detail::MsgAug(op);
-    ep2_map_dst(g2, msg.data(), msg.size(), op.dest.GetPtr(), op.dest.GetSize());
+    ep2_map_dst(g2, msg.GetPtr(&ds), msg.GetSize(), op.dest.GetPtr(&ds), op.dest.GetSize());
 
     ret = chia_bls_detail::G2_To_Component(g2);
 
@@ -237,7 +238,7 @@ std::optional<component::BLS_Signature> chia_bls::OpBLS_Sign(operation::BLS_Sign
         const auto msg = chia_bls_detail::MsgAug(op);
         //bls::G2Element sig = bls::BasicSchemeMPL().Sign(priv, op.cleartext.Get());
         //bls::G2Element sig = priv.SignG2(op.cleartext.GetPtr(), op.cleartext.GetSize(), op.dest.GetPtr(), op.dest.GetSize());
-        bls::G2Element sig = priv.SignG2(msg.data(), msg.size(), op.dest.GetPtr(), op.dest.GetSize());
+        bls::G2Element sig = priv.SignG2(msg.GetPtr(&ds), msg.GetSize(), op.dest.GetPtr(&ds), op.dest.GetSize());
         {
             g2_t g2;
             sig.ToNative(g2);
