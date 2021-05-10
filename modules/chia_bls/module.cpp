@@ -511,6 +511,81 @@ end:
     return ret;
 }
 
+std::optional<component::G2> chia_bls::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
+    std::optional<component::G2> ret = std::nullopt;
+
+    g2_t a;
+    bn_t b;
+
+    g2_new(a);
+    g2_null(a);
+
+    bn_new(b);
+    bn_null(b);
+
+    const auto a_v = op.a.first.first.ToTrimmedString();
+    const auto a_w = op.a.first.second.ToTrimmedString();
+    const auto a_x = op.a.second.first.ToTrimmedString();
+    const auto a_y = op.a.second.second.ToTrimmedString();
+
+    CF_CHECK_NE(a_v, "0");
+    CF_CHECK_NE(a_w, "0");
+    CF_CHECK_NE(a_x, "0");
+    CF_CHECK_NE(a_y, "0");
+
+    CF_CHECK_LT(a_v.size(), 120);
+    CF_CHECK_LT(a_w.size(), 120);
+    CF_CHECK_LT(a_x.size(), 120);
+    CF_CHECK_LT(a_y.size(), 120);
+
+    RLC_TRY {
+        fp_read_str(a->x[0], a_v.c_str(), a_v.size(), 10);
+    } RLC_CATCH_ANY {
+        goto end;
+    }
+
+    RLC_TRY {
+        fp_read_str(a->y[0], a_w.c_str(), a_w.size(), 10);
+    } RLC_CATCH_ANY {
+        goto end;
+    }
+
+    fp_read_str(a->z[0], "1", 1, 10);
+
+    RLC_TRY {
+        fp_read_str(a->x[1], a_x.c_str(), a_x.size(), 10);
+    } RLC_CATCH_ANY {
+        goto end;
+    }
+
+    RLC_TRY {
+        fp_read_str(a->y[1], a_y.c_str(), a_y.size(), 10);
+    } RLC_CATCH_ANY {
+        goto end;
+    }
+
+    fp_read_str(a->z[1], "0", 1, 10);
+
+    CF_CHECK_NE(op.b.ToTrimmedString(), "0");
+    CF_CHECK_LT(op.b.ToTrimmedString().size(), 120);
+
+    RLC_TRY {
+        bn_read_str(b, op.b.ToTrimmedString().c_str(), op.b.ToTrimmedString().size(), 10);
+    } RLC_CATCH_ANY {
+        goto end;
+    }
+
+    try {
+        const auto A = bls::G2Element::FromNative(a);
+
+        ret = chia_bls_detail::G2_To_Component(A * b);
+    } catch ( ... ) {
+    }
+
+end:
+    return ret;
+}
+
 std::optional<component::G1> chia_bls::OpBLS_Decompress_G1(operation::BLS_Decompress_G1& op) {
     std::optional<component::G1> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());

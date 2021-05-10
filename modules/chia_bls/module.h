@@ -21,6 +21,7 @@ class chia_bls : public Module {
         std::optional<component::Key> OpKDF_HKDF(operation::KDF_HKDF& op);
         std::optional<component::G1> OpBLS_G1_Add(operation::BLS_G1_Add& op);
         std::optional<component::G1> OpBLS_G1_Mul(operation::BLS_G1_Mul& op);
+        std::optional<component::G2> OpBLS_G2_Mul(operation::BLS_G2_Mul& op);
         std::optional<component::G1> OpBLS_Decompress_G1(operation::BLS_Decompress_G1& op);
         std::optional<component::G2> OpBLS_Decompress_G2(operation::BLS_Decompress_G2& op);
 };
