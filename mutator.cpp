@@ -146,6 +146,14 @@ static std::string get_BLS_PyECC_DST(void) {
     return "424c535f5349475f424c53313233383147325f584d443a5348412d3235365f535357555f524f5f504f505f";
 }
 
+static std::string get_BLS_BasicScheme_DST(void) {
+    return "424c535f5349475f424c53313233383147325f584d443a5348412d3235365f535357555f524f5f4e554c5f";
+}
+
+static std::string get_BLS_predefined_DST(void) {
+    return getBool() ? get_BLS_PyECC_DST() : get_BLS_BasicScheme_DST();
+}
+
 extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t maxSize, unsigned int seed) {
     (void)seed;
 
@@ -979,8 +987,8 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                         parameters["cleartext"] = "";
                     }
-                    parameters["dest"] = getBool() ? getBuffer(PRNG() % 512) : get_BLS_PyECC_DST();
-                    parameters["aug"] = getBuffer(PRNG() % 1024);
+                    parameters["dest"] = getBool() ? getBuffer(PRNG() % 512) : get_BLS_predefined_DST();
+                    parameters["aug"] = "";
                     parameters["priv"] = getBignum();
 
                     cryptofuzz::operation::BLS_Sign op(parameters);
@@ -1026,7 +1034,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                             parameters["point_y"] = getBignum();
                             parameters["cleartext"] = "";
                         }
-                        parameters["dest"] = getBool() ? getBuffer(PRNG() % 512) : get_BLS_PyECC_DST();
+                        parameters["dest"] = getBool() ? getBuffer(PRNG() % 512) : get_BLS_predefined_DST();
                         parameters["pub_x"] = getBignum();
                         parameters["pub_y"] = getBignum();
                         parameters["sig_v"] = getBignum();
@@ -1156,7 +1164,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
                     parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
                     parameters["cleartext"] = getBuffer(PRNG() % 1024);
-                    parameters["dest"] = getBool() ? getBuffer(PRNG() % 512) : get_BLS_PyECC_DST();
+                    parameters["dest"] = getBool() ? getBuffer(PRNG() % 512) : get_BLS_predefined_DST();
 
                     parameters["aug"] = getBuffer(PRNG() % 1024);
 
@@ -1169,7 +1177,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
                     parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
                     parameters["cleartext"] = getBuffer(PRNG() % 1024);
-                    parameters["dest"] = getBool() ? getBuffer(PRNG() % 512) : get_BLS_PyECC_DST();
+                    parameters["dest"] = getBool() ? getBuffer(PRNG() % 512) : get_BLS_predefined_DST();
                     parameters["aug"] = getBuffer(PRNG() % 1024);
 
                     cryptofuzz::operation::BLS_HashToG2 op(parameters);
@@ -1181,7 +1189,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
                     parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
 
-                    parameters["dest"] = getBool() ? getBuffer(PRNG() % 512) : get_BLS_PyECC_DST();
+                    parameters["dest"] = getBool() ? getBuffer(PRNG() % 512) : get_BLS_predefined_DST();
 
                     nlohmann::json components = nlohmann::json::array();
 
