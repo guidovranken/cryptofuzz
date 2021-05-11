@@ -746,7 +746,8 @@ std::vector<uint8_t> AddLeadingZeroes(fuzzing::datasource::Datasource& ds, const
 
     uint16_t numZeroes = 0;
     try {
-        numZeroes = ds.Get<uint16_t>();
+        numZeroes = ds.Get<uint8_t>();
+        numZeroes %= 64;
     } catch ( fuzzing::datasource::Datasource::OutOfData ) {
     }
     const std::vector<uint8_t> zeroes(numZeroes, 0);
