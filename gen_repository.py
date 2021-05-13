@@ -1224,7 +1224,7 @@ ecc_curves.Add( ECC_Curve("sect113r2",
                           order="5192296858534827702972497909952403"
 ) )
 ecc_curves.Add( ECC_Curve("wap_wsg_idm_ecid_wtls8",
-                          bits=112,
+                          bits=113,
                           prime="5192296858534827628530496329219559",
                           a="0",
                           b="3",
