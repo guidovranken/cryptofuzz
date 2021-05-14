@@ -1,4 +1,5 @@
 #include "module.h"
+#undef SHA1
 #include <cryptofuzz/util.h>
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
