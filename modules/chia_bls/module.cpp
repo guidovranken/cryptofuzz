@@ -15,9 +15,11 @@ chia_bls::chia_bls(void) :
 }
 
 namespace chia_bls_detail {
-    component::G1 G1_To_Component(const g1_t g1) {
+    component::G1 G1_To_Component(g1_t g1) {
         char g1str1[1024];
         char g1str2[1024];
+
+        ep_norm(g1, g1);
 
         fp_write_str(g1str1, 1024, g1->x, 10);
         fp_write_str(g1str2, 1024, g1->y, 10);
@@ -398,7 +400,6 @@ std::optional<component::Key> chia_bls::OpKDF_HKDF(operation::KDF_HKDF& op) {
 
 std::optional<component::G1> chia_bls::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
     std::optional<component::G1> ret = std::nullopt;
-    return ret;
 
     g1_t a, b;
 
