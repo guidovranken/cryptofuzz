@@ -206,6 +206,10 @@
   #include <modules/py_ecc/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_KILIC_BLS12_381)
+  #include <modules/kilic-bls12-381/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -432,6 +436,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_PY_ECC)
     driver->LoadModule( std::make_shared<cryptofuzz::module::py_ecc>() );
+#endif
+
+#if defined(CRYPTOFUZZ_KILIC_BLS12_381)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::kilic_bls12_381>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
