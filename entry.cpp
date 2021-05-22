@@ -23,8 +23,14 @@
   #ifdef SHA1
     #undef SHA1
   #endif
+  #ifdef SHA224
+    #undef SHA224
+  #endif
   #ifdef SHA256
     #undef SHA256
+  #endif
+  #ifdef SHA384
+    #undef SHA384
   #endif
   #ifdef SHA512
     #undef SHA512
