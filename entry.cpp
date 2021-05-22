@@ -20,6 +20,15 @@
 
 #if !defined(CRYPTOFUZZ_NO_OPENSSL)
   #include <modules/openssl/module.h>
+  #ifdef SHA1
+    #undef SHA1
+  #endif
+  #ifdef SHA256
+    #undef SHA256
+  #endif
+  #ifdef SHA512
+    #undef SHA512
+  #endif
 #endif
 
 #if defined(CRYPTOFUZZ_BITCOIN)
