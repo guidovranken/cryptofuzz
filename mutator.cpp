@@ -86,24 +86,29 @@ static std::string getBuffer(size_t size, const bool alternativeSize = false) {
     return ret;
 }
 
-static bool getIsNegative(void) {
-    if ( cryptofuzz::config::kNegativeIntegers == false ) {
-        return false;
-    } else {
-        return getBool();
-    }
-}
+static std::string getBignum(bool mustBePositive = false) {
+    std::string ret;
 
-static std::string getBignum(const bool positive = false) {
     if ( Pool_Bignum.Have() && getBool() ) {
-        const auto ret = Pool_Bignum.Get();
-        if ( positive && !ret.empty() && ret[0] == '-' ) {
-            goto end;
-        }
-        return (getIsNegative() ? "-" : "") + ret;
+        ret = Pool_Bignum.Get();
+    } else {
+        ret = cryptofuzz::numbers.at(PRNG() % cryptofuzz::numbers.size());
     }
-end:
-    return (getIsNegative() ? "-" : "") + cryptofuzz::numbers.at(PRNG() % cryptofuzz::numbers.size());
+
+    const bool isNegative = !ret.empty() && ret[0] == '-';
+    if ( cryptofuzz::config::kNegativeIntegers == false ) {
+        mustBePositive = true;
+    }
+
+    if ( isNegative && mustBePositive ) {
+        ret = std::string(ret.data() + 1, ret.size() - 1);
+    }
+
+    if ( !mustBePositive && !isNegative && getBool() ) {
+        ret = "-" + ret;
+    }
+
+    return ret;
 }
 
 extern "C" size_t LLVMFuzzerMutate(uint8_t* data, size_t size, size_t maxSize);
