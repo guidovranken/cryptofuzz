@@ -2484,13 +2484,22 @@ std::optional<component::MAC> wolfCrypt::OpCMAC(operation::CMAC& op) {
         }
     }
 
+    /* wc_AesCmacVerify return values:
+     * 0: Verification succeeded
+     * < 0: Internal error (e.g. memory failure)
+     * 1: Verification failed
+     *
+     * Only abort if wc_AesCmacVerify signals explicit
+     * verification failure (e.g. returns 1).
+     *
+     */
     CF_ASSERT(wc_AesCmacVerify(
                     out,
                     outSize,
                     op.cleartext.GetPtr(&ds),
                     op.cleartext.GetSize(),
                     op.cipher.key.GetPtr(&ds),
-                    op.cipher.key.GetSize()) == 0,
+                    op.cipher.key.GetSize()) != 1,
             "Cannot verify self-generated CMAC");
 end:
 
