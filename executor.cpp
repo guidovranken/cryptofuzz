@@ -499,6 +499,40 @@ template<> std::optional<component::ECGDSA_Signature> ExecutorBase<component::EC
     return module->OpECGDSA_Sign(op);
 }
 
+/* Specialization for operation::ECRDSA_Sign */
+template<> void ExecutorBase<component::ECRDSA_Signature, operation::ECRDSA_Sign>::postprocess(std::shared_ptr<Module> module, operation::ECRDSA_Sign& op, const ExecutorBase<component::ECRDSA_Signature, operation::ECRDSA_Sign>::ResultPair& result) const {
+    (void)module;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto cleartext = op.cleartext.ToHex();
+        const auto pub_x = result.second->pub.first.ToTrimmedString();
+        const auto pub_y = result.second->pub.second.ToTrimmedString();
+        const auto sig_r = result.second->signature.first.ToTrimmedString();
+        const auto sig_s = result.second->signature.second.ToTrimmedString();
+
+        Pool_CurveECDSASignature.Set({ curveID, cleartext, pub_x, pub_y, sig_r, sig_s});
+
+        if ( pub_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_x); }
+        if ( pub_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_y); }
+        if ( sig_r.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(sig_r); }
+        if ( sig_s.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(sig_s); }
+    }
+}
+
+template<> std::optional<component::ECRDSA_Signature> ExecutorBase<component::ECRDSA_Signature, operation::ECRDSA_Sign>::callModule(std::shared_ptr<Module> module, operation::ECRDSA_Sign& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
+    RETURN_IF_DISABLED(options.digests, op.digestType.Get());
+
+    const size_t size = op.priv.ToTrimmedString().size();
+
+    if ( size == 0 || size > 4096 ) {
+        return std::nullopt;
+    }
+
+    return module->OpECRDSA_Sign(op);
+}
+
 /* Specialization for operation::ECDSA_Verify */
 template<> void ExecutorBase<bool, operation::ECDSA_Verify>::postprocess(std::shared_ptr<Module> module, operation::ECDSA_Verify& op, const ExecutorBase<bool, operation::ECDSA_Verify>::ResultPair& result) const {
     (void)module;
@@ -545,6 +579,30 @@ template<> std::optional<bool> ExecutorBase<bool, operation::ECGDSA_Verify>::cal
      */
 
     return module->OpECGDSA_Verify(op);
+}
+
+/* Specialization for operation::ECRDSA_Verify */
+template<> void ExecutorBase<bool, operation::ECRDSA_Verify>::postprocess(std::shared_ptr<Module> module, operation::ECRDSA_Verify& op, const ExecutorBase<bool, operation::ECRDSA_Verify>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<bool> ExecutorBase<bool, operation::ECRDSA_Verify>::callModule(std::shared_ptr<Module> module, operation::ECRDSA_Verify& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
+    RETURN_IF_DISABLED(options.digests, op.digestType.Get());
+
+    /* Intentionally do not constrain the size of the public key or
+     * signature (like we do for BignumCalc).
+     *
+     * If any large public key or signature causes a time-out (or
+     * worse), this is something that needs attention;
+     * because verifiers sometimes process untrusted public keys,
+     * signatures or both, they should be resistant to bugs
+     * arising from large inputs.
+     */
+
+    return module->OpECRDSA_Verify(op);
 }
 
 template<> void ExecutorBase<component::ECC_PublicKey, operation::ECDSA_Recover>::postprocess(std::shared_ptr<Module> module, operation::ECDSA_Recover& op, const ExecutorBase<component::ECC_PublicKey, operation::ECDSA_Recover>::ResultPair& result) const {
@@ -1620,8 +1678,10 @@ template class ExecutorBase<bool, operation::ECC_ValidatePubkey>;
 template class ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>;
 template class ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>;
 template class ExecutorBase<component::ECGDSA_Signature, operation::ECGDSA_Sign>;
+template class ExecutorBase<component::ECRDSA_Signature, operation::ECRDSA_Sign>;
 template class ExecutorBase<bool, operation::ECDSA_Verify>;
 template class ExecutorBase<bool, operation::ECGDSA_Verify>;
+template class ExecutorBase<bool, operation::ECRDSA_Verify>;
 template class ExecutorBase<component::ECC_PublicKey, operation::ECDSA_Recover>;
 template class ExecutorBase<component::Secret, operation::ECDH_Derive>;
 template class ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>;

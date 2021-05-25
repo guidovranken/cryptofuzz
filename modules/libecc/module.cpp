@@ -12,7 +12,7 @@ namespace module {
 namespace libecc_detail {
     Datasource* global_ds = nullptr;
     FILE* fp_dev_urandom = nullptr;
-	const ec_sig_mapping *sm_ecdsa, *sm_ecgdsa;
+	const ec_sig_mapping *sm_ecdsa, *sm_ecgdsa, *sm_ecrdsa;
 
     std::map<uint64_t, const ec_str_params*> curveLUT;
 
@@ -145,6 +145,7 @@ libecc::libecc(void) :
     CF_ASSERT((libecc_detail::fp_dev_urandom = fopen("/dev/urandom", "rb")) != NULL, "Failed to open /dev/urandom");
     CF_ASSERT((libecc_detail::sm_ecdsa = get_sig_by_name("ECDSA")) != nullptr, "Cannot initialize ECDSA");
     CF_ASSERT((libecc_detail::sm_ecgdsa = get_sig_by_name("ECGDSA")) != nullptr, "Cannot initialize ECGDSA");
+    CF_ASSERT((libecc_detail::sm_ecrdsa = get_sig_by_name("ECRDSA")) != nullptr, "Cannot initialize ECRDSA");
 
     /* Load curves */
     libecc_detail::AddCurve(CF_ECC_CURVE("brainpool224r1"), "BRAINPOOLP224R1");
@@ -455,12 +456,20 @@ std::optional<component::ECGDSA_Signature> libecc::OpECGDSA_Sign(operation::ECGD
     return libecc_detail::ECxDSA_Sign<operation::ECGDSA_Sign, ECGDSA>(op, ecgdsa_sign_raw);
 }
 
+std::optional<component::ECRDSA_Signature> libecc::OpECRDSA_Sign(operation::ECRDSA_Sign& op) {
+    return libecc_detail::ECxDSA_Sign<operation::ECRDSA_Sign, ECRDSA>(op, ecrdsa_sign_raw);
+}
+
 std::optional<bool> libecc::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     return libecc_detail::ECxDSA_Verify<operation::ECDSA_Verify, ECDSA>(op, libecc_detail::sm_ecdsa, ecdsa_verify_raw);
 }
 
 std::optional<bool> libecc::OpECGDSA_Verify(operation::ECGDSA_Verify& op) {
     return libecc_detail::ECxDSA_Verify<operation::ECGDSA_Verify, ECGDSA>(op, libecc_detail::sm_ecgdsa, ecgdsa_verify_raw);
+}
+
+std::optional<bool> libecc::OpECRDSA_Verify(operation::ECRDSA_Verify& op) {
+    return libecc_detail::ECxDSA_Verify<operation::ECRDSA_Verify, ECRDSA>(op, libecc_detail::sm_ecrdsa, ecrdsa_verify_raw);
 }
 
 std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op) {

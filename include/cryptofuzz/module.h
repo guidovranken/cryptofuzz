@@ -104,11 +104,19 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::ECRDSA_Signature> OpECRDSA_Sign(operation::ECRDSA_Sign& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) {
             (void)op;
             return std::nullopt;
         }
         virtual std::optional<bool> OpECGDSA_Verify(operation::ECGDSA_Verify& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<bool> OpECRDSA_Verify(operation::ECRDSA_Verify& op) {
             (void)op;
             return std::nullopt;
         }

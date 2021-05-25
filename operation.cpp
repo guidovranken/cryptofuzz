@@ -574,6 +574,45 @@ nlohmann::json ECGDSA_Sign::ToJSON(void) const {
     return j;
 }
 
+std::string ECRDSA_Sign::Name(void) const { return "ECRDSA_Sign"; }
+std::string ECRDSA_Sign::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: ECRDSA_Sign" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "nonce: " << nonce.ToString() << std::endl;
+    ss << "private key: " << priv.ToString() << std::endl;
+    ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+    ss << "nonce source: ";
+    if ( UseRandomNonce() ) {
+        ss << "random";
+    } else if ( UseRFC6979Nonce() ) {
+        ss << "RFC 6979";
+    } else if ( UseSpecifiedNonce() ) {
+        ss << "specified";
+    } else {
+        ss << "(unknown)";
+    }
+    ss << std::endl;
+
+    ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json ECRDSA_Sign::ToJSON(void) const {
+    nlohmann::json j;
+    j["operation"] = "ECRDSA_Sign";
+    j["priv"] = priv.ToJSON();
+    j["nonce"] = priv.ToJSON();
+    j["curveType"] = curveType.ToJSON();
+    j["cleartext"] = cleartext.ToJSON();
+    j["nonceSource"] = nonceSource;
+    j["digestType"] = digestType.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string ECDSA_Verify::Name(void) const { return "ECDSA_Verify"; }
 std::string ECDSA_Verify::ToString(void) const {
     std::stringstream ss;
@@ -634,6 +673,35 @@ nlohmann::json ECGDSA_Verify::ToJSON(void) const {
     return j;
 }
 
+std::string ECRDSA_Verify::Name(void) const { return "ECRDSA_Verify"; }
+std::string ECRDSA_Verify::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: ECRDSA_Verify" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "public key X: " << signature.pub.first.ToString() << std::endl;
+    ss << "public key Y: " << signature.pub.second.ToString() << std::endl;
+    ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+    ss << "signature R: " << signature.signature.first.ToString() << std::endl;
+    ss << "signature S: " << signature.signature.second.ToString() << std::endl;
+    ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json ECRDSA_Verify::ToJSON(void) const {
+    nlohmann::json j;
+    j["operation"] = "ECRDSA_Verify";
+    j["curveType"] = curveType.ToJSON();
+    j["pub_x"] = signature.pub.first.ToJSON();
+    j["pub_y"] = signature.pub.second.ToJSON();
+    j["cleartext"] = cleartext.ToJSON();
+    j["sig_r"] = signature.signature.first.ToJSON();
+    j["sig_s"] = signature.signature.second.ToJSON();
+    j["digestType"] = digestType.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
 std::string ECDSA_Recover::Name(void) const { return "ECDSA_Recover"; }
 std::string ECDSA_Recover::ToString(void) const {
     std::stringstream ss;

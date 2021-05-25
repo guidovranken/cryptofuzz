@@ -102,6 +102,7 @@ class ECDSA_Signature {
 };
 
 using ECGDSA_Signature = ECDSA_Signature;
+using ECRDSA_Signature = ECDSA_Signature;
 
 class MACType {
     public:
