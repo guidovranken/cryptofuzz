@@ -1361,6 +1361,20 @@ bool ExecutorBase<component::ECGDSA_Signature, operation::ECGDSA_Sign>::dontComp
     return false;
 }
 
+template <>
+bool ExecutorBase<component::ECRDSA_Signature, operation::ECRDSA_Sign>::dontCompare(const operation::ECRDSA_Sign& operation) const {
+    if (
+            operation.curveType.Get() != CF_ECC_CURVE("ed25519") &&
+            operation.curveType.Get() != CF_ECC_CURVE("ed448") ) {
+        if ( operation.UseRandomNonce() ) {
+            /* Don't compare ECRDSA signatures comptued from a randomly generated nonce */
+            return true;
+        }
+    }
+
+    return false;
+}
+
 /* OpenSSL DES_EDE3_WRAP randomizes the IV, result is different each time */
 template <>
 bool ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>::dontCompare(const operation::SymmetricEncrypt& operation) const {

@@ -115,6 +115,33 @@ end:
                 return nullptr;
         }
     }
+
+    std::optional<hash_alg_type> To_hash_alg_type(const uint64_t digestType) {
+        switch ( digestType ) {
+            case    CF_DIGEST("SHA224"):
+                return SHA224;
+            case    CF_DIGEST("SHA256"):
+                return SHA256;
+            case    CF_DIGEST("SHA384"):
+                return SHA384;
+            case    CF_DIGEST("SHA512"):
+                return SHA512;
+            case    CF_DIGEST("SHA512-224"):
+                return SHA512_224;
+            case    CF_DIGEST("SHA512-256"):
+                return SHA512_256;
+            case    CF_DIGEST("SHA3-224"):
+                return SHA3_224;
+            case    CF_DIGEST("SHA3-256"):
+                return SHA3_256;
+            case    CF_DIGEST("SHA3-384"):
+                return SHA3_384;
+            case    CF_DIGEST("SHA3-512"):
+                return SHA3_512;
+            default:
+                return std::nullopt;
+        }
+    }
 }
 }
 }
@@ -268,17 +295,15 @@ std::optional<component::ECC_PublicKey> libecc::OpECC_PrivateToPublic(operation:
 namespace libecc_detail {
 
     typedef int (*ecxdsa_sign_raw_t)(struct ec_sign_context *ctx, const u8 *input, u8 inputlen, u8 *sig, u8 siglen, const u8 *nonce, u8 noncelen);
+    typedef int (*ecxdsa_sign_update_t)(struct ec_sign_context *ctx, const u8 *chunk, u32 chunklen);
+    typedef int (*ecxdsa_sign_finalize_t)(struct ec_sign_context *ctx, u8 *sig, u8 siglen);
 
     template <class Operation, ec_sig_alg_type AlgType>
-    std::optional<component::ECDSA_Signature> ECxDSA_Sign(const Operation& op, const ecxdsa_sign_raw_t ecxdsa_sign_raw) {
-        if ( op.UseRandomNonce() == false && op.UseSpecifiedNonce() == false ) {
-            return std::nullopt;
-        }
-
-        if ( op.digestType.Get() != CF_DIGEST("NULL") ) {
-            return std::nullopt;
-        }
-
+    std::optional<component::ECDSA_Signature> ECxDSA_Sign(
+            const Operation& op,
+            const ecxdsa_sign_raw_t ecxdsa_sign_raw,
+            const ecxdsa_sign_update_t ecxdsa_sign_update,
+            const ecxdsa_sign_finalize_t ecxdsa_sign_finalize) {
         /* ecdsa_sign_raw supports messages up to 255 bytes */
         if ( op.cleartext.GetSize() > 255 ) {
             return std::nullopt;
@@ -296,6 +321,15 @@ namespace libecc_detail {
         size_t signature_size = 0;
         uint8_t* signature = nullptr;
         std::optional<std::vector<uint8_t>> nonce_bytes;
+        std::optional<hash_alg_type> hash;
+        util::Multipart parts;
+
+        if ( !op.digestType.Is(CF_DIGEST("NULL")) ) {
+            CF_CHECK_TRUE(op.UseRandomNonce());
+            CF_CHECK_NE(hash = libecc_detail::To_hash_alg_type(op.digestType.Get()), std::nullopt);
+        } else {
+            CF_CHECK_TRUE(op.UseSpecifiedNonce());
+        }
 
         CF_CHECK_NE(pub = libecc_detail::OpECC_PrivateToPublic(ds, op.curveType, op.priv), std::nullopt);
 
@@ -321,7 +355,11 @@ namespace libecc_detail {
         CF_ASSERT((signature_size % 2) == 0, "Signature size is not multiple of 2");
         signature = util::malloc(signature_size);
 
-        CF_CHECK_EQ(ec_sign_init(&ctx, &kp, AlgType, SHA256), 0);
+        if ( op.digestType.Is(CF_DIGEST("NULL")) ) {
+            CF_CHECK_EQ(ec_sign_init(&ctx, &kp, AlgType, SHA256), 0);
+        } else {
+            CF_CHECK_EQ(ec_sign_init(&ctx, &kp, AlgType, *hash), 0);
+        }
 
         if ( op.UseSpecifiedNonce() == true ) {
             /* ecdsa_sign_raw crashes if nonce is 0 */
@@ -333,14 +371,27 @@ namespace libecc_detail {
             CF_CHECK_LTE(nonce_bytes->size(), 255);
         }
 
+        if ( !op.digestType.Is(CF_DIGEST("NULL")) ) {
+            parts = util::ToParts(ds, op.cleartext);
+        }
+
         CF_INSTALL_JMP();
 
-        CF_CHECK_EQ(ecxdsa_sign_raw(
-                    &ctx,
-                    op.cleartext.GetPtr(), op.cleartext.GetSize(),
-                    signature, signature_size,
-                    op.UseSpecifiedNonce() ? nonce_bytes->data() : nullptr,
-                    op.UseSpecifiedNonce() ? nonce_bytes->size() : 0), 0);
+        if ( op.digestType.Is(CF_DIGEST("NULL")) ) {
+            CF_CHECK_EQ(ecxdsa_sign_raw(
+                        &ctx,
+                        op.cleartext.GetPtr(), op.cleartext.GetSize(),
+                        signature, signature_size,
+                        op.UseSpecifiedNonce() ? nonce_bytes->data() : nullptr,
+                        op.UseSpecifiedNonce() ? nonce_bytes->size() : 0), 0);
+        } else {
+            for (const auto& part : parts) {
+                CF_CHECK_EQ(ecxdsa_sign_update(&ctx, part.first, part.second), 0);
+            }
+
+            CF_CHECK_EQ(ecxdsa_sign_finalize(&ctx, signature, signature_size), 0);
+        }
+
         ret = {
             {
                 util::BinToDec(signature, signature_size / 2),
@@ -359,9 +410,16 @@ end:
     }
 
     typedef int (*ecxdsa_verify_raw_t)(struct ec_verify_context *ctx, const u8 *input, u8 inputlen);
+    typedef int (*ecxdsa_verify_update_t)(struct ec_verify_context *ctx, const u8 *chunk, u32 chunklen);
+    typedef int (*ecxdsa_verify_finalize_t)(struct ec_verify_context *ctx);
 
     template <class Operation, ec_sig_alg_type AlgType>
-    std::optional<bool> ECxDSA_Verify(const Operation& op, const ec_sig_mapping* sm, const ecxdsa_verify_raw_t ecxdsa_verify_raw) {
+    std::optional<bool> ECxDSA_Verify(
+            const Operation& op,
+            const ec_sig_mapping* sm,
+            const ecxdsa_verify_raw_t ecxdsa_verify_raw,
+            const ecxdsa_verify_update_t ecxdsa_verify_update,
+            const ecxdsa_verify_finalize_t ecxdsa_verify_finalize) {
         if ( op.digestType.Get() != CF_DIGEST("NULL") ) {
             return std::nullopt;
         }
@@ -382,6 +440,12 @@ end:
         std::vector<uint8_t> pub;
         std::vector<uint8_t> sig;
         std::optional<std::vector<uint8_t>> X, Y, Z;
+        std::optional<hash_alg_type> hash;
+        util::Multipart parts;
+
+        if ( !op.digestType.Is(CF_DIGEST("NULL")) ) {
+            CF_CHECK_NE(hash = libecc_detail::To_hash_alg_type(op.digestType.Get()), std::nullopt);
+        }
 
         /* Load curve */
         CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
@@ -426,7 +490,12 @@ end:
 
 
         CF_CHECK_EQ(ec_verify_init(&ctx, &(kp.pub_key), sig.data(), sig.size(), AlgType, SHA256), 0);
-        {
+
+        if ( !op.digestType.Is(CF_DIGEST("NULL")) ) {
+            parts = util::ToParts(ds, op.cleartext);
+        }
+
+        if ( op.digestType.Is(CF_DIGEST("NULL")) ) {
             const auto cleartext_ptr = op.cleartext.GetPtr();
 
             /* libecc has an explicit check for NULL input which causes ecdsa_verify_raw
@@ -437,6 +506,12 @@ end:
             CF_CHECK_NE(cleartext_ptr, nullptr);
 
             ret = ecxdsa_verify_raw(&ctx, cleartext_ptr, op.cleartext.GetSize()) == 0;
+        } else {
+            for (const auto& part : parts) {
+                CF_CHECK_EQ(ecxdsa_verify_update(&ctx, part.first, part.second), 0);
+            }
+
+            ret = ecxdsa_verify_finalize(&ctx) == 0;
         }
 
 end:
@@ -449,27 +524,27 @@ end:
 } /* namespace libecc_detail */
 
 std::optional<component::ECDSA_Signature> libecc::OpECDSA_Sign(operation::ECDSA_Sign& op) {
-    return libecc_detail::ECxDSA_Sign<operation::ECDSA_Sign, ECDSA>(op, ecdsa_sign_raw);
+    return libecc_detail::ECxDSA_Sign<operation::ECDSA_Sign, ECDSA>(op, ecdsa_sign_raw, _ecdsa_sign_update, _ecdsa_sign_finalize);
 }
 
 std::optional<component::ECGDSA_Signature> libecc::OpECGDSA_Sign(operation::ECGDSA_Sign& op) {
-    return libecc_detail::ECxDSA_Sign<operation::ECGDSA_Sign, ECGDSA>(op, ecgdsa_sign_raw);
+    return libecc_detail::ECxDSA_Sign<operation::ECGDSA_Sign, ECGDSA>(op, ecgdsa_sign_raw, _ecgdsa_sign_update, _ecgdsa_sign_finalize);
 }
 
 std::optional<component::ECRDSA_Signature> libecc::OpECRDSA_Sign(operation::ECRDSA_Sign& op) {
-    return libecc_detail::ECxDSA_Sign<operation::ECRDSA_Sign, ECRDSA>(op, ecrdsa_sign_raw);
+    return libecc_detail::ECxDSA_Sign<operation::ECRDSA_Sign, ECRDSA>(op, ecrdsa_sign_raw, _ecrdsa_sign_update, _ecrdsa_sign_finalize);
 }
 
 std::optional<bool> libecc::OpECDSA_Verify(operation::ECDSA_Verify& op) {
-    return libecc_detail::ECxDSA_Verify<operation::ECDSA_Verify, ECDSA>(op, libecc_detail::sm_ecdsa, ecdsa_verify_raw);
+    return libecc_detail::ECxDSA_Verify<operation::ECDSA_Verify, ECDSA>(op, libecc_detail::sm_ecdsa, ecdsa_verify_raw, _ecdsa_verify_update, _ecdsa_verify_finalize);
 }
 
 std::optional<bool> libecc::OpECGDSA_Verify(operation::ECGDSA_Verify& op) {
-    return libecc_detail::ECxDSA_Verify<operation::ECGDSA_Verify, ECGDSA>(op, libecc_detail::sm_ecgdsa, ecgdsa_verify_raw);
+    return libecc_detail::ECxDSA_Verify<operation::ECGDSA_Verify, ECGDSA>(op, libecc_detail::sm_ecgdsa, ecgdsa_verify_raw, _ecgdsa_verify_update, _ecgdsa_verify_finalize);
 }
 
 std::optional<bool> libecc::OpECRDSA_Verify(operation::ECRDSA_Verify& op) {
-    return libecc_detail::ECxDSA_Verify<operation::ECRDSA_Verify, ECRDSA>(op, libecc_detail::sm_ecrdsa, ecrdsa_verify_raw);
+    return libecc_detail::ECxDSA_Verify<operation::ECRDSA_Verify, ECRDSA>(op, libecc_detail::sm_ecrdsa, ecrdsa_verify_raw, _ecrdsa_verify_update, _ecrdsa_verify_finalize);
 }
 
 std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op) {
