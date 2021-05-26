@@ -420,10 +420,6 @@ end:
             const ecxdsa_verify_raw_t ecxdsa_verify_raw,
             const ecxdsa_verify_update_t ecxdsa_verify_update,
             const ecxdsa_verify_finalize_t ecxdsa_verify_finalize) {
-        if ( op.digestType.Get() != CF_DIGEST("NULL") ) {
-            return std::nullopt;
-        }
-
         /* ecdsa_verify_raw supports messages up to 255 bytes */
         if ( op.cleartext.GetSize() > 255 ) {
             return std::nullopt;
@@ -462,6 +458,11 @@ end:
             sig.insert(std::end(sig), std::begin(*R), std::end(*R));
             sig.insert(std::end(sig), std::begin(*S), std::end(*S));
         }
+
+        if ( !op.digestType.Is(CF_DIGEST("NULL")) ) {
+            parts = util::ToParts(ds, op.cleartext);
+        }
+
         {
             const size_t pubSize = BYTECEIL(params.ec_curve.a.ctx->p_bitlen) * 3;
             CF_ASSERT((pubSize % 2) == 0, "Public key byte size is not even");
@@ -488,12 +489,7 @@ end:
             CF_CHECK_EQ(prj_pt_is_on_curve(&kp.pub_key.y), 1);
         }
 
-
         CF_CHECK_EQ(ec_verify_init(&ctx, &(kp.pub_key), sig.data(), sig.size(), AlgType, SHA256), 0);
-
-        if ( !op.digestType.Is(CF_DIGEST("NULL")) ) {
-            parts = util::ToParts(ds, op.cleartext);
-        }
 
         if ( op.digestType.Is(CF_DIGEST("NULL")) ) {
             const auto cleartext_ptr = op.cleartext.GetPtr();
