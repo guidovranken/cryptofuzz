@@ -489,7 +489,11 @@ end:
             CF_CHECK_EQ(prj_pt_is_on_curve(&kp.pub_key.y), 1);
         }
 
-        CF_CHECK_EQ(ec_verify_init(&ctx, &(kp.pub_key), sig.data(), sig.size(), AlgType, SHA256), 0);
+        if ( op.digestType.Is(CF_DIGEST("NULL")) ) {
+            CF_CHECK_EQ(ec_verify_init(&ctx, &(kp.pub_key), sig.data(), sig.size(), AlgType, SHA256), 0);
+        } else {
+            CF_CHECK_EQ(ec_verify_init(&ctx, &(kp.pub_key), sig.data(), sig.size(), AlgType, *hash), 0);
+        }
 
         if ( op.digestType.Is(CF_DIGEST("NULL")) ) {
             const auto cleartext_ptr = op.cleartext.GetPtr();
