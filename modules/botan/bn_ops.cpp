@@ -870,7 +870,17 @@ bool AddMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std
                     }
 
                     ::Botan::secure_vector<::Botan::word> ws;
-                    res = bn[0].Ref().mod_add(bn[1].Ref(), bn[2].Ref(), ws);
+                    try {
+                        res = bn[0].Ref().mod_add(bn[1].Ref(), bn[2].Ref(), ws);
+                    } catch ( ::Botan::Invalid_Argument& e ) {
+                        /* mod_add is expected to throw an exception when any argument is negative */
+                        if ( bn[0].Ref() < 0 || bn[1].Ref() < 0 || bn[2].Ref() < 0) {
+                            return false;
+                        }
+
+                        /* Rethrow */
+                        throw e;
+                    }
                 }
                 break;
             default:
