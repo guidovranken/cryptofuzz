@@ -13,7 +13,7 @@ noble-secp256k1.bytecode : header.js harness.js ids.js
 	test $(LIBFUZZER_JS_PATH)
 	test $(NOBLE_SECP256K1_PATH)
 	rm -rf noble-secp256k1.bytecode
-	cat header.js $(NOBLE_SECP256K1_PATH) ids.js harness.js >combined.js
+	cat header.js $(NOBLE_SECP256K1_PATH) ids.js crypto-js/core.js crypto-js/x64-core.js crypto-js/sha256.js crypto-js/hmac.js harness.js >combined.js
 	$(LIBFUZZER_JS_PATH)/to_bytecode combined.js noble-secp256k1.bytecode
 noble-secp256k1.bytecode.h : noble-secp256k1.bytecode
 	xxd -i noble-secp256k1.bytecode >noble-secp256k1.bytecode.h

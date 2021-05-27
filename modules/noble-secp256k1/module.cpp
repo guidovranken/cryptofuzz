@@ -51,21 +51,25 @@ std::optional<component::ECDSA_Signature> noble_secp256k1::OpECDSA_Sign(operatio
     if ( !op.UseRFC6979Nonce() ) {
         return ret;
     }
-    
-    if ( !op.digestType.Is(CF_DIGEST("NULL")) ) {
+
+    if ( !op.digestType.Is(CF_DIGEST("NULL")) && !op.digestType.Is(CF_DIGEST("SHA256")) ) {
         return ret;
     }
 
-    {
-        auto json = op.ToJSON();
-        json["operation"] = std::to_string(CF_OPERATION("ECDSA_Sign"));
+    auto json = op.ToJSON();
+    json["operation"] = std::to_string(CF_OPERATION("ECDSA_Sign"));
 
-        const auto res = ((JS*)js)->Run(json.dump());
+    if ( op.digestType.Is(CF_DIGEST("SHA256")) ) {
+        json["cleartext"] = op.cleartext.SHA256().ToJSON();
+    } else {
+        json["cleartext"] = op.cleartext.ECDSA_Pad(32).ToJSON();
+    }
 
-        if ( res != std::nullopt ) {
-            auto jsonRet = nlohmann::json::parse(*res);
-            ret = component::ECDSA_Signature(jsonRet);
-        }
+    const auto res = ((JS*)js)->Run(json.dump());
+
+    if ( res != std::nullopt ) {
+        auto jsonRet = nlohmann::json::parse(*res);
+        ret = component::ECDSA_Signature(jsonRet);
     }
 
     return ret;
