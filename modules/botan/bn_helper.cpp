@@ -16,7 +16,7 @@ void Bignum::modify(void) {
 
     try {
         /* Binary encode/decode */
-        if ( ds->Get<bool>() ) {
+        if ( bn >= 0 && ds->Get<bool>() ) {
             uint8_t* encoded = util::malloc(bn.bytes());
             CF_NORET(bn.binary_encode(encoded, bn.bytes()));
             CF_NORET(bn.binary_decode(encoded, bn.bytes()));
