@@ -67,6 +67,10 @@ var OpBignumCalc = function(FuzzerInput) {
     } else if ( IsIsZero(calcOp) ) {
         ret = bn[0].isZero(bn[1]) ? new BigNumber(1) : new BigNumber(0);
     } else if ( IsSqrt(calcOp) ) {
+        /* Prevent timeouts */
+        if ( FuzzerInput['bn0'].length > 3000 ) {
+            return;
+        }
         ret = new BigNumber( bn[0].squareRoot().toFixed(0) );
     } else {
         return;
