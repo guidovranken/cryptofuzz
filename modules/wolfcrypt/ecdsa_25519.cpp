@@ -91,7 +91,7 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Curve25519(operati
     /* Load private key */
     {
         CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
-        CF_CHECK_EQ(mp_to_unsigned_bin_len(priv.GetPtr(), priv_bytes, sizeof(priv_bytes)), MP_OKAY);
+        CF_CHECK_TRUE(priv.ToBin(priv_bytes, sizeof(priv_bytes)));
         priv_bytes[0] &= 248;
         priv_bytes[31] &= 127;
         priv_bytes[31] |= 64;
@@ -141,7 +141,7 @@ std::optional<bool> OpECC_ValidatePubkey_Curve25519(operation::ECC_ValidatePubke
     uint8_t pub_bytes[CURVE25519_KEYSIZE];
 
     CF_CHECK_EQ(pub.Set(op.pub.first.ToString(ds)), true);
-    CF_CHECK_EQ(mp_to_unsigned_bin_len(pub.GetPtr(), pub_bytes, sizeof(pub_bytes)), MP_OKAY);
+    CF_CHECK_TRUE(pub.ToBin(pub_bytes, sizeof(pub_bytes)));
 
     haveAllocFailure = false;
     ret = wc_curve25519_check_public(pub_bytes, sizeof(pub_bytes), EC25519_BIG_ENDIAN) == 0;

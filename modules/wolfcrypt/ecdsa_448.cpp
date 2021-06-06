@@ -91,7 +91,7 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Curve448(operation
     /* Load private key */
     {
         CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
-        CF_CHECK_EQ(mp_to_unsigned_bin_len(priv.GetPtr(), priv_bytes, sizeof(priv_bytes)), MP_OKAY);
+        CF_CHECK_TRUE(priv.ToBin(priv_bytes, sizeof(priv_bytes)));
         priv_bytes[0] &= 0xFC;
         priv_bytes[55] |= 0x80;
     }
@@ -127,7 +127,7 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Ed448(operation::E
     /* Load private key */
     {
         CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
-        CF_CHECK_EQ(mp_to_unsigned_bin_len(priv.GetPtr(), key.k, sizeof(key.k)), MP_OKAY);
+        CF_CHECK_TRUE(priv.ToBin(key.k, sizeof(key.k)));
     }
 
     /* Convert to public key */
@@ -180,7 +180,7 @@ std::optional<bool> OpECC_ValidatePubkey_Curve448(operation::ECC_ValidatePubkey&
     uint8_t pub_bytes[CURVE448_KEY_SIZE];
 
     CF_CHECK_EQ(pub.Set(op.pub.first.ToString(ds)), true);
-    CF_CHECK_EQ(mp_to_unsigned_bin_len(pub.GetPtr(), pub_bytes, sizeof(pub_bytes)), MP_OKAY);
+    CF_CHECK_TRUE(pub.ToBin(pub_bytes, sizeof(pub_bytes)));
 
     haveAllocFailure = false;
     ret = wc_curve448_check_public(pub_bytes, sizeof(pub_bytes), EC448_BIG_ENDIAN) == 0;

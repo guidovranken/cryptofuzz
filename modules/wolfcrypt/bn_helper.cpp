@@ -301,6 +301,10 @@ end:
 bool Bignum::ToBin(uint8_t* dest, const size_t size) {
     bool ret = false;
 
+    const auto required = mp_unsigned_bin_size(GetPtr());
+    CF_ASSERT(required >= 0, "mp_unsigned_bin_size returned negative value");
+
+    CF_CHECK_GTE(size, static_cast<size_t>(required));
     CF_CHECK_EQ(mp_to_unsigned_bin_len(GetPtr(), dest, size), MP_OKAY);
 
     ret = true;
