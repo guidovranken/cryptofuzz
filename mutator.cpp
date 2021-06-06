@@ -1556,7 +1556,14 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
         dsOut.PutData(dsOut2.GetOut());
 
         /* Modifier */
-        dsOut.PutData(std::vector<uint8_t>(0));
+        {
+            size_t modifierMaxSize = maxSize / 10;
+            if ( modifierMaxSize == 0 ) {
+                modifierMaxSize = 1;
+            }
+
+            dsOut.PutData(std::vector<uint8_t>(PRNG() % modifierMaxSize, PRNG() % 256));
+        }
 
         /* Module ID */
         dsOut.Put<uint64_t>( ModuleLUT[ PRNG() % (sizeof(ModuleLUT) / sizeof(ModuleLUT[0])) ].id );
