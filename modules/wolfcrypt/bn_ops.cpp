@@ -760,6 +760,10 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             break;
         case    2:
             {
+                /* mp_div_2_mod_ct does not support negative numbers */
+                CF_CHECK_NE(mp_cmp_d(bn[0].GetPtr(), 0), MP_LT);
+                CF_CHECK_NE(mp_cmp_d(bn[0].GetPtr(), 0), MP_LT);
+
                 /* bn[0] *= 2 */
                 MP_CHECK_EQ(mp_mul_d(bn[0].GetPtr(), 2, bn.GetDestPtr(0)), MP_OKAY);
 
