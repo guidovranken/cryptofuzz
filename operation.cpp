@@ -13,7 +13,6 @@ std::string Digest::ToString(void) const {
     ss << "operation name: Digest" << std::endl;
     ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -35,7 +34,6 @@ std::string HMAC::ToString(void) const {
     ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
     ss << "key: " << util::HexDump(cipher.key.Get()) << std::endl;
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -62,7 +60,6 @@ std::string SymmetricEncrypt::ToString(void) const {
     ss << "cipher: " << repository::CipherToString(cipher.cipherType.Get()) << std::endl;
     ss << "ciphertextSize: " << std::to_string(ciphertextSize) << std::endl;
     ss << "tagSize: " << (tagSize ? std::to_string(*tagSize) : "nullopt") << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -93,7 +90,6 @@ std::string SymmetricDecrypt::ToString(void) const {
     ss << "cipher key: " << util::HexDump(cipher.key.Get()) << std::endl;
     ss << "cipher: " << repository::CipherToString(cipher.cipherType.Get()) << std::endl;
     ss << "cleartextSize: " << std::to_string(cleartextSize) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -133,7 +129,6 @@ std::string KDF_SCRYPT::ToString(void) const {
     ss << "r: " << std::to_string(r) << std::endl;
     ss << "p: " << std::to_string(p) << std::endl;
     ss << "keySize: " << std::to_string(keySize) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -161,7 +156,6 @@ std::string KDF_HKDF::ToString(void) const {
     ss << "salt: " << util::HexDump(salt.Get()) << std::endl;
     ss << "info: " << util::HexDump(info.Get()) << std::endl;
     ss << "keySize: " << std::to_string(keySize) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -187,7 +181,6 @@ std::string KDF_TLS1_PRF::ToString(void) const {
     ss << "secret: " << util::HexDump(secret.Get()) << std::endl;
     ss << "seed: " << util::HexDump(seed.Get()) << std::endl;
     ss << "keySize: " << std::to_string(keySize) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -213,7 +206,6 @@ std::string KDF_PBKDF::ToString(void) const {
     ss << "salt: " << util::HexDump(salt.Get()) << std::endl;
     ss << "iterations: " << std::to_string(iterations) << std::endl;
     ss << "keySize: " << std::to_string(keySize) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -240,7 +232,6 @@ std::string KDF_PBKDF1::ToString(void) const {
     ss << "salt: " << util::HexDump(salt.Get()) << std::endl;
     ss << "iterations: " << std::to_string(iterations) << std::endl;
     ss << "keySize: " << std::to_string(keySize) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -267,7 +258,6 @@ std::string KDF_PBKDF2::ToString(void) const {
     ss << "salt: " << util::HexDump(salt.Get()) << std::endl;
     ss << "iterations: " << std::to_string(iterations) << std::endl;
     ss << "keySize: " << std::to_string(keySize) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -296,7 +286,6 @@ std::string KDF_ARGON2::ToString(void) const {
     ss << "memory: " << std::to_string(memory) << std::endl;
     ss << "iterations: " << std::to_string(iterations) << std::endl;
     ss << "keySize: " << std::to_string(keySize) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -325,7 +314,6 @@ std::string KDF_SSH::ToString(void) const {
     ss << "session_id: " << util::HexDump(session_id.Get()) << std::endl;
     ss << "type: " << util::HexDump(type.Get()) << std::endl;
     ss << "keySize: " << std::to_string(keySize) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -352,7 +340,6 @@ std::string KDF_X963::ToString(void) const {
     ss << "secret: " << util::HexDump(secret.Get()) << std::endl;
     ss << "info: " << util::HexDump(info.Get()) << std::endl;
     ss << "keySize: " << std::to_string(keySize) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -378,7 +365,6 @@ std::string KDF_BCRYPT::ToString(void) const {
     ss << "salt: " << util::HexDump(salt.Get()) << std::endl;
     ss << "iterations: " << std::to_string(iterations) << std::endl;
     ss << "keySize: " << std::to_string(keySize) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -411,7 +397,6 @@ std::string KDF_SP_800_108::ToString(void) const {
     ss << "label: " << util::HexDump(label.Get()) << std::endl;
     ss << "mode: " << std::to_string(mode) << std::endl;
     ss << "keySize: " << std::to_string(keySize) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -438,7 +423,6 @@ std::string CMAC::ToString(void) const {
     ss << "cipher: " << repository::CipherToString(cipher.cipherType.Get()) << std::endl;
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
     ss << "key: " << util::HexDump(cipher.key.Get()) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -459,7 +443,6 @@ std::string ECC_PrivateToPublic::ToString(void) const {
     ss << "operation name: ECC_PrivateToPublic" << std::endl;
     ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
     ss << "private key: " << priv.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -481,7 +464,6 @@ std::string ECC_ValidatePubkey::ToString(void) const {
     ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
     ss << "public key X: " << pub.first.ToString() << std::endl;
     ss << "public key Y: " << pub.second.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -502,7 +484,6 @@ std::string ECC_GenerateKeyPair::ToString(void) const {
 
     ss << "operation name: ECC_GenerateKeyPair" << std::endl;
     ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -537,7 +518,6 @@ std::string ECDSA_Sign::ToString(void) const {
     ss << std::endl;
 
     ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -577,7 +557,6 @@ std::string ECGDSA_Sign::ToString(void) const {
     ss << std::endl;
 
     ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -617,7 +596,6 @@ std::string ECRDSA_Sign::ToString(void) const {
     ss << std::endl;
 
     ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -647,7 +625,6 @@ std::string ECDSA_Verify::ToString(void) const {
     ss << "signature R: " << signature.signature.first.ToString() << std::endl;
     ss << "signature S: " << signature.signature.second.ToString() << std::endl;
     ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -678,7 +655,6 @@ std::string ECGDSA_Verify::ToString(void) const {
     ss << "signature R: " << signature.signature.first.ToString() << std::endl;
     ss << "signature S: " << signature.signature.second.ToString() << std::endl;
     ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -709,7 +685,6 @@ std::string ECRDSA_Verify::ToString(void) const {
     ss << "signature R: " << signature.signature.first.ToString() << std::endl;
     ss << "signature S: " << signature.signature.second.ToString() << std::endl;
     ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -738,7 +713,6 @@ std::string ECDSA_Recover::ToString(void) const {
     ss << "signature S: " << signature.second.ToString() << std::endl;
     ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
     ss << "recovery ID: " << std::to_string(id) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -765,7 +739,6 @@ std::string ECDH_Derive::ToString(void) const {
     ss << "public key 1 Y: " << pub1.second.ToString() << std::endl;
     ss << "public key 2 X: " << pub2.first.ToString() << std::endl;
     ss << "public key 2 Y: " << pub2.second.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -794,7 +767,6 @@ std::string ECIES_Encrypt::ToString(void) const {
     ss << "public key Y: " << pub.second.ToString() << std::endl;
     ss << "cipher: " << repository::CipherToString(cipherType.Get()) << std::endl;
     ss << "iv: " << (iv ? util::HexDump(iv->Get()) : "nullopt") << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -826,7 +798,6 @@ std::string ECIES_Decrypt::ToString(void) const {
     ss << "public key Y: " << pub.second.ToString() << std::endl;
     ss << "cipher: " << repository::CipherToString(cipherType.Get()) << std::endl;
     ss << "iv: " << (iv ? util::HexDump(iv->Get()) : "nullopt") << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -853,7 +824,6 @@ std::string DH_GenerateKeyPair::ToString(void) const {
     ss << "operation name: DH_GenerateKeyPair" << std::endl;
     ss << "prime: " << prime.ToString() << std::endl;
     ss << "base: " << base.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -876,7 +846,6 @@ std::string DH_Derive::ToString(void) const {
     ss << "base: " << base.ToString() << std::endl;
     ss << "public key: " << pub.ToString() << std::endl;
     ss << "private key: " << priv.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -902,7 +871,6 @@ std::string BignumCalc::ToString(void) const {
     ss << "bignum 2: " << bn1.ToString() << std::endl;
     ss << "bignum 3: " << bn2.ToString() << std::endl;
     ss << "bignum 4: " << bn3.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -926,7 +894,6 @@ std::string BLS_PrivateToPublic::ToString(void) const {
     ss << "operation name: BLS_PrivateToPublic" << std::endl;
     ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
     ss << "private key: " << priv.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -946,7 +913,6 @@ std::string BLS_PrivateToPublic_G2::ToString(void) const {
     ss << "operation name: BLS_PrivateToPublic_G2" << std::endl;
     ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
     ss << "private key: " << priv.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -976,7 +942,6 @@ std::string BLS_Sign::ToString(void) const {
     }
     ss << "dest: " << util::HexDump(dest.Get()) << std::endl;
     ss << "aug: " << util::HexDump(aug.Get()) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1010,7 +975,6 @@ std::string BLS_Verify::ToString(void) const {
     ss << "signature W: " << signature.first.second.ToString() << std::endl;
     ss << "signature X: " << signature.second.first.ToString() << std::endl;
     ss << "signature Y: " << signature.second.second.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1043,7 +1007,6 @@ std::string BLS_Pairing::ToString(void) const {
     for (const auto& c : components.c) {
         ss << "msg: " << util::HexDump(c.msg.Get()) << std::endl;
     }
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1065,7 +1028,6 @@ std::string BLS_HashToG1::ToString(void) const {
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
     ss << "dest: " << util::HexDump(dest.Get()) << std::endl;
     ss << "aug: " << util::HexDump(aug.Get()) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1089,7 +1051,6 @@ std::string BLS_HashToG2::ToString(void) const {
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
     ss << "dest: " << util::HexDump(dest.Get()) << std::endl;
     ss << "aug: " << util::HexDump(aug.Get()) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1112,7 +1073,6 @@ std::string BLS_IsG1OnCurve::ToString(void) const {
     ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
     ss << "G1 X: " << g1.first.ToString() << std::endl;
     ss << "G1 Y: " << g1.second.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1138,7 +1098,6 @@ std::string BLS_IsG2OnCurve::ToString(void) const {
     ss << "G2 W: " << g2.first.second.ToString() << std::endl;
     ss << "G2 X: " << g2.second.first.ToString() << std::endl;
     ss << "G2 Y: " << g2.second.second.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1164,7 +1123,6 @@ std::string BLS_GenerateKeyPair::ToString(void) const {
     ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
     ss << "ikm: " << util::HexDump(ikm.Get()) << std::endl;
     ss << "info: " << util::HexDump(info.Get()) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1185,7 +1143,6 @@ std::string BLS_Decompress_G1::ToString(void) const {
     ss << "operation name: BLS_Decompress_G1" << std::endl;
     ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
     ss << "compressed: " << compressed.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1206,7 +1163,6 @@ std::string BLS_Compress_G1::ToString(void) const {
     ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
     ss << "uncompressed X:" << uncompressed.first.ToString() << std::endl;
     ss << "uncompressed Y:" << uncompressed.second.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1228,7 +1184,6 @@ std::string BLS_Decompress_G2::ToString(void) const {
     ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
     ss << "compressed X: " << compressed.first.ToString() << std::endl;
     ss << "compressed Y: " << compressed.second.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1252,7 +1207,6 @@ std::string BLS_Compress_G2::ToString(void) const {
     ss << "uncompressed W:" << uncompressed.first.second.ToString() << std::endl;
     ss << "uncompressed X:" << uncompressed.second.first.ToString() << std::endl;
     ss << "uncompressed Y:" << uncompressed.second.second.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1278,7 +1232,6 @@ std::string BLS_G1_Add::ToString(void) const {
     ss << "A Y: " << a.second.ToString() << std::endl;
     ss << "B X: " << b.first.ToString() << std::endl;
     ss << "B Y: " << b.second.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1306,7 +1259,6 @@ std::string BLS_G1_Mul::ToString(void) const {
     ss << "A X: " << a.first.ToString() << std::endl;
     ss << "A Y: " << a.second.ToString() << std::endl;
     ss << "B: " << b.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1334,7 +1286,6 @@ std::string BLS_G1_IsEq::ToString(void) const {
     ss << "A Y: " << a.second.ToString() << std::endl;
     ss << "B X: " << b.first.ToString() << std::endl;
     ss << "B Y: " << b.second.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1361,7 +1312,6 @@ std::string BLS_G1_Neg::ToString(void) const {
     ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
     ss << "A X: " << a.first.ToString() << std::endl;
     ss << "A Y: " << a.second.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1391,7 +1341,6 @@ std::string BLS_G2_Add::ToString(void) const {
     ss << "B W:" << b.first.second.ToString() << std::endl;
     ss << "B X:" << b.second.first.ToString() << std::endl;
     ss << "B Y:" << b.second.second.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1425,7 +1374,6 @@ std::string BLS_G2_Mul::ToString(void) const {
     ss << "A X:" << a.second.first.ToString() << std::endl;
     ss << "A Y:" << a.second.second.ToString() << std::endl;
     ss << "B: " << b.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1459,7 +1407,6 @@ std::string BLS_G2_IsEq::ToString(void) const {
     ss << "B W:" << b.first.second.ToString() << std::endl;
     ss << "B X:" << b.second.first.ToString() << std::endl;
     ss << "B Y:" << b.second.second.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1492,7 +1439,6 @@ std::string BLS_G2_Neg::ToString(void) const {
     ss << "A W:" << a.first.second.ToString() << std::endl;
     ss << "A X:" << a.second.first.ToString() << std::endl;
     ss << "A Y:" << a.second.second.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1516,7 +1462,6 @@ std::string Misc::ToString(void) const {
 
     ss << "operation name: Misc" << std::endl;
     ss << "operation: " << std::to_string(operation.Get()) << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1537,7 +1482,6 @@ std::string SR25519_Verify::ToString(void) const {
     ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
     ss << "signature R: " << signature.signature.first.ToString() << std::endl;
     ss << "signature S: " << signature.signature.second.ToString() << std::endl;
-    ss << "modifier: " << util::HexDump(modifier.Get()) << std::endl;
 
     return ss.str();
 }

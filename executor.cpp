@@ -1637,6 +1637,10 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
             }
         }
 
+        if ( options.debug == true ) {
+            printf("modifier: %s\n", util::HexDump(op.modifier.Get()).c_str());
+        }
+
         results.push_back( {module, std::move(callModule(module, op))} );
 
         const auto& result = results.back();
