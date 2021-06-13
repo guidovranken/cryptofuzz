@@ -24,9 +24,7 @@
 #include <nettle/md2.h>
 #include <nettle/md4.h>
 #include <nettle/md5.h>
-#if defined(NETTLE_HAVE_AES_KEY_WRAP)
 #include <nettle/nist-keywrap.h>
-#endif
 #include <nettle/pbkdf2.h>
 #include <nettle/ripemd160.h>
 #include <nettle/salsa20.h>
@@ -822,7 +820,6 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
         }
         break;
-#if defined(NETTLE_HAVE_AES_KEY_WRAP)
         case CF_CIPHER("AES_128_WRAP"):
         {
             struct aes128_ctx ctx;
@@ -874,7 +871,6 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize() + 8));
         }
         break;
-#endif
     }
 
 end:
@@ -1344,7 +1340,6 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
         }
         break;
-#if defined(NETTLE_HAVE_AES_KEY_WRAP)
         case CF_CIPHER("AES_128_WRAP"):
         {
             struct aes128_ctx ctx;
@@ -1396,7 +1391,6 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize() - 8));
         }
         break;
-#endif
     }
 
 end:
