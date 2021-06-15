@@ -7,6 +7,7 @@
 extern "C" {
     #include <secp256k1.h>
     #include <secp256k1_recovery.h>
+    #include <secp256k1_schnorrsig.h>
 }
 
 namespace cryptofuzz {
@@ -93,6 +94,18 @@ end:
         memcpy(nonce32, data, 32);
 
         return counter == 0;
+    }
+
+    static int nonce_function_schnorrsig(unsigned char *nonce32, const unsigned char *msg32, const unsigned char *key32, const unsigned char *xonly_pk32, const unsigned char *algo16, void *data) {
+        (void)nonce32;
+        (void)msg32;
+        (void)key32;
+        (void)xonly_pk32;
+        (void)algo16;
+
+        memcpy(nonce32, data, 32);
+
+        return 1;
     }
 
 }
@@ -292,6 +305,127 @@ std::optional<component::ECC_PublicKey> secp256k1::OpECDSA_Recover(operation::EC
     } else {
         //ret = {"0", "0"};
     }
+
+end:
+    /* noret */ secp256k1_context_destroy(ctx);
+    return ret;
+}
+
+std::optional<component::Schnorr_Signature> secp256k1::OpSchnorr_Sign(operation::Schnorr_Sign& op) {
+    std::optional<component::Schnorr_Signature> ret = std::nullopt;
+
+    if ( op.UseBIP340Nonce() == false && op.UseSpecifiedNonce() == false ) {
+        return ret;
+    }
+
+    secp256k1_context* ctx = nullptr, *ctx_verify = nullptr;
+    secp256k1_xonly_pubkey pubkey;
+    std::vector<uint8_t> sig_bytes(64);
+    std::vector<uint8_t> pubkey_bytes(32);
+    secp256k1_keypair keypair;
+    uint8_t key[32];
+    uint8_t hash[32];
+    uint8_t specified_nonce[32];
+
+    CF_CHECK_EQ(op.curveType.Get(), CF_ECC_CURVE("secp256k1"));
+
+    CF_CHECK_NE(ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN), nullptr);
+
+    CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                op.priv.ToTrimmedString(),
+                key), true);
+
+    CF_CHECK_EQ(secp256k1_keypair_create(ctx, &keypair, key), 1);
+
+    if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
+        CF_CHECK_EQ(op.cleartext.GetSize(), sizeof(hash));
+        memcpy(hash, op.cleartext.GetPtr(), sizeof(hash));
+    } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
+        const auto _hash = crypto::sha256(op.cleartext.Get());
+        memcpy(hash, _hash.data(), _hash.size());
+    } else {
+        goto end;
+    }
+
+
+    if ( op.UseBIP340Nonce() == true ) {
+        CF_CHECK_EQ(secp256k1_schnorrsig_sign(ctx, sig_bytes.data(), hash, &keypair, secp256k1_nonce_function_bip340, nullptr), 1);
+    } else if ( op.UseSpecifiedNonce() == true ) {
+        CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                    op.nonce.ToTrimmedString(),
+                    specified_nonce), true);
+        CF_CHECK_EQ(secp256k1_schnorrsig_sign(ctx, sig_bytes.data(), hash, &keypair, secp256k1_detail::nonce_function_schnorrsig, specified_nonce), 1);
+    } else {
+        abort();
+    }
+
+    CF_CHECK_EQ(secp256k1_keypair_xonly_pub(ctx, &pubkey, nullptr, &keypair), 1);
+    CF_CHECK_EQ(secp256k1_xonly_pubkey_serialize(ctx, pubkey_bytes.data(), &pubkey), 1);
+
+    {
+        CF_CHECK_NE(ctx_verify = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY), nullptr);
+        CF_ASSERT(secp256k1_schnorrsig_verify(ctx_verify, sig_bytes.data(), hash, &pubkey) == 1, "Cannot verify generated signature");
+    }
+
+    {
+        boost::multiprecision::cpp_int x, r, s;
+
+        boost::multiprecision::import_bits(x, pubkey_bytes.begin(), pubkey_bytes.end());
+        boost::multiprecision::import_bits(r, sig_bytes.begin(), sig_bytes.begin() + 32);
+        boost::multiprecision::import_bits(s, sig_bytes.begin() + 32, sig_bytes.end());
+
+        ret = component::Schnorr_Signature(
+                {secp256k1_detail::toString(r), secp256k1_detail::toString(s)},
+                {secp256k1_detail::toString(x), "0"});
+    }
+
+end:
+    /* noret */ secp256k1_context_destroy(ctx);
+    /* noret */ secp256k1_context_destroy(ctx_verify);
+    return ret;
+}
+
+std::optional<bool> secp256k1::OpSchnorr_Verify(operation::Schnorr_Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+
+    secp256k1_context* ctx = nullptr;
+    secp256k1_xonly_pubkey pubkey;
+    uint8_t pubkey_bytes[32];
+    uint8_t sig_bytes[64];
+    uint8_t hash[32];
+
+    CF_CHECK_EQ(op.curveType.Get(), CF_ECC_CURVE("secp256k1"));
+
+    if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
+        CF_CHECK_EQ(op.cleartext.GetSize(), sizeof(hash));
+        memcpy(hash, op.cleartext.GetPtr(), sizeof(hash));
+    } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
+        const auto _hash = crypto::sha256(op.cleartext.Get());
+        memcpy(hash, _hash.data(), _hash.size());
+    } else {
+        goto end;
+    }
+
+    /* Beyond this point, a failure definitely means that the
+     * pubkey or signature is invalid */
+    ret = false;
+
+    CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                op.signature.pub.first.ToTrimmedString(),
+                pubkey_bytes), true);
+
+    CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                op.signature.signature.first.ToTrimmedString(),
+                sig_bytes), true);
+    CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                op.signature.signature.second.ToTrimmedString(),
+                sig_bytes + 32), true);
+
+    CF_CHECK_NE(ctx = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY), nullptr);
+
+    CF_CHECK_EQ(secp256k1_xonly_pubkey_parse(ctx, &pubkey, pubkey_bytes), 1);
+
+    ret = secp256k1_schnorrsig_verify(ctx, sig_bytes, hash, &pubkey) == 1 ? true : false;
 
 end:
     /* noret */ secp256k1_context_destroy(ctx);

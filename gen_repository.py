@@ -373,6 +373,8 @@ operations.Add( Operation("KDF_TLS1_PRF") )
 operations.Add( Operation("KDF_X963") )
 operations.Add( Operation("Misc") )
 operations.Add( Operation("SR25519_Verify") )
+operations.Add( Operation("Schnorr_Sign") )
+operations.Add( Operation("Schnorr_Verify") )
 operations.Add( Operation("SymmetricDecrypt") )
 operations.Add( Operation("SymmetricEncrypt") )
 

@@ -108,6 +108,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::Schnorr_Signature> OpSchnorr_Sign(operation::Schnorr_Sign& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) {
             (void)op;
             return std::nullopt;
@@ -117,6 +121,10 @@ class Module {
             return std::nullopt;
         }
         virtual std::optional<bool> OpECRDSA_Verify(operation::ECRDSA_Verify& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<bool> OpSchnorr_Verify(operation::Schnorr_Verify& op) {
             (void)op;
             return std::nullopt;
         }

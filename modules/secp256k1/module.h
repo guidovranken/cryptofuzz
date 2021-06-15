@@ -15,6 +15,8 @@ class secp256k1 : public Module {
         std::optional<component::ECDSA_Signature> OpECDSA_Sign(operation::ECDSA_Sign& op) override;
         std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) override;
         std::optional<component::ECC_PublicKey> OpECDSA_Recover(operation::ECDSA_Recover& op) override;
+        std::optional<component::Schnorr_Signature> OpSchnorr_Sign(operation::Schnorr_Sign& op) override;
+        std::optional<bool> OpSchnorr_Verify(operation::Schnorr_Verify& op) override;
 };
 
 } /* namespace module */

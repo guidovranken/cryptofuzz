@@ -352,6 +352,25 @@ void test(const operation::ECRDSA_Sign& op, const std::optional<component::ECRDS
     }
 }
 
+void test(const operation::Schnorr_Sign& op, const std::optional<component::Schnorr_Signature>& result) {
+    if ( result != std::nullopt ) {
+        test_ECC_PrivateKey(op.curveType.Get(), op.priv.ToTrimmedString());
+
+        if (
+                op.UseSpecifiedNonce() == true &&
+                !IsSpecialCurve(op.curveType.Get()) &&
+                op.nonce.ToTrimmedString() == "0"
+           ) {
+            std::cout << "0 is an invalid Schnorr nonce" << std::endl;
+            ::abort();
+        }
+
+        test_ECDSA_Signature(op.curveType.Get(),
+                result->signature.first.ToTrimmedString(),
+                result->signature.second.ToTrimmedString());
+    }
+}
+
 void test(const operation::ECDSA_Verify& op, const std::optional<bool>& result) {
     if ( result != std::nullopt && *result == true ) {
         test_ECDSA_Signature(op.curveType.Get(),
@@ -369,6 +388,14 @@ void test(const operation::ECGDSA_Verify& op, const std::optional<bool>& result)
 }
 
 void test(const operation::ECRDSA_Verify& op, const std::optional<bool>& result) {
+    if ( result != std::nullopt && *result == true ) {
+        test_ECDSA_Signature(op.curveType.Get(),
+                op.signature.signature.first.ToTrimmedString(),
+                op.signature.signature.second.ToTrimmedString());
+    }
+}
+
+void test(const operation::Schnorr_Verify& op, const std::optional<bool>& result) {
     if ( result != std::nullopt && *result == true ) {
         test_ECDSA_Signature(op.curveType.Get(),
                 op.signature.signature.first.ToTrimmedString(),
