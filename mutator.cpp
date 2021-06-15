@@ -86,6 +86,16 @@ static std::string getBuffer(size_t size, const bool alternativeSize = false) {
     return ret;
 }
 
+static std::vector<uint8_t> getBufferBin(const size_t size) {
+    std::vector<uint8_t> ret(size);
+
+    for (size_t i = 0; i < size; i++) {
+        ret[i] = PRNG();
+    }
+
+    return ret;
+}
+
 static std::string getBignum(bool mustBePositive = false) {
     std::string ret;
 
@@ -1631,7 +1641,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                 modifierMaxSize = 1;
             }
 
-            dsOut.PutData(std::vector<uint8_t>(PRNG() % modifierMaxSize, PRNG() % 256));
+            dsOut.PutData(getBufferBin(PRNG() % modifierMaxSize));
         }
 
         /* Module ID */
