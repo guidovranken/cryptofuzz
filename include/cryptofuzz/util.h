@@ -94,6 +94,7 @@ std::optional<std::pair<std::string, std::string>> SignatureFromDER(const std::s
 std::optional<std::pair<std::string, std::string>> SignatureFromDER(const std::vector<uint8_t> data);
 std::string SHA1(const std::vector<uint8_t> data);
 void HintBignum(const std::string bn);
+void HintBignum(const std::optional<std::string> bn);
 std::vector<uint8_t> Append(const std::vector<uint8_t> A, const std::vector<uint8_t> B);
 std::vector<uint8_t> RemoveLeadingZeroes(std::vector<uint8_t> v);
 std::vector<uint8_t> AddLeadingZeroes(fuzzing::datasource::Datasource& ds, const std::vector<uint8_t>& v);

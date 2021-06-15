@@ -31,6 +31,9 @@ namespace wolfCrypt_bignum_detail {
 #define MP_CHECK_EQ(expr, res) CF_CHECK_EQ(::cryptofuzz::module::wolfCrypt_bignum::wolfCrypt_bignum_detail::assertRet(expr), res);
 
     static int compare(Bignum& A, Bignum& B, Datasource& ds) {
+        util::HintBignum(A.ToDecString());
+        util::HintBignum(B.ToDecString());
+
         bool swap = false;
         try {
             swap = ds.Get<bool>();

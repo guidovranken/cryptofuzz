@@ -725,6 +725,12 @@ void HintBignum(const std::string bn) {
     }
 }
 
+void HintBignum(const std::optional<std::string> bn) {
+    if ( bn != std::nullopt ) {
+        HintBignum(*bn);
+    }
+}
+
 std::vector<uint8_t> Append(const std::vector<uint8_t> A, const std::vector<uint8_t> B) {
     std::vector<uint8_t> ret;
 
