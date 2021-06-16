@@ -31,8 +31,8 @@ namespace wolfCrypt_bignum_detail {
 #define MP_CHECK_EQ(expr, res) CF_CHECK_EQ(::cryptofuzz::module::wolfCrypt_bignum::wolfCrypt_bignum_detail::assertRet(expr), res);
 
     static int compare(Bignum& A, Bignum& B, Datasource& ds) {
-        util::HintBignum(A.ToDecString());
-        util::HintBignum(B.ToDecString());
+        util::HintBignumOpt(A.ToDecString());
+        util::HintBignumOpt(B.ToDecString());
 
         bool swap = false;
         try {
@@ -71,9 +71,7 @@ namespace wolfCrypt_bignum_detail {
             /* Use the nearest exponent of 2 as a hint for the mutator */
             const auto s = tmp.ToDecString();
 
-            if ( s != std::nullopt ) {
-                util::HintBignum(*s);
-            }
+            util::HintBignumOpt(s);
         }
 
         CF_CHECK_EQ(compare(A, tmp, ds), MP_EQ);

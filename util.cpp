@@ -725,7 +725,7 @@ void HintBignum(const std::string bn) {
     }
 }
 
-void HintBignum(const std::optional<std::string> bn) {
+void HintBignumOpt(const std::optional<std::string> bn) {
     if ( bn != std::nullopt ) {
         HintBignum(*bn);
     }
