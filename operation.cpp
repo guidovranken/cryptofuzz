@@ -1021,9 +1021,18 @@ nlohmann::json BLS_Sign::ToJSON(void) const {
 
     j["curveType"] = curveType.ToJSON();
 
+    j["hashOrPoint"] = hashOrPoint;
+
     j["priv"] = priv.ToJSON();
 
-    j["cleartext"] = cleartext.ToJSON();
+    if ( hashOrPoint == true ) {
+        j["cleartext"] = cleartext.ToJSON();
+    } else {
+        j["g2_v"] = point.first.first.ToJSON();
+        j["g2_w"] = point.first.second.ToJSON();
+        j["g2_x"] = point.second.first.ToJSON();
+        j["g2_y"] = point.second.second.ToJSON();
+    }
     j["dest"] = dest.ToJSON();
     j["aug"] = aug.ToJSON();
 
@@ -1045,6 +1054,7 @@ std::string BLS_Verify::ToString(void) const {
     ss << "signature W: " << signature.first.second.ToString() << std::endl;
     ss << "signature X: " << signature.second.first.ToString() << std::endl;
     ss << "signature Y: " << signature.second.second.ToString() << std::endl;
+    ss << "dest: " << util::HexDump(dest.Get()) << std::endl;
 
     return ss.str();
 }
@@ -1062,6 +1072,8 @@ nlohmann::json BLS_Verify::ToJSON(void) const {
     j["g2_w"] = signature.first.second.ToJSON();
     j["g2_x"] = signature.second.first.ToJSON();
     j["g2_y"] = signature.second.second.ToJSON();
+
+    j["dest"] = dest.ToJSON();
 
     j["modifier"] = modifier.ToJSON();
     return j;

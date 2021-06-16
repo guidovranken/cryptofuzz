@@ -209,10 +209,6 @@
   #include <modules/noble-secp256k1/module.h>
 #endif
 
-#if defined(CRYPTOFUZZ_NOBLE_ED25519)
-  #include <modules/noble-ed25519/module.h>
-#endif
-
 #if defined(CRYPTOFUZZ_BLST)
   #include <modules/blst/module.h>
 #endif
@@ -227,6 +223,14 @@
 
 #if defined(CRYPTOFUZZ_KILIC_BLS12_381)
   #include <modules/kilic-bls12-381/module.h>
+#endif
+
+#if defined(CRYPTOFUZZ_NOBLE_ED25519)
+  #include <modules/noble-ed25519/module.h>
+#endif
+
+#if defined(CRYPTOFUZZ_NOBLE_BLS12_381)
+  #include <modules/noble-bls12-381/module.h>
 #endif
 
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
@@ -463,6 +467,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_NOBLE_ED25519)
     driver->LoadModule( std::make_shared<cryptofuzz::module::noble_ed25519>() );
+#endif
+
+#if defined(CRYPTOFUZZ_NOBLE_BLS12_381)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::noble_bls12_381>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
