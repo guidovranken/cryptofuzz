@@ -99,10 +99,30 @@ static std::vector<uint8_t> getBufferBin(const size_t size) {
 static std::string getBignum(bool mustBePositive = false) {
     std::string ret;
 
-    if ( Pool_Bignum.Have() && getBool() ) {
-        ret = Pool_Bignum.Get();
+    if ( (PRNG() % 10) == 0 ) {
+        constexpr long sizeMax = cryptofuzz::config::kMaxBignumSize;
+        constexpr long sizeTop = sizeMax * 0.5;
+        constexpr long sizeBottom = sizeMax - sizeTop;
+
+        static_assert(sizeBottom > 0);
+        static_assert(sizeBottom + sizeTop <= sizeMax);
+
+        const size_t size = (PRNG() % sizeTop) + sizeBottom;
+
+        for (size_t i = 0; i < size; i++) {
+            char c = '0' + (PRNG() % 10);
+            if ( i == 0 && c == '0' ) {
+                /* Cannot have leading zeroes */
+                c = '1';
+            }
+            ret += c;
+        }
     } else {
-        ret = cryptofuzz::numbers.at(PRNG() % cryptofuzz::numbers.size());
+        if ( getBool() ) {
+            ret = Pool_Bignum.Get();
+        } else {
+            ret = cryptofuzz::numbers.at(PRNG() % cryptofuzz::numbers.size());
+        }
     }
 
     const bool isNegative = !ret.empty() && ret[0] == '-';
@@ -171,9 +191,23 @@ static std::string get_BLS_predefined_DST(void) {
 
 extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t maxSize, unsigned int seed) {
     (void)seed;
+    std::vector<uint8_t> modifier;
+    bool reuseModifier;
 
     if ( maxSize < 64 || getBool() ) {
         goto end;
+    }
+
+    reuseModifier = getBool();
+
+    if ( reuseModifier == true ) {
+        /* Try to extract modifier from input */
+        try {
+            fuzzing::datasource::Datasource ds(data, size);
+            /* ignore result */ ds.Get<uint64_t>();
+            /* ignore result */ ds.GetData(0, 1);
+            modifier = ds.GetData(0);
+        } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
     }
 
     {
@@ -1635,7 +1669,9 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
         dsOut.PutData(dsOut2.GetOut());
 
         /* Modifier */
-        {
+        if ( reuseModifier == true && !modifier.empty() ) {
+            dsOut.PutData(modifier);
+        } else {
             size_t modifierMaxSize = maxSize / 10;
             if ( modifierMaxSize == 0 ) {
                 modifierMaxSize = 1;
