@@ -17,6 +17,10 @@ class noble_bls12_381 : public Module {
         std::optional<component::G2> OpBLS_HashToG2(operation::BLS_HashToG2& op) override;
         std::optional<component::BLS_Signature> OpBLS_Sign(operation::BLS_Sign& op) override;
         std::optional<bool> OpBLS_Verify(operation::BLS_Verify& op) override;
+        std::optional<component::Bignum> OpBLS_Compress_G1(operation::BLS_Compress_G1& op) override;
+        std::optional<component::G1> OpBLS_Decompress_G1(operation::BLS_Decompress_G1& op) override;
+        std::optional<component::G1> OpBLS_Compress_G2(operation::BLS_Compress_G2& op) override;
+        std::optional<component::G2> OpBLS_Decompress_G2(operation::BLS_Decompress_G2& op) override;
         std::optional<bool> OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) override;
         std::optional<bool> OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) override;
         std::optional<component::G1> OpBLS_G1_Add(operation::BLS_G1_Add& op) override;

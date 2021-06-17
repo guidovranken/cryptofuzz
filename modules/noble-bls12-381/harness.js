@@ -159,6 +159,71 @@ var OpBLS_Verify = async function(FuzzerInput) {
     } catch ( e ) { /* console.log(e); */ }
 }
 
+var OpBLS_Compress_G1 = async function(FuzzerInput) {
+    var g1 = To_G1(FuzzerInput['g1_x'], FuzzerInput['g1_y']);
+
+    try {
+        g1.assertValidity();
+    } catch ( e ) {
+        return;
+    }
+
+    var compressed = g1.toHex(true);
+    compressed = HexToDec(compressed);
+
+    FuzzerOutput = JSON.stringify(compressed);
+}
+
+var OpBLS_Decompress_G1 = async function(FuzzerInput) {
+    var compressed = BigInt(FuzzerInput['compressed']).toString(16);
+    if ( compressed.length > 96 ) {
+        return;
+    }
+
+    compressed = '0'.repeat(96 - compressed.length) + compressed;
+
+    var g1 = exports.PointG1.fromHex(compressed);
+
+    try {
+        g1.assertValidity();
+    } catch ( e ) {
+        return;
+    }
+
+    return; /* XXX */
+    FuzzerOutput = JSON.stringify(From_G1(g1));
+}
+
+var OpBLS_Compress_G2 = async function(FuzzerInput) {
+    /* XXX not implemented by noble-bls12-381 */
+}
+
+var OpBLS_Decompress_G2 = async function(FuzzerInput) {
+    var x = BigInt(FuzzerInput['g1_x']).toString(16);
+    if ( x.length > 96 ) {
+        return;
+    }
+    x = '0'.repeat(96 - x.length) + x;
+
+    var y = BigInt(FuzzerInput['g1_y']).toString(16);
+    if ( y.length > 96 ) {
+        return;
+    }
+    y = '0'.repeat(96 - y.length) + y;
+
+    var compressed = x + y;
+
+    var g2 = exports.PointG2.fromHex(compressed);
+
+    try {
+        g2.assertValidity();
+    } catch ( e ) {
+        return;
+    }
+
+    FuzzerOutput = JSON.stringify(From_G2(g2));
+}
+
 var OpBLS_IsG1OnCurve = async function(FuzzerInput) {
     return; /* XXX */
     var a = To_G1(FuzzerInput['g1_x'], FuzzerInput['g1_y']);
@@ -290,12 +355,47 @@ var OpBLS_G2_IsEq = async function(FuzzerInput) {
     } catch ( e ) { /* console.log(e); */ }
 }
     
-var OpBignumCalc = async function(FuzzerInput) {
-    var bn = BigInt(FuzzerInput['bn0']);
-    try {
-        var res = invert(bn).toString(10);
-        FuzzerOutput = JSON.stringify(res);
-    } catch ( e ) { /* console.log(e); */ }
+var OpBignumCalc = async function(FuzzerInput, Fx) {
+    var calcOp = BigInt(FuzzerInput["calcOp"]);
+
+    var bn1 = new Fx(BigInt(FuzzerInput['bn0']));
+    var bn2 = new Fx(BigInt(FuzzerInput['bn1']));
+
+    var res;
+
+    if ( IsAdd(calcOp) ) {
+        res = bn1.add(bn2);
+    } else if ( IsSub(calcOp) ) {
+        res = bn1.subtract(bn2);
+    } else if ( IsMul(calcOp) ) {
+        res = bn1.multiply(bn2);
+    } else if ( IsDiv(calcOp) ) {
+        res = bn1.div(bn2);
+    } else if ( IsSqr(calcOp) ) {
+        res = bn1.square();
+    } else if ( IsInvMod(calcOp) ) {
+        res = bn1.invert();
+    } else if ( IsSqrt(calcOp) ) {
+        res = bn1.sqrt();
+        if (typeof res === "undefined") {
+            res = new Fx(0n);
+        } else {
+            res = res.square();
+        }
+    } else if ( IsJacobi(calcOp) ) {
+        res = bn1.legendre();
+    } else if ( IsNeg(calcOp) ) {
+        res = bn1.negate();
+    } else if ( IsIsEq(calcOp) ) {
+        res = bn1.equals(bn2);
+    } else if ( IsIsZero(calcOp) ) {
+        res = bn1.isZero();
+    } else {
+        return;
+    }
+
+    res = res.value.toString(10);
+    FuzzerOutput = JSON.stringify(res);
 }
 
 FuzzerInput = JSON.parse(FuzzerInput);
@@ -311,6 +411,14 @@ if ( IsBLS_PrivateToPublic(operation) ) {
     OpBLS_Sign(FuzzerInput);
 } else if ( IsBLS_Verify(operation) ) {
     OpBLS_Verify(FuzzerInput);
+} else if ( IsBLS_Compress_G1(operation) ) {
+    OpBLS_Compress_G1(FuzzerInput);
+} else if ( IsBLS_Decompress_G1(operation) ) {
+    OpBLS_Decompress_G1(FuzzerInput);
+} else if ( IsBLS_Compress_G2(operation) ) {
+    OpBLS_Compress_G2(FuzzerInput);
+} else if ( IsBLS_Decompress_G2(operation) ) {
+    OpBLS_Decompress_G2(FuzzerInput);
 } else if ( IsBLS_IsG1OnCurve(operation) ) {
     OpBLS_IsG1OnCurve(FuzzerInput);
 } else if ( IsBLS_IsG2OnCurve(operation) ) {
@@ -331,6 +439,8 @@ if ( IsBLS_PrivateToPublic(operation) ) {
     OpBLS_G2_Neg(FuzzerInput);
 } else if ( IsBLS_G2_IsEq(operation) ) {
     OpBLS_G2_IsEq(FuzzerInput);
-} else if ( IsBignumCalc(operation) ) {
-    OpBignumCalc(FuzzerInput);
+} else if ( IsBignumCalc_Mod_BLS12_381_P(operation) ) {
+    OpBignumCalc(FuzzerInput, exports.Fq);
+} else if ( IsBignumCalc_Mod_BLS12_381_R(operation) ) {
+    OpBignumCalc(FuzzerInput, exports.Fr);
 }

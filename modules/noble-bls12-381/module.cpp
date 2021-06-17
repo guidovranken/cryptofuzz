@@ -20,10 +20,10 @@ noble_bls12_381::noble_bls12_381(void) :
 noble_bls12_381::~noble_bls12_381(void) {
     delete (JS*)js;
 }
-        
+
 std::optional<component::BLS_PublicKey> noble_bls12_381::OpBLS_PrivateToPublic(operation::BLS_PrivateToPublic& op) {
     std::optional<component::BLS_PublicKey> ret = std::nullopt;
-    
+
     auto json = op.ToJSON();
     json["operation"] = std::to_string(CF_OPERATION("BLS_PrivateToPublic"));
 
@@ -39,7 +39,7 @@ std::optional<component::BLS_PublicKey> noble_bls12_381::OpBLS_PrivateToPublic(o
 
 std::optional<component::G1> noble_bls12_381::OpBLS_HashToG1(operation::BLS_HashToG1& op) {
     std::optional<component::G1> ret = std::nullopt;
-    
+
     auto json = op.ToJSON();
     json["operation"] = std::to_string(CF_OPERATION("BLS_HashToG1"));
 
@@ -55,7 +55,7 @@ std::optional<component::G1> noble_bls12_381::OpBLS_HashToG1(operation::BLS_Hash
 
 std::optional<component::G2> noble_bls12_381::OpBLS_HashToG2(operation::BLS_HashToG2& op) {
     std::optional<component::G2> ret = std::nullopt;
-    
+
     auto json = op.ToJSON();
     json["operation"] = std::to_string(CF_OPERATION("BLS_HashToG2"));
 
@@ -71,7 +71,7 @@ std::optional<component::G2> noble_bls12_381::OpBLS_HashToG2(operation::BLS_Hash
 
 std::optional<component::BLS_Signature> noble_bls12_381::OpBLS_Sign(operation::BLS_Sign& op) {
     std::optional<component::BLS_Signature> ret = std::nullopt;
-    
+
     auto json = op.ToJSON();
     json["operation"] = std::to_string(CF_OPERATION("BLS_Sign"));
 
@@ -85,9 +85,73 @@ std::optional<component::BLS_Signature> noble_bls12_381::OpBLS_Sign(operation::B
     return ret;
 }
 
+std::optional<component::Bignum> noble_bls12_381::OpBLS_Compress_G1(operation::BLS_Compress_G1& op) {
+    std::optional<component::Bignum> ret = std::nullopt;
+
+    auto json = op.ToJSON();
+    json["operation"] = std::to_string(CF_OPERATION("BLS_Compress_G1"));
+
+    auto res = ((JS*)js)->Run(json.dump());
+
+    if ( res != std::nullopt ) {
+        auto jsonRet = nlohmann::json::parse(*res);
+        ret = component::Bignum(jsonRet);
+    }
+
+    return ret;
+}
+
+std::optional<component::G1> noble_bls12_381::OpBLS_Decompress_G1(operation::BLS_Decompress_G1& op) {
+    std::optional<component::G1> ret = std::nullopt;
+
+    auto json = op.ToJSON();
+    json["operation"] = std::to_string(CF_OPERATION("BLS_Decompress_G1"));
+
+    auto res = ((JS*)js)->Run(json.dump());
+
+    if ( res != std::nullopt ) {
+        auto jsonRet = nlohmann::json::parse(*res);
+        ret = component::G1(jsonRet);
+    }
+
+    return ret;
+}
+
+std::optional<component::G1> noble_bls12_381::OpBLS_Compress_G2(operation::BLS_Compress_G2& op) {
+    std::optional<component::G1> ret = std::nullopt;
+
+    auto json = op.ToJSON();
+    json["operation"] = std::to_string(CF_OPERATION("BLS_Compress_G2"));
+
+    auto res = ((JS*)js)->Run(json.dump());
+
+    if ( res != std::nullopt ) {
+        auto jsonRet = nlohmann::json::parse(*res);
+        ret = component::G1(jsonRet);
+    }
+
+    return ret;
+}
+
+std::optional<component::G2> noble_bls12_381::OpBLS_Decompress_G2(operation::BLS_Decompress_G2& op) {
+    std::optional<component::G2> ret = std::nullopt;
+
+    auto json = op.ToJSON();
+    json["operation"] = std::to_string(CF_OPERATION("BLS_Decompress_G2"));
+
+    auto res = ((JS*)js)->Run(json.dump());
+
+    if ( res != std::nullopt ) {
+        auto jsonRet = nlohmann::json::parse(*res);
+        ret = component::G2(jsonRet);
+    }
+
+    return ret;
+}
+
 std::optional<bool> noble_bls12_381::OpBLS_Verify(operation::BLS_Verify& op) {
     std::optional<bool> ret = std::nullopt;
-    
+
     auto json = op.ToJSON();
     json["operation"] = std::to_string(CF_OPERATION("BLS_Verify"));
 
@@ -103,7 +167,7 @@ std::optional<bool> noble_bls12_381::OpBLS_Verify(operation::BLS_Verify& op) {
 
 std::optional<bool> noble_bls12_381::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
     std::optional<bool> ret = std::nullopt;
-    
+
     auto json = op.ToJSON();
     json["operation"] = std::to_string(CF_OPERATION("BLS_IsG1OnCurve"));
 
@@ -119,7 +183,7 @@ std::optional<bool> noble_bls12_381::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurv
 
 std::optional<bool> noble_bls12_381::OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) {
     std::optional<bool> ret = std::nullopt;
-    
+
     auto json = op.ToJSON();
     json["operation"] = std::to_string(CF_OPERATION("BLS_IsG2OnCurve"));
 
@@ -135,7 +199,7 @@ std::optional<bool> noble_bls12_381::OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurv
 
 std::optional<component::G1> noble_bls12_381::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
     std::optional<component::G1> ret = std::nullopt;
-    
+
     auto json = op.ToJSON();
     json["operation"] = std::to_string(CF_OPERATION("BLS_G1_Add"));
 
@@ -151,7 +215,7 @@ std::optional<component::G1> noble_bls12_381::OpBLS_G1_Add(operation::BLS_G1_Add
 
 std::optional<component::G1> noble_bls12_381::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
     std::optional<component::G1> ret = std::nullopt;
-    
+
     auto json = op.ToJSON();
     json["operation"] = std::to_string(CF_OPERATION("BLS_G1_Mul"));
 
@@ -167,7 +231,7 @@ std::optional<component::G1> noble_bls12_381::OpBLS_G1_Mul(operation::BLS_G1_Mul
 
 std::optional<component::G1> noble_bls12_381::OpBLS_G1_Neg(operation::BLS_G1_Neg& op) {
     std::optional<component::G1> ret = std::nullopt;
-    
+
     auto json = op.ToJSON();
     json["operation"] = std::to_string(CF_OPERATION("BLS_G1_Neg"));
 
@@ -183,7 +247,7 @@ std::optional<component::G1> noble_bls12_381::OpBLS_G1_Neg(operation::BLS_G1_Neg
 
 std::optional<bool> noble_bls12_381::OpBLS_G1_IsEq(operation::BLS_G1_IsEq& op) {
     std::optional<bool> ret = std::nullopt;
-    
+
     auto json = op.ToJSON();
     json["operation"] = std::to_string(CF_OPERATION("BLS_G1_IsEq"));
 
@@ -199,7 +263,7 @@ std::optional<bool> noble_bls12_381::OpBLS_G1_IsEq(operation::BLS_G1_IsEq& op) {
 
 std::optional<component::G2> noble_bls12_381::OpBLS_G2_Add(operation::BLS_G2_Add& op) {
     std::optional<component::G2> ret = std::nullopt;
-    
+
     auto json = op.ToJSON();
     json["operation"] = std::to_string(CF_OPERATION("BLS_G2_Add"));
 
@@ -215,7 +279,7 @@ std::optional<component::G2> noble_bls12_381::OpBLS_G2_Add(operation::BLS_G2_Add
 
 std::optional<component::G2> noble_bls12_381::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
     std::optional<component::G2> ret = std::nullopt;
-    
+
     auto json = op.ToJSON();
     json["operation"] = std::to_string(CF_OPERATION("BLS_G2_Mul"));
 
@@ -231,7 +295,7 @@ std::optional<component::G2> noble_bls12_381::OpBLS_G2_Mul(operation::BLS_G2_Mul
 
 std::optional<component::G2> noble_bls12_381::OpBLS_G2_Neg(operation::BLS_G2_Neg& op) {
     std::optional<component::G2> ret = std::nullopt;
-    
+
     auto json = op.ToJSON();
     json["operation"] = std::to_string(CF_OPERATION("BLS_G2_Neg"));
 
@@ -247,7 +311,7 @@ std::optional<component::G2> noble_bls12_381::OpBLS_G2_Neg(operation::BLS_G2_Neg
 
 std::optional<bool> noble_bls12_381::OpBLS_G2_IsEq(operation::BLS_G2_IsEq& op) {
     std::optional<bool> ret = std::nullopt;
-    
+
     auto json = op.ToJSON();
     json["operation"] = std::to_string(CF_OPERATION("BLS_G2_IsEq"));
 
@@ -266,18 +330,20 @@ std::optional<component::Bignum> noble_bls12_381::OpBignumCalc(operation::Bignum
         return std::nullopt;
     }
 
-    if ( op.modulo->ToTrimmedString() != "4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787" ) {
-        return std::nullopt;
-    }
-    
-    if ( op.calcOp.Get() != CF_CALCOP("InvMod(A,B)") ) {
+    bool P;
+    if ( op.modulo->ToTrimmedString() == "4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787" ) {
+        P = true;
+    } else if ( op.modulo->ToTrimmedString() == "52435875175126190479447740508185965837690552500527637822603658699938581184513" ) {
+        P = false;
+    } else {
         return std::nullopt;
     }
 
+
     std::optional<component::Bignum> ret = std::nullopt;
-    
+
     auto json = op.ToJSON();
-    json["operation"] = std::to_string(CF_OPERATION("BignumCalc"));
+    json["operation"] = P ? std::to_string(CF_OPERATION("BignumCalc_Mod_BLS12_381_P")) : std::to_string(CF_OPERATION("BignumCalc_Mod_BLS12_381_R"));
 
     auto res = ((JS*)js)->Run(json.dump());
 
