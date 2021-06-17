@@ -3,7 +3,7 @@
 ## Library compilation
 
 ```sh
-git clone --depth 1 https://github.com/ARMmbed/mbedtls.git
+git clone --depth 1 -b development_2.x https://github.com/ARMmbed/mbedtls.git
 cd mbedtls/
 scripts/config.pl set MBEDTLS_PLATFORM_MEMORY
 scripts/config.pl set MBEDTLS_CMAC_C
