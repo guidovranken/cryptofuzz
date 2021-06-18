@@ -2831,6 +2831,8 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
 
     if ( op.curveType.Get() == CF_ECC_CURVE("ed25519") ) {
         CF_CHECK_EQ(wc_ed25519_init(&e25519_key), 0);
+        e25519_key_inited = true;
+
         CF_CHECK_EQ(wc_ed25519_make_key(wolfCrypt_detail::GetRNG(), ED25519_KEY_SIZE, &e25519_key), 0);
 
         wolfCrypt_detail::haveAllocFailure = false;
@@ -2874,6 +2876,8 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
         }
     } else if ( op.curveType.Get() == CF_ECC_CURVE("ed448") ) {
         CF_CHECK_EQ(wc_ed448_init(&e448_key), 0);
+        e448_key_inited = true;
+
         CF_CHECK_EQ(wc_ed448_make_key(wolfCrypt_detail::GetRNG(), ED448_KEY_SIZE, &e448_key), 0);
 
         wolfCrypt_detail::haveAllocFailure = false;
@@ -2917,6 +2921,8 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
         }
     } else if ( op.curveType.Get() == CF_ECC_CURVE("x25519") ) {
         CF_CHECK_EQ(wc_curve25519_init(&c25519_key), 0);
+        c25519_key_inited = true;
+
         CF_CHECK_EQ(wc_curve25519_make_key(wolfCrypt_detail::GetRNG(), CURVE25519_KEYSIZE, &c25519_key), 0);
 
         wolfCrypt_detail::haveAllocFailure = false;
@@ -2960,6 +2966,8 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
         }
     } else if ( op.curveType.Get() == CF_ECC_CURVE("x448") ) {
         CF_CHECK_EQ(wc_curve448_init(&c448_key), 0);
+        c448_key_inited = true;
+
         CF_CHECK_EQ(wc_curve448_make_key(wolfCrypt_detail::GetRNG(), CURVE448_KEY_SIZE, &c448_key), 0);
 
         wolfCrypt_detail::haveAllocFailure = false;
