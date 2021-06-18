@@ -233,6 +233,10 @@
   #include <modules/noble-bls12-381/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_SCHNORR_FUN)
+  #include <modules/schnorr_fun/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -471,6 +475,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_NOBLE_BLS12_381)
     driver->LoadModule( std::make_shared<cryptofuzz::module::noble_bls12_381>() );
+#endif
+
+#if defined(CRYPTOFUZZ_SCHNORR_FUN)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::schnorr_fun>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
