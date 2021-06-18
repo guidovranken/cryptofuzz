@@ -295,6 +295,31 @@ static void test_ECDSA_Signature(const uint64_t curveID, const std::string R, co
     }
 }
 
+static void test_BIP340_Schnorr_Signature(const uint64_t curveID, const std::string R, const std::string S) {
+    boost::multiprecision::cpp_int r(R);
+    boost::multiprecision::cpp_int s(S);
+    if ( r < 1 ) {
+        std::cout << "BIP340 Schnorr signature invalid: R < 1" << std::endl;
+        ::abort();
+    }
+    if ( s < 1 ) {
+        std::cout << "BIP340 Schnorr signature invalid: S < 1" << std::endl;
+        ::abort();
+    }
+
+    const auto prime = cryptofuzz::repository::ECC_CurveToPrime(curveID);
+    if ( prime != std::nullopt ) {
+        const boost::multiprecision::cpp_int p(*prime);
+        CF_ASSERT(r < p, "BIP340 Schnorr signature R should be less than curve P");
+    }
+
+    const auto order = cryptofuzz::repository::ECC_CurveToOrder(curveID);
+    if ( order != std::nullopt ) {
+        const boost::multiprecision::cpp_int n(*order);
+        CF_ASSERT(s < n, "BIP340 Schnorr signature S should be less than curve N");
+    }
+}
+
 void test(const operation::ECDSA_Sign& op, const std::optional<component::ECDSA_Signature>& result) {
     if ( result != std::nullopt ) {
         test_ECC_PrivateKey(op.curveType.Get(), op.priv.ToTrimmedString());
@@ -365,7 +390,7 @@ void test(const operation::Schnorr_Sign& op, const std::optional<component::Schn
             ::abort();
         }
 
-        test_ECDSA_Signature(op.curveType.Get(),
+        test_BIP340_Schnorr_Signature(op.curveType.Get(),
                 result->signature.first.ToTrimmedString(),
                 result->signature.second.ToTrimmedString());
     }
@@ -397,7 +422,7 @@ void test(const operation::ECRDSA_Verify& op, const std::optional<bool>& result)
 
 void test(const operation::Schnorr_Verify& op, const std::optional<bool>& result) {
     if ( result != std::nullopt && *result == true ) {
-        test_ECDSA_Signature(op.curveType.Get(),
+        test_BIP340_Schnorr_Signature(op.curveType.Get(),
                 op.signature.signature.first.ToTrimmedString(),
                 op.signature.signature.second.ToTrimmedString());
     }
