@@ -189,6 +189,10 @@ static std::string get_BLS_predefined_DST(void) {
     return getBool() ? get_BLS_PyECC_DST() : get_BLS_BasicScheme_DST();
 }
 
+extern "C" {
+    __attribute__((weak)) void __msan_unpoison(const volatile void*, size_t) { }
+}
+
 extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t maxSize, unsigned int seed) {
     (void)seed;
     std::vector<uint8_t> modifier;
@@ -201,6 +205,8 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
     reuseModifier = getBool();
 
     if ( reuseModifier == true ) {
+        __msan_unpoison(data, size);
+
         /* Try to extract modifier from input */
         try {
             fuzzing::datasource::Datasource ds(data, size);
