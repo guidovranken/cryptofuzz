@@ -4,6 +4,7 @@
 
 extern "C" {
     int schnorr_fun_schnorr_verify(uint8_t* msg_bytes, size_t msg_size, const uint8_t sig_bytes[64], const uint8_t pk_bytes[32]);
+    int schnorr_fun_schnorr_sign(uint8_t* msg_bytes, size_t msg_size, const uint8_t priv_bytes[32], uint8_t sig_bytes[64], uint8_t pk_bytes[32]);
 }
 
 namespace cryptofuzz {
@@ -11,6 +12,47 @@ namespace module {
 
 schnorr_fun::schnorr_fun(void) :
     Module("schnorr_fun") { }
+
+std::optional<component::Schnorr_Signature> schnorr_fun::OpSchnorr_Sign(operation::Schnorr_Sign& op) {
+    std::optional<component::Schnorr_Signature> ret = std::nullopt;
+    std::vector<uint8_t> CT;
+
+    if ( !op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        return ret;
+    }
+
+    if ( op.UseBIP340Nonce() == false ) {
+        return ret;
+    }
+
+    if ( op.digestType.Is(CF_DIGEST("NULL")) ) {
+        CT = op.cleartext.Get();
+    } else if ( op.digestType.Is(CF_DIGEST("SHA256")) ) {
+        CT = op.cleartext.SHA256().Get();
+    } else {
+        return ret;
+    }
+
+    uint8_t priv_bytes[32];
+    uint8_t sig_bytes[64];
+    uint8_t pk_bytes[32];
+
+    {
+        const auto _priv_bytes = util::DecToBin(op.priv.ToTrimmedString(), 32);
+        CF_CHECK_NE(_priv_bytes, std::nullopt);
+        memcpy(priv_bytes, _priv_bytes->data(), 32);
+    }
+
+    CF_CHECK_NE(schnorr_fun_schnorr_sign(CT.data(), CT.size(), priv_bytes, sig_bytes, pk_bytes), 0);
+
+    ret = component::Schnorr_Signature(
+        {util::BinToDec(sig_bytes, 32), util::BinToDec(sig_bytes + 32, 32)},
+        {util::BinToDec(pk_bytes, 32), "0"}
+    );
+
+end:
+    return ret;
+}
 
 std::optional<bool> schnorr_fun::OpSchnorr_Verify(operation::Schnorr_Verify& op) {
     std::optional<bool> ret = std::nullopt;

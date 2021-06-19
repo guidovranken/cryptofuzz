@@ -1,5 +1,5 @@
 [package]
-name = "rust-libsecp256k1"
+name = "schnorr_fun_harness"
 version = "0.1.0"
 authors = ["Guido Vranken <guidovranken@gmail.com>"]
 edition = "2018"
