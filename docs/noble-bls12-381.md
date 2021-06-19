@@ -1,4 +1,4 @@
-# noble-secp256k1
+# noble-bls12-381
 
 ## Library compilation
 
