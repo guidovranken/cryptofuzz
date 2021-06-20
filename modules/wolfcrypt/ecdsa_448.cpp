@@ -123,6 +123,10 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Ed448(operation::E
     uint8_t pub_bytes[ED448_PUB_KEY_SIZE];
 
     ed448_key key;
+    bool e448_key_inited = false;
+
+    CF_CHECK_EQ(wc_ed448_init(&key), 0);
+    e448_key_inited = true;
 
     /* Load private key */
     {
@@ -144,6 +148,10 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Ed448(operation::E
     }
 
 end:
+    if ( e448_key_inited == true ) {
+        wc_ed448_free(&key);
+    }
+
     wolfCrypt_detail::UnsetGlobalDs();
     return ret;
 }
@@ -154,8 +162,10 @@ std::optional<bool> OpECC_ValidatePubkey_Ed448(operation::ECC_ValidatePubkey& op
     wolfCrypt_detail::SetGlobalDs(&ds);
 
     ed448_key key;
+    bool e448_key_inited = false;
 
-    memset(&key, 0, sizeof(key));
+    CF_CHECK_EQ(wc_ed448_init(&key), 0);
+    e448_key_inited = true;
 
     CF_CHECK_EQ(ed448LoadPublicKey(key, op.pub.first, ds), true);
 
@@ -166,6 +176,9 @@ std::optional<bool> OpECC_ValidatePubkey_Ed448(operation::ECC_ValidatePubkey& op
     }
 
 end:
+    if ( e448_key_inited == true ) {
+        wc_ed448_free(&key);
+    }
 
     wolfCrypt_detail::UnsetGlobalDs();
     return ret;
@@ -200,10 +213,12 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_ed448(operation::ECDSA_Si
     wolfCrypt_detail::SetGlobalDs(&ds);
 
     ed448_key key;
+    bool e448_key_inited = false;
     uint8_t sig[ED448_SIG_SIZE];
     word32 sigSz = sizeof(sig);
 
-    memset(&key, 0, sizeof(key));
+    CF_CHECK_EQ(wc_ed448_init(&key), 0);
+    e448_key_inited = true;
 
     CF_CHECK_EQ(wolfCrypt_detail::ed448LoadPrivateKey(key, op.priv, ds), true);
     CF_CHECK_EQ(wolfCrypt_detail::ed448DerivePublicKey(key), true);
@@ -224,6 +239,10 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_ed448(operation::ECDSA_Si
     }
 
 end:
+    if ( e448_key_inited == true ) {
+        wc_ed448_free(&key);
+    }
+
     wolfCrypt_detail::UnsetGlobalDs();
     return ret;
 }
@@ -234,10 +253,12 @@ std::optional<bool> OpECDSA_Verify_ed448(operation::ECDSA_Verify& op) {
     wolfCrypt_detail::SetGlobalDs(&ds);
 
     ed448_key key;
+    bool e448_key_inited = false;
     uint8_t ed448sig[ED448_SIG_SIZE];
     int verify;
 
-    memset(&key, 0, sizeof(key));
+    CF_CHECK_EQ(wc_ed448_init(&key), 0);
+    e448_key_inited = true;
 
     CF_CHECK_EQ(ed448LoadPublicKey(key, op.signature.pub.first, ds), true);
     CF_CHECK_EQ(wolfCrypt_bignum::Bignum::ToBin(ds, op.signature.signature, ed448sig, sizeof(ed448sig)), true);
@@ -246,6 +267,10 @@ std::optional<bool> OpECDSA_Verify_ed448(operation::ECDSA_Verify& op) {
     ret = verify ? true : false;
 
 end:
+    if ( e448_key_inited == true ) {
+        wc_ed448_free(&key);
+    }
+
     wolfCrypt_detail::UnsetGlobalDs();
     return ret;
 }

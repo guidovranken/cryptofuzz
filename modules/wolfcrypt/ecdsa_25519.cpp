@@ -123,11 +123,19 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Ed25519(operation:
     wolfCrypt_bignum::Bignum priv(ds), pub(ds);
 
     ed25519_key key;
+    bool e25519_key_inited = false;
+
+    CF_CHECK_EQ(wc_ed25519_init(&key), 0);
+    e25519_key_inited = true;
 
     CF_CHECK_EQ(ed25519LoadPrivateKey(key, op.priv, ds), true);
     ret = ed25519GetPublicKey(key, ds);
 
 end:
+    if ( e25519_key_inited == true ) {
+        wc_ed25519_free(&key);
+    }
+
     wolfCrypt_detail::UnsetGlobalDs();
     return ret;
 }
@@ -161,8 +169,10 @@ std::optional<bool> OpECC_ValidatePubkey_Ed25519(operation::ECC_ValidatePubkey& 
     wolfCrypt_detail::SetGlobalDs(&ds);
 
     ed25519_key key;
+    bool e25519_key_inited = false;
 
-    memset(&key, 0, sizeof(key));
+    CF_CHECK_EQ(wc_ed25519_init(&key), 0);
+    e25519_key_inited = true;
 
     CF_CHECK_EQ(ed25519LoadPublicKey(key, op.pub.first, ds), true);
 
@@ -173,6 +183,9 @@ std::optional<bool> OpECC_ValidatePubkey_Ed25519(operation::ECC_ValidatePubkey& 
     }
 
 end:
+    if ( e25519_key_inited == true ) {
+        wc_ed25519_free(&key);
+    }
 
     wolfCrypt_detail::UnsetGlobalDs();
     return ret;
@@ -184,10 +197,12 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_ed25519(operation::ECDSA_
     wolfCrypt_detail::SetGlobalDs(&ds);
 
     ed25519_key key;
+    bool e25519_key_inited = false;
     uint8_t sig[ED25519_SIG_SIZE];
     word32 sigSz = sizeof(sig);
 
-    memset(&key, 0, sizeof(key));
+    CF_CHECK_EQ(wc_ed25519_init(&key), 0);
+    e25519_key_inited = true;
 
     CF_CHECK_EQ(wolfCrypt_detail::ed25519LoadPrivateKey(key, op.priv, ds), true);
     CF_CHECK_EQ(wolfCrypt_detail::ed25519DerivePublicKey(key), true);
@@ -208,6 +223,10 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_ed25519(operation::ECDSA_
     }
 
 end:
+    if ( e25519_key_inited == true ) {
+        wc_ed25519_free(&key);
+    }
+
     wolfCrypt_detail::UnsetGlobalDs();
     return ret;
 }
@@ -218,10 +237,12 @@ std::optional<bool> OpECDSA_Verify_ed25519(operation::ECDSA_Verify& op) {
     wolfCrypt_detail::SetGlobalDs(&ds);
 
     ed25519_key key;
+    bool e25519_key_inited = false;
     uint8_t ed25519sig[ED25519_SIG_SIZE];
     int verify;
 
-    memset(&key, 0, sizeof(key));
+    CF_CHECK_EQ(wc_ed25519_init(&key), 0);
+    e25519_key_inited = true;
 
     CF_CHECK_EQ(ed25519LoadPublicKey(key, op.signature.pub.first, ds), true);
     CF_CHECK_EQ(wolfCrypt_bignum::Bignum::ToBin(ds, op.signature.signature, ed25519sig, sizeof(ed25519sig)), true);
@@ -230,6 +251,10 @@ std::optional<bool> OpECDSA_Verify_ed25519(operation::ECDSA_Verify& op) {
     ret = verify ? true : false;
 
 end:
+    if ( e25519_key_inited == true ) {
+        wc_ed25519_free(&key);
+    }
+
     wolfCrypt_detail::UnsetGlobalDs();
     return ret;
 }
