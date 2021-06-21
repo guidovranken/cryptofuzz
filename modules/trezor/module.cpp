@@ -593,7 +593,7 @@ std::optional<component::Secret> trezor_firmware::OpECDH_Derive(operation::ECDH_
     uint8_t pubkey_bytes[65];
     uint8_t key[32];
     uint8_t out[65];
-    std::vector<uint8_t> out2(32, 0);
+    std::vector<uint8_t> out2;
 
     CF_CHECK_NE(curve = trezor_firmware_detail::toCurve(op.curveType), std::nullopt);
 
@@ -622,8 +622,9 @@ std::optional<component::Secret> trezor_firmware::OpECDH_Derive(operation::ECDH_
         out2 = crypto::sha256(sha256_input);
     }
 
-end:
     ret = component::Secret(Buffer(out2));
+
+end:
 
     return ret;
 }
