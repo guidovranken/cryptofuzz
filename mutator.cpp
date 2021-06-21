@@ -494,19 +494,17 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                         parameters["curveType"] = P1.curveID;
 
-                        parameters["pub1_x"] = P1.pub_x;
-                        parameters["pub1_y"] = P1.pub_y;
+                        parameters["priv"] = P1.privkey;
 
-                        parameters["pub2_x"] = P2.pub_x;
-                        parameters["pub2_y"] = P2.pub_y;
+                        parameters["pub_x"] = P1.pub_x;
+                        parameters["pub_y"] = P1.pub_y;
                     } else {
                         parameters["curveType"] = getRandomCurve();
 
-                        parameters["pub1_x"] = getBignum();
-                        parameters["pub1_y"] = getBignum();
+                        parameters["priv"] = getBignum();
 
-                        parameters["pub2_x"] = getBignum();
-                        parameters["pub2_y"] = getBignum();
+                        parameters["pub_x"] = getBignum();
+                        parameters["pub_y"] = getBignum();
                     }
 
                     cryptofuzz::operation::ECDH_Derive op(parameters);

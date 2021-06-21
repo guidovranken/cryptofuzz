@@ -1525,40 +1525,6 @@ OperationType ExecutorBase<ResultType, OperationType>::getOpPostprocess(Datasour
     return std::move(op);
 }
 
-template <>
-operation::ECDH_Derive ExecutorBase<component::Secret, operation::ECDH_Derive>::getOpPostprocess(Datasource* parentDs, operation::ECDH_Derive op) const {
-    /* Decide whether to return the original operation, or construct a new one */
-    if ( parentDs->Get<bool>() == true) {
-        std::shared_ptr<Module> module = nullptr;
-        std::optional<component::ECC_PublicKey> pub1, pub2;
-        std::optional<component::ECC_KeyPair> keypair1, keypair2;
-
-        /* Pick random module */
-        CF_CHECK_NE(module = getModule(*parentDs), nullptr);
-
-        {
-            /* Construct two PrivateToPublic operations */
-            auto modifier1 = parentDs->GetData(0);
-            operation::ECC_PrivateToPublic op1(*parentDs, component::Modifier(modifier1.data(), modifier1.size()));
-            auto modifier2 = parentDs->GetData(0);
-            operation::ECC_PrivateToPublic op2(*parentDs, component::Modifier(modifier2.data(), modifier2.size()));
-
-            CF_CHECK_EQ(op1.curveType == op2.curveType, true);
-
-            /* Generate two public keys, using OpECC_PrivateToPublic */
-            CF_CHECK_NE(pub1 = module->OpECC_PrivateToPublic(op1), std::nullopt);
-            CF_CHECK_NE(pub2 = module->OpECC_PrivateToPublic(op2), std::nullopt);
-
-            /* Construct a new ECDH_Derive operation from these two public keys */
-            return operation::ECDH_Derive(op.modifier, op1.curveType, *pub1, *pub2);
-        }
-    }
-
-end:
-    /* Return the original operaton unmodified */
-    return op;
-}
-
 operation::BignumCalc ExecutorBignumCalc_Mod_BLS12_381_R::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
     (void)parentDs;
     op.modulo = modulo;

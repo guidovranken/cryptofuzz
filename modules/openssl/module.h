@@ -95,7 +95,9 @@ class OpenSSL : public Module {
         std::optional<component::ECC_KeyPair> OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) override;
         std::optional<component::ECDSA_Signature> OpECDSA_Sign(operation::ECDSA_Sign& op) override;
         std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) override;
+#if 0
         std::optional<component::Secret> OpECDH_Derive(operation::ECDH_Derive& op) override;
+#endif
         std::optional<component::DH_KeyPair> OpDH_GenerateKeyPair(operation::DH_GenerateKeyPair& op) override;
         std::optional<component::Bignum> OpDH_Derive(operation::DH_Derive& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;

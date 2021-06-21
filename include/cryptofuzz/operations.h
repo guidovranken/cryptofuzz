@@ -1364,30 +1364,30 @@ class Schnorr_Verify : public Operation {
 class ECDH_Derive : public Operation {
     public:
         const component::CurveType curveType;
-        const component::ECC_PublicKey pub1;
-        const component::ECC_PublicKey pub2;
+        const component::ECC_PrivateKey priv;
+        const component::ECC_PublicKey pub;
 
         ECDH_Derive(Datasource& ds, component::Modifier modifier) :
             Operation(std::move(modifier)),
             curveType(ds),
-            pub1(ds),
-            pub2(ds)
+            priv(ds),
+            pub(ds)
         { }
         ECDH_Derive(nlohmann::json json) :
             Operation(json["modifier"]),
             curveType(json["curveType"]),
-            pub1(json["pub1_x"], json["pub1_y"]),
-            pub2(json["pub2_x"], json["pub2_y"])
+            priv(json["priv"]),
+            pub(json["pub_x"], json["pub_y"])
         { }
         ECDH_Derive(
                 component::Modifier modifier,
                 component::CurveType curveType,
-                component::ECC_PublicKey pub1,
-                component::ECC_PublicKey pub2) :
+                component::ECC_PrivateKey priv,
+                component::ECC_PublicKey pub) :
             Operation(std::move(modifier)),
             curveType(curveType),
-            pub1(pub1),
-            pub2(pub2)
+            priv(priv),
+            pub(pub)
         { }
 
 
@@ -1398,14 +1398,14 @@ class ECDH_Derive : public Operation {
         inline bool operator==(const ECDH_Derive& rhs) const {
             return
                 (curveType == rhs.curveType) &&
-                (pub1 == rhs.pub2) &&
-                (pub2 == rhs.pub2) &&
+                (priv == rhs.priv) &&
+                (pub == rhs.pub) &&
                 (modifier == rhs.modifier);
         }
         void Serialize(Datasource& ds) const {
             curveType.Serialize(ds);
-            pub1.Serialize(ds);
-            pub2.Serialize(ds);
+            priv.Serialize(ds);
+            pub.Serialize(ds);
         }
 };
 

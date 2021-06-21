@@ -3643,6 +3643,8 @@ end:
     return ret;
 }
 
+/* ECDH_Derive is temporarily disabled */
+#if 0
 std::optional<component::Secret> OpenSSL::OpECDH_Derive(operation::ECDH_Derive& op) {
     std::optional<component::Secret> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -3712,6 +3714,7 @@ end:
 
     return ret;
 }
+#endif
 
 std::optional<component::DH_KeyPair> OpenSSL::OpDH_GenerateKeyPair(operation::DH_GenerateKeyPair& op) {
     std::optional<component::DH_KeyPair> ret = std::nullopt;
