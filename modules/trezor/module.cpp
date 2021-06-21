@@ -1,6 +1,7 @@
 #include "module.h"
 #include <cryptofuzz/util.h>
 #include <boost/multiprecision/cpp_int.hpp>
+#include <cryptofuzz/crypto.h>
 
 extern "C" {
     #include <ecdsa.h>
@@ -93,13 +94,8 @@ namespace trezor_firmware_detail {
         return LUT.at(digestType.Get());
     }
 
-    std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(const component::CurveType& curveType, const component::ECC_PrivateKey& priv) {
-        std::optional<component::ECC_PublicKey> ret = std::nullopt;
-        std::vector<uint8_t> pubkey_bytes(65);
-        uint8_t key[32];
-
-        std::optional<const ecdsa_curve*> curve = std::nullopt;
-        CF_CHECK_NE(curve = trezor_firmware_detail::toCurve(curveType), std::nullopt);
+    static bool CheckValidity(const component::CurveType& curveType, const component::ECC_PrivateKey& priv) {
+        bool ret = false;
 
         {
             const auto order = cryptofuzz::repository::ECC_CurveToOrder(curveType.Get());
@@ -109,6 +105,21 @@ namespace trezor_firmware_detail {
             CF_CHECK_LT(priv_cpp_int, order_cpp_int);
             CF_CHECK_GT(priv_cpp_int, 0);
         }
+
+        ret = true;
+end:
+        return ret;
+    }
+
+    std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(const component::CurveType& curveType, const component::ECC_PrivateKey& priv) {
+        std::optional<component::ECC_PublicKey> ret = std::nullopt;
+        std::vector<uint8_t> pubkey_bytes(65);
+        uint8_t key[32];
+
+        std::optional<const ecdsa_curve*> curve = std::nullopt;
+        CF_CHECK_NE(curve = trezor_firmware_detail::toCurve(curveType), std::nullopt);
+
+        CF_CHECK_TRUE(CheckValidity(curveType, priv));
 
         CF_CHECK_EQ(trezor_firmware_detail::EncodeBignum(
                     priv.ToTrimmedString(),
@@ -574,5 +585,48 @@ end:
     global_ds = nullptr;
     return ret;
 }
+
+std::optional<component::Secret> trezor_firmware::OpECDH_Derive(operation::ECDH_Derive& op) {
+    std::optional<component::Secret> ret = std::nullopt;
+
+    std::optional<const ecdsa_curve*> curve = std::nullopt;
+    uint8_t pubkey_bytes[65];
+    uint8_t key[32];
+    uint8_t out[65];
+    std::vector<uint8_t> out2(32, 0);
+
+    CF_CHECK_NE(curve = trezor_firmware_detail::toCurve(op.curveType), std::nullopt);
+
+    CF_CHECK_TRUE(trezor_firmware_detail::CheckValidity(op.curveType, op.priv));
+
+    pubkey_bytes[0] = 4;
+    CF_CHECK_EQ(trezor_firmware_detail::EncodeBignum(
+                op.pub.first.ToTrimmedString(),
+                pubkey_bytes + 1), true);
+    CF_CHECK_EQ(trezor_firmware_detail::EncodeBignum(
+                op.pub.second.ToTrimmedString(),
+                pubkey_bytes + 1 + 32), true);
+
+    CF_CHECK_EQ(trezor_firmware_detail::EncodeBignum(
+                op.priv.ToTrimmedString(),
+                key), true);
+
+    CF_CHECK_EQ(ecdh_multiply(*curve, key, pubkey_bytes, out), 0);
+
+    {
+        std::vector<uint8_t> sha256_input(33);
+
+        sha256_input[0] = (out[64] & 0x01) | 0x02;
+        memcpy(sha256_input.data() + 1, out + 1, 32);
+
+        out2 = crypto::sha256(sha256_input);
+    }
+
+end:
+    ret = component::Secret(Buffer(out2));
+
+    return ret;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */

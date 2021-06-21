@@ -17,6 +17,7 @@ class trezor_firmware : public Module {
         std::optional<bool> OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) override;
         std::optional<component::ECDSA_Signature> OpECDSA_Sign(operation::ECDSA_Sign& op) override;
         std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) override;
+        std::optional<component::Secret> OpECDH_Derive(operation::ECDH_Derive& op) override;
 };
 
 } /* namespace module */
