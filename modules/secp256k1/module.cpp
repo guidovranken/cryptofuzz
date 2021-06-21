@@ -8,6 +8,7 @@ extern "C" {
     #include <secp256k1.h>
     #include <secp256k1_recovery.h>
     #include <secp256k1_schnorrsig.h>
+    #include <secp256k1_ecdh.h>
 }
 
 namespace cryptofuzz {
@@ -64,24 +65,89 @@ end:
         return ret;
     }
 
-    std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(const std::string priv) {
+    bool PrivkeyToBytes(const component::ECC_PrivateKey& priv, uint8_t privkey_bytes[32]) {
+        bool ret = false;
+
+        CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                    priv.ToTrimmedString(),
+                    privkey_bytes), true);
+
+        ret = true;
+end:
+        return ret;
+    }
+
+    bool PubkeyToBytes(const component::ECC_PublicKey& pub, uint8_t pubkey_bytes[65]) {
+        bool ret = false;
+
+        pubkey_bytes[0] = 4;
+
+        CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                    pub.first.ToTrimmedString(),
+                    pubkey_bytes + 1), true);
+        CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                    pub.second.ToTrimmedString(),
+                    pubkey_bytes + 1 + 32), true);
+        ret = true;
+
+end:
+        return ret;
+    }
+
+    class Context {
+        private:
+            Datasource& ds;
+            secp256k1_context* ctx = nullptr;
+            void randomizeContext(void) {
+                std::vector<uint8_t> seed;
+
+                try {
+                    if ( ds.Get<bool>() ) {
+                        seed = ds.GetData(0, 32, 32);
+                        CF_ASSERT(secp256k1_context_randomize(ctx, seed.data()) == 1, "Call to secp256k1_context_randomize failed");
+                    }
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            }
+
+        public:
+            Context(Datasource& ds, const unsigned int flags) :
+                ds(ds) {
+                    CF_ASSERT((ctx = secp256k1_context_create(flags)) != nullptr, "Cannot create secp256k1 context");
+            }
+            ~Context(void) {
+                CF_NORET(secp256k1_context_destroy(ctx));
+                ctx = nullptr;
+            }
+            secp256k1_context* GetPtr(void) {
+                randomizeContext();
+
+                return ctx;
+            }
+    };
+
+
+    std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, const std::string priv) {
         std::optional<component::ECC_PublicKey> ret = std::nullopt;
-        secp256k1_context* ctx = nullptr;
+        secp256k1_detail::Context ctx(ds, SECP256K1_CONTEXT_SIGN);
         secp256k1_pubkey pubkey;
         std::vector<uint8_t> pubkey_bytes(65);
         uint8_t key[32];
 
-        CF_CHECK_NE(ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN), nullptr);
         CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
                     priv,
                     key), true);
-        CF_CHECK_EQ(secp256k1_ec_pubkey_create(ctx, &pubkey, key), 1);
+        CF_CHECK_EQ(secp256k1_ec_pubkey_create(ctx.GetPtr(), &pubkey, key), 1);
 
-        ret = To_ECC_PublicKey(ctx, pubkey);
+        ret = To_ECC_PublicKey(ctx.GetPtr(), pubkey);
 
 end:
-        /* noret */ secp256k1_context_destroy(ctx);
         return ret;
+    }
+
+    template <class T>
+    void AssertZero(const T* v) {
+        const static T nulls = {0};
+        CF_ASSERT(memcmp(v, &nulls, sizeof(T)) == 0, "Variable is not all zeroes");
     }
 
     static int nonce_function(unsigned char *nonce32, const unsigned char *msg32, const unsigned char *key32, const unsigned char *algo16, void *data, unsigned int counter) {
@@ -107,15 +173,15 @@ end:
 
         return 1;
     }
-
 }
 
 std::optional<component::ECC_PublicKey> secp256k1::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     CF_CHECK_EQ(op.curveType.Get(), CF_ECC_CURVE("secp256k1"));
 
-    ret = secp256k1_detail::OpECC_PrivateToPublic(op.priv.ToTrimmedString());
+    ret = secp256k1_detail::OpECC_PrivateToPublic(ds, op.priv.ToTrimmedString());
 
 end:
     return ret;
@@ -123,14 +189,15 @@ end:
 
 std::optional<bool> secp256k1::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
     std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    secp256k1_context* ctx = nullptr;
+    secp256k1_detail::Context ctx(ds, SECP256K1_CONTEXT_VERIFY);
     secp256k1_pubkey pubkey;
     uint8_t pubkey_bytes[65];
     pubkey_bytes[0] = 4;
 
     CF_CHECK_EQ(op.curveType.Get(), CF_ECC_CURVE("secp256k1"));
-    CF_CHECK_NE(ctx = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY), nullptr);
+
     CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
                 op.pub.first.ToTrimmedString(),
                 pubkey_bytes + 1), true);
@@ -138,20 +205,21 @@ std::optional<bool> secp256k1::OpECC_ValidatePubkey(operation::ECC_ValidatePubke
                 op.pub.second.ToTrimmedString(),
                 pubkey_bytes + 1 + 32), true);
 
-    ret = secp256k1_ec_pubkey_parse(ctx, &pubkey, pubkey_bytes, sizeof(pubkey_bytes)) == 1;
+    ret = secp256k1_ec_pubkey_parse(ctx.GetPtr(), &pubkey, pubkey_bytes, sizeof(pubkey_bytes)) == 1;
 
 end:
-    /* noret */ secp256k1_context_destroy(ctx);
     return ret;
 }
 
 std::optional<component::ECDSA_Signature> secp256k1::OpECDSA_Sign(operation::ECDSA_Sign& op) {
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
     if ( op.UseRFC6979Nonce() == false && op.UseSpecifiedNonce() == false ) {
         return ret;
     }
 
-    secp256k1_context* ctx = nullptr;
+    secp256k1_detail::Context ctx(ds, SECP256K1_CONTEXT_SIGN);
     secp256k1_pubkey pubkey;
     secp256k1_ecdsa_signature sig;
     std::vector<uint8_t> sig_bytes(64);
@@ -162,8 +230,6 @@ std::optional<component::ECDSA_Signature> secp256k1::OpECDSA_Sign(operation::ECD
     uint8_t specified_nonce[32];
 
     CF_CHECK_EQ(op.curveType.Get(), CF_ECC_CURVE("secp256k1"));
-
-    CF_CHECK_NE(ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN), nullptr);
 
     CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
                 op.priv.ToTrimmedString(),
@@ -180,26 +246,26 @@ std::optional<component::ECDSA_Signature> secp256k1::OpECDSA_Sign(operation::ECD
     }
 
     if ( op.UseRFC6979Nonce() == true ) {
-        CF_CHECK_EQ(secp256k1_ecdsa_sign(ctx, &sig, hash, key, secp256k1_nonce_function_rfc6979, nullptr), 1);
+        CF_CHECK_EQ(secp256k1_ecdsa_sign(ctx.GetPtr(), &sig, hash, key, secp256k1_nonce_function_rfc6979, nullptr), 1);
     } else if ( op.UseSpecifiedNonce() == true ) {
         CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
                     op.nonce.ToTrimmedString(),
                     specified_nonce), true);
-        CF_CHECK_EQ(secp256k1_ecdsa_sign(ctx, &sig, hash, key, secp256k1_detail::nonce_function, specified_nonce), 1);
+        CF_CHECK_EQ(secp256k1_ecdsa_sign(ctx.GetPtr(), &sig, hash, key, secp256k1_detail::nonce_function, specified_nonce), 1);
     } else {
-        abort();
+        CF_UNREACHABLE();
     }
 
-    CF_CHECK_EQ(secp256k1_ecdsa_signature_serialize_compact(ctx, sig_bytes.data(), &sig), 1);
+    CF_CHECK_EQ(secp256k1_ecdsa_signature_serialize_compact(ctx.GetPtr(), sig_bytes.data(), &sig), 1);
 
-    CF_CHECK_EQ(secp256k1_ec_pubkey_create(ctx, &pubkey, key), 1);
-    CF_CHECK_EQ(secp256k1_ec_pubkey_serialize(ctx, pubkey_bytes.data(), &pubkey_bytes_size, &pubkey, SECP256K1_FLAGS_TYPE_COMPRESSION), 1);
+    CF_CHECK_EQ(secp256k1_ec_pubkey_create(ctx.GetPtr(), &pubkey, key), 1);
+    CF_CHECK_EQ(secp256k1_ec_pubkey_serialize(ctx.GetPtr(), pubkey_bytes.data(), &pubkey_bytes_size, &pubkey, SECP256K1_FLAGS_TYPE_COMPRESSION), 1);
     CF_CHECK_EQ(pubkey_bytes_size, 65);
 
     {
         boost::multiprecision::cpp_int r, s;
 
-        auto component_pubkey = secp256k1_detail::OpECC_PrivateToPublic(op.priv.ToTrimmedString());
+        auto component_pubkey = secp256k1_detail::OpECC_PrivateToPublic(ds, op.priv.ToTrimmedString());
         CF_CHECK_NE(component_pubkey, std::nullopt);
 
         boost::multiprecision::import_bits(r, sig_bytes.begin(), sig_bytes.begin() + 32);
@@ -211,14 +277,14 @@ std::optional<component::ECDSA_Signature> secp256k1::OpECDSA_Sign(operation::ECD
     }
 
 end:
-    /* noret */ secp256k1_context_destroy(ctx);
     return ret;
 }
 
 std::optional<bool> secp256k1::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    secp256k1_context* ctx = nullptr;
+    secp256k1_detail::Context ctx(ds, SECP256K1_CONTEXT_VERIFY);
     secp256k1_pubkey pubkey;
     secp256k1_ecdsa_signature sig;
     uint8_t pubkey_bytes[65];
@@ -256,23 +322,21 @@ std::optional<bool> secp256k1::OpECDSA_Verify(operation::ECDSA_Verify& op) {
                 op.signature.signature.second.ToTrimmedString(),
                 sig_bytes + 32), true);
 
-    CF_CHECK_NE(ctx = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY), nullptr);
+    CF_CHECK_EQ(secp256k1_ec_pubkey_parse(ctx.GetPtr(), &pubkey, pubkey_bytes, sizeof(pubkey_bytes)), 1);
+    CF_CHECK_EQ(secp256k1_ecdsa_signature_parse_compact(ctx.GetPtr(), &sig, sig_bytes), 1);
+    /* ignore ret */ secp256k1_ecdsa_signature_normalize(ctx.GetPtr(), &sig, &sig);
 
-    CF_CHECK_EQ(secp256k1_ec_pubkey_parse(ctx, &pubkey, pubkey_bytes, sizeof(pubkey_bytes)), 1);
-    CF_CHECK_EQ(secp256k1_ecdsa_signature_parse_compact(ctx, &sig, sig_bytes), 1);
-    secp256k1_ecdsa_signature_normalize(ctx, &sig, &sig);
-
-    ret = secp256k1_ecdsa_verify(ctx, &sig, hash, &pubkey) == 1 ? true : false;
+    ret = secp256k1_ecdsa_verify(ctx.GetPtr(), &sig, hash, &pubkey) == 1 ? true : false;
 
 end:
-    /* noret */ secp256k1_context_destroy(ctx);
     return ret;
 }
 
 std::optional<component::ECC_PublicKey> secp256k1::OpECDSA_Recover(operation::ECDSA_Recover& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    secp256k1_context* ctx = nullptr;
+    secp256k1_detail::Context ctx(ds, SECP256K1_CONTEXT_VERIFY);
     secp256k1_pubkey pubkey;
     secp256k1_ecdsa_recoverable_signature sig;
     uint8_t sig_bytes[64];
@@ -298,27 +362,32 @@ std::optional<component::ECC_PublicKey> secp256k1::OpECDSA_Recover(operation::EC
                 op.signature.second.ToTrimmedString(),
                 sig_bytes + 32), true);
 
-    CF_CHECK_NE(ctx = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY), nullptr);
-    CF_CHECK_EQ(secp256k1_ecdsa_recoverable_signature_parse_compact(ctx, &sig, sig_bytes, op.id), 1);
-    if ( secp256k1_ecdsa_recover(ctx, &pubkey, &sig, hash) == 1 ) {
-        ret = secp256k1_detail::To_ECC_PublicKey(ctx, pubkey);
+    if ( secp256k1_ecdsa_recoverable_signature_parse_compact(ctx.GetPtr(), &sig, sig_bytes, op.id) != 1 ) {
+        /* https://github.com/bitcoin-core/secp256k1/blob/8ae56e33e749e16880dbfb4444fdae238b4426ac/src/modules/recovery/main_impl.h#L55 */
+        secp256k1_detail::AssertZero<>(&sig);
+        goto end;
+    }
+
+    if ( secp256k1_ecdsa_recover(ctx.GetPtr(), &pubkey, &sig, hash) == 1 ) {
+        ret = secp256k1_detail::To_ECC_PublicKey(ctx.GetPtr(), pubkey);
     } else {
-        //ret = {"0", "0"};
+        /* https://github.com/bitcoin-core/secp256k1/blob/8ae56e33e749e16880dbfb4444fdae238b4426ac/src/modules/recovery/main_impl.h#L155 */
+        secp256k1_detail::AssertZero<>(&pubkey);
     }
 
 end:
-    /* noret */ secp256k1_context_destroy(ctx);
     return ret;
 }
 
 std::optional<component::Schnorr_Signature> secp256k1::OpSchnorr_Sign(operation::Schnorr_Sign& op) {
     std::optional<component::Schnorr_Signature> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     if ( op.UseBIP340Nonce() == false && op.UseSpecifiedNonce() == false ) {
         return ret;
     }
 
-    secp256k1_context* ctx = nullptr, *ctx_verify = nullptr;
+    secp256k1_detail::Context ctx(ds, SECP256K1_CONTEXT_SIGN);
     secp256k1_xonly_pubkey pubkey;
     std::vector<uint8_t> sig_bytes(64);
     std::vector<uint8_t> pubkey_bytes(32);
@@ -329,13 +398,11 @@ std::optional<component::Schnorr_Signature> secp256k1::OpSchnorr_Sign(operation:
 
     CF_CHECK_EQ(op.curveType.Get(), CF_ECC_CURVE("secp256k1"));
 
-    CF_CHECK_NE(ctx = secp256k1_context_create(SECP256K1_CONTEXT_SIGN), nullptr);
-
     CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
                 op.priv.ToTrimmedString(),
                 key), true);
 
-    CF_CHECK_EQ(secp256k1_keypair_create(ctx, &keypair, key), 1);
+    CF_CHECK_EQ(secp256k1_keypair_create(ctx.GetPtr(), &keypair, key), 1);
 
     if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
         CF_CHECK_EQ(op.cleartext.GetSize(), sizeof(hash));
@@ -349,23 +416,18 @@ std::optional<component::Schnorr_Signature> secp256k1::OpSchnorr_Sign(operation:
 
 
     if ( op.UseBIP340Nonce() == true ) {
-        CF_CHECK_EQ(secp256k1_schnorrsig_sign(ctx, sig_bytes.data(), hash, &keypair, secp256k1_nonce_function_bip340, nullptr), 1);
+        CF_CHECK_EQ(secp256k1_schnorrsig_sign(ctx.GetPtr(), sig_bytes.data(), hash, &keypair, secp256k1_nonce_function_bip340, nullptr), 1);
     } else if ( op.UseSpecifiedNonce() == true ) {
         CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
                     op.nonce.ToTrimmedString(),
                     specified_nonce), true);
-        CF_CHECK_EQ(secp256k1_schnorrsig_sign(ctx, sig_bytes.data(), hash, &keypair, secp256k1_detail::nonce_function_schnorrsig, specified_nonce), 1);
+        CF_CHECK_EQ(secp256k1_schnorrsig_sign(ctx.GetPtr(), sig_bytes.data(), hash, &keypair, secp256k1_detail::nonce_function_schnorrsig, specified_nonce), 1);
     } else {
-        abort();
+        CF_UNREACHABLE();
     }
 
-    CF_CHECK_EQ(secp256k1_keypair_xonly_pub(ctx, &pubkey, nullptr, &keypair), 1);
-    CF_CHECK_EQ(secp256k1_xonly_pubkey_serialize(ctx, pubkey_bytes.data(), &pubkey), 1);
-
-    {
-        CF_CHECK_NE(ctx_verify = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY), nullptr);
-        CF_ASSERT(secp256k1_schnorrsig_verify(ctx_verify, sig_bytes.data(), hash, &pubkey) == 1, "Cannot verify generated signature");
-    }
+    CF_CHECK_EQ(secp256k1_keypair_xonly_pub(ctx.GetPtr(), &pubkey, nullptr, &keypair), 1);
+    CF_CHECK_EQ(secp256k1_xonly_pubkey_serialize(ctx.GetPtr(), pubkey_bytes.data(), &pubkey), 1);
 
     {
         boost::multiprecision::cpp_int x, r, s;
@@ -380,15 +442,14 @@ std::optional<component::Schnorr_Signature> secp256k1::OpSchnorr_Sign(operation:
     }
 
 end:
-    /* noret */ secp256k1_context_destroy(ctx);
-    /* noret */ secp256k1_context_destroy(ctx_verify);
     return ret;
 }
 
 std::optional<bool> secp256k1::OpSchnorr_Verify(operation::Schnorr_Verify& op) {
     std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    secp256k1_context* ctx = nullptr;
+    secp256k1_detail::Context ctx(ds, SECP256K1_CONTEXT_VERIFY);
     secp256k1_xonly_pubkey pubkey;
     uint8_t pubkey_bytes[32];
     uint8_t sig_bytes[64];
@@ -421,14 +482,37 @@ std::optional<bool> secp256k1::OpSchnorr_Verify(operation::Schnorr_Verify& op) {
                 op.signature.signature.second.ToTrimmedString(),
                 sig_bytes + 32), true);
 
-    CF_CHECK_NE(ctx = secp256k1_context_create(SECP256K1_CONTEXT_VERIFY), nullptr);
+    CF_CHECK_EQ(secp256k1_xonly_pubkey_parse(ctx.GetPtr(), &pubkey, pubkey_bytes), 1);
 
-    CF_CHECK_EQ(secp256k1_xonly_pubkey_parse(ctx, &pubkey, pubkey_bytes), 1);
-
-    ret = secp256k1_schnorrsig_verify(ctx, sig_bytes, hash, &pubkey) == 1 ? true : false;
+    ret = secp256k1_schnorrsig_verify(ctx.GetPtr(), sig_bytes, hash, &pubkey) == 1 ? true : false;
 
 end:
-    /* noret */ secp256k1_context_destroy(ctx);
+    return ret;
+}
+
+std::optional<component::Secret> secp256k1::OpECDH_Derive(operation::ECDH_Derive& op) {
+    std::optional<component::Secret> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    secp256k1_detail::Context ctx(ds, SECP256K1_CONTEXT_SIGN);
+    secp256k1_pubkey pubkey;
+    uint8_t privkey_bytes[32];
+    uint8_t pubkey_bytes[65];
+    uint8_t out[32];
+    memset(out, 0, 32);
+
+    CF_CHECK_EQ(op.curveType.Get(), CF_ECC_CURVE("secp256k1"));
+
+    CF_CHECK_TRUE(secp256k1_detail::PrivkeyToBytes(op.priv, privkey_bytes));
+    CF_CHECK_TRUE(secp256k1_detail::PubkeyToBytes(op.pub, pubkey_bytes));
+
+    CF_CHECK_EQ(secp256k1_ec_pubkey_parse(ctx.GetPtr(), &pubkey, pubkey_bytes, sizeof(pubkey_bytes)), 1);
+
+    CF_CHECK_EQ(secp256k1_ecdh(ctx.GetPtr(), out, &pubkey, privkey_bytes, nullptr, nullptr), 1);
+
+end:
+    ret = component::Secret(Buffer(out, sizeof(out)));
+
     return ret;
 }
 
