@@ -40,7 +40,7 @@ var SetDST = function(dst) {
 var To_G1 = function(x, y) {
     var x = BigInt(x);
     var y = BigInt(y);
-    return new PointG1(new Fq(x), new Fq(y), new Fq(1n));
+    return new exports.PointG1(new Fq(x), new Fq(y), new Fq(1n));
 }
 
 var From_G1 = function(g1) {
@@ -57,7 +57,7 @@ var To_G2 = function(x, y, v, w) {
     var y1 = BigInt(w);
     var x2 = BigInt(x);
     var y2 = BigInt(y);
-    return new PointG2(new Fq2([x1, y1]), new Fq2([x2, y2]), Fq2.ONE);
+    return new exports.PointG2(new Fq2([x1, y1]), new Fq2([x2, y2]), Fq2.ONE);
 }
 
 var From_G2 = function(g2) {
@@ -225,7 +225,6 @@ var OpBLS_Decompress_G2 = async function(FuzzerInput) {
 }
 
 var OpBLS_IsG1OnCurve = async function(FuzzerInput) {
-    return; /* XXX */
     var a = To_G1(FuzzerInput['g1_x'], FuzzerInput['g1_y']);
     var res = true;
 
@@ -234,8 +233,6 @@ var OpBLS_IsG1OnCurve = async function(FuzzerInput) {
     } catch ( e ) {
         res = false;
     }
-
-    /* XXX subgroup check */
 
     FuzzerOutput = JSON.stringify(res);
 }
@@ -248,10 +245,6 @@ var OpBLS_IsG2OnCurve = async function(FuzzerInput) {
         a.assertValidity();
     } catch ( e ) {
         res = false;
-    }
-
-    if ( res == true ) {
-        res = !exports.clearCofactorG2(a).isZero();
     }
 
     FuzzerOutput = JSON.stringify(res);
