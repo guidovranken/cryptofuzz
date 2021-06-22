@@ -45,10 +45,15 @@ std::optional<component::Schnorr_Signature> schnorr_fun::OpSchnorr_Sign(operatio
 
     CF_CHECK_NE(schnorr_fun_schnorr_sign(CT.data(), CT.size(), priv_bytes, sig_bytes, pk_bytes), 0);
 
-    ret = component::Schnorr_Signature(
-        {util::BinToDec(sig_bytes, 32), util::BinToDec(sig_bytes + 32, 32)},
-        {util::BinToDec(pk_bytes, 32), "0"}
-    );
+    {
+        util::MemorySanitizerUnpoison(sig_bytes, sizeof(sig_bytes));
+        util::MemorySanitizerUnpoison(pk_bytes, sizeof(pk_bytes));
+
+        ret = component::Schnorr_Signature(
+                {util::BinToDec(sig_bytes, 32), util::BinToDec(sig_bytes + 32, 32)},
+                {util::BinToDec(pk_bytes, 32), "0"}
+                );
+    }
 
 end:
     return ret;
@@ -89,7 +94,12 @@ std::optional<bool> schnorr_fun::OpSchnorr_Verify(operation::Schnorr_Verify& op)
         memcpy(sig_bytes + 32, s_bytes->data(), 32);
     }
 
-    ret = schnorr_fun_schnorr_verify(CT.data(), CT.size(), sig_bytes, pk_bytes);
+    {
+        const bool r = schnorr_fun_schnorr_verify(CT.data(), CT.size(), sig_bytes, pk_bytes);
+        util::MemorySanitizerUnpoison(&r, sizeof(r));
+
+        ret = r;
+    }
 
 end:
     return ret;

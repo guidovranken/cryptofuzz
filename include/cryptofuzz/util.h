@@ -98,6 +98,7 @@ void HintBignumOpt(const std::optional<std::string> bn);
 std::vector<uint8_t> Append(const std::vector<uint8_t> A, const std::vector<uint8_t> B);
 std::vector<uint8_t> RemoveLeadingZeroes(std::vector<uint8_t> v);
 std::vector<uint8_t> AddLeadingZeroes(fuzzing::datasource::Datasource& ds, const std::vector<uint8_t>& v);
+void MemorySanitizerUnpoison(const void* data, const size_t size);
 
 } /* namespace util */
 } /* namespace cryptofuzz */

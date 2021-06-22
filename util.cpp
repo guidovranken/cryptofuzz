@@ -761,5 +761,13 @@ std::vector<uint8_t> AddLeadingZeroes(fuzzing::datasource::Datasource& ds, const
     return Append(zeroes, stripped);
 }
 
+extern "C" {
+    __attribute__((weak)) void __msan_unpoison(const volatile void*, size_t) { }
+}
+
+void MemorySanitizerUnpoison(const void* data, const size_t size) {
+    __msan_unpoison(data, size);
+}
+
 } /* namespace util */
 } /* namespace cryptofuzz */
