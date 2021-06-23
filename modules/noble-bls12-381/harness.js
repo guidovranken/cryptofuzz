@@ -33,7 +33,13 @@ var SetDST = function(dst) {
         }
         ret += String.fromCharCode(dst[i]);
     }
-    exports.DST_LABEL = ret;
+
+    try {
+        exports.utils.setDSTLabel(ret);
+    } catch ( e ) {
+        return false;
+    }
+
     return true;
 }
 
