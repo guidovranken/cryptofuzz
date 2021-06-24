@@ -499,9 +499,12 @@ std::optional<component::Secret> secp256k1::OpECDH_Derive(operation::ECDH_Derive
     uint8_t privkey_bytes[32];
     uint8_t pubkey_bytes[65];
     uint8_t out[32];
-    memset(out, 0, 32);
 
-    CF_CHECK_EQ(op.curveType.Get(), CF_ECC_CURVE("secp256k1"));
+    if ( op.curveType.Get(), CF_ECC_CURVE("secp256k1") ) {
+        return ret;
+    }
+
+    memset(out, 0, 32);
 
     CF_CHECK_TRUE(secp256k1_detail::PrivkeyToBytes(op.priv, privkey_bytes));
     CF_CHECK_TRUE(secp256k1_detail::PubkeyToBytes(op.pub, pubkey_bytes));
