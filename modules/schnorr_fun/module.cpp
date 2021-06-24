@@ -3,8 +3,8 @@
 #include <cryptofuzz/crypto.h>
 
 extern "C" {
-    int schnorr_fun_schnorr_verify(uint8_t* msg_bytes, size_t msg_size, const uint8_t sig_bytes[64], const uint8_t pk_bytes[32]);
-    int schnorr_fun_schnorr_sign(uint8_t* msg_bytes, size_t msg_size, const uint8_t priv_bytes[32], uint8_t sig_bytes[64], uint8_t pk_bytes[32]);
+    bool schnorr_fun_schnorr_verify(uint8_t* msg_bytes, size_t msg_size, const uint8_t sig_bytes[64], const uint8_t pk_bytes[32]);
+    bool schnorr_fun_schnorr_sign(uint8_t* msg_bytes, size_t msg_size, const uint8_t priv_bytes[32], uint8_t sig_bytes[64], uint8_t pk_bytes[32]);
 }
 
 namespace cryptofuzz {
@@ -43,7 +43,7 @@ std::optional<component::Schnorr_Signature> schnorr_fun::OpSchnorr_Sign(operatio
         memcpy(priv_bytes, _priv_bytes->data(), 32);
     }
 
-    CF_CHECK_NE(schnorr_fun_schnorr_sign(CT.data(), CT.size(), priv_bytes, sig_bytes, pk_bytes), 0);
+    CF_CHECK_TRUE(schnorr_fun_schnorr_sign(CT.data(), CT.size(), priv_bytes, sig_bytes, pk_bytes));
 
     {
         util::MemorySanitizerUnpoison(sig_bytes, sizeof(sig_bytes));
