@@ -46,7 +46,7 @@ var SetDST = function(dst) {
 var To_G1 = function(x, y) {
     var x = BigInt(x);
     var y = BigInt(y);
-    return new exports.PointG1(new Fq(x), new Fq(y), new Fq(1n));
+    return new exports.PointG1(new Fp(x), new Fp(y), new Fp(1n));
 }
 
 var From_G1 = function(g1) {
@@ -63,7 +63,7 @@ var To_G2 = function(x, y, v, w) {
     var y1 = BigInt(w);
     var x2 = BigInt(x);
     var y2 = BigInt(y);
-    return new exports.PointG2(new Fq2([x1, y1]), new Fq2([x2, y2]), Fq2.ONE);
+    return new exports.PointG2(new Fp2([x1, y1]), new Fp2([x2, y2]), Fp2.ONE);
 }
 
 var From_G2 = function(g2) {
@@ -439,7 +439,7 @@ if ( IsBLS_PrivateToPublic(operation) ) {
 } else if ( IsBLS_G2_IsEq(operation) ) {
     OpBLS_G2_IsEq(FuzzerInput);
 } else if ( IsBignumCalc_Mod_BLS12_381_P(operation) ) {
-    OpBignumCalc(FuzzerInput, exports.Fq);
+    OpBignumCalc(FuzzerInput, exports.Fp);
 } else if ( IsBignumCalc_Mod_BLS12_381_R(operation) ) {
     OpBignumCalc(FuzzerInput, exports.Fr);
 }
