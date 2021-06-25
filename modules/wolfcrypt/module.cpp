@@ -3137,8 +3137,10 @@ std::optional<component::Bignum> wolfCrypt::OpDH_Derive(operation::DH_Derive& op
 
     memset(&key, 0, sizeof(key));
 
-    /* Prevent timeouts if wolfCrypt is compiled with --disable-fastmath */
-#if !defined(USE_FAST_MATH) && !defined(WOLFSSL_SP_MATH)
+    /* Prevent timeouts if wolfCrypt is compiled with --disable-fastmath
+     * or 8 bit SP math */
+#if (!defined(USE_FAST_MATH) && !defined(WOLFSSL_SP_MATH)) || \
+    SP_WORD_SIZE==8
     CF_CHECK_LT(op.prime.GetSize(), 200);
     CF_CHECK_LT(op.base.GetSize(), 200);
     CF_CHECK_LT(op.pub.GetSize(), 200);
@@ -3300,9 +3302,11 @@ std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& 
         case    CF_CALCOP("SetBit(A,B)"):
             opRunner = std::make_unique<wolfCrypt_bignum::SetBit>();
             break;
+#if 0
         case    CF_CALCOP("LCM(A,B)"):
             opRunner = std::make_unique<wolfCrypt_bignum::LCM>();
             break;
+#endif
         case    CF_CALCOP("Mod(A,B)"):
             opRunner = std::make_unique<wolfCrypt_bignum::Mod>();
             break;
