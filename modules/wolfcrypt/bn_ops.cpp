@@ -719,7 +719,11 @@ end:
 }
 
 bool LCM::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
-#if defined(WOLFSSL_SP_MATH)
+#if \
+    defined(WOLFSSL_SP_MATH) || \
+    (defined(WOLFSSL_SP_MATH_ALL) && \
+        !(!defined(NO_RSA) && defined(WOLFSSL_KEY_GEN) && !defined(WC_RSA_BLINDING)) \
+    )
     (void)ds;
     (void)res;
     (void)bn;

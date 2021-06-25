@@ -3302,11 +3302,9 @@ std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& 
         case    CF_CALCOP("SetBit(A,B)"):
             opRunner = std::make_unique<wolfCrypt_bignum::SetBit>();
             break;
-#if 0
         case    CF_CALCOP("LCM(A,B)"):
             opRunner = std::make_unique<wolfCrypt_bignum::LCM>();
             break;
-#endif
         case    CF_CALCOP("Mod(A,B)"):
             opRunner = std::make_unique<wolfCrypt_bignum::Mod>();
             break;
