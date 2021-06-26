@@ -318,6 +318,8 @@ modules.Add( Module("wolfCrypt") )
 modules.Add( Module("wolfCrypt-OpenSSL") )
 
 operations = OperationTable()
+operations.Add( Operation("BLS_Aggregate_G1") )
+operations.Add( Operation("BLS_Aggregate_G2") )
 operations.Add( Operation("BLS_Compress_G1") )
 operations.Add( Operation("BLS_Compress_G2") )
 operations.Add( Operation("BLS_Decompress_G1") )

@@ -495,6 +495,87 @@ std::optional<component::BLS_KeyPair> blst::OpBLS_GenerateKeyPair(operation::BLS
     return ret;
 }
 
+std::optional<component::G1> blst::OpBLS_Aggregate_G1(operation::BLS_Aggregate_G1& op) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    std::optional<component::G1> ret = std::nullopt;
+
+    blst_p1 res;
+    blst_p1_affine res_affine;
+
+    bool first = true;
+    for (const auto& sig : op.points.points) {
+        uint8_t serialized[96];
+        blst_p1_affine a;
+        blst_p1 a_;
+
+        CF_CHECK_TRUE(blst_detail::To_blst_fp(sig.first, a.x));
+        CF_CHECK_TRUE(blst_detail::To_blst_fp(sig.second, a.y));
+
+        CF_NORET(blst_p1_from_affine(&a_, &a));
+
+        CF_NORET(blst_p1_serialize(serialized, &a_));
+
+        CF_CHECK_EQ(
+                blst_aggregate_in_g1(
+                    &res,
+                    first == true ? nullptr : &res,
+                    serialized), BLST_SUCCESS);
+
+        first = false;
+    }
+
+    if ( first == false ) {
+        CF_NORET(blst_p1_to_affine(&res_affine, &res));
+        CF_ASSERT(blst_p1_affine_on_curve(&res_affine) && blst_p1_affine_in_g1(&res_affine), "Aggregate created invalid point");
+        blst_detail::G1 _g1(res_affine, ds);
+        ret = _g1.To_Component_G1();
+    }
+
+end:
+    return ret;
+}
+
+std::optional<component::G2> blst::OpBLS_Aggregate_G2(operation::BLS_Aggregate_G2& op) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    std::optional<component::G2> ret = std::nullopt;
+
+    blst_p2 res;
+    blst_p2_affine res_affine;
+
+    bool first = true;
+    for (const auto& sig : op.points.points) {
+        uint8_t serialized[192];
+        blst_p2_affine a;
+        blst_p2 a_;
+
+        CF_CHECK_TRUE(blst_detail::To_blst_fp(sig.first.first, a.x.fp[0]));
+        CF_CHECK_TRUE(blst_detail::To_blst_fp(sig.first.second, a.y.fp[0]));
+        CF_CHECK_TRUE(blst_detail::To_blst_fp(sig.second.first, a.x.fp[1]));
+        CF_CHECK_TRUE(blst_detail::To_blst_fp(sig.second.second, a.y.fp[1]));
+
+        CF_NORET(blst_p2_from_affine(&a_, &a));
+
+        CF_NORET(blst_p2_serialize(serialized, &a_));
+
+        CF_CHECK_EQ(
+                blst_aggregate_in_g2(
+                    &res,
+                    first == true ? nullptr : &res,
+                    serialized), BLST_SUCCESS);
+
+        first = false;
+    }
+
+    if ( first == false ) {
+        CF_NORET(blst_p2_to_affine(&res_affine, &res));
+        CF_ASSERT(blst_p2_affine_on_curve(&res_affine) && blst_p2_affine_in_g2(&res_affine), "Aggregate created invalid point");
+        ret = blst_detail::To_G2(res_affine);
+    }
+
+end:
+    return ret;
+}
+
 std::optional<bool> blst::OpBLS_Pairing(operation::BLS_Pairing& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     std::optional<bool> ret = std::nullopt;

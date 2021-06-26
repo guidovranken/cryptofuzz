@@ -910,6 +910,28 @@ template<> std::optional<bool> ExecutorBase<bool, operation::BLS_Verify>::callMo
     return module->OpBLS_Verify(op);
 }
 
+/* Specialization for operation::BLS_Aggregate_G1 */
+template<> void ExecutorBase<component::G1, operation::BLS_Aggregate_G1>::postprocess(std::shared_ptr<Module> module, operation::BLS_Aggregate_G1& op, const ExecutorBase<component::G1, operation::BLS_Aggregate_G1>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::G1> ExecutorBase<component::G1, operation::BLS_Aggregate_G1>::callModule(std::shared_ptr<Module> module, operation::BLS_Aggregate_G1& op) const {
+    return module->OpBLS_Aggregate_G1(op);
+}
+
+/* Specialization for operation::BLS_Aggregate_G2 */
+template<> void ExecutorBase<component::G2, operation::BLS_Aggregate_G2>::postprocess(std::shared_ptr<Module> module, operation::BLS_Aggregate_G2& op, const ExecutorBase<component::G2, operation::BLS_Aggregate_G2>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::G2> ExecutorBase<component::G2, operation::BLS_Aggregate_G2>::callModule(std::shared_ptr<Module> module, operation::BLS_Aggregate_G2& op) const {
+    return module->OpBLS_Aggregate_G2(op);
+}
+
 /* Specialization for operation::BLS_Pairing */
 template<> void ExecutorBase<bool, operation::BLS_Pairing>::postprocess(std::shared_ptr<Module> module, operation::BLS_Pairing& op, const ExecutorBase<bool, operation::BLS_Pairing>::ResultPair& result) const {
     (void)module;
@@ -1737,6 +1759,8 @@ template class ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPu
 template class ExecutorBase<component::G2, operation::BLS_PrivateToPublic_G2>;
 template class ExecutorBase<component::BLS_Signature, operation::BLS_Sign>;
 template class ExecutorBase<bool, operation::BLS_Verify>;
+template class ExecutorBase<component::G1, operation::BLS_Aggregate_G1>;
+template class ExecutorBase<component::G2, operation::BLS_Aggregate_G2>;
 template class ExecutorBase<bool, operation::BLS_Pairing>;
 template class ExecutorBase<component::G1, operation::BLS_HashToG1>;
 template class ExecutorBase<component::G2, operation::BLS_HashToG2>;

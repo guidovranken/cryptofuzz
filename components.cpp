@@ -633,6 +633,50 @@ void BLS_PairingComponents::Serialize(Datasource& ds) const {
     }
 }
 
+/* BLS_G1_Vector */
+
+BLS_G1_Vector::BLS_G1_Vector(Datasource& ds) {
+    const auto num = ds.Get<uint32_t>(0);
+    for (size_t i = 0; i < num; i++) {
+        points.push_back( component::G1(ds) );
+    }
+}
+
+BLS_G1_Vector::BLS_G1_Vector(nlohmann::json json) {
+    for (const auto& j : json) {
+        points.push_back( component::G1{j["x"], j["y"]} );
+    }
+}
+
+void BLS_G1_Vector::Serialize(Datasource& ds) const {
+    ds.Put<uint32_t>(points.size());
+    for (const auto& signature : points) {
+        signature.Serialize(ds);
+    }
+}
+
+/* BLS_G2_Vector */
+
+BLS_G2_Vector::BLS_G2_Vector(Datasource& ds) {
+    const auto num = ds.Get<uint32_t>(0);
+    for (size_t i = 0; i < num; i++) {
+        points.push_back( component::G2(ds) );
+    }
+}
+
+BLS_G2_Vector::BLS_G2_Vector(nlohmann::json json) {
+    for (const auto& j : json) {
+        points.push_back( component::G2{j["v"], j["w"], j["x"], j["y"]} );
+    }
+}
+
+void BLS_G2_Vector::Serialize(Datasource& ds) const {
+    ds.Put<uint32_t>(points.size());
+    for (const auto& signature : points) {
+        signature.Serialize(ds);
+    }
+}
+
 /* SR25519_Signature */
 SR25519_Signature::SR25519_Signature(Datasource& ds) :
     signature(ds),

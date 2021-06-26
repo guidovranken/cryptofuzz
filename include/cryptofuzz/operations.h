@@ -1871,6 +1871,70 @@ class BLS_Verify : public Operation {
         }
 };
 
+class BLS_Aggregate_G1 : public Operation {
+    public:
+        const component::CurveType curveType;
+        component::BLS_G1_Vector points;
+
+        BLS_Aggregate_G1(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            points(ds)
+        { }
+        BLS_Aggregate_G1(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            points(json["points"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_Aggregate_G1& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (points == rhs.points) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            points.Serialize(ds);
+        }
+};
+
+class BLS_Aggregate_G2 : public Operation {
+    public:
+        const component::CurveType curveType;
+        component::BLS_G2_Vector points;
+
+        BLS_Aggregate_G2(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            points(ds)
+        { }
+        BLS_Aggregate_G2(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            points(json["points"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_Aggregate_G2& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (points == rhs.points) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            points.Serialize(ds);
+        }
+};
+
 class BLS_Pairing : public Operation {
     public:
         const component::CurveType curveType;

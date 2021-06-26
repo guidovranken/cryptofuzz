@@ -194,6 +194,30 @@ class BLS_PairingComponents {
         nlohmann::json ToJSON(void) const;
 };
 
+class BLS_G1_Vector {
+    public:
+        std::vector<component::G1> points;
+
+        BLS_G1_Vector(Datasource& ds);
+        BLS_G1_Vector(nlohmann::json json);
+
+        bool operator==(const BLS_G1_Vector& rhs) const;
+        void Serialize(Datasource& ds) const;
+        nlohmann::json ToJSON(void) const;
+};
+
+class BLS_G2_Vector {
+    public:
+        std::vector<component::G2> points;
+
+        BLS_G2_Vector(Datasource& ds);
+        BLS_G2_Vector(nlohmann::json json);
+
+        bool operator==(const BLS_G2_Vector& rhs) const;
+        void Serialize(Datasource& ds) const;
+        nlohmann::json ToJSON(void) const;
+};
+
 class SR25519_Signature {
     public:
         BignumPair signature;

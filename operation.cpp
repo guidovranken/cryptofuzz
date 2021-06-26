@@ -1099,6 +1099,56 @@ nlohmann::json BLS_Pairing::ToJSON(void) const {
     return j;
 }
 
+std::string BLS_Aggregate_G1::Name(void) const { return "BLS_Aggregate_G1"; }
+std::string BLS_Aggregate_G1::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_Aggregate_G1" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+
+    for (const auto& g1 : points.points) {
+        ss << "    X: " << g1.first.ToString() << std::endl;
+        ss << "    Y: " << g1.second.ToString() << std::endl;
+        ss << std::endl;
+    }
+
+    return ss.str();
+}
+
+nlohmann::json BLS_Aggregate_G1::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    /* TODO  */
+    return j;
+}
+
+std::string BLS_Aggregate_G2::Name(void) const { return "BLS_Aggregate_G2"; }
+std::string BLS_Aggregate_G2::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_Aggregate_G2" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+
+    for (const auto& g2 : points.points) {
+        ss << "    V:" << g2.first.first.ToString() << std::endl;
+        ss << "    W:" << g2.first.second.ToString() << std::endl;
+        ss << "    X:" << g2.second.first.ToString() << std::endl;
+        ss << "    Y:" << g2.second.second.ToString() << std::endl;
+        ss << std::endl;
+    }
+
+    return ss.str();
+}
+
+nlohmann::json BLS_Aggregate_G2::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    /* TODO  */
+    return j;
+}
+
 std::string BLS_HashToG1::Name(void) const { return "BLS_HashToG1"; }
 std::string BLS_HashToG1::ToString(void) const {
     std::stringstream ss;
