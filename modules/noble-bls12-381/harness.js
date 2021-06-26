@@ -353,7 +353,41 @@ var OpBLS_G2_IsEq = async function(FuzzerInput) {
         FuzzerOutput = JSON.stringify(res);
     } catch ( e ) { /* console.log(e); */ }
 }
-    
+
+var OpBLS_Aggregate_G1 = async function(FuzzerInput) {
+    try {
+        var points = [];
+        for (var i = 0; i < FuzzerInput['points'].length; i++) {
+            var point = To_G1(
+                FuzzerInput['points'][i]['x'],
+                FuzzerInput['points'][i]['y']);
+            points.push(point);
+        }
+
+        var res = aggregatePublicKeys(points);
+
+        FuzzerOutput = JSON.stringify(From_G1(res));
+    } catch ( e ) { /* console.log(e); */ }
+}
+
+var OpBLS_Aggregate_G2 = async function(FuzzerInput) {
+    try {
+        var points = [];
+        for (var i = 0; i < FuzzerInput['points'].length; i++) {
+            var point = To_G2(
+                FuzzerInput['points'][i]['w'],
+                FuzzerInput['points'][i]['y'],
+                FuzzerInput['points'][i]['v'],
+                FuzzerInput['points'][i]['x']);
+            points.push(point);
+        }
+
+        var res = aggregateSignatures(points);
+
+        FuzzerOutput = JSON.stringify(From_G2(res));
+    } catch ( e ) { /* console.log(e); */ }
+}
+
 var OpBignumCalc = async function(FuzzerInput, Fx) {
     var calcOp = BigInt(FuzzerInput["calcOp"]);
 
@@ -438,6 +472,10 @@ if ( IsBLS_PrivateToPublic(operation) ) {
     OpBLS_G2_Neg(FuzzerInput);
 } else if ( IsBLS_G2_IsEq(operation) ) {
     OpBLS_G2_IsEq(FuzzerInput);
+} else if ( IsBLS_Aggregate_G1(operation) ) {
+    OpBLS_Aggregate_G1(FuzzerInput);
+} else if ( IsBLS_Aggregate_G2(operation) ) {
+    OpBLS_Aggregate_G2(FuzzerInput);
 } else if ( IsBignumCalc_Mod_BLS12_381_P(operation) ) {
     OpBignumCalc(FuzzerInput, exports.Fp);
 } else if ( IsBignumCalc_Mod_BLS12_381_R(operation) ) {

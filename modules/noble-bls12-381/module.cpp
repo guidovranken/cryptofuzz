@@ -325,6 +325,38 @@ std::optional<bool> noble_bls12_381::OpBLS_G2_IsEq(operation::BLS_G2_IsEq& op) {
     return ret;
 }
 
+std::optional<component::G1> noble_bls12_381::OpBLS_Aggregate_G1(operation::BLS_Aggregate_G1& op) {
+    std::optional<component::G1> ret = std::nullopt;
+
+    auto json = op.ToJSON();
+    json["operation"] = std::to_string(CF_OPERATION("BLS_Aggregate_G1"));
+
+    auto res = ((JS*)js)->Run(json.dump());
+
+    if ( res != std::nullopt ) {
+        auto jsonRet = nlohmann::json::parse(*res);
+        ret = component::G1(jsonRet);
+    }
+
+    return ret;
+}
+
+std::optional<component::G2> noble_bls12_381::OpBLS_Aggregate_G2(operation::BLS_Aggregate_G2& op) {
+    std::optional<component::G2> ret = std::nullopt;
+
+    auto json = op.ToJSON();
+    json["operation"] = std::to_string(CF_OPERATION("BLS_Aggregate_G2"));
+
+    auto res = ((JS*)js)->Run(json.dump());
+
+    if ( res != std::nullopt ) {
+        auto jsonRet = nlohmann::json::parse(*res);
+        ret = component::G2(jsonRet);
+    }
+
+    return ret;
+}
+
 std::optional<component::Bignum> noble_bls12_381::OpBignumCalc(operation::BignumCalc& op) {
     if ( op.modulo == std::nullopt ) {
         return std::nullopt;

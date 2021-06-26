@@ -1119,7 +1119,20 @@ nlohmann::json BLS_Aggregate_G1::ToJSON(void) const {
     nlohmann::json j;
     j["curveType"] = curveType.ToJSON();
     j["modifier"] = modifier.ToJSON();
-    /* TODO  */
+
+    nlohmann::json points_json = nlohmann::json::array();
+
+    for (const auto& g1 : points.points) {
+        nlohmann::json point;
+
+        point["x"] = g1.first.ToJSON();
+        point["y"] = g1.second.ToJSON();
+
+        points_json.push_back(point);
+    }
+
+    j["points"] = points_json;
+
     return j;
 }
 
@@ -1145,7 +1158,21 @@ nlohmann::json BLS_Aggregate_G2::ToJSON(void) const {
     nlohmann::json j;
     j["curveType"] = curveType.ToJSON();
     j["modifier"] = modifier.ToJSON();
-    /* TODO  */
+
+    nlohmann::json points_json = nlohmann::json::array();
+
+    for (const auto& g2 : points.points) {
+        nlohmann::json point;
+
+        point["v"] = g2.first.first.ToJSON();
+        point["w"] = g2.first.second.ToJSON();
+        point["x"] = g2.second.first.ToJSON();
+        point["y"] = g2.second.second.ToJSON();
+
+        points_json.push_back(point);
+    }
+
+    j["points"] = points_json;
     return j;
 }
 
