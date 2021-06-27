@@ -506,11 +506,16 @@ std::string HexToDec(std::string s) {
         return ret;
     }
 
+    if ( s.size() >= 1 && s[0] == '-' ) {
+        s = s.substr(1);
+        negative = true;
+    }
+
     if ( s.size() >= 2 && s[0] == '0' && s[1] == 'x' ) {
         s = s.substr(2);
     }
 
-    if ( s.size() >= 1 && s[0] == '-' ) {
+    if ( negative == false && s.size() >= 1 && s[0] == '-' ) {
         s = s.substr(1);
         negative = true;
     }
