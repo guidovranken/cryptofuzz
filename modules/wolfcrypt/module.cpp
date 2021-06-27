@@ -196,8 +196,13 @@ namespace wolfCrypt_detail {
         const uint32_t preferred = (top - n) & 0xFFFFF000;
 
         for (const auto& p : fixed_allocs) {
-            /* If an existing pointer overlaps with the preferred pointer, revert to normal mallo */
-            if ( (void*)preferred >= p.first && (void*)preferred <= ((uint8_t*)p.first + p.second)) {
+            const size_t a_start = (size_t)preferred;
+            const size_t a_end = a_start + n;
+            const size_t b_start = (size_t)p.first;
+            const size_t b_end = b_start + p.second;
+
+            /* If an existing pointer overlaps with the preferred pointer, revert to normal malloc */
+            if ( a_start <= b_end && b_start <= a_end ) {
                 return util::malloc(n);
             }
         }
