@@ -504,6 +504,15 @@ bool IsZero::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std
     return true;
 }
 
+bool IsNotZero::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
+    (void)ds;
+
+    res = bn[0].Ref() == 0 ? 0 : 1;
+
+    return true;
+}
+
 bool IsOne::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
     (void)modulo;
     (void)ds;

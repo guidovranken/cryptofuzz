@@ -237,6 +237,10 @@
   #include <modules/schnorr_fun/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_QUICKJS)
+  #include <modules/quickjs/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -479,6 +483,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_SCHNORR_FUN)
     driver->LoadModule( std::make_shared<cryptofuzz::module::schnorr_fun>() );
+#endif
+
+#if defined(CRYPTOFUZZ_QUICKJS)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::quickjs>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is

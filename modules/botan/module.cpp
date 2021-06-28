@@ -1396,6 +1396,9 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
         case    CF_CALCOP("IsZero(A)"):
             opRunner = std::make_unique<Botan_bignum::IsZero>();
             break;
+        case    CF_CALCOP("IsNotZero(A)"):
+            opRunner = std::make_unique<Botan_bignum::IsNotZero>();
+            break;
         case    CF_CALCOP("IsOne(A)"):
             opRunner = std::make_unique<Botan_bignum::IsOne>();
             break;
