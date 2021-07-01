@@ -22,6 +22,7 @@ module.a: module.o bn_ops.o
 	ar x $(NSS_NSPR_PATH)/nspr/Debug/pr/src/libnspr4.a && \
 	ar x $(NSS_NSPR_PATH)/dist/Debug/lib/libplc4.a && \
 	ar x $(NSS_NSPR_PATH)/dist/Debug/lib/libnss_static.a && \
+	ar x $(NSS_NSPR_PATH)/dist/Debug/lib/libsha-x86_c_lib.a && \
 	ar x $(NSS_NSPR_PATH)/dist/Debug/lib/libfreebl_static.a && \
 	ar x $(NSS_NSPR_PATH)/dist/Debug/lib/libhw-acc-crypto-avx.a && \
 	ar x $(NSS_NSPR_PATH)/dist/Debug/lib/libhw-acc-crypto-avx2.a && \
