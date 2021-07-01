@@ -999,6 +999,11 @@ std::optional<component::Key> SymCrypt::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) 
 
     CF_CHECK_NE(mac = SymCrypt_detail::to_SYMCRYPT_MAC(op.digestType), nullptr);
 
+    /* SymCryptPbkdf2 crashes if output size is 0:
+     * https://github.com/microsoft/SymCrypt/blob/b15ec2c87d54704474ee8d26c95e90762c746ba2/lib/pbkdf2.c#L33-L35
+     */
+    CF_CHECK_NE(op.keySize, 0);
+
     CF_CHECK_EQ(SymCryptPbkdf2(
                 mac,
                 op.password.GetPtr(),
@@ -1051,6 +1056,12 @@ std::optional<component::Key> SymCrypt::OpKDF_SP_800_108(operation::KDF_SP_800_1
     CF_CHECK_EQ(op.mech.mode, true);
     CF_CHECK_EQ(op.mode, 0);
     CF_CHECK_NE(mac = SymCrypt_detail::to_SYMCRYPT_MAC(op.mech.type), nullptr);
+
+    /* SymCryptSp800_108 crashes if output size is 0:
+     * https://github.com/microsoft/SymCrypt/blob/b15ec2c87d54704474ee8d26c95e90762c746ba2/lib/sp800_108.c#L34-L36
+     */
+    CF_CHECK_NE(op.keySize, 0);
+
     CF_CHECK_EQ(SymCryptSp800_108(
                 mac,
                 op.secret.GetPtr(),
