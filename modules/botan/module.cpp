@@ -1269,6 +1269,115 @@ end:
     return ret;
 }
 
+std::optional<component::ECC_Point> Botan::OpECC_Point_Add(operation::ECC_Point_Add& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    BOTAN_FUZZER_RNG;
+
+    std::unique_ptr<::Botan::EC_Group> group = nullptr;
+
+    {
+        std::optional<std::string> curveString;
+        CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
+        group = std::make_unique<::Botan::EC_Group>(*curveString);
+    }
+
+    try {
+        const auto a_x = ::Botan::BigInt(op.a.first.ToString(ds));
+        CF_CHECK_GTE(a_x, 0);
+
+        const auto a_y = ::Botan::BigInt(op.a.second.ToString(ds));
+        CF_CHECK_GTE(a_y, 0);
+
+        const auto a = group->point(a_x, a_y);
+        CF_CHECK_TRUE(a.on_the_curve());
+
+        const auto b_x = ::Botan::BigInt(op.b.first.ToString(ds));
+        CF_CHECK_GTE(b_x, 0);
+
+        const auto b_y = ::Botan::BigInt(op.b.second.ToString(ds));
+        CF_CHECK_GTE(b_y, 0);
+
+        const auto b = group->point(b_x, b_y);
+        CF_CHECK_TRUE(b.on_the_curve());
+
+        ::Botan::PointGFp _res = a + b;
+
+        const auto x = _res.get_affine_x();
+        const auto y = _res.get_affine_y();
+
+        ret = {
+            util::HexToDec(x.to_hex_string()),
+            util::HexToDec(y.to_hex_string()),
+        };
+
+    } catch ( ... ) { }
+
+end:
+    return ret;
+}
+
+std::optional<component::ECC_Point> Botan::OpECC_Point_Mul(operation::ECC_Point_Mul& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    BOTAN_FUZZER_RNG;
+
+    std::unique_ptr<::Botan::EC_Group> group = nullptr;
+
+    {
+        std::optional<std::string> curveString;
+        CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
+        group = std::make_unique<::Botan::EC_Group>(*curveString);
+    }
+
+    try {
+        const auto a_x = ::Botan::BigInt(op.a.first.ToString(ds));
+        CF_CHECK_GTE(a_x, 0);
+
+        const auto a_y = ::Botan::BigInt(op.a.second.ToString(ds));
+        CF_CHECK_GTE(a_y, 0);
+
+        const auto a = group->point(a_x, a_y);
+        CF_CHECK_TRUE(a.on_the_curve());
+
+        const auto b = ::Botan::BigInt(op.b.ToString(ds));
+
+        CF_CHECK_GTE(b, 0);
+        CF_CHECK_LT(b, group->get_order());
+
+        std::vector<::Botan::BigInt> ws(::Botan::PointGFp::WORKSPACE_SIZE);
+
+        bool useBlinding = false;
+#if defined(CRYPTOFUZZ_BOTAN_IS_ORACLE)
+        try {
+            useBlinding = ds.Get<bool>();
+        } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+#endif
+
+        ::Botan::PointGFp _res;
+
+        if ( useBlinding == false ) {
+            _res = a * b;
+        } else {
+            _res = group->blinded_var_point_multiply(a, b, rng, ws);
+        }
+
+        const auto x = _res.get_affine_x();
+        const auto y = _res.get_affine_y();
+
+        ret = {
+            util::HexToDec(x.to_hex_string()),
+            util::HexToDec(y.to_hex_string()),
+        };
+
+    } catch ( ... ) { }
+
+end:
+    return ret;
+}
+
 std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
 
