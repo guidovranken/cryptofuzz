@@ -47,6 +47,8 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorECDH_Derive executorECDH_Derive(CF_OPERATION("ECDH_Derive"), modules, options);
     static ExecutorECIES_Encrypt executorECIES_Encrypt(CF_OPERATION("ECIES_Encrypt"), modules, options);
     static ExecutorECIES_Decrypt executorECIES_Decrypt(CF_OPERATION("ECIES_Decrypt"), modules, options);
+    static ExecutorECC_Point_Add executorECC_Point_Add(CF_OPERATION("ECC_Point_Add"), modules, options);
+    static ExecutorECC_Point_Mul executorECC_Point_Mul(CF_OPERATION("ECC_Point_Mul"), modules, options);
     static ExecutorDH_GenerateKeyPair executorDH_GenerateKeyPair(CF_OPERATION("DH_GenerateKeyPair"), modules, options);
     static ExecutorDH_Derive executorDH_Derive(CF_OPERATION("DH_Derive"), modules, options);
     static ExecutorBignumCalc executorBignumCalc(CF_OPERATION("BignumCalc"), modules, options);
@@ -185,6 +187,12 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("ECIES_Decrypt"):
                 executorECIES_Decrypt.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("ECC_Point_Add"):
+                executorECC_Point_Add.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("ECC_Point_Mul"):
+                executorECC_Point_Mul.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("DH_GenerateKeyPair"):
                 executorDH_GenerateKeyPair.Run(ds, payload.data(), payload.size());

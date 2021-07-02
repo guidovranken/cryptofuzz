@@ -866,6 +866,63 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     }
                 }
                 break;
+            case    CF_OPERATION("ECC_Point_Add"):
+                {
+                    parameters["modifier"] = "";
+
+                    if ( Pool_CurveECC_Point.Have() == true ) {
+                        const auto P = Pool_CurveECC_Point.Get();
+                        parameters["curveType"] = P.curveID;
+
+                        parameters["a_x"] = getBool() ? getBignum() : P.x;
+                        parameters["a_y"] = getBool() ? getBignum() : P.y;
+                    } else {
+                        parameters["curveType"] = getRandomCurve();
+
+                        parameters["a_x"] = getBignum();
+                        parameters["a_y"] = getBignum();
+                    }
+
+                    if ( Pool_CurveECC_Point.Have() == true ) {
+                        const auto P = Pool_CurveECC_Point.Get();
+                        parameters["curveType"] = P.curveID;
+
+                        parameters["b_x"] = getBool() ? getBignum() : P.x;
+                        parameters["b_y"] = getBool() ? getBignum() : P.y;
+                    } else {
+                        parameters["curveType"] = getRandomCurve();
+
+                        parameters["b_x"] = getBignum();
+                        parameters["b_y"] = getBignum();
+                    }
+
+                    cryptofuzz::operation::ECC_Point_Add op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("ECC_Point_Mul"):
+                {
+                    parameters["modifier"] = "";
+
+                    if ( Pool_CurveECC_Point.Have() == true ) {
+                        const auto P = Pool_CurveECC_Point.Get();
+                        parameters["curveType"] = P.curveID;
+
+                        parameters["a_x"] = getBool() ? getBignum() : P.x;
+                        parameters["a_y"] = getBool() ? getBignum() : P.y;
+                    } else {
+                        parameters["curveType"] = getRandomCurve();
+
+                        parameters["a_x"] = getBignum();
+                        parameters["a_y"] = getBignum();
+                    }
+
+                    parameters["b"] = getBignum();
+
+                    cryptofuzz::operation::ECC_Point_Mul op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
             case    CF_OPERATION("KDF_SCRYPT"):
                 {
                     size_t numParts = 0;

@@ -37,6 +37,8 @@ void test(const operation::ECDSA_Recover& op, const std::optional<component::ECC
 void test(const operation::ECDH_Derive& op, const std::optional<component::Secret>& result);
 void test(const operation::ECIES_Encrypt& op, const std::optional<component::Ciphertext>& result);
 void test(const operation::ECIES_Decrypt& op, const std::optional<component::Cleartext>& result);
+void test(const operation::ECC_Point_Add& op, const std::optional<component::ECC_Point>& result);
+void test(const operation::ECC_Point_Mul& op, const std::optional<component::ECC_Point>& result);
 void test(const operation::DH_GenerateKeyPair& op, const std::optional<component::DH_KeyPair>& result);
 void test(const operation::DH_Derive& op, const std::optional<component::Bignum>& result);
 void test(const operation::BignumCalc& op, const std::optional<component::Bignum>& result);

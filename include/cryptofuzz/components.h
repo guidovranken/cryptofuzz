@@ -71,6 +71,8 @@ class BignumPair {
         nlohmann::json ToJSON(void) const;
 };
 
+using ECC_Point = BignumPair;
+
 using ECC_PublicKey = BignumPair;
 
 class ECC_KeyPair {

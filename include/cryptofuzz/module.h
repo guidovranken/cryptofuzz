@@ -144,6 +144,14 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::ECC_Point> OpECC_Point_Mul(operation::ECC_Point_Mul& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::DH_KeyPair> OpDH_GenerateKeyPair(operation::DH_GenerateKeyPair& op) {
             (void)op;
             return std::nullopt;

@@ -369,6 +369,7 @@ template<> void ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToP
 
         Pool_CurvePrivkey.Set({ curveID, privkey });
         Pool_CurveKeypair.Set({ curveID, privkey, pub_x, pub_y });
+        Pool_CurveECC_Point.Set({ curveID, pub_x, pub_y });
 
         if ( pub_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_x); }
         if ( pub_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_y); }
@@ -444,6 +445,8 @@ template<> void ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>:
         const auto sig_s = result.second->signature.second.ToTrimmedString();
 
         Pool_CurveECDSASignature.Set({ curveID, cleartext, pub_x, pub_y, sig_r, sig_s});
+        Pool_CurveECC_Point.Set({ curveID, pub_x, pub_y });
+        Pool_CurveECC_Point.Set({ curveID, sig_r, sig_s });
 
         if ( pub_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_x); }
         if ( pub_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_y); }
@@ -713,6 +716,50 @@ template<> std::optional<component::Cleartext> ExecutorBase<component::Cleartext
     RETURN_IF_DISABLED(options.curves, op.curveType.Get());
 
     return module->OpECIES_Decrypt(op);
+}
+
+/* Specialization for operation::ECC_Point_Add */
+template<> void ExecutorBase<component::ECC_Point, operation::ECC_Point_Add>::postprocess(std::shared_ptr<Module> module, operation::ECC_Point_Add& op, const ExecutorBase<component::ECC_Point, operation::ECC_Point_Add>::ResultPair& result) const {
+    (void)module;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto x = result.second->first.ToTrimmedString();
+        const auto y = result.second->second.ToTrimmedString();
+
+        Pool_CurveECC_Point.Set({ curveID, x, y });
+
+        if ( x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(x); }
+        if ( y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(y); }
+    }
+}
+
+template<> std::optional<component::ECC_Point> ExecutorBase<component::ECC_Point, operation::ECC_Point_Add>::callModule(std::shared_ptr<Module> module, operation::ECC_Point_Add& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
+
+    return module->OpECC_Point_Add(op);
+}
+
+/* Specialization for operation::ECC_Point_Mul */
+template<> void ExecutorBase<component::ECC_Point, operation::ECC_Point_Mul>::postprocess(std::shared_ptr<Module> module, operation::ECC_Point_Mul& op, const ExecutorBase<component::ECC_Point, operation::ECC_Point_Mul>::ResultPair& result) const {
+    (void)module;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto x = result.second->first.ToTrimmedString();
+        const auto y = result.second->second.ToTrimmedString();
+
+        Pool_CurveECC_Point.Set({ curveID, x, y });
+
+        if ( x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(x); }
+        if ( y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(y); }
+    }
+}
+
+template<> std::optional<component::ECC_Point> ExecutorBase<component::ECC_Point, operation::ECC_Point_Mul>::callModule(std::shared_ptr<Module> module, operation::ECC_Point_Mul& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
+
+    return module->OpECC_Point_Mul(op);
 }
 
 /* Specialization for operation::DH_Derive */
@@ -1752,6 +1799,8 @@ template class ExecutorBase<component::ECC_PublicKey, operation::ECDSA_Recover>;
 template class ExecutorBase<component::Secret, operation::ECDH_Derive>;
 template class ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>;
 template class ExecutorBase<component::Cleartext, operation::ECIES_Decrypt>;
+template class ExecutorBase<component::ECC_Point, operation::ECC_Point_Add>;
+template class ExecutorBase<component::ECC_Point, operation::ECC_Point_Mul>;
 template class ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>;
 template class ExecutorBase<component::Bignum, operation::DH_Derive>;
 template class ExecutorBase<component::Bignum, operation::BignumCalc>;
