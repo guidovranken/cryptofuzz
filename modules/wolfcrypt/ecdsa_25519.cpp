@@ -1,4 +1,5 @@
 #include "ecdsa_25519.h"
+#include "module_internal.h"
 #include "shared.h"
 #include "bn_ops.h"
 #include <cryptofuzz/util.h>
@@ -44,7 +45,7 @@ static std::optional<std::vector<uint8_t>> ed25519GetPublicKeyAsVector(ed25519_k
     std::optional<std::vector<uint8_t>> ret = std::nullopt;
     uint8_t pub_bytes[ED25519_PUB_KEY_SIZE];
 
-    CF_CHECK_EQ(wc_ed25519_make_public(&key, pub_bytes, sizeof(pub_bytes)), MP_OKAY);
+    WC_CHECK_EQ(wc_ed25519_make_public(&key, pub_bytes, sizeof(pub_bytes)), MP_OKAY);
 
     ret = std::vector<uint8_t>(pub_bytes, pub_bytes + sizeof(pub_bytes));
 end:
@@ -99,7 +100,7 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Curve25519(operati
 
     /* Convert to public key */
     {
-        CF_CHECK_EQ(wc_curve25519_make_pub(sizeof(pub_bytes), pub_bytes, sizeof(priv_bytes), priv_bytes), MP_OKAY);
+        WC_CHECK_EQ(wc_curve25519_make_pub(sizeof(pub_bytes), pub_bytes, sizeof(priv_bytes), priv_bytes), MP_OKAY);
     }
 
     /* Convert public key */
@@ -125,7 +126,7 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Ed25519(operation:
     ed25519_key key;
     bool e25519_key_inited = false;
 
-    CF_CHECK_EQ(wc_ed25519_init(&key), 0);
+    WC_CHECK_EQ(wc_ed25519_init(&key), 0);
     e25519_key_inited = true;
 
     CF_CHECK_EQ(ed25519LoadPrivateKey(key, op.priv, ds), true);
@@ -171,7 +172,7 @@ std::optional<bool> OpECC_ValidatePubkey_Ed25519(operation::ECC_ValidatePubkey& 
     ed25519_key key;
     bool e25519_key_inited = false;
 
-    CF_CHECK_EQ(wc_ed25519_init(&key), 0);
+    WC_CHECK_EQ(wc_ed25519_init(&key), 0);
     e25519_key_inited = true;
 
     CF_CHECK_EQ(ed25519LoadPublicKey(key, op.pub.first, ds), true);
@@ -201,14 +202,14 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_ed25519(operation::ECDSA_
     uint8_t sig[ED25519_SIG_SIZE];
     word32 sigSz = sizeof(sig);
 
-    CF_CHECK_EQ(wc_ed25519_init(&key), 0);
+    WC_CHECK_EQ(wc_ed25519_init(&key), 0);
     e25519_key_inited = true;
 
     CF_CHECK_EQ(wolfCrypt_detail::ed25519LoadPrivateKey(key, op.priv, ds), true);
     CF_CHECK_EQ(wolfCrypt_detail::ed25519DerivePublicKey(key), true);
 
     /* Sign message */
-    CF_CHECK_EQ(wc_ed25519_sign_msg(op.cleartext.GetPtr(), op.cleartext.GetSize(), sig, &sigSz, &key), MP_OKAY);
+    WC_CHECK_EQ(wc_ed25519_sign_msg(op.cleartext.GetPtr(), op.cleartext.GetSize(), sig, &sigSz, &key), MP_OKAY);
     CF_CHECK_EQ(sigSz, ED25519_SIG_SIZE);
     static_assert(ED25519_SIG_SIZE % 2 == 0);
 
@@ -241,12 +242,12 @@ std::optional<bool> OpECDSA_Verify_ed25519(operation::ECDSA_Verify& op) {
     uint8_t ed25519sig[ED25519_SIG_SIZE];
     int verify;
 
-    CF_CHECK_EQ(wc_ed25519_init(&key), 0);
+    WC_CHECK_EQ(wc_ed25519_init(&key), 0);
     e25519_key_inited = true;
 
     CF_CHECK_EQ(ed25519LoadPublicKey(key, op.signature.pub.first, ds), true);
     CF_CHECK_EQ(wolfCrypt_bignum::Bignum::ToBin(ds, op.signature.signature, ed25519sig, sizeof(ed25519sig)), true);
-    CF_CHECK_EQ(wc_ed25519_verify_msg(ed25519sig, sizeof(ed25519sig), op.cleartext.GetPtr(), op.cleartext.GetSize(), &verify, &key), 0);
+    WC_CHECK_EQ(wc_ed25519_verify_msg(ed25519sig, sizeof(ed25519sig), op.cleartext.GetPtr(), op.cleartext.GetSize(), &verify, &key), 0);
 
     ret = verify ? true : false;
 

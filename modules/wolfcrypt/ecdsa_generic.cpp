@@ -1,4 +1,5 @@
 #include "ecdsa_generic.h"
+#include "module_internal.h"
 #include "shared.h"
 #include "bn_ops.h"
 #include <cryptofuzz/util.h>
@@ -46,9 +47,9 @@ ecc_key* ECCKey::GetPtr(void) {
         bool compressed = false;
         try { compressed  = ds.Get<bool>();} catch ( ... ) { }
 
-        CF_CHECK_EQ(wc_ecc_export_x963_ex(key, nullptr, &outLen, compressed), LENGTH_ONLY_E);
+        WC_CHECK_EQ(wc_ecc_export_x963_ex(key, nullptr, &outLen, compressed), LENGTH_ONLY_E);
         x963 = util::malloc(outLen);
-        CF_CHECK_EQ(wc_ecc_export_x963_ex(key, x963, &outLen, compressed), 0);;
+        WC_CHECK_EQ(wc_ecc_export_x963_ex(key, x963, &outLen, compressed), 0);;
 
         /* Get the curve id of the old key */
         int curveID;
@@ -78,6 +79,7 @@ bool ECCKey::SetCurve(const Type& curveType) {
     try {
         useCustomCurve = ds.Get<uint8_t>();
     } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+    useCustomCurve = false;
 
     if ( useCustomCurve == false )
 #endif
@@ -90,7 +92,7 @@ bool ECCKey::SetCurve(const Type& curveType) {
         CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(curveType), std::nullopt);
         this->curveID = *curveID;
 
-        CF_CHECK_EQ(wc_ecc_set_curve(GetPtr(), 0, *curveID), 0);
+        WC_CHECK_EQ(wc_ecc_set_curve(GetPtr(), 0, *curveID), 0);
     }
 #if !defined(WOLFSSL_SP_MATH)
     else {
@@ -99,7 +101,7 @@ bool ECCKey::SetCurve(const Type& curveType) {
  #endif
         const ecc_set_type* curveSpec;
         CF_CHECK_NE(curveSpec = GetCustomCurve(curveType.Get()), nullptr);
-        CF_CHECK_EQ(wc_ecc_set_custom_curve(GetPtr(), curveSpec), 0);
+        WC_CHECK_EQ(wc_ecc_set_custom_curve(GetPtr(), curveSpec), 0);
         this->curveID = ECC_CURVE_CUSTOM;
     }
 #endif
@@ -116,7 +118,7 @@ bool ECCKey::LoadPrivateKey(const component::Bignum& priv) {
 
     CF_CHECK_NE(priv_bytes = wolfCrypt_bignum::Bignum::ToBin(ds, priv), std::nullopt);
 
-    CF_CHECK_EQ(wc_ecc_import_private_key_ex(priv_bytes->data(), priv_bytes->size(), nullptr, 0, GetPtr(), *curveID), 0);
+    WC_CHECK_EQ(wc_ecc_import_private_key_ex(priv_bytes->data(), priv_bytes->size(), nullptr, 0, GetPtr(), *curveID), 0);
 
     ret = true;
 
@@ -128,7 +130,7 @@ std::optional<ECCPoint> ECCKey::MakePub(void) {
     std::optional<ECCPoint> ret = std::nullopt;
 
     ECCPoint pub(ds, *curveID);
-    CF_CHECK_EQ(wc_ecc_make_pub(GetPtr(), pub.GetPtr()), 0);
+    WC_CHECK_EQ(wc_ecc_make_pub(GetPtr(), pub.GetPtr()), 0);
     pub.SetInitialized();
 
     return pub;
@@ -140,7 +142,7 @@ end:
 bool ECCKey::SetRNG(void) {
     bool ret = false;
 
-    CF_CHECK_EQ(wc_ecc_set_rng(GetPtr(), wolfCrypt_detail::GetRNG()), 0);
+    WC_CHECK_EQ(wc_ecc_set_rng(GetPtr(), wolfCrypt_detail::GetRNG()), 0);
 
     ret = true;
 end:
@@ -182,11 +184,17 @@ ecc_point* ECCPoint::GetPtr() {
 
     if ( locked == false && initialized == true ) {
         bool exportToDER = false;
+
         try {
             exportToDER = ds.Get<bool>();
         } catch ( ... ) { }
 
         if ( exportToDER == true ) {
+            bool compressed = false;
+            try {
+                compressed = ds.Get<bool>();
+            } catch ( ... ) { }
+
             const int curveIdx = wc_ecc_get_curve_idx(curveID);
             CF_CHECK_NE(newPoint = wc_ecc_new_point_h(nullptr), nullptr);
 
@@ -195,7 +203,12 @@ ecc_point* ECCPoint::GetPtr() {
 
             out = util::malloc(outSz);
 
-            CF_CHECK_EQ(wc_ecc_export_point_der(curveIdx, point, out, &outSz), 0);
+            if ( compressed == false ) {
+                WC_CHECK_EQ(wc_ecc_export_point_der(curveIdx, point, out, &outSz), 0);
+            } else {
+                WC_CHECK_EQ(wc_ecc_export_point_der(curveIdx, point, out, &outSz), 0);
+                //WC_CHECK_EQ(wc_ecc_export_point_der_compressed(curveIdx, point, out, &outSz), 0);
+            }
 
             {
                 haveAllocFailure = false;
@@ -224,6 +237,55 @@ end:
     CF_NORET(wc_ecc_del_point(newPoint));
 
     return point;
+}
+
+bool ECCPoint::Set(const component::BignumPair& xy, const bool pointCheck) {
+    bool ret = false;
+
+    wolfCrypt_bignum::Bignum x(ds), y(ds), z(ds);
+
+    CF_CHECK_TRUE(x.Set(xy.first));
+    CF_CHECK_TRUE(y.Set(xy.second));
+    CF_CHECK_TRUE(z.Set("1"));
+
+    WC_CHECK_EQ(mp_copy(x.GetPtr(), point->x), MP_OKAY);
+    WC_CHECK_EQ(mp_copy(y.GetPtr(), point->y), MP_OKAY);
+    WC_CHECK_EQ(mp_copy(z.GetPtr(), point->z), MP_OKAY);
+
+    if ( pointCheck ) {
+        CF_CHECK_TRUE(CurveCheck());
+    }
+
+    SetInitialized();
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool ECCPoint::ToProjective(wolfCrypt_bignum::Bignum& prime) {
+    bool ret = false;
+
+    wolfCrypt_bignum::Bignum mu(ds);
+
+    WC_CHECK_EQ(mp_montgomery_calc_normalization(mu.GetPtr(), prime.GetPtr()), MP_OKAY);
+
+    if ( mp_cmp_d(mu.GetPtr(), 1) != MP_EQ ) {
+        WC_CHECK_EQ(mp_mulmod(point->x, mu.GetPtr(), prime.GetPtr(), point->x), MP_OKAY);
+        WC_CHECK_EQ(mp_mulmod(point->y, mu.GetPtr(), prime.GetPtr(), point->y), MP_OKAY);
+        WC_CHECK_EQ(mp_mulmod(point->z, mu.GetPtr(), prime.GetPtr(), point->z), MP_OKAY);
+    }
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool ECCPoint::CurveCheck(void) const {
+    const int curveIdx = wc_ecc_get_curve_idx(curveID);
+    return wc_ecc_point_is_on_curve(point, curveIdx) == 0;
 }
 
 void ECCPoint::Lock(void) {
@@ -299,7 +361,7 @@ std::optional<bool> OpECC_ValidatePubkey_Generic(operation::ECC_ValidatePubkey& 
 
             CF_CHECK_NE(name = wc_ecc_get_name(*curveID), nullptr);
 
-            CF_CHECK_EQ(wc_ecc_import_raw(
+            WC_CHECK_EQ(wc_ecc_import_raw(
                         key.GetPtr(),
                         util::DecToHex(op.pub.first.ToTrimmedString()).c_str(),
                         util::DecToHex(op.pub.second.ToTrimmedString()).c_str(),
@@ -347,23 +409,23 @@ std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op) {
 
             CF_CHECK_NE(name = wc_ecc_get_name(*curveID), nullptr);
 
-            CF_CHECK_EQ(wc_ecc_import_raw(
+            WC_CHECK_EQ(wc_ecc_import_raw(
                         key.GetPtr(),
                         util::DecToHex(op.signature.pub.first.ToTrimmedString()).c_str(),
                         util::DecToHex(op.signature.pub.second.ToTrimmedString()).c_str(),
                         nullptr,
                         name), 0);
-            CF_CHECK_EQ(wc_ecc_check_key(key.GetPtr()), 0);
+            WC_CHECK_EQ(wc_ecc_check_key(key.GetPtr()), 0);
         }
 
-        CF_CHECK_EQ(wc_ecc_rs_to_sig(
+        WC_CHECK_EQ(wc_ecc_rs_to_sig(
                     util::DecToHex(op.signature.signature.first.ToTrimmedString()).c_str(),
                     util::DecToHex(op.signature.signature.second.ToTrimmedString()).c_str(),
                     sig, &sigSz), 0);
 
         if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
             const auto CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
-            CF_CHECK_EQ(wc_ecc_verify_hash(sig, sigSz, CT.GetPtr(), CT.GetSize(), &verify, key.GetPtr()), 0);
+            WC_CHECK_EQ(wc_ecc_verify_hash(sig, sigSz, CT.GetPtr(), CT.GetSize(), &verify, key.GetPtr()), 0);
         } else {
             std::optional<wc_HashType> hashType;
             CF_CHECK_NE(hashType = wolfCrypt_detail::toHashType(op.digestType), std::nullopt);
@@ -371,10 +433,10 @@ std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op) {
             const auto hashSize = wc_HashGetDigestSize(*hashType);
             hash = util::malloc(hashSize);
 
-            CF_CHECK_EQ(wc_Hash(*hashType, op.cleartext.GetPtr(), op.cleartext.GetSize(), hash, hashSize), 0);
+            WC_CHECK_EQ(wc_Hash(*hashType, op.cleartext.GetPtr(), op.cleartext.GetSize(), hash, hashSize), 0);
 
             const auto CT = Buffer(hash, hashSize).ECDSA_RandomPad(ds, op.curveType);
-            CF_CHECK_EQ(wc_ecc_verify_hash(sig, sigSz, CT.GetPtr(), CT.GetSize(), &verify, key.GetPtr()), 0);
+            WC_CHECK_EQ(wc_ecc_verify_hash(sig, sigSz, CT.GetPtr(), CT.GetSize(), &verify, key.GetPtr()), 0);
         }
 
         ret = verify ? true : false;
@@ -433,7 +495,7 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_
             CF_CHECK_EQ(mp_to_unsigned_bin(nonce.GetPtr(), nonce_bytes), 0);
 
             /* Set nonce */
-            CF_CHECK_EQ(wc_ecc_sign_set_k(nonce_bytes, nonce_bytes_size, key.GetPtr()), 0);
+            WC_CHECK_EQ(wc_ecc_sign_set_k(nonce_bytes, nonce_bytes_size, key.GetPtr()), 0);
         }
 
         auto pub = key.MakePub();
@@ -448,13 +510,13 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_
             hashSize = wc_HashGetDigestSize(*hashType);
             hash = util::malloc(hashSize);
 
-            CF_CHECK_EQ(wc_Hash(*hashType, op.cleartext.GetPtr(), op.cleartext.GetSize(), hash, hashSize), 0);
+            WC_CHECK_EQ(wc_Hash(*hashType, op.cleartext.GetPtr(), op.cleartext.GetSize(), hash, hashSize), 0);
 
             CT = Buffer(hash, hashSize).ECDSA_RandomPad(ds, op.curveType);
         }
 
         /* Sign */
-        CF_CHECK_EQ(wc_ecc_sign_hash(CT.GetPtr(), CT.GetSize(), sig, &sigSz, wolfCrypt_detail::GetRNG(), key.GetPtr()), 0);
+        WC_CHECK_EQ(wc_ecc_sign_hash(CT.GetPtr(), CT.GetSize(), sig, &sigSz, wolfCrypt_detail::GetRNG(), key.GetPtr()), 0);
 
         /* Verify */
         {
@@ -539,7 +601,7 @@ std::optional<component::Ciphertext> OpECIES_Encrypt_Generic(operation::ECIES_En
 
             CF_CHECK_NE(name = wc_ecc_get_name(*curveID), nullptr);
 
-            CF_CHECK_EQ(wc_ecc_import_raw(
+            WC_CHECK_EQ(wc_ecc_import_raw(
                         pub.GetPtr(),
                         util::DecToHex(op.pub.first.ToTrimmedString()).c_str(),
                         util::DecToHex(op.pub.second.ToTrimmedString()).c_str(),
@@ -551,7 +613,7 @@ std::optional<component::Ciphertext> OpECIES_Encrypt_Generic(operation::ECIES_En
 
         out = util::malloc(outSz);
 
-        CF_CHECK_EQ(wc_ecc_encrypt(priv.GetPtr(), pub.GetPtr(), op.cleartext.GetPtr(), op.cleartext.GetSize(), out, &outSz, nullptr), 0);
+        WC_CHECK_EQ(wc_ecc_encrypt(priv.GetPtr(), pub.GetPtr(), op.cleartext.GetPtr(), op.cleartext.GetSize(), out, &outSz, nullptr), 0);
 
         ret = component::Ciphertext(Buffer(out, outSz));
     } catch ( ... ) { }
@@ -596,7 +658,7 @@ std::optional<component::Cleartext> OpECIES_Decrypt_Generic(operation::ECIES_Dec
 
             CF_CHECK_NE(name = wc_ecc_get_name(*curveID), nullptr);
 
-            CF_CHECK_EQ(wc_ecc_import_raw(
+            WC_CHECK_EQ(wc_ecc_import_raw(
                         pub.GetPtr(),
                         util::DecToHex(op.pub.first.ToTrimmedString()).c_str(),
                         util::DecToHex(op.pub.second.ToTrimmedString()).c_str(),
@@ -608,7 +670,7 @@ std::optional<component::Cleartext> OpECIES_Decrypt_Generic(operation::ECIES_Dec
 
         out = util::malloc(outSz);
 
-        CF_CHECK_EQ(wc_ecc_decrypt(priv.GetPtr(), pub.GetPtr(), op.ciphertext.GetPtr(), op.ciphertext.GetSize(), out, &outSz, nullptr), 0);
+        WC_CHECK_EQ(wc_ecc_decrypt(priv.GetPtr(), pub.GetPtr(), op.ciphertext.GetPtr(), op.ciphertext.GetSize(), out, &outSz, nullptr), 0);
 
         ret = component::Cleartext(Buffer(out, outSz));
     } catch ( ... ) { }
@@ -618,6 +680,145 @@ end:
 
     wolfCrypt_detail::UnsetGlobalDs();
 #endif
+    return ret;
+}
+
+std::optional<component::Secret> OpECDH_Derive(operation::ECDH_Derive& op) {
+    std::optional<component::Secret> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    /* try/catch because ECCKey constructor may throw if allocation fails */
+    try {
+        /* TODO dynamic size */
+        uint8_t out[1024];
+        word32 outlen = sizeof(out);
+        ECCKey priv(ds), pub(ds);
+
+        /* Initialize private key */
+        {
+            CF_CHECK_TRUE(priv.SetCurve(op.curveType));
+            CF_CHECK_TRUE(priv.LoadPrivateKey(op.priv));
+            CF_CHECK_TRUE(priv.SetRNG());
+        }
+
+        /* Initialize public key */
+        {
+            std::optional<int> curveID;
+            const char* name = nullptr;
+
+            CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
+
+            CF_CHECK_NE(name = wc_ecc_get_name(*curveID), nullptr);
+
+            WC_CHECK_EQ(wc_ecc_import_raw(
+                        pub.GetPtr(),
+                        util::DecToHex(op.pub.first.ToTrimmedString()).c_str(),
+                        util::DecToHex(op.pub.second.ToTrimmedString()).c_str(),
+                        nullptr,
+                        name), 0);
+            WC_CHECK_EQ(wc_ecc_check_key(pub.GetPtr()), 0);
+        }
+
+        WC_CHECK_EQ(wc_ecc_shared_secret(priv.GetPtr(), pub.GetPtr(), out, &outlen), 0);
+
+        ret = component::Secret(Buffer(out, outlen));
+    } catch ( ... ) { }
+
+end:
+    wolfCrypt_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
+std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    std::optional<int> curveID;
+    int curveIdx;
+    const ecc_set_type* curve = nullptr;
+
+    CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
+
+    CF_CHECK_NE(curveIdx = wc_ecc_get_curve_idx(*curveID), ECC_CURVE_INVALID);
+    CF_CHECK_NE(curve = wc_ecc_get_curve_params(curveIdx), nullptr);
+
+    /* try/catch because ECCPoint constructor may throw if allocation fails */
+    try {
+        ECCPoint res(ds, *curveID), a(ds, *curveID), b(ds, *curveID);
+        wolfCrypt_bignum::Bignum Af(ds), prime(ds), mu(ds);
+        mp_digit mp;
+        int infinity;
+
+        /* Set points */
+        CF_CHECK_TRUE(a.Set(op.a));
+        CF_CHECK_TRUE(b.Set(op.b));
+
+        /* Retrieve curve parameter */
+        CF_CHECK_EQ(Af.Set(util::HexToDec(curve->Af)), true);
+        CF_CHECK_EQ(prime.Set(util::HexToDec(curve->prime)), true);
+
+        CF_CHECK_TRUE(a.ToProjective(prime));
+        CF_CHECK_TRUE(b.ToProjective(prime));
+
+        WC_CHECK_EQ(mp_montgomery_setup(prime.GetPtr(), &mp), MP_OKAY);
+
+        WC_CHECK_EQ(ecc_projective_add_point_safe(a.GetPtr(), b.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp, &infinity), 0);
+
+        /* To affine */
+        WC_CHECK_EQ(ecc_map(res.GetPtr(), prime.GetPtr(), mp), MP_OKAY);
+
+        ret = res.ToBignumPair();
+    } catch ( ... ) { }
+
+end:
+    wolfCrypt_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
+std::optional<component::ECC_Point> OpECC_Point_Mul(operation::ECC_Point_Mul& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    std::optional<int> curveID;
+    int curveIdx;
+    const ecc_set_type* curve = nullptr;
+
+    CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
+
+    CF_CHECK_NE(curveIdx = wc_ecc_get_curve_idx(*curveID), ECC_CURVE_INVALID);
+    CF_CHECK_NE(curve = wc_ecc_get_curve_params(curveIdx), nullptr);
+
+    /* try/catch because ECCPoint constructor may throw if allocation fails */
+    try {
+        ECCPoint res(ds, *curveID), a(ds, *curveID);
+        wolfCrypt_bignum::Bignum b(ds), Af(ds), prime(ds);
+
+        /* Set point */
+        CF_CHECK_TRUE(a.Set(op.a));
+
+        /* Set multiplier */
+        CF_CHECK_EQ(b.Set(op.b.ToString(ds)), true);
+
+        /* Retrieve curve parameters */
+        CF_CHECK_EQ(Af.Set(util::HexToDec(curve->Af)), true);
+        CF_CHECK_EQ(prime.Set(util::HexToDec(curve->prime)), true);
+
+        /* Multiply */
+        WC_CHECK_EQ(wc_ecc_mulmod_ex(b.GetPtr(), a.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), 1, nullptr), 0);
+
+        CF_CHECK_GTE(mp_cmp(prime.GetPtr(), b.GetPtr()), 0);
+
+        ret = res.ToBignumPair();
+    } catch ( ... ) { }
+
+end:
+    wolfCrypt_detail::UnsetGlobalDs();
+
     return ret;
 }
 

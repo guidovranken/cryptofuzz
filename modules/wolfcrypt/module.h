@@ -32,6 +32,9 @@ class wolfCrypt : public Module {
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
         std::optional<component::Ciphertext> OpECIES_Encrypt(operation::ECIES_Encrypt& op) override;
         std::optional<component::Cleartext> OpECIES_Decrypt(operation::ECIES_Decrypt& op) override;
+        std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op) override;
+        std::optional<component::ECC_Point> OpECC_Point_Mul(operation::ECC_Point_Mul& op) override;
+        std::optional<component::Secret> OpECDH_Derive(operation::ECDH_Derive& op) override;
 };
 
 } /* namespace module */
