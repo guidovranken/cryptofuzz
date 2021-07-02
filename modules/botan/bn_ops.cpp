@@ -104,8 +104,9 @@ bool Div::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::o
                 {
                     CF_CHECK_TRUE(bn[1].Ref() != 0);
                     CF_CHECK_TRUE(bn[1].Ref() < 256);
-                    uint8_t dummy;
-                    /* noret */ ::Botan::ct_divide_u8(bn[0].Ref(), bn[1].Ref().byte_at(0), res.Ref(), dummy);
+                    ::Botan::word dummy;
+                    CF_NORET(::Botan::ct_divide_word(bn[0].Ref(), bn[1].Ref().word_at(0), res.Ref(), dummy));
+                    printf("OK\n");
                 }
                 return true;
             case    3:
