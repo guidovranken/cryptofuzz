@@ -765,12 +765,18 @@ std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op
 
         WC_CHECK_EQ(mp_montgomery_setup(prime.GetPtr(), &mp), MP_OKAY);
 
+#if defined(WOLFSSL_SP_MATH)
+        /* ecc_projective_add_point_safe and ecc_map are not exported by the library with SP math */
+
+        (void)infinity;
+#else
         WC_CHECK_EQ(ecc_projective_add_point_safe(a.GetPtr(), b.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp, &infinity), 0);
 
         /* To affine */
         WC_CHECK_EQ(ecc_map(res.GetPtr(), prime.GetPtr(), mp), MP_OKAY);
 
         ret = res.ToBignumPair();
+#endif
     } catch ( ... ) { }
 
 end:
