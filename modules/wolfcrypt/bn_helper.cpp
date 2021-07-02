@@ -95,6 +95,25 @@ end:
 #endif
 }
 
+void Bignum::binaryConversion(void) const {
+    uint8_t* data = nullptr;
+
+    CF_CHECK_EQ(mp_isneg(mp), 0);
+
+    {
+        const auto size = mp_unsigned_bin_size(mp);
+        CF_ASSERT(size >= 0, "mp_unsigned_bin_size returned negative value");
+
+        data = util::malloc(size);
+        CF_CHECK_EQ(mp_to_unsigned_bin_len(mp, data, size), MP_OKAY);
+
+        CF_ASSERT(mp_read_unsigned_bin(mp, data, size) == MP_OKAY, "Cannot parse output of mp_to_unsigned_bin_len");
+    }
+
+end:
+    util::free(data);
+}
+
 Bignum::Bignum(Datasource& ds) :
     ds(ds) {
     mp = (mp_int*)util::malloc(sizeof(mp_int));
@@ -214,6 +233,18 @@ mp_int* Bignum::GetPtr(void) const {
         }
     }
 
+    {
+        /* Optionally convert to bytes and back */
+
+        bool convert = false;
+
+        try { convert = ds.Get<bool>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+        if ( convert ) {
+            binaryConversion();
+        }
+    }
+
     return mp;
 }
 
@@ -317,13 +348,19 @@ std::optional<std::vector<uint8_t>> Bignum::ToBin(Datasource& ds, const componen
     std::optional<std::vector<uint8_t>> ret = std::nullopt;
     std::vector<uint8_t> v;
     Bignum bn(ds);
+    uint16_t padding = 0;
 
     CF_CHECK_EQ(bn.Set(b), true);
     if ( size != std::nullopt ) {
         v.resize(*size);
     } else {
-        v.resize( mp_unsigned_bin_size(bn.GetPtr()) );
+        try {
+            padding = ds.Get<uint16_t>();
+        } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+        v.resize( mp_unsigned_bin_size(bn.GetPtr()) + padding );
     }
+
     CF_CHECK_EQ(bn.ToBin(v.data(), v.size()), true);
 
     ret = v;
