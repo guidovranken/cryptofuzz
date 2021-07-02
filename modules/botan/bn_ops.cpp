@@ -330,7 +330,18 @@ bool LCM::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::o
     (void)modulo;
     (void)ds;
 
-    res = ::Botan::lcm(bn[0].Ref(), bn[1].Ref());
+    try {
+        res = ::Botan::lcm(bn[0].Ref(), bn[1].Ref());
+    } catch ( ::Botan::Invalid_Argument& e ) {
+        /* lcm() is expected to throw in these cases */
+        if ( bn[0].Ref() == 0 || bn[1].Ref() == 0 ) {
+            return false;
+        }
+
+        /* Rethrow */
+        throw e;
+    }
+
 
     return true;
 }
