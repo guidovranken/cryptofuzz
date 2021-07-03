@@ -70,6 +70,12 @@ class ExecutorBignumCalc_Mod_2Exp256 : public ExecutorBignumCalc {
         operation::BignumCalc getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const override;
 };
 
+class ExecutorBignumCalc_Mod_SECP256K1 : public ExecutorBignumCalc {
+    public:
+        ExecutorBignumCalc_Mod_SECP256K1(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options);
+        operation::BignumCalc getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const override;
+};
+
 /* Declare aliases */
 using ExecutorDigest = ExecutorBase<component::Digest, operation::Digest>;
 using ExecutorHMAC = ExecutorBase<component::MAC, operation::HMAC>;

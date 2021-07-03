@@ -1384,7 +1384,10 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
     if ( op.modulo ) {
         switch ( op.calcOp.Get() ) {
             case    CF_CALCOP("Add(A,B)"):
+            case    CF_CALCOP("Bit(A,B)"):
+            case    CF_CALCOP("CondSet(A,B)"):
             case    CF_CALCOP("Exp(A,B)"):
+            case    CF_CALCOP("InvMod(A,B)"):
             case    CF_CALCOP("IsEq(A,B)"):
             case    CF_CALCOP("IsEven(A)"):
             case    CF_CALCOP("IsOdd(A)"):

@@ -18,6 +18,9 @@ class secp256k1 : public Module {
         std::optional<component::Schnorr_Signature> OpSchnorr_Sign(operation::Schnorr_Sign& op) override;
         std::optional<bool> OpSchnorr_Verify(operation::Schnorr_Verify& op) override;
         std::optional<component::Secret> OpECDH_Derive(operation::ECDH_Derive& op) override;
+        std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op) override;
+        std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
+        bool SupportsModularBignumCalc(void) const override;
 };
 
 } /* namespace module */

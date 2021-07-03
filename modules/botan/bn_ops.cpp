@@ -291,16 +291,18 @@ bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std
     (void)modulo;
     (void)ds;
 
+    const auto mod = modulo == std::nullopt ? bn[1].ConstRef() : modulo->ConstRef();
+
     try {
-        res = ::Botan::inverse_mod(bn[0].Ref(), bn[1].Ref());
+        res = ::Botan::inverse_mod(bn[0].Ref(), mod);
     } catch ( ::Botan::Invalid_Argument& e ) {
         /* inverse_mod() is expected to throw an exception when modulo is 0 */
-        if ( bn[1].Ref() == 0 ) {
+        if ( mod == 0 ) {
             return false;
         }
 
         /* inverse_mod() is expected to throw an exception when either argument is negative */
-        if ( bn[0].Ref() < 0 || bn[1].Ref() < 0 ) {
+        if ( bn[0].Ref() < 0 || mod < 0 ) {
             return false;
         }
 
