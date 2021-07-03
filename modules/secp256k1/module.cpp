@@ -529,12 +529,22 @@ end:
         return counter == 0;
     }
 
-    static int nonce_function_schnorrsig(unsigned char *nonce32, const unsigned char *msg32, const unsigned char *key32, const unsigned char *xonly_pk32, const unsigned char *algo16, void *data) {
+    static int nonce_function_schnorrsig(
+            unsigned char *nonce32,
+            const unsigned char *msg,
+            size_t msglen,
+            const unsigned char *key32,
+            const unsigned char *xonly_pk32,
+            const unsigned char *algo,
+            size_t algolen,
+            void *data) {
         (void)nonce32;
-        (void)msg32;
+        (void)msg;
+        (void)msglen;
         (void)key32;
         (void)xonly_pk32;
-        (void)algo16;
+        (void)algo;
+        (void)algolen;
 
         memcpy(nonce32, data, 32);
 
@@ -755,10 +765,7 @@ end:
 std::optional<component::Schnorr_Signature> secp256k1::OpSchnorr_Sign(operation::Schnorr_Sign& op) {
     std::optional<component::Schnorr_Signature> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
-
-    if ( op.UseBIP340Nonce() == false && op.UseSpecifiedNonce() == false ) {
-        return ret;
-    }
+    util::SetGlobalDs(&ds);
 
     secp256k1_detail::Context ctx(ds, SECP256K1_CONTEXT_SIGN);
     secp256k1_xonly_pubkey pubkey;
@@ -766,8 +773,11 @@ std::optional<component::Schnorr_Signature> secp256k1::OpSchnorr_Sign(operation:
     std::vector<uint8_t> pubkey_bytes(32);
     secp256k1_keypair keypair;
     uint8_t key[32];
-    uint8_t hash[32];
+    Buffer input;
     uint8_t specified_nonce[32];
+    secp256k1_schnorrsig_extraparams extraparams;
+
+    CF_CHECK_TRUE(op.UseBIP340Nonce() || op.UseSpecifiedNonce() );
 
     CF_CHECK_EQ(op.curveType.Get(), CF_ECC_CURVE("secp256k1"));
 
@@ -778,26 +788,38 @@ std::optional<component::Schnorr_Signature> secp256k1::OpSchnorr_Sign(operation:
     CF_CHECK_EQ(secp256k1_keypair_create(ctx.GetPtr(), &keypair, key), 1);
 
     if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
-        CF_CHECK_EQ(op.cleartext.GetSize(), sizeof(hash));
-        memcpy(hash, op.cleartext.GetPtr(), sizeof(hash));
+        input = op.cleartext;
     } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
-        const auto _hash = crypto::sha256(op.cleartext.Get());
-        memcpy(hash, _hash.data(), _hash.size());
+        input = op.cleartext.SHA256();
     } else {
         goto end;
     }
 
-
     if ( op.UseBIP340Nonce() == true ) {
-        CF_CHECK_EQ(secp256k1_schnorrsig_sign(ctx.GetPtr(), sig_bytes.data(), hash, &keypair, secp256k1_nonce_function_bip340, nullptr), 1);
+        extraparams.noncefp = secp256k1_nonce_function_bip340;
+        extraparams.ndata = nullptr;
     } else if ( op.UseSpecifiedNonce() == true ) {
         CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
                     op.nonce.ToTrimmedString(),
                     specified_nonce), true);
-        CF_CHECK_EQ(secp256k1_schnorrsig_sign(ctx.GetPtr(), sig_bytes.data(), hash, &keypair, secp256k1_detail::nonce_function_schnorrsig, specified_nonce), 1);
+        extraparams.noncefp = secp256k1_detail::nonce_function_schnorrsig;
+        extraparams.ndata = specified_nonce;
     } else {
         CF_UNREACHABLE();
     }
+
+    /* Manually set magic until this is fixed:
+     * https://github.com/bitcoin-core/secp256k1/issues/962
+     */
+    extraparams.magic[0] = 0xDA;
+    extraparams.magic[1] = 0x6F;
+    extraparams.magic[2] = 0xB3;
+    extraparams.magic[3] = 0x8C;
+
+    CF_CHECK_EQ(
+            secp256k1_detail::CheckRet(
+                secp256k1_schnorrsig_sign_custom(ctx.GetPtr(), sig_bytes.data(), input.GetPtr(), input.GetSize(), &keypair, &extraparams)
+        ), 1);
 
     CF_CHECK_EQ(secp256k1_keypair_xonly_pub(ctx.GetPtr(), &pubkey, nullptr, &keypair), 1);
     CF_CHECK_EQ(secp256k1_xonly_pubkey_serialize(ctx.GetPtr(), pubkey_bytes.data(), &pubkey), 1);
@@ -815,27 +837,28 @@ std::optional<component::Schnorr_Signature> secp256k1::OpSchnorr_Sign(operation:
     }
 
 end:
+    util::UnsetGlobalDs();
+
     return ret;
 }
 
 std::optional<bool> secp256k1::OpSchnorr_Verify(operation::Schnorr_Verify& op) {
     std::optional<bool> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    util::SetGlobalDs(&ds);
 
     secp256k1_detail::Context ctx(ds, SECP256K1_CONTEXT_VERIFY);
     secp256k1_xonly_pubkey pubkey;
     uint8_t pubkey_bytes[32];
     uint8_t sig_bytes[64];
-    uint8_t hash[32];
+    Buffer input;
 
     CF_CHECK_EQ(op.curveType.Get(), CF_ECC_CURVE("secp256k1"));
 
     if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
-        CF_CHECK_EQ(op.cleartext.GetSize(), sizeof(hash));
-        memcpy(hash, op.cleartext.GetPtr(), sizeof(hash));
+        input = op.cleartext;
     } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
-        const auto _hash = crypto::sha256(op.cleartext.Get());
-        memcpy(hash, _hash.data(), _hash.size());
+        input = op.cleartext.SHA256();
     } else {
         goto end;
     }
@@ -857,9 +880,13 @@ std::optional<bool> secp256k1::OpSchnorr_Verify(operation::Schnorr_Verify& op) {
 
     CF_CHECK_EQ(secp256k1_xonly_pubkey_parse(ctx.GetPtr(), &pubkey, pubkey_bytes), 1);
 
-    ret = secp256k1_schnorrsig_verify(ctx.GetPtr(), sig_bytes, hash, &pubkey) == 1 ? true : false;
+    ret = secp256k1_detail::CheckRet(
+            secp256k1_schnorrsig_verify(ctx.GetPtr(), sig_bytes, input.GetPtr(), input.GetSize(), &pubkey)
+            ) == 1 ? true : false;
 
 end:
+    util::UnsetGlobalDs();
+
     return ret;
 }
 
