@@ -257,13 +257,28 @@ std::optional<bool> OpECDSA_Verify_ed448(operation::ECDSA_Verify& op) {
     bool e448_key_inited = false;
     uint8_t ed448sig[ED448_SIG_SIZE];
     int verify;
+    bool oneShot = true;
 
     WC_CHECK_EQ(wc_ed448_init(&key), 0);
     e448_key_inited = true;
 
     CF_CHECK_EQ(ed448LoadPublicKey(key, op.signature.pub.first, ds), true);
     CF_CHECK_EQ(wolfCrypt_bignum::Bignum::ToBin(ds, op.signature.signature, ed448sig, sizeof(ed448sig)), true);
-    WC_CHECK_EQ(wc_ed448_verify_msg(ed448sig, sizeof(ed448sig), op.cleartext.GetPtr(), op.cleartext.GetSize(), &verify, &key, nullptr, 0), 0);
+    try { oneShot = ds.Get<bool>(); } catch ( ... ) { }
+
+    if ( oneShot == true ) {
+        WC_CHECK_EQ(wc_ed448_verify_msg(ed448sig, sizeof(ed448sig), op.cleartext.GetPtr(), op.cleartext.GetSize(), &verify, &key, nullptr, 0), 0);
+    } else {
+        const auto parts = util::ToParts(ds, op.cleartext);
+
+        WC_CHECK_EQ(wc_ed448_verify_msg_init(ed448sig, sizeof(ed448sig), &key, (byte)Ed448, nullptr, 0), 0);
+
+        for (const auto& part : parts) {
+            WC_CHECK_EQ(wc_ed448_verify_msg_feed(part.first, part.second, &key), 0);
+        }
+
+        WC_CHECK_EQ(wc_ed448_verify_msg_final(ed448sig, sizeof(ed448sig), &verify, &key), 0);
+    }
 
     ret = verify ? true : false;
 
