@@ -316,6 +316,10 @@ end:
     return ret;
 }
 
+int ECCPoint::Compare(ECCPoint& other) {
+    return wc_ecc_cmp_point(GetPtr(), other.GetPtr());
+}
+
 std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Generic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -751,10 +755,13 @@ std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op
         wolfCrypt_bignum::Bignum Af(ds), prime(ds), mu(ds);
         mp_digit mp;
         int infinity;
+        bool valid = false;
 
         /* Set points */
         CF_CHECK_TRUE(a.Set(op.a));
         CF_CHECK_TRUE(b.Set(op.b));
+
+        valid = a.CurveCheck() && b.CurveCheck();
 
         /* Retrieve curve parameter */
         CF_CHECK_EQ(Af.Set(util::HexToDec(curve->Af)), true);
@@ -770,14 +777,26 @@ std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op
 
         (void)infinity;
 #else
-        WC_CHECK_EQ(ecc_projective_add_point_safe(a.GetPtr(), b.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp, &infinity), 0);
+        {
+            bool dbl = false;
+
+            if ( a.Compare(b) == MP_EQ ) {
+                try { dbl = ds.Get<bool>(); } catch ( ... ) { }
+                dbl = true;
+            }
+
+            if ( dbl == true ) {
+                WC_CHECK_EQ(ecc_projective_dbl_point_safe(a.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp), 0);
+            } else {
+                WC_CHECK_EQ(ecc_projective_add_point_safe(a.GetPtr(), b.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp, &infinity), 0);
+            }
+        }
 
         /* To affine */
         WC_CHECK_EQ(ecc_map(res.GetPtr(), prime.GetPtr(), mp), MP_OKAY);
 
         /* Only return the result if the input points are valid */
-        CF_CHECK_TRUE(a.CurveCheck());
-        CF_CHECK_TRUE(b.CurveCheck());
+        CF_CHECK_TRUE(valid);
 
         ret = res.ToBignumPair();
 #endif
@@ -807,9 +826,11 @@ std::optional<component::ECC_Point> OpECC_Point_Mul(operation::ECC_Point_Mul& op
     try {
         ECCPoint res(ds, *curveID), a(ds, *curveID);
         wolfCrypt_bignum::Bignum b(ds), Af(ds), prime(ds);
+        bool valid = false;
 
         /* Set point */
         CF_CHECK_TRUE(a.Set(op.a));
+        valid = a.CurveCheck();
 
         /* Set multiplier */
         CF_CHECK_EQ(b.Set(op.b.ToString(ds)), true);
@@ -824,7 +845,7 @@ std::optional<component::ECC_Point> OpECC_Point_Mul(operation::ECC_Point_Mul& op
         CF_CHECK_GTE(mp_cmp(prime.GetPtr(), b.GetPtr()), 0);
 
         /* Only return the result if the input point is valid */
-        CF_CHECK_TRUE(a.CurveCheck());
+        CF_CHECK_TRUE(valid);
 
         ret = res.ToBignumPair();
     } catch ( ... ) { }

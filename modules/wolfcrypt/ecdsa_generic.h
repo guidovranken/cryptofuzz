@@ -33,6 +33,7 @@ class ECCPoint {
         void Lock(void);
         void SetInitialized(void);
         std::optional<component::BignumPair> ToBignumPair(void);
+        int Compare(ECCPoint& other);
 };
 
 class ECCKey {
