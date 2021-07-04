@@ -53,7 +53,13 @@ void Wycheproof::write(const uint64_t operation, fuzzing::datasource::Datasource
 void Wycheproof::ECDSA_Verify(const nlohmann::json& groups) {
     for (const auto &group : groups) {
         for (const auto &test : group["tests"]) {
-            nlohmann::json parameters;
+            nlohmann::json
+                p_ecdsa_verify,
+                p_ecc_point_add,
+                p_ecc_point_mul_1,
+                p_ecc_point_mul_2,
+                p_ecc_validatepubkey_1,
+                p_ecc_validatepubkey_2;
             std::string digest;
 
             {
@@ -86,52 +92,75 @@ void Wycheproof::ECDSA_Verify(const nlohmann::json& groups) {
                     }
                 }
 
-                parameters["curveType"] = *curveID;
+                p_ecdsa_verify["curveType"] = *curveID;
+                p_ecc_point_add["curveType"] = *curveID;
+                p_ecc_point_mul_1["curveType"] = *curveID;
+                p_ecc_point_mul_2["curveType"] = *curveID;
+                p_ecc_validatepubkey_1["curveType"] = *curveID;
+                p_ecc_validatepubkey_2["curveType"] = *curveID;
             }
 
             {
                 digest = group["sha"];
 
                 if ( digest == "SHA-224") {
-                    parameters["digestType"] = CF_DIGEST("SHA224");
+                    p_ecdsa_verify["digestType"] = CF_DIGEST("SHA224");
                 } else if ( digest == "SHA-256") {
-                    parameters["digestType"] = CF_DIGEST("SHA256");
+                    p_ecdsa_verify["digestType"] = CF_DIGEST("SHA256");
                 } else if ( digest == "SHA-384") {
-                    parameters["digestType"] = CF_DIGEST("SHA384");
+                    p_ecdsa_verify["digestType"] = CF_DIGEST("SHA384");
                 } else if ( digest == "SHA-512") {
-                    parameters["digestType"] = CF_DIGEST("SHA512");
+                    p_ecdsa_verify["digestType"] = CF_DIGEST("SHA512");
                 } else if ( digest == "SHA3-224") {
-                    parameters["digestType"] = CF_DIGEST("SHA3-224");
+                    p_ecdsa_verify["digestType"] = CF_DIGEST("SHA3-224");
                 } else if ( digest == "SHA3-256") {
-                    parameters["digestType"] = CF_DIGEST("SHA3-256");
+                    p_ecdsa_verify["digestType"] = CF_DIGEST("SHA3-256");
                 } else if ( digest == "SHA3-384") {
-                    parameters["digestType"] = CF_DIGEST("SHA3-384");
+                    p_ecdsa_verify["digestType"] = CF_DIGEST("SHA3-384");
                 } else if ( digest == "SHA3-512") {
-                    parameters["digestType"] = CF_DIGEST("SHA3-512");
+                    p_ecdsa_verify["digestType"] = CF_DIGEST("SHA3-512");
                 } else {
                     CF_ASSERT(0, "Digest not recognized");
                 }
             }
 
-            parameters["signature"]["pub"][0] = util::HexToDec(group["key"]["wx"]);
-            parameters["signature"]["pub"][1] = util::HexToDec(group["key"]["wy"]);
+            p_ecdsa_verify["signature"]["pub"][0] = util::HexToDec(group["key"]["wx"]);
+            p_ecdsa_verify["signature"]["pub"][1] = util::HexToDec(group["key"]["wy"]);
+
+            p_ecc_point_add["a_x"] = util::HexToDec(group["key"]["wx"]);
+            p_ecc_point_add["a_y"] = util::HexToDec(group["key"]["wy"]);
+
+            p_ecc_point_mul_1["a_x"] = util::HexToDec(group["key"]["wx"]);
+            p_ecc_point_mul_1["a_y"] = util::HexToDec(group["key"]["wy"]);
+
+            p_ecc_validatepubkey_1["pub_x"] = util::HexToDec(group["key"]["wx"]);
+            p_ecc_validatepubkey_1["pub_y"] = util::HexToDec(group["key"]["wy"]);
 
             {
                 const auto sig = util::SignatureFromDER(test["sig"].get<std::string>());
                 CF_CHECK_NE(sig, std::nullopt);
 
-                parameters["signature"]["signature"][0] = sig->first;
-                parameters["signature"]["signature"][1] = sig->second;
+                p_ecdsa_verify["signature"]["signature"][0] = sig->first;
+                p_ecdsa_verify["signature"]["signature"][1] = sig->second;
+
+                p_ecc_point_add["b_x"] = sig->first;
+                p_ecc_point_add["b_y"] = sig->second;
+
+                p_ecc_point_mul_2["a_x"] = sig->first;
+                p_ecc_point_mul_2["a_y"] = sig->second;
+
+                p_ecc_validatepubkey_2["pub_x"] = sig->first;
+                p_ecc_validatepubkey_2["pub_y"] = sig->second;
             }
 
-            parameters["cleartext"] = test["msg"].get<std::string>();
+            p_ecdsa_verify["cleartext"] = test["msg"].get<std::string>();
 
-            parameters["modifier"] = std::string(1000, '0');
-
-            /* Construct and write */
+            /* Construct and write ECDSA_Verify */
             {
+                p_ecdsa_verify["modifier"] = "";
+
                 fuzzing::datasource::Datasource dsOut2(nullptr, 0);
-                cryptofuzz::operation::ECDSA_Verify op(parameters);
+                cryptofuzz::operation::ECDSA_Verify op(p_ecdsa_verify);
                 op.Serialize(dsOut2);
 
                 write(CF_OPERATION("ECDSA_Verify"), dsOut2);
@@ -150,14 +179,62 @@ void Wycheproof::ECDSA_Verify(const nlohmann::json& groups) {
                 std::string ct_hex;
                 boost::algorithm::hex(ct, std::back_inserter(ct_hex));
 
-                parameters["cleartext"] = ct_hex;
-                parameters["digestType"] = CF_DIGEST("NULL");
+                p_ecdsa_verify["cleartext"] = ct_hex;
+                p_ecdsa_verify["digestType"] = CF_DIGEST("NULL");
 
                 fuzzing::datasource::Datasource dsOut2(nullptr, 0);
-                cryptofuzz::operation::ECDSA_Verify op(parameters);
+                cryptofuzz::operation::ECDSA_Verify op(p_ecdsa_verify);
                 op.Serialize(dsOut2);
 
                 write(CF_OPERATION("ECDSA_Verify"), dsOut2);
+            }
+
+            {
+                p_ecc_point_add["modifier"] = "";
+
+                fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+                cryptofuzz::operation::ECC_Point_Add op(p_ecc_point_add);
+                op.Serialize(dsOut2);
+
+                write(CF_OPERATION("ECC_Point_Add"), dsOut2);
+            }
+
+            {
+                p_ecc_point_mul_1["modifier"] = "";
+                p_ecc_point_mul_1["b"] = "1";
+                fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+                cryptofuzz::operation::ECC_Point_Mul op(p_ecc_point_mul_1);
+                op.Serialize(dsOut2);
+
+                write(CF_OPERATION("ECC_Point_Mul"), dsOut2);
+            }
+
+            {
+                p_ecc_point_mul_2["modifier"] = "";
+                p_ecc_point_mul_2["b"] = "1";
+                fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+                cryptofuzz::operation::ECC_Point_Mul op(p_ecc_point_mul_2);
+                op.Serialize(dsOut2);
+
+                write(CF_OPERATION("ECC_Point_Mul"), dsOut2);
+            }
+
+            {
+                p_ecc_validatepubkey_1["modifier"] = "";
+                fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+                cryptofuzz::operation::ECC_ValidatePubkey op(p_ecc_validatepubkey_1);
+                op.Serialize(dsOut2);
+
+                write(CF_OPERATION("ECC_ValidatePubkey"), dsOut2);
+            }
+
+            {
+                p_ecc_validatepubkey_2["modifier"] = "";
+                fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+                cryptofuzz::operation::ECC_ValidatePubkey op(p_ecc_validatepubkey_2);
+                op.Serialize(dsOut2);
+
+                write(CF_OPERATION("ECC_ValidatePubkey"), dsOut2);
             }
 
 end:
