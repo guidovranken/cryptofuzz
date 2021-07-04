@@ -775,6 +775,10 @@ std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op
         /* To affine */
         WC_CHECK_EQ(ecc_map(res.GetPtr(), prime.GetPtr(), mp), MP_OKAY);
 
+        /* Only return the result if the input points are valid */
+        CF_CHECK_TRUE(a.CurveCheck());
+        CF_CHECK_TRUE(b.CurveCheck());
+
         ret = res.ToBignumPair();
 #endif
     } catch ( ... ) { }
@@ -818,6 +822,9 @@ std::optional<component::ECC_Point> OpECC_Point_Mul(operation::ECC_Point_Mul& op
         WC_CHECK_EQ(wc_ecc_mulmod_ex(b.GetPtr(), a.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), 1, nullptr), 0);
 
         CF_CHECK_GTE(mp_cmp(prime.GetPtr(), b.GetPtr()), 0);
+
+        /* Only return the result if the input point is valid */
+        CF_CHECK_TRUE(a.CurveCheck());
 
         ret = res.ToBignumPair();
     } catch ( ... ) { }
