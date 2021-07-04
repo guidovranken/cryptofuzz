@@ -629,5 +629,73 @@ end:
     return ret;
 }
 
+std::optional<component::ECC_Point> trezor_firmware::OpECC_Point_Add(operation::ECC_Point_Add& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+
+    std::optional<const ecdsa_curve*> curve = std::nullopt;
+    uint8_t a_x_bytes[32], a_y_bytes[32], b_x_bytes[32], b_y_bytes[32], out_x_bytes[32], out_y_bytes[32];
+    curve_point a, b;
+
+    CF_CHECK_NE(curve = trezor_firmware_detail::toCurve(op.curveType), std::nullopt);
+
+    /* Read point A */
+    CF_CHECK_TRUE(trezor_firmware_detail::EncodeBignum(op.a.first.ToTrimmedString(), a_x_bytes));
+    CF_CHECK_TRUE(trezor_firmware_detail::EncodeBignum(op.a.second.ToTrimmedString(), a_y_bytes));
+    CF_NORET(bn_read_be(a_x_bytes, &a.x));
+    CF_NORET(bn_read_be(a_y_bytes, &a.y));
+
+    /* Read point B */
+    CF_CHECK_TRUE(trezor_firmware_detail::EncodeBignum(op.b.first.ToTrimmedString(), b_x_bytes));
+    CF_CHECK_TRUE(trezor_firmware_detail::EncodeBignum(op.b.second.ToTrimmedString(), b_y_bytes));
+    CF_NORET(bn_read_be(b_x_bytes, &b.x));
+    CF_NORET(bn_read_be(b_y_bytes, &b.y));
+
+    CF_NORET(point_add(*curve, &a, &b));
+
+    CF_NORET(bn_write_be(&b.x, out_x_bytes));
+    CF_NORET(bn_write_be(&b.y, out_y_bytes));
+
+    ret = component::ECC_Point(
+            util::BinToDec(out_x_bytes, sizeof(out_x_bytes)),
+            util::BinToDec(out_y_bytes, sizeof(out_y_bytes))
+    );
+end:
+    return ret;
+}
+
+std::optional<component::ECC_Point> trezor_firmware::OpECC_Point_Mul(operation::ECC_Point_Mul& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+
+    std::optional<const ecdsa_curve*> curve = std::nullopt;
+    uint8_t scalar_bytes[32], a_x_bytes[32], a_y_bytes[32], out_x_bytes[32], out_y_bytes[32];
+    bignum256 scalar = {0};
+    curve_point point;
+
+    CF_CHECK_NE(curve = trezor_firmware_detail::toCurve(op.curveType), std::nullopt);
+
+    /* Read scalar */
+    CF_CHECK_TRUE(trezor_firmware_detail::EncodeBignum(op.b.ToTrimmedString(), scalar_bytes));
+    CF_NORET(bn_read_be(scalar_bytes, &scalar));
+    CF_CHECK_NE(bn_is_less(&scalar, &(*curve)->order), 0);
+
+    /* Read point */
+    CF_CHECK_TRUE(trezor_firmware_detail::EncodeBignum(op.a.first.ToTrimmedString(), a_x_bytes));
+    CF_CHECK_TRUE(trezor_firmware_detail::EncodeBignum(op.a.second.ToTrimmedString(), a_y_bytes));
+    CF_NORET(bn_read_be(a_x_bytes, &point.x));
+    CF_NORET(bn_read_be(a_y_bytes, &point.y));
+
+    CF_NORET(point_multiply(*curve, &scalar, &point, &point));
+
+    CF_NORET(bn_write_be(&point.x, out_x_bytes));
+    CF_NORET(bn_write_be(&point.y, out_y_bytes));
+
+    ret = component::ECC_Point(
+            util::BinToDec(out_x_bytes, sizeof(out_x_bytes)),
+            util::BinToDec(out_y_bytes, sizeof(out_y_bytes))
+    );
+end:
+    return ret;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */
