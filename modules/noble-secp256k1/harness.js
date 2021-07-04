@@ -61,6 +61,44 @@ var OpECDSA_Verify = function(FuzzerInput) {
 
 }
 
+var OpECC_Point_Add = function(FuzzerInput) {
+    var a_x = BigInt(FuzzerInput['a_x']);
+    var a_y = BigInt(FuzzerInput['a_y']);
+
+    var b_x = BigInt(FuzzerInput['b_x']);
+    var b_y = BigInt(FuzzerInput['b_y']);
+
+    try {
+        var a = new exports.Point(a_x, a_y);
+        var b = new exports.Point(b_x, b_y);
+
+        a = JacobianPoint.fromAffine(a);
+        b = JacobianPoint.fromAffine(b);
+
+        var res = a.add(b).toAffine();
+
+        FuzzerOutput = JSON.stringify([res.x.toString(), res.y.toString()]);
+    } catch ( e ) { }
+}
+
+var OpECC_Point_Mul = function(FuzzerInput) {
+    var x = BigInt(FuzzerInput['a_x']);
+    var y = BigInt(FuzzerInput['a_y']);
+    var b = BigInt(FuzzerInput['b']);
+
+    if ( b == 0n ) {
+        return;
+    }
+
+    try {
+        var point = new exports.Point(x, y);
+
+        var res = JacobianPoint.fromAffine(point).multiplyUnsafe(b).toAffine();
+
+        FuzzerOutput = JSON.stringify([res.x.toString(), res.y.toString()]);
+    } catch ( e ) { }
+}
+
 FuzzerInput = JSON.parse(FuzzerInput);
 var operation = BigInt(FuzzerInput['operation']);
 
@@ -70,4 +108,8 @@ if ( IsECC_PrivateToPublic(operation) ) {
     FuzzerOutput = OpECDSA_Sign(FuzzerInput);
 } else if ( IsECDSA_Verify(operation) ) {
     OpECDSA_Verify(FuzzerInput);
+} else if ( IsECC_Point_Add(operation) ) {
+    OpECC_Point_Add(FuzzerInput);
+} else if ( IsECC_Point_Mul(operation) ) {
+    OpECC_Point_Mul(FuzzerInput);
 }
