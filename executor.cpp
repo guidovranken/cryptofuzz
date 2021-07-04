@@ -423,6 +423,7 @@ template<> void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyP
 
         Pool_CurvePrivkey.Set({ curveID, privkey });
         Pool_CurveKeypair.Set({ curveID, privkey, pub_x, pub_y });
+        Pool_CurveECC_Point.Set({ curveID, pub_x, pub_y });
     }
 }
 
@@ -481,6 +482,8 @@ template<> void ExecutorBase<component::ECGDSA_Signature, operation::ECGDSA_Sign
         const auto sig_s = result.second->signature.second.ToTrimmedString();
 
         Pool_CurveECDSASignature.Set({ curveID, cleartext, pub_x, pub_y, sig_r, sig_s});
+        Pool_CurveECC_Point.Set({ curveID, pub_x, pub_y });
+        Pool_CurveECC_Point.Set({ curveID, sig_r, sig_s });
 
         if ( pub_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_x); }
         if ( pub_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_y); }
@@ -515,6 +518,8 @@ template<> void ExecutorBase<component::ECRDSA_Signature, operation::ECRDSA_Sign
         const auto sig_s = result.second->signature.second.ToTrimmedString();
 
         Pool_CurveECDSASignature.Set({ curveID, cleartext, pub_x, pub_y, sig_r, sig_s});
+        Pool_CurveECC_Point.Set({ curveID, pub_x, pub_y });
+        Pool_CurveECC_Point.Set({ curveID, sig_r, sig_s });
 
         if ( pub_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_x); }
         if ( pub_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_y); }
@@ -549,6 +554,8 @@ template<> void ExecutorBase<component::Schnorr_Signature, operation::Schnorr_Si
         const auto sig_s = result.second->signature.second.ToTrimmedString();
 
         Pool_CurveECDSASignature.Set({ curveID, cleartext, pub_x, pub_y, sig_r, sig_s});
+        Pool_CurveECC_Point.Set({ curveID, pub_x, pub_y });
+        Pool_CurveECC_Point.Set({ curveID, sig_r, sig_s });
 
         if ( pub_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_x); }
         if ( pub_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_y); }
