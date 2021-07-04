@@ -770,8 +770,14 @@ bool Abs::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
                 CF_CHECK_EQ(BN_sub(res.GetDestPtr(), zero.GetPtr(), bn[0].GetPtr()), 1);
                 break;
             case    1:
-                CF_CHECK_EQ(BN_sub(res.GetDestPtr(), bn[0].GetPtr(), bn[0].GetPtr()), 1);
-                CF_CHECK_EQ(BN_sub(res.GetDestPtr(), res.GetDestPtr(), bn[0].GetPtr()), 1);
+                {
+                    auto bn0 = bn[0].GetPtr();
+                    CF_CHECK_EQ(BN_sub(res.GetDestPtr(), bn0, bn0), 1);
+                }
+                {
+                    auto resPtr = res.GetDestPtr();
+                    CF_CHECK_EQ(BN_sub(resPtr, resPtr, bn[0].GetPtr()), 1);
+                }
                 break;
             default:
                 goto end;
