@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <cryptofuzz/repository.h>
 #include <cryptofuzz/wycheproof.h>
+#include <cryptofuzz/ecc_diff_fuzzer_importer.h>
+#include <cryptofuzz/botan_importer.h>
 #include <cryptofuzz/util.h>
 
 namespace cryptofuzz {
@@ -288,6 +290,47 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
 
             Wycheproof wp(wycheproofArgs[0], wycheproofArgs[1]);
             wp.Run();
+
+            exit(0);
+#if defined(CRYPTOFUZZ_IMPORT_ECC_DIFF_FUZZER)
+        } else if ( !parts.empty() && parts[0] == "--from-ecc-diff-fuzzer" ) {
+            if ( parts.size() != 2 ) {
+                std::cout << "Expected argument after --from-ecc-diff-fuzzer=" << std::endl;
+                exit(1);
+            }
+
+            std::vector<std::string> args;
+            boost::split(args, parts[1], boost::is_any_of(","));
+
+            if ( args.size() != 2 ) {
+                std::cout << "Expected 2 arguments after --from-ecc-diff-fuzzer=" << std::endl;
+                exit(1);
+            }
+
+            ECC_Diff_Fuzzer_Importer importer(args[0], args[1]);
+            importer.Run();
+
+            exit(0);
+#endif
+        } else if ( !parts.empty() && parts[0] == "--from-botan" ) {
+            if ( parts.size() != 2 ) {
+                std::cout << "Expected argument after --from-botan=" << std::endl;
+                exit(1);
+            }
+
+            std::vector<std::string> args;
+            boost::split(args, parts[1], boost::is_any_of(","));
+
+            if ( args.size() != 3 ) {
+                std::cout << "Expected 3 arguments after --from-botan=" << std::endl;
+                exit(1);
+            }
+
+            const auto curveID = repository::ECC_CurveFromString(args[2]);
+            CF_ASSERT(curveID != std::nullopt, "Unknown curve");
+
+            Botan_Importer importer(args[0], args[1], *curveID);
+            importer.Run();
 
             exit(0);
         }

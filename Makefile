@@ -34,13 +34,17 @@ numbers.o : numbers.cpp
 	$(CXX) $(CXXFLAGS) -O0 numbers.cpp -c -o numbers.o
 mutatorpool.o : mutatorpool.cpp
 	$(CXX) $(CXXFLAGS) mutatorpool.cpp -c -o mutatorpool.o
+ecc_diff_fuzzer_importer.o : ecc_diff_fuzzer_importer.cpp
+	$(CXX) $(CXXFLAGS) ecc_diff_fuzzer_importer.cpp -c -o ecc_diff_fuzzer_importer.o
+botan_importer.o : botan_importer.cpp
+	$(CXX) $(CXXFLAGS) botan_importer.cpp -c -o botan_importer.o
 
 third_party/cpu_features/build/libcpu_features.a :
 	cd third_party/cpu_features && rm -rf build && mkdir build && cd build && cmake .. && make
 
-cryptofuzz : driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o options.o components.o wycheproof.o crypto.o mutator.o numbers.o mutatorpool.o third_party/cpu_features/build/libcpu_features.a
+cryptofuzz : driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o options.o components.o wycheproof.o crypto.o mutator.o numbers.o mutatorpool.o ecc_diff_fuzzer_importer.o botan_importer.o third_party/cpu_features/build/libcpu_features.a
 	test $(LIBFUZZER_LINK)
-	$(CXX) $(CXXFLAGS) driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o options.o components.o wycheproof.o crypto.o mutator.o numbers.o mutatorpool.o $(shell find modules -type f -name module.a) $(LIBFUZZER_LINK) third_party/cpu_features/build/libcpu_features.a $(LINK_FLAGS) -o cryptofuzz
+	$(CXX) $(CXXFLAGS) driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o options.o components.o wycheproof.o crypto.o mutator.o numbers.o mutatorpool.o ecc_diff_fuzzer_importer.o botan_importer.o $(shell find modules -type f -name module.a) $(LIBFUZZER_LINK) third_party/cpu_features/build/libcpu_features.a $(LINK_FLAGS) -o cryptofuzz
 
 generate_dict: generate_dict.cpp
 	$(CXX) $(CXXFLAGS) generate_dict.cpp -o generate_dict
