@@ -26,6 +26,7 @@ import (
     "hash/adler32"
     "hash/crc32"
     "io"
+    "math"
     "math/big"
     "strconv"
 )
@@ -933,6 +934,32 @@ func op_NUM_BITS(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct 
     return true
 }
 
+func op_CMP(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    res.SetInt64((int64)(BN0.Cmp(BN1)))
+    return true
+}
+
+func op_CMP_ABS(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    res.SetInt64((int64)(BN0.CmpAbs(BN1)))
+    return true
+}
+
+func op_BIT(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if BN1.IsInt64() == false {
+        return false
+    }
+    pos := BN1.Int64()
+    if pos < 0 {
+        return false
+    }
+    if pos > math.MaxInt32 {
+        return false
+    }
+
+    res.SetInt64((int64)(BN0.Bit((int)(pos))))
+    return true
+}
+
 //export Golang_Cryptofuzz_OpBignumCalc
 func Golang_Cryptofuzz_OpBignumCalc(in []byte) {
     resetResult()
@@ -1004,6 +1031,12 @@ func Golang_Cryptofuzz_OpBignumCalc(in []byte) {
         success = op_SET_BIT(res, bn[0], bn[1], bn[2], direct)
     } else if isNumBits(op.CalcOp) {
         success = op_NUM_BITS(res, bn[0], bn[1], bn[2], direct)
+    } else if isCmp(op.CalcOp) {
+        success = op_CMP(res, bn[0], bn[1], bn[2], direct)
+    } else if isCmpAbs(op.CalcOp) {
+        success = op_CMP_ABS(res, bn[0], bn[1], bn[2], direct)
+    } else if isBit(op.CalcOp) {
+        success = op_BIT(res, bn[0], bn[1], bn[2], direct)
     }
 
     if success == false {
