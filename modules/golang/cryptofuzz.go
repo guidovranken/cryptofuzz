@@ -960,6 +960,50 @@ func op_BIT(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool)
     return true
 }
 
+func op_SET(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool, modifier byte) bool {
+    modifier %= 6
+
+    if modifier == 0 {
+        if BN0.IsInt64() == false {
+            return false
+        }
+
+        res.SetInt64(BN0.Int64())
+    } else if modifier == 1 {
+        if BN0.IsUint64() == false {
+            return false
+        }
+
+        res.SetUint64(BN0.Uint64())
+    } else if modifier == 2 {
+        _, err := res.SetString(BN0.String(), 10)
+        if err == false {
+            return false
+        }
+    } else if modifier == 3 {
+        if BN0.Cmp(big.NewInt(0)) < 0 {
+            return false
+        }
+        res.SetBits(BN0.Bits())
+    } else if modifier == 4 {
+        if BN0.Cmp(big.NewInt(0)) < 0 {
+            return false
+        }
+        res.SetBytes(BN0.Bytes())
+    } else if modifier == 5 {
+        encoded, err := BN0.GobEncode()
+        if err != nil {
+            return false
+        }
+        err = res.GobDecode(encoded)
+        if err != nil {
+            return false
+        }
+    }
+
+    return true
+}
+
 //export Golang_Cryptofuzz_OpBignumCalc
 func Golang_Cryptofuzz_OpBignumCalc(in []byte) {
     resetResult()
@@ -1037,6 +1081,12 @@ func Golang_Cryptofuzz_OpBignumCalc(in []byte) {
         success = op_CMP_ABS(res, bn[0], bn[1], bn[2], direct)
     } else if isBit(op.CalcOp) {
         success = op_BIT(res, bn[0], bn[1], bn[2], direct)
+    } else if isSet(op.CalcOp) {
+        var modifier byte = 0
+        if len(op.Modifier) >= 2 {
+            modifier = op.Modifier[1]
+        }
+        success = op_SET(res, bn[0], bn[1], bn[2], direct, modifier)
     }
 
     if success == false {
