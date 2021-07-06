@@ -106,7 +106,6 @@ bool Div::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::o
                     CF_CHECK_TRUE(bn[1].Ref() < 256);
                     ::Botan::word dummy;
                     CF_NORET(::Botan::ct_divide_word(bn[0].Ref(), bn[1].Ref().word_at(0), res.Ref(), dummy));
-                    printf("OK\n");
                 }
                 return true;
             case    3:
