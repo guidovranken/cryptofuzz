@@ -151,6 +151,23 @@ type OpBignumCalc struct {
     BN3 string
 }
 
+type OpECC_Point_Add struct {
+    Modifier ByteSlice
+    CurveType Type
+    A_x string
+    A_y string
+    B_x string
+    B_y string
+}
+
+type OpECC_Point_Mul struct {
+    Modifier ByteSlice
+    CurveType Type
+    A_x string
+    A_y string
+    B string
+}
+
 var result []byte
 
 func resetResult() {
@@ -490,6 +507,8 @@ func toCurve(curveType Type) (elliptic.Curve, error) {
     if issecp224r1(curveType) {
         return elliptic.P224(), nil
     } else if isx962_p256v1(curveType) {
+        return elliptic.P256(), nil
+    } else if issecp256r1(curveType) {
         return elliptic.P256(), nil
     } else if issecp384r1(curveType) {
         return elliptic.P384(), nil
@@ -993,6 +1012,94 @@ func Golang_Cryptofuzz_OpBignumCalc(in []byte) {
 
     resStr := res.String()
     r2, err := json.Marshal(&resStr)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export Golang_Cryptofuzz_OpECC_Point_Add
+func Golang_Cryptofuzz_OpECC_Point_Add(in []byte) {
+    resetResult()
+
+    var op OpECC_Point_Add
+    unmarshal(in, &op)
+
+    curve, err := toCurve(op.CurveType)
+    if err != nil {
+        return
+    }
+
+    a_x := decodeBignum(op.A_x)
+    a_y := decodeBignum(op.A_y)
+
+    if curve.IsOnCurve(a_x, a_y) == false {
+        return
+    }
+
+    b_x := decodeBignum(op.B_x)
+    b_y := decodeBignum(op.B_y)
+
+    if curve.IsOnCurve(b_x, b_y) == false {
+        return
+    }
+
+    double := false
+
+    if len(op.Modifier) >= 1 {
+        if op.Modifier[0] & 1 == 1 {
+            if a_x.Cmp(b_x) == 0 && a_y.Cmp(b_y) == 0 {
+                double = true
+            }
+        }
+    }
+
+    var rx, ry *big.Int
+
+    if double == false {
+        rx, ry = curve.Add(a_x, a_y, b_x, b_y)
+    } else {
+        rx, ry = curve.Double(a_x, a_y)
+    }
+
+    res := make([]string, 2)
+    res[0], res[1] = rx.String(), ry.String()
+
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export Golang_Cryptofuzz_OpECC_Point_Mul
+func Golang_Cryptofuzz_OpECC_Point_Mul(in []byte) {
+    resetResult()
+
+    var op OpECC_Point_Mul
+    unmarshal(in, &op)
+
+    curve, err := toCurve(op.CurveType)
+    if err != nil {
+        return
+    }
+
+    a_x := decodeBignum(op.A_x)
+    a_y := decodeBignum(op.A_y)
+
+    if curve.IsOnCurve(a_x, a_y) == false {
+        return
+    }
+
+    b := decodeBignum(op.B).Bytes()
+
+    rx, ry := curve.ScalarMult(a_x, a_y, b)
+    res := make([]string, 2)
+    res[0], res[1] = rx.String(), ry.String()
+
+    r2, err := json.Marshal(&res)
     if err != nil {
         panic("Cannot marshal to JSON")
     }

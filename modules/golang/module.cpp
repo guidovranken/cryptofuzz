@@ -125,5 +125,19 @@ std::optional<component::Bignum> Golang::OpBignumCalc(operation::BignumCalc& op)
     return getResultAs<component::Bignum>();
 }
 
+std::optional<component::ECC_Point> Golang::OpECC_Point_Add(operation::ECC_Point_Add& op) {
+    auto jsonStr = op.ToJSON().dump();
+    Golang_Cryptofuzz_OpECC_Point_Add(toGoSlice(jsonStr));
+
+    return getResultAs<component::ECC_Point>();
+}
+
+std::optional<component::ECC_Point> Golang::OpECC_Point_Mul(operation::ECC_Point_Mul& op) {
+    auto jsonStr = op.ToJSON().dump();
+    Golang_Cryptofuzz_OpECC_Point_Mul(toGoSlice(jsonStr));
+
+    return getResultAs<component::ECC_Point>();
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */
