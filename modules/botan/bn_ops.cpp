@@ -633,7 +633,7 @@ bool Mod_NIST_192::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, con
                 return true;
             case    1:
                 {
-                    if( bn[0].Ref() >= limit ) {
+                    if ( bn[0].Ref() < 0 || bn[0].Ref() >= limit ) {
                         return false;
                     }
                     res = bn[0].Ref();
@@ -669,7 +669,7 @@ bool Mod_NIST_224::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, con
                 return true;
             case    1:
                 {
-                    if( bn[0].Ref() >= limit ) {
+                    if ( bn[0].Ref() < 0 || bn[0].Ref() >= limit ) {
                         return false;
                     }
                     res = bn[0].Ref();
@@ -705,7 +705,7 @@ bool Mod_NIST_256::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, con
                 return true;
             case    1:
                 {
-                    if( bn[0].Ref() >= limit ) {
+                    if ( bn[0].Ref() < 0 || bn[0].Ref() >= limit ) {
                         return false;
                     }
                     res = bn[0].Ref();
@@ -741,7 +741,7 @@ bool Mod_NIST_384::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, con
                 return true;
             case    1:
                 {
-                    if( bn[0].Ref() >= limit ) {
+                    if ( bn[0].Ref() < 0 || bn[0].Ref() >= limit ) {
                         return false;
                     }
                     res = bn[0].Ref();
@@ -777,7 +777,7 @@ bool Mod_NIST_521::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, con
                 return true;
             case    1:
                 {
-                    if( bn[0].Ref() >= limit ) {
+                    if ( bn[0].Ref() < 0 || bn[0].Ref() >= limit ) {
                         return false;
                     }
                     res = bn[0].Ref();
