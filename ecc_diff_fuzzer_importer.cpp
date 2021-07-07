@@ -5,8 +5,10 @@
 #include <cryptofuzz/crypto.h>
 #include <stdio.h>
 #include <fstream>
+#if defined(CRYPTOFUZZ_IMPORT_ECC_DIFF_FUZZER)
 #include <openssl/ec.h>
 #include <openssl/obj_mac.h>
+#endif
 
 namespace cryptofuzz {
 
