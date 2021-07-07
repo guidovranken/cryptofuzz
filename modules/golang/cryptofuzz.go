@@ -860,25 +860,48 @@ func op_INV_MOD(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct b
 }
 
 func op_MOD_SQRT(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
-    /* XXX requires primality check of BN1 */
-    return false;
-    /* BN1 must be odd */
-    if BN1.Bit(0) == 1 {
-        if direct {
-            if res.ModSqrt(BN0, BN1) == nil {
-                return false
-            }
-        } else {
-            tmp := big.NewInt(0)
-            if tmp.ModSqrt(BN0, BN1) == nil {
-                return false
-            }
-            res.Set(tmp)
-        }
-        return true
-    } else {
+
+    if BN1.Bit(0) == 0 {
         return false
     }
+    if BN1.Cmp(big.NewInt(0)) <= 0 {
+        return false
+    }
+
+    max64 := big.NewInt(0).SetUint64(math.MaxInt64)
+
+    if BN1.Cmp(max64) >= 0 {
+        return false
+    }
+    if BN1.ProbablyPrime(1) == false {
+        return false
+    }
+
+    if direct {
+        if res.ModSqrt(BN0, BN1) == nil {
+            return false
+        }
+    } else {
+        tmp := big.NewInt(0)
+        if tmp.ModSqrt(BN0, BN1) == nil {
+            return false
+        }
+        res.Set(tmp)
+    }
+
+    {
+        tmp1 := big.NewInt(0)
+        tmp1.Mod(BN0, BN1)
+
+        tmp2 := big.NewInt(0)
+        tmp2.Exp(res, big.NewInt(2), BN1)
+
+        if tmp1.Cmp(tmp2) != 0 {
+            panic("Invalid modular square root")
+        }
+    }
+
+    return true
 }
 
 func op_SQRT(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
