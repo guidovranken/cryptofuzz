@@ -189,6 +189,40 @@ static std::string get_BLS_predefined_DST(void) {
     return getBool() ? get_BLS_PyECC_DST() : get_BLS_BasicScheme_DST();
 }
 
+static void generateECCPoint(void) {
+    if ( (PRNG() % 100) != 0 ) {
+        return;
+    }
+
+    const auto curveID = getRandomCurve();
+
+    const auto a = cryptofuzz::repository::ECC_CurveToA(curveID);
+    if ( a == std::nullopt ) {
+        return;
+    }
+
+    const auto b = cryptofuzz::repository::ECC_CurveToB(curveID);
+    if ( b == std::nullopt ) {
+        return;
+    }
+
+    const auto p = cryptofuzz::repository::ECC_CurveToPrime(curveID);
+    if ( p == std::nullopt ) {
+        return;
+    }
+
+    const auto o = cryptofuzz::repository::ECC_CurveToPrime(curveID);
+    if ( o == std::nullopt ) {
+        return;
+    }
+
+    const auto x = getBignum(true);
+
+    const auto y = cryptofuzz::util::Find_ECC_Y(x, *a, *b, *p, *o, getBool());
+
+    Pool_CurveECC_Point.Set({ curveID, x, y });
+}
+
 extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t maxSize, unsigned int seed) {
     (void)seed;
     std::vector<uint8_t> modifier;
@@ -899,6 +933,8 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     cryptofuzz::operation::ECC_Point_Add op(parameters);
                     op.Serialize(dsOut2);
+
+                    generateECCPoint();
                 }
                 break;
             case    CF_OPERATION("ECC_Point_Mul"):
@@ -922,6 +958,8 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     cryptofuzz::operation::ECC_Point_Mul op(parameters);
                     op.Serialize(dsOut2);
+
+                    generateECCPoint();
                 }
                 break;
             case    CF_OPERATION("KDF_SCRYPT"):

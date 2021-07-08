@@ -98,6 +98,7 @@ void HintBignumOpt(const std::optional<std::string> bn);
 std::vector<uint8_t> Append(const std::vector<uint8_t> A, const std::vector<uint8_t> B);
 std::vector<uint8_t> RemoveLeadingZeroes(std::vector<uint8_t> v);
 std::vector<uint8_t> AddLeadingZeroes(fuzzing::datasource::Datasource& ds, const std::vector<uint8_t>& v);
+std::string Find_ECC_Y(const std::string& x, const std::string& a, const std::string& b, const std::string& p, const std::string& o, const bool addOrder);
 void MemorySanitizerUnpoison(const void* data, const size_t size);
 
 } /* namespace util */

@@ -766,6 +766,35 @@ std::vector<uint8_t> AddLeadingZeroes(fuzzing::datasource::Datasource& ds, const
     return Append(zeroes, stripped);
 }
 
+/* Find corresponding Y coordinate given X, A, B, P
+ * This currently only works for primes that are congruent to 3 MOD 4
+ * https://www.rieselprime.de/ziki/Modular_square_root
+ */
+std::string Find_ECC_Y(
+        const std::string& x,
+        const std::string& a,
+        const std::string& b,
+        const std::string& p,
+        const std::string& o, const bool addOrder) {
+    using namespace boost::multiprecision;
+
+    const cpp_int A(a), B(b), P(p);
+    const cpp_int X = cpp_int(x) % P;
+
+    const auto Z = (pow(X, 3) + (A*X) + B) % P;
+    cpp_int res = powm(Z, (P+1) / 4, P);
+
+    if ( addOrder ) {
+        const cpp_int O(o);
+        res = (res + O) % P;
+    }
+
+    std::stringstream ss;
+    ss << res;
+
+    return ss.str();
+}
+
 extern "C" {
     __attribute__((weak)) void __msan_unpoison(const volatile void*, size_t) { }
 }
