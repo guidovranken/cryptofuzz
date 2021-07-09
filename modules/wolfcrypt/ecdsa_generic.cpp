@@ -277,6 +277,11 @@ bool ECCPoint::ToProjective(wolfCrypt_bignum::Bignum& prime) {
         WC_CHECK_EQ(mp_mulmod(point->z, mu.GetPtr(), prime.GetPtr(), point->z), MP_OKAY);
     }
 
+    /* Lock so it isn't attempted to export/import the projective point in GetPtr(),
+     * which will lead to incorrect results
+     */
+    Lock();
+
     ret = true;
 
 end:
@@ -790,6 +795,9 @@ std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op
             } else {
                 WC_CHECK_EQ(ecc_projective_add_point_safe(a.GetPtr(), b.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp, &infinity), 0);
             }
+
+            /* Lock to prevent exporting the projective point */
+            res.Lock();
         }
 
         /* To affine */
