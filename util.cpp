@@ -766,10 +766,31 @@ std::vector<uint8_t> AddLeadingZeroes(fuzzing::datasource::Datasource& ds, const
     return Append(zeroes, stripped);
 }
 
-/* Find corresponding Y coordinate given X, A, B, P
- * This currently only works for primes that are congruent to 3 MOD 4
- * https://www.rieselprime.de/ziki/Modular_square_root
- */
+static inline boost::multiprecision::cpp_int sqrt_mod(
+        const boost::multiprecision::cpp_int& in,
+        const boost::multiprecision::cpp_int& prime) {
+    using namespace boost::multiprecision;
+
+    /* https://www.rieselprime.de/ziki/Modular_square_root */
+
+    if ( prime % 4 == 3 ) {
+        const cpp_int r = powm(in, (prime + 1) / 4, prime);
+
+        return r;
+    } else if ( prime % 8 == 5 ) {
+        const cpp_int v = powm((2 * in), (prime - 5) / 8, prime);
+        const cpp_int i = (2 * in * pow(v, 2)) % prime;
+        const cpp_int r = (in * v * (i - 1)) % prime;
+
+        return r;
+    }
+
+    /* Other primes not yet supported */
+
+    return 0;
+}
+
+/* Find corresponding Y coordinate given X, A, B, P */
 std::string Find_ECC_Y(
         const std::string& x,
         const std::string& a,
@@ -781,18 +802,10 @@ std::string Find_ECC_Y(
     const cpp_int A(a), B(b), P(p);
     const cpp_int X = cpp_int(x) % P;
 
-    const auto Z = (pow(X, 3) + (A*X) + B) % P;
-    cpp_int res = powm(Z, (P+1) / 4, P);
+    const cpp_int Z = (pow(X, 3) + (A*X) + B) % P;
+    const cpp_int res = sqrt_mod(Z, P) + (addOrder ? cpp_int(o) : cpp_int(0));
 
-    if ( addOrder ) {
-        const cpp_int O(o);
-        res = (res + O) % P;
-    }
-
-    std::stringstream ss;
-    ss << res;
-
-    return ss.str();
+    return res.str();
 }
 
 extern "C" {
