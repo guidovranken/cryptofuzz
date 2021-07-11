@@ -787,7 +787,6 @@ std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op
 
             if ( a.Compare(b) == MP_EQ ) {
                 try { dbl = ds.Get<bool>(); } catch ( ... ) { }
-                dbl = true;
             }
 
             if ( dbl == true ) {
@@ -849,8 +848,6 @@ std::optional<component::ECC_Point> OpECC_Point_Mul(operation::ECC_Point_Mul& op
 
         /* Multiply */
         WC_CHECK_EQ(wc_ecc_mulmod_ex(b.GetPtr(), a.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), 1, nullptr), 0);
-
-        CF_CHECK_GTE(mp_cmp(prime.GetPtr(), b.GetPtr()), 0);
 
         /* Only return the result if the input point is valid */
         CF_CHECK_TRUE(valid);
