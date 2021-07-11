@@ -274,7 +274,7 @@ std::optional<bool> OpECDSA_Verify_ed448(operation::ECDSA_Verify& op) {
         WC_CHECK_EQ(wc_ed448_verify_msg_init(ed448sig, sizeof(ed448sig), &key, (byte)Ed448, nullptr, 0), 0);
 
         for (const auto& part : parts) {
-            WC_CHECK_EQ(wc_ed448_verify_msg_feed(part.first, part.second, &key), 0);
+            WC_CHECK_EQ(wc_ed448_verify_msg_update(part.first, part.second, &key), 0);
         }
 
         WC_CHECK_EQ(wc_ed448_verify_msg_final(ed448sig, sizeof(ed448sig), &verify, &key), 0);

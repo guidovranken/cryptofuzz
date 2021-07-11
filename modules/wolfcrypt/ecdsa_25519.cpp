@@ -259,7 +259,7 @@ std::optional<bool> OpECDSA_Verify_ed25519(operation::ECDSA_Verify& op) {
         WC_CHECK_EQ(wc_ed25519_verify_msg_init(ed25519sig, sizeof(ed25519sig), &key, (byte)Ed25519, nullptr, 0), 0);
 
         for (const auto& part : parts) {
-            WC_CHECK_EQ(wc_ed25519_verify_msg_feed(part.first, part.second, &key), 0);
+            WC_CHECK_EQ(wc_ed25519_verify_msg_update(part.first, part.second, &key), 0);
         }
 
         WC_CHECK_EQ(wc_ed25519_verify_msg_final(ed25519sig, sizeof(ed25519sig), &verify, &key), 0);
