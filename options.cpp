@@ -6,6 +6,7 @@
 #include <cryptofuzz/repository.h>
 #include <cryptofuzz/wycheproof.h>
 #include <cryptofuzz/ecc_diff_fuzzer_importer.h>
+#include <cryptofuzz/ecc_diff_fuzzer_exporter.h>
 #include <cryptofuzz/botan_importer.h>
 #include <cryptofuzz/util.h>
 
@@ -309,6 +310,26 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
 
             ECC_Diff_Fuzzer_Importer importer(args[0], args[1]);
             importer.Run();
+
+            exit(0);
+#endif
+#if defined(CRYPTOFUZZ_EXPORT_ECC_DIFF_FUZZER)
+        } else if ( !parts.empty() && parts[0] == "--to-ecc-diff-fuzzer" ) {
+            if ( parts.size() != 2 ) {
+                std::cout << "Expected argument after --to-ecc-diff-fuzzer=" << std::endl;
+                exit(1);
+            }
+
+            std::vector<std::string> args;
+            boost::split(args, parts[1], boost::is_any_of(","));
+
+            if ( args.size() != 2 ) {
+                std::cout << "Expected 2 arguments after --to-ecc-diff-fuzzer=" << std::endl;
+                exit(1);
+            }
+
+            ECC_Diff_Fuzzer_Exporter exporter(args[0], args[1]);
+            exporter.Run();
 
             exit(0);
 #endif
