@@ -12,7 +12,7 @@ namespace module {
 namespace libecc_detail {
     Datasource* global_ds = nullptr;
     FILE* fp_dev_urandom = nullptr;
-	const ec_sig_mapping *sm_ecdsa, *sm_ecgdsa, *sm_ecrdsa;
+    const ec_sig_mapping *sm_ecdsa, *sm_ecgdsa, *sm_ecrdsa;
 
     std::map<uint64_t, const ec_str_params*> curveLUT;
 
@@ -237,9 +237,9 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, co
     libecc_detail::global_ds = &ds;
 
     ec_priv_key priv;
-	ec_pub_key pub;
+    ec_pub_key pub;
     uint8_t* out = nullptr;
-	ec_params params;
+    ec_params params;
     ec_sig_alg_type sig_type;
     std::optional<std::vector<uint8_t>> priv_bytes;
     const ec_str_params* curve_params;
@@ -545,6 +545,165 @@ std::optional<bool> libecc::OpECGDSA_Verify(operation::ECGDSA_Verify& op) {
 
 std::optional<bool> libecc::OpECRDSA_Verify(operation::ECRDSA_Verify& op) {
     return libecc_detail::ECxDSA_Verify<operation::ECRDSA_Verify, ECRDSA>(op, libecc_detail::sm_ecrdsa, ecrdsa_verify_raw, _ecrdsa_verify_update, _ecrdsa_verify_finalize);
+}
+
+std::optional<component::ECC_Point> libecc::OpECC_Point_Add(operation::ECC_Point_Add& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+
+    const ec_str_params* curve_params;
+    ec_params params;
+    prj_pt res, a, b;
+    aff_pt res_aff;
+    fp x, y, z;
+
+    const auto ax_bin = util::DecToBin(op.a.first.ToTrimmedString());
+    const auto ay_bin = util::DecToBin(op.a.second.ToTrimmedString());
+    const auto bx_bin = util::DecToBin(op.b.first.ToTrimmedString());
+    const auto by_bin = util::DecToBin(op.b.second.ToTrimmedString());
+
+    /* Load curve */
+    CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
+    CF_NORET(import_params(&params, curve_params));
+
+    CF_INSTALL_JMP();
+
+    prj_pt_init(&res, &(params.ec_curve));
+
+    {
+        fp_init_from_buf(&x, &(params.ec_fp), ax_bin->data(), ax_bin->size());
+
+        fp_init_from_buf(&y, &(params.ec_fp), ay_bin->data(), ay_bin->size());
+
+        fp_init(&z, &(params.ec_fp));
+        fp_one(&z);
+
+        prj_pt_init_from_coords(&a, &(params.ec_curve), &x, &y, &z);
+
+        fp_uninit(&x);
+        fp_uninit(&y);
+        fp_uninit(&z);
+    }
+
+    {
+        fp_init_from_buf(&x, &(params.ec_fp), bx_bin->data(), bx_bin->size());
+
+        fp_init_from_buf(&y, &(params.ec_fp), by_bin->data(), by_bin->size());
+
+        fp_init(&z, &(params.ec_fp));
+        fp_one(&z);
+
+        prj_pt_init_from_coords(&b, &(params.ec_curve), &x, &y, &z);
+
+        fp_uninit(&x);
+        fp_uninit(&y);
+        fp_uninit(&z);
+    }
+
+    prj_pt_add(&res, &a, &b);
+
+    prj_pt_to_aff(&res_aff, &res);
+
+    {
+        const size_t coordinateSize = BYTECEIL(params.ec_curve.a.ctx->p_bitlen);
+        const size_t pointSize = coordinateSize * 2;
+
+        uint8_t out_bytes[pointSize];
+
+        CF_CHECK_EQ(aff_pt_export_to_buf(&res_aff, out_bytes, pointSize), 0);
+
+        const auto X = util::BinToDec(out_bytes, coordinateSize);
+        const auto Y = util::BinToDec(out_bytes + coordinateSize, coordinateSize);
+
+        ret = {X, Y};
+    }
+
+    prj_pt_uninit(&res);
+    prj_pt_uninit(&a);
+    prj_pt_uninit(&b);
+
+end:
+    CF_RESTORE_JMP();
+
+    return ret;
+}
+
+std::optional<component::ECC_Point> libecc::OpECC_Point_Mul(operation::ECC_Point_Mul& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    const ec_str_params* curve_params;
+    ec_params params;
+    prj_pt res, a;
+    nn b;
+    aff_pt res_aff;
+    fp x, y, z;
+    bool useMonty = false;
+
+    libecc_detail::global_ds = &ds;
+
+    try {
+        useMonty = ds.Get<bool>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+    const auto ax_bin = util::DecToBin(op.a.first.ToTrimmedString());
+    const auto ay_bin = util::DecToBin(op.a.second.ToTrimmedString());
+
+    /* Load curve */
+    CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
+    CF_NORET(import_params(&params, curve_params));
+
+    CF_INSTALL_JMP();
+
+    prj_pt_init(&res, &(params.ec_curve));
+
+    {
+        fp_init_from_buf(&x, &(params.ec_fp), ax_bin->data(), ax_bin->size());
+
+        fp_init_from_buf(&y, &(params.ec_fp), ay_bin->data(), ay_bin->size());
+
+        fp_init(&z, &(params.ec_fp));
+        fp_one(&z);
+
+        prj_pt_init_from_coords(&a, &(params.ec_curve), &x, &y, &z);
+
+        fp_uninit(&x);
+        fp_uninit(&y);
+        fp_uninit(&z);
+    }
+
+    CF_CHECK_TRUE(libecc_detail::To_nn_t(op.b, &b));
+
+    if ( useMonty == false ) {
+        prj_pt_mul(&res, &b, &a);
+    } else {
+        prj_pt_mul_monty(&res, &b, &a);
+    }
+
+    prj_pt_to_aff(&res_aff, &res);
+
+    {
+        const size_t coordinateSize = BYTECEIL(params.ec_curve.a.ctx->p_bitlen);
+        const size_t pointSize = coordinateSize * 2;
+
+        uint8_t out_bytes[pointSize];
+
+        CF_CHECK_EQ(aff_pt_export_to_buf(&res_aff, out_bytes, pointSize), 0);
+
+        const auto X = util::BinToDec(out_bytes, coordinateSize);
+        const auto Y = util::BinToDec(out_bytes + coordinateSize, coordinateSize);
+
+        ret = {X, Y};
+    }
+
+    prj_pt_uninit(&res);
+    prj_pt_uninit(&a);
+
+end:
+    CF_RESTORE_JMP();
+
+    libecc_detail::global_ds = nullptr;
+
+    return ret;
 }
 
 std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op) {
