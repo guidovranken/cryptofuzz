@@ -124,15 +124,31 @@ namespace wolfCrypt_detail {
     bool haveAllocFailure;
 #endif
 
+    void InitializeSystemRNG(void) {
+        const auto cached_disableAllocationFailures = disableAllocationFailures;
+        disableAllocationFailures = true;
+        CF_ASSERT(wc_InitRng(&wolfCrypt_detail::rng) == 0, "Cannot initialize wolfCrypt RNG");
+        disableAllocationFailures = cached_disableAllocationFailures;
+    }
+
+    WC_RNG* GetSystemRNG(void) {
+        if ( rng.status != 1 ) {
+            /* ignore ret */ wc_FreeRng(&rng);
+            CF_NORET(InitializeSystemRNG());
+            CF_ASSERT(rng.status == 1, "System RNG broken after re-initialization");
+        }
+
+        return &rng;
+    }
     WC_RNG* GetRNG(void) {
 #if defined(WOLF_CRYPTO_CB)
         if ( ds == nullptr ) {
-            return &rng;
+            return GetSystemRNG();
         }
 
         bool which = false; try { which = ds->Get<bool>(); } catch ( ... ) { }
 
-        return which ? &rng_deterministic : &rng;
+        return which ? &rng_deterministic : GetSystemRNG();
 #else
         return &rng;
 #endif
@@ -307,7 +323,7 @@ wolfCrypt::wolfCrypt(void) :
     wolfCrypt_detail::disableAllocationFailures = false;
 #endif
 
-    CF_ASSERT(wc_InitRng(&wolfCrypt_detail::rng) == 0, "Cannot initialize wolfCrypt RNG");
+    CF_NORET(wolfCrypt_detail::InitializeSystemRNG());
 
 #if defined(WOLF_CRYPTO_CB)
     CF_NORET(wc_CryptoCb_Init());
