@@ -1823,5 +1823,64 @@ end:
     return ret;
 }
 
+std::optional<component::ECC_Point> Nettle::OpECC_Point_Mul(operation::ECC_Point_Mul& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+
+#if !defined(HAVE_LIBHOGWEED)
+    (void)op;
+#else
+
+    mpz_t a_x, a_y, b, x, y;
+    struct ecc_point res, a;
+    struct ecc_scalar bs;
+    const struct ecc_curve* curve = nullptr;
+    char *x_str = nullptr, *y_str = nullptr;
+    bool initialized = false;
+
+    CF_CHECK_NE(curve = Nettle_detail::to_ecc_curve(op.curveType.Get()), nullptr);
+
+    CF_NORET(ecc_point_init(&res, curve));
+    CF_NORET(ecc_point_init(&a, curve));
+    CF_NORET(mpz_init(a_x));
+    CF_NORET(mpz_init(a_y));
+    CF_NORET(mpz_init(b));
+    CF_NORET(mpz_init(x));
+    CF_NORET(mpz_init(y));
+    CF_NORET(ecc_scalar_init(&bs, curve));
+    initialized = true;
+
+    CF_CHECK_EQ(mpz_set_str(a_x, op.a.first.ToTrimmedString().c_str(), 0), 0);
+    CF_CHECK_EQ(mpz_set_str(a_y, op.a.second.ToTrimmedString().c_str(), 0), 0);
+    CF_CHECK_EQ(ecc_point_set(&a, a_x, a_y), 1);
+
+    CF_CHECK_EQ(mpz_set_str(b, op.b.ToTrimmedString().c_str(), 0), 0);
+    CF_CHECK_NE(ecc_scalar_set(&bs, b), 0);
+
+    CF_NORET(ecc_point_mul(&res, &bs, &a));
+
+    CF_NORET(ecc_point_get(&res, x, y));
+
+    x_str = mpz_get_str(nullptr, 10, x);
+    y_str = mpz_get_str(nullptr, 10, y);
+
+    ret = { std::string(x_str), std::string(y_str) };
+
+end:
+    if ( initialized == true ) {
+        CF_NORET(ecc_point_clear(&res));
+        CF_NORET(ecc_point_clear(&a));
+        CF_NORET(mpz_clear(a_x));
+        CF_NORET(mpz_clear(a_y));
+        CF_NORET(mpz_clear(b));
+        CF_NORET(mpz_clear(x));
+        CF_NORET(mpz_clear(y));
+        CF_NORET(ecc_scalar_clear(&bs));
+        free(x_str);
+        free(y_str);
+    }
+#endif
+
+    return ret;
+}
 } /* namespace module */
 } /* namespace cryptofuzz */
