@@ -756,6 +756,9 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 #if !defined(WOLFSSL_SP_MATH)
         case    1:
             {
+                /* Input must not be negative */
+                CF_CHECK_NE(mp_cmp_d(bn[0].GetPtr(), 0), MP_LT);
+
                 const auto op = bn[1].AsUnsigned<mp_digit>();
                 CF_CHECK_NE(op, std::nullopt);
                 mp_digit modResult;
