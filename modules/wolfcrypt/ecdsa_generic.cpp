@@ -759,7 +759,6 @@ std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op
         ECCPoint res(ds, *curveID), a(ds, *curveID), b(ds, *curveID);
         wolfCrypt_bignum::Bignum Af(ds), prime(ds), mu(ds);
         mp_digit mp;
-        int infinity;
         bool valid = false;
 
         /* Set points */
@@ -777,27 +776,45 @@ std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op
 
         WC_CHECK_EQ(mp_montgomery_setup(prime.GetPtr(), &mp), MP_OKAY);
 
-#if defined(WOLFSSL_SP_MATH)
-        /* ecc_projective_add_point_safe and ecc_map are not exported by the library with SP math */
-
-        (void)infinity;
+#if defined(WOLFSSL_SP_MATH) && !defined(WOLFSSL_PUBLIC_ECC_ADD_DBL)
+        goto end;
 #else
         {
             bool dbl = false;
+            bool safe = false;
 
             if ( a.Compare(b) == MP_EQ ) {
                 try { dbl = ds.Get<bool>(); } catch ( ... ) { }
             }
 
-            if ( dbl == true ) {
-                WC_CHECK_EQ(ecc_projective_dbl_point_safe(a.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp), 0);
+#if !(defined(WOLFSSL_SP_MATH) && defined(WOLFSSL_PUBLIC_ECC_ADD_DBL))
+            try { safe = ds.Get<bool>(); } catch ( ... ) { }
+#endif
+
+            if ( safe ) {
+#if defined(WOLFSSL_SP_MATH) && defined(WOLFSSL_PUBLIC_ECC_ADD_DBL)
+                CF_UNREACHABLE();
+#else
+                int infinity;
+
+                if ( dbl == true ) {
+                    WC_CHECK_EQ(ecc_projective_dbl_point_safe(a.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp), 0);
+                } else {
+                    WC_CHECK_EQ(ecc_projective_add_point_safe(a.GetPtr(), b.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp, &infinity), 0);
+                }
+#endif
             } else {
-                WC_CHECK_EQ(ecc_projective_add_point_safe(a.GetPtr(), b.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp, &infinity), 0);
+                if ( dbl == true ) {
+                    WC_CHECK_EQ(ecc_projective_dbl_point(a.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp), 0);
+                } else {
+                    WC_CHECK_EQ(ecc_projective_add_point(a.GetPtr(), b.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp), 0);
+                }
             }
 
             /* Lock to prevent exporting the projective point */
             res.Lock();
         }
+#endif
 
         /* To affine */
         WC_CHECK_EQ(ecc_map(res.GetPtr(), prime.GetPtr(), mp), MP_OKAY);
@@ -806,7 +823,6 @@ std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op
         CF_CHECK_TRUE(valid);
 
         ret = res.ToBignumPair();
-#endif
     } catch ( ... ) { }
 
 end:
