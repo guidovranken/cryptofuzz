@@ -249,11 +249,16 @@ std::optional<bool> OpECDSA_Verify_ed25519(operation::ECDSA_Verify& op) {
     CF_CHECK_EQ(ed25519LoadPublicKey(key, op.signature.pub.first, ds), true);
     CF_CHECK_EQ(wolfCrypt_bignum::Bignum::ToBin(ds, op.signature.signature, ed25519sig, sizeof(ed25519sig)), true);
 
+#if defined(WOLFSSL_ED25519_STREAMING_VERIFY)
     try { oneShot = ds.Get<bool>(); } catch ( ... ) { }
+#endif
 
     if ( oneShot == true ) {
         WC_CHECK_EQ(wc_ed25519_verify_msg(ed25519sig, sizeof(ed25519sig), op.cleartext.GetPtr(), op.cleartext.GetSize(), &verify, &key), 0);
     } else {
+#if !defined(WOLFSSL_ED25519_STREAMING_VERIFY)
+        CF_UNREACHABLE();
+#else
         const auto parts = util::ToParts(ds, op.cleartext);
 
         WC_CHECK_EQ(wc_ed25519_verify_msg_init(ed25519sig, sizeof(ed25519sig), &key, (byte)Ed25519, nullptr, 0), 0);
@@ -263,6 +268,7 @@ std::optional<bool> OpECDSA_Verify_ed25519(operation::ECDSA_Verify& op) {
         }
 
         WC_CHECK_EQ(wc_ed25519_verify_msg_final(ed25519sig, sizeof(ed25519sig), &verify, &key), 0);
+#endif
     }
 
     ret = verify ? true : false;

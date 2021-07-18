@@ -264,11 +264,17 @@ std::optional<bool> OpECDSA_Verify_ed448(operation::ECDSA_Verify& op) {
 
     CF_CHECK_EQ(ed448LoadPublicKey(key, op.signature.pub.first, ds), true);
     CF_CHECK_EQ(wolfCrypt_bignum::Bignum::ToBin(ds, op.signature.signature, ed448sig, sizeof(ed448sig)), true);
+
+#if defined(WOLFSSL_ED25519_STREAMING_VERIFY)
     try { oneShot = ds.Get<bool>(); } catch ( ... ) { }
+#endif
 
     if ( oneShot == true ) {
         WC_CHECK_EQ(wc_ed448_verify_msg(ed448sig, sizeof(ed448sig), op.cleartext.GetPtr(), op.cleartext.GetSize(), &verify, &key, nullptr, 0), 0);
     } else {
+#if !defined(WOLFSSL_ED25519_STREAMING_VERIFY)
+        CF_UNREACHABLE();
+#else
         const auto parts = util::ToParts(ds, op.cleartext);
 
         WC_CHECK_EQ(wc_ed448_verify_msg_init(ed448sig, sizeof(ed448sig), &key, (byte)Ed448, nullptr, 0), 0);
@@ -278,6 +284,7 @@ std::optional<bool> OpECDSA_Verify_ed448(operation::ECDSA_Verify& op) {
         }
 
         WC_CHECK_EQ(wc_ed448_verify_msg_final(ed448sig, sizeof(ed448sig), &verify, &key), 0);
+#endif
     }
 
     ret = verify ? true : false;
