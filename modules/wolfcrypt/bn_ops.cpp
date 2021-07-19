@@ -796,6 +796,9 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             {
                 std::optional<int> exponent = std::nullopt;
 
+                /* Negative modulo not supported */
+                CF_CHECK_NE(mp_cmp_d(bn[1].GetPtr(), 0), MP_LT);
+
                 CF_CHECK_NE(exponent = wolfCrypt_bignum_detail::isPowerOf2(bn[1], ds), std::nullopt);
 
                 MP_CHECK_EQ(mp_mod_2d(bn[0].GetPtr(), *exponent, res.GetPtr()), MP_OKAY);
