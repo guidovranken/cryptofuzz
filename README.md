@@ -135,3 +135,6 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - blst: [NULL pointer dereference if point multiplier is zero-stripped](https://github.com/supranational/blst/commit/9a9d57d5a11b52b46d358ffbb995013cd1ac1faa)
 - libecc: [Use of uninitialized memory in ECGDSA signing](https://github.com/ANSSI-FR/libecc/commit/57016705636b66f146bd437172dc1950fd71aec4)
 - noble-ed25519: [Accepts overlong private keys](https://github.com/paulmillr/noble-ed25519/commit/c726f5202fd82062d645e1cd0ebbfdbd3e81a0fc)
+- relic: [Elliptic curve point multiplication incorrect result if input X = 0](https://github.com/relic-toolkit/relic/issues/206)
+- relic: [Incorrect point validation](https://github.com/relic-toolkit/relic/commit/7ed8e702db74d5d5a83b0bfaf9ee8e33a70e36ed)
+- Chia/relic: Allows loading invalid point [1](https://github.com/Chia-Network/bls-signatures/issues/247) [2](https://github.com/Chia-Network/bls-signatures/issues/251)
