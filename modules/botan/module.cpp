@@ -9,6 +9,7 @@
 #include <botan/dh.h>
 #include <botan/ecdsa.h>
 #include <botan/ecgdsa.h>
+#include <botan/ed25519.h>
 #include <botan/hash.h>
 #include <botan/kdf.h>
 #include <botan/mac.h>
@@ -1172,7 +1173,33 @@ end:
 } /* namespace Botan_detail */
 
 std::optional<bool> Botan::OpECDSA_Verify(operation::ECDSA_Verify& op) {
-    return Botan_detail::ECxDSA_Verify<::Botan::ECDSA_PublicKey, operation::ECDSA_Verify>(op);
+    if ( op.curveType.Is(CF_ECC_CURVE("ed25519")) ) {
+        const auto pub_bytes = util::DecToBin(op.signature.pub.first.ToTrimmedString(), 32);
+        if ( pub_bytes == std::nullopt ) {
+            return std::nullopt;
+        }
+        const auto pub = std::make_unique<::Botan::Ed25519_PublicKey>(*pub_bytes);
+
+        const auto sig_r = util::DecToBin(op.signature.signature.first.ToTrimmedString(), 32);
+        if ( sig_r == std::nullopt ) {
+            return std::nullopt;
+        }
+
+        const auto sig_s = util::DecToBin(op.signature.signature.second.ToTrimmedString(), 32);
+        if ( sig_s == std::nullopt ) {
+            return std::nullopt;
+        }
+
+        std::vector<uint8_t> sig_bytes(64);
+        memcpy(sig_bytes.data(), sig_r->data(), 32);
+        memcpy(sig_bytes.data() + 32, sig_s->data(), 32);
+
+        const bool ret = ::Botan::PK_Verifier(*pub, "Pure").verify_message(op.cleartext.Get(), sig_bytes);
+        return ret;
+
+    } else {
+        return Botan_detail::ECxDSA_Verify<::Botan::ECDSA_PublicKey, operation::ECDSA_Verify>(op);
+    }
 }
 
 std::optional<bool> Botan::OpECGDSA_Verify(operation::ECGDSA_Verify& op) {
