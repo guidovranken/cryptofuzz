@@ -1097,6 +1097,37 @@ end:
 } /* namespace Botan_detail */
 
 std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_Sign& op) {
+    if ( op.curveType.Is(CF_ECC_CURVE("ed25519")) ) {
+        const auto _priv_bytes = util::DecToBin(op.priv.ToTrimmedString(), 32);
+        if ( _priv_bytes == std::nullopt ) {
+            return std::nullopt;
+        }
+
+        const ::Botan::secure_vector<uint8_t> priv_bytes(_priv_bytes->data(), _priv_bytes->data() + _priv_bytes->size());
+
+        const auto priv = std::make_unique<::Botan::Ed25519_PrivateKey>(priv_bytes);
+
+        std::unique_ptr<::Botan::PK_Signer> signer;
+
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+        BOTAN_FUZZER_RNG;
+
+        signer.reset(new ::Botan::PK_Signer(*priv, rng, "Pure", ::Botan::IEEE_1363));
+
+        const auto signature = signer->sign_message(op.cleartext.Get(), rng);
+        CF_ASSERT(signature.size() == 64, "ed25519 signature is not 64 bytes");
+
+        const auto pub = priv->get_public_key();
+        CF_ASSERT(pub.size() == 32, "ed25519 pubkey is not 32 bytes");
+
+        const auto ret = component::ECDSA_Signature(
+                { util::BinToDec(signature.data(), 32), util::BinToDec(signature.data() + 32, 32) },
+                { util::BinToDec(pub.data(), 32), "0"}
+        );
+
+        return ret;
+    }
+
     return Botan_detail::ECxDSA_Sign<::Botan::ECDSA_PrivateKey, operation::ECDSA_Sign>(op);
 }
 
