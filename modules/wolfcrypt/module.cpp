@@ -649,7 +649,7 @@ end:
 
             void runFree(void) override {
                 if ( freeCTX != nullptr ) {
-                    freeCTX(&this->ctx);
+                    CF_NORET(freeCTX(&this->ctx));
                 }
             }
 
@@ -1777,7 +1777,7 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
                         op.aad->GetPtr(&ds),
                         op.aad->GetSize(),
                         outTag, *op.tagSize), 0);
-            wc_AesFree(&ctx.aes);
+            CF_NORET(wc_AesFree(&ctx.aes));
 
             ret = component::Ciphertext(
                     Buffer(op.cleartext.GetPtr(&ds), op.cleartext.GetSize()),
@@ -3145,7 +3145,7 @@ std::optional<component::DH_KeyPair> wolfCrypt::OpDH_GenerateKeyPair(operation::
     }
 
 end:
-    wc_FreeDhKey(&key);
+    CF_ASSERT(wc_FreeDhKey(&key) == 0, "Cannot free DH key");
     wolfCrypt_detail::UnsetGlobalDs();
 
     return ret;
@@ -3197,7 +3197,7 @@ std::optional<component::Bignum> wolfCrypt::OpDH_Derive(operation::DH_Derive& op
     }
 
 end:
-    wc_FreeDhKey(&key);
+    CF_ASSERT(wc_FreeDhKey(&key) == 0, "Cannot free DH key");
     wolfCrypt_detail::UnsetGlobalDs();
 
     return ret;

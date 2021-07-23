@@ -12,7 +12,7 @@ extern "C" {
 namespace cryptofuzz {
 namespace module {
 namespace wolfCrypt_detail {
-    
+
 extern WC_RNG rng;
 
 std::optional<int> toCurveID(const component::CurveType& curveType);
