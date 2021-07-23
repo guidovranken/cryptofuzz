@@ -1477,7 +1477,6 @@ class ECIES_Decrypt : public Operation {
         const Buffer ciphertext;
         const component::CurveType curveType;
         const component::ECC_PrivateKey priv;
-        const component::ECC_PublicKey pub;
         const component::SymmetricCipherType cipherType;
         const std::optional<component::SymmetricIV> iv;
         /* TODO kdf type */
@@ -1488,7 +1487,6 @@ class ECIES_Decrypt : public Operation {
             ciphertext(ds),
             curveType(ds),
             priv(ds),
-            pub(ds),
             cipherType(ds),
             iv(ds.Get<bool>() ? std::nullopt : std::make_optional<component::SymmetricIV>(ds))
         { }
@@ -1497,7 +1495,6 @@ class ECIES_Decrypt : public Operation {
             ciphertext(json["ciphertext"]),
             curveType(json["curveType"]),
             priv(json["priv"]),
-            pub(json["pub_x"], json["pub_y"]),
             cipherType(json["cipherType"]),
             iv(
                     json["iv_enabled"].get<bool>() ?
@@ -1515,7 +1512,6 @@ class ECIES_Decrypt : public Operation {
                 (ciphertext == rhs.ciphertext) &&
                 (curveType == rhs.curveType) &&
                 (priv == rhs.priv) &&
-                (pub == rhs.pub) &&
                 (cipherType == rhs.cipherType) &&
                 (iv == rhs.iv) &&
                 (modifier == rhs.modifier);
@@ -1524,7 +1520,6 @@ class ECIES_Decrypt : public Operation {
             ciphertext.Serialize(ds);
             curveType.Serialize(ds);
             priv.Serialize(ds);
-            pub.Serialize(ds);
             cipherType.Serialize(ds);
             if ( iv == std::nullopt ) {
                 ds.Put<bool>(true);

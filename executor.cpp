@@ -701,9 +701,11 @@ template<> std::optional<component::Secret> ExecutorBase<component::Secret, oper
 
 /* Specialization for operation::ECIES_Encrypt */
 template<> void ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>::postprocess(std::shared_ptr<Module> module, operation::ECIES_Encrypt& op, const ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>::ResultPair& result) const {
+    if ( result.second != std::nullopt  ) {
+        Pool_ECIES_ciphertext.Set(result.second->ciphertext.ToHex());
+    }
     (void)module;
     (void)op;
-    (void)result;
 }
 
 template<> std::optional<component::Ciphertext> ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>::callModule(std::shared_ptr<Module> module, operation::ECIES_Encrypt& op) const {

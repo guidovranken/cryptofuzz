@@ -862,8 +862,6 @@ std::string ECIES_Decrypt::ToString(void) const {
     ss << "ciphertext: " << util::HexDump(ciphertext.Get()) << std::endl;
     ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
     ss << "private key: " << priv.ToString() << std::endl;
-    ss << "public key X: " << pub.first.ToString() << std::endl;
-    ss << "public key Y: " << pub.second.ToString() << std::endl;
     ss << "cipher: " << repository::CipherToString(cipherType.Get()) << std::endl;
     ss << "iv: " << (iv ? util::HexDump(iv->Get()) : "nullopt") << std::endl;
 
@@ -876,8 +874,6 @@ nlohmann::json ECIES_Decrypt::ToJSON(void) const {
     j["ciphertext"] = ciphertext.ToJSON();
     j["curveType"] = curveType.ToJSON();
     j["priv"] = priv.ToJSON();
-    j["pub_x"] = pub.first.ToJSON();
-    j["pub_y"] = pub.second.ToJSON();
     j["cipherType"] = cipherType.ToJSON();
     j["iv_enabled"] = (bool)(iv != std::nullopt);
     j["iv"] = iv != std::nullopt ? iv->ToJSON() : "";

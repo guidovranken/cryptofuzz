@@ -87,3 +87,5 @@ extern MutatorPool<CurveBLSG2_Pair, cryptofuzz::config::kMutatorPoolSize> Pool_C
 
 extern MutatorPool<std::string, cryptofuzz::config::kMutatorPoolSize> Pool_DH_PrivateKey;
 extern MutatorPool<std::string, cryptofuzz::config::kMutatorPoolSize> Pool_DH_PublicKey;
+
+extern MutatorPool<std::string, cryptofuzz::config::kMutatorPoolSize> Pool_ECIES_ciphertext;

@@ -599,6 +599,7 @@ std::optional<component::Ciphertext> OpECIES_Encrypt_Generic(operation::ECIES_En
             CF_CHECK_TRUE(priv.SetCurve(op.curveType));
             CF_CHECK_TRUE(priv.LoadPrivateKey(op.priv));
             CF_CHECK_TRUE(priv.SetRNG());
+            WC_CHECK_EQ(wc_ecc_make_pub(priv.GetPtr(), nullptr), 0);
         }
 
         /* Initialize public key */
@@ -648,7 +649,7 @@ std::optional<component::Cleartext> OpECIES_Decrypt_Generic(operation::ECIES_Dec
     CF_CHECK_EQ(op.iv, std::nullopt);
 
     try {
-        ECCKey priv(ds), pub(ds);
+        ECCKey priv(ds);
         word32 outSz = ds.Get<uint32_t>() % 0xFFFFFF;
 
         /* Initialize private key */
@@ -658,28 +659,9 @@ std::optional<component::Cleartext> OpECIES_Decrypt_Generic(operation::ECIES_Dec
             CF_CHECK_TRUE(priv.SetRNG());
         }
 
-        /* Initialize public key */
-        {
-            std::optional<int> curveID;
-            const char* name = nullptr;
-
-            CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
-
-            CF_CHECK_NE(name = wc_ecc_get_name(*curveID), nullptr);
-
-            WC_CHECK_EQ(wc_ecc_import_raw(
-                        pub.GetPtr(),
-                        util::DecToHex(op.pub.first.ToTrimmedString()).c_str(),
-                        util::DecToHex(op.pub.second.ToTrimmedString()).c_str(),
-                        nullptr,
-                        name), 0);
-
-            CF_CHECK_TRUE(pub.SetRNG());
-        }
-
         out = util::malloc(outSz);
 
-        WC_CHECK_EQ(wc_ecc_decrypt(priv.GetPtr(), pub.GetPtr(), op.ciphertext.GetPtr(), op.ciphertext.GetSize(), out, &outSz, nullptr), 0);
+        WC_CHECK_EQ(wc_ecc_decrypt(priv.GetPtr(), nullptr, op.ciphertext.GetPtr(), op.ciphertext.GetSize(), out, &outSz, nullptr), 0);
 
         ret = component::Cleartext(Buffer(out, outSz));
     } catch ( ... ) { }

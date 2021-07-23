@@ -859,20 +859,13 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                 }
                 break;
             case    CF_OPERATION("ECIES_Encrypt"):
-            case    CF_OPERATION("ECIES_Decrypt"):
                 {
-                    parameters["modifier"] = getBuffer(PRNG() % 128);
-                    if ( operation == CF_OPERATION("ECIES_Encrypt") ) {
-                        parameters["cleartext"] = getBuffer(PRNG() % 1024);
-                    } else {
-                        parameters["ciphertext"] = getBuffer(PRNG() % 1024);
-                    }
-                    //parameters["cipherType"] = getRandomCipher();
+                    parameters["modifier"] = "";
+
+                    parameters["cleartext"] = getBuffer(PRNG() % 1024);
                     parameters["cipherType"] = CF_CIPHER("AES_128_CBC");
                     parameters["iv_enabled"] = false;
-
                     parameters["priv"] = getBignum();
-
                     if ( Pool_CurveKeypair.Have() && getBool() == true ) {
                         const auto P = Pool_CurveKeypair.Get();
 
@@ -892,13 +885,27 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         parameters["pub_y"] = getBignum();
                     }
 
-                    if ( operation == CF_OPERATION("ECIES_Encrypt") ) {
-                        cryptofuzz::operation::ECIES_Encrypt op(parameters);
-                        op.Serialize(dsOut2);
+                    cryptofuzz::operation::ECIES_Encrypt op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("ECIES_Decrypt"):
+                {
+                    parameters["modifier"] = "";
+
+                    if ( Pool_ECIES_ciphertext.Have() ) {
+                        parameters["ciphertext"] = Pool_ECIES_ciphertext.Get();
                     } else {
-                        cryptofuzz::operation::ECIES_Decrypt op(parameters);
-                        op.Serialize(dsOut2);
+                        parameters["ciphertext"] = getBuffer(PRNG() % 1024);
                     }
+                    parameters["cipherType"] = CF_CIPHER("AES_128_CBC");
+                    parameters["iv_enabled"] = false;
+
+                    parameters["priv"] = getBignum();
+                    parameters["curveType"] = getRandomCurve();
+
+                    cryptofuzz::operation::ECIES_Decrypt op(parameters);
+                    op.Serialize(dsOut2);
                 }
                 break;
             case    CF_OPERATION("ECC_Point_Add"):

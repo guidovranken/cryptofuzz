@@ -9,6 +9,7 @@
 #include <botan/dh.h>
 #include <botan/ecdsa.h>
 #include <botan/ecgdsa.h>
+#include <botan/ecies.h>
 #include <botan/ed25519.h>
 #include <botan/hash.h>
 #include <botan/kdf.h>
@@ -1324,6 +1325,116 @@ std::optional<component::Bignum> Botan::OpDH_Derive(operation::DH_Derive& op) {
     } catch ( ... ) { }
 
 end:
+    return ret;
+}
+
+std::optional<component::Ciphertext> Botan::OpECIES_Encrypt(operation::ECIES_Encrypt& op) {
+    std::optional<component::Ciphertext> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    BOTAN_FUZZER_RNG;
+
+    std::unique_ptr<::Botan::ECDH_PrivateKey> priv = nullptr;
+    std::unique_ptr<::Botan::PointGFp> pub = nullptr;
+
+    CF_CHECK_TRUE(op.cipherType.Is(CF_CIPHER("AES_128_CBC")));
+
+    try {
+        {
+            std::optional<std::string> curveString, algoString;
+
+            /* Botan appears to generate a new key if the input key is 0, so don't do this */
+            CF_CHECK_NE(op.priv.ToTrimmedString(), "0");
+
+            CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
+
+            ::Botan::EC_Group group(*curveString);
+
+            /* Private key */
+            {
+                const ::Botan::BigInt priv_bn(op.priv.ToString(ds));
+                priv = std::make_unique<::Botan::ECDH_PrivateKey>(rng, group, priv_bn);
+            }
+
+            /* Public key */
+            {
+                const ::Botan::BigInt pub_x(op.pub.first.ToString(ds));
+                const ::Botan::BigInt pub_y(op.pub.second.ToString(ds));
+                pub = std::make_unique<::Botan::PointGFp>(group.point(pub_x, pub_y));
+            }
+        }
+
+        {
+            const ::Botan::ECIES_System_Params ecies_params(priv->domain(),
+                    "HKDF(SHA-256)",
+                    "AES-128/CBC/NoPadding", 16,
+                    "HMAC(SHA-256)", 32,
+                    ::Botan::PointGFp::UNCOMPRESSED,
+                    ::Botan::ECIES_Flags::NONE);
+
+            ::Botan::ECIES_Encryptor ecies_enc(*priv, ecies_params, rng);
+            ecies_enc.set_other_key(*pub);
+            if ( op.iv != std::nullopt ) {
+                CF_NORET(ecies_enc.set_initialization_vector(op.iv->Get()));
+            }
+
+            ret = component::Ciphertext(Buffer(ecies_enc.encrypt(op.cleartext.Get(), rng)));
+        }
+    } catch ( ... ) { }
+
+end:
+
+    return ret;
+}
+
+std::optional<component::Cleartext> Botan::OpECIES_Decrypt(operation::ECIES_Decrypt& op) {
+    std::optional<component::Cleartext> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    BOTAN_FUZZER_RNG;
+
+    std::unique_ptr<::Botan::ECDH_PrivateKey> priv = nullptr;
+
+    CF_CHECK_TRUE(op.cipherType.Is(CF_CIPHER("AES_128_CBC")));
+
+    try {
+        {
+            std::optional<std::string> curveString, algoString;
+
+            /* Botan appears to generate a new key if the input key is 0, so don't do this */
+            CF_CHECK_NE(op.priv.ToTrimmedString(), "0");
+
+            CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
+
+            ::Botan::EC_Group group(*curveString);
+
+            /* Private key */
+            {
+                const ::Botan::BigInt priv_bn(op.priv.ToString(ds));
+                priv = std::make_unique<::Botan::ECDH_PrivateKey>(rng, group, priv_bn);
+            }
+        }
+
+        {
+            const ::Botan::ECIES_System_Params ecies_params(priv->domain(),
+                    "HKDF(SHA-256)",
+                    "AES-128/CBC/NoPadding", 16,
+                    "HMAC(SHA-256)", 32,
+                    ::Botan::PointGFp::UNCOMPRESSED,
+                    ::Botan::ECIES_Flags::NONE);
+
+            ::Botan::ECIES_Decryptor ecies_dec(*priv, ecies_params, rng);
+            if ( op.iv != std::nullopt ) {
+                CF_NORET(ecies_dec.set_initialization_vector(op.iv->Get()));
+            }
+
+            const auto decrypted = ecies_dec.decrypt(op.ciphertext.Get());
+            ret = component::Cleartext(Buffer(decrypted.data(), decrypted.size()));
+        }
+    } catch ( ... ) { }
+
+end:
+
     return ret;
 }
 

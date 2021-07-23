@@ -32,6 +32,8 @@ class Botan : public Module {
         std::optional<bool> OpECGDSA_Verify(operation::ECGDSA_Verify& op) override;
         std::optional<component::ECC_PublicKey> OpECDSA_Recover(operation::ECDSA_Recover& op) override;
         std::optional<component::Bignum> OpDH_Derive(operation::DH_Derive& op) override;
+        std::optional<component::Ciphertext> OpECIES_Encrypt(operation::ECIES_Encrypt& op) override;
+        std::optional<component::Cleartext> OpECIES_Decrypt(operation::ECIES_Decrypt& op) override;
         std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op) override;
         std::optional<component::ECC_Point> OpECC_Point_Mul(operation::ECC_Point_Mul& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;

@@ -28,6 +28,7 @@ MutatorPool<CurveBLSG2_Pair, cryptofuzz::config::kMutatorPoolSize> Pool_CurveBLS
 MutatorPool<std::string, cryptofuzz::config::kMutatorPoolSize> Pool_Bignum;
 MutatorPool<std::string, cryptofuzz::config::kMutatorPoolSize> Pool_DH_PrivateKey;
 MutatorPool<std::string, cryptofuzz::config::kMutatorPoolSize> Pool_DH_PublicKey;
+MutatorPool<std::string, cryptofuzz::config::kMutatorPoolSize> Pool_ECIES_ciphertext;
 
 template class MutatorPool<CurvePrivkey_Pair, cryptofuzz::config::kMutatorPoolSize>;
 template class MutatorPool<CurveKeypair_Pair, cryptofuzz::config::kMutatorPoolSize>;

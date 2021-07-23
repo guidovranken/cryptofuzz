@@ -454,8 +454,11 @@ void test(const operation::ECIES_Encrypt& op, const std::optional<component::Cip
 }
 
 void test(const operation::ECIES_Decrypt& op, const std::optional<component::Cleartext>& result) {
-    (void)op;
-    (void)result;
+    if ( result == std::nullopt ) {
+        return;
+    }
+
+    test_ECC_PrivateKey(op.curveType.Get(), op.priv.ToTrimmedString());
 }
 
 void test(const operation::ECC_Point_Add& op, const std::optional<component::ECC_Point>& result) {
