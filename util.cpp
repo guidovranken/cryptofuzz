@@ -569,6 +569,9 @@ std::vector<uint8_t> HexToBin(const std::string s) {
 }
 
 std::optional<std::vector<uint8_t>> DecToBin(const std::string s, std::optional<size_t> size) {
+    if ( !s.empty() && s[0] == '-' ) {
+        return std::nullopt;
+    }
     std::vector<uint8_t> v;
     boost::multiprecision::cpp_int c(s);
     boost::multiprecision::export_bits(c, std::back_inserter(v), 8);
