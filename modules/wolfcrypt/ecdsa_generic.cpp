@@ -463,10 +463,6 @@ end:
 
 std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_Sign& op) {
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
-    if ( op.UseRandomNonce() == false && op.UseSpecifiedNonce() == false ) {
-        return ret;
-    }
-
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     wolfCrypt_detail::SetGlobalDs(&ds);
 
@@ -505,13 +501,19 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_
 
             /* Set nonce */
             WC_CHECK_EQ(wc_ecc_sign_set_k(nonce_bytes, nonce_bytes_size, key.GetPtr()), 0);
+        } else if ( op.UseRFC6979Nonce() == true ) {
+            WC_CHECK_EQ(wc_ecc_set_deterministic(key.GetPtr(), 1), 0);
         }
 
         auto pub = key.MakePub();
         CF_CHECK_NE(pub, std::nullopt);
 
         if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
-            CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
+            if ( op.UseRFC6979Nonce() == true ) {
+                CT = op.cleartext.ECDSA_Pad(32);
+            } else {
+                CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
+            }
         } else {
             std::optional<wc_HashType> hashType;
             CF_CHECK_NE(hashType = wolfCrypt_detail::toHashType(op.digestType), std::nullopt);
