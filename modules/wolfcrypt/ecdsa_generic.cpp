@@ -822,6 +822,9 @@ std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op
         /* Only return the result if the input points are valid */
         CF_CHECK_TRUE(valid);
 
+        /* Only return the result if the output point is valid */
+        CF_CHECK_TRUE(res.CurveCheck());
+
         ret = res.ToBignumPair();
     } catch ( ... ) { }
 
