@@ -1,4 +1,6 @@
-use libsecp256k1::{SecretKey, PublicKey, Signature, Message, RecoveryId, SharedSecret, verify, sign, recover};
+use libsecp256k1::{SecretKey, PublicKey, Signature, Message, RecoveryId, SharedSecret, verify, sign, recover, ECMULT_CONTEXT};
+use libsecp256k1::curve::{Affine, Jacobian, Scalar};
+use arrayref::{array_mut_ref};
 use sha2;
 
 #[no_mangle]
@@ -84,8 +86,42 @@ pub extern "C" fn parity_libsecp256k1_ecdh_derive(sk_bytes: &[u8; 32], pk_bytes:
     if shared.len() == 32 {
         shared_bytes.copy_from_slice(&shared);
     }
-    //println!("{:?}", res.as_ref().len());
     return true;
+}
+
+#[no_mangle]
+pub extern "C" fn parity_libsecp256k1_ecc_point_mul(scalar_bytes: &[u8; 32], point_bytes: &[u8; 65], res_bytes: &mut [u8; 64]) -> bool {
+    let mut scalar = Scalar::default();
+    if bool::from(scalar.set_b32(&scalar_bytes)) == true {
+        return false
+    }
+    if scalar.is_zero() {
+        return false
+    }
+
+    let pk = match PublicKey::parse(point_bytes) {
+        Ok(_v) => _v,
+        Err(_e) => return false,
+    };
+
+    let pk_affine: Affine = pk.into();
+
+    let mut res: Jacobian = Jacobian::default();
+    ECMULT_CONTEXT.ecmult_const(&mut res, &pk_affine, &scalar);
+    if res.is_infinity() {
+        return false;
+    }
+
+    let mut res_affine: Affine = Affine::default();
+    res_affine.set_gej(&res);
+
+    res_affine.x.normalize_var();
+    res_affine.y.normalize_var();
+
+    res_affine.x.fill_b32(array_mut_ref!(res_bytes, 0, 32));
+    res_affine.y.fill_b32(array_mut_ref!(res_bytes, 32, 32));
+
+    return true
 }
 
 /*
