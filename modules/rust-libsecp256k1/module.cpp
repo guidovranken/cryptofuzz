@@ -3,11 +3,12 @@
 #include <cryptofuzz/crypto.h>
 
 extern "C" {
-    int ecc_privatetopublic(const uint8_t sk_bytes[32], uint8_t pk_bytes[65]);
-    int ecdsa_verify(const uint8_t msg_bytes[32], const uint8_t sig_bytes[34], const uint8_t pk_bytes[65]);
-    int ecdsa_sign(const uint8_t msg_bytes[32], const uint8_t sk_bytes[32], uint8_t sig_bytes[32]);
-    int validate_pubkey(const uint8_t pk_bytes[65]);
-    int ecdsa_recover(const uint8_t msg_bytes[32], const uint8_t sig_bytes[32], const uint8_t id, uint8_t pk_bytes[65]);
+    int parity_libsecp256k1_ecc_privatetopublic(const uint8_t sk_bytes[32], uint8_t pk_bytes[65]);
+    int parity_libsecp256k1_ecdsa_verify(const uint8_t msg_bytes[32], const uint8_t sig_bytes[34], const uint8_t pk_bytes[65]);
+    int parity_libsecp256k1_ecdsa_sign(const uint8_t msg_bytes[32], const uint8_t sk_bytes[32], uint8_t sig_bytes[32]);
+    int parity_libsecp256k1_validate_pubkey(const uint8_t pk_bytes[65]);
+    int parity_libsecp256k1_ecdsa_recover(const uint8_t msg_bytes[32], const uint8_t sig_bytes[32], const uint8_t id, uint8_t pk_bytes[65]);
+    int parity_libsecp256k1_ecdh_derive(const uint8_t sk_bytes[32], const uint8_t pk_bytes[65], uint8_t shared_bytes[32]);
 }
 
 namespace cryptofuzz {
@@ -24,7 +25,7 @@ std::optional<component::ECC_PublicKey> rust_libsecp256k1::OpECC_PrivateToPublic
     uint8_t pk_bytes[65];
     const auto sk_bytes = util::DecToBin(op.priv.ToTrimmedString(), 32);
     CF_CHECK_NE(sk_bytes, std::nullopt);
-    CF_CHECK_NE(ecc_privatetopublic(sk_bytes->data(), pk_bytes), 0);
+    CF_CHECK_NE(parity_libsecp256k1_ecc_privatetopublic(sk_bytes->data(), pk_bytes), 0);
     ret = { util::BinToDec(pk_bytes + 1, 32), util::BinToDec(pk_bytes + 1 + 32, 32) };
 end:
     return ret;
@@ -43,7 +44,7 @@ std::optional<bool> rust_libsecp256k1::OpECC_ValidatePubkey(operation::ECC_Valid
     CF_CHECK_NE(y_bytes, std::nullopt);
     memcpy(pk_bytes + 1, x_bytes->data(), 32);
     memcpy(pk_bytes + 1 + 32, y_bytes->data(), 32);
-    ret = validate_pubkey(pk_bytes);
+    ret = parity_libsecp256k1_validate_pubkey(pk_bytes);
 end:
     return ret;
 }
@@ -72,8 +73,8 @@ std::optional<component::ECDSA_Signature> rust_libsecp256k1::OpECDSA_Sign(operat
     const auto sk_bytes = util::DecToBin(op.priv.ToTrimmedString(), 32);
     CF_CHECK_NE(sk_bytes, std::nullopt);
 
-    CF_CHECK_NE(ecc_privatetopublic(sk_bytes->data(), pk_bytes), 0);
-    CF_CHECK_NE(ecdsa_sign(CT.GetPtr(), sk_bytes->data(), sig_bytes), 0);
+    CF_CHECK_NE(parity_libsecp256k1_ecc_privatetopublic(sk_bytes->data(), pk_bytes), 0);
+    CF_CHECK_NE(parity_libsecp256k1_ecdsa_sign(CT.GetPtr(), sk_bytes->data(), sig_bytes), 0);
 
     /* Pending fix for https://github.com/paritytech/libsecp256k1/issues/62 */
     {
@@ -132,7 +133,7 @@ std::optional<bool> rust_libsecp256k1::OpECDSA_Verify(operation::ECDSA_Verify& o
         memcpy(sig_bytes + 32, s_bytes->data(), 32);
     }
 
-    ret = ecdsa_verify(CT.GetPtr(), sig_bytes, pk_bytes);
+    ret = parity_libsecp256k1_ecdsa_verify(CT.GetPtr(), sig_bytes, pk_bytes);
 
 end:
     return ret;
@@ -166,8 +167,38 @@ std::optional<component::ECC_PublicKey> rust_libsecp256k1::OpECDSA_Recover(opera
         memcpy(sig_bytes + 32, s_bytes->data(), 32);
     }
 
-    if ( ecdsa_recover(CT.GetPtr(), sig_bytes, op.id, pk_bytes) == 1 ) {
+    if ( parity_libsecp256k1_ecdsa_recover(CT.GetPtr(), sig_bytes, op.id, pk_bytes) == 1 ) {
         ret = { util::BinToDec(pk_bytes + 1, 32), util::BinToDec(pk_bytes + 1 + 32, 32) };
+    }
+
+end:
+    return ret;
+}
+
+std::optional<component::Secret> rust_libsecp256k1::OpECDH_Derive(operation::ECDH_Derive& op) {
+    std::optional<component::Secret> ret = std::nullopt;
+    if ( !op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        return ret;
+    }
+
+    uint8_t pk_bytes[65];
+    uint8_t shared_bytes[32];
+
+    const auto sk_bytes = util::DecToBin(op.priv.ToTrimmedString(), 32);
+    CF_CHECK_NE(sk_bytes, std::nullopt);
+
+    {
+        pk_bytes[0] = 0x04;
+        const auto x_bytes = util::DecToBin(op.pub.first.ToTrimmedString(), 32);
+        const auto y_bytes = util::DecToBin(op.pub.second.ToTrimmedString(), 32);
+        CF_CHECK_NE(x_bytes, std::nullopt);
+        CF_CHECK_NE(y_bytes, std::nullopt);
+        memcpy(pk_bytes + 1, x_bytes->data(), 32);
+        memcpy(pk_bytes + 1 + 32, y_bytes->data(), 32);
+    }
+
+    if ( parity_libsecp256k1_ecdh_derive(sk_bytes->data(), pk_bytes, shared_bytes) == 1 ) {
+        ret = component::Secret(Buffer(shared_bytes, 32));
     }
 
 end:

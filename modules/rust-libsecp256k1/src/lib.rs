@@ -1,7 +1,8 @@
-use libsecp256k1::{SecretKey, PublicKey, Signature, Message, RecoveryId, verify, sign, recover};
+use libsecp256k1::{SecretKey, PublicKey, Signature, Message, RecoveryId, SharedSecret, verify, sign, recover};
+use sha2;
 
 #[no_mangle]
-pub extern "C" fn ecc_privatetopublic(sk_bytes: &[u8; 32], pk_bytes: &mut [u8; 65]) -> bool {
+pub extern "C" fn parity_libsecp256k1_ecc_privatetopublic(sk_bytes: &[u8; 32], pk_bytes: &mut [u8; 65]) -> bool {
     let sk = match SecretKey::parse(sk_bytes) {
         Ok(_v) => _v,
         Err(_e) => return false,
@@ -12,9 +13,12 @@ pub extern "C" fn ecc_privatetopublic(sk_bytes: &[u8; 32], pk_bytes: &mut [u8; 6
 }
 
 #[no_mangle]
-pub extern "C" fn ecdsa_verify(msg_bytes: &[u8; 32], sig_bytes: &[u8; 64], pk_bytes: &[u8; 65]) -> bool {
+pub extern "C" fn parity_libsecp256k1_ecdsa_verify(msg_bytes: &[u8; 32], sig_bytes: &[u8; 64], pk_bytes: &[u8; 65]) -> bool {
     let msg = Message::parse(msg_bytes);
-    let sig = Signature::parse(sig_bytes);
+    let sig = match Signature::parse_standard(sig_bytes) {
+        Ok(_v) => _v,
+        Err(_e) => return false,
+    };
     let pk = match PublicKey::parse(pk_bytes) {
         Ok(_v) => _v,
         Err(_e) => return false,
@@ -23,7 +27,7 @@ pub extern "C" fn ecdsa_verify(msg_bytes: &[u8; 32], sig_bytes: &[u8; 64], pk_by
 }
 
 #[no_mangle]
-pub extern "C" fn ecdsa_sign(msg_bytes: &[u8; 32], sk_bytes: &[u8; 32], sig_bytes: &mut [u8; 64]) -> bool {
+pub extern "C" fn parity_libsecp256k1_ecdsa_sign(msg_bytes: &[u8; 32], sk_bytes: &[u8; 32], sig_bytes: &mut [u8; 64]) -> bool {
     let msg = Message::parse(msg_bytes);
     let sk = match SecretKey::parse(sk_bytes) {
         Ok(_v) => _v,
@@ -35,7 +39,7 @@ pub extern "C" fn ecdsa_sign(msg_bytes: &[u8; 32], sk_bytes: &[u8; 32], sig_byte
 }
 
 #[no_mangle]
-pub extern "C" fn validate_pubkey(pk_bytes: &[u8; 65]) -> bool {
+pub extern "C" fn parity_libsecp256k1_validate_pubkey(pk_bytes: &[u8; 65]) -> bool {
     match PublicKey::parse(pk_bytes) {
         Ok(_v) => true,
         Err(_e) => false,
@@ -43,9 +47,12 @@ pub extern "C" fn validate_pubkey(pk_bytes: &[u8; 65]) -> bool {
 }
 
 #[no_mangle]
-pub extern "C" fn ecdsa_recover(msg_bytes: &[u8; 32], sig_bytes: &mut [u8; 64], id: u8, pk_bytes: &mut [u8; 65]) -> bool {
+pub extern "C" fn parity_libsecp256k1_ecdsa_recover(msg_bytes: &[u8; 32], sig_bytes: &mut [u8; 64], id: u8, pk_bytes: &mut [u8; 65]) -> bool {
     let msg = Message::parse(msg_bytes);
-    let sig = Signature::parse(sig_bytes);
+    let sig = match Signature::parse_standard(sig_bytes) {
+        Ok(_v) => _v,
+        Err(_e) => return false,
+    };
     let recovery_id = match RecoveryId::parse(id) {
         Ok(_v) => _v,
         Err(_e) => return false,
@@ -55,6 +62,29 @@ pub extern "C" fn ecdsa_recover(msg_bytes: &[u8; 32], sig_bytes: &mut [u8; 64], 
         Err(_e) => return false,
     };
     pk_bytes.copy_from_slice(&pk.serialize());
+    return true;
+}
+
+#[no_mangle]
+pub extern "C" fn parity_libsecp256k1_ecdh_derive(sk_bytes: &[u8; 32], pk_bytes: &[u8; 65], shared_bytes: &mut [u8; 32]) -> bool {
+    let sk = match SecretKey::parse(sk_bytes) {
+        Ok(_v) => _v,
+        Err(_e) => return false,
+    };
+    let pk = match PublicKey::parse(pk_bytes) {
+        Ok(_v) => _v,
+        Err(_e) => return false,
+    };
+    let res = match SharedSecret::<sha2::Sha256>::new(&pk, &sk) {
+        Ok(_v) => _v,
+        Err(_e) => return false,
+    };
+
+    let shared = res.as_ref();
+    if shared.len() == 32 {
+        shared_bytes.copy_from_slice(&shared);
+    }
+    //println!("{:?}", res.as_ref().len());
     return true;
 }
 

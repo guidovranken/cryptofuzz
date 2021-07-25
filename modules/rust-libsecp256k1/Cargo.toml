@@ -10,3 +10,4 @@ crate-type = ["staticlib"]
 [dependencies]
 #libsecp256k1 = "0.3.5"
 libsecp256k1 = { git = "https://github.com/paritytech/libsecp256k1" }
+sha2 = { version = "0.9" }
