@@ -1403,7 +1403,6 @@ std::optional<component::ECC_Point> Botan::OpECC_Point_Mul(operation::ECC_Point_
         const auto b = ::Botan::BigInt(op.b.ToString(ds));
 
         CF_CHECK_GTE(b, 0);
-        CF_CHECK_LT(b, group->get_order());
 
         std::vector<::Botan::BigInt> ws(::Botan::PointGFp::WORKSPACE_SIZE);
 
