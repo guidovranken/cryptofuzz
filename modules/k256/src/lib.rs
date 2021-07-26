@@ -1,5 +1,6 @@
-use k256::{SecretKey, PublicKey, ecdsa::signature::Signature, ecdsa::VerifyingKey, ecdsa::SigningKey, ecdsa::signature::Signer, ecdsa::signature::DigestVerifier, ecdsa::signature::Verifier, elliptic_curve::sec1::ToEncodedPoint};
+use k256::{SecretKey, PublicKey, ecdsa::signature::Signature, ecdsa::VerifyingKey, ecdsa::SigningKey, ecdsa::signature::Signer, ecdsa::signature::DigestVerifier, elliptic_curve::sec1::ToEncodedPoint, AffinePoint, ProjectivePoint, EncodedPoint, Scalar};
 use sha2::{Sha256, Digest};
+use k256::elliptic_curve::sec1::FromEncodedPoint;
 
 #[no_mangle]
 pub extern "C" fn k256_ecc_privatetopublic(sk_bytes: &[u8; 32], pk_bytes: &mut [u8; 65]) -> bool {
@@ -45,4 +46,68 @@ pub extern "C" fn k256_ecdsa_verify(msg_bytes: &[u8; 32], sig_bytes: &[u8; 64], 
         Err(_e) => return false,
     };
     return pk.verify_digest(Sha256::new().chain(msg_bytes), &sig).is_ok();
+}
+
+
+#[no_mangle]
+pub extern "C" fn k256_ecc_point_add(a_bytes: &[u8; 65], b_bytes: &[u8; 65], res_bytes: &mut [u8; 65]) -> bool {
+    let a = match EncodedPoint::from_bytes(a_bytes) {
+        Ok(_v) => _v,
+        Err(_e) => return false,
+    };
+
+    let a_affine = match AffinePoint::from_encoded_point(&a) {
+        Some(_v) => _v,
+        None => return false,
+    };
+
+    let a_projective: ProjectivePoint = a_affine.into();
+
+    let b = match EncodedPoint::from_bytes(b_bytes) {
+        Ok(_v) => _v,
+        Err(_e) => return false,
+    };
+
+    let b_affine = match AffinePoint::from_encoded_point(&b) {
+        Some(_v) => _v,
+        None => return false,
+    };
+
+    let b_projective: ProjectivePoint = b_affine.into();
+
+    let res_projective = a_projective + b_projective;
+    let res_affine = res_projective.to_affine();
+
+    let res = res_affine.to_encoded_point(false);
+    res_bytes.copy_from_slice(&res.as_bytes());
+
+    return true
+
+}
+
+#[no_mangle]
+pub extern "C" fn k256_ecc_point_mul(a_bytes: &[u8; 65], b_bytes: &[u8; 32], res_bytes: &mut [u8; 65]) -> bool {
+    let a = match EncodedPoint::from_bytes(a_bytes) {
+        Ok(_v) => _v,
+        Err(_e) => return false,
+    };
+
+    let a_affine = match AffinePoint::from_encoded_point(&a) {
+        Some(_v) => _v,
+        None => return false,
+    };
+
+    let a_projective: ProjectivePoint = a_affine.into();
+
+    let b = Scalar::from_bytes_reduced(b_bytes.into());
+
+    let res_projective = a_projective * b;
+    let res_affine = res_projective.to_affine();
+
+    let res = res_affine.to_encoded_point(false);
+    if res.len() != 65 {
+        return false
+    }
+    res_bytes.copy_from_slice(&res.as_bytes());
+    return true;
 }

@@ -3,10 +3,12 @@
 #include <cryptofuzz/crypto.h>
 
 extern "C" {
-    int k256_ecc_privatetopublic(const uint8_t sk_bytes[32], uint8_t pk_bytes[65]);
-    int k256_ecdsa_verify(const uint8_t msg_bytes[32], const uint8_t sig_bytes[34], const uint8_t pk_bytes[65]);
-    int k256_ecdsa_sign(const uint8_t msg_bytes[32], const uint8_t sk_bytes[32], uint8_t sig_bytes[32]);
-    int k256_validate_pubkey(const uint8_t pk_bytes[65]);
+    bool k256_ecc_privatetopublic(const uint8_t sk_bytes[32], uint8_t pk_bytes[65]);
+    bool k256_ecdsa_verify(const uint8_t msg_bytes[32], const uint8_t sig_bytes[34], const uint8_t pk_bytes[65]);
+    bool k256_ecdsa_sign(const uint8_t msg_bytes[32], const uint8_t sk_bytes[32], uint8_t sig_bytes[32]);
+    bool k256_validate_pubkey(const uint8_t pk_bytes[65]);
+    bool k256_ecc_point_add(const uint8_t a_bytes[65], const uint8_t b_bytes[65], uint8_t res_bytes[65]);
+    bool k256_ecc_point_mul(const uint8_t a_bytes[65], const uint8_t b_bytes[32], uint8_t res_bytes[65]);
 }
 
 namespace cryptofuzz {
@@ -23,7 +25,7 @@ std::optional<component::ECC_PublicKey> k256::OpECC_PrivateToPublic(operation::E
     uint8_t pk_bytes[65];
     const auto sk_bytes = util::DecToBin(op.priv.ToTrimmedString(), 32);
     CF_CHECK_NE(sk_bytes, std::nullopt);
-    CF_CHECK_NE(k256_ecc_privatetopublic(sk_bytes->data(), pk_bytes), 0);
+    CF_CHECK_TRUE(k256_ecc_privatetopublic(sk_bytes->data(), pk_bytes));
     ret = { util::BinToDec(pk_bytes + 1, 32), util::BinToDec(pk_bytes + 1 + 32, 32) };
 end:
     return ret;
@@ -67,9 +69,9 @@ std::optional<component::ECDSA_Signature> k256::OpECDSA_Sign(operation::ECDSA_Si
     const auto sk_bytes = util::DecToBin(op.priv.ToTrimmedString(), 32);
     CF_CHECK_NE(sk_bytes, std::nullopt);
 
-    CF_CHECK_NE(k256_ecc_privatetopublic(sk_bytes->data(), pk_bytes), 0);
-    CF_CHECK_NE(k256_ecdsa_sign(op.cleartext.GetPtr(), sk_bytes->data(), sig_bytes), 0);
-    CF_ASSERT(k256_ecdsa_verify(op.cleartext.GetPtr(), sig_bytes, pk_bytes) != 0, "Cannot verify generated signature");
+    CF_CHECK_TRUE(k256_ecc_privatetopublic(sk_bytes->data(), pk_bytes));
+    CF_CHECK_TRUE(k256_ecdsa_sign(op.cleartext.GetPtr(), sk_bytes->data(), sig_bytes));
+    CF_ASSERT(k256_ecdsa_verify(op.cleartext.GetPtr(), sig_bytes, pk_bytes) == true, "Cannot verify generated signature");
 
     ret = component::ECDSA_Signature(
         {util::BinToDec(sig_bytes, 32), util::BinToDec(sig_bytes + 32, 32)},
@@ -117,6 +119,78 @@ std::optional<bool> k256::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     }
 
     ret = k256_ecdsa_verify(CT.GetPtr(), sig_bytes, pk_bytes);
+
+end:
+    return ret;
+}
+
+std::optional<component::ECC_Point> k256::OpECC_Point_Add(operation::ECC_Point_Add& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    if ( !op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        return ret;
+    }
+
+    uint8_t a_bytes[65], b_bytes[65], res_bytes[65];
+
+    {
+        a_bytes[0] = 0x04;
+        const auto x_bytes = util::DecToBin(op.a.first.ToTrimmedString(), 32);
+        const auto y_bytes = util::DecToBin(op.a.second.ToTrimmedString(), 32);
+        CF_CHECK_NE(x_bytes, std::nullopt);
+        CF_CHECK_NE(y_bytes, std::nullopt);
+        memcpy(a_bytes + 1, x_bytes->data(), 32);
+        memcpy(a_bytes + 1 + 32, y_bytes->data(), 32);
+    }
+
+    {
+        b_bytes[0] = 0x04;
+        const auto x_bytes = util::DecToBin(op.b.first.ToTrimmedString(), 32);
+        const auto y_bytes = util::DecToBin(op.b.second.ToTrimmedString(), 32);
+        CF_CHECK_NE(x_bytes, std::nullopt);
+        CF_CHECK_NE(y_bytes, std::nullopt);
+        memcpy(b_bytes + 1, x_bytes->data(), 32);
+        memcpy(b_bytes + 1 + 32, y_bytes->data(), 32);
+    }
+
+    CF_CHECK_TRUE(k256_ecc_point_add(a_bytes, b_bytes, res_bytes));
+
+    ret = { util::BinToDec(res_bytes + 1, 32), util::BinToDec(res_bytes + 1 + 32, 32) };
+
+end:
+    return ret;
+}
+
+std::optional<component::ECC_Point> k256::OpECC_Point_Mul(operation::ECC_Point_Mul& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    if ( !op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        return ret;
+    }
+
+    uint8_t a_bytes[65], b_bytes[32], res_bytes[65];
+
+    {
+        a_bytes[0] = 0x04;
+        const auto x_bytes = util::DecToBin(op.a.first.ToTrimmedString(), 32);
+        const auto y_bytes = util::DecToBin(op.a.second.ToTrimmedString(), 32);
+        CF_CHECK_NE(x_bytes, std::nullopt);
+        CF_CHECK_NE(y_bytes, std::nullopt);
+        memcpy(a_bytes + 1, x_bytes->data(), 32);
+        memcpy(a_bytes + 1 + 32, y_bytes->data(), 32);
+    }
+
+    {
+        const auto bytes = util::DecToBin(op.b.ToTrimmedString(), 32);
+        CF_CHECK_NE(bytes, std::nullopt);
+        memcpy(b_bytes, bytes->data(), 32);
+    }
+
+    CF_CHECK_TRUE(k256_ecc_point_mul(a_bytes, b_bytes, res_bytes));
+
+    ret = { util::BinToDec(res_bytes + 1, 32), util::BinToDec(res_bytes + 1 + 32, 32) };
 
 end:
     return ret;
