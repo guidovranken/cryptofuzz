@@ -241,6 +241,10 @@
   #include <modules/quickjs/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_UINT128_T)
+  #include <modules/uint128_t/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -487,6 +491,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_QUICKJS)
     driver->LoadModule( std::make_shared<cryptofuzz::module::quickjs>() );
+#endif
+
+#if defined(CRYPTOFUZZ_UINT128_T)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::uint128_t>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is

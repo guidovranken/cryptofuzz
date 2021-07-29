@@ -54,6 +54,7 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorBignumCalc executorBignumCalc(CF_OPERATION("BignumCalc"), modules, options);
     static ExecutorBignumCalc_Mod_BLS12_381_R executorBignumCalc_mod_bls12_381_r(CF_OPERATION("BignumCalc_Mod_BLS12_381_R"), modules, options);
     static ExecutorBignumCalc_Mod_BLS12_381_P executorBignumCalc_mod_bls12_381_p(CF_OPERATION("BignumCalc_Mod_BLS12_381_P"), modules, options);
+    static ExecutorBignumCalc_Mod_2Exp128 executorBignumCalc_mod_2exp128(CF_OPERATION("BignumCalc_Mod_2Exp128"), modules, options);
     static ExecutorBignumCalc_Mod_2Exp256 executorBignumCalc_mod_2exp256(CF_OPERATION("BignumCalc_Mod_2Exp256"), modules, options);
     static ExecutorBignumCalc_Mod_SECP256K1 executorBignumCalc_mod_secp256k1(CF_OPERATION("BignumCalc_Mod_SECP256K1"), modules, options);
     static ExecutorBLS_PrivateToPublic executorBLS_PrivateToPublic(CF_OPERATION("BLS_PrivateToPublic"), modules, options);
@@ -209,6 +210,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("BignumCalc_Mod_BLS12_381_P"):
                 executorBignumCalc_mod_bls12_381_p.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BignumCalc_Mod_2Exp128"):
+                executorBignumCalc_mod_2exp128.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("BignumCalc_Mod_2Exp256"):
                 executorBignumCalc_mod_2exp256.Run(ds, payload.data(), payload.size());

@@ -509,10 +509,11 @@ bool IsOdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std:
 }
 
 bool IsZero::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
-    (void)modulo;
     (void)ds;
 
-    res = bn[0].Ref() == 0 ? 1 : 0;
+    auto A = modulo == std::nullopt ? bn[0] : bn[0].Ref() % modulo->ConstRef();
+
+    res = A.Ref() == 0 ? 1 : 0;
 
     return true;
 }
@@ -527,10 +528,11 @@ bool IsNotZero::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const 
 }
 
 bool IsOne::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
-    (void)modulo;
     (void)ds;
 
-    res = bn[0].Ref() == 1 ? 1 : 0;
+    auto A = modulo == std::nullopt ? bn[0] : bn[0].Ref() % modulo->ConstRef();
+
+    res = A.Ref() == 1 ? 1 : 0;
 
     return true;
 }
