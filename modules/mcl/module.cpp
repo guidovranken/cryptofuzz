@@ -767,6 +767,34 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                         PREPARE_BN();
                         return *ap == *bp ? std::string("1") : std::string("0");
                     }
+                case    CF_CALCOP("IsGt(A,B)"):
+                    {
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
+                        b.setStr(op.bn1.ToTrimmedString(), 10);
+                        PREPARE_BN();
+                        return *ap > *bp ? std::string("1") : std::string("0");
+                    }
+                case    CF_CALCOP("IsGte(A,B)"):
+                    {
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
+                        b.setStr(op.bn1.ToTrimmedString(), 10);
+                        PREPARE_BN();
+                        return *ap >= *bp ? std::string("1") : std::string("0");
+                    }
+                case    CF_CALCOP("IsLt(A,B)"):
+                    {
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
+                        b.setStr(op.bn1.ToTrimmedString(), 10);
+                        PREPARE_BN();
+                        return *ap < *bp ? std::string("1") : std::string("0");
+                    }
+                case    CF_CALCOP("IsLte(A,B)"):
+                    {
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
+                        b.setStr(op.bn1.ToTrimmedString(), 10);
+                        PREPARE_BN();
+                        return *ap <= *bp ? std::string("1") : std::string("0");
+                    }
                 case    CF_CALCOP("IsZero(A)"):
                     {
                         a.setStr(op.bn0.ToTrimmedString(), 10);
@@ -903,6 +931,34 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                         PREPARE_BN();
                         return *ap == *bp ? std::string("1") : std::string("0");
                     }
+                case    CF_CALCOP("IsGt(A,B)"):
+                    {
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
+                        b.setStr(op.bn1.ToTrimmedString(), 10);
+                        PREPARE_BN();
+                        return *ap > *bp ? std::string("1") : std::string("0");
+                    }
+                case    CF_CALCOP("IsGte(A,B)"):
+                    {
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
+                        b.setStr(op.bn1.ToTrimmedString(), 10);
+                        PREPARE_BN();
+                        return *ap >= *bp ? std::string("1") : std::string("0");
+                    }
+                case    CF_CALCOP("IsLt(A,B)"):
+                    {
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
+                        b.setStr(op.bn1.ToTrimmedString(), 10);
+                        PREPARE_BN();
+                        return *ap < *bp ? std::string("1") : std::string("0");
+                    }
+                case    CF_CALCOP("IsLte(A,B)"):
+                    {
+                        a.setStr(op.bn0.ToTrimmedString(), 10);
+                        b.setStr(op.bn1.ToTrimmedString(), 10);
+                        PREPARE_BN();
+                        return *ap <= *bp ? std::string("1") : std::string("0");
+                    }
                 case    CF_CALCOP("IsZero(A)"):
                     {
                         a.setStr(op.bn0.ToTrimmedString(), 10);
@@ -944,9 +1000,6 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                     }
                 case    CF_CALCOP("Sqrt(A)"):
                     {
-                        /* Compute the sqrt but don't return it, because blst may return
-                         * a different (but also valid) result
-                         */
                         a.setStr(op.bn0.ToTrimmedString(), 10);
                         b.setStr("0", 10);
                         PREPARE_BN();
