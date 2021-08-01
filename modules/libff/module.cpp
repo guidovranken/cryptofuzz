@@ -362,6 +362,8 @@ namespace libff_detail {
                     if ( euler == T::zero() || euler == T::one() ) {
                         const auto res = bn0.sqrt().squared();
                         ret = component::Bignum{ ToString(res) };
+                    } else {
+                        ret = component::Bignum{ std::string("0") };
                     }
                 }
                 break;

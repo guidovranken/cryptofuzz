@@ -862,10 +862,12 @@ end:
                     blst_fp result2;
                     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.bn0, A));
 
-                    CF_CHECK_EQ(blst_fp_sqrt(&result, &A), true);
-                    blst_fp_sqr(&result, &result);
-
-                    ret = blst_detail::To_component_bignum(result);
+                    if ( blst_fp_sqrt(&result, &A) == true ) {
+                        CF_NORET(blst_fp_sqr(&result, &result));
+                        ret = blst_detail::To_component_bignum(result);
+                    } else {
+                        ret = std::string("0");
+                    }
                 }
                 break;
             case    CF_CALCOP("Not(A)"):
