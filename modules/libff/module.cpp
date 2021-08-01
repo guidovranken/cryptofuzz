@@ -213,6 +213,27 @@ end:
 end:
         return ret;
     }
+
+    template <class Type, class ReturnType, class Operation>
+    std::optional<ReturnType> OpBLS_Gx_Neg(Operation& op) {
+        std::optional<ReturnType> ret = std::nullopt;
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+        std::optional<Type> a;
+        Type res;
+
+        CF_CHECK_NE(a = Load(op.a, ds), std::nullopt);
+
+        res = -(*a);
+
+        CF_CHECK_TRUE(IsValid(*a));
+
+        ret = Save(res);
+
+end:
+        return ret;
+    }
+
 } /* namespace libff_detail */
 
 std::optional<bool> _libff::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
@@ -231,6 +252,10 @@ std::optional<bool> _libff::OpBLS_G1_IsEq(operation::BLS_G1_IsEq& op) {
     return libff_detail::OpBLS_Gx_IsEq<G1Type>(op);
 }
 
+std::optional<component::G1> _libff::OpBLS_G1_Neg(operation::BLS_G1_Neg& op) {
+    return libff_detail::OpBLS_Gx_Neg<G1Type, component::G1>(op);
+}
+
 std::optional<bool> _libff::OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) {
     return libff_detail::OpBLS_IsGxOnCurve<G2Type>(op);
 }
@@ -245,6 +270,10 @@ std::optional<component::G2> _libff::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
 
 std::optional<bool> _libff::OpBLS_G2_IsEq(operation::BLS_G2_IsEq& op) {
     return libff_detail::OpBLS_Gx_IsEq<G2Type>(op);
+}
+
+std::optional<component::G2> _libff::OpBLS_G2_Neg(operation::BLS_G2_Neg& op) {
+    return libff_detail::OpBLS_Gx_Neg<G2Type, component::G2>(op);
 }
 
 namespace libff_detail {
