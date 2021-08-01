@@ -648,6 +648,7 @@ namespace blst_detail {
         Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
         blst_fr result, A, B;
         uint8_t resultIdx;
+        static const blst_fr zero = {0};
 
         switch ( op.calcOp.Get() ) {
             case    CF_CALCOP("Add(A,B)"):
@@ -747,6 +748,15 @@ namespace blst_detail {
                 CF_CHECK_TRUE(blst_detail::To_blst_fr(op.bn0, A));
                 ret = blst_detail::To_component_bignum(A);
                 break;
+            case    CF_CALCOP("IsEq(A,B)"):
+                CF_CHECK_TRUE(blst_detail::To_blst_fr(op.bn0, A));
+                CF_CHECK_TRUE(blst_detail::To_blst_fr(op.bn1, B));
+                ret = memcmp(&A, &B, sizeof(A)) == 0 ? std::string("1") : std::string("0");
+                break;
+            case    CF_CALCOP("IsZero(A)"):
+                CF_CHECK_TRUE(blst_detail::To_blst_fr(op.bn0, A));
+                ret = memcmp(&A, &zero, sizeof(A)) == 0 ? std::string("1") : std::string("0");
+                break;
         }
 
 end:
@@ -758,6 +768,7 @@ end:
         Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
         blst_fp result, A, B;
         uint8_t resultIdx;
+        static const blst_fp zero = {0};
 
         switch ( op.calcOp.Get() ) {
             case    CF_CALCOP("Add(A,B)"):
@@ -866,6 +877,15 @@ end:
             case    CF_CALCOP("Set(A)"):
                 CF_CHECK_TRUE(blst_detail::To_blst_fp(op.bn0, A));
                 ret = blst_detail::To_component_bignum(A);
+                break;
+            case    CF_CALCOP("IsEq(A,B)"):
+                CF_CHECK_TRUE(blst_detail::To_blst_fp(op.bn0, A));
+                CF_CHECK_TRUE(blst_detail::To_blst_fp(op.bn1, B));
+                ret = memcmp(&A, &B, sizeof(A)) == 0 ? std::string("1") : std::string("0");
+                break;
+            case    CF_CALCOP("IsZero(A)"):
+                CF_CHECK_TRUE(blst_detail::To_blst_fp(op.bn0, A));
+                ret = memcmp(&A, &zero, sizeof(A)) == 0 ? std::string("1") : std::string("0");
                 break;
         }
 
