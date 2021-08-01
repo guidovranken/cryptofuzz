@@ -2,6 +2,8 @@
 #include <cryptofuzz/util.h>
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
+#include <limits>
 
 #if defined(LIBFF_HAVE_BLS12_381)
   #include <libff/algebra/curves/bls12_381/bls12_381_pp.hpp>
@@ -361,6 +363,22 @@ namespace libff_detail {
                         const auto res = bn0.sqrt().squared();
                         ret = component::Bignum{ ToString(res) };
                     }
+                }
+                break;
+            case    CF_CALCOP("FrobeniusMap(A,B)"):
+                {
+                    const auto bn0 = T(op.bn0.ToString(ds).c_str());
+                    const boost::multiprecision::cpp_int bn1(op.bn1.ToTrimmedString());
+                    CF_CHECK_LTE(bn1, std::numeric_limits<unsigned long>::max());
+                    const auto res = bn0.Frobenius_map(bn1.convert_to<unsigned long>());
+                    ret = component::Bignum{ ToString(res) };
+                }
+                break;
+            case    CF_CALCOP("Neg(A)"):
+                {
+                    const auto bn0 = T(op.bn0.ToString(ds).c_str());
+                    const auto res = -bn0;
+                    ret = component::Bignum{ ToString(res) };
                 }
                 break;
         }
