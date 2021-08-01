@@ -864,8 +864,17 @@ std::optional<component::Bignum> ExecutorBignumCalc::callModule(std::shared_ptr<
 /* Specialization for operation::BLS_PrivateToPublic */
 template<> void ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>::postprocess(std::shared_ptr<Module> module, operation::BLS_PrivateToPublic& op, const ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>::ResultPair& result) const {
     (void)module;
-    (void)op;
-    (void)result;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto g1_x = result.second->first.ToTrimmedString();
+        const auto g1_y = result.second->second.ToTrimmedString();
+
+        Pool_CurveBLSG1.Set({ curveID, g1_x, g1_y });
+
+        if ( g1_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_x); }
+        if ( g1_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_y); }
+    }
 }
 
 template<> std::optional<component::BLS_PublicKey> ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>::callModule(std::shared_ptr<Module> module, operation::BLS_PrivateToPublic& op) const {
@@ -881,8 +890,20 @@ template<> std::optional<component::BLS_PublicKey> ExecutorBase<component::BLS_P
 /* Specialization for operation::BLS_PrivateToPublic_G2 */
 template<> void ExecutorBase<component::G2, operation::BLS_PrivateToPublic_G2>::postprocess(std::shared_ptr<Module> module, operation::BLS_PrivateToPublic_G2& op, const ExecutorBase<component::G2, operation::BLS_PrivateToPublic_G2>::ResultPair& result) const {
     (void)module;
-    (void)op;
-    (void)result;
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto g2_v = result.second->first.first.ToTrimmedString();
+        const auto g2_w = result.second->first.second.ToTrimmedString();
+        const auto g2_x = result.second->second.first.ToTrimmedString();
+        const auto g2_y = result.second->second.second.ToTrimmedString();
+
+        Pool_CurveBLSG2.Set({ curveID, g2_v, g2_w, g2_x, g2_y });
+
+        if ( g2_v.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_v); }
+        if ( g2_w.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_w); }
+        if ( g2_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_x); }
+        if ( g2_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_y); }
+    }
 }
 
 template<> std::optional<component::G2> ExecutorBase<component::G2, operation::BLS_PrivateToPublic_G2>::callModule(std::shared_ptr<Module> module, operation::BLS_PrivateToPublic_G2& op) const {
@@ -1400,6 +1421,46 @@ ExecutorBignumCalc_Mod_BLS12_381_P::ExecutorBignumCalc_Mod_BLS12_381_P(const uin
     CF_NORET(SetModulo("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787"));
 }
 
+ExecutorBignumCalc_Mod_BN128_R::ExecutorBignumCalc_Mod_BN128_R(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
+    CF_NORET(SetModulo("21888242871839275222246405745257275088548364400416034343698204186575808495617"));
+}
+
+ExecutorBignumCalc_Mod_BN128_P::ExecutorBignumCalc_Mod_BN128_P(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
+    CF_NORET(SetModulo("21888242871839275222246405745257275088696311157297823662689037894645226208583"));
+}
+
+ExecutorBignumCalc_Mod_Edwards_R::ExecutorBignumCalc_Mod_Edwards_R(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
+    CF_NORET(SetModulo("1552511030102430251236801561344621993261920897571225601"));
+}
+
+ExecutorBignumCalc_Mod_Edwards_P::ExecutorBignumCalc_Mod_Edwards_P(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
+    CF_NORET(SetModulo("6210044120409721004947206240885978274523751269793792001"));
+}
+
+ExecutorBignumCalc_Mod_MNT4_R::ExecutorBignumCalc_Mod_MNT4_R(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
+    CF_NORET(SetModulo("475922286169261325753349249653048451545124878552823515553267735739164647307408490559963137"));
+}
+
+ExecutorBignumCalc_Mod_MNT4_P::ExecutorBignumCalc_Mod_MNT4_P(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
+    CF_NORET(SetModulo("475922286169261325753349249653048451545124879242694725395555128576210262817955800483758081"));
+}
+
+ExecutorBignumCalc_Mod_MNT6_R::ExecutorBignumCalc_Mod_MNT6_R(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
+    CF_NORET(SetModulo("475922286169261325753349249653048451545124879242694725395555128576210262817955800483758081"));
+}
+
+ExecutorBignumCalc_Mod_MNT6_P::ExecutorBignumCalc_Mod_MNT6_P(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
+    CF_NORET(SetModulo("237961143084630662876674624826524225772562439621347362697777564288105131408977900241879040"));
+}
+
 ExecutorBignumCalc_Mod_2Exp128::ExecutorBignumCalc_Mod_2Exp128(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
     ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
     CF_NORET(SetModulo("340282366920938463463374607431768211456"));
@@ -1618,6 +1679,54 @@ operation::BignumCalc ExecutorBignumCalc_Mod_BLS12_381_R::getOpPostprocess(Datas
 }
 
 operation::BignumCalc ExecutorBignumCalc_Mod_BLS12_381_P::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
+    (void)parentDs;
+    op.modulo = modulo;
+    return op;
+}
+
+operation::BignumCalc ExecutorBignumCalc_Mod_BN128_R::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
+    (void)parentDs;
+    op.modulo = modulo;
+    return op;
+}
+
+operation::BignumCalc ExecutorBignumCalc_Mod_BN128_P::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
+    (void)parentDs;
+    op.modulo = modulo;
+    return op;
+}
+
+operation::BignumCalc ExecutorBignumCalc_Mod_Edwards_R::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
+    (void)parentDs;
+    op.modulo = modulo;
+    return op;
+}
+
+operation::BignumCalc ExecutorBignumCalc_Mod_Edwards_P::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
+    (void)parentDs;
+    op.modulo = modulo;
+    return op;
+}
+
+operation::BignumCalc ExecutorBignumCalc_Mod_MNT4_R::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
+    (void)parentDs;
+    op.modulo = modulo;
+    return op;
+}
+
+operation::BignumCalc ExecutorBignumCalc_Mod_MNT4_P::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
+    (void)parentDs;
+    op.modulo = modulo;
+    return op;
+}
+
+operation::BignumCalc ExecutorBignumCalc_Mod_MNT6_R::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
+    (void)parentDs;
+    op.modulo = modulo;
+    return op;
+}
+
+operation::BignumCalc ExecutorBignumCalc_Mod_MNT6_P::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
     (void)parentDs;
     op.modulo = modulo;
     return op;
