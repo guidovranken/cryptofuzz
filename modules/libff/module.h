@@ -10,6 +10,8 @@ namespace module {
 class _libff : public Module {
     public:
         _libff(void);
+        std::optional<component::BLS_PublicKey> OpBLS_PrivateToPublic(operation::BLS_PrivateToPublic& op) override;
+        std::optional<component::G2> OpBLS_PrivateToPublic_G2(operation::BLS_PrivateToPublic_G2& op) override;
         std::optional<bool> OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) override;
         std::optional<component::G1> OpBLS_G1_Add(operation::BLS_G1_Add& op) override;
         std::optional<component::G1> OpBLS_G1_Mul(operation::BLS_G1_Mul& op) override;

@@ -122,9 +122,6 @@ namespace libff_detail {
         };
     }
 
-} /* namespace libff_detail */
-
-namespace libff_detail {
     template <class Type, class Operation>
     std::optional<Type> Load(const Operation& op, Datasource& ds);
 
@@ -136,6 +133,32 @@ namespace libff_detail {
     template <>
     std::optional<G2Type> Load(const operation::BLS_IsG2OnCurve& op, Datasource& ds) {
         return Load(op.g2, ds);
+    }
+
+    template <class Type, class ReturnType>
+    std::optional<ReturnType> Mul(const Type& a, const component::Bignum& multiplier, Datasource& ds) {
+        std::optional<ReturnType> ret = std::nullopt;
+
+        Type res;
+        FrType b;
+
+        CF_CHECK_LTE(multiplier.GetSize(), FrMaxSize);
+        b = FrType(multiplier.ToString(ds).c_str());
+
+        res = b * a;
+
+        CF_CHECK_FALSE(b.is_zero());
+        CF_CHECK_TRUE(a.is_well_formed());
+
+        ret = Save(res);
+
+end:
+        return ret;
+    }
+
+    template <class Type, class ReturnType>
+    std::optional<ReturnType> Mul(const std::optional<Type>& a, const component::Bignum& multiplier, Datasource& ds) {
+        return a == std::nullopt ? std::nullopt : Mul<Type, ReturnType>(*a, multiplier, ds);
     }
 
     template <class Type, class Operation>
@@ -178,26 +201,13 @@ end:
 
     template <class Type, class ReturnType, class Operation>
     std::optional<ReturnType> OpBLS_Gx_Mul(Operation& op) {
-        std::optional<ReturnType> ret = std::nullopt;
         Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-        std::optional<Type> a;
-        FrType b;
-        Type res;
-
-        CF_CHECK_LTE(op.b.GetSize(), FrMaxSize);
-        CF_CHECK_NE(a = Load(op.a, ds), std::nullopt);
-        b = FrType(op.b.ToString(ds).c_str());
-
-        res = b * *a;
-
-        CF_CHECK_TRUE(IsValid(*a));
-        CF_CHECK_FALSE(b.is_zero());
-
-        ret = Save(res);
-
-end:
-        return ret;
+        return Mul<Type, ReturnType>(
+                Load(op.a, ds),
+                op.b,
+                ds
+        );
     }
 
     template <class Type, class Operation>
@@ -237,6 +247,18 @@ end:
     }
 
 } /* namespace libff_detail */
+
+std::optional<component::BLS_PublicKey> _libff::OpBLS_PrivateToPublic(operation::BLS_PrivateToPublic& op) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    return libff_detail::Mul<G1Type, component::BLS_PublicKey>(G1Type::one(), op.priv, ds);
+}
+
+std::optional<component::G2> _libff::OpBLS_PrivateToPublic_G2(operation::BLS_PrivateToPublic_G2& op) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    return libff_detail::Mul<G2Type, component::G2>(G2Type::one(), op.priv, ds);
+}
 
 std::optional<bool> _libff::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
     return libff_detail::OpBLS_IsGxOnCurve<G1Type>(op);
@@ -376,7 +398,7 @@ namespace libff_detail {
                     ret = component::Bignum{ ToString(res) };
                 }
                 break;
-            case    CF_CALCOP("Neg(A)"):
+            case    CF_CALCOP("Not(A)"):
                 {
                     const auto bn0 = T(op.bn0.ToString(ds).c_str());
                     const auto res = -bn0;
