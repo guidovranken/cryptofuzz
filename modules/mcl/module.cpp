@@ -1035,13 +1035,6 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
                 case    CF_CALCOP("Set(A)"):
                         a.setStr(op.bn0.ToTrimmedString(), 10);
                         return a.getStr();
-                case    CF_CALCOP("Neg(A)"):
-                    {
-                        a.setStr(op.bn0.ToTrimmedString(), 10);
-                        PREPARE_BN();
-                        ::mcl::bn::Fp::neg(*resultp, *ap);
-                        return resultp->getStr();
-                    }
             }
         } catch ( cybozu::Exception ) {
             if (

@@ -409,6 +409,13 @@ namespace libff_detail {
                     ret = component::Bignum{ ToString(res) };
                 }
                 break;
+            case    CF_CALCOP("LShift1(A)"):
+                {
+                    const auto bn0 = T(op.bn0.ToString(ds).c_str());
+                    const auto res = bn0 * 2;
+                    ret = component::Bignum{ ToString(res) };
+                }
+                break;
         }
 end:
         return ret;
