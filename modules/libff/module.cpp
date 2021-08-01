@@ -301,9 +301,7 @@ namespace libff_detail {
                 {
                     const auto bn0 = T(op.bn0.ToString(ds).c_str());
                     const auto res = bn0.squared();
-                    if ( !bn0.is_zero() ) {
-                        CF_ASSERT(res.sqrt().squared() == res, "Sqr(Sqrt(A)) != A");
-                    }
+                    CF_ASSERT(res.sqrt().squared() == res, "Sqr(Sqrt(A)) != A");
                     ret = component::Bignum{ ToString(res) };
                 }
                 break;
@@ -324,6 +322,16 @@ namespace libff_detail {
                 {
                     const auto bn0 = T(op.bn0.ToString(ds).c_str());
                     ret = component::Bignum{ bn0.is_zero() ? std::string("1") : std::string("0") };
+                }
+                break;
+            case    CF_CALCOP("Sqrt(A)"):
+                {
+                    const auto bn0 = T(op.bn0.ToString(ds).c_str());
+                    const auto euler = bn0 ^ T::euler;
+                    if ( euler == T::zero() || euler == T::one() ) {
+                        const auto res = bn0.sqrt().squared();
+                        ret = component::Bignum{ ToString(res) };
+                    }
                 }
                 break;
         }
