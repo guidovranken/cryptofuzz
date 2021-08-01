@@ -147,7 +147,11 @@ namespace libff_detail {
 
         res = b * a;
 
-        CF_CHECK_FALSE(b.is_zero());
+        if ( b.is_zero() == true ) {
+            CF_ASSERT(res.is_zero() == true, "Multiplication by 0 does not yield point at infinity");
+            goto end;
+        }
+
         CF_CHECK_TRUE(a.is_well_formed());
 
         ret = Save(res);
