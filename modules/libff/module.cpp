@@ -107,10 +107,17 @@ namespace libff_detail {
     component::G1 Save(G1Type& g1) {
         CF_NORET(g1.to_affine_coordinates());
 
-        return component::G1{
-            libff_detail::ToString(g1.X),
-            libff_detail::ToString(g1.Y),
-        };
+        if ( g1.is_zero() ) {
+            return component::G1{
+                std::string("0"),
+                std::string("0")
+            };
+        } else {
+            return component::G1{
+                libff_detail::ToString(g1.X),
+                libff_detail::ToString(g1.Y),
+            };
+        }
     }
 
     component::G2 Save(G2Type& g2) {
@@ -152,7 +159,7 @@ namespace libff_detail {
             goto end;
         }
 
-        CF_CHECK_TRUE(a.is_well_formed());
+        CF_CHECK_TRUE(IsValid(a));
 
         ret = Save(res);
 
