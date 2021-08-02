@@ -220,7 +220,11 @@ static void generateECCPoint(void) {
 
     const auto y = cryptofuzz::util::Find_ECC_Y(x, *a, *b, *p, *o, getBool());
 
-    Pool_CurveECC_Point.Set({ curveID, x, y });
+    if ( curveID == CF_ECC_CURVE("BLS12_381") ) {
+        Pool_CurveBLSG1.Set({ curveID, x, y });
+    } else {
+        Pool_CurveECC_Point.Set({ curveID, x, y });
+    }
 }
 
 extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t maxSize, unsigned int seed) {
@@ -1355,6 +1359,8 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     cryptofuzz::operation::BLS_IsG1OnCurve op(parameters);
                     op.Serialize(dsOut2);
+
+                    generateECCPoint();
                 }
                 break;
             case    CF_OPERATION("BLS_IsG2OnCurve"):
@@ -1416,6 +1422,8 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     cryptofuzz::operation::BLS_Compress_G1 op(parameters);
                     op.Serialize(dsOut2);
+
+                    generateECCPoint();
                 }
                 break;
             case    CF_OPERATION("BLS_Decompress_G2"):
@@ -1563,6 +1571,8 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     cryptofuzz::operation::BLS_G1_Add op(parameters);
                     op.Serialize(dsOut2);
+
+                    generateECCPoint();
                 }
                 break;
             case    CF_OPERATION("BLS_G1_Mul"):
@@ -1583,6 +1593,8 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     cryptofuzz::operation::BLS_G1_Mul op(parameters);
                     op.Serialize(dsOut2);
+
+                    generateECCPoint();
                 }
                 break;
             case    CF_OPERATION("BLS_G1_IsEq"):
@@ -1610,6 +1622,8 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     cryptofuzz::operation::BLS_G1_IsEq op(parameters);
                     op.Serialize(dsOut2);
+
+                    generateECCPoint();
                 }
                 break;
             case    CF_OPERATION("BLS_G1_Neg"):
@@ -1628,6 +1642,8 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     cryptofuzz::operation::BLS_G1_Neg op(parameters);
                     op.Serialize(dsOut2);
+
+                    generateECCPoint();
                 }
                 break;
             case    CF_OPERATION("BLS_G2_Add"):
