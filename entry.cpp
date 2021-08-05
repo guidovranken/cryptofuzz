@@ -253,6 +253,10 @@
   #include <modules/gnark-bn254/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_GOOGLE_BN256)
+  #include <modules/google-bn256/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -511,6 +515,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_GNARK_BN254)
     driver->LoadModule( std::make_shared<cryptofuzz::module::Gnark_bn254>() );
+#endif
+
+#if defined(CRYPTOFUZZ_GOOGLE_BN256)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::Google_bn256>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
