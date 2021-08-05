@@ -249,6 +249,10 @@
   #include <modules/libff/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_GNARK_BN254)
+  #include <modules/gnark-bn254/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -503,6 +507,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_LIBFF)
     driver->LoadModule( std::make_shared<cryptofuzz::module::_libff>() );
+#endif
+
+#if defined(CRYPTOFUZZ_GNARK_BN254)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::Gnark_bn254>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
