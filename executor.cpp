@@ -1008,13 +1008,13 @@ template<> std::optional<component::G2> ExecutorBase<component::G2, operation::B
 }
 
 /* Specialization for operation::BLS_Pairing */
-template<> void ExecutorBase<bool, operation::BLS_Pairing>::postprocess(std::shared_ptr<Module> module, operation::BLS_Pairing& op, const ExecutorBase<bool, operation::BLS_Pairing>::ResultPair& result) const {
+template<> void ExecutorBase<component::FP12, operation::BLS_Pairing>::postprocess(std::shared_ptr<Module> module, operation::BLS_Pairing& op, const ExecutorBase<component::FP12, operation::BLS_Pairing>::ResultPair& result) const {
     (void)module;
     (void)op;
     (void)result;
 }
 
-template<> std::optional<bool> ExecutorBase<bool, operation::BLS_Pairing>::callModule(std::shared_ptr<Module> module, operation::BLS_Pairing& op) const {
+template<> std::optional<component::FP12> ExecutorBase<component::FP12, operation::BLS_Pairing>::callModule(std::shared_ptr<Module> module, operation::BLS_Pairing& op) const {
     return module->OpBLS_Pairing(op);
 }
 
@@ -1948,7 +1948,7 @@ template class ExecutorBase<component::BLS_Signature, operation::BLS_Sign>;
 template class ExecutorBase<bool, operation::BLS_Verify>;
 template class ExecutorBase<component::G1, operation::BLS_Aggregate_G1>;
 template class ExecutorBase<component::G2, operation::BLS_Aggregate_G2>;
-template class ExecutorBase<bool, operation::BLS_Pairing>;
+template class ExecutorBase<component::FP12, operation::BLS_Pairing>;
 template class ExecutorBase<component::G1, operation::BLS_HashToG1>;
 template class ExecutorBase<component::G2, operation::BLS_HashToG2>;
 template class ExecutorBase<bool, operation::BLS_IsG1OnCurve>;

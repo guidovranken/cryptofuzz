@@ -1486,64 +1486,35 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                 break;
             case    CF_OPERATION("BLS_Pairing"):
                 {
-                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+                    parameters["modifier"] = "";
                     parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
 
-                    parameters["dest"] = getBool() ? getBuffer(PRNG() % 512) : get_BLS_predefined_DST();
-
-                    nlohmann::json components = nlohmann::json::array();
-
-                    const auto numComponents = PRNG() % 16;
-
-                    for (size_t i = 0; i < numComponents; i++) {
-                        nlohmann::json component;
-
-                        if ( Pool_CurveBLSSignature.Have() == true ) {
-                            const auto P = Pool_CurveBLSSignature.Get();
-
-                            component["msg"] = P.cleartext;
-                            parameters["dest"] = P.dest;
-                            component["aug"] = P.aug;
-                            component["pub_x"] = GET_OR_BIGNUM(P.pub_x);
-                            component["pub_y"] = GET_OR_BIGNUM(P.pub_y);
-                            component["sig_v"] = GET_OR_BIGNUM(P.sig_v);
-                            component["sig_w"] = GET_OR_BIGNUM(P.sig_w);
-                            component["sig_x"] = GET_OR_BIGNUM(P.sig_x);
-                            component["sig_y"] = GET_OR_BIGNUM(P.sig_y);
-                        } else {
-                            if ( getBool() && Pool_CurveBLSG2.Have() == true ) {
-                                const auto P = Pool_CurveBLSG2.Get();
-                                component["sig_v"] = GET_OR_BIGNUM(P.g2_v);
-                                component["sig_w"] = GET_OR_BIGNUM(P.g2_w);
-                                component["sig_x"] = GET_OR_BIGNUM(P.g2_x);
-                                component["sig_y"] = GET_OR_BIGNUM(P.g2_y);
-                            } else {
-                                component["sig_v"] = getBignum();
-                                component["sig_w"] = getBignum();
-                                component["sig_x"] = getBignum();
-                                component["sig_y"] = getBignum();
-                            }
-
-                            if ( Pool_CurveKeypair.Have() ) {
-                                const auto P = Pool_CurveKeypair.Get();
-                                component["pub_x"] = GET_OR_BIGNUM(P.pub_x);
-                                component["pub_y"] = GET_OR_BIGNUM(P.pub_y);
-                            } else {
-                                component["pub_x"] = getBignum();
-                                component["pub_y"] = getBignum();
-                            }
-
-                            component["msg"] = getBuffer(PRNG() % 1024);
-                            component["aug"] = getBuffer(PRNG() % 1024);
-                        }
-
-                        components.push_back(component);
+                    if ( getBool() && Pool_CurveBLSG1.Have() == true ) {
+                        const auto P = Pool_CurveBLSG1.Get();
+                        parameters["g1_x"] = GET_OR_BIGNUM(P.g1_x);
+                        parameters["g1_y"] = GET_OR_BIGNUM(P.g1_y);
+                    } else {
+                        parameters["g1_x"] = getBignum();
+                        parameters["g1_y"] = getBignum();
                     }
 
-                    parameters["components"] = components;
+                    if ( getBool() && Pool_CurveBLSG2.Have() == true ) {
+                        const auto P = Pool_CurveBLSG2.Get();
+                        parameters["g2_v"] = GET_OR_BIGNUM(P.g2_v);
+                        parameters["g2_w"] = GET_OR_BIGNUM(P.g2_w);
+                        parameters["g2_x"] = GET_OR_BIGNUM(P.g2_x);
+                        parameters["g2_y"] = GET_OR_BIGNUM(P.g2_y);
+                    } else {
+                        parameters["g2_v"] = getBignum();
+                        parameters["g2_w"] = getBignum();
+                        parameters["g2_x"] = getBignum();
+                        parameters["g2_y"] = getBignum();
+                    }
 
                     cryptofuzz::operation::BLS_Pairing op(parameters);
                     op.Serialize(dsOut2);
+
+                    generateECCPoint();
                 }
                 break;
             case    CF_OPERATION("BLS_G1_Add"):

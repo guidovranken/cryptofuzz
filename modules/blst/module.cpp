@@ -122,6 +122,62 @@ namespace blst_detail {
             util::BinToDec(y2.data(), 48)
         };
     }
+
+    component::FP12 To_FP12(const blst_fp12& fp12) {
+        std::array<uint8_t, 48> bn1, bn2, bn3, bn4, bn5, bn6, bn7, bn8, bn9, bn10, bn11, bn12;
+
+        blst_uint64_from_fp((uint64_t*)bn1.data(), &fp12.fp6[0].fp2[0].fp[0]);
+        Reverse<>(bn1);
+
+        blst_uint64_from_fp((uint64_t*)bn2.data(), &fp12.fp6[0].fp2[0].fp[1]);
+        Reverse<>(bn2);
+
+        blst_uint64_from_fp((uint64_t*)bn3.data(), &fp12.fp6[0].fp2[1].fp[0]);
+        Reverse<>(bn3);
+
+        blst_uint64_from_fp((uint64_t*)bn4.data(), &fp12.fp6[0].fp2[1].fp[1]);
+        Reverse<>(bn4);
+
+        blst_uint64_from_fp((uint64_t*)bn5.data(), &fp12.fp6[0].fp2[2].fp[0]);
+        Reverse<>(bn5);
+
+        blst_uint64_from_fp((uint64_t*)bn6.data(), &fp12.fp6[0].fp2[2].fp[1]);
+        Reverse<>(bn6);
+
+        blst_uint64_from_fp((uint64_t*)bn7.data(), &fp12.fp6[1].fp2[0].fp[0]);
+        Reverse<>(bn7);
+
+        blst_uint64_from_fp((uint64_t*)bn8.data(), &fp12.fp6[1].fp2[0].fp[1]);
+        Reverse<>(bn8);
+
+        blst_uint64_from_fp((uint64_t*)bn9.data(), &fp12.fp6[1].fp2[1].fp[0]);
+        Reverse<>(bn9);
+
+        blst_uint64_from_fp((uint64_t*)bn10.data(), &fp12.fp6[1].fp2[1].fp[1]);
+        Reverse<>(bn10);
+
+        blst_uint64_from_fp((uint64_t*)bn11.data(), &fp12.fp6[1].fp2[2].fp[0]);
+        Reverse<>(bn11);
+
+        blst_uint64_from_fp((uint64_t*)bn12.data(), &fp12.fp6[1].fp2[2].fp[1]);
+        Reverse<>(bn12);
+
+        return {
+            util::BinToDec(bn1.data(), 48),
+            util::BinToDec(bn2.data(), 48),
+            util::BinToDec(bn3.data(), 48),
+            util::BinToDec(bn4.data(), 48),
+            util::BinToDec(bn5.data(), 48),
+            util::BinToDec(bn6.data(), 48),
+            util::BinToDec(bn7.data(), 48),
+            util::BinToDec(bn8.data(), 48),
+            util::BinToDec(bn9.data(), 48),
+            util::BinToDec(bn10.data(), 48),
+            util::BinToDec(bn11.data(), 48),
+            util::BinToDec(bn12.data(), 48),
+        };
+    }
+
     bool To_blst_scalar(const component::Bignum& bn, blst_scalar& out) {
         const auto ret = ToArray<32>(bn);
 
@@ -576,42 +632,29 @@ end:
     return ret;
 }
 
-std::optional<bool> blst::OpBLS_Pairing(operation::BLS_Pairing& op) {
+std::optional<component::FP12> blst::OpBLS_Pairing(operation::BLS_Pairing& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
-    std::optional<bool> ret = std::nullopt;
+    std::optional<component::FP12> ret = std::nullopt;
 
-    blst_pairing* ctx = (blst_pairing*)util::malloc(blst_pairing_sizeof());
+    blst_p1_affine g1_affine;
+    blst_p2_affine g2_affine;
+    blst_fp12 out;
 
-    blst_p1_affine pub;
-    blst_p2_affine sig;
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g1.first, g1_affine.x));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g1.second, g1_affine.y));
 
-    CF_NORET(blst_pairing_init(ctx, true, op.dest.GetPtr(&ds), op.dest.GetSize()));
-    ///* noret */ blst_pairing_init(ctx, false, op.dest.GetPtr(), op.dest.GetSize());
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g2.first.first, g2_affine.x.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g2.first.second, g2_affine.y.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g2.second.first, g2_affine.x.fp[1]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g2.second.second, g2_affine.y.fp[1]));
 
-    for (const auto& c : op.components.c) {
-        CF_CHECK_TRUE(blst_detail::To_blst_fp(c.pub.first, pub.x));
-        CF_CHECK_TRUE(blst_detail::To_blst_fp(c.pub.second, pub.y));
+    CF_NORET(blst_miller_loop(&out, &g2_affine, &g1_affine));
+    CF_NORET(blst_final_exp(&out, &out));
 
-        CF_CHECK_TRUE(blst_detail::To_blst_fp(c.sig.first.first, sig.x.fp[0]));
-        CF_CHECK_TRUE(blst_detail::To_blst_fp(c.sig.first.second, sig.y.fp[0]));
-        CF_CHECK_TRUE(blst_detail::To_blst_fp(c.sig.second.first, sig.x.fp[1]));
-        CF_CHECK_TRUE(blst_detail::To_blst_fp(c.sig.second.second, sig.y.fp[1]));
-
-        CF_CHECK_EQ(blst_pairing_aggregate_pk_in_g1(ctx,
-                    &pub,
-                    &sig,
-                    c.msg.GetPtr(&ds), c.msg.GetSize(),
-                    c.aug.GetPtr(&ds), c.aug.GetSize()), BLST_SUCCESS);
-    }
-
-    CF_NORET(blst_pairing_commit(ctx));
-
-    ret = blst_pairing_finalverify(ctx, nullptr);
+    ret = blst_detail::To_FP12(out);
 
 end:
-    util::free(ctx);
-
-    return false;
+    return ret;
 }
 
 namespace blst_detail {

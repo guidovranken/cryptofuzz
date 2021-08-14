@@ -84,6 +84,24 @@ std::vector<std::string> split(const std::string& s, std::optional<size_t> expec
         return { parts[1], parts[3], parts[2], parts[4] };
     }
 
+    component::FP12 ToComponentFP12(::mcl::bls12::Fp12& fp12) {
+        const auto parts = mcl_detail::split(fp12.getStr(10), 12);
+        return {
+            parts[0],
+            parts[1],
+            parts[2],
+            parts[3],
+            parts[4],
+            parts[5],
+            parts[6],
+            parts[7],
+            parts[8],
+            parts[9],
+            parts[10],
+            parts[11],
+        };
+    }
+
     ::mcl::bls12::G1 Generator(void) {
         return ::mcl::bls12::G1(
                 ::mcl::bls12::Fp("3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507", 10),
@@ -275,68 +293,31 @@ std::optional<bool> mcl::OpBLS_Verify(operation::BLS_Verify& op) {
     return ret;
 }
 
-std::optional<bool> mcl::OpBLS_Pairing(operation::BLS_Pairing& op) {
-#if 0
-    std::optional<bool> ret = std::nullopt;
+std::optional<component::FP12> mcl::OpBLS_Pairing(operation::BLS_Pairing& op) {
+    std::optional<component::FP12> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     try {
-        G1 P;
-        G2 Q;
-        if ( op.hashInput != std::nullopt ) {
-            {
-                auto blsHashToG1Modifier = ds.GetData(0);
-                operation::BLS_HashToG1 opBLSHashToG1(
-                        op.curveType,
-                        *op.hashInput,
-                        component::Modifier(blsHashToG1Modifier.data(), blsHashToG1Modifier.size()));
+        using namespace ::mcl::bls12;
 
-                auto p = OpBLS_HashToG1(opBLSHashToG1);
-                if ( p == std::nullopt ) {
-                    return std::nullopt;
-                }
+        const auto g1 = mcl_detail::Convert(op.g1);
+        //CF_CHECK_TRUE(g1.isValid());
 
-                P = G1(
-                        Fp(p->first.ToString(ds), 10),
-                        Fp(p->second.ToString(ds), 10));
-            }
-
-            {
-                auto blsHashToG2Modifier = ds.GetData(0);
-                operation::BLS_HashToG2 opBLSHashToG2(
-                        op.curveType,
-                        *op.hashInput,
-                        component::Modifier(blsHashToG2Modifier.data(), blsHashToG2Modifier.size()));
-
-                auto q = OpBLS_HashToG2(opBLSHashToG2);
-                if ( q == std::nullopt ) {
-                    return std::nullopt;
-                }
-
-                Q = G2(
-                        Fp2(q->first.first.ToString(ds), q->first.second.ToString(ds), 10),
-                        Fp2(q->second.first.ToString(ds), q->second.second.ToString(ds), 10));
-            }
-
-        } else {
-            P = G1(
-                    Fp(op.q.first.ToString(ds), 10),
-                    Fp(op.q.second.ToString(ds), 10));
-            Q = G2(
-                    Fp2(op.p.first.first.ToString(ds), op.p.first.second.ToString(ds), 10),
-                    Fp2(op.p.second.first.ToString(ds), op.p.second.second.ToString(ds), 10));
-        }
+        const auto g2 = mcl_detail::Convert(op.g2);
+        //CF_CHECK_TRUE(g2.isValid());
 
         Fp12 f;
-        pairing(f, P, Q);
-        const auto parts = mcl_detail::split(f.getStr(10), 12);
-    }
-    catch ( cybozu::Exception ) { }
-    catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
+        millerLoop(f, g1, g2);
+        finalExp(f, f);
+
+        ret = mcl_detail::ToComponentFP12(f);
+
+    } catch ( cybozu::Exception ) {
+    }
+
+end:
     return ret;
-#endif
-    return std::nullopt;
 }
 
 std::optional<bool> mcl::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {

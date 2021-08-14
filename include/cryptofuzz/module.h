@@ -191,7 +191,7 @@ class Module {
             (void)op;
             return std::nullopt;
         }
-        virtual std::optional<bool> OpBLS_Pairing(operation::BLS_Pairing& op) {
+        virtual std::optional<component::FP12> OpBLS_Pairing(operation::BLS_Pairing& op) {
             (void)op;
             return std::nullopt;
         }

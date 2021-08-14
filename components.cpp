@@ -546,6 +546,23 @@ void G2::Serialize(Datasource& ds) const {
     second.Serialize(ds);
 }
 
+nlohmann::json FP12::ToJSON(void) const {
+    return std::vector<nlohmann::json>{
+        bn1.ToJSON(),
+        bn2.ToJSON(),
+        bn3.ToJSON(),
+        bn4.ToJSON(),
+        bn5.ToJSON(),
+        bn6.ToJSON(),
+        bn7.ToJSON(),
+        bn8.ToJSON(),
+        bn9.ToJSON(),
+        bn10.ToJSON(),
+        bn11.ToJSON(),
+        bn12.ToJSON(),
+    };
+}
+
 /* BLS_Signature */
 BLS_Signature::BLS_Signature(Datasource& ds) :
     signature(ds),

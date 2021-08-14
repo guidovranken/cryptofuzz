@@ -353,6 +353,25 @@ std::string ToString(const component::G2& val) {
     return ret;
 }
 
+std::string ToString(const component::FP12& val) {
+    std::string ret;
+
+    ret += "bn1: " + val.bn1.ToString() + "\n";
+    ret += "bn2: " + val.bn2.ToString() + "\n";
+    ret += "bn3: " + val.bn3.ToString() + "\n";
+    ret += "bn4: " + val.bn4.ToString() + "\n";
+    ret += "bn5: " + val.bn5.ToString() + "\n";
+    ret += "bn6: " + val.bn6.ToString() + "\n";
+    ret += "bn7: " + val.bn7.ToString() + "\n";
+    ret += "bn8: " + val.bn8.ToString() + "\n";
+    ret += "bn9: " + val.bn9.ToString() + "\n";
+    ret += "bn10: " + val.bn10.ToString() + "\n";
+    ret += "bn11: " + val.bn11.ToString() + "\n";
+    ret += "bn12: " + val.bn12.ToString() + "\n";
+
+    return ret;
+}
+
 nlohmann::json ToJSON(const Buffer& buffer) {
     return buffer.ToJSON();
 }
@@ -398,6 +417,10 @@ nlohmann::json ToJSON(const component::BLS_Signature& val) {
 }
 
 nlohmann::json ToJSON(const component::BLS_KeyPair& val) {
+    return val.ToJSON();
+}
+
+nlohmann::json ToJSON(const component::FP12& val) {
     return val.ToJSON();
 }
 

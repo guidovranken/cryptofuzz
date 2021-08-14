@@ -508,7 +508,7 @@ void test(const operation::BLS_Aggregate_G2& op, const std::optional<component::
     (void)result;
 }
 
-void test(const operation::BLS_Pairing& op, const std::optional<bool>& result) {
+void test(const operation::BLS_Pairing& op, const std::optional<component::FP12>& result) {
     (void)op;
     (void)result;
 }

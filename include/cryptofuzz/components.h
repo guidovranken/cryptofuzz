@@ -146,6 +146,81 @@ class G2 {
         void Serialize(Datasource& ds) const;
 };
 
+class FP12 {
+    public:
+        Bignum bn1;
+        Bignum bn2;
+        Bignum bn3;
+        Bignum bn4;
+        Bignum bn5;
+        Bignum bn6;
+        Bignum bn7;
+        Bignum bn8;
+        Bignum bn9;
+        Bignum bn10;
+        Bignum bn11;
+        Bignum bn12;
+
+        FP12(Datasource& ds) :
+            bn1(ds),
+            bn2(ds),
+            bn3(ds),
+            bn4(ds),
+            bn5(ds),
+            bn6(ds),
+            bn7(ds),
+            bn8(ds),
+            bn9(ds),
+            bn10(ds),
+            bn11(ds),
+            bn12(ds)
+        { }
+
+        FP12(
+        std::string bn1,
+        std::string bn2,
+        std::string bn3,
+        std::string bn4,
+        std::string bn5,
+        std::string bn6,
+        std::string bn7,
+        std::string bn8,
+        std::string bn9,
+        std::string bn10,
+        std::string bn11,
+        std::string bn12) :
+            bn1(bn1),
+            bn2(bn2),
+            bn3(bn3),
+            bn4(bn4),
+            bn5(bn5),
+            bn6(bn6),
+            bn7(bn7),
+            bn8(bn8),
+            bn9(bn9),
+            bn10(bn10),
+            bn11(bn11),
+            bn12(bn12)
+        { }
+
+        inline bool operator==(const FP12& rhs) const {
+            return
+                (bn1 == rhs.bn1) &&
+                (bn2 == rhs.bn2) &&
+                (bn3 == rhs.bn3) &&
+                (bn4 == rhs.bn4) &&
+                (bn5 == rhs.bn5) &&
+                (bn6 == rhs.bn6) &&
+                (bn7 == rhs.bn7) &&
+                (bn8 == rhs.bn8) &&
+                (bn9 == rhs.bn9) &&
+                (bn10 == rhs.bn10) &&
+                (bn11 == rhs.bn11) &&
+                (bn12 == rhs.bn12);
+        }
+        nlohmann::json ToJSON(void) const;
+};
+
 class BLS_Signature {
     public:
         G2 signature;

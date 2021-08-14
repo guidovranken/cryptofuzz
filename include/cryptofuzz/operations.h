@@ -2011,20 +2011,20 @@ class BLS_Aggregate_G2 : public Operation {
 class BLS_Pairing : public Operation {
     public:
         const component::CurveType curveType;
-        const component::Cleartext dest;
-        component::BLS_PairingComponents components;
+        const component::G1 g1;
+        const component::G2 g2;
 
         BLS_Pairing(Datasource& ds, component::Modifier modifier) :
             Operation(std::move(modifier)),
             curveType(ds),
-            dest(ds),
-            components(ds)
+            g1(ds),
+            g2(ds)
         { }
         BLS_Pairing(nlohmann::json json) :
             Operation(json["modifier"]),
             curveType(json["curveType"]),
-            dest(json["dest"]),
-            components(json["components"])
+            g1(json["g1_x"], json["g1_y"]),
+            g2(json["g2_v"], json["g2_w"], json["g2_x"], json["g2_y"])
         { }
 
         static size_t MaxOperations(void) { return 5; }
@@ -2034,14 +2034,14 @@ class BLS_Pairing : public Operation {
         inline bool operator==(const BLS_Pairing& rhs) const {
             return
                 (curveType == rhs.curveType) &&
-                (dest == rhs.dest) &&
-                (components == rhs.components) &&
+                (g1 == rhs.g1) &&
+                (g2 == rhs.g2) &&
                 (modifier == rhs.modifier);
         }
         void Serialize(Datasource& ds) const {
             curveType.Serialize(ds);
-            dest.Serialize(ds);
-            components.Serialize(ds);
+            g1.Serialize(ds);
+            g2.Serialize(ds);
         }
 };
 

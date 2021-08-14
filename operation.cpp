@@ -1137,10 +1137,12 @@ std::string BLS_Pairing::ToString(void) const {
 
     ss << "operation name: BLS_Pairing" << std::endl;
     ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
-    ss << "dest: " << util::HexDump(dest.Get()) << std::endl;
-    for (const auto& c : components.c) {
-        ss << "msg: " << util::HexDump(c.msg.Get()) << std::endl;
-    }
+    ss << "G1 X: " << g1.first.ToString() << std::endl;
+    ss << "G1 Y: " << g1.second.ToString() << std::endl;
+    ss << "G2 V: " << g2.first.first.ToString() << std::endl;
+    ss << "G2 W: " << g2.first.second.ToString() << std::endl;
+    ss << "G2 X: " << g2.second.first.ToString() << std::endl;
+    ss << "G2 Y: " << g2.second.second.ToString() << std::endl;
 
     return ss.str();
 }
