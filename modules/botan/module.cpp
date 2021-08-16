@@ -100,6 +100,8 @@ namespace Botan_detail {
             ret = "SHAKE-128(256)";
         } else if ( altShake == true && digestType == CF_DIGEST("SHAKE256") ) {
             ret = "SHAKE-256(512)";
+        } else if ( altShake == true && digestType == CF_DIGEST("SHAKE256_114") ) {
+            ret = "SHAKE-256(912)"; /* 114 bytes * 8 = 912 bits */
         } else {
             ret = LUT.at(digestType);
         }

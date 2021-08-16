@@ -113,7 +113,7 @@ end:
                 return get_hash_by_type(SHA3_512);
             case    CF_DIGEST("SM3"):
                 return get_hash_by_type(SM3);
-            case    CF_DIGEST("SHAKE256"):
+            case    CF_DIGEST("SHAKE256_114"):
                 return get_hash_by_type(SHAKE256);
             case    CF_DIGEST("STREEBOG-256"):
                 return get_hash_by_type(STREEBOG256);
@@ -148,7 +148,7 @@ end:
                 return SHA3_512;
             case    CF_DIGEST("SM3"):
                 return SM3;
-            case    CF_DIGEST("SHAKE256"):
+            case    CF_DIGEST("SHAKE256_114"):
                 return SHAKE256;
             case    CF_DIGEST("STREEBOG-256"):
                 return STREEBOG256;
@@ -239,12 +239,7 @@ std::optional<component::Digest> libecc::OpDigest(operation::Digest& op) {
         out = util::malloc(hash->digest_size);
         CF_NORET(hash->hfunc_finalize(&ctx, out));
 
-        if ( op.digestType.Is(CF_DIGEST("SHAKE256")) ) {
-            CF_ASSERT(hash->digest_size >= 32, "SHAKE256 output < 32 bytes");
-            ret = component::Digest(out, 32);
-        } else {
-            ret = component::Digest(out, hash->digest_size);
-        }
+        ret = component::Digest(out, hash->digest_size);
     }
 
 end:
