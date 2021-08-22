@@ -21,6 +21,10 @@ uint32_t PRNG(void)
     return nSeed  % 32767;
 }
 
+static uint64_t PRNG64(void) {
+    return (((uint64_t)PRNG()) << 32) + PRNG();
+}
+
 static std::vector<size_t> SplitLength(size_t left, const size_t numParts) {
     std::vector<size_t> lengths;
     for (size_t i = 0; i < numParts; i++) {
@@ -267,15 +271,8 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
         switch ( operation ) {
             case    CF_OPERATION("Digest"):
                 {
-                    size_t numParts = 0;
-
-                    numParts++; /* modifier */
-                    numParts++; /* cleartext */
-
-                    const auto lengths = SplitLength(maxSize - 64, numParts);
-
-                    parameters["modifier"] = getBuffer(lengths[0]);
-                    parameters["cleartext"] = getBuffer(lengths[1]);
+                    parameters["modifier"] = "";
+                    parameters["cleartext"] = getBuffer(PRNG64() % maxSize);
                     parameters["digestType"] = getRandomDigest();
 
                     cryptofuzz::operation::Digest op(parameters);
@@ -1781,6 +1778,10 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
         const auto insertSize = dsOut.GetOut().size();
         if ( insertSize <= maxSize ) {
             memcpy(data, dsOut.GetOut().data(), insertSize);
+
+            if ( getBool() == true ) {
+                return insertSize;
+            }
 
             /* Fall through to LLVMFuzzerMutate */
         }
