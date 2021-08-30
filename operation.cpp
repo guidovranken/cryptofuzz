@@ -1009,6 +1009,30 @@ nlohmann::json BignumCalc::ToJSON(void) const {
     return j;
 }
 
+std::string BignumCalc_Fp2::Name(void) const { return "BignumCalc_Fp2"; }
+std::string BignumCalc_Fp2::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BignumCalc_Fp2" << std::endl;
+    ss << "calc operation: " << repository::CalcOpToString(calcOp.Get()) << std::endl;
+    ss << "Fp2 1 x: " << bn0.first.ToString() << std::endl;
+    ss << "Fp2 1 x: " << bn0.second.ToString() << std::endl;
+    ss << "Fp2 2 x: " << bn1.first.ToString() << std::endl;
+    ss << "Fp2 2 x: " << bn1.second.ToString() << std::endl;
+    ss << "Fp2 3 x: " << bn2.first.ToString() << std::endl;
+    ss << "Fp2 3 x: " << bn2.second.ToString() << std::endl;
+    ss << "Fp2 4 x: " << bn3.first.ToString() << std::endl;
+    ss << "Fp2 4 x: " << bn3.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BignumCalc_Fp2::ToJSON(void) const {
+    nlohmann::json j;
+    /* TODO */
+    return j;
+}
+
 std::string BLS_PrivateToPublic::Name(void) const { return "BLS_PrivateToPublic"; }
 std::string BLS_PrivateToPublic::ToString(void) const {
     std::stringstream ss;

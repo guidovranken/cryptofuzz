@@ -146,6 +146,8 @@ class G2 {
         void Serialize(Datasource& ds) const;
 };
 
+using Fp2 = BignumPair;
+
 class FP12 {
     public:
         Bignum bn1;

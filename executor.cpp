@@ -861,6 +861,44 @@ std::optional<component::Bignum> ExecutorBignumCalc::callModule(std::shared_ptr<
     return module->OpBignumCalc(op);
 }
 
+/* Specialization for operation::BignumCalc_Fp2 */
+template<> void ExecutorBase<component::Fp2, operation::BignumCalc_Fp2>::postprocess(std::shared_ptr<Module> module, operation::BignumCalc_Fp2& op, const ExecutorBase<component::Fp2, operation::BignumCalc_Fp2>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+
+    if ( result.second != std::nullopt  ) {
+        const auto bignum_first = result.second->first.ToTrimmedString();
+        const auto bignum_second = result.second->second.ToTrimmedString();
+
+        if ( bignum_first.size() <= config::kMaxBignumSize ) {
+            Pool_Bignum.Set(bignum_first);
+        }
+        if ( bignum_second.size() <= config::kMaxBignumSize ) {
+            Pool_Bignum.Set(bignum_second);
+        }
+    }
+}
+
+std::optional<component::Fp2> ExecutorBignumCalc_Fp2::callModule(std::shared_ptr<Module> module, operation::BignumCalc_Fp2& op) const {
+    RETURN_IF_DISABLED(options.calcOps, op.calcOp.Get());
+
+    /* Prevent timeouts */
+    if ( op.bn0.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn0.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn1.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn1.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn2.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn2.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn3.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn3.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+
+    if ( op.modulo != std::nullopt && !module->SupportsModularBignumCalc() ) {
+        return std::nullopt;
+    }
+
+    return module->OpBignumCalc_Fp2(op);
+}
+
 /* Specialization for operation::BLS_PrivateToPublic */
 template<> void ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>::postprocess(std::shared_ptr<Module> module, operation::BLS_PrivateToPublic& op, const ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>::ResultPair& result) const {
     (void)module;
@@ -1476,6 +1514,13 @@ ExecutorBignumCalc_Mod_SECP256K1::ExecutorBignumCalc_Mod_SECP256K1(const uint64_
     CF_NORET(SetModulo("115792089237316195423570985008687907852837564279074904382605163141518161494337"));
 }
 
+ExecutorBignumCalc_Fp2::ExecutorBignumCalc_Fp2(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBase<component::Fp2, operation::BignumCalc_Fp2>::ExecutorBase(operationID, modules, options)
+{ }
+void ExecutorBignumCalc_Fp2::SetModulo(const std::string& modulo) {
+    this->modulo = component::Bignum(modulo);
+}
+
 template <class ResultType, class OperationType>
 ExecutorBase<ResultType, OperationType>::ExecutorBase(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
     operationID(operationID),
@@ -1942,6 +1987,7 @@ template class ExecutorBase<component::ECC_Point, operation::ECC_Point_Mul>;
 template class ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>;
 template class ExecutorBase<component::Bignum, operation::DH_Derive>;
 template class ExecutorBase<component::Bignum, operation::BignumCalc>;
+template class ExecutorBase<component::Fp2, operation::BignumCalc_Fp2>;
 template class ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>;
 template class ExecutorBase<component::G2, operation::BLS_PrivateToPublic_G2>;
 template class ExecutorBase<component::BLS_Signature, operation::BLS_Sign>;

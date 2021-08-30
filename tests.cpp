@@ -825,5 +825,10 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
     }
 }
 
+void test(const operation::BignumCalc_Fp2& op, const std::optional<component::Fp2>& result) {
+    (void)op;
+    (void)result;
+}
+
 } /* namespace tests */
 } /* namespace cryptofuzz */

@@ -130,6 +130,16 @@ class ExecutorBignumCalc_Mod_SECP256K1 : public ExecutorBignumCalc {
         operation::BignumCalc getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const override;
 };
 
+class ExecutorBignumCalc_Fp2 : public ExecutorBase<component::Fp2, operation::BignumCalc_Fp2> {
+    private:
+        std::optional<component::Fp2> callModule(std::shared_ptr<Module> module, operation::BignumCalc_Fp2& op) const override;
+    protected:
+        std::optional<component::Bignum> modulo = std::nullopt;
+    public:
+        ExecutorBignumCalc_Fp2(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options);
+        void SetModulo(const std::string& modulo);
+};
+
 /* Declare aliases */
 using ExecutorDigest = ExecutorBase<component::Digest, operation::Digest>;
 using ExecutorHMAC = ExecutorBase<component::MAC, operation::HMAC>;

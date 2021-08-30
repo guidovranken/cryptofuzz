@@ -27,6 +27,7 @@ class mcl : public Module {
         std::optional<component::G1> OpBLS_HashToG1(operation::BLS_HashToG1& op);
         std::optional<component::G2> OpBLS_HashToG2(operation::BLS_HashToG2& op);
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op);
+        std::optional<component::Fp2> OpBignumCalc_Fp2(operation::BignumCalc_Fp2& op);
         std::optional<component::G1> OpBLS_G1_Add(operation::BLS_G1_Add& op);
         std::optional<component::G1> OpBLS_G1_Mul(operation::BLS_G1_Mul& op);
         std::optional<bool> OpBLS_G1_IsEq(operation::BLS_G1_IsEq& op);

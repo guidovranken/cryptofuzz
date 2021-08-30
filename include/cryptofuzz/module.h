@@ -164,6 +164,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::Fp2> OpBignumCalc_Fp2(operation::BignumCalc_Fp2& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual bool SupportsModularBignumCalc(void) const {
             return false;
         }

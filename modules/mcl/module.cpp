@@ -84,6 +84,11 @@ std::vector<std::string> split(const std::string& s, std::optional<size_t> expec
         return { parts[1], parts[3], parts[2], parts[4] };
     }
 
+    component::Fp2 ToComponentFp2(::mcl::bls12::Fp2 fp2) {
+        const auto parts = mcl_detail::split(fp2.getStr(10), 2);
+        return { parts[0], parts[1] };
+    }
+
     component::FP12 ToComponentFP12(::mcl::bls12::Fp12& fp12) {
         const auto parts = mcl_detail::split(fp12.getStr(10), 12);
         return {
@@ -1030,6 +1035,84 @@ std::optional<component::Bignum> mcl::OpBignumCalc(operation::BignumCalc& op) {
 
 end:
         return std::nullopt;
+}
+
+std::optional<component::Fp2> mcl::OpBignumCalc_Fp2(operation::BignumCalc_Fp2& op) {
+    ::mcl::bn::Fp2 a, b, result;
+    ::mcl::bn::Fp* ap, *bp, *resultp;
+
+    try {
+        switch ( op.calcOp.Get() ) {
+            case    CF_CALCOP("Add(A,B)"):
+                a = ::mcl::bn::Fp2(
+                        op.bn0.first.ToTrimmedString(),
+                        op.bn0.second.ToTrimmedString());
+                b = ::mcl::bn::Fp2(
+                        op.bn1.first.ToTrimmedString(),
+                        op.bn1.second.ToTrimmedString());
+
+                return mcl_detail::ToComponentFp2(a+b);
+            case    CF_CALCOP("Sub(A,B)"):
+                a = ::mcl::bn::Fp2(
+                        op.bn0.first.ToTrimmedString(),
+                        op.bn0.second.ToTrimmedString());
+                b = ::mcl::bn::Fp2(
+                        op.bn1.first.ToTrimmedString(),
+                        op.bn1.second.ToTrimmedString());
+
+                return mcl_detail::ToComponentFp2(a-b);
+            case    CF_CALCOP("Mul(A,B)"):
+                a = ::mcl::bn::Fp2(
+                        op.bn0.first.ToTrimmedString(),
+                        op.bn0.second.ToTrimmedString());
+                b = ::mcl::bn::Fp2(
+                        op.bn1.first.ToTrimmedString(),
+                        op.bn1.second.ToTrimmedString());
+
+                return mcl_detail::ToComponentFp2(a*b);
+            case    CF_CALCOP("InvMod(A,B)"):
+                a = ::mcl::bn::Fp2(
+                        op.bn0.first.ToTrimmedString(),
+                        op.bn0.second.ToTrimmedString());
+
+                if ( !a.isZero() ) {
+                    ::mcl::bn::Fp2::inv(result, a);
+                    return mcl_detail::ToComponentFp2(result);
+                }
+                break;
+            case    CF_CALCOP("Sqrt(A)"):
+                a = ::mcl::bn::Fp2(
+                        op.bn0.first.ToTrimmedString(),
+                        op.bn0.second.ToTrimmedString());
+                if ( ::mcl::bn::Fp2::squareRoot(result, a) == false ) {
+                    return component::Fp2{"0", "0"};
+                } else {
+                    ::mcl::bn::Fp2::sqr(result, result);
+                    return mcl_detail::ToComponentFp2(result);
+                }
+            case    CF_CALCOP("Neg(A)"):
+                a = ::mcl::bn::Fp2(
+                        op.bn0.first.ToTrimmedString(),
+                        op.bn0.second.ToTrimmedString());
+                ::mcl::bn::Fp2::neg(result, a);
+                return mcl_detail::ToComponentFp2(result);
+            case    CF_CALCOP("Sqr(A)"):
+                a = ::mcl::bn::Fp2(
+                        op.bn0.first.ToTrimmedString(),
+                        op.bn0.second.ToTrimmedString());
+                ::mcl::bn::Fp2::sqr(result, a);
+                return mcl_detail::ToComponentFp2(result);
+            case    CF_CALCOP("LShift1(A)"):
+                a = ::mcl::bn::Fp2(
+                        op.bn0.first.ToTrimmedString(),
+                        op.bn0.second.ToTrimmedString());
+                ::mcl::bn::Fp2::mul2(result, a);
+                return mcl_detail::ToComponentFp2(result);
+        }
+    } catch ( ... ) {
+    }
+
+    return std::nullopt;
 }
 
 bool mcl::SupportsModularBignumCalc(void) const {

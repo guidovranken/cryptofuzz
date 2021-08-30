@@ -56,6 +56,10 @@ namespace blst_detail {
         CF_NORET(blst_fp_from_uint64(&out, (const uint64_t*)ret->data()));
         return true;
     }
+    bool To_blst_fp2(const component::Fp2& bn, blst_fp2& out) {
+        return  To_blst_fp(bn.first, out.fp[0]) &&
+                To_blst_fp(bn.second, out.fp[1]);
+    }
     component::Bignum To_component_bignum(const blst_fr& in) {
         std::array<uint8_t, 32> v;
 
@@ -71,6 +75,20 @@ namespace blst_detail {
 
         Reverse<>(v);
         return util::BinToDec(v.data(), 48);
+    }
+    component::Fp2 To_component_Fp2(const blst_fp2& in) {
+        std::array<uint8_t, 48> v1, v2;
+
+        blst_uint64_from_fp((uint64_t*)v1.data(), &in.fp[0]);
+        Reverse<>(v1);
+
+        blst_uint64_from_fp((uint64_t*)v2.data(), &in.fp[1]);
+        Reverse<>(v2);
+
+        return {
+            util::BinToDec(v1.data(), 48),
+            util::BinToDec(v2.data(), 48),
+        };
     }
     boost::multiprecision::cpp_int To_cpp_int(const component::Bignum& in) {
         return boost::multiprecision::cpp_int(in.ToTrimmedString());
@@ -957,6 +975,109 @@ std::optional<component::Bignum> blst::OpBignumCalc(operation::BignumCalc& op) {
     } else {
         return std::nullopt;
     }
+}
+
+namespace blst_detail {
+    #define PREPARE_RESULT() {resultIdx = GetMod3(ds);}
+    #define RESULT_PTR() (resultIdx == 0 ? &result : (resultIdx == 1 ? &A : &B))
+    #define RESULT() (resultIdx == 0 ? result : (resultIdx == 1 ? A : B))
+    #define PARAM_B() (UseParamTwice(ds, &A, &B) ? &A : &B)
+
+    std::optional<component::Fp2> OpBignumCalc_Fp2_prime(operation::BignumCalc_Fp2& op) {
+        std::optional<component::Fp2> ret = std::nullopt;
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+        blst_fp2 result, A, B;
+        uint8_t resultIdx;
+
+        switch ( op.calcOp.Get() ) {
+            case    CF_CALCOP("Add(A,B)"):
+                CF_CHECK_TRUE(blst_detail::To_blst_fp2(op.bn0, A));
+                CF_CHECK_TRUE(blst_detail::To_blst_fp2(op.bn1, B));
+                PREPARE_RESULT();
+                blst_fp2_add(RESULT_PTR(), &A, PARAM_B());
+                ret = blst_detail::To_component_Fp2(RESULT());
+                break;
+            case    CF_CALCOP("Sub(A,B)"):
+                CF_CHECK_TRUE(blst_detail::To_blst_fp2(op.bn0, A));
+                CF_CHECK_TRUE(blst_detail::To_blst_fp2(op.bn1, B));
+                PREPARE_RESULT();
+                blst_fp2_sub(RESULT_PTR(), &A, PARAM_B());
+                ret = blst_detail::To_component_Fp2(RESULT());
+                break;
+            case    CF_CALCOP("Mul(A,B)"):
+                CF_CHECK_TRUE(blst_detail::To_blst_fp2(op.bn0, A));
+                CF_CHECK_TRUE(blst_detail::To_blst_fp2(op.bn1, B));
+                PREPARE_RESULT();
+                CF_NORET(blst_fp2_mul(RESULT_PTR(), &A, PARAM_B()));
+
+                ret = blst_detail::To_component_Fp2(RESULT());
+                break;
+            case    CF_CALCOP("LShift1(A)"):
+                CF_CHECK_TRUE(blst_detail::To_blst_fp2(op.bn0, A));
+                PREPARE_RESULT();
+                blst_fp2_lshift(RESULT_PTR(), &A, 1);
+                ret = blst_detail::To_component_Fp2(RESULT());
+                break;
+            case    CF_CALCOP("Sqr(A)"):
+                CF_CHECK_TRUE(blst_detail::To_blst_fp2(op.bn0, A));
+                PREPARE_RESULT();
+                blst_fp2_sqr(RESULT_PTR(), &A);
+                ret = blst_detail::To_component_Fp2(RESULT());
+                break;
+            case    CF_CALCOP("InvMod(A,B)"):
+                CF_CHECK_TRUE(blst_detail::To_blst_fp2(op.bn0, A));
+
+                try {
+                    if ( ds.Get<bool>() ) {
+                        PREPARE_RESULT();
+                        CF_NORET(blst_fp2_eucl_inverse(RESULT_PTR(), &A));
+                    } else {
+                        PREPARE_RESULT();
+                        CF_NORET(blst_fp2_inverse(RESULT_PTR(), &A));
+                    }
+                } catch ( fuzzing::datasource::Base::OutOfData ) {
+                    goto end;
+                }
+
+                ret = blst_detail::To_component_Fp2(RESULT());
+                break;
+            case    CF_CALCOP("Sqrt(A)"):
+                {
+                    blst_fp result2;
+                    CF_CHECK_TRUE(blst_detail::To_blst_fp2(op.bn0, A));
+
+                    if ( blst_fp2_sqrt(&result, &A) == true ) {
+                        CF_NORET(blst_fp2_sqr(&result, &result));
+                        ret = blst_detail::To_component_Fp2(result);
+                    } else {
+                        ret = { std::string("0"), std::string("0") };
+                    }
+                }
+                break;
+            case    CF_CALCOP("Not(A)"):
+                CF_CHECK_TRUE(blst_detail::To_blst_fp2(op.bn0, A));
+                PREPARE_RESULT();
+                blst_fp2_cneg(RESULT_PTR(), &A, true);
+                ret = blst_detail::To_component_Fp2(RESULT());
+                break;
+            case    CF_CALCOP("Set(A)"):
+                CF_CHECK_TRUE(blst_detail::To_blst_fp2(op.bn0, A));
+                ret = blst_detail::To_component_Fp2(A);
+                break;
+        }
+
+end:
+        return ret;
+    }
+
+    #undef PREPARE_RESULT
+    #undef RESULT_PTR
+    #undef RESULT
+    #undef PARAM_B
+}
+
+std::optional<component::Fp2> blst::OpBignumCalc_Fp2(operation::BignumCalc_Fp2& op) {
+    return blst_detail::OpBignumCalc_Fp2_prime(op);
 }
 
 std::optional<component::G1> blst::OpBLS_Decompress_G1(operation::BLS_Decompress_G1& op) {

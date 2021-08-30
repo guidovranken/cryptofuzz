@@ -23,6 +23,7 @@ class blst : public Module {
         std::optional<component::G2> OpBLS_Aggregate_G2(operation::BLS_Aggregate_G2& op) override;
         std::optional<component::FP12> OpBLS_Pairing(operation::BLS_Pairing& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
+        std::optional<component::Fp2> OpBignumCalc_Fp2(operation::BignumCalc_Fp2& op) override;
         std::optional<component::G1> OpBLS_Decompress_G1(operation::BLS_Decompress_G1& op) override;
         std::optional<component::Bignum> OpBLS_Compress_G1(operation::BLS_Compress_G1& op) override;
         std::optional<component::G2> OpBLS_Decompress_G2(operation::BLS_Decompress_G2& op) override;

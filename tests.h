@@ -42,6 +42,7 @@ void test(const operation::ECC_Point_Mul& op, const std::optional<component::ECC
 void test(const operation::DH_GenerateKeyPair& op, const std::optional<component::DH_KeyPair>& result);
 void test(const operation::DH_Derive& op, const std::optional<component::Bignum>& result);
 void test(const operation::BignumCalc& op, const std::optional<component::Bignum>& result);
+void test(const operation::BignumCalc_Fp2& op, const std::optional<component::Fp2>& result);
 void test(const operation::BLS_PrivateToPublic& op, const std::optional<component::BLS_PublicKey>& result);
 void test(const operation::BLS_PrivateToPublic_G2& op, const std::optional<component::G2>& result);
 void test(const operation::BLS_Sign& op, const std::optional<component::BLS_Signature>& result);

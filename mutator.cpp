@@ -459,15 +459,20 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     op.Serialize(dsOut2);
                 }
                 break;
+            case    CF_OPERATION("BignumCalc_Fp2"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
                     parameters["calcOp"] = getRandomCalcOp();
-                    parameters["bn1"] = getBignum();
-                    parameters["bn2"] = getBignum();
-                    parameters["bn3"] = getBignum();
-                    parameters["bn4"] = "";
+                    parameters["bn1"][0] = getBignum();
+                    parameters["bn1"][1] = getBignum();
+                    parameters["bn2"][0] = getBignum();
+                    parameters["bn2"][1] = getBignum();
+                    parameters["bn3"][0] = "";
+                    parameters["bn3"][1] = "";
+                    parameters["bn4"][0] = "";
+                    parameters["bn4"][1] = "";
 
-                    cryptofuzz::operation::BignumCalc op(parameters);
+                    cryptofuzz::operation::BignumCalc_Fp2 op(parameters);
                     op.Serialize(dsOut2);
                 }
                 break;
