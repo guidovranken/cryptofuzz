@@ -8,7 +8,7 @@
 #if defined(CRYPTOFUZZ_BORINGSSL)
 extern "C" {
     int bn_jacobi(const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx);
-    int bn_div_consttime(BIGNUM *quotient, BIGNUM *remainder, const BIGNUM *numerator, const BIGNUM *divisor, BN_CTX *ctx);
+    int bn_div_consttime(BIGNUM *quotient, BIGNUM *remainder, const BIGNUM *numerator, const BIGNUM *divisor, unsigned divisor_min_bits, BN_CTX *ctx);
     int bn_lcm_consttime(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx);
     uint16_t bn_mod_u16_consttime(const BIGNUM *bn, uint16_t d);
     int bn_abs_sub_consttime(BIGNUM *r, const BIGNUM *a, const BIGNUM *b, BN_CTX *ctx);
@@ -155,7 +155,18 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
             break;
 #if defined(CRYPTOFUZZ_BORINGSSL)
         case    2:
-            CF_CHECK_EQ(bn_div_consttime(nullptr, res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            {
+                bool use_divisor_min_bits = false;
+                try { use_divisor_min_bits = ds. Get<bool>(); } catch ( ... ) { }
+
+                CF_CHECK_EQ(bn_div_consttime(
+                            nullptr,
+                            res.GetDestPtr(),
+                            bn[0].GetPtr(),
+                            bn[1].GetPtr(),
+                            use_divisor_min_bits ? BN_num_bits(bn[1].GetPtrConst()) : 0,
+                            ctx.GetPtr()), 1);
+            }
             break;
         case    3:
             CF_CHECK_EQ(BN_is_pow2(bn[1].GetPtr()), 1);
@@ -484,7 +495,18 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
             break;
 #if defined(CRYPTOFUZZ_BORINGSSL)
         case    1:
-            CF_CHECK_EQ(bn_div_consttime(res.GetDestPtr(), nullptr, bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            {
+                bool use_divisor_min_bits = false;
+                try { use_divisor_min_bits = ds. Get<bool>(); } catch ( ... ) { }
+
+                CF_CHECK_EQ(bn_div_consttime(
+                            res.GetDestPtr(),
+                            nullptr,
+                            bn[0].GetPtr(),
+                            bn[1].GetPtr(),
+                            use_divisor_min_bits ? BN_num_bits(bn[1].GetPtrConst()) : 0,
+                            ctx.GetPtr()), 1);
+            }
             break;
 #endif
         case    2:
