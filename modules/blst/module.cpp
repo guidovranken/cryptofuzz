@@ -274,6 +274,7 @@ std::optional<component::BLS_PublicKey> blst::OpBLS_PrivateToPublic(operation::B
 
     CF_NORET(blst_sk_to_pk_in_g1(&pub, &priv));
     CF_ASSERT(blst_p1_on_curve(&pub) == true, "Generated pubkey not on curve");
+    CF_ASSERT(blst_p1_in_g1(&pub) == true, "Generated pubkey not in group");
 
     CF_NORET(blst_p1_to_affine(&pub_affine, &pub));
 
@@ -307,6 +308,7 @@ std::optional<component::G2> blst::OpBLS_PrivateToPublic_G2(operation::BLS_Priva
 
     CF_NORET(blst_sk_to_pk_in_g2(&pub, &priv));
     CF_ASSERT(blst_p2_on_curve(&pub) == true, "Generated pubkey not on curve");
+    CF_ASSERT(blst_p2_in_g2(&pub) == true, "Generated pubkey not in group");
 
     CF_NORET(blst_p2_to_affine(&pub_affine, &pub));
 
@@ -334,6 +336,7 @@ std::optional<component::G1> blst::OpBLS_HashToG1(operation::BLS_HashToG1& op) {
             op.aug.GetPtr(&ds), op.aug.GetSize()));
 
     CF_ASSERT(blst_p1_on_curve(&g1) == true, "Generated g1 not on curve");
+    CF_ASSERT(blst_p1_in_g1(&g1) == true, "Generated g1 not in group");
 
     CF_NORET(blst_p1_to_affine(&g1_affine, &g1));
 
@@ -363,6 +366,7 @@ std::optional<component::G2> blst::OpBLS_HashToG2(operation::BLS_HashToG2& op) {
             op.aug.GetPtr(&ds), op.aug.GetSize()));
 
     CF_ASSERT(blst_p2_on_curve(&g2) == true, "Generated g2 not on curve");
+    CF_ASSERT(blst_p2_in_g2(&g2) == true, "Generated g2 not in group");
 
     CF_NORET(blst_p2_to_affine(&g2_affine, &g2));
 
@@ -392,6 +396,7 @@ std::optional<component::BLS_Signature> blst::OpBLS_Sign(operation::BLS_Sign& op
 
     CF_NORET(blst_sk_to_pk_in_g1(&pub, &priv));
     CF_ASSERT(blst_p1_on_curve(&pub) == true, "Generated pubkey not on curve");
+    CF_ASSERT(blst_p1_in_g1(&pub) == true, "Generated pubkey not in group");
     CF_NORET(blst_p1_to_affine(&pub_affine, &pub));
 
     if ( op.hashOrPoint == true ) {
@@ -411,9 +416,14 @@ std::optional<component::BLS_Signature> blst::OpBLS_Sign(operation::BLS_Sign& op
 
     if ( op.hashOrPoint == true ) {
         CF_ASSERT(blst_p2_on_curve(&signature) == true, "Generated signature not on curve");
+        CF_ASSERT(blst_p2_in_g2(&signature) == true, "Generated signature not in group");
     } else {
         if ( blst_p2_affine_on_curve(&hash_affine) ) {
             CF_ASSERT(blst_p2_on_curve(&signature) == true, "Generated signature not on curve");
+        }
+
+        if ( blst_p2_affine_in_g2(&hash_affine) ) {
+            CF_ASSERT(blst_p2_in_g2(&signature) == true, "Generated signature not in group");
         }
     }
 
@@ -561,6 +571,7 @@ std::optional<component::BLS_KeyPair> blst::OpBLS_GenerateKeyPair(operation::BLS
             const auto pub = g1.To_Component_G1();
 
             CF_ASSERT(blst_p1_affine_on_curve(&pub_affine) == true, "Generated public key not on curve");
+            CF_ASSERT(blst_p1_affine_in_g1(&pub_affine), "Generated public key not in group");
 
             ret = {priv, pub};
         }
