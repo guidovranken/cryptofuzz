@@ -168,6 +168,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::Fp12> OpBignumCalc_Fp12(operation::BignumCalc_Fp12& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual bool SupportsModularBignumCalc(void) const {
             return false;
         }
@@ -195,7 +199,7 @@ class Module {
             (void)op;
             return std::nullopt;
         }
-        virtual std::optional<component::FP12> OpBLS_Pairing(operation::BLS_Pairing& op) {
+        virtual std::optional<component::Fp12> OpBLS_Pairing(operation::BLS_Pairing& op) {
             (void)op;
             return std::nullopt;
         }

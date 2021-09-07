@@ -140,6 +140,16 @@ class ExecutorBignumCalc_Fp2 : public ExecutorBase<component::Fp2, operation::Bi
         void SetModulo(const std::string& modulo);
 };
 
+class ExecutorBignumCalc_Fp12 : public ExecutorBase<component::Fp12, operation::BignumCalc_Fp12> {
+    private:
+        std::optional<component::Fp12> callModule(std::shared_ptr<Module> module, operation::BignumCalc_Fp12& op) const override;
+    protected:
+        std::optional<component::Bignum> modulo = std::nullopt;
+    public:
+        ExecutorBignumCalc_Fp12(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options);
+        void SetModulo(const std::string& modulo);
+};
+
 /* Declare aliases */
 using ExecutorDigest = ExecutorBase<component::Digest, operation::Digest>;
 using ExecutorHMAC = ExecutorBase<component::MAC, operation::HMAC>;
@@ -182,7 +192,7 @@ using ExecutorBLS_Sign = ExecutorBase<component::BLS_Signature, operation::BLS_S
 using ExecutorBLS_Verify = ExecutorBase<bool, operation::BLS_Verify>;
 using ExecutorBLS_Aggregate_G1 = ExecutorBase<component::G1, operation::BLS_Aggregate_G1>;
 using ExecutorBLS_Aggregate_G2 = ExecutorBase<component::G2, operation::BLS_Aggregate_G2>;
-using ExecutorBLS_Pairing = ExecutorBase<component::FP12, operation::BLS_Pairing>;
+using ExecutorBLS_Pairing = ExecutorBase<component::Fp12, operation::BLS_Pairing>;
 using ExecutorBLS_HashToG1 = ExecutorBase<component::G1, operation::BLS_HashToG1>;
 using ExecutorBLS_HashToG2 = ExecutorBase<component::G2, operation::BLS_HashToG2>;
 using ExecutorBLS_IsG1OnCurve = ExecutorBase<bool, operation::BLS_IsG1OnCurve>;

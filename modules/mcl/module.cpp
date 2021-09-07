@@ -89,7 +89,7 @@ std::vector<std::string> split(const std::string& s, std::optional<size_t> expec
         return { parts[0], parts[1] };
     }
 
-    component::FP12 ToComponentFP12(::mcl::bls12::Fp12& fp12) {
+    component::Fp12 ToComponentFp12(::mcl::bls12::Fp12 fp12) {
         const auto parts = mcl_detail::split(fp12.getStr(10), 12);
         return {
             parts[0],
@@ -298,8 +298,8 @@ std::optional<bool> mcl::OpBLS_Verify(operation::BLS_Verify& op) {
     return ret;
 }
 
-std::optional<component::FP12> mcl::OpBLS_Pairing(operation::BLS_Pairing& op) {
-    std::optional<component::FP12> ret = std::nullopt;
+std::optional<component::Fp12> mcl::OpBLS_Pairing(operation::BLS_Pairing& op) {
+    std::optional<component::Fp12> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     try {
@@ -316,7 +316,7 @@ std::optional<component::FP12> mcl::OpBLS_Pairing(operation::BLS_Pairing& op) {
         millerLoop(f, g1, g2);
         finalExp(f, f);
 
-        ret = mcl_detail::ToComponentFP12(f);
+        ret = mcl_detail::ToComponentFp12(f);
 
     } catch ( cybozu::Exception ) {
     }
@@ -1108,6 +1108,346 @@ std::optional<component::Fp2> mcl::OpBignumCalc_Fp2(operation::BignumCalc_Fp2& o
                         op.bn0.second.ToTrimmedString());
                 ::mcl::bn::Fp2::mul2(result, a);
                 return mcl_detail::ToComponentFp2(result);
+        }
+    } catch ( ... ) {
+    }
+
+    return std::nullopt;
+}
+
+std::optional<component::Fp12> mcl::OpBignumCalc_Fp12(operation::BignumCalc_Fp12& op) {
+    ::mcl::bn::Fp12 a, b, result;
+    ::mcl::bn::Fp* ap, *bp, *resultp;
+
+    try {
+        switch ( op.calcOp.Get() ) {
+            case    CF_CALCOP("Add(A,B)"):
+                a = ::mcl::bn::Fp12(
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn1.ToTrimmedString(),
+                                op.bn0.bn2.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn3.ToTrimmedString(),
+                                op.bn0.bn4.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn5.ToTrimmedString(),
+                                op.bn0.bn6.ToTrimmedString()
+                            )
+                        ),
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn7.ToTrimmedString(),
+                                op.bn0.bn8.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn9.ToTrimmedString(),
+                                op.bn0.bn10.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn11.ToTrimmedString(),
+                                op.bn0.bn12.ToTrimmedString()
+                            )
+                        )
+                    );
+                b = ::mcl::bn::Fp12(
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn1.bn1.ToTrimmedString(),
+                                op.bn1.bn2.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn1.bn3.ToTrimmedString(),
+                                op.bn1.bn4.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn1.bn5.ToTrimmedString(),
+                                op.bn1.bn6.ToTrimmedString()
+                            )
+                        ),
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn1.bn7.ToTrimmedString(),
+                                op.bn1.bn8.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn1.bn9.ToTrimmedString(),
+                                op.bn1.bn10.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn1.bn11.ToTrimmedString(),
+                                op.bn1.bn12.ToTrimmedString()
+                            )
+                        )
+                    );
+                return mcl_detail::ToComponentFp12(a+b);
+            case    CF_CALCOP("Sub(A,B)"):
+                a = ::mcl::bn::Fp12(
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn1.ToTrimmedString(),
+                                op.bn0.bn2.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn3.ToTrimmedString(),
+                                op.bn0.bn4.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn5.ToTrimmedString(),
+                                op.bn0.bn6.ToTrimmedString()
+                            )
+                        ),
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn7.ToTrimmedString(),
+                                op.bn0.bn8.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn9.ToTrimmedString(),
+                                op.bn0.bn10.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn11.ToTrimmedString(),
+                                op.bn0.bn12.ToTrimmedString()
+                            )
+                        )
+                    );
+                b = ::mcl::bn::Fp12(
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn1.bn1.ToTrimmedString(),
+                                op.bn1.bn2.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn1.bn3.ToTrimmedString(),
+                                op.bn1.bn4.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn1.bn5.ToTrimmedString(),
+                                op.bn1.bn6.ToTrimmedString()
+                            )
+                        ),
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn1.bn7.ToTrimmedString(),
+                                op.bn1.bn8.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn1.bn9.ToTrimmedString(),
+                                op.bn1.bn10.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn1.bn11.ToTrimmedString(),
+                                op.bn1.bn12.ToTrimmedString()
+                            )
+                        )
+                    );
+                return mcl_detail::ToComponentFp12(a-b);
+            case    CF_CALCOP("Mul(A,B)"):
+                a = ::mcl::bn::Fp12(
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn1.ToTrimmedString(),
+                                op.bn0.bn2.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn3.ToTrimmedString(),
+                                op.bn0.bn4.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn5.ToTrimmedString(),
+                                op.bn0.bn6.ToTrimmedString()
+                            )
+                        ),
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn7.ToTrimmedString(),
+                                op.bn0.bn8.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn9.ToTrimmedString(),
+                                op.bn0.bn10.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn11.ToTrimmedString(),
+                                op.bn0.bn12.ToTrimmedString()
+                            )
+                        )
+                    );
+                b = ::mcl::bn::Fp12(
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn1.bn1.ToTrimmedString(),
+                                op.bn1.bn2.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn1.bn3.ToTrimmedString(),
+                                op.bn1.bn4.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn1.bn5.ToTrimmedString(),
+                                op.bn1.bn6.ToTrimmedString()
+                            )
+                        ),
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn1.bn7.ToTrimmedString(),
+                                op.bn1.bn8.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn1.bn9.ToTrimmedString(),
+                                op.bn1.bn10.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn1.bn11.ToTrimmedString(),
+                                op.bn1.bn12.ToTrimmedString()
+                            )
+                        )
+                    );
+                return mcl_detail::ToComponentFp12(a*b);
+            case    CF_CALCOP("InvMod(A,B)"):
+                a = ::mcl::bn::Fp12(
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn1.ToTrimmedString(),
+                                op.bn0.bn2.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn3.ToTrimmedString(),
+                                op.bn0.bn4.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn5.ToTrimmedString(),
+                                op.bn0.bn6.ToTrimmedString()
+                            )
+                        ),
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn7.ToTrimmedString(),
+                                op.bn0.bn8.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn9.ToTrimmedString(),
+                                op.bn0.bn10.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn11.ToTrimmedString(),
+                                op.bn0.bn12.ToTrimmedString()
+                            )
+                        )
+                    );
+
+                if ( !a.isZero() ) {
+                    ::mcl::bn::Fp12::inv(result, a);
+                    return mcl_detail::ToComponentFp12(result);
+                }
+                break;
+            case    CF_CALCOP("Neg(A)"):
+                a = ::mcl::bn::Fp12(
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn1.ToTrimmedString(),
+                                op.bn0.bn2.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn3.ToTrimmedString(),
+                                op.bn0.bn4.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn5.ToTrimmedString(),
+                                op.bn0.bn6.ToTrimmedString()
+                            )
+                        ),
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn7.ToTrimmedString(),
+                                op.bn0.bn8.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn9.ToTrimmedString(),
+                                op.bn0.bn10.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn11.ToTrimmedString(),
+                                op.bn0.bn12.ToTrimmedString()
+                            )
+                        )
+                    );
+                ::mcl::bn::Fp12::neg(result, a);
+                return mcl_detail::ToComponentFp12(result);
+            case    CF_CALCOP("Sqr(A)"):
+                a = ::mcl::bn::Fp12(
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn1.ToTrimmedString(),
+                                op.bn0.bn2.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn3.ToTrimmedString(),
+                                op.bn0.bn4.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn5.ToTrimmedString(),
+                                op.bn0.bn6.ToTrimmedString()
+                            )
+                        ),
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn7.ToTrimmedString(),
+                                op.bn0.bn8.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn9.ToTrimmedString(),
+                                op.bn0.bn10.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn11.ToTrimmedString(),
+                                op.bn0.bn12.ToTrimmedString()
+                            )
+                        )
+                    );
+                ::mcl::bn::Fp12::sqr(result, a);
+                return mcl_detail::ToComponentFp12(result);
+#if 0
+            case    CF_CALCOP("CyclotomicSqr(A)"):
+                a = ::mcl::bn::Fp12(
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn1.ToTrimmedString(),
+                                op.bn0.bn2.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn3.ToTrimmedString(),
+                                op.bn0.bn4.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn5.ToTrimmedString(),
+                                op.bn0.bn6.ToTrimmedString()
+                            )
+                        ),
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn7.ToTrimmedString(),
+                                op.bn0.bn8.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn9.ToTrimmedString(),
+                                op.bn0.bn10.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn11.ToTrimmedString(),
+                                op.bn0.bn12.ToTrimmedString()
+                            )
+                        )
+                    );
+                if ( !a.isZero() ) {
+                    ::mcl::bn::local::mapToCyclotomic(result, a);
+                    return mcl_detail::ToComponentFp12(result);
+                }
+                break;
+#endif
         }
     } catch ( ... ) {
     }

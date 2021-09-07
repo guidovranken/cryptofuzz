@@ -353,7 +353,7 @@ std::string ToString(const component::G2& val) {
     return ret;
 }
 
-std::string ToString(const component::FP12& val) {
+std::string ToString(const component::Fp12& val) {
     std::string ret;
 
     ret += "bn1: " + val.bn1.ToString() + "\n";
@@ -420,7 +420,7 @@ nlohmann::json ToJSON(const component::BLS_KeyPair& val) {
     return val.ToJSON();
 }
 
-nlohmann::json ToJSON(const component::FP12& val) {
+nlohmann::json ToJSON(const component::Fp12& val) {
     return val.ToJSON();
 }
 

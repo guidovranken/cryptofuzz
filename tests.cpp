@@ -508,7 +508,7 @@ void test(const operation::BLS_Aggregate_G2& op, const std::optional<component::
     (void)result;
 }
 
-void test(const operation::BLS_Pairing& op, const std::optional<component::FP12>& result) {
+void test(const operation::BLS_Pairing& op, const std::optional<component::Fp12>& result) {
     (void)op;
     (void)result;
 }
@@ -826,6 +826,11 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
 }
 
 void test(const operation::BignumCalc_Fp2& op, const std::optional<component::Fp2>& result) {
+    (void)op;
+    (void)result;
+}
+
+void test(const operation::BignumCalc_Fp12& op, const std::optional<component::Fp12>& result) {
     (void)op;
     (void)result;
 }

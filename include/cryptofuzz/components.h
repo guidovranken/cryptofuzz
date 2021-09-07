@@ -148,7 +148,7 @@ class G2 {
 
 using Fp2 = BignumPair;
 
-class FP12 {
+class Fp12 {
     public:
         Bignum bn1;
         Bignum bn2;
@@ -163,7 +163,7 @@ class FP12 {
         Bignum bn11;
         Bignum bn12;
 
-        FP12(Datasource& ds) :
+        Fp12(Datasource& ds) :
             bn1(ds),
             bn2(ds),
             bn3(ds),
@@ -178,7 +178,7 @@ class FP12 {
             bn12(ds)
         { }
 
-        FP12(
+        Fp12(
         std::string bn1,
         std::string bn2,
         std::string bn3,
@@ -204,8 +204,9 @@ class FP12 {
             bn11(bn11),
             bn12(bn12)
         { }
+        Fp12(nlohmann::json json);
 
-        inline bool operator==(const FP12& rhs) const {
+        inline bool operator==(const Fp12& rhs) const {
             return
                 (bn1 == rhs.bn1) &&
                 (bn2 == rhs.bn2) &&
@@ -220,6 +221,7 @@ class FP12 {
                 (bn11 == rhs.bn11) &&
                 (bn12 == rhs.bn12);
         }
+        void Serialize(Datasource& ds) const;
         nlohmann::json ToJSON(void) const;
 };
 

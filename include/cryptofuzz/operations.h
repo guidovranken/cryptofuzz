@@ -1830,6 +1830,70 @@ class BignumCalc_Fp2 : public Operation {
         void SetModulo(component::Fp2& modulo);
 };
 
+class BignumCalc_Fp12 : public Operation {
+    public:
+        const component::CalcOp calcOp;
+        const component::Fp12 bn0;
+        const component::Fp12 bn1;
+        const component::Fp12 bn2;
+        const component::Fp12 bn3;
+        std::optional<component::Fp12> modulo;
+
+        BignumCalc_Fp12(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            calcOp(ds),
+            bn0(ds),
+            bn1(ds),
+            bn2(ds),
+            bn3(ds)
+        { }
+        BignumCalc_Fp12(nlohmann::json json) :
+            Operation(json["modifier"]),
+            calcOp(json["calcOp"]),
+            bn0(json["bn1"]),
+            bn1(json["bn2"]),
+            bn2(json["bn3"]),
+            bn3(json["bn4"])
+        { }
+        BignumCalc_Fp12(
+                component::Modifier modifier,
+                component::CurveType calcOp,
+                component::Fp12 bn0,
+                component::Fp12 bn1,
+                component::Fp12 bn2,
+                component::Fp12 bn3) :
+            Operation(std::move(modifier)),
+            calcOp(calcOp),
+            bn0(bn0),
+            bn1(bn1),
+            bn2(bn2),
+            bn3(bn3)
+        { }
+
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BignumCalc_Fp12& rhs) const {
+            return
+                (calcOp == rhs.calcOp) &&
+                (bn0 == rhs.bn0) &&
+                (bn1 == rhs.bn1) &&
+                (bn2 == rhs.bn2) &&
+                (bn3 == rhs.bn3) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            calcOp.Serialize(ds);
+            bn0.Serialize(ds);
+            bn1.Serialize(ds);
+            bn2.Serialize(ds);
+            bn3.Serialize(ds);
+        }
+        void SetModulo(component::Fp12& modulo);
+};
+
 class BLS_PrivateToPublic : public Operation {
     public:
         const component::CurveType curveType;

@@ -546,7 +546,7 @@ void G2::Serialize(Datasource& ds) const {
     second.Serialize(ds);
 }
 
-nlohmann::json FP12::ToJSON(void) const {
+nlohmann::json Fp12::ToJSON(void) const {
     return std::vector<nlohmann::json>{
         bn1.ToJSON(),
         bn2.ToJSON(),
@@ -561,6 +561,36 @@ nlohmann::json FP12::ToJSON(void) const {
         bn11.ToJSON(),
         bn12.ToJSON(),
     };
+}
+
+Fp12::Fp12(nlohmann::json json) :
+    bn1(json[0].get<std::string>()),
+    bn2(json[1].get<std::string>()),
+    bn3(json[2].get<std::string>()),
+    bn4(json[3].get<std::string>()),
+    bn5(json[4].get<std::string>()),
+    bn6(json[5].get<std::string>()),
+    bn7(json[6].get<std::string>()),
+    bn8(json[7].get<std::string>()),
+    bn9(json[8].get<std::string>()),
+    bn10(json[9].get<std::string>()),
+    bn11(json[10].get<std::string>()),
+    bn12(json[11].get<std::string>())
+{ }
+
+void Fp12::Serialize(Datasource& ds) const {
+    bn1.Serialize(ds);
+    bn2.Serialize(ds);
+    bn3.Serialize(ds);
+    bn4.Serialize(ds);
+    bn5.Serialize(ds);
+    bn6.Serialize(ds);
+    bn7.Serialize(ds);
+    bn8.Serialize(ds);
+    bn9.Serialize(ds);
+    bn10.Serialize(ds);
+    bn11.Serialize(ds);
+    bn12.Serialize(ds);
 }
 
 /* BLS_Signature */

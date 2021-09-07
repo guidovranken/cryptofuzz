@@ -85,5 +85,21 @@ typedef struct {
 } CurveBLSG2_Pair;
 extern MutatorPool<CurveBLSG2_Pair, cryptofuzz::config::kMutatorPoolSize> Pool_CurveBLSG2;
 
+typedef struct {
+    std::string bn1;
+    std::string bn2;
+    std::string bn3;
+    std::string bn4;
+    std::string bn5;
+    std::string bn6;
+    std::string bn7;
+    std::string bn8;
+    std::string bn9;
+    std::string bn10;
+    std::string bn11;
+    std::string bn12;
+} Fp12;
+extern MutatorPool<Fp12, cryptofuzz::config::kMutatorPoolSize> Pool_Fp12;
+
 extern MutatorPool<std::string, cryptofuzz::config::kMutatorPoolSize> Pool_DH_PrivateKey;
 extern MutatorPool<std::string, cryptofuzz::config::kMutatorPoolSize> Pool_DH_PublicKey;

@@ -899,6 +899,104 @@ std::optional<component::Fp2> ExecutorBignumCalc_Fp2::callModule(std::shared_ptr
     return module->OpBignumCalc_Fp2(op);
 }
 
+/* Specialization for operation::BignumCalc_Fp12 */
+template<> void ExecutorBase<component::Fp12, operation::BignumCalc_Fp12>::postprocess(std::shared_ptr<Module> module, operation::BignumCalc_Fp12& op, const ExecutorBase<component::Fp12, operation::BignumCalc_Fp12>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+
+    if ( result.second != std::nullopt  ) {
+        Pool_Fp12.Set({
+                result.second->bn1.ToTrimmedString(),
+                result.second->bn2.ToTrimmedString(),
+                result.second->bn3.ToTrimmedString(),
+                result.second->bn4.ToTrimmedString(),
+                result.second->bn5.ToTrimmedString(),
+                result.second->bn6.ToTrimmedString(),
+                result.second->bn7.ToTrimmedString(),
+                result.second->bn8.ToTrimmedString(),
+                result.second->bn9.ToTrimmedString(),
+                result.second->bn10.ToTrimmedString(),
+                result.second->bn11.ToTrimmedString(),
+                result.second->bn12.ToTrimmedString()
+        });
+        /* TODO */
+#if 0
+        const auto bignum_first = result.second->first.ToTrimmedString();
+        const auto bignum_second = result.second->second.ToTrimmedString();
+
+        if ( bignum_first.size() <= config::kMaxBignumSize ) {
+            Pool_Bignum.Set(bignum_first);
+        }
+        if ( bignum_second.size() <= config::kMaxBignumSize ) {
+            Pool_Bignum.Set(bignum_second);
+        }
+#endif
+    }
+}
+
+std::optional<component::Fp12> ExecutorBignumCalc_Fp12::callModule(std::shared_ptr<Module> module, operation::BignumCalc_Fp12& op) const {
+    RETURN_IF_DISABLED(options.calcOps, op.calcOp.Get());
+
+    /* Prevent timeouts */
+    if ( op.bn0.bn1.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn0.bn2.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn0.bn3.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn0.bn4.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn0.bn5.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn0.bn6.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn0.bn7.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn0.bn8.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn0.bn9.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn0.bn10.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn0.bn11.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn0.bn12.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+
+    if ( op.bn1.bn1.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn1.bn2.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn1.bn3.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn1.bn4.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn1.bn5.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn1.bn6.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn1.bn7.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn1.bn8.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn1.bn9.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn1.bn10.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn1.bn11.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn1.bn12.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+
+    if ( op.bn2.bn1.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn2.bn2.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn2.bn3.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn2.bn4.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn2.bn5.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn2.bn6.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn2.bn7.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn2.bn8.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn2.bn9.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn2.bn10.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn2.bn11.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn2.bn12.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+
+    if ( op.bn3.bn1.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn3.bn2.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn3.bn3.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn3.bn4.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn3.bn5.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn3.bn6.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn3.bn7.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn3.bn8.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn3.bn9.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn3.bn10.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn3.bn11.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    if ( op.bn3.bn12.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+
+    if ( op.modulo != std::nullopt && !module->SupportsModularBignumCalc() ) {
+        return std::nullopt;
+    }
+
+    return module->OpBignumCalc_Fp12(op);
+}
+
 /* Specialization for operation::BLS_PrivateToPublic */
 template<> void ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>::postprocess(std::shared_ptr<Module> module, operation::BLS_PrivateToPublic& op, const ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>::ResultPair& result) const {
     (void)module;
@@ -1046,13 +1144,29 @@ template<> std::optional<component::G2> ExecutorBase<component::G2, operation::B
 }
 
 /* Specialization for operation::BLS_Pairing */
-template<> void ExecutorBase<component::FP12, operation::BLS_Pairing>::postprocess(std::shared_ptr<Module> module, operation::BLS_Pairing& op, const ExecutorBase<component::FP12, operation::BLS_Pairing>::ResultPair& result) const {
+template<> void ExecutorBase<component::Fp12, operation::BLS_Pairing>::postprocess(std::shared_ptr<Module> module, operation::BLS_Pairing& op, const ExecutorBase<component::Fp12, operation::BLS_Pairing>::ResultPair& result) const {
     (void)module;
     (void)op;
-    (void)result;
+
+    if ( result.second != std::nullopt  ) {
+        Pool_Fp12.Set({
+                result.second->bn1.ToTrimmedString(),
+                result.second->bn2.ToTrimmedString(),
+                result.second->bn3.ToTrimmedString(),
+                result.second->bn4.ToTrimmedString(),
+                result.second->bn5.ToTrimmedString(),
+                result.second->bn6.ToTrimmedString(),
+                result.second->bn7.ToTrimmedString(),
+                result.second->bn8.ToTrimmedString(),
+                result.second->bn9.ToTrimmedString(),
+                result.second->bn10.ToTrimmedString(),
+                result.second->bn11.ToTrimmedString(),
+                result.second->bn12.ToTrimmedString()
+        });
+    }
 }
 
-template<> std::optional<component::FP12> ExecutorBase<component::FP12, operation::BLS_Pairing>::callModule(std::shared_ptr<Module> module, operation::BLS_Pairing& op) const {
+template<> std::optional<component::Fp12> ExecutorBase<component::Fp12, operation::BLS_Pairing>::callModule(std::shared_ptr<Module> module, operation::BLS_Pairing& op) const {
     return module->OpBLS_Pairing(op);
 }
 
@@ -1518,6 +1632,13 @@ ExecutorBignumCalc_Fp2::ExecutorBignumCalc_Fp2(const uint64_t operationID, const
     ExecutorBase<component::Fp2, operation::BignumCalc_Fp2>::ExecutorBase(operationID, modules, options)
 { }
 void ExecutorBignumCalc_Fp2::SetModulo(const std::string& modulo) {
+    this->modulo = component::Bignum(modulo);
+}
+
+ExecutorBignumCalc_Fp12::ExecutorBignumCalc_Fp12(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBase<component::Fp12, operation::BignumCalc_Fp12>::ExecutorBase(operationID, modules, options)
+{ }
+void ExecutorBignumCalc_Fp12::SetModulo(const std::string& modulo) {
     this->modulo = component::Bignum(modulo);
 }
 
@@ -1988,13 +2109,14 @@ template class ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair
 template class ExecutorBase<component::Bignum, operation::DH_Derive>;
 template class ExecutorBase<component::Bignum, operation::BignumCalc>;
 template class ExecutorBase<component::Fp2, operation::BignumCalc_Fp2>;
+template class ExecutorBase<component::Fp12, operation::BignumCalc_Fp12>;
 template class ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>;
 template class ExecutorBase<component::G2, operation::BLS_PrivateToPublic_G2>;
 template class ExecutorBase<component::BLS_Signature, operation::BLS_Sign>;
 template class ExecutorBase<bool, operation::BLS_Verify>;
 template class ExecutorBase<component::G1, operation::BLS_Aggregate_G1>;
 template class ExecutorBase<component::G2, operation::BLS_Aggregate_G2>;
-template class ExecutorBase<component::FP12, operation::BLS_Pairing>;
+template class ExecutorBase<component::Fp12, operation::BLS_Pairing>;
 template class ExecutorBase<component::G1, operation::BLS_HashToG1>;
 template class ExecutorBase<component::G2, operation::BLS_HashToG2>;
 template class ExecutorBase<bool, operation::BLS_IsG1OnCurve>;

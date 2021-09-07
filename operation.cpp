@@ -1033,6 +1033,49 @@ nlohmann::json BignumCalc_Fp2::ToJSON(void) const {
     return j;
 }
 
+std::string BignumCalc_Fp12::Name(void) const { return "BignumCalc_Fp12"; }
+std::string BignumCalc_Fp12::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BignumCalc_Fp12" << std::endl;
+    ss << "calc operation: " << repository::CalcOpToString(calcOp.Get()) << std::endl;
+    ss << "bn0 1: " << bn0.bn1.ToString() << std::endl;
+    ss << "bn0 2: " << bn0.bn2.ToString() << std::endl;
+    ss << "bn0 3: " << bn0.bn3.ToString() << std::endl;
+    ss << "bn0 4: " << bn0.bn4.ToString() << std::endl;
+    ss << "bn0 5: " << bn0.bn5.ToString() << std::endl;
+    ss << "bn0 6: " << bn0.bn6.ToString() << std::endl;
+    ss << "bn0 7: " << bn0.bn7.ToString() << std::endl;
+    ss << "bn0 8: " << bn0.bn8.ToString() << std::endl;
+    ss << "bn0 9: " << bn0.bn9.ToString() << std::endl;
+    ss << "bn0 10: " << bn0.bn10.ToString() << std::endl;
+    ss << "bn0 11: " << bn0.bn11.ToString() << std::endl;
+    ss << "bn0 12: " << bn0.bn12.ToString() << std::endl;
+
+    ss << std::endl;
+
+    ss << "bn1 1: " << bn1.bn1.ToString() << std::endl;
+    ss << "bn1 2: " << bn1.bn2.ToString() << std::endl;
+    ss << "bn1 3: " << bn1.bn3.ToString() << std::endl;
+    ss << "bn1 4: " << bn1.bn4.ToString() << std::endl;
+    ss << "bn1 5: " << bn1.bn5.ToString() << std::endl;
+    ss << "bn1 6: " << bn1.bn6.ToString() << std::endl;
+    ss << "bn1 7: " << bn1.bn7.ToString() << std::endl;
+    ss << "bn1 8: " << bn1.bn8.ToString() << std::endl;
+    ss << "bn1 9: " << bn1.bn9.ToString() << std::endl;
+    ss << "bn1 10: " << bn1.bn10.ToString() << std::endl;
+    ss << "bn1 11: " << bn1.bn11.ToString() << std::endl;
+    ss << "bn1 12: " << bn1.bn12.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BignumCalc_Fp12::ToJSON(void) const {
+    nlohmann::json j;
+    /* TODO */
+    return j;
+}
+
 std::string BLS_PrivateToPublic::Name(void) const { return "BLS_PrivateToPublic"; }
 std::string BLS_PrivateToPublic::ToString(void) const {
     std::stringstream ss;

@@ -60,6 +60,21 @@ namespace blst_detail {
         return  To_blst_fp(bn.first, out.fp[0]) &&
                 To_blst_fp(bn.second, out.fp[1]);
     }
+    bool To_blst_fp12(const component::Fp12& bn, blst_fp12& out) {
+        return  To_blst_fp(bn.bn1, out.fp6[0].fp2[0].fp[0]) &&
+                To_blst_fp(bn.bn2, out.fp6[0].fp2[0].fp[1]) &&
+                To_blst_fp(bn.bn3, out.fp6[0].fp2[1].fp[0]) &&
+                To_blst_fp(bn.bn4, out.fp6[0].fp2[1].fp[1]) &&
+                To_blst_fp(bn.bn5, out.fp6[0].fp2[2].fp[0]) &&
+                To_blst_fp(bn.bn6, out.fp6[0].fp2[2].fp[1]) &&
+
+                To_blst_fp(bn.bn7, out.fp6[1].fp2[0].fp[0]) &&
+                To_blst_fp(bn.bn8, out.fp6[1].fp2[0].fp[1]) &&
+                To_blst_fp(bn.bn9, out.fp6[1].fp2[1].fp[0]) &&
+                To_blst_fp(bn.bn10, out.fp6[1].fp2[1].fp[1]) &&
+                To_blst_fp(bn.bn11, out.fp6[1].fp2[2].fp[0]) &&
+                To_blst_fp(bn.bn12, out.fp6[1].fp2[2].fp[1]);
+    }
     component::Bignum To_component_bignum(const blst_fr& in) {
         std::array<uint8_t, 32> v;
 
@@ -141,7 +156,7 @@ namespace blst_detail {
         };
     }
 
-    component::FP12 To_FP12(const blst_fp12& fp12) {
+    component::Fp12 To_component_Fp12(const blst_fp12& fp12) {
         std::array<uint8_t, 48> bn1, bn2, bn3, bn4, bn5, bn6, bn7, bn8, bn9, bn10, bn11, bn12;
 
         blst_uint64_from_fp((uint64_t*)bn1.data(), &fp12.fp6[0].fp2[0].fp[0]);
@@ -661,9 +676,9 @@ end:
     return ret;
 }
 
-std::optional<component::FP12> blst::OpBLS_Pairing(operation::BLS_Pairing& op) {
+std::optional<component::Fp12> blst::OpBLS_Pairing(operation::BLS_Pairing& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
-    std::optional<component::FP12> ret = std::nullopt;
+    std::optional<component::Fp12> ret = std::nullopt;
 
     blst_p1_affine g1_affine;
     blst_p2_affine g2_affine;
@@ -680,7 +695,7 @@ std::optional<component::FP12> blst::OpBLS_Pairing(operation::BLS_Pairing& op) {
     CF_NORET(blst_miller_loop(&out, &g2_affine, &g1_affine));
     CF_NORET(blst_final_exp(&out, &out));
 
-    ret = blst_detail::To_FP12(out);
+    ret = blst_detail::To_component_Fp12(out);
 
 end:
     return ret;
@@ -1089,6 +1104,73 @@ end:
 
 std::optional<component::Fp2> blst::OpBignumCalc_Fp2(operation::BignumCalc_Fp2& op) {
     return blst_detail::OpBignumCalc_Fp2_prime(op);
+}
+
+namespace blst_detail {
+    #define PREPARE_RESULT() {resultIdx = GetMod3(ds);}
+    #define RESULT_PTR() (resultIdx == 0 ? &result : (resultIdx == 1 ? &A : &B))
+    #define RESULT() (resultIdx == 0 ? result : (resultIdx == 1 ? A : B))
+    #define PARAM_B() (UseParamTwice(ds, &A, &B) ? &A : &B)
+
+    std::optional<component::Fp12> OpBignumCalc_Fp12_prime(operation::BignumCalc_Fp12& op) {
+        std::optional<component::Fp12> ret = std::nullopt;
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+        blst_fp12 result, A, B;
+        uint8_t resultIdx;
+
+        switch ( op.calcOp.Get() ) {
+            case    CF_CALCOP("Mul(A,B)"):
+                CF_CHECK_TRUE(blst_detail::To_blst_fp12(op.bn0, A));
+                CF_CHECK_TRUE(blst_detail::To_blst_fp12(op.bn1, B));
+                PREPARE_RESULT();
+                CF_NORET(blst_fp12_mul(RESULT_PTR(), &A, PARAM_B()));
+
+                ret = blst_detail::To_component_Fp12(RESULT());
+                break;
+#if 0
+            case    CF_CALCOP("Neg(A)"):
+                CF_CHECK_TRUE(blst_detail::To_blst_fp12(op.bn0, A));
+                CF_NORET(blst_fp12_conjugate(&A));
+                ret = blst_detail::To_component_Fp12(A);
+                break;
+#endif
+            case    CF_CALCOP("Sqr(A)"):
+                CF_CHECK_TRUE(blst_detail::To_blst_fp12(op.bn0, A));
+                PREPARE_RESULT();
+                CF_NORET(blst_fp12_sqr(RESULT_PTR(), &A));
+                ret = blst_detail::To_component_Fp12(RESULT());
+                break;
+            case    CF_CALCOP("CyclotomicSqr(A)"):
+                CF_CHECK_TRUE(blst_detail::To_blst_fp12(op.bn0, A));
+                PREPARE_RESULT();
+                CF_NORET(blst_fp12_cyclotomic_sqr(RESULT_PTR(), &A));
+                ret = blst_detail::To_component_Fp12(RESULT());
+                break;
+            case    CF_CALCOP("InvMod(A,B)"):
+                CF_CHECK_TRUE(blst_detail::To_blst_fp12(op.bn0, A));
+
+                PREPARE_RESULT();
+                CF_NORET(blst_fp12_inverse(RESULT_PTR(), &A));
+
+                ret = blst_detail::To_component_Fp12(RESULT());
+                break;
+            case    CF_CALCOP("One()"):
+                ret = blst_detail::To_component_Fp12(*(blst_fp12_one()));
+                break;
+        }
+
+end:
+        return ret;
+    }
+
+    #undef PREPARE_RESULT
+    #undef RESULT_PTR
+    #undef RESULT
+    #undef PARAM_B
+}
+
+std::optional<component::Fp12> blst::OpBignumCalc_Fp12(operation::BignumCalc_Fp12& op) {
+    return blst_detail::OpBignumCalc_Fp12_prime(op);
 }
 
 std::optional<component::G1> blst::OpBLS_Decompress_G1(operation::BLS_Decompress_G1& op) {

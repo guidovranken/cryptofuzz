@@ -476,6 +476,140 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     op.Serialize(dsOut2);
                 }
                 break;
+
+            case    CF_OPERATION("BignumCalc_Fp12"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+                    parameters["calcOp"] = getRandomCalcOp();
+
+                    if ( Pool_Fp12.Have() && getBool() == true ) {
+                        const auto Fp12 = Pool_Fp12.Get();
+#if 0
+                        parameters["bn1"][0] = GET_OR_BIGNUM(Fp12.bn1);
+                        parameters["bn1"][1] = GET_OR_BIGNUM(Fp12.bn2);
+                        parameters["bn1"][2] = GET_OR_BIGNUM(Fp12.bn3);
+                        parameters["bn1"][3] = GET_OR_BIGNUM(Fp12.bn4);
+                        parameters["bn1"][4] = GET_OR_BIGNUM(Fp12.bn5);
+                        parameters["bn1"][5] = GET_OR_BIGNUM(Fp12.bn6);
+                        parameters["bn1"][6] = GET_OR_BIGNUM(Fp12.bn7);
+                        parameters["bn1"][7] = GET_OR_BIGNUM(Fp12.bn8);
+                        parameters["bn1"][8] = GET_OR_BIGNUM(Fp12.bn9);
+                        parameters["bn1"][9] = GET_OR_BIGNUM(Fp12.bn10);
+                        parameters["bn1"][10] = GET_OR_BIGNUM(Fp12.bn11);
+                        parameters["bn1"][11] = GET_OR_BIGNUM(Fp12.bn12);
+#endif
+                        parameters["bn1"][0] = Fp12.bn1;
+                        parameters["bn1"][1] = Fp12.bn2;
+                        parameters["bn1"][2] = Fp12.bn3;
+                        parameters["bn1"][3] = Fp12.bn4;
+                        parameters["bn1"][4] = Fp12.bn5;
+                        parameters["bn1"][5] = Fp12.bn6;
+                        parameters["bn1"][6] = Fp12.bn7;
+                        parameters["bn1"][7] = Fp12.bn8;
+                        parameters["bn1"][8] = Fp12.bn9;
+                        parameters["bn1"][9] = Fp12.bn10;
+                        parameters["bn1"][10] = Fp12.bn11;
+                        parameters["bn1"][11] = Fp12.bn12;
+                    } else {
+                        parameters["bn1"][0] = getBignum();
+                        parameters["bn1"][1] = getBignum();
+                        parameters["bn1"][2] = getBignum();
+                        parameters["bn1"][3] = getBignum();
+                        parameters["bn1"][4] = getBignum();
+                        parameters["bn1"][5] = getBignum();
+                        parameters["bn1"][6] = getBignum();
+                        parameters["bn1"][7] = getBignum();
+                        parameters["bn1"][8] = getBignum();
+                        parameters["bn1"][9] = getBignum();
+                        parameters["bn1"][10] = getBignum();
+                        parameters["bn1"][11] = getBignum();
+
+                        parameters["bn2"][0] = getBignum();
+                        parameters["bn2"][1] = getBignum();
+                        parameters["bn2"][2] = getBignum();
+                        parameters["bn2"][3] = getBignum();
+                        parameters["bn2"][4] = getBignum();
+                        parameters["bn2"][5] = getBignum();
+                        parameters["bn2"][6] = getBignum();
+                        parameters["bn2"][7] = getBignum();
+                        parameters["bn2"][8] = getBignum();
+                        parameters["bn2"][9] = getBignum();
+                        parameters["bn2"][10] = getBignum();
+                        parameters["bn2"][11] = getBignum();
+                    }
+
+                    if ( Pool_Fp12.Have() && getBool() == true ) {
+                        const auto Fp12 = Pool_Fp12.Get();
+#if 0
+                        parameters["bn2"][0] = GET_OR_BIGNUM(Fp12.bn1);
+                        parameters["bn2"][1] = GET_OR_BIGNUM(Fp12.bn2);
+                        parameters["bn2"][2] = GET_OR_BIGNUM(Fp12.bn3);
+                        parameters["bn2"][3] = GET_OR_BIGNUM(Fp12.bn4);
+                        parameters["bn2"][4] = GET_OR_BIGNUM(Fp12.bn5);
+                        parameters["bn2"][5] = GET_OR_BIGNUM(Fp12.bn6);
+                        parameters["bn2"][6] = GET_OR_BIGNUM(Fp12.bn7);
+                        parameters["bn2"][7] = GET_OR_BIGNUM(Fp12.bn8);
+                        parameters["bn2"][8] = GET_OR_BIGNUM(Fp12.bn9);
+                        parameters["bn2"][9] = GET_OR_BIGNUM(Fp12.bn10);
+                        parameters["bn2"][10] = GET_OR_BIGNUM(Fp12.bn11);
+                        parameters["bn2"][11] = GET_OR_BIGNUM(Fp12.bn12);
+#endif
+                        parameters["bn2"][0] = Fp12.bn1;
+                        parameters["bn2"][1] = Fp12.bn2;
+                        parameters["bn2"][2] = Fp12.bn3;
+                        parameters["bn2"][3] = Fp12.bn4;
+                        parameters["bn2"][4] = Fp12.bn5;
+                        parameters["bn2"][5] = Fp12.bn6;
+                        parameters["bn2"][6] = Fp12.bn7;
+                        parameters["bn2"][7] = Fp12.bn8;
+                        parameters["bn2"][8] = Fp12.bn9;
+                        parameters["bn2"][9] = Fp12.bn10;
+                        parameters["bn2"][10] = Fp12.bn11;
+                        parameters["bn2"][11] = Fp12.bn12;
+                    } else {
+                        parameters["bn2"][0] = getBignum();
+                        parameters["bn2"][1] = getBignum();
+                        parameters["bn2"][2] = getBignum();
+                        parameters["bn2"][3] = getBignum();
+                        parameters["bn2"][4] = getBignum();
+                        parameters["bn2"][5] = getBignum();
+                        parameters["bn2"][6] = getBignum();
+                        parameters["bn2"][7] = getBignum();
+                        parameters["bn2"][8] = getBignum();
+                        parameters["bn2"][9] = getBignum();
+                        parameters["bn2"][10] = getBignum();
+                        parameters["bn2"][11] = getBignum();
+                    }
+
+                    parameters["bn3"][0] = "";
+                    parameters["bn3"][1] = "";
+                    parameters["bn3"][2] = "";
+                    parameters["bn3"][3] = "";
+                    parameters["bn3"][4] = "";
+                    parameters["bn3"][5] = "";
+                    parameters["bn3"][6] = "";
+                    parameters["bn3"][7] = "";
+                    parameters["bn3"][8] = "";
+                    parameters["bn3"][9] = "";
+                    parameters["bn3"][10] = "";
+                    parameters["bn3"][11] = "";
+
+                    parameters["bn4"][0] = "";
+                    parameters["bn4"][1] = "";
+                    parameters["bn4"][2] = "";
+                    parameters["bn4"][3] = "";
+                    parameters["bn4"][4] = "";
+                    parameters["bn4"][5] = "";
+                    parameters["bn4"][6] = "";
+                    parameters["bn4"][7] = "";
+                    parameters["bn4"][8] = "";
+                    parameters["bn4"][9] = "";
+                    parameters["bn4"][10] = "";
+                    parameters["bn4"][11] = "";
+                    cryptofuzz::operation::BignumCalc_Fp12 op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
             case    CF_OPERATION("ECC_PrivateToPublic"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
