@@ -1222,6 +1222,25 @@ nlohmann::json BLS_Pairing::ToJSON(void) const {
     return j;
 }
 
+std::string BLS_FinalExp::Name(void) const { return "BLS_FinalExp"; }
+std::string BLS_FinalExp::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_FinalExp" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    /* TODO */
+
+    return ss.str();
+}
+
+nlohmann::json BLS_FinalExp::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    /* TODO q,p */
+    return j;
+}
+
 std::string BLS_Aggregate_G1::Name(void) const { return "BLS_Aggregate_G1"; }
 std::string BLS_Aggregate_G1::ToString(void) const {
     std::stringstream ss;

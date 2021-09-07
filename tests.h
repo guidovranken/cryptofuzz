@@ -51,6 +51,7 @@ void test(const operation::BLS_Verify& op, const std::optional<bool>& result);
 void test(const operation::BLS_Aggregate_G1& op, const std::optional<component::G1>& result);
 void test(const operation::BLS_Aggregate_G2& op, const std::optional<component::G2>& result);
 void test(const operation::BLS_Pairing& op, const std::optional<component::Fp12>& result);
+void test(const operation::BLS_FinalExp& op, const std::optional<component::Fp12>& result);
 void test(const operation::BLS_HashToG1& op, const std::optional<component::G1>& result);
 void test(const operation::BLS_HashToG2& op, const std::optional<component::G2>& result);
 void test(const operation::BLS_IsG1OnCurve& op, const std::optional<bool>& result);

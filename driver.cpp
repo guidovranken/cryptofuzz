@@ -74,6 +74,7 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorBLS_Aggregate_G1 executorBLS_Aggregate_G1(CF_OPERATION("BLS_Aggregate_G1"), modules, options);
     static ExecutorBLS_Aggregate_G2 executorBLS_Aggregate_G2(CF_OPERATION("BLS_Aggregate_G2"), modules, options);
     static ExecutorBLS_Pairing executorBLS_Pairing(CF_OPERATION("BLS_Pairing"), modules, options);
+    static ExecutorBLS_FinalExp executorBLS_FinalExp(CF_OPERATION("BLS_FinalExp"), modules, options);
     static ExecutorBLS_HashToG1 executorBLS_HashToG1(CF_OPERATION("BLS_HashToG1"), modules, options);
     static ExecutorBLS_HashToG2 executorBLS_HashToG2(CF_OPERATION("BLS_HashToG2"), modules, options);
     static ExecutorBLS_IsG1OnCurve executorBLS_IsG1OnCurve(CF_OPERATION("BLS_IsG1OnCurve"), modules, options);
@@ -280,6 +281,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("BLS_Pairing"):
                 executorBLS_Pairing.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_FinalExp"):
+                executorBLS_FinalExp.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("BLS_HashToG1"):
                 executorBLS_HashToG1.Run(ds, payload.data(), payload.size());

@@ -325,6 +325,54 @@ end:
     return ret;
 }
 
+std::optional<component::Fp12> mcl::OpBLS_FinalExp(operation::BLS_FinalExp& op) {
+    std::optional<component::Fp12> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    try {
+        using namespace ::mcl::bls12;
+
+        auto f = ::mcl::bn::Fp12(
+                ::mcl::bn::Fp6(
+                    ::mcl::bn::Fp2(
+                        op.fp12.bn1.ToTrimmedString(),
+                        op.fp12.bn2.ToTrimmedString()
+                        ),
+                    ::mcl::bn::Fp2(
+                        op.fp12.bn3.ToTrimmedString(),
+                        op.fp12.bn4.ToTrimmedString()
+                        ),
+                    ::mcl::bn::Fp2(
+                        op.fp12.bn5.ToTrimmedString(),
+                        op.fp12.bn6.ToTrimmedString()
+                        )
+                    ),
+                ::mcl::bn::Fp6(
+                    ::mcl::bn::Fp2(
+                        op.fp12.bn7.ToTrimmedString(),
+                        op.fp12.bn8.ToTrimmedString()
+                        ),
+                    ::mcl::bn::Fp2(
+                        op.fp12.bn9.ToTrimmedString(),
+                        op.fp12.bn10.ToTrimmedString()
+                        ),
+                    ::mcl::bn::Fp2(
+                        op.fp12.bn11.ToTrimmedString(),
+                        op.fp12.bn12.ToTrimmedString()
+                        )
+                    )
+        );
+
+        finalExp(f, f);
+
+        ret = mcl_detail::ToComponentFp12(f);
+    } catch ( cybozu::Exception ) {
+    }
+
+end:
+    return ret;
+}
+
 std::optional<bool> mcl::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
     using namespace ::mcl::bls12;
 

@@ -701,6 +701,22 @@ end:
     return ret;
 }
 
+std::optional<component::Fp12> blst::OpBLS_FinalExp(operation::BLS_FinalExp& op) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    std::optional<component::Fp12> ret = std::nullopt;
+
+    blst_fp12 out;
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp12(op.fp12, out));
+
+    CF_NORET(blst_final_exp(&out, &out));
+
+    ret = blst_detail::To_component_Fp12(out);
+
+end:
+    return ret;
+}
+
 namespace blst_detail {
     template <class T>
     bool UseParamTwice(fuzzing::datasource::Datasource& ds, const T* A, const T* B) {

@@ -193,6 +193,7 @@ using ExecutorBLS_Verify = ExecutorBase<bool, operation::BLS_Verify>;
 using ExecutorBLS_Aggregate_G1 = ExecutorBase<component::G1, operation::BLS_Aggregate_G1>;
 using ExecutorBLS_Aggregate_G2 = ExecutorBase<component::G2, operation::BLS_Aggregate_G2>;
 using ExecutorBLS_Pairing = ExecutorBase<component::Fp12, operation::BLS_Pairing>;
+using ExecutorBLS_FinalExp = ExecutorBase<component::Fp12, operation::BLS_FinalExp>;
 using ExecutorBLS_HashToG1 = ExecutorBase<component::G1, operation::BLS_HashToG1>;
 using ExecutorBLS_HashToG2 = ExecutorBase<component::G2, operation::BLS_HashToG2>;
 using ExecutorBLS_IsG1OnCurve = ExecutorBase<bool, operation::BLS_IsG1OnCurve>;

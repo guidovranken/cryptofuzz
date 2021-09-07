@@ -513,6 +513,11 @@ void test(const operation::BLS_Pairing& op, const std::optional<component::Fp12>
     (void)result;
 }
 
+void test(const operation::BLS_FinalExp& op, const std::optional<component::Fp12>& result) {
+    (void)op;
+    (void)result;
+}
+
 void test(const operation::BLS_HashToG1& op, const std::optional<component::G1>& result) {
     (void)op;
     (void)result;

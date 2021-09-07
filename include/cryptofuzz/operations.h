@@ -2173,6 +2173,38 @@ class BLS_Pairing : public Operation {
         }
 };
 
+class BLS_FinalExp : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::Fp12 fp12;
+
+        BLS_FinalExp(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            fp12(ds)
+        { }
+        BLS_FinalExp(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            fp12(json["fp12"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_FinalExp& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (fp12 == rhs.fp12) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            fp12.Serialize(ds);
+        }
+};
+
 class BLS_HashToG1 : public Operation {
     public:
         const component::CurveType curveType;

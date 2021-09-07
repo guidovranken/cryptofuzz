@@ -203,6 +203,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::Fp12> OpBLS_FinalExp(operation::BLS_FinalExp& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::G1> OpBLS_HashToG1(operation::BLS_HashToG1& op) {
             (void)op;
             return std::nullopt;

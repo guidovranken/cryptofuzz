@@ -1653,6 +1653,45 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     generateECCPoint();
                 }
                 break;
+            case    CF_OPERATION("BLS_FinalExp"):
+                {
+                    parameters["modifier"] = "";
+                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+
+                    if ( Pool_Fp12.Have() && getBool() == true ) {
+                        const auto Fp12 = Pool_Fp12.Get();
+
+                        parameters["fp12"][0] = Fp12.bn1;
+                        parameters["fp12"][1] = Fp12.bn2;
+                        parameters["fp12"][2] = Fp12.bn3;
+                        parameters["fp12"][3] = Fp12.bn4;
+                        parameters["fp12"][4] = Fp12.bn5;
+                        parameters["fp12"][5] = Fp12.bn6;
+                        parameters["fp12"][6] = Fp12.bn7;
+                        parameters["fp12"][7] = Fp12.bn8;
+                        parameters["fp12"][8] = Fp12.bn9;
+                        parameters["fp12"][9] = Fp12.bn10;
+                        parameters["fp12"][10] = Fp12.bn11;
+                        parameters["fp12"][11] = Fp12.bn12;
+                    } else {
+                        parameters["fp12"][0] = getBignum();
+                        parameters["fp12"][1] = getBignum();
+                        parameters["fp12"][2] = getBignum();
+                        parameters["fp12"][3] = getBignum();
+                        parameters["fp12"][4] = getBignum();
+                        parameters["fp12"][5] = getBignum();
+                        parameters["fp12"][6] = getBignum();
+                        parameters["fp12"][7] = getBignum();
+                        parameters["fp12"][8] = getBignum();
+                        parameters["fp12"][9] = getBignum();
+                        parameters["fp12"][10] = getBignum();
+                        parameters["fp12"][11] = getBignum();
+                    }
+
+                    cryptofuzz::operation::BLS_FinalExp op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
             case    CF_OPERATION("BLS_G1_Add"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);

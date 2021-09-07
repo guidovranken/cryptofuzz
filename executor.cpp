@@ -1170,6 +1170,33 @@ template<> std::optional<component::Fp12> ExecutorBase<component::Fp12, operatio
     return module->OpBLS_Pairing(op);
 }
 
+/* Specialization for operation::BLS_FinalExp */
+template<> void ExecutorBase<component::Fp12, operation::BLS_FinalExp>::postprocess(std::shared_ptr<Module> module, operation::BLS_FinalExp& op, const ExecutorBase<component::Fp12, operation::BLS_FinalExp>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+
+    if ( result.second != std::nullopt  ) {
+        Pool_Fp12.Set({
+                result.second->bn1.ToTrimmedString(),
+                result.second->bn2.ToTrimmedString(),
+                result.second->bn3.ToTrimmedString(),
+                result.second->bn4.ToTrimmedString(),
+                result.second->bn5.ToTrimmedString(),
+                result.second->bn6.ToTrimmedString(),
+                result.second->bn7.ToTrimmedString(),
+                result.second->bn8.ToTrimmedString(),
+                result.second->bn9.ToTrimmedString(),
+                result.second->bn10.ToTrimmedString(),
+                result.second->bn11.ToTrimmedString(),
+                result.second->bn12.ToTrimmedString()
+        });
+    }
+}
+
+template<> std::optional<component::Fp12> ExecutorBase<component::Fp12, operation::BLS_FinalExp>::callModule(std::shared_ptr<Module> module, operation::BLS_FinalExp& op) const {
+    return module->OpBLS_FinalExp(op);
+}
+
 /* Specialization for operation::BLS_HashToG1 */
 template<> void ExecutorBase<component::G1, operation::BLS_HashToG1>::postprocess(std::shared_ptr<Module> module, operation::BLS_HashToG1& op, const ExecutorBase<component::G1, operation::BLS_HashToG1>::ResultPair& result) const {
     (void)module;
@@ -2117,6 +2144,7 @@ template class ExecutorBase<bool, operation::BLS_Verify>;
 template class ExecutorBase<component::G1, operation::BLS_Aggregate_G1>;
 template class ExecutorBase<component::G2, operation::BLS_Aggregate_G2>;
 template class ExecutorBase<component::Fp12, operation::BLS_Pairing>;
+template class ExecutorBase<component::Fp12, operation::BLS_FinalExp>;
 template class ExecutorBase<component::G1, operation::BLS_HashToG1>;
 template class ExecutorBase<component::G2, operation::BLS_HashToG2>;
 template class ExecutorBase<bool, operation::BLS_IsG1OnCurve>;
