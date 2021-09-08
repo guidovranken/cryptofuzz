@@ -313,7 +313,20 @@ std::optional<component::Fp12> mcl::OpBLS_Pairing(operation::BLS_Pairing& op) {
 
         Fp12 f;
 
-        millerLoop(f, g1, g2);
+        bool precompute = false;
+        try {
+            precompute = ds.Get<bool>();
+        } catch ( fuzzing::datasource::Base::OutOfData ) {
+        }
+
+        if ( precompute == true ) {
+            std::vector<Fp6> Qcoeff;
+            precomputeG2(Qcoeff, g2);
+            precomputedMillerLoop(f, g1, Qcoeff);
+        } else {
+            millerLoop(f, g1, g2);
+        }
+
         finalExp(f, f);
 
         ret = mcl_detail::ToComponentFp12(f);
