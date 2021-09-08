@@ -1425,6 +1425,39 @@ std::optional<component::Fp12> mcl::OpBignumCalc_Fp12(operation::BignumCalc_Fp12
                     );
                 ::mcl::bn::Fp12::neg(result, a);
                 return mcl_detail::ToComponentFp12(result);
+            case    CF_CALCOP("Conjugate(A)"):
+                a = ::mcl::bn::Fp12(
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn1.ToTrimmedString(),
+                                op.bn0.bn2.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn3.ToTrimmedString(),
+                                op.bn0.bn4.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn5.ToTrimmedString(),
+                                op.bn0.bn6.ToTrimmedString()
+                            )
+                        ),
+                        ::mcl::bn::Fp6(
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn7.ToTrimmedString(),
+                                op.bn0.bn8.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn9.ToTrimmedString(),
+                                op.bn0.bn10.ToTrimmedString()
+                            ),
+                            ::mcl::bn::Fp2(
+                                op.bn0.bn11.ToTrimmedString(),
+                                op.bn0.bn12.ToTrimmedString()
+                            )
+                        )
+                    );
+                ::mcl::bn::Fp12::unitaryInv(result, a);
+                return mcl_detail::ToComponentFp12(result);
             case    CF_CALCOP("Sqr(A)"):
                 a = ::mcl::bn::Fp12(
                         ::mcl::bn::Fp6(

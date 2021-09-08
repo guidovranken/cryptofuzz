@@ -1143,13 +1143,11 @@ namespace blst_detail {
 
                 ret = blst_detail::To_component_Fp12(RESULT());
                 break;
-#if 0
-            case    CF_CALCOP("Neg(A)"):
+            case    CF_CALCOP("Conjugate(A)"):
                 CF_CHECK_TRUE(blst_detail::To_blst_fp12(op.bn0, A));
                 CF_NORET(blst_fp12_conjugate(&A));
                 ret = blst_detail::To_component_Fp12(A);
                 break;
-#endif
             case    CF_CALCOP("Sqr(A)"):
                 CF_CHECK_TRUE(blst_detail::To_blst_fp12(op.bn0, A));
                 PREPARE_RESULT();
