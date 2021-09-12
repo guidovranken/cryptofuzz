@@ -4,7 +4,15 @@ CXXFLAGS += -Wall -Wextra -std=c++17 -I ../../include -I ../../fuzzing-headers/i
 
 module.a: module.o
 	test $(CHIA_BLS_LIBBLS_A_PATH)
-	bash ../link.sh module.a $(CHIA_BLS_LIBBLS_A_PATH)
+	test $(CHIA_BLS_LIBRELIC_S_A_PATH)
+	test $(CHIA_BLS_LIBSODIUM_A_PATH)
+	rm -rf module.a
+	rm -rf tmp/
+	mkdir tmp/
+	cd tmp && ar x $(CHIA_BLS_LIBBLS_A_PATH)
+	cd tmp && ar x $(CHIA_BLS_LIBRELIC_S_A_PATH)
+	cd tmp && ar x $(CHIA_BLS_LIBSODIUM_A_PATH)
+	ar rcs module.a module.o tmp/*
 	ranlib module.a
 module.o: module.cpp module.h
 	test $(CHIA_BLS_INCLUDE_PATH)
