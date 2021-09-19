@@ -26,6 +26,8 @@ using G2Type = libff::bls12_381_G2;
 using FrType = libff::bls12_381_Fr;
 using FqType = libff::bls12_381_Fq;
 using Fq2Type = libff::bls12_381_Fq2;
+using Fq6Type = libff::bls12_381_Fp6;
+using Fq12Type = libff::bls12_381_Fp12;
 constexpr size_t FrMaxSize = 77;
 constexpr size_t FqMaxSize = 115;
 #else
@@ -34,6 +36,8 @@ using G2Type = libff::alt_bn128_G2;
 using FrType = libff::alt_bn128_Fr;
 using FqType = libff::alt_bn128_Fq;
 using Fq2Type = libff::alt_bn128_Fq2;
+using Fq6Type = libff::alt_bn128_Fq6;
+using Fq12Type = libff::alt_bn128_Fq12;
 constexpr size_t FrMaxSize = 77;
 constexpr size_t FqMaxSize = 77;
 #endif
@@ -52,7 +56,7 @@ _libff::_libff(void) :
     libff::init_mnt6_params();
     */
 
-    //libff::inhibit_profiling_info = true;
+    libff::inhibit_profiling_info = true;
 }
 
 namespace libff_detail {
@@ -126,6 +130,23 @@ namespace libff_detail {
         return component::G2{
             libff_detail::ToString(g2.X.c0), libff_detail::ToString(g2.Y.c0),
             libff_detail::ToString(g2.X.c1), libff_detail::ToString(g2.Y.c1),
+        };
+    }
+
+    component::Fp12 Save(Fq12Type& fp12) {
+        return component::Fp12{
+            libff_detail::ToString(fp12.c0.c0.c0),
+            libff_detail::ToString(fp12.c0.c0.c1),
+            libff_detail::ToString(fp12.c0.c1.c0),
+            libff_detail::ToString(fp12.c0.c1.c1),
+            libff_detail::ToString(fp12.c0.c2.c0),
+            libff_detail::ToString(fp12.c0.c2.c1),
+            libff_detail::ToString(fp12.c1.c0.c0),
+            libff_detail::ToString(fp12.c1.c0.c1),
+            libff_detail::ToString(fp12.c1.c1.c0),
+            libff_detail::ToString(fp12.c1.c1.c1),
+            libff_detail::ToString(fp12.c1.c2.c0),
+            libff_detail::ToString(fp12.c1.c2.c1),
         };
     }
 
@@ -309,6 +330,68 @@ std::optional<bool> _libff::OpBLS_G2_IsEq(operation::BLS_G2_IsEq& op) {
 
 std::optional<component::G2> _libff::OpBLS_G2_Neg(operation::BLS_G2_Neg& op) {
     return libff_detail::OpBLS_Gx_Neg<G2Type, component::G2>(op);
+}
+
+std::optional<component::Fp12> _libff::OpBLS_FinalExp(operation::BLS_FinalExp& op) {
+    std::optional<component::Fp12> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    if ( op.fp12.bn1.GetSize() > FqMaxSize ) return std::nullopt;
+    if ( op.fp12.bn2.GetSize() > FqMaxSize ) return std::nullopt;
+    if ( op.fp12.bn3.GetSize() > FqMaxSize ) return std::nullopt;
+    if ( op.fp12.bn4.GetSize() > FqMaxSize ) return std::nullopt;
+    if ( op.fp12.bn5.GetSize() > FqMaxSize ) return std::nullopt;
+    if ( op.fp12.bn6.GetSize() > FqMaxSize ) return std::nullopt;
+    if ( op.fp12.bn7.GetSize() > FqMaxSize ) return std::nullopt;
+    if ( op.fp12.bn8.GetSize() > FqMaxSize ) return std::nullopt;
+    if ( op.fp12.bn9.GetSize() > FqMaxSize ) return std::nullopt;
+    if ( op.fp12.bn10.GetSize() > FqMaxSize ) return std::nullopt;
+    if ( op.fp12.bn11.GetSize() > FqMaxSize ) return std::nullopt;
+    if ( op.fp12.bn12.GetSize() > FqMaxSize ) return std::nullopt;
+
+    const auto f = Fq12Type(
+            Fq6Type(
+                Fq2Type(
+                    FqType(op.fp12.bn1.ToTrimmedString().c_str()),
+                    FqType(op.fp12.bn2.ToTrimmedString().c_str())
+                    ),
+                Fq2Type(
+                    FqType(op.fp12.bn3.ToTrimmedString().c_str()),
+                    FqType(op.fp12.bn4.ToTrimmedString().c_str())
+                    ),
+                Fq2Type(
+                    FqType(op.fp12.bn5.ToTrimmedString().c_str()),
+                    FqType(op.fp12.bn6.ToTrimmedString().c_str())
+                    )
+                ),
+            Fq6Type(
+                Fq2Type(
+                    FqType(op.fp12.bn7.ToTrimmedString().c_str()),
+                    FqType(op.fp12.bn8.ToTrimmedString().c_str())
+                    ),
+                Fq2Type(
+                    FqType(op.fp12.bn9.ToTrimmedString().c_str()),
+                    FqType(op.fp12.bn10.ToTrimmedString().c_str())
+                    ),
+                Fq2Type(
+                    FqType(op.fp12.bn11.ToTrimmedString().c_str()),
+                    FqType(op.fp12.bn12.ToTrimmedString().c_str())
+                    )
+                )
+                );
+
+    if ( f == Fq12Type::zero() ) {
+        auto res = Fq12Type::zero();
+        ret = libff_detail::Save(res);
+        return ret;
+    }
+
+    {
+        auto res = alt_bn128_final_exponentiation(f);
+        ret = libff_detail::Save(res);
+    }
+
+    return ret;
 }
 
 namespace libff_detail {

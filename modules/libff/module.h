@@ -22,6 +22,7 @@ class _libff : public Module {
         std::optional<component::G2> OpBLS_G2_Mul(operation::BLS_G2_Mul& op) override;
         std::optional<bool> OpBLS_G2_IsEq(operation::BLS_G2_IsEq& op) override;
         std::optional<component::G2> OpBLS_G2_Neg(operation::BLS_G2_Neg& op) override;
+        std::optional<component::Fp12> OpBLS_FinalExp(operation::BLS_FinalExp& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
         bool SupportsModularBignumCalc(void) const override;
 };
