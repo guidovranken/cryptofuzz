@@ -13,7 +13,7 @@
 #include <cybozu/sha2.hpp>
 
 #if !defined(CRYPTOFUZZ_MCL_USE_BN128)
- #define Namespace Namespace
+ #define Namespace ::mcl::bls12
 #else
  #define Namespace ::mcl::bn
 #endif
