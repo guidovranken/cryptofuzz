@@ -3,9 +3,20 @@
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
 
-#include <mcl/bls12_381.hpp>
+#if !defined(CRYPTOFUZZ_MCL_USE_BN128)
+ #include <mcl/bls12_381.hpp>
+#else
+ #include <mcl/bn256.hpp>
+#endif
+
 #define MCL_DONT_USE_OPENSSL
 #include <cybozu/sha2.hpp>
+
+#if !defined(CRYPTOFUZZ_MCL_USE_BN128)
+ #define Namespace Namespace
+#else
+ #define Namespace ::mcl::bn
+#endif
 
 #include <iostream>
 #include <vector>
@@ -17,8 +28,12 @@ namespace module {
 
 mcl::mcl(void) :
     Module("mcl") {
+#if !defined(CRYPTOFUZZ_MCL_USE_BN128)
         ::mcl::bn::initPairing(::mcl::BLS12_381);
         ::mcl::bn::setMapToMode(MCL_MAP_TO_MODE_HASH_TO_CURVE_07);
+#else
+        ::mcl::bn::initPairing(::mcl::BN_SNARK1);
+#endif
         CF_NORET(::mcl::bn::verifyOrderG1(1));
         CF_NORET(::mcl::bn::verifyOrderG2(1));
 }
@@ -58,38 +73,38 @@ std::vector<std::string> split(const std::string& s, std::optional<size_t> expec
         return Buffer(msg);
     }
 
-    ::mcl::bls12::G1 Convert(const component::G1& g1) {
-        using namespace ::mcl::bls12;
+    Namespace::G1 Convert(const component::G1& g1) {
+        using namespace Namespace;
         return G1(
                 Fp(g1.first.ToTrimmedString(), 10),
                 Fp(g1.second.ToTrimmedString(), 10));
     }
-    ::mcl::bls12::G2 Convert(const component::G2& g2) {
-        using namespace ::mcl::bls12;
+    Namespace::G2 Convert(const component::G2& g2) {
+        using namespace Namespace;
         return G2(
                 {Fp(g2.first.first.ToTrimmedString(), 10), Fp(g2.second.first.ToTrimmedString(), 10)},
                 {Fp(g2.first.second.ToTrimmedString(), 10), Fp(g2.second.second.ToTrimmedString(), 10)});
     }
-    component::G1 ToComponentG1(::mcl::bls12::G1 g1) {
+    component::G1 ToComponentG1(Namespace::G1 g1) {
         /* Necessary? */
         g1.normalize();
         const auto parts = mcl_detail::split(g1.getStr(10), 3);
         return { parts[1], parts[2] };
     }
 
-    component::G2 ToComponentG2(::mcl::bls12::G2 g2) {
+    component::G2 ToComponentG2(Namespace::G2 g2) {
         /* Necessary? */
         g2.normalize();
         const auto parts = mcl_detail::split(g2.getStr(10), 5);
         return { parts[1], parts[3], parts[2], parts[4] };
     }
 
-    component::Fp2 ToComponentFp2(::mcl::bls12::Fp2 fp2) {
+    component::Fp2 ToComponentFp2(Namespace::Fp2 fp2) {
         const auto parts = mcl_detail::split(fp2.getStr(10), 2);
         return { parts[0], parts[1] };
     }
 
-    component::Fp12 ToComponentFp12(::mcl::bls12::Fp12 fp12) {
+    component::Fp12 ToComponentFp12(Namespace::Fp12 fp12) {
         const auto parts = mcl_detail::split(fp12.getStr(10), 12);
         return {
             parts[0],
@@ -107,39 +122,53 @@ std::vector<std::string> split(const std::string& s, std::optional<size_t> expec
         };
     }
 
-    ::mcl::bls12::G1 Generator(void) {
-        return ::mcl::bls12::G1(
-                ::mcl::bls12::Fp("3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507", 10),
-                ::mcl::bls12::Fp("1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569", 10) );
+    Namespace::G1 Generator(void) {
+#if !defined(CRYPTOFUZZ_MCL_USE_BN128)
+        return Namespace::G1(
+                Namespace::Fp("3685416753713387016781088315183077757961620795782546409894578378688607592378376318836054947676345821548104185464507", 10),
+                Namespace::Fp("1339506544944476473020471379941921221584933875938349620426543736416511423956333506472724655353366534992391756441569", 10) );
+#else
+        return Namespace::G1(
+                Namespace::Fp("1", 10),
+                Namespace::Fp("2", 10) );
+#endif
     }
 
-    ::mcl::bls12::G2 Generator_G2(void) {
-        return ::mcl::bls12::G2(
-                {::mcl::bls12::Fp("352701069587466618187139116011060144890029952792775240219908644239793785735715026873347600343865175952761926303160", 10),
-                ::mcl::bls12::Fp("3059144344244213709971259814753781636986470325476647558659373206291635324768958432433509563104347017837885763365758", 10)},
-                {::mcl::bls12::Fp("1985150602287291935568054521177171638300868978215655730859378665066344726373823718423869104263333984641494340347905", 10),
-                ::mcl::bls12::Fp("927553665492332455747201965776037880757740193453592970025027978793976877002675564980949289727957565575433344219582", 10)} );
+    Namespace::G2 Generator_G2(void) {
+#if !defined(CRYPTOFUZZ_MCL_USE_BN128)
+        return Namespace::G2(
+                {Namespace::Fp("352701069587466618187139116011060144890029952792775240219908644239793785735715026873347600343865175952761926303160", 10),
+                Namespace::Fp("3059144344244213709971259814753781636986470325476647558659373206291635324768958432433509563104347017837885763365758", 10)},
+                {Namespace::Fp("1985150602287291935568054521177171638300868978215655730859378665066344726373823718423869104263333984641494340347905", 10),
+                Namespace::Fp("927553665492332455747201965776037880757740193453592970025027978793976877002675564980949289727957565575433344219582", 10)} );
+#else
+        return Namespace::G2(
+                {Namespace::Fp("10857046999023057135944570762232829481370756359578518086990519993285655852781", 10),
+                Namespace::Fp("11559732032986387107991004021392285783925812861821192530917403151452391805634", 10)},
+                {Namespace::Fp("8495653923123431417604973247489272438418190587263600148770280649306958101930", 10),
+                Namespace::Fp("4082367875863433681332203403145435568316851327593401208105741076214120093531", 10)} );
+#endif
     }
 
-    void Hash(::mcl::bls12::G1& P, const std::string& m)
+    void Hash(Namespace::G1& P, const std::string& m)
     {
-        ::mcl::bls12::Fp t;
+        Namespace::Fp t;
         t.setHashOf(m);
-        ::mcl::bls12::mapToG1(P, t);
+        Namespace::mapToG1(P, t);
     }
 
-    void Hash(::mcl::bls12::G2& P, const std::string& m)
+    void Hash(Namespace::G2& P, const std::string& m)
     {
-        ::mcl::bls12::Fp t;
+        Namespace::Fp t;
         t.setHashOf(m);
-        ::mcl::bls12::mapToG2(P, ::mcl::bls12::Fp2(t, 0));
+        Namespace::mapToG2(P, Namespace::Fp2(t, 0));
     }
 
-    void Sign(::mcl::bls12::G2& sign, const ::mcl::bls12::Fr& s, const std::string& m)
+    void Sign(Namespace::G2& sign, const Namespace::Fr& s, const std::string& m)
     {
-        ::mcl::bls12::G2 Hm;
+        Namespace::G2 Hm;
         Hash(Hm, m);
-        ::mcl::bls12::G2::mul(sign, Hm, s); // sign = s H(m)
+        Namespace::G2::mul(sign, Hm, s); // sign = s H(m)
     }
 
 }
@@ -186,7 +215,7 @@ std::optional<component::BLS_PublicKey> mcl::OpBLS_PrivateToPublic(operation::BL
     }
 
     try {
-        using namespace ::mcl::bls12;
+        using namespace Namespace;
 
         Fr sec;
         sec.setStr(op.priv.ToTrimmedString(), 10);
@@ -212,7 +241,7 @@ std::optional<component::G2> mcl::OpBLS_PrivateToPublic_G2(operation::BLS_Privat
     }
 
     try {
-        using namespace ::mcl::bls12;
+        using namespace Namespace;
 
         Fr sec;
         sec.setStr(op.priv.ToTrimmedString(), 10);
@@ -239,7 +268,7 @@ std::optional<component::BLS_Signature> mcl::OpBLS_Sign(operation::BLS_Sign& op)
     }
 
     try {
-        using namespace ::mcl::bls12;
+        using namespace Namespace;
         Fr sec;
         sec.setStr(op.priv.ToTrimmedString(), 10);
 
@@ -248,10 +277,10 @@ std::optional<component::BLS_Signature> mcl::OpBLS_Sign(operation::BLS_Sign& op)
             G2 hash;
             const auto msg = mcl_detail::MsgAug(op);
             BN::param.mapTo.mapTo_WB19_.msgToG2(hash, msg.GetPtr(&ds), msg.GetSize(), (const char*)op.dest.GetPtr(&ds), op.dest.GetSize());
-            ::mcl::bls12::G2::mul(sign, hash, sec);
+            Namespace::G2::mul(sign, hash, sec);
         } else {
             const auto g2 = mcl_detail::Convert(op.point);
-            ::mcl::bls12::G2::mul(sign, g2, sec);
+            Namespace::G2::mul(sign, g2, sec);
         }
 
         G1 pub;
@@ -285,7 +314,7 @@ std::optional<bool> mcl::OpBLS_Verify(operation::BLS_Verify& op) {
     }
 
     try {
-        using namespace ::mcl::bls12;
+        using namespace Namespace;
         const auto pub = mcl_detail::Convert(op.pub);
         const auto signature = mcl_detail::Convert(op.signature);
 
@@ -303,7 +332,7 @@ std::optional<component::Fp12> mcl::OpBLS_Pairing(operation::BLS_Pairing& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     try {
-        using namespace ::mcl::bls12;
+        using namespace Namespace;
 
         const auto g1 = mcl_detail::Convert(op.g1);
         //CF_CHECK_TRUE(g1.isValid());
@@ -343,7 +372,7 @@ std::optional<component::Fp12> mcl::OpBLS_FinalExp(operation::BLS_FinalExp& op) 
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     try {
-        using namespace ::mcl::bls12;
+        using namespace Namespace;
 
         auto f = ::mcl::bn::Fp12(
                 ::mcl::bn::Fp6(
@@ -376,6 +405,7 @@ std::optional<component::Fp12> mcl::OpBLS_FinalExp(operation::BLS_FinalExp& op) 
                     )
         );
 
+        //::mcl::bn::Fp12::unitaryInv(f, f);
         finalExp(f, f);
 
         ret = mcl_detail::ToComponentFp12(f);
@@ -387,9 +417,9 @@ end:
 }
 
 std::optional<bool> mcl::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
-    using namespace ::mcl::bls12;
+    using namespace Namespace;
 
-    ::mcl::bls12::Fp x, y;
+    Namespace::Fp x, y;
 
     try {
         x = Fp(op.g1.first.ToTrimmedString(), 10);
@@ -400,16 +430,16 @@ std::optional<bool> mcl::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
     }
 
     try {
-        return ::mcl::bls12::G1(x, y).isValid();
+        return Namespace::G1(x, y).isValid();
     } catch ( cybozu::Exception ) {
         return false;
     }
 }
 
 std::optional<bool> mcl::OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) {
-    using namespace ::mcl::bls12;
+    using namespace Namespace;
 
-    ::mcl::bls12::Fp x1, y1, x2, y2;
+    Namespace::Fp x1, y1, x2, y2;
 
     try {
         x1 = Fp(op.g2.first.first.ToTrimmedString(), 10);
@@ -422,7 +452,7 @@ std::optional<bool> mcl::OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) {
     }
 
     try {
-        return ::mcl::bls12::G2({x1, y1}, {x2, y2}).isValid();
+        return Namespace::G2({x1, y1}, {x2, y2}).isValid();
     } catch ( cybozu::Exception ) {
         return false;
     }
@@ -432,7 +462,7 @@ std::optional<component::G1> mcl::OpBLS_HashToG1(operation::BLS_HashToG1& op) {
     std::optional<component::G1> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    using namespace ::mcl::bls12;
+    using namespace Namespace;
     G1 P;
     const auto msg = mcl_detail::MsgAug(op);
     BN::param.mapTo.mapTo_WB19_.msgToG1(P, msg.GetPtr(&ds), msg.GetSize(), (const char*)op.dest.GetPtr(&ds), op.dest.GetSize());
@@ -448,7 +478,7 @@ std::optional<component::G2> mcl::OpBLS_HashToG2(operation::BLS_HashToG2& op) {
     std::optional<component::G2> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    using namespace ::mcl::bls12;
+    using namespace Namespace;
     G2 P;
     const auto msg = mcl_detail::MsgAug(op);
     BN::param.mapTo.mapTo_WB19_.msgToG2(P, msg.GetPtr(&ds), msg.GetSize(), (const char*)op.dest.GetPtr(&ds), op.dest.GetSize());
@@ -462,9 +492,9 @@ std::optional<component::G2> mcl::OpBLS_HashToG2(operation::BLS_HashToG2& op) {
 
 std::optional<component::G1> mcl::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
     std::optional<component::G1> ret = std::nullopt;
-    using namespace ::mcl::bls12;
+    using namespace Namespace;
 
-    ::mcl::bls12::Fp a_x, a_y, b_x, b_y;
+    Namespace::Fp a_x, a_y, b_x, b_y;
 
     try {
         a_x = Fp(op.a.first.ToTrimmedString(), 10);
@@ -477,8 +507,8 @@ std::optional<component::G1> mcl::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
     }
 
     try {
-        const auto a = ::mcl::bls12::G1(a_x, a_y);
-        const auto b = ::mcl::bls12::G1(b_x, b_y);
+        const auto a = Namespace::G1(a_x, a_y);
+        const auto b = Namespace::G1(b_x, b_y);
 
         const auto result = a + b;
 
@@ -492,10 +522,10 @@ std::optional<component::G1> mcl::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
 
 std::optional<component::G1> mcl::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
     std::optional<component::G1> ret = std::nullopt;
-    using namespace ::mcl::bls12;
+    using namespace Namespace;
 
-    ::mcl::bls12::Fp a_x, a_y;
-    ::mcl::bls12::Fp b;
+    Namespace::Fp a_x, a_y;
+    Namespace::Fp b;
 
     try {
         a_x = Fp(op.a.first.ToTrimmedString(), 10);
@@ -508,7 +538,7 @@ std::optional<component::G1> mcl::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
     }
 
     try {
-        const auto a = ::mcl::bls12::G1(a_x, a_y);
+        const auto a = Namespace::G1(a_x, a_y);
 
         const auto result = a * b;
 
@@ -522,9 +552,9 @@ std::optional<component::G1> mcl::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
 
 std::optional<bool> mcl::OpBLS_G1_IsEq(operation::BLS_G1_IsEq& op) {
     std::optional<bool> ret = std::nullopt;
-    using namespace ::mcl::bls12;
+    using namespace Namespace;
 
-    ::mcl::bls12::Fp a_x, a_y, b_x, b_y;
+    Namespace::Fp a_x, a_y, b_x, b_y;
 
     try {
         a_x = Fp(op.a.first.ToTrimmedString(), 10);
@@ -537,8 +567,8 @@ std::optional<bool> mcl::OpBLS_G1_IsEq(operation::BLS_G1_IsEq& op) {
     }
 
     try {
-        const auto a = ::mcl::bls12::G1(a_x, a_y);
-        const auto b = ::mcl::bls12::G1(b_x, b_y);
+        const auto a = Namespace::G1(a_x, a_y);
+        const auto b = Namespace::G1(b_x, b_y);
 
         ret = a == b;
     } catch ( cybozu::Exception ) {
@@ -550,9 +580,9 @@ std::optional<bool> mcl::OpBLS_G1_IsEq(operation::BLS_G1_IsEq& op) {
 
 std::optional<component::G1> mcl::OpBLS_G1_Neg(operation::BLS_G1_Neg& op) {
     std::optional<component::G1> ret = std::nullopt;
-    using namespace ::mcl::bls12;
+    using namespace Namespace;
 
-    ::mcl::bls12::Fp a_x, a_y;
+    Namespace::Fp a_x, a_y;
 
     try {
         a_x = Fp(op.a.first.ToTrimmedString(), 10);
@@ -563,7 +593,7 @@ std::optional<component::G1> mcl::OpBLS_G1_Neg(operation::BLS_G1_Neg& op) {
     }
 
     try {
-        const auto a = ::mcl::bls12::G1(a_x, a_y);
+        const auto a = Namespace::G1(a_x, a_y);
 
         const auto result = -a;
 
@@ -577,10 +607,10 @@ std::optional<component::G1> mcl::OpBLS_G1_Neg(operation::BLS_G1_Neg& op) {
 
 std::optional<component::G2> mcl::OpBLS_G2_Add(operation::BLS_G2_Add& op) {
     std::optional<component::G2> ret = std::nullopt;
-    using namespace ::mcl::bls12;
+    using namespace Namespace;
 
-    ::mcl::bls12::Fp a_v, a_w, a_x, a_y;
-    ::mcl::bls12::Fp b_v, b_w, b_x, b_y;
+    Namespace::Fp a_v, a_w, a_x, a_y;
+    Namespace::Fp b_v, b_w, b_x, b_y;
 
     try {
         a_v = Fp(op.a.first.first.ToTrimmedString(), 10);
@@ -598,8 +628,8 @@ std::optional<component::G2> mcl::OpBLS_G2_Add(operation::BLS_G2_Add& op) {
     }
 
     try {
-        const auto a = ::mcl::bls12::G2({a_v, a_x}, {a_w, a_y});
-        const auto b = ::mcl::bls12::G2({b_v, b_x}, {b_w, b_y});
+        const auto a = Namespace::G2({a_v, a_x}, {a_w, a_y});
+        const auto b = Namespace::G2({b_v, b_x}, {b_w, b_y});
 
         const auto result = a + b;
 
@@ -613,10 +643,10 @@ std::optional<component::G2> mcl::OpBLS_G2_Add(operation::BLS_G2_Add& op) {
 
 std::optional<component::G2> mcl::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
     std::optional<component::G2> ret = std::nullopt;
-    using namespace ::mcl::bls12;
+    using namespace Namespace;
 
-    ::mcl::bls12::Fp a_v, a_w, a_x, a_y;
-    ::mcl::bls12::Fp b;
+    Namespace::Fp a_v, a_w, a_x, a_y;
+    Namespace::Fp b;
 
     try {
         a_v = Fp(op.a.first.first.ToTrimmedString(), 10);
@@ -631,7 +661,7 @@ std::optional<component::G2> mcl::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
     }
 
     try {
-        const auto a = ::mcl::bls12::G2({a_v, a_x}, {a_w, a_y});
+        const auto a = Namespace::G2({a_v, a_x}, {a_w, a_y});
 
         const auto result = a * b;
 
@@ -645,10 +675,10 @@ std::optional<component::G2> mcl::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
 
 std::optional<bool> mcl::OpBLS_G2_IsEq(operation::BLS_G2_IsEq& op) {
     std::optional<bool> ret = std::nullopt;
-    using namespace ::mcl::bls12;
+    using namespace Namespace;
 
-    ::mcl::bls12::Fp a_v, a_w, a_x, a_y;
-    ::mcl::bls12::Fp b_v, b_w, b_x, b_y;
+    Namespace::Fp a_v, a_w, a_x, a_y;
+    Namespace::Fp b_v, b_w, b_x, b_y;
 
     try {
         a_v = Fp(op.a.first.first.ToTrimmedString(), 10);
@@ -666,8 +696,8 @@ std::optional<bool> mcl::OpBLS_G2_IsEq(operation::BLS_G2_IsEq& op) {
     }
 
     try {
-        const auto a = ::mcl::bls12::G2({a_v, a_x}, {a_w, a_y});
-        const auto b = ::mcl::bls12::G2({b_v, b_x}, {b_w, b_y});
+        const auto a = Namespace::G2({a_v, a_x}, {a_w, a_y});
+        const auto b = Namespace::G2({b_v, b_x}, {b_w, b_y});
 
         ret = a == b;
     } catch ( cybozu::Exception ) {
@@ -679,9 +709,9 @@ std::optional<bool> mcl::OpBLS_G2_IsEq(operation::BLS_G2_IsEq& op) {
 
 std::optional<component::G2> mcl::OpBLS_G2_Neg(operation::BLS_G2_Neg& op) {
     std::optional<component::G2> ret = std::nullopt;
-    using namespace ::mcl::bls12;
+    using namespace Namespace;
 
-    ::mcl::bls12::Fp a_v, a_w, a_x, a_y;
+    Namespace::Fp a_v, a_w, a_x, a_y;
 
     try {
         a_v = Fp(op.a.first.first.ToTrimmedString(), 10);
@@ -694,7 +724,7 @@ std::optional<component::G2> mcl::OpBLS_G2_Neg(operation::BLS_G2_Neg& op) {
     }
 
     try {
-        const auto a = ::mcl::bls12::G2({a_v, a_x}, {a_w, a_y});
+        const auto a = Namespace::G2({a_v, a_x}, {a_w, a_y});
 
         const auto result = -a;
 
