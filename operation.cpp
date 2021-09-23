@@ -1198,6 +1198,20 @@ nlohmann::json BLS_Verify::ToJSON(void) const {
     return j;
 }
 
+std::string BLS_BatchVerify::Name(void) const { return "BLS_BatchVerify"; }
+std::string BLS_BatchVerify::ToString(void) const {
+    std::stringstream ss;
+
+    /* TODO */
+    return ss.str();
+}
+
+nlohmann::json BLS_BatchVerify::ToJSON(void) const {
+    nlohmann::json j;
+    /* TODO */
+    return j;
+}
+
 std::string BLS_Pairing::Name(void) const { return "BLS_Pairing"; }
 std::string BLS_Pairing::ToString(void) const {
     std::stringstream ss;
@@ -1218,7 +1232,29 @@ nlohmann::json BLS_Pairing::ToJSON(void) const {
     nlohmann::json j;
     j["curveType"] = curveType.ToJSON();
     j["modifier"] = modifier.ToJSON();
-    /* TODO q,p */
+    return j;
+}
+
+std::string BLS_MillerLoop::Name(void) const { return "BLS_MillerLoop"; }
+std::string BLS_MillerLoop::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_MillerLoop" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "G1 X: " << g1.first.ToString() << std::endl;
+    ss << "G1 Y: " << g1.second.ToString() << std::endl;
+    ss << "G2 V: " << g2.first.first.ToString() << std::endl;
+    ss << "G2 W: " << g2.first.second.ToString() << std::endl;
+    ss << "G2 X: " << g2.second.first.ToString() << std::endl;
+    ss << "G2 Y: " << g2.second.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_MillerLoop::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+    j["modifier"] = modifier.ToJSON();
     return j;
 }
 

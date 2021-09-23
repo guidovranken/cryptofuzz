@@ -651,29 +651,27 @@ nlohmann::json BLS_KeyPair::ToJSON(void) const {
     return std::vector<nlohmann::json>{priv.ToJSON(), pub.ToJSON()};
 }
 
-/* BLS_PairingComponents */
+/* BLS_BatchVerify_Vector */
 
-BLS_PairingComponents::BLS_PairingComponents(Datasource& ds) {
+BLS_BatchVerify_Vector::BLS_BatchVerify_Vector(Datasource& ds) {
     const auto num = ds.Get<uint32_t>(0);
     for (size_t i = 0; i < num; i++) {
-        c.push_back( Component{{ds}, {ds}, {ds}, {ds}} );
+        c.push_back( BatchVerify_single{{ds}, {ds}, {ds}} );
     }
 }
 
-BLS_PairingComponents::BLS_PairingComponents(nlohmann::json json) {
+BLS_BatchVerify_Vector::BLS_BatchVerify_Vector(nlohmann::json json) {
     for (const auto& j : json) {
-        c.push_back( Component{
-                {j["sig_v"], j["sig_w"], j["sig_x"], j["sig_y"]},
+        c.push_back( BatchVerify_single{
                 {j["pub_x"], j["pub_y"]},
                 {j["msg"]},
                 {j["aug"]}});
     }
 }
 
-void BLS_PairingComponents::Serialize(Datasource& ds) const {
+void BLS_BatchVerify_Vector::Serialize(Datasource& ds) const {
     ds.Put<uint32_t>(c.size());
     for (const auto& component : c) {
-        component.sig.Serialize(ds);
         component.pub.Serialize(ds);
         component.msg.Serialize(ds);
         component.aug.Serialize(ds);

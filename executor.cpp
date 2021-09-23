@@ -1121,6 +1121,17 @@ template<> std::optional<bool> ExecutorBase<bool, operation::BLS_Verify>::callMo
     return module->OpBLS_Verify(op);
 }
 
+/* Specialization for operation::BLS_BatchVerify */
+template<> void ExecutorBase<bool, operation::BLS_BatchVerify>::postprocess(std::shared_ptr<Module> module, operation::BLS_BatchVerify& op, const ExecutorBase<bool, operation::BLS_BatchVerify>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<bool> ExecutorBase<bool, operation::BLS_BatchVerify>::callModule(std::shared_ptr<Module> module, operation::BLS_BatchVerify& op) const {
+    return module->OpBLS_BatchVerify(op);
+}
+
 /* Specialization for operation::BLS_Aggregate_G1 */
 template<> void ExecutorBase<component::G1, operation::BLS_Aggregate_G1>::postprocess(std::shared_ptr<Module> module, operation::BLS_Aggregate_G1& op, const ExecutorBase<component::G1, operation::BLS_Aggregate_G1>::ResultPair& result) const {
     (void)module;
@@ -1168,6 +1179,33 @@ template<> void ExecutorBase<component::Fp12, operation::BLS_Pairing>::postproce
 
 template<> std::optional<component::Fp12> ExecutorBase<component::Fp12, operation::BLS_Pairing>::callModule(std::shared_ptr<Module> module, operation::BLS_Pairing& op) const {
     return module->OpBLS_Pairing(op);
+}
+
+/* Specialization for operation::BLS_MillerLoop */
+template<> void ExecutorBase<component::Fp12, operation::BLS_MillerLoop>::postprocess(std::shared_ptr<Module> module, operation::BLS_MillerLoop& op, const ExecutorBase<component::Fp12, operation::BLS_MillerLoop>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+
+    if ( result.second != std::nullopt  ) {
+        Pool_Fp12.Set({
+                result.second->bn1.ToTrimmedString(),
+                result.second->bn2.ToTrimmedString(),
+                result.second->bn3.ToTrimmedString(),
+                result.second->bn4.ToTrimmedString(),
+                result.second->bn5.ToTrimmedString(),
+                result.second->bn6.ToTrimmedString(),
+                result.second->bn7.ToTrimmedString(),
+                result.second->bn8.ToTrimmedString(),
+                result.second->bn9.ToTrimmedString(),
+                result.second->bn10.ToTrimmedString(),
+                result.second->bn11.ToTrimmedString(),
+                result.second->bn12.ToTrimmedString()
+        });
+    }
+}
+
+template<> std::optional<component::Fp12> ExecutorBase<component::Fp12, operation::BLS_MillerLoop>::callModule(std::shared_ptr<Module> module, operation::BLS_MillerLoop& op) const {
+    return module->OpBLS_MillerLoop(op);
 }
 
 /* Specialization for operation::BLS_FinalExp */
@@ -2141,9 +2179,11 @@ template class ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPu
 template class ExecutorBase<component::G2, operation::BLS_PrivateToPublic_G2>;
 template class ExecutorBase<component::BLS_Signature, operation::BLS_Sign>;
 template class ExecutorBase<bool, operation::BLS_Verify>;
+template class ExecutorBase<bool, operation::BLS_BatchVerify>;
 template class ExecutorBase<component::G1, operation::BLS_Aggregate_G1>;
 template class ExecutorBase<component::G2, operation::BLS_Aggregate_G2>;
 template class ExecutorBase<component::Fp12, operation::BLS_Pairing>;
+template class ExecutorBase<component::Fp12, operation::BLS_MillerLoop>;
 template class ExecutorBase<component::Fp12, operation::BLS_FinalExp>;
 template class ExecutorBase<component::G1, operation::BLS_HashToG1>;
 template class ExecutorBase<component::G2, operation::BLS_HashToG2>;

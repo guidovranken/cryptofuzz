@@ -2072,6 +2072,53 @@ class BLS_Verify : public Operation {
         }
 };
 
+class BLS_BatchVerify : public Operation {
+    public:
+        const component::CurveType curveType;
+        const bool hashOrEncode;
+        const component::Cleartext dest;
+        const component::G2 sig;
+        component::BLS_BatchVerify_Vector bf;
+
+        BLS_BatchVerify(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            hashOrEncode(ds.Get<bool>()),
+            dest(ds),
+            sig(ds),
+            bf(ds)
+        { }
+        BLS_BatchVerify(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            hashOrEncode(json["hashOrEncode"]),
+            dest(json["dest"]),
+            sig(json["sig_v"], json["sig_w"], json["sig_x"], json["sig_y"]),
+            bf(json["bf"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_BatchVerify& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (hashOrEncode == rhs.hashOrEncode) &&
+                (dest == rhs.dest) &&
+                (sig == rhs.sig) &&
+                (bf == rhs.bf) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            ds.Put<bool>(hashOrEncode);
+            dest.Serialize(ds);
+            sig.Serialize(ds);
+            bf.Serialize(ds);
+        }
+};
+
 class BLS_Aggregate_G1 : public Operation {
     public:
         const component::CurveType curveType;
@@ -2160,6 +2207,43 @@ class BLS_Pairing : public Operation {
         std::string ToString(void) const override;
         nlohmann::json ToJSON(void) const override;
         inline bool operator==(const BLS_Pairing& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (g1 == rhs.g1) &&
+                (g2 == rhs.g2) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            g1.Serialize(ds);
+            g2.Serialize(ds);
+        }
+};
+
+class BLS_MillerLoop : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::G1 g1;
+        const component::G2 g2;
+
+        BLS_MillerLoop(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            g1(ds),
+            g2(ds)
+        { }
+        BLS_MillerLoop(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            g1(json["g1_x"], json["g1_y"]),
+            g2(json["g2_v"], json["g2_w"], json["g2_x"], json["g2_y"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_MillerLoop& rhs) const {
             return
                 (curveType == rhs.curveType) &&
                 (g1 == rhs.g1) &&

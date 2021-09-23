@@ -16,12 +16,14 @@ class blst : public Module {
         std::optional<component::G2> OpBLS_HashToG2(operation::BLS_HashToG2& op) override;
         std::optional<component::BLS_Signature> OpBLS_Sign(operation::BLS_Sign& op) override;
         std::optional<bool> OpBLS_Verify(operation::BLS_Verify& op) override;
+        std::optional<bool> OpBLS_BatchVerify(operation::BLS_BatchVerify& op) override;
         std::optional<bool> OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) override;
         std::optional<bool> OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) override;
         std::optional<component::BLS_KeyPair> OpBLS_GenerateKeyPair(operation::BLS_GenerateKeyPair& op) override;
         std::optional<component::G1> OpBLS_Aggregate_G1(operation::BLS_Aggregate_G1& op) override;
         std::optional<component::G2> OpBLS_Aggregate_G2(operation::BLS_Aggregate_G2& op) override;
         std::optional<component::Fp12> OpBLS_Pairing(operation::BLS_Pairing& op) override;
+        std::optional<component::Fp12> OpBLS_MillerLoop(operation::BLS_MillerLoop& op) override;
         std::optional<component::Fp12> OpBLS_FinalExp(operation::BLS_FinalExp& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
         std::optional<component::Fp2> OpBignumCalc_Fp2(operation::BignumCalc_Fp2& op) override;

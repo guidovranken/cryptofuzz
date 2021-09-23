@@ -256,21 +256,20 @@ class BLS_KeyPair {
         nlohmann::json ToJSON(void) const;
 };
 
-class BLS_PairingComponents {
+class BLS_BatchVerify_Vector {
     public:
         typedef struct {
-            G2 sig;
             BLS_PublicKey pub;
             Cleartext msg;
             Cleartext aug;
-        } Component;
-        std::vector<Component> c;
+        } BatchVerify_single;
+        std::vector<BatchVerify_single> c;
 
-        BLS_PairingComponents(Datasource& ds);
-        BLS_PairingComponents(G2 sig, BLS_PublicKey pub, Cleartext msg, Cleartext aug);
-        BLS_PairingComponents(nlohmann::json json);
+        BLS_BatchVerify_Vector(Datasource& ds);
+        BLS_BatchVerify_Vector(BLS_PublicKey pub, Cleartext msg, Cleartext aug);
+        BLS_BatchVerify_Vector(nlohmann::json json);
 
-        bool operator==(const BLS_PairingComponents& rhs) const;
+        bool operator==(const BLS_BatchVerify_Vector& rhs) const;
         void Serialize(Datasource& ds) const;
         nlohmann::json ToJSON(void) const;
 };

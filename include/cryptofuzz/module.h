@@ -191,6 +191,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<bool> OpBLS_BatchVerify(operation::BLS_BatchVerify& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::G1> OpBLS_Aggregate_G1(operation::BLS_Aggregate_G1& op) {
             (void)op;
             return std::nullopt;
@@ -200,6 +204,10 @@ class Module {
             return std::nullopt;
         }
         virtual std::optional<component::Fp12> OpBLS_Pairing(operation::BLS_Pairing& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::Fp12> OpBLS_MillerLoop(operation::BLS_MillerLoop& op) {
             (void)op;
             return std::nullopt;
         }

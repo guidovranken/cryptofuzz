@@ -464,6 +464,48 @@ end:
     return ret;
 }
 
+namespace blst_detail {
+    std::optional<bool> Verify(
+            Datasource& ds,
+            const component::Cleartext& msg,
+            const component::Cleartext& dst,
+            const component::Cleartext& aug,
+            const component::G1& pub,
+            const component::G2& sig,
+            const bool hashOrEncode) {
+    std::optional<bool> ret = std::nullopt;
+
+    blst_p1_affine pub_affine;
+    blst_p2_affine sig_affine;
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(pub.first, pub_affine.x));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(pub.second, pub_affine.y));
+
+    if ( !(blst_p1_affine_on_curve(&pub_affine) && blst_p1_affine_in_g1(&pub_affine)) ) {
+        return false;
+    }
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(sig.first.first, sig_affine.x.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(sig.first.second, sig_affine.y.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(sig.second.first, sig_affine.x.fp[1]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(sig.second.second, sig_affine.y.fp[1]));
+
+    if ( !(blst_p2_affine_on_curve(&sig_affine) && blst_p2_affine_in_g2(&sig_affine)) ) {
+        return false;
+    }
+
+    ret = blst_core_verify_pk_in_g1(
+                &pub_affine, &sig_affine,
+                hashOrEncode,
+                msg.GetPtr(&ds), msg.GetSize(),
+                dst.GetPtr(&ds), dst.GetSize(),
+                aug.GetPtr(&ds), aug.GetSize()) == BLST_SUCCESS;
+
+end:
+    return ret;
+}
+}
+
 std::optional<bool> blst::OpBLS_Verify(operation::BLS_Verify& op) {
     if ( op.curveType.Get() != CF_ECC_CURVE("BLS12_381") ) {
         //return std::nullopt;
@@ -495,6 +537,74 @@ std::optional<bool> blst::OpBLS_Verify(operation::BLS_Verify& op) {
                 nullptr, 0) == BLST_SUCCESS;
 
 end:
+    return ret;
+}
+
+std::optional<bool> blst::OpBLS_BatchVerify(operation::BLS_BatchVerify& op) {
+    std::optional<bool> ret = std::nullopt;
+
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    blst_pairing* ctx = nullptr;
+    bool useBatchVerify = true;
+
+    try {
+        useBatchVerify = ds.Get<bool>();
+    } catch ( fuzzing::datasource::Base::OutOfData ) { }
+
+    if ( useBatchVerify == true ) {
+        ctx = (blst_pairing*)(malloc(blst_pairing_sizeof()));
+
+        CF_NORET(blst_pairing_init(ctx, op.hashOrEncode, op.dest.GetPtr(), op.dest.GetSize()));
+
+        bool first = true;
+        blst_p2_affine sig;
+
+        CF_CHECK_TRUE(blst_detail::To_blst_fp(op.sig.first.first, sig.x.fp[0]));
+        CF_CHECK_TRUE(blst_detail::To_blst_fp(op.sig.first.second, sig.y.fp[0]));
+        CF_CHECK_TRUE(blst_detail::To_blst_fp(op.sig.second.first, sig.x.fp[1]));
+        CF_CHECK_TRUE(blst_detail::To_blst_fp(op.sig.second.second, sig.y.fp[1]));
+
+        for (const auto& cur : op.bf.c) {
+            blst_p1_affine pub;
+
+            /* Load current public key */
+            CF_CHECK_TRUE(blst_detail::To_blst_fp(cur.pub.first, pub.x));
+            CF_CHECK_TRUE(blst_detail::To_blst_fp(cur.pub.second, pub.y));
+
+            CF_CHECK_EQ(blst_pairing_aggregate_pk_in_g1(
+                        ctx,
+                        &pub,
+                        /* If first iteration, then load the signature, otherwise pass null */
+                        first == true ? &sig : nullptr,
+                        cur.msg.GetPtr(), cur.msg.GetSize(),
+                        cur.aug.GetPtr(), cur.aug.GetSize()
+                        ), BLST_SUCCESS);
+
+            first = false;
+        }
+
+        CF_CHECK_FALSE(first);
+
+        CF_NORET(blst_pairing_commit(ctx));
+
+        ret = static_cast<bool>(blst_pairing_finalverify(ctx, nullptr));
+    } else {
+        for (const auto& cur : op.bf.c) {
+            const auto curRet = blst_detail::Verify(ds, cur.msg, op.dest, cur.aug, cur.pub, op.sig, op.hashOrEncode);
+            if ( curRet == std::nullopt ) {
+                return std::nullopt;
+            }
+            if ( *curRet == false ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+end:
+    free(ctx);
     return ret;
 }
 
@@ -694,6 +804,30 @@ std::optional<component::Fp12> blst::OpBLS_Pairing(operation::BLS_Pairing& op) {
 
     CF_NORET(blst_miller_loop(&out, &g2_affine, &g1_affine));
     CF_NORET(blst_final_exp(&out, &out));
+
+    ret = blst_detail::To_component_Fp12(out);
+
+end:
+    return ret;
+}
+
+std::optional<component::Fp12> blst::OpBLS_MillerLoop(operation::BLS_MillerLoop& op) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    std::optional<component::Fp12> ret = std::nullopt;
+
+    blst_p1_affine g1_affine;
+    blst_p2_affine g2_affine;
+    blst_fp12 out;
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g1.first, g1_affine.x));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g1.second, g1_affine.y));
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g2.first.first, g2_affine.x.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g2.first.second, g2_affine.y.fp[0]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g2.second.first, g2_affine.x.fp[1]));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g2.second.second, g2_affine.y.fp[1]));
+
+    CF_NORET(blst_miller_loop(&out, &g2_affine, &g1_affine));
 
     ret = blst_detail::To_component_Fp12(out);
 

@@ -71,9 +71,11 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorBLS_PrivateToPublic_G2 executorBLS_PrivateToPublic_G2(CF_OPERATION("BLS_PrivateToPublic_G2"), modules, options);
     static ExecutorBLS_Sign executorBLS_Sign(CF_OPERATION("BLS_Sign"), modules, options);
     static ExecutorBLS_Verify executorBLS_Verify(CF_OPERATION("BLS_Verify"), modules, options);
+    static ExecutorBLS_BatchVerify executorBLS_BatchVerify(CF_OPERATION("BLS_BatchVerify"), modules, options);
     static ExecutorBLS_Aggregate_G1 executorBLS_Aggregate_G1(CF_OPERATION("BLS_Aggregate_G1"), modules, options);
     static ExecutorBLS_Aggregate_G2 executorBLS_Aggregate_G2(CF_OPERATION("BLS_Aggregate_G2"), modules, options);
     static ExecutorBLS_Pairing executorBLS_Pairing(CF_OPERATION("BLS_Pairing"), modules, options);
+    static ExecutorBLS_MillerLoop executorBLS_MillerLoop(CF_OPERATION("BLS_MillerLoop"), modules, options);
     static ExecutorBLS_FinalExp executorBLS_FinalExp(CF_OPERATION("BLS_FinalExp"), modules, options);
     static ExecutorBLS_HashToG1 executorBLS_HashToG1(CF_OPERATION("BLS_HashToG1"), modules, options);
     static ExecutorBLS_HashToG2 executorBLS_HashToG2(CF_OPERATION("BLS_HashToG2"), modules, options);
@@ -273,6 +275,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
             case CF_OPERATION("BLS_Verify"):
                 executorBLS_Verify.Run(ds, payload.data(), payload.size());
                 break;
+            case CF_OPERATION("BLS_BatchVerify"):
+                executorBLS_BatchVerify.Run(ds, payload.data(), payload.size());
+                break;
             case CF_OPERATION("BLS_Aggregate_G1"):
                 executorBLS_Aggregate_G1.Run(ds, payload.data(), payload.size());
                 break;
@@ -281,6 +286,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("BLS_Pairing"):
                 executorBLS_Pairing.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_MillerLoop"):
+                executorBLS_MillerLoop.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("BLS_FinalExp"):
                 executorBLS_FinalExp.Run(ds, payload.data(), payload.size());
