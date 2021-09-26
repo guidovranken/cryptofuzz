@@ -1815,10 +1815,8 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         parameters["a_x"] = getBignum();
                         parameters["a_y"] = getBignum();
                     }
-                    parameters["a_x"] = "175120027539531016442854006573889751122153014990298010045047409866982914293422983043097473453160715743839524736495";
-                    parameters["a_y"] = "3886161143382294459707944199964771025143673781268592314417728386394555910678469538674068117321209145872489588747338";
 
-                    parameters["b"] = "52435875175126190479447740508185965837690552500527637822603658699938581184513";
+                    parameters["b"] = getBignum();
 
                     cryptofuzz::operation::BLS_G1_Mul op(parameters);
                     op.Serialize(dsOut2);
