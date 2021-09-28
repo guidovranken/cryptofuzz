@@ -572,7 +572,12 @@ func Golang_Cryptofuzz_OpECDSA_Verify(in []byte) {
     pubKey.X = decodeBignum(op.Pub_X)
     pubKey.Y = decodeBignum(op.Pub_Y)
 
-    res := ecdsa.Verify(pubKey, op.Cleartext, sigR, sigS)
+    var res bool
+    if curve.IsOnCurve(pubKey.X, pubKey.Y) == false {
+        res = false
+    } else {
+        res = ecdsa.Verify(pubKey, op.Cleartext, sigR, sigS)
+    }
 
     r2, err := json.Marshal(&res)
     if err != nil {

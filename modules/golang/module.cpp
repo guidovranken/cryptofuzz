@@ -113,9 +113,7 @@ std::optional<bool> Golang::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     auto jsonStr = json.dump();
     Golang_Cryptofuzz_OpECDSA_Verify(toGoSlice(jsonStr));
 
-    /* Not returning result until https://github.com/golang/go/issues/42340 is fixed */
-    return std::nullopt;
-    //return getResultAs<bool>();
+    return getResultAs<bool>();
 }
 
 std::optional<component::Bignum> Golang::OpBignumCalc(operation::BignumCalc& op) {
