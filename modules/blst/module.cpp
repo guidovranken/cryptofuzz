@@ -565,12 +565,16 @@ std::optional<bool> blst::OpBLS_BatchVerify(operation::BLS_BatchVerify& op) {
         CF_CHECK_TRUE(blst_detail::To_blst_fp(op.sig.second.first, sig.x.fp[1]));
         CF_CHECK_TRUE(blst_detail::To_blst_fp(op.sig.second.second, sig.y.fp[1]));
 
+        CF_CHECK_TRUE(blst_p2_affine_on_curve(&sig) && blst_p2_affine_in_g2(&sig));
+
         for (const auto& cur : op.bf.c) {
             blst_p1_affine pub;
 
             /* Load current public key */
             CF_CHECK_TRUE(blst_detail::To_blst_fp(cur.pub.first, pub.x));
             CF_CHECK_TRUE(blst_detail::To_blst_fp(cur.pub.second, pub.y));
+
+            CF_CHECK_TRUE(blst_p1_affine_on_curve(&pub) && blst_p1_affine_in_g1(&pub));
 
             CF_CHECK_EQ(blst_pairing_aggregate_pk_in_g1(
                         ctx,
