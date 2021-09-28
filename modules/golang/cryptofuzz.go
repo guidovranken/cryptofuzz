@@ -983,6 +983,15 @@ func op_BIT(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool)
     return true
 }
 
+func op_JACOBI(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if BN1.Bit(0) == 0 {
+        return false
+    }
+
+    res.SetInt64((int64)(big.Jacobi(BN0, BN1)))
+    return true
+}
+
 func op_SET(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool, modifier byte) bool {
     modifier %= 6
 
@@ -1104,6 +1113,8 @@ func Golang_Cryptofuzz_OpBignumCalc(in []byte) {
         success = op_CMP_ABS(res, bn[0], bn[1], bn[2], direct)
     } else if isBit(op.CalcOp) {
         success = op_BIT(res, bn[0], bn[1], bn[2], direct)
+    } else if isJacobi(op.CalcOp) {
+        success = op_JACOBI(res, bn[0], bn[1], bn[2], direct)
     } else if isSet(op.CalcOp) {
         var modifier byte = 0
         if len(op.Modifier) >= 2 {
