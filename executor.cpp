@@ -6,12 +6,46 @@
 #include <fuzzing/memory.hpp>
 #include <algorithm>
 #include <set>
+#include <boost/multiprecision/cpp_int.hpp>
 
 uint32_t PRNG(void);
 
 #define RETURN_IF_DISABLED(option, id) if ( !option.Have(id) ) return std::nullopt;
 
 namespace cryptofuzz {
+
+static std::string GxCoordMutate(const uint64_t curveID, std::string coord) {
+    if ( (PRNG()%10) != 0 ) {
+        return coord;
+    }
+
+    if ( curveID == CF_ECC_CURVE("BLS12_381") ) {
+        const static auto prime = boost::multiprecision::cpp_int("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787");
+        return boost::multiprecision::cpp_int(boost::multiprecision::cpp_int(coord) + prime).str();
+    } else if ( curveID == CF_ECC_CURVE("alt_bn128") ) {
+        const static auto prime = boost::multiprecision::cpp_int("21888242871839275222246405745257275088696311157297823662689037894645226208583");
+        return boost::multiprecision::cpp_int(boost::multiprecision::cpp_int(coord) + prime).str();
+    } else {
+        return coord;
+    }
+}
+static void G1AddToPool(const uint64_t curveID, const std::string& g1_x, const std::string& g1_y) {
+    Pool_CurveBLSG1.Set({ curveID, GxCoordMutate(curveID, g1_x), GxCoordMutate(curveID, g1_y) });
+}
+
+static void G2AddToPool(const uint64_t curveID,
+                        const std::string& g2_v,
+                        const std::string& g2_w,
+                        const std::string& g2_x,
+                        const std::string& g2_y) {
+
+    Pool_CurveBLSG2.Set({ curveID,
+                                    GxCoordMutate(curveID, g2_v),
+                                    GxCoordMutate(curveID, g2_w),
+                                    GxCoordMutate(curveID, g2_x),
+                                    GxCoordMutate(curveID, g2_y)
+    });
+}
 
 /* Specialization for operation::Digest */
 template<> void ExecutorBase<component::Digest, operation::Digest>::postprocess(std::shared_ptr<Module> module, operation::Digest& op, const ExecutorBase<component::Digest, operation::Digest>::ResultPair& result) const {
@@ -1006,7 +1040,7 @@ template<> void ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToP
         const auto g1_x = result.second->first.ToTrimmedString();
         const auto g1_y = result.second->second.ToTrimmedString();
 
-        Pool_CurveBLSG1.Set({ curveID, g1_x, g1_y });
+        G1AddToPool(curveID, g1_x, g1_y);
 
         if ( g1_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_x); }
         if ( g1_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_y); }
@@ -1033,7 +1067,7 @@ template<> void ExecutorBase<component::G2, operation::BLS_PrivateToPublic_G2>::
         const auto g2_x = result.second->second.first.ToTrimmedString();
         const auto g2_y = result.second->second.second.ToTrimmedString();
 
-        Pool_CurveBLSG2.Set({ curveID, g2_v, g2_w, g2_x, g2_y });
+        G2AddToPool(curveID, g2_v, g2_w, g2_x, g2_y);
 
         if ( g2_v.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_v); }
         if ( g2_w.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_w); }
@@ -1072,8 +1106,8 @@ template<> void ExecutorBase<component::BLS_Signature, operation::BLS_Sign>::pos
         const auto sig_x = result.second->signature.second.first.ToTrimmedString();
         const auto sig_y = result.second->signature.second.second.ToTrimmedString();
 
-        Pool_CurveBLSG1.Set({ curveID, pub_x, pub_y });
-        Pool_CurveBLSG2.Set({ curveID, sig_v, sig_w, sig_x, sig_y });
+        G1AddToPool(curveID, pub_x, pub_y);
+        G2AddToPool(curveID, sig_v, sig_w, sig_x, sig_y);
         Pool_CurveBLSSignature.Set({ curveID, op.hashOrPoint, point_v, point_w, point_x, point_y, cleartext, dest, aug, pub_x, pub_y, sig_v, sig_w, sig_x, sig_y});
 
         if ( pub_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_x); }
@@ -1244,7 +1278,7 @@ template<> void ExecutorBase<component::G1, operation::BLS_HashToG1>::postproces
         const auto g1_x = result.second->first.ToTrimmedString();
         const auto g1_y = result.second->second.ToTrimmedString();
 
-        Pool_CurveBLSG1.Set({ curveID, g1_x, g1_y });
+        G1AddToPool(curveID, g1_x, g1_y);
 
         if ( g1_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_x); }
         if ( g1_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_y); }
@@ -1295,7 +1329,7 @@ template<> void ExecutorBase<component::BLS_KeyPair, operation::BLS_GenerateKeyP
         const auto g1_x = result.second->pub.first.ToTrimmedString();
         const auto g1_y = result.second->pub.second.ToTrimmedString();
 
-        Pool_CurveBLSG1.Set({ curveID, g1_x, g1_y });
+        G1AddToPool(curveID, g1_x, g1_y);
 
         if ( priv.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(priv); }
         if ( g1_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_x); }
@@ -1316,7 +1350,7 @@ template<> void ExecutorBase<component::G1, operation::BLS_Decompress_G1>::postp
         const auto g1_x = result.second->first.ToTrimmedString();
         const auto g1_y = result.second->second.ToTrimmedString();
 
-        Pool_CurveBLSG1.Set({ curveID, g1_x, g1_y });
+        G1AddToPool(curveID, g1_x, g1_y);
 
         if ( g1_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_x); }
         if ( g1_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_y); }
@@ -1353,7 +1387,7 @@ template<> void ExecutorBase<component::G2, operation::BLS_Decompress_G2>::postp
         const auto g2_x = result.second->second.first.ToTrimmedString();
         const auto g2_y = result.second->second.second.ToTrimmedString();
 
-        Pool_CurveBLSG2.Set({ curveID, g2_v, g2_w, g2_x, g2_y });
+        G2AddToPool(curveID, g2_v, g2_w, g2_x, g2_y);
 
         if ( g2_v.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_v); }
         if ( g2_w.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_w); }
@@ -1375,7 +1409,7 @@ template<> void ExecutorBase<component::G1, operation::BLS_Compress_G2>::postpro
         const auto g1_x = result.second->first.ToTrimmedString();
         const auto g1_y = result.second->second.ToTrimmedString();
 
-        Pool_CurveBLSG1.Set({ curveID, g1_x, g1_y });
+        G1AddToPool(curveID, g1_x, g1_y);
 
         if ( g1_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_x); }
         if ( g1_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_y); }
@@ -1395,7 +1429,7 @@ template<> void ExecutorBase<component::G1, operation::BLS_G1_Add>::postprocess(
         const auto g1_x = result.second->first.ToTrimmedString();
         const auto g1_y = result.second->second.ToTrimmedString();
 
-        Pool_CurveBLSG1.Set({ curveID, g1_x, g1_y });
+        G1AddToPool(curveID, g1_x, g1_y);
 
         if ( g1_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_x); }
         if ( g1_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_y); }
@@ -1420,7 +1454,7 @@ template<> void ExecutorBase<component::G1, operation::BLS_G1_Mul>::postprocess(
         const auto g1_x = result.second->first.ToTrimmedString();
         const auto g1_y = result.second->second.ToTrimmedString();
 
-        Pool_CurveBLSG1.Set({ curveID, g1_x, g1_y });
+        G1AddToPool(curveID, g1_x, g1_y);
 
         if ( g1_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_x); }
         if ( g1_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_y); }
@@ -1460,7 +1494,7 @@ template<> void ExecutorBase<component::G1, operation::BLS_G1_Neg>::postprocess(
         const auto g1_x = result.second->first.ToTrimmedString();
         const auto g1_y = result.second->second.ToTrimmedString();
 
-        Pool_CurveBLSG1.Set({ curveID, g1_x, g1_y });
+        G1AddToPool(curveID, g1_x, g1_y);
 
         if ( g1_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_x); }
         if ( g1_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_y); }
@@ -1485,7 +1519,7 @@ template<> void ExecutorBase<component::G2, operation::BLS_G2_Add>::postprocess(
         const auto g2_x = result.second->second.first.ToTrimmedString();
         const auto g2_y = result.second->second.second.ToTrimmedString();
 
-        Pool_CurveBLSG2.Set({ curveID, g2_v, g2_w, g2_x, g2_y });
+        G2AddToPool(curveID, g2_v, g2_w, g2_x, g2_y);
 
         if ( g2_v.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_v); }
         if ( g2_w.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_w); }
@@ -1518,7 +1552,7 @@ template<> void ExecutorBase<component::G2, operation::BLS_G2_Mul>::postprocess(
         const auto g2_x = result.second->second.first.ToTrimmedString();
         const auto g2_y = result.second->second.second.ToTrimmedString();
 
-        Pool_CurveBLSG2.Set({ curveID, g2_v, g2_w, g2_x, g2_y });
+        G2AddToPool(curveID, g2_v, g2_w, g2_x, g2_y);
 
         if ( g2_v.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_v); }
         if ( g2_w.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_w); }
@@ -1568,7 +1602,7 @@ template<> void ExecutorBase<component::G2, operation::BLS_G2_Neg>::postprocess(
         const auto g2_x = result.second->second.first.ToTrimmedString();
         const auto g2_y = result.second->second.second.ToTrimmedString();
 
-        Pool_CurveBLSG2.Set({ curveID, g2_v, g2_w, g2_x, g2_y });
+        G2AddToPool(curveID, g2_v, g2_w, g2_x, g2_y);
 
         if ( g2_v.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_v); }
         if ( g2_w.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_w); }
@@ -1608,7 +1642,7 @@ template<> void ExecutorBase<component::G2, operation::BLS_HashToG2>::postproces
         const auto g2_x = result.second->second.first.ToTrimmedString();
         const auto g2_y = result.second->second.second.ToTrimmedString();
 
-        Pool_CurveBLSG2.Set({ curveID, g2_v, g2_w, g2_x, g2_y });
+        G2AddToPool(curveID, g2_v, g2_w, g2_x, g2_y);
 
         if ( g2_v.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_v); }
         if ( g2_w.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_w); }
