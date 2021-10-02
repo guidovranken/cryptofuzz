@@ -26,8 +26,8 @@ using G2Type = libff::bls12_381_G2;
 using FrType = libff::bls12_381_Fr;
 using FqType = libff::bls12_381_Fq;
 using Fq2Type = libff::bls12_381_Fq2;
-using Fq6Type = libff::bls12_381_Fp6;
-using Fq12Type = libff::bls12_381_Fp12;
+using Fq6Type = libff::bls12_381_Fq6;
+using Fq12Type = libff::bls12_381_Fq12;
 constexpr size_t FrMaxSize = 77;
 constexpr size_t FqMaxSize = 115;
 #else
@@ -127,10 +127,16 @@ namespace libff_detail {
     component::G2 Save(G2Type& g2) {
         CF_NORET(g2.to_affine_coordinates());
 
-        return component::G2{
-            libff_detail::ToString(g2.X.c0), libff_detail::ToString(g2.Y.c0),
-            libff_detail::ToString(g2.X.c1), libff_detail::ToString(g2.Y.c1),
-        };
+        const auto V = libff_detail::ToString(g2.X.c0);
+        const auto W = libff_detail::ToString(g2.Y.c0);
+        const auto X = libff_detail::ToString(g2.X.c1);
+        const auto Y = libff_detail::ToString(g2.Y.c1);
+
+        if ( std::array<std::string, 4>{V, W, X, Y} == std::array<std::string, 4>{"0", "1", "0", "0"} ) {
+            return component::G2{"0", "0", "0", "0"};
+        }
+
+        return component::G2{V, W, X, Y};
     }
 
     component::Fp12 Save(Fq12Type& fp12) {
@@ -387,7 +393,11 @@ std::optional<component::Fp12> _libff::OpBLS_FinalExp(operation::BLS_FinalExp& o
     }
 
     {
+#if defined(LIBFF_HAVE_BLS12_381)
+        auto res = bls12_381_final_exponentiation(f);
+#else
         auto res = alt_bn128_final_exponentiation(f);
+#endif
         ret = libff_detail::Save(res);
     }
 
@@ -406,39 +416,39 @@ namespace libff_detail {
         switch ( op.calcOp.Get() ) {
             case    CF_CALCOP("Add(A,B)"):
                 {
-                    const auto bn0 = T(op.bn0.ToString(ds).c_str());
-                    const auto bn1 = T(op.bn1.ToString(ds).c_str());
+                    const auto bn0 = T(op.bn0.ToTrimmedString().c_str());
+                    const auto bn1 = T(op.bn1.ToTrimmedString().c_str());
                     const auto res = bn0 + bn1;
                     ret = component::Bignum{ ToString(res) };
                 }
                 break;
             case    CF_CALCOP("Sub(A,B)"):
                 {
-                    const auto bn0 = T(op.bn0.ToString(ds).c_str());
-                    const auto bn1 = T(op.bn1.ToString(ds).c_str());
+                    const auto bn0 = T(op.bn0.ToTrimmedString().c_str());
+                    const auto bn1 = T(op.bn1.ToTrimmedString().c_str());
                     const auto res = bn0 - bn1;
                     ret = component::Bignum{ ToString(res) };
                 }
                 break;
             case    CF_CALCOP("Mul(A,B)"):
                 {
-                    const auto bn0 = T(op.bn0.ToString(ds).c_str());
-                    const auto bn1 = T(op.bn1.ToString(ds).c_str());
+                    const auto bn0 = T(op.bn0.ToTrimmedString().c_str());
+                    const auto bn1 = T(op.bn1.ToTrimmedString().c_str());
                     const auto res = bn0 * bn1;
                     ret = component::Bignum{ ToString(res) };
                 }
                 break;
             case    CF_CALCOP("Exp(A,B)"):
                 {
-                    const auto bn0 = T(op.bn0.ToString(ds).c_str());
-                    const auto bn1 = T(op.bn1.ToString(ds).c_str());
+                    const auto bn0 = T(op.bn0.ToTrimmedString().c_str());
+                    const auto bn1 = T(op.bn1.ToTrimmedString().c_str());
                     const auto res = bn0 ^ bn1.as_bigint();
                     ret = component::Bignum{ ToString(res) };
                 }
                 break;
             case    CF_CALCOP("InvMod(A,B)"):
                 {
-                    const auto bn0 = T(op.bn0.ToString(ds).c_str());
+                    const auto bn0 = T(op.bn0.ToTrimmedString().c_str());
                     CF_CHECK_FALSE(bn0.is_zero());
                     const auto res = bn0.inverse();
                     ret = component::Bignum{ ToString(res) };
@@ -446,7 +456,7 @@ namespace libff_detail {
                 break;
             case    CF_CALCOP("Sqr(A)"):
                 {
-                    const auto bn0 = T(op.bn0.ToString(ds).c_str());
+                    const auto bn0 = T(op.bn0.ToTrimmedString().c_str());
                     const auto res = bn0.squared();
                     CF_ASSERT(res.sqrt().squared() == res, "Sqr(Sqrt(A)) != A");
                     ret = component::Bignum{ ToString(res) };
@@ -454,26 +464,26 @@ namespace libff_detail {
                 break;
             case    CF_CALCOP("Set(A)"):
                 {
-                    const auto bn0 = T(op.bn0.ToString(ds).c_str());
+                    const auto bn0 = T(op.bn0.ToTrimmedString().c_str());
                     ret = component::Bignum{ ToString(bn0) };
                 }
                 break;
             case    CF_CALCOP("IsEq(A,B)"):
                 {
-                    const auto bn0 = T(op.bn0.ToString(ds).c_str());
-                    const auto bn1 = T(op.bn1.ToString(ds).c_str());
+                    const auto bn0 = T(op.bn0.ToTrimmedString().c_str());
+                    const auto bn1 = T(op.bn1.ToTrimmedString().c_str());
                     ret = component::Bignum{ bn0 == bn1 ? std::string("1") : std::string("0") };
                 }
                 break;
             case    CF_CALCOP("IsZero(A)"):
                 {
-                    const auto bn0 = T(op.bn0.ToString(ds).c_str());
+                    const auto bn0 = T(op.bn0.ToTrimmedString().c_str());
                     ret = component::Bignum{ bn0.is_zero() ? std::string("1") : std::string("0") };
                 }
                 break;
             case    CF_CALCOP("Sqrt(A)"):
                 {
-                    const auto bn0 = T(op.bn0.ToString(ds).c_str());
+                    const auto bn0 = T(op.bn0.ToTrimmedString().c_str());
                     const auto euler = bn0 ^ T::euler;
                     if ( euler == T::zero() || euler == T::one() ) {
                         const auto res = bn0.sqrt().squared();
@@ -485,7 +495,7 @@ namespace libff_detail {
                 break;
             case    CF_CALCOP("FrobeniusMap(A,B)"):
                 {
-                    const auto bn0 = T(op.bn0.ToString(ds).c_str());
+                    const auto bn0 = T(op.bn0.ToTrimmedString().c_str());
                     const boost::multiprecision::cpp_int bn1(op.bn1.ToTrimmedString());
                     CF_CHECK_LTE(bn1, std::numeric_limits<unsigned long>::max());
                     const auto res = bn0.Frobenius_map(bn1.convert_to<unsigned long>());
@@ -494,14 +504,14 @@ namespace libff_detail {
                 break;
             case    CF_CALCOP("Not(A)"):
                 {
-                    const auto bn0 = T(op.bn0.ToString(ds).c_str());
+                    const auto bn0 = T(op.bn0.ToTrimmedString().c_str());
                     const auto res = -bn0;
                     ret = component::Bignum{ ToString(res) };
                 }
                 break;
             case    CF_CALCOP("LShift1(A)"):
                 {
-                    const auto bn0 = T(op.bn0.ToString(ds).c_str());
+                    const auto bn0 = T(op.bn0.ToTrimmedString().c_str());
                     const auto res = bn0 * 2;
                     ret = component::Bignum{ ToString(res) };
                 }
