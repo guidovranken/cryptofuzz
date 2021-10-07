@@ -261,6 +261,10 @@
   #include <modules/cloudflare-bn256/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_NOBLE_HASHES)
+  #include <modules/noble-hashes/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -527,6 +531,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_CLOUDFLARE_BN256)
     driver->LoadModule( std::make_shared<cryptofuzz::module::Cloudflare_bn256>() );
+#endif
+
+#if defined(CRYPTOFUZZ_NOBLE_HASHES)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::noble_hashes>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
