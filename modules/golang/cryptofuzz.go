@@ -198,10 +198,18 @@ func toHashFunc(digestType Type) (func() hash.Hash, error) {
         return ripemd160.New, nil
     } else if isSHA1(digestType) {
         return sha1.New, nil
+    } else if isSHA224(digestType) {
+        return sha256.New224, nil
     } else if isSHA256(digestType) {
         return sha256.New, nil
+    } else if isSHA384(digestType) {
+        return sha512.New384, nil
     } else if isSHA512(digestType) {
         return sha512.New, nil
+    } else if isSHA512_224(digestType) {
+        return sha512.New512_224, nil
+    } else if isSHA512_256(digestType) {
+        return sha512.New512_256, nil
     } else if isSHA3_224(digestType) {
         return sha3.New224, nil
     } else if isSHA3_256(digestType) {
