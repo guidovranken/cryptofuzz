@@ -983,6 +983,14 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         } else {
                             parameters["cleartext"] = cryptofuzz::util::DecToHex(getBignum(true), (PRNG() % 64) * 2);
                         }
+                    } else if ( getBool() && Pool_CurveECC_Point.Have() == true ) {
+                        const auto P = Pool_CurveECC_Point.Get();
+                        parameters["curveType"] = P.curveID;
+
+                        parameters["signature"][0] = getBool() ? getBignum() : P.x;
+                        parameters["signature"][1] = getBool() ? getBignum() : P.y;
+
+                        parameters["cleartext"] = cryptofuzz::util::DecToHex(getBignum(true), (PRNG() % 64) * 2);
                     } else {
                         parameters["curveType"] = getRandomCurve();
 
