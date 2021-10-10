@@ -731,6 +731,8 @@ std::optional<component::ECC_PublicKey> secp256k1::OpECDSA_Recover(operation::EC
     secp256k1_detail::ECDSA_Recoverable_Signature sig(ds, ctx);
     uint8_t sig_bytes[64];
     uint8_t hash[32];
+    std::vector<uint8_t> pubkey_bytes(65);
+    size_t pubkey_bytes_size = pubkey_bytes.size();
 
     CF_CHECK_EQ(op.curveType.Get(), CF_ECC_CURVE("secp256k1"));
     CF_CHECK_LTE(op.id, 3);
@@ -755,6 +757,16 @@ std::optional<component::ECC_PublicKey> secp256k1::OpECDSA_Recover(operation::EC
     CF_CHECK_TRUE(sig.ParseCompact(sig_bytes, op.id));
 
     CF_CHECK_TRUE(pub.Recover(sig, hash));
+    CF_CHECK_TRUE(pub.Serialize(pubkey_bytes.data(), &pubkey_bytes_size));
+
+    {
+        boost::multiprecision::cpp_int x, y;
+
+        boost::multiprecision::import_bits(x, pubkey_bytes.begin() + 1, pubkey_bytes.begin() + 33);
+        boost::multiprecision::import_bits(y, pubkey_bytes.begin() + 33, pubkey_bytes.end());
+
+        ret = component::ECC_PublicKey(secp256k1_detail::toString(x), secp256k1_detail::toString(y));
+    }
 
 end:
     util::UnsetGlobalDs();
