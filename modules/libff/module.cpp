@@ -319,6 +319,15 @@ std::optional<component::G1> _libff::OpBLS_G1_Neg(operation::BLS_G1_Neg& op) {
 }
 
 std::optional<bool> _libff::OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) {
+    if (
+            op.g2.first.first.ToTrimmedString() == "0" &&
+            op.g2.first.second.ToTrimmedString() == "1" &&
+            op.g2.second.first.ToTrimmedString() == "0" &&
+            op.g2.second.second.ToTrimmedString() == "0" )
+    {
+        return true;
+    }
+
     return libff_detail::OpBLS_IsGxOnCurve<G2Type>(op);
 }
 
