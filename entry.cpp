@@ -265,6 +265,10 @@
   #include <modules/noble-hashes/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_SKALE_SOLIDITY)
+  #include <modules/skalesolidity/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -535,6 +539,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_NOBLE_HASHES)
     driver->LoadModule( std::make_shared<cryptofuzz::module::noble_hashes>() );
+#endif
+
+#if defined(CRYPTOFUZZ_SKALE_SOLIDITY)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::SkaleSolidity>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is

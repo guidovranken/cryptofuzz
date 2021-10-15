@@ -72,6 +72,7 @@ class Bignum {
         std::string ToString(void) const;
         std::string ToTrimmedString(void) const;
         std::string ToString(Datasource& ds) const;
+        std::optional<std::vector<uint8_t>> ToBin(std::optional<size_t> size = std::nullopt) const;
         nlohmann::json ToJSON(void) const;
         void Serialize(Datasource& ds) const;
 };

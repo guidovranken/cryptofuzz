@@ -339,6 +339,10 @@ std::string Bignum::ToString(Datasource& ds) const {
     return (isNegative ? "-" : "") + zeros + s;
 }
 
+std::optional<std::vector<uint8_t>> Bignum::ToBin(std::optional<size_t> size) const {
+    return util::DecToBin(ToTrimmedString(), size);
+}
+
 nlohmann::json Bignum::ToJSON(void) const {
     return ToString();
 }
