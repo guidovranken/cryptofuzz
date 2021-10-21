@@ -269,6 +269,10 @@
   #include <modules/skalesolidity/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_GOOGLE_INTEGERS)
+  #include <modules/google-integers/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -543,6 +547,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_SKALE_SOLIDITY)
     driver->LoadModule( std::make_shared<cryptofuzz::module::SkaleSolidity>() );
+#endif
+
+#if defined(CRYPTOFUZZ_GOOGLE_INTEGERS)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::Google_Integers>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
