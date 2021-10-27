@@ -1,0 +1,29 @@
+[package]
+name = "cryptofuzz-rustcrypto-hashes"
+version = "0.1.0"
+authors = ["Guido Vranken <guidovranken@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+sha-1 = {version = "0.9.8"}
+sha2 = {version = "0.9.8"}
+streebog = {version = "0.9.2"}
+whirlpool = {version = "0.9.0"}
+ripemd160 = {version = "0.9.1"}
+ripemd256 = {version = "0.1.0"}
+ripemd320 = {version = "0.9.0"}
+sm3 = {version = "0.3.0"}
+gost94 = {version = "0.9.1"}
+md2 = {version = "0.9.0"}
+md4 = {version = "0.9.0"}
+md-5 = {version = "0.9.1"}
+groestl = {version = "0.9.0"}
+tiger = {version = "0.1.0"}
+blake2 = {version = "0.9.2"}
+sha3 = {version = "0.9.1"}
+fsb = {version = "0.0.2"}
+shabal = {version = "0.3.0"}
+libc = "0.2.0"
