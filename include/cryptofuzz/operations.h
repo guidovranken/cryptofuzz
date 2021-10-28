@@ -1160,6 +1160,7 @@ class ECDSA_Verify : public Operation {
             signature(ds),
             digestType(ds)
         { }
+        ECDSA_Verify(const ECDSA_Sign& opECDSA_Sign, const component::ECDSA_Signature signature, component::Modifier modifier);
         ECDSA_Verify(nlohmann::json json) :
             Operation(json["modifier"]),
             curveType(json["curveType"]),
