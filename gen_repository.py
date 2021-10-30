@@ -980,7 +980,7 @@ ecc_curves.Add( ECC_Curve("secp160k1",
                           order="1461501637330902918203686915170869725397159163571"
 ) )
 ecc_curves.Add( ECC_Curve("wap_wsg_idm_ecid_wtls9",
-                          bits=160,
+                          bits=161,
                           prime="1461501637330902918203684832716283019655932313743",
                           a="0",
                           b="3",
