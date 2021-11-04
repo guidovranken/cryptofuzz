@@ -305,6 +305,14 @@ bool Bignum::IsLessThan(const std::string& other) const {
     return A < B;
 }
 
+void Bignum::ToPositive(void) {
+    if ( !IsNegative() ) {
+        return;
+    }
+
+    data.GetVectorPtr().erase(data.GetVectorPtr().begin());
+}
+
 std::string Bignum::ToString(void) const {
     const auto ptr = data.GetPtr();
     return std::string(ptr, ptr + data.GetSize());

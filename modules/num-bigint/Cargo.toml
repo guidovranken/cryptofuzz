@@ -1,0 +1,14 @@
+[package]
+name = "rust-num-bigint-harness"
+version = "0.1.0"
+authors = ["Guido Vranken <guidovranken@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+num-bigint = { git = "https://github.com/rust-num/num-bigint" }
+num-traits = "0.2.14"
+num-integer ="0.1.44"
+libc = "0.2.0"
