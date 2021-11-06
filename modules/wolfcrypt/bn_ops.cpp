@@ -901,15 +901,8 @@ bool Set::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 /* mp_exch alters the value of bn[0], so invalidate the cache. */
                 bn.InvalidateCache();
 
-                /* mp_exch only returns a value when wolfCrypt is compiled
-                 * with fast math; it does not return a value when compiled
-                 * with --disable-fastmath or SP math.
-                 */
-#if defined(USE_FAST_MATH) || defined(WOLFSSL_SP_MATH)
+                /* mp_exch always returns a value */
                 MP_CHECK_EQ(mp_exch(res.GetPtr(), bn[0].GetPtr()), MP_OKAY);
-#else
-                CF_NORET(mp_exch(res.GetPtr(), bn[0].GetPtr()));
-#endif
 
                 ret = true;
             }
