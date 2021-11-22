@@ -139,3 +139,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - relic: [Incorrect point validation](https://github.com/relic-toolkit/relic/commit/7ed8e702db74d5d5a83b0bfaf9ee8e33a70e36ed)
 - Chia/relic: Allows loading invalid point [1](https://github.com/Chia-Network/bls-signatures/issues/247) [2](https://github.com/Chia-Network/bls-signatures/issues/251)
 - blst: [Branching on uninitialize memory](https://github.com/supranational/blst/commit/eb6151961c133a930420e844e1a84708fbb4f6a4)
+- num-bigint: [Panic on multiplication](https://github.com/rust-num/num-bigint/security/advisories/GHSA-v935-pqmr-g8v9)

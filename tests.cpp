@@ -815,6 +815,9 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
         case    CF_CALCOP("Sqrt(A)"):
             AssertNotLargerThan(*result, op.bn0, repository::CalcOpToString(calcOp));
             break;
+        case    CF_CALCOP("Cbrt(A)"):
+            AssertNotLargerThan(*result, op.bn0, repository::CalcOpToString(calcOp));
+            break;
         case    CF_CALCOP("MulAdd(A,B,C)"):
             AssertNotSmallerThan(*result, op.bn2, repository::CalcOpToString(calcOp));
             break;

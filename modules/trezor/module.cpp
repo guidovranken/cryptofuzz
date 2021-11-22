@@ -684,7 +684,7 @@ std::optional<component::ECC_Point> trezor_firmware::OpECC_Point_Mul(operation::
     CF_NORET(bn_read_be(a_x_bytes, &point.x));
     CF_NORET(bn_read_be(a_y_bytes, &point.y));
 
-    CF_NORET(point_multiply(*curve, &scalar, &point, &point));
+    CF_CHECK_EQ(point_multiply(*curve, &scalar, &point, &point), 0);
 
     CF_NORET(bn_write_be(&point.x, out_x_bytes));
     CF_NORET(bn_write_be(&point.y, out_y_bytes));

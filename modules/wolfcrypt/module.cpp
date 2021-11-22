@@ -40,6 +40,8 @@ extern "C" {
 
 #include <wolfssl/wolfcrypt/cmac.h>
 
+#include <wolfssl/wolfcrypt/kdf.h>
+
 #include <wolfssl/wolfcrypt/pwdbased.h>
 #include <wolfssl/wolfcrypt/ecc.h>
 #include <wolfssl/wolfcrypt/curve25519.h>

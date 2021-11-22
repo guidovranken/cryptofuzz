@@ -2,16 +2,14 @@
 
 #include <cryptofuzz/components.h>
 #include <cryptofuzz/module.h>
-#include <boost/uuid/sha1.hpp>
 #include <optional>
 
 namespace cryptofuzz {
 namespace module {
 
-class Boost : public Module {
+class num_bigint : public Module {
     public:
-        Boost(void);
-        std::optional<component::Digest> OpDigest(operation::Digest& op) override;
+        num_bigint(void);
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
 };
 

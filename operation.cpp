@@ -682,6 +682,15 @@ nlohmann::json ECDSA_Verify::ToJSON(void) const {
     return j;
 }
 
+/* Construct ECDSA_Verify from ECDSA_Sign */
+ECDSA_Verify::ECDSA_Verify(const ECDSA_Sign& opECDSA_Sign, const component::ECDSA_Signature signature, component::Modifier modifier) :
+    Operation(std::move(modifier)),
+    curveType(opECDSA_Sign.curveType),
+    cleartext(opECDSA_Sign.cleartext),
+    signature(signature),
+    digestType(opECDSA_Sign.digestType)
+{ }
+
 std::string ECGDSA_Verify::Name(void) const { return "ECGDSA_Verify"; }
 std::string ECGDSA_Verify::ToString(void) const {
     std::stringstream ss;

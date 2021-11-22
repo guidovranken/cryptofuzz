@@ -487,6 +487,19 @@ template<> void ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>:
         if ( pub_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_y); }
         if ( sig_r.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(sig_r); }
         if ( sig_s.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(sig_s); }
+
+        {
+            auto opVerify = operation::ECDSA_Verify(
+                    op,
+                    *(result.second),
+                    op.modifier);
+
+            const auto verifyResult = module->OpECDSA_Verify(opVerify);
+            CF_ASSERT(
+                    verifyResult == std::nullopt ||
+                    *verifyResult == true,
+                    "Cannot verify generated signature");
+        }
     }
 }
 
