@@ -26,7 +26,7 @@ use hkdf::Hkdf;
 
 use hmac::{Mac, Hmac, NewMac};
 
-use scrypt::{scrypt, Params};
+use scrypt::{scrypt, Params as ScryptParams};
 
 use crypto_bigint::{U256, Encoding, Integer, Zero};
 
@@ -280,7 +280,7 @@ pub extern "C" fn rustcrypto_scrypt(
 
     let mut res = vec![0u8; keysize.try_into().unwrap()];
 
-    let params = match Params::new(N, r, p)  {
+    let params = match ScryptParams::new(N, r, p)  {
         Ok(v) => v,
         Err(e) => return -1,
     };
@@ -295,6 +295,79 @@ pub extern "C" fn rustcrypto_scrypt(
     }
 
     return 0;
+}
+
+fn pbkdf2_<D: Mac + NewMac + Clone + Sync>(
+    password: Vec<u8>,
+    salt: Vec<u8>,
+    iterations: u32,
+    keysize: u64,
+    out: *mut u8) -> i32 {
+
+    let mut res = vec![0u8; keysize.try_into().unwrap()];
+
+    pbkdf2::pbkdf2::<D>(&password, &salt, iterations, &mut res);
+
+    unsafe {
+        ptr::copy_nonoverlapping(res.as_ptr(), out, res.len());
+    }
+
+    return 0;
+}
+
+#[no_mangle]
+pub extern "C" fn rustcrypto_pbkdf2(
+    password_bytes: *const u8, password_size: libc::size_t,
+    salt_bytes: *const u8, salt_size: libc::size_t,
+    iterations: u32,
+    keysize: u64,
+    algorithm: u64,
+    out: *mut u8) -> i32 {
+
+    let password = unsafe { slice::from_raw_parts(password_bytes, password_size) }.to_vec();
+    let salt = unsafe { slice::from_raw_parts(salt_bytes, salt_size) }.to_vec();
+
+         if is_SHA1(algorithm)            { return pbkdf2_::<Hmac<Sha1>>(password, salt, iterations, keysize, out); }
+    else if is_SHA224(algorithm)          { return pbkdf2_::<Hmac<Sha224>>(password, salt, iterations, keysize, out); }
+    else if is_SHA256(algorithm)          { return pbkdf2_::<Hmac<Sha256>>(password, salt, iterations, keysize, out); }
+    else if is_SHA384(algorithm)          { return pbkdf2_::<Hmac<Sha384>>(password, salt, iterations, keysize, out); }
+    else if is_SHA512(algorithm)          { return pbkdf2_::<Hmac<Sha512>>(password, salt, iterations, keysize, out); }
+    else if is_STREEBOG_256(algorithm)    { return pbkdf2_::<Hmac<Streebog256>>(password, salt, iterations, keysize, out); }
+    else if is_STREEBOG_512(algorithm)    { return pbkdf2_::<Hmac<Streebog512>>(password, salt, iterations, keysize, out); }
+    else if is_WHIRLPOOL(algorithm)       { return pbkdf2_::<Hmac<Whirlpool>>(password, salt, iterations, keysize, out); }
+    else if is_RIPEMD160(algorithm)       { return pbkdf2_::<Hmac<Ripemd160>>(password, salt, iterations, keysize, out); }
+    else if is_RIPEMD256(algorithm)       { return pbkdf2_::<Hmac<Ripemd256>>(password, salt, iterations, keysize, out); }
+    else if is_RIPEMD320(algorithm)       { return pbkdf2_::<Hmac<Ripemd320>>(password, salt, iterations, keysize, out); }
+    else if is_GOST_R_34_11_94(algorithm) { return pbkdf2_::<Hmac<Gost94CryptoPro>>(password, salt, iterations, keysize, out); }
+    else if is_SM3(algorithm)             { return pbkdf2_::<Hmac<Sm3>>(password, salt, iterations, keysize, out); }
+    else if is_MD2(algorithm)             { return pbkdf2_::<Hmac<Md2>>(password, salt, iterations, keysize, out); }
+    else if is_MD4(algorithm)             { return pbkdf2_::<Hmac<Md4>>(password, salt, iterations, keysize, out); }
+    else if is_MD5(algorithm)             { return pbkdf2_::<Hmac<Md5>>(password, salt, iterations, keysize, out); }
+    else if is_GROESTL_224(algorithm)     { return pbkdf2_::<Hmac<Groestl224>>(password, salt, iterations, keysize, out); }
+    else if is_GROESTL_256(algorithm)     { return pbkdf2_::<Hmac<Groestl256>>(password, salt, iterations, keysize, out); }
+    else if is_GROESTL_384(algorithm)     { return pbkdf2_::<Hmac<Groestl384>>(password, salt, iterations, keysize, out); }
+    else if is_GROESTL_512(algorithm)     { return pbkdf2_::<Hmac<Groestl512>>(password, salt, iterations, keysize, out); }
+    else if is_BLAKE2B512(algorithm)      { return pbkdf2_::<Hmac<Blake2b>>(password, salt, iterations, keysize, out); }
+    else if is_BLAKE2S256(algorithm)      { return pbkdf2_::<Hmac<Blake2s>>(password, salt, iterations, keysize, out); }
+    else if is_SHA3_224(algorithm)        { return pbkdf2_::<Hmac<Sha3_224>>(password, salt, iterations, keysize, out); }
+    else if is_SHA3_256(algorithm)        { return pbkdf2_::<Hmac<Sha3_256>>(password, salt, iterations, keysize, out); }
+    else if is_SHA3_384(algorithm)        { return pbkdf2_::<Hmac<Sha3_384>>(password, salt, iterations, keysize, out); }
+    else if is_SHA3_512(algorithm)        { return pbkdf2_::<Hmac<Sha3_512>>(password, salt, iterations, keysize, out); }
+    else if is_KECCAK_224(algorithm)      { return pbkdf2_::<Hmac<Keccak224>>(password, salt, iterations, keysize, out); }
+    else if is_KECCAK_256(algorithm)      { return pbkdf2_::<Hmac<Keccak256>>(password, salt, iterations, keysize, out); }
+    else if is_KECCAK_384(algorithm)      { return pbkdf2_::<Hmac<Keccak384>>(password, salt, iterations, keysize, out); }
+    else if is_KECCAK_512(algorithm)      { return pbkdf2_::<Hmac<Keccak512>>(password, salt, iterations, keysize, out); }
+    else if is_FSB_160(algorithm)         { return pbkdf2_::<Hmac<Fsb160>>(password, salt, iterations, keysize, out); }
+    else if is_FSB_224(algorithm)         { return pbkdf2_::<Hmac<Fsb224>>(password, salt, iterations, keysize, out); }
+    else if is_FSB_256(algorithm)         { return pbkdf2_::<Hmac<Fsb256>>(password, salt, iterations, keysize, out); }
+    else if is_FSB_384(algorithm)         { return pbkdf2_::<Hmac<Fsb384>>(password, salt, iterations, keysize, out); }
+    else if is_FSB_512(algorithm)         { return pbkdf2_::<Hmac<Fsb512>>(password, salt, iterations, keysize, out); }
+    else if is_SHABAL_256(algorithm)      { return pbkdf2_::<Hmac<Shabal256>>(password, salt, iterations, keysize, out); }
+    else if is_SHABAL_512(algorithm)      { return pbkdf2_::<Hmac<Shabal512>>(password, salt, iterations, keysize, out); }
+    else if is_TIGER(algorithm)           { return pbkdf2_::<Hmac<Tiger>>(password, salt, iterations, keysize, out); }
+    else {
+        return -1;
+    }
 }
 
 #[no_mangle]
