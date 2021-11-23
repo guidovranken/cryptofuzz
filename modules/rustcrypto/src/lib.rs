@@ -107,6 +107,7 @@ pub extern "C" fn rustcrypto_hashes_hash(
     else if is_FSB_512(algorithm)         { return hash::<Fsb512>(parts, out); }
     else if is_SHABAL_256(algorithm)      { return hash::<Shabal256>(parts, out); }
     else if is_SHABAL_512(algorithm)      { return hash::<Shabal512>(parts, out); }
+    else if is_TIGER(algorithm)           { return hash::<Tiger>(parts, out); }
     else {
         return -1;
     }
@@ -178,6 +179,7 @@ pub extern "C" fn rustcrypto_hkdf(
     else if is_FSB_512(algorithm)         { return hkdf::<Fsb512>(password, salt, info, keysize, out); }
     else if is_SHABAL_256(algorithm)      { return hkdf::<Shabal256>(password, salt, info, keysize, out); }
     else if is_SHABAL_512(algorithm)      { return hkdf::<Shabal512>(password, salt, info, keysize, out); }
+    else if is_TIGER(algorithm)           { return hkdf::<Tiger>(password, salt, info, keysize, out); }
     else {
         return -1;
     }
@@ -253,6 +255,7 @@ pub extern "C" fn rustcrypto_hmac(
     else if is_FSB_512(algorithm)         { return hmac::<Fsb512>(parts, key, out); }
     else if is_SHABAL_256(algorithm)      { return hmac::<Shabal256>(parts, key, out); }
     else if is_SHABAL_512(algorithm)      { return hmac::<Shabal512>(parts, key, out); }
+    else if is_TIGER(algorithm)           { return hmac::<Tiger>(parts, key, out); }
     else {
         return -1;
     }
