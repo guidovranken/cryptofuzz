@@ -8,6 +8,12 @@ extern "C" {
             const size_t* parts_bytes, const size_t parts_size,
             const uint64_t algorithm,
             uint8_t* out);
+    int rustcrypto_hmac(
+            const uint8_t* input_bytes, const size_t input_size,
+            const size_t* parts_bytes, const size_t parts_size,
+            const uint8_t* key_bytes, const size_t key_size,
+            const uint64_t algorithm,
+            uint8_t* out);
     int rustcrypto_hkdf(
             const uint8_t* password_bytes, const size_t password_size,
             const uint8_t* salt_bytes, const size_t salt_size,
@@ -45,6 +51,35 @@ std::optional<component::Digest> rustcrypto::OpDigest(operation::Digest& op) {
                 out);
         CF_CHECK_GTE(size, 0);
         ret = component::Digest(out, size);
+    }
+
+end:
+    return ret;
+}
+
+std::optional<component::MAC> rustcrypto::OpHMAC(operation::HMAC& op) {
+    std::optional<component::Digest> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    uint8_t out[64];
+
+    std::vector<size_t> parts;
+    {
+        const auto _parts = util::ToParts(ds, op.cleartext);
+        for (const auto& part : _parts) {
+            parts.push_back(part.second);
+        }
+    }
+
+    {
+        const auto size = rustcrypto_hmac(
+                op.cleartext.GetPtr(), op.cleartext.GetSize(),
+                parts.data(), parts.size(),
+                op.cipher.key.GetPtr(), op.cipher.key.GetSize(),
+                op.digestType.Get(),
+                out);
+        CF_CHECK_GTE(size, 0);
+        ret = component::MAC(out, size);
     }
 
 end:
