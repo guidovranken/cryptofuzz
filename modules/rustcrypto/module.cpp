@@ -29,6 +29,12 @@ extern "C" {
             const uint32_t p,
             const uint64_t keysize,
             uint8_t* out);
+    int rustcrypto_bigint_bignumcalc(
+            uint64_t op,
+            uint8_t* bn0_bytes,
+            uint8_t* bn1_bytes,
+            uint8_t* bn2_bytes,
+            uint8_t* result);
 }
 
 namespace cryptofuzz {
@@ -132,6 +138,44 @@ end:
     util::free(out);
 
     return ret;
+}
+
+std::optional<component::Bignum> rustcrypto::OpBignumCalc(operation::BignumCalc& op) {
+    std::optional<component::Bignum> ret = std::nullopt;
+
+    if ( op.modulo == std::nullopt ) {
+        return ret;
+    } else if ( op.modulo->ToTrimmedString() != "115792089237316195423570985008687907853269984665640564039457584007913129639936" ) {
+        return ret;
+    }
+
+    uint8_t result[32] = {0};
+    std::optional<std::vector<uint8_t>> bn0, bn1, bn2;
+
+    CF_CHECK_NE(bn0 = util::DecToBin(op.bn0.ToTrimmedString(), 32), std::nullopt);
+    CF_CHECK_NE(bn1 = util::DecToBin(op.bn1.ToTrimmedString(), 32), std::nullopt);
+    CF_CHECK_NE(bn2 = util::DecToBin(op.bn2.ToTrimmedString(), 32), std::nullopt);
+
+    {
+        const auto res = rustcrypto_bigint_bignumcalc(
+                op.calcOp.Get(),
+                bn0->data(),
+                bn1->data(),
+                bn2->data(),
+                result
+        );
+
+        CF_CHECK_EQ(res, 0);
+
+        ret = util::BinToDec(result, sizeof(result));
+    }
+
+end:
+    return ret;
+}
+
+bool rustcrypto::SupportsModularBignumCalc(void) const {
+    return true;
 }
 
 } /* namespace module */

@@ -28,6 +28,8 @@ use hmac::{Mac, Hmac, NewMac};
 
 use scrypt::{scrypt, Params};
 
+use crypto_bigint::{U256, Encoding, Integer, Zero};
+
 use std::convert::TryInto;
 mod ids;
 use crate::ids::{*};
@@ -291,6 +293,80 @@ pub extern "C" fn rustcrypto_scrypt(
     unsafe {
         ptr::copy_nonoverlapping(res.as_ptr(), out, res.len());
     }
+
+    return 0;
+}
+
+#[no_mangle]
+pub extern "C" fn rustcrypto_bigint_bignumcalc(
+            op: u64,
+            bn0: &[u8; 32],
+            bn1: &[u8; 32],
+            bn2: &[u8; 32],
+            result: &mut [u8; 32]) -> i32 {
+    let bn0 = U256::from_be_bytes(*bn0);
+    let bn1 = U256::from_be_bytes(*bn1);
+    let bn2 = U256::from_be_bytes(*bn2);
+
+    let res: U256;
+    if is_Add(op) {
+        res = bn0.wrapping_add(&bn1);
+    } else if is_Sub(op) {
+        res = bn0.wrapping_sub(&bn1);
+    } else if is_Mul(op) {
+        res = bn0.wrapping_mul(&bn1);
+    } else if is_Div(op) {
+        if bool::from(bn1.is_zero()) {
+            return -1;
+        }
+        res = bn0.wrapping_div(&bn1);
+    } else if is_Mod(op) {
+        if bool::from(bn1.is_zero()) {
+            return -1;
+        }
+        res = bn0.wrapping_rem(&bn1);
+    } else if is_AddMod(op) {
+        res = bn0.add_mod(&bn1, &bn2);
+    } else if is_SubMod(op) {
+        res = bn0.sub_mod(&bn1, &bn2);
+    } else if is_And(op) {
+        res = bn0.wrapping_and(&bn1);
+    } else if is_Or(op) {
+        res = bn0.wrapping_or(&bn1);
+    } else if is_Xor(op) {
+        res = bn0.wrapping_xor(&bn1);
+    } else if is_Not(op) {
+        res = bn0.not();
+    } else if is_IsEq(op) {
+        res = if bn0 == bn1 { U256::ONE } else { U256::ZERO }
+    } else if is_IsGt(op) {
+        res = if bn0 > bn1 { U256::ONE } else { U256::ZERO }
+    } else if is_IsGte(op) {
+        res = if bn0 >= bn1 { U256::ONE } else { U256::ZERO }
+    } else if is_IsLt(op) {
+        res = if bn0 < bn1 { U256::ONE } else { U256::ZERO }
+    } else if is_IsLte(op) {
+        res = if bn0 <= bn1 { U256::ONE } else { U256::ZERO }
+    } else if is_Sqrt(op) {
+        res = bn0.wrapping_sqrt();
+    } else if is_IsEven(op) {
+        res = if bool::from(bn0.is_even()) { U256::ONE } else { U256::ZERO }
+    } else if is_IsOdd(op) {
+        res = if bool::from(bn0.is_odd()) { U256::ONE } else { U256::ZERO }
+    } else if is_IsZero(op) {
+        res = if bool::from(bn0.is_zero()) { U256::ONE } else { U256::ZERO }
+    } else if is_NumBits(op) {
+        res = (bn0.bits() as u64).into();
+    } else if is_Min(op) {
+        res = bn0.min(bn1);
+    } else if is_Max(op) {
+        res = bn0.max(bn1);
+    } else {
+        return -1;
+    }
+
+    let res_bytes = res.to_be_bytes();
+    result.copy_from_slice(&res_bytes);
 
     return 0;
 }
