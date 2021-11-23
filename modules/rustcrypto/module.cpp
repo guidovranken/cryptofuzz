@@ -8,13 +8,20 @@ extern "C" {
             const size_t* parts_bytes, const size_t parts_size,
             const uint64_t algorithm,
             uint8_t* out);
+    int rustcrypto_hkdf(
+            const uint8_t* password_bytes, const size_t password_size,
+            const uint8_t* salt_bytes, const size_t salt_size,
+            const uint8_t* info_bytes, const size_t info_size,
+            const uint64_t keysize,
+            const uint64_t algorithm,
+            uint8_t* out);
 }
 
 namespace cryptofuzz {
 namespace module {
 
 rustcrypto::rustcrypto(void) :
-    Module("RustCrypto-hashes") { }
+    Module("RustCrypto") { }
 
 std::optional<component::Digest> rustcrypto::OpDigest(operation::Digest& op) {
     std::optional<component::Digest> ret = std::nullopt;
@@ -40,6 +47,24 @@ std::optional<component::Digest> rustcrypto::OpDigest(operation::Digest& op) {
         ret = component::Digest(out, size);
     }
 
+end:
+    return ret;
+}
+
+std::optional<component::Key> rustcrypto::OpKDF_HKDF(operation::KDF_HKDF& op) {
+    std::optional<component::Key> ret = std::nullopt;
+
+    uint8_t* out = util::malloc(op.keySize);
+
+    CF_CHECK_EQ(rustcrypto_hkdf(
+                op.password.GetPtr(), op.password.GetSize(),
+                op.salt.GetPtr(), op.salt.GetSize(),
+                op.info.GetPtr(), op.info.GetSize(),
+                op.keySize,
+                op.digestType.Get(),
+                out), 0);
+
+    ret = component::Key(out, op.keySize);
 end:
     return ret;
 }

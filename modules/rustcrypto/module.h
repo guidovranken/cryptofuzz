@@ -11,6 +11,7 @@ class rustcrypto : public Module {
     public:
         rustcrypto(void);
         std::optional<component::Digest> OpDigest(operation::Digest& op) override;
+        std::optional<component::Key> OpKDF_HKDF(operation::KDF_HKDF& op) override;
 };
 
 } /* namespace module */

@@ -569,8 +569,8 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
     driver->LoadModule( std::make_shared<cryptofuzz::module::nimcrypto>() );
 #endif
 
-#if defined(CRYPTOFUZZ_RUSTCRYPTO_HASHES)
-    driver->LoadModule( std::make_shared<cryptofuzz::module::rustcrypto_hashes>() );
+#if defined(CRYPTOFUZZ_RUSTCRYPTO)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::rustcrypto>() );
 #endif
 
 #if defined(CRYPTOFUZZ_NUM_BIGINT)
