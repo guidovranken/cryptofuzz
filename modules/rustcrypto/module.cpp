@@ -21,6 +21,14 @@ extern "C" {
             const uint64_t keysize,
             const uint64_t algorithm,
             uint8_t* out);
+    int rustcrypto_scrypt(
+            const uint8_t* password_bytes, const size_t password_size,
+            const uint8_t* salt_bytes, const size_t salt_size,
+            const uint8_t N,
+            const uint32_t r,
+            const uint32_t p,
+            const uint64_t keysize,
+            uint8_t* out);
 }
 
 namespace cryptofuzz {
@@ -101,6 +109,28 @@ std::optional<component::Key> rustcrypto::OpKDF_HKDF(operation::KDF_HKDF& op) {
 
     ret = component::Key(out, op.keySize);
 end:
+    return ret;
+}
+
+std::optional<component::Key> rustcrypto::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
+    std::optional<component::Key> ret = std::nullopt;
+
+    uint8_t* out = util::malloc(op.keySize);
+
+    CF_CHECK_EQ(rustcrypto_scrypt(
+                op.password.GetPtr(), op.password.GetSize(),
+                op.salt.GetPtr(), op.salt.GetSize(),
+                op.N >> 1,
+                op.r,
+                op.p,
+                op.keySize,
+                out), 0);
+
+    ret = component::Key(out, op.keySize);
+
+end:
+    util::free(out);
+
     return ret;
 }
 

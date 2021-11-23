@@ -26,6 +26,8 @@ use hkdf::Hkdf;
 
 use hmac::{Mac, Hmac, NewMac};
 
+use scrypt::{scrypt, Params};
+
 use std::convert::TryInto;
 mod ids;
 use crate::ids::{*};
@@ -259,4 +261,36 @@ pub extern "C" fn rustcrypto_hmac(
     else {
         return -1;
     }
+}
+
+#[no_mangle]
+pub extern "C" fn rustcrypto_scrypt(
+    password_bytes: *const u8, password_size: libc::size_t,
+    salt_bytes: *const u8, salt_size: libc::size_t,
+    N: u8,
+    r: u32,
+    p: u32,
+    keysize: u64,
+    out: *mut u8) -> i32 {
+
+    let password = unsafe { slice::from_raw_parts(password_bytes, password_size) }.to_vec();
+    let salt = unsafe { slice::from_raw_parts(salt_bytes, salt_size) }.to_vec();
+
+    let mut res = vec![0u8; keysize.try_into().unwrap()];
+
+    let params = match Params::new(N, r, p)  {
+        Ok(v) => v,
+        Err(e) => return -1,
+    };
+
+    match scrypt(&password, &salt, &params, &mut res) {
+        Ok(v) => (),
+        Err(e) => return -1,
+    };
+
+    unsafe {
+        ptr::copy_nonoverlapping(res.as_ptr(), out, res.len());
+    }
+
+    return 0;
 }

@@ -32,4 +32,6 @@ hkdf = {version = "0.11.0"}
 
 hmac = {version = "0.11.0"}
 
+scrypt = {version = "0.8.0"}
+
 libc = "0.2.0"
