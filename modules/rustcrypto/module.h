@@ -7,9 +7,9 @@
 namespace cryptofuzz {
 namespace module {
 
-class rustcrypto_hashes : public Module {
+class rustcrypto : public Module {
     public:
-        rustcrypto_hashes(void);
+        rustcrypto(void);
         std::optional<component::Digest> OpDigest(operation::Digest& op) override;
 };
 

@@ -277,8 +277,8 @@
   #include <modules/nimcrypto/module.h>
 #endif
 
-#if defined(CRYPTOFUZZ_RUSTCRYPTO_HASHES)
-  #include <modules/rustcrypto-hashes/module.h>
+#if defined(CRYPTOFUZZ_RUSTCRYPTO)
+  #include <modules/rustcrypto/module.h>
 #endif
 
 #if defined(CRYPTOFUZZ_NUM_BIGINT)

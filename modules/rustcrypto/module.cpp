@@ -13,10 +13,10 @@ extern "C" {
 namespace cryptofuzz {
 namespace module {
 
-rustcrypto_hashes::rustcrypto_hashes(void) :
+rustcrypto::rustcrypto(void) :
     Module("RustCrypto-hashes") { }
 
-std::optional<component::Digest> rustcrypto_hashes::OpDigest(operation::Digest& op) {
+std::optional<component::Digest> rustcrypto::OpDigest(operation::Digest& op) {
     std::optional<component::Digest> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
