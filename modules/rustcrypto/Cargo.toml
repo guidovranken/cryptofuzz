@@ -37,6 +37,8 @@ scrypt = {git = "https://github.com/RustCrypto/password-hashes"}
 
 pbkdf2 = {git = "https://github.com/RustCrypto/password-hashes"}
 
+bcrypt-pbkdf = {git = "https://github.com/RustCrypto/password-hashes"}
+
 crypto-bigint = {git = "https://github.com/RustCrypto/crypto-bigint"}
 
 libc = "0.2.0"

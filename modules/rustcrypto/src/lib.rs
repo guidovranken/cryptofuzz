@@ -371,6 +371,36 @@ pub extern "C" fn rustcrypto_pbkdf2(
 }
 
 #[no_mangle]
+pub extern "C" fn rustcrypto_bcrypt(
+    password_bytes: *const u8, password_size: libc::size_t,
+    salt_bytes: *const u8, salt_size: libc::size_t,
+    iterations: u32,
+    keysize: u64,
+    out: *mut u8) -> i32 {
+
+    let password = unsafe { slice::from_raw_parts(password_bytes, password_size) }.to_vec();
+    let password = match std::str::from_utf8(&password) {
+        Ok(_v) => (_v),
+        Err(e) => return -1,
+    };
+
+    let salt = unsafe { slice::from_raw_parts(salt_bytes, salt_size) }.to_vec();
+
+    let mut res = vec![0u8; keysize.try_into().unwrap()];
+
+    match bcrypt_pbkdf::bcrypt_pbkdf(password, &salt, iterations, &mut res) {
+        Ok(v) => (),
+        Err(e) => return -1,
+    };
+
+    unsafe {
+        ptr::copy_nonoverlapping(res.as_ptr(), out, res.len());
+    }
+
+    return 0;
+}
+
+#[no_mangle]
 pub extern "C" fn rustcrypto_bigint_bignumcalc(
             op: u64,
             bn0: &[u8; 32],

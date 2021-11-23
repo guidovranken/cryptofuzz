@@ -36,6 +36,12 @@ extern "C" {
             const uint64_t keysize,
             const uint64_t algorithm,
             uint8_t* out);
+    int rustcrypto_bcrypt(
+            const uint8_t* password_bytes, const size_t password_size,
+            const uint8_t* salt_bytes, const size_t salt_size,
+            const uint32_t iterations,
+            const uint64_t keysize,
+            uint8_t* out);
     int rustcrypto_bigint_bignumcalc(
             uint64_t op,
             uint8_t* bn0_bytes,
@@ -150,7 +156,6 @@ end:
 std::optional<component::Key> rustcrypto::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
     std::optional<component::Key> ret = std::nullopt;
 
-
     uint8_t* out = util::malloc(op.keySize);
 
     CF_CHECK_EQ(rustcrypto_pbkdf2(
@@ -159,6 +164,25 @@ std::optional<component::Key> rustcrypto::OpKDF_PBKDF2(operation::KDF_PBKDF2& op
                 op.iterations,
                 op.keySize,
                 op.digestType.Get(),
+                out), 0);
+
+    ret = component::Key(out, op.keySize);
+
+end:
+    return ret;
+}
+
+std::optional<component::Key> rustcrypto::OpKDF_BCRYPT(operation::KDF_BCRYPT& op) {
+    std::optional<component::Key> ret = std::nullopt;
+
+    uint8_t* out = util::malloc(op.keySize);
+
+    CF_CHECK_EQ(op.digestType.Get(), CF_DIGEST("SHA512"));
+    CF_CHECK_EQ(rustcrypto_bcrypt(
+                op.secret.GetPtr(), op.secret.GetSize(),
+                op.salt.GetPtr(), op.salt.GetSize(),
+                op.iterations,
+                op.keySize,
                 out), 0);
 
     ret = component::Key(out, op.keySize);

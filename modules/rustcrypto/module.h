@@ -15,6 +15,7 @@ class rustcrypto : public Module {
         std::optional<component::Key> OpKDF_HKDF(operation::KDF_HKDF& op) override;
         std::optional<component::Key> OpKDF_SCRYPT(operation::KDF_SCRYPT& op) override;
         std::optional<component::Key> OpKDF_PBKDF2(operation::KDF_PBKDF2& op) override;
+        std::optional<component::Key> OpKDF_BCRYPT(operation::KDF_BCRYPT& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
         bool SupportsModularBignumCalc(void) const override;
 };
