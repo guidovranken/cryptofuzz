@@ -42,6 +42,15 @@ extern "C" {
             const uint32_t iterations,
             const uint64_t keysize,
             uint8_t* out);
+    int rustcrypto_argon2(
+            const uint8_t* password_bytes, const size_t password_size,
+            const uint8_t* salt_bytes, const size_t salt_size,
+            const uint8_t algorithm,
+            const uint8_t threads,
+            const uint32_t memory,
+            const uint32_t iterations,
+            const uint64_t keysize,
+            uint8_t* out);
     int rustcrypto_bigint_bignumcalc(
             uint64_t op,
             uint8_t* bn0_bytes,
@@ -181,6 +190,27 @@ std::optional<component::Key> rustcrypto::OpKDF_BCRYPT(operation::KDF_BCRYPT& op
     CF_CHECK_EQ(rustcrypto_bcrypt(
                 op.secret.GetPtr(), op.secret.GetSize(),
                 op.salt.GetPtr(), op.salt.GetSize(),
+                op.iterations,
+                op.keySize,
+                out), 0);
+
+    ret = component::Key(out, op.keySize);
+
+end:
+    return ret;
+}
+
+std::optional<component::Key> rustcrypto::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
+    std::optional<component::Key> ret = std::nullopt;
+
+    uint8_t* out = util::malloc(op.keySize);
+
+    CF_CHECK_EQ(rustcrypto_argon2(
+                op.password.GetPtr(), op.password.GetSize(),
+                op.salt.GetPtr(), op.salt.GetSize(),
+                op.type,
+                op.threads,
+                op.memory,
                 op.iterations,
                 op.keySize,
                 out), 0);

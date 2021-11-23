@@ -30,6 +30,11 @@ use scrypt::{scrypt, Params as ScryptParams};
 
 use crypto_bigint::{U256, Encoding, Integer, Zero};
 
+use argon2::{
+    Algorithm, Argon2, Error, Params, ParamsBuilder, PasswordHash, PasswordHasher,
+    PasswordVerifier, Version,
+};
+
 use std::convert::TryInto;
 mod ids;
 use crate::ids::{*};
@@ -389,6 +394,61 @@ pub extern "C" fn rustcrypto_bcrypt(
     let mut res = vec![0u8; keysize.try_into().unwrap()];
 
     match bcrypt_pbkdf::bcrypt_pbkdf(password, &salt, iterations, &mut res) {
+        Ok(v) => (),
+        Err(e) => return -1,
+    };
+
+    unsafe {
+        ptr::copy_nonoverlapping(res.as_ptr(), out, res.len());
+    }
+
+    return 0;
+}
+
+#[no_mangle]
+pub extern "C" fn rustcrypto_argon2(
+    password_bytes: *const u8, password_size: libc::size_t,
+    salt_bytes: *const u8, salt_size: libc::size_t,
+    algorithm: u8,
+    threads: u8,
+    memory: u32,
+    iterations: u32,
+    keysize: u64,
+    out: *mut u8) -> i32 {
+    let password = unsafe { slice::from_raw_parts(password_bytes, password_size) }.to_vec();
+    let salt = unsafe { slice::from_raw_parts(salt_bytes, salt_size) }.to_vec();
+
+    let mut builder = ParamsBuilder::new();
+    match builder.m_cost(memory) {
+        Ok(v) => (),
+        Err(e) => return -1,
+    };
+    match builder.t_cost(iterations) {
+        Ok(v) => (),
+        Err(e) => return -1,
+    };
+    match builder.p_cost(threads as u32) {
+        Ok(v) => (),
+        Err(e) => return -1,
+    };
+
+    let params = match builder.params() {
+        Ok(v) => (v),
+        Err(e) => return -1,
+    };
+
+    let mut res = vec![0u8; keysize.try_into().unwrap()];
+
+    let algorithm = match algorithm {
+        0 => Algorithm::Argon2d,
+        1 => Algorithm::Argon2i,
+        2 => Algorithm::Argon2id,
+        _ => return -1,
+    };
+
+    let ctx = Argon2::new(algorithm, Version::V0x13, params);
+
+    match ctx.hash_password_into(&password, &salt, &mut res) {
         Ok(v) => (),
         Err(e) => return -1,
     };
