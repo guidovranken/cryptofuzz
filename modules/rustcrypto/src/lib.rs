@@ -267,6 +267,7 @@ pub extern "C" fn rustcrypto_hkdf(
 
 fn hmac<D: BlockInput + Clone + Default + FixedOutput + Update + Reset>(
     parts: Vec<Vec<u8>>,
+    resets: Vec<u8>,
     key: Vec<u8>,
     out: *mut u8) -> i32 {
 
@@ -275,8 +276,29 @@ fn hmac<D: BlockInput + Clone + Default + FixedOutput + Update + Reset>(
         Err(_e) => return -1,
     };
 
-    for part in parts.iter() {
-        hmac.update(part);
+    let mut resetidx: usize = 0;
+    let mut numresets: usize = 0;
+
+    loop {
+        let mut doreset: bool = false;
+        for part in parts.iter() {
+            if numresets < 5 && resetidx < resets.len() {
+                doreset = (resets[resetidx] % 2) == 0;
+                resetidx += 1;
+
+                if doreset {
+                    numresets += 1;
+                    break;
+                }
+            }
+
+            hmac.update(part);
+        }
+        if !doreset {
+            break;
+        }
+
+        hmac.reset();
     }
 
     let res = hmac.finalize().into_bytes();
@@ -292,50 +314,52 @@ fn hmac<D: BlockInput + Clone + Default + FixedOutput + Update + Reset>(
 pub extern "C" fn rustcrypto_hmac(
     input_bytes: *const u8, input_size: libc::size_t,
     parts_bytes: *const libc::size_t, parts_size: libc::size_t,
+    resets_bytes: *const u8, resets_size: libc::size_t,
     key_bytes: *const u8, key_size: libc::size_t,
     algorithm: u64,
     out: *mut u8) -> i32 {
     let parts = create_parts(input_bytes, input_size, parts_bytes, parts_size);
     let key = unsafe { slice::from_raw_parts(key_bytes, key_size) }.to_vec();
+    let resets = unsafe { slice::from_raw_parts(resets_bytes, resets_size) }.to_vec();
 
-         if is_sha1(algorithm)            { return hmac::<Sha1>(parts, key, out); }
-    else if is_sha224(algorithm)          { return hmac::<Sha224>(parts, key, out); }
-    else if is_sha256(algorithm)          { return hmac::<Sha256>(parts, key, out); }
-    else if is_sha384(algorithm)          { return hmac::<Sha384>(parts, key, out); }
-    else if is_sha512(algorithm)          { return hmac::<Sha512>(parts, key, out); }
-    else if is_streebog_256(algorithm)    { return hmac::<Streebog256>(parts, key, out); }
-    else if is_streebog_512(algorithm)    { return hmac::<Streebog512>(parts, key, out); }
-    else if is_whirlpool(algorithm)       { return hmac::<Whirlpool>(parts, key, out); }
-    else if is_ripemd160(algorithm)       { return hmac::<Ripemd160>(parts, key, out); }
-    else if is_ripemd256(algorithm)       { return hmac::<Ripemd256>(parts, key, out); }
-    else if is_ripemd320(algorithm)       { return hmac::<Ripemd320>(parts, key, out); }
-    else if is_gost_r_34_11_94(algorithm) { return hmac::<Gost94CryptoPro>(parts, key, out); }
-    else if is_sm3(algorithm)             { return hmac::<Sm3>(parts, key, out); }
-    else if is_md2(algorithm)             { return hmac::<Md2>(parts, key, out); }
-    else if is_md4(algorithm)             { return hmac::<Md4>(parts, key, out); }
-    else if is_md5(algorithm)             { return hmac::<Md5>(parts, key, out); }
-    else if is_groestl_224(algorithm)     { return hmac::<Groestl224>(parts, key, out); }
-    else if is_groestl_256(algorithm)     { return hmac::<Groestl256>(parts, key, out); }
-    else if is_groestl_384(algorithm)     { return hmac::<Groestl384>(parts, key, out); }
-    else if is_groestl_512(algorithm)     { return hmac::<Groestl512>(parts, key, out); }
-    else if is_blake2b512(algorithm)      { return hmac::<Blake2b>(parts, key, out); }
-    else if is_blake2s256(algorithm)      { return hmac::<Blake2s>(parts, key, out); }
-    else if is_sha3_224(algorithm)        { return hmac::<Sha3_224>(parts, key, out); }
-    else if is_sha3_256(algorithm)        { return hmac::<Sha3_256>(parts, key, out); }
-    else if is_sha3_384(algorithm)        { return hmac::<Sha3_384>(parts, key, out); }
-    else if is_sha3_512(algorithm)        { return hmac::<Sha3_512>(parts, key, out); }
-    else if is_keccak_224(algorithm)      { return hmac::<Keccak224>(parts, key, out); }
-    else if is_keccak_256(algorithm)      { return hmac::<Keccak256>(parts, key, out); }
-    else if is_keccak_384(algorithm)      { return hmac::<Keccak384>(parts, key, out); }
-    else if is_keccak_512(algorithm)      { return hmac::<Keccak512>(parts, key, out); }
-    else if is_fsb_160(algorithm)         { return hmac::<Fsb160>(parts, key, out); }
-    else if is_fsb_224(algorithm)         { return hmac::<Fsb224>(parts, key, out); }
-    else if is_fsb_256(algorithm)         { return hmac::<Fsb256>(parts, key, out); }
-    else if is_fsb_384(algorithm)         { return hmac::<Fsb384>(parts, key, out); }
-    else if is_fsb_512(algorithm)         { return hmac::<Fsb512>(parts, key, out); }
-    else if is_shabal_256(algorithm)      { return hmac::<Shabal256>(parts, key, out); }
-    else if is_shabal_512(algorithm)      { return hmac::<Shabal512>(parts, key, out); }
-    else if is_tiger(algorithm)           { return hmac::<Tiger>(parts, key, out); }
+         if is_sha1(algorithm)            { return hmac::<Sha1>(parts, resets, key, out); }
+    else if is_sha224(algorithm)          { return hmac::<Sha224>(parts, resets, key, out); }
+    else if is_sha256(algorithm)          { return hmac::<Sha256>(parts, resets, key, out); }
+    else if is_sha384(algorithm)          { return hmac::<Sha384>(parts, resets, key, out); }
+    else if is_sha512(algorithm)          { return hmac::<Sha512>(parts, resets, key, out); }
+    else if is_streebog_256(algorithm)    { return hmac::<Streebog256>(parts, resets, key, out); }
+    else if is_streebog_512(algorithm)    { return hmac::<Streebog512>(parts, resets, key, out); }
+    else if is_whirlpool(algorithm)       { return hmac::<Whirlpool>(parts, resets, key, out); }
+    else if is_ripemd160(algorithm)       { return hmac::<Ripemd160>(parts, resets, key, out); }
+    else if is_ripemd256(algorithm)       { return hmac::<Ripemd256>(parts, resets, key, out); }
+    else if is_ripemd320(algorithm)       { return hmac::<Ripemd320>(parts, resets, key, out); }
+    else if is_gost_r_34_11_94(algorithm) { return hmac::<Gost94CryptoPro>(parts, resets, key, out); }
+    else if is_sm3(algorithm)             { return hmac::<Sm3>(parts, resets, key, out); }
+    else if is_md2(algorithm)             { return hmac::<Md2>(parts, resets, key, out); }
+    else if is_md4(algorithm)             { return hmac::<Md4>(parts, resets, key, out); }
+    else if is_md5(algorithm)             { return hmac::<Md5>(parts, resets, key, out); }
+    else if is_groestl_224(algorithm)     { return hmac::<Groestl224>(parts, resets, key, out); }
+    else if is_groestl_256(algorithm)     { return hmac::<Groestl256>(parts, resets, key, out); }
+    else if is_groestl_384(algorithm)     { return hmac::<Groestl384>(parts, resets, key, out); }
+    else if is_groestl_512(algorithm)     { return hmac::<Groestl512>(parts, resets, key, out); }
+    else if is_blake2b512(algorithm)      { return hmac::<Blake2b>(parts, resets, key, out); }
+    else if is_blake2s256(algorithm)      { return hmac::<Blake2s>(parts, resets, key, out); }
+    else if is_sha3_224(algorithm)        { return hmac::<Sha3_224>(parts, resets, key, out); }
+    else if is_sha3_256(algorithm)        { return hmac::<Sha3_256>(parts, resets, key, out); }
+    else if is_sha3_384(algorithm)        { return hmac::<Sha3_384>(parts, resets, key, out); }
+    else if is_sha3_512(algorithm)        { return hmac::<Sha3_512>(parts, resets, key, out); }
+    else if is_keccak_224(algorithm)      { return hmac::<Keccak224>(parts, resets, key, out); }
+    else if is_keccak_256(algorithm)      { return hmac::<Keccak256>(parts, resets, key, out); }
+    else if is_keccak_384(algorithm)      { return hmac::<Keccak384>(parts, resets, key, out); }
+    else if is_keccak_512(algorithm)      { return hmac::<Keccak512>(parts, resets, key, out); }
+    else if is_fsb_160(algorithm)         { return hmac::<Fsb160>(parts, resets, key, out); }
+    else if is_fsb_224(algorithm)         { return hmac::<Fsb224>(parts, resets, key, out); }
+    else if is_fsb_256(algorithm)         { return hmac::<Fsb256>(parts, resets, key, out); }
+    else if is_fsb_384(algorithm)         { return hmac::<Fsb384>(parts, resets, key, out); }
+    else if is_fsb_512(algorithm)         { return hmac::<Fsb512>(parts, resets, key, out); }
+    else if is_shabal_256(algorithm)      { return hmac::<Shabal256>(parts, resets, key, out); }
+    else if is_shabal_512(algorithm)      { return hmac::<Shabal512>(parts, resets, key, out); }
+    else if is_tiger(algorithm)           { return hmac::<Tiger>(parts, resets, key, out); }
     else {
         return -1;
     }

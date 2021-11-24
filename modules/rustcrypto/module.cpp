@@ -12,6 +12,7 @@ extern "C" {
     int rustcrypto_hmac(
             const uint8_t* input_bytes, const size_t input_size,
             const size_t* parts_bytes, const size_t parts_size,
+            const uint8_t* resets_bytes, const size_t resets_size,
             const uint8_t* key_bytes, const size_t key_size,
             const uint64_t algorithm,
             uint8_t* out);
@@ -131,10 +132,16 @@ std::optional<component::MAC> rustcrypto::OpHMAC(operation::HMAC& op) {
         }
     }
 
+    std::vector<uint8_t> resets;
+    try {
+        resets = ds.GetData(0);
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
     {
         const auto size = rustcrypto_hmac(
                 op.cleartext.GetPtr(), op.cleartext.GetSize(),
                 parts.data(), parts.size(),
+                resets.data(), resets.size(),
                 op.cipher.key.GetPtr(), op.cipher.key.GetSize(),
                 op.digestType.Get(),
                 out);
