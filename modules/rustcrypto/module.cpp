@@ -6,6 +6,7 @@ extern "C" {
     int rustcrypto_hashes_hash(
             const uint8_t* input_bytes, const size_t input_size,
             const size_t* parts_bytes, const size_t parts_size,
+            const uint8_t* resets_bytes, const size_t resets_size,
             const uint64_t algorithm,
             uint8_t* out);
     int rustcrypto_hmac(
@@ -84,10 +85,16 @@ std::optional<component::Digest> rustcrypto::OpDigest(operation::Digest& op) {
         }
     }
 
+    std::vector<uint8_t> resets;
+    try {
+        resets = ds.GetData(0);
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
     {
         const auto size = rustcrypto_hashes_hash(
                 op.cleartext.GetPtr(), op.cleartext.GetSize(),
                 parts.data(), parts.size(),
+                resets.data(), resets.size(),
                 op.digestType.Get(),
                 out);
         CF_CHECK_GTE(size, 0);

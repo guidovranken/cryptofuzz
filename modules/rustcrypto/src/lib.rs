@@ -57,11 +57,35 @@ fn create_parts(
     return ret;
 }
 
-fn hash<D: Digest>(parts: Vec<Vec<u8>>, out: *mut u8) -> i32 {
+fn hash<D: Digest>(
+    parts: Vec<Vec<u8>>,
+    resets: Vec<u8>,
+    out: *mut u8) -> i32 {
     let mut hasher = D::new();
 
-    for part in parts.iter() {
-        hasher.update(part);
+    let mut resetidx: usize = 0;
+    let mut numresets: usize = 0;
+
+    loop {
+        let mut doreset: bool = false;
+        for part in parts.iter() {
+            if numresets < 5 && resetidx < resets.len() {
+                doreset = (resets[resetidx] % 2) == 0;
+                resetidx += 1;
+
+                if doreset {
+                    numresets += 1;
+                    break;
+                }
+            }
+
+            hasher.update(part);
+        }
+        if !doreset {
+            break;
+        }
+
+        hasher.reset();
     }
 
     let res = hasher.finalize();
@@ -77,48 +101,50 @@ fn hash<D: Digest>(parts: Vec<Vec<u8>>, out: *mut u8) -> i32 {
 pub extern "C" fn rustcrypto_hashes_hash(
     input_bytes: *const u8, input_size: libc::size_t,
     parts_bytes: *const libc::size_t, parts_size: libc::size_t,
+    resets_bytes: *const u8, resets_size: libc::size_t,
     algorithm: u64,
     out: *mut u8) -> i32 {
     let parts = create_parts(input_bytes, input_size, parts_bytes, parts_size);
+    let resets = unsafe { slice::from_raw_parts(resets_bytes, resets_size) }.to_vec();
 
-         if is_sha1(algorithm)            { return hash::<Sha1>(parts, out); }
-    else if is_sha224(algorithm)          { return hash::<Sha224>(parts, out); }
-    else if is_sha256(algorithm)          { return hash::<Sha256>(parts, out); }
-    else if is_sha384(algorithm)          { return hash::<Sha384>(parts, out); }
-    else if is_sha512(algorithm)          { return hash::<Sha512>(parts, out); }
-    else if is_streebog_256(algorithm)    { return hash::<Streebog256>(parts, out); }
-    else if is_streebog_512(algorithm)    { return hash::<Streebog512>(parts, out); }
-    else if is_whirlpool(algorithm)       { return hash::<Whirlpool>(parts, out); }
-    else if is_ripemd160(algorithm)       { return hash::<Ripemd160>(parts, out); }
-    else if is_ripemd256(algorithm)       { return hash::<Ripemd256>(parts, out); }
-    else if is_ripemd320(algorithm)       { return hash::<Ripemd320>(parts, out); }
-    else if is_gost_r_34_11_94(algorithm) { return hash::<Gost94CryptoPro>(parts, out); }
-    else if is_sm3(algorithm)             { return hash::<Sm3>(parts, out); }
-    else if is_md2(algorithm)             { return hash::<Md2>(parts, out); }
-    else if is_md4(algorithm)             { return hash::<Md4>(parts, out); }
-    else if is_md5(algorithm)             { return hash::<Md5>(parts, out); }
-    else if is_groestl_224(algorithm)     { return hash::<Groestl224>(parts, out); }
-    else if is_groestl_256(algorithm)     { return hash::<Groestl256>(parts, out); }
-    else if is_groestl_384(algorithm)     { return hash::<Groestl384>(parts, out); }
-    else if is_groestl_512(algorithm)     { return hash::<Groestl512>(parts, out); }
-    else if is_blake2b512(algorithm)      { return hash::<Blake2b>(parts, out); }
-    else if is_blake2s256(algorithm)      { return hash::<Blake2s>(parts, out); }
-    else if is_sha3_224(algorithm)        { return hash::<Sha3_224>(parts, out); }
-    else if is_sha3_256(algorithm)        { return hash::<Sha3_256>(parts, out); }
-    else if is_sha3_384(algorithm)        { return hash::<Sha3_384>(parts, out); }
-    else if is_sha3_512(algorithm)        { return hash::<Sha3_512>(parts, out); }
-    else if is_keccak_224(algorithm)      { return hash::<Keccak224>(parts, out); }
-    else if is_keccak_256(algorithm)      { return hash::<Keccak256>(parts, out); }
-    else if is_keccak_384(algorithm)      { return hash::<Keccak384>(parts, out); }
-    else if is_keccak_512(algorithm)      { return hash::<Keccak512>(parts, out); }
-    else if is_fsb_160(algorithm)         { return hash::<Fsb160>(parts, out); }
-    else if is_fsb_224(algorithm)         { return hash::<Fsb224>(parts, out); }
-    else if is_fsb_256(algorithm)         { return hash::<Fsb256>(parts, out); }
-    else if is_fsb_384(algorithm)         { return hash::<Fsb384>(parts, out); }
-    else if is_fsb_512(algorithm)         { return hash::<Fsb512>(parts, out); }
-    else if is_shabal_256(algorithm)      { return hash::<Shabal256>(parts, out); }
-    else if is_shabal_512(algorithm)      { return hash::<Shabal512>(parts, out); }
-    else if is_tiger(algorithm)           { return hash::<Tiger>(parts, out); }
+         if is_sha1(algorithm)            { return hash::<Sha1>(parts, resets, out); }
+    else if is_sha224(algorithm)          { return hash::<Sha224>(parts, resets, out); }
+    else if is_sha256(algorithm)          { return hash::<Sha256>(parts, resets, out); }
+    else if is_sha384(algorithm)          { return hash::<Sha384>(parts, resets, out); }
+    else if is_sha512(algorithm)          { return hash::<Sha512>(parts, resets, out); }
+    else if is_streebog_256(algorithm)    { return hash::<Streebog256>(parts, resets, out); }
+    else if is_streebog_512(algorithm)    { return hash::<Streebog512>(parts, resets, out); }
+    else if is_whirlpool(algorithm)       { return hash::<Whirlpool>(parts, resets, out); }
+    else if is_ripemd160(algorithm)       { return hash::<Ripemd160>(parts, resets, out); }
+    else if is_ripemd256(algorithm)       { return hash::<Ripemd256>(parts, resets, out); }
+    else if is_ripemd320(algorithm)       { return hash::<Ripemd320>(parts, resets, out); }
+    else if is_gost_r_34_11_94(algorithm) { return hash::<Gost94CryptoPro>(parts, resets, out); }
+    else if is_sm3(algorithm)             { return hash::<Sm3>(parts, resets, out); }
+    else if is_md2(algorithm)             { return hash::<Md2>(parts, resets, out); }
+    else if is_md4(algorithm)             { return hash::<Md4>(parts, resets, out); }
+    else if is_md5(algorithm)             { return hash::<Md5>(parts, resets, out); }
+    else if is_groestl_224(algorithm)     { return hash::<Groestl224>(parts, resets, out); }
+    else if is_groestl_256(algorithm)     { return hash::<Groestl256>(parts, resets, out); }
+    else if is_groestl_384(algorithm)     { return hash::<Groestl384>(parts, resets, out); }
+    else if is_groestl_512(algorithm)     { return hash::<Groestl512>(parts, resets, out); }
+    else if is_blake2b512(algorithm)      { return hash::<Blake2b>(parts, resets, out); }
+    else if is_blake2s256(algorithm)      { return hash::<Blake2s>(parts, resets, out); }
+    else if is_sha3_224(algorithm)        { return hash::<Sha3_224>(parts, resets, out); }
+    else if is_sha3_256(algorithm)        { return hash::<Sha3_256>(parts, resets, out); }
+    else if is_sha3_384(algorithm)        { return hash::<Sha3_384>(parts, resets, out); }
+    else if is_sha3_512(algorithm)        { return hash::<Sha3_512>(parts, resets, out); }
+    else if is_keccak_224(algorithm)      { return hash::<Keccak224>(parts, resets, out); }
+    else if is_keccak_256(algorithm)      { return hash::<Keccak256>(parts, resets, out); }
+    else if is_keccak_384(algorithm)      { return hash::<Keccak384>(parts, resets, out); }
+    else if is_keccak_512(algorithm)      { return hash::<Keccak512>(parts, resets, out); }
+    else if is_fsb_160(algorithm)         { return hash::<Fsb160>(parts, resets, out); }
+    else if is_fsb_224(algorithm)         { return hash::<Fsb224>(parts, resets, out); }
+    else if is_fsb_256(algorithm)         { return hash::<Fsb256>(parts, resets, out); }
+    else if is_fsb_384(algorithm)         { return hash::<Fsb384>(parts, resets, out); }
+    else if is_fsb_512(algorithm)         { return hash::<Fsb512>(parts, resets, out); }
+    else if is_shabal_256(algorithm)      { return hash::<Shabal256>(parts, resets, out); }
+    else if is_shabal_512(algorithm)      { return hash::<Shabal512>(parts, resets, out); }
+    else if is_tiger(algorithm)           { return hash::<Tiger>(parts, resets, out); }
     else {
         return -1;
     }
