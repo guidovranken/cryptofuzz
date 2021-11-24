@@ -43,4 +43,6 @@ argon2 = {git = "https://github.com/RustCrypto/password-hashes"}
 
 crypto-bigint = {git = "https://github.com/RustCrypto/crypto-bigint"}
 
+cmac = {git = "https://github.com/RustCrypto/MACs"}
+aes = {git = "https://github.com/RustCrypto/block-ciphers"}
 libc = "0.2.0"

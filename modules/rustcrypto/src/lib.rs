@@ -34,6 +34,9 @@ use argon2::{
     Algorithm, Argon2, ParamsBuilder, Version,
 };
 
+use aes::Aes128;
+use cmac::Cmac;
+
 use std::convert::TryInto;
 mod ids;
 use crate::ids::{*};
@@ -460,6 +463,33 @@ pub extern "C" fn rustcrypto_argon2(
     }
 
     return 0;
+}
+
+#[no_mangle]
+pub extern "C" fn rustcrypto_cmac(
+    input_bytes: *const u8, input_size: libc::size_t,
+    parts_bytes: *const libc::size_t, parts_size: libc::size_t,
+    key_bytes: *const u8, key_size: libc::size_t,
+    out: *mut u8) -> i32 {
+    let parts = create_parts(input_bytes, input_size, parts_bytes, parts_size);
+    let key = unsafe { slice::from_raw_parts(key_bytes, key_size) }.to_vec();
+
+    let mut mac = match Cmac::<Aes128>::new_from_slice(&key) {
+        Ok(v) => (v),
+        Err(_e) => return -1,
+    };
+
+    for part in parts.iter() {
+        mac.update(part);
+    }
+
+    let res = mac.finalize().into_bytes();
+
+    unsafe {
+        ptr::copy_nonoverlapping(res.as_ptr(), out, res.len());
+    }
+
+    return res.len() as i32;
 }
 
 #[no_mangle]

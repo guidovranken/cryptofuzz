@@ -57,6 +57,11 @@ extern "C" {
             uint8_t* bn1_bytes,
             uint8_t* bn2_bytes,
             uint8_t* result);
+    int rustcrypto_cmac(
+            const uint8_t* input_bytes, const size_t input_size,
+            const size_t* parts_bytes, const size_t parts_size,
+            const uint8_t* key_bytes, const size_t key_size,
+            uint8_t* out);
 }
 
 namespace cryptofuzz {
@@ -216,6 +221,38 @@ std::optional<component::Key> rustcrypto::OpKDF_ARGON2(operation::KDF_ARGON2& op
                 out), 0);
 
     ret = component::Key(out, op.keySize);
+
+end:
+    return ret;
+}
+
+std::optional<component::MAC> rustcrypto::OpCMAC(operation::CMAC& op) {
+    std::optional<component::MAC> ret = std::nullopt;
+    if ( !op.cipher.cipherType.Is(CF_CIPHER("AES_128_CBC")) ) {
+        return ret;
+    }
+
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    uint8_t out[64];
+
+    std::vector<size_t> parts;
+    {
+        const auto _parts = util::ToParts(ds, op.cleartext);
+        for (const auto& part : _parts) {
+            parts.push_back(part.second);
+        }
+    }
+
+    {
+        const auto size = rustcrypto_cmac(
+                op.cleartext.GetPtr(), op.cleartext.GetSize(),
+                parts.data(), parts.size(),
+                op.cipher.key.GetPtr(), op.cipher.key.GetSize(),
+                out);
+        CF_CHECK_GTE(size, 0);
+        ret = component::MAC(out, size);
+    }
 
 end:
     return ret;
