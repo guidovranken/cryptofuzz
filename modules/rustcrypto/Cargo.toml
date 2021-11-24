@@ -1,0 +1,48 @@
+[package]
+name = "cryptofuzz-rustcrypto-hashes"
+version = "0.1.0"
+authors = ["Guido Vranken <guidovranken@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+sha-1 = {git = "https://github.com/RustCrypto/hashes"}
+sha2 = {git = "https://github.com/RustCrypto/hashes"}
+streebog = {git = "https://github.com/RustCrypto/hashes"}
+whirlpool = {git = "https://github.com/RustCrypto/hashes"}
+ripemd160 = {git = "https://github.com/RustCrypto/hashes"}
+ripemd256 = {git = "https://github.com/RustCrypto/hashes"}
+ripemd320 = {git = "https://github.com/RustCrypto/hashes"}
+sm3 = {git = "https://github.com/RustCrypto/hashes"}
+gost94 = {git = "https://github.com/RustCrypto/hashes"}
+md2 = {git = "https://github.com/RustCrypto/hashes"}
+md4 = {git = "https://github.com/RustCrypto/hashes"}
+md-5 = {git = "https://github.com/RustCrypto/hashes"}
+groestl = {git = "https://github.com/RustCrypto/hashes"}
+tiger = {git = "https://github.com/RustCrypto/hashes"}
+#blake2 = {git = "https://github.com/RustCrypto/hashes"}
+blake2 = {git = "https://github.com/RustCrypto/hashes" }
+sha3 = {git = "https://github.com/RustCrypto/hashes"}
+fsb = {git = "https://github.com/RustCrypto/hashes"}
+shabal = {git = "https://github.com/RustCrypto/hashes"}
+
+digest = { version = "0.9", default-features = false }
+hkdf = {git = "https://github.com/RustCrypto/KDFs"}
+
+hmac = {git = "https://github.com/RustCrypto/MACs"}
+
+scrypt = {git = "https://github.com/RustCrypto/password-hashes"}
+
+pbkdf2 = {git = "https://github.com/RustCrypto/password-hashes"}
+
+bcrypt-pbkdf = {git = "https://github.com/RustCrypto/password-hashes"}
+
+argon2 = {git = "https://github.com/RustCrypto/password-hashes"}
+
+crypto-bigint = {git = "https://github.com/RustCrypto/crypto-bigint"}
+
+cmac = {git = "https://github.com/RustCrypto/MACs"}
+aes = {git = "https://github.com/RustCrypto/block-ciphers"}
+libc = "0.2.0"
