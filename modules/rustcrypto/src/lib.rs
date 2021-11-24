@@ -35,8 +35,26 @@ use argon2::{
     Algorithm, Argon2, ParamsBuilder, Version,
 };
 
-use aes::Aes128;
 use cmac::Cmac;
+
+use aes::{Aes128, Aes192, Aes256};
+use cast5::Cast5;
+use idea::Idea;
+use blowfish::Blowfish;
+use twofish::Twofish;
+use threefish::Threefish512;
+use serpent::Serpent;
+use sm4::Sm4;
+use des::Des;
+use cipher::{
+    BlockCipher, BlockEncrypt, StreamCipher,
+    NewBlockCipher,
+};
+use ofb::Ofb;
+use cfb_mode::Cfb;
+use cfb8::Cfb8;
+use cfb8::cipher::{AsyncStreamCipher};
+use ofb::cipher::{NewCipher};
 
 use std::convert::TryInto;
 mod ids;
@@ -538,6 +556,180 @@ pub extern "C" fn rustcrypto_cmac(
     }
 
     return res.len() as i32;
+}
+
+fn cfb_crypt<C: BlockCipher + BlockEncrypt + NewBlockCipher>(
+    mut input: Vec<u8>,
+    key: Vec<u8>,
+    iv: Vec<u8>,
+    encrypt: bool,
+    out: *mut u8) -> i32 {
+    let mut cipher = match Cfb::<C>::new_from_slices(&key, &iv) {
+        Ok(v) => (v),
+        Err(_e) => return -1,
+    };
+
+    if encrypt {
+        cipher.encrypt(&mut input);
+    } else {
+        cipher.decrypt(&mut input);
+    }
+
+    unsafe {
+        ptr::copy_nonoverlapping(input.as_ptr(), out, input.len());
+    }
+
+    return input.len() as i32;
+}
+
+fn cfb8_crypt<C: BlockCipher + BlockEncrypt + NewBlockCipher>(
+    mut input: Vec<u8>,
+    key: Vec<u8>,
+    iv: Vec<u8>,
+    encrypt: bool,
+    out: *mut u8) -> i32 {
+    let mut cipher = match Cfb8::<C>::new_from_slices(&key, &iv) {
+        Ok(v) => (v),
+        Err(_e) => return -1,
+    };
+
+    if encrypt {
+        cipher.encrypt(&mut input);
+    } else {
+        cipher.decrypt(&mut input);
+    }
+
+    unsafe {
+        ptr::copy_nonoverlapping(input.as_ptr(), out, input.len());
+    }
+
+    return input.len() as i32;
+}
+
+fn ofb_crypt<C: BlockCipher + BlockEncrypt + NewBlockCipher>(
+    mut input: Vec<u8>,
+    key: Vec<u8>,
+    iv: Vec<u8>,
+    _encrypt: bool,
+    out: *mut u8) -> i32 {
+    let mut cipher = match Ofb::<C>::new_from_slices(&key, &iv) {
+        Ok(v) => (v),
+        Err(_e) => return -1,
+    };
+
+    cipher.apply_keystream(&mut input);
+
+    unsafe {
+        ptr::copy_nonoverlapping(input.as_ptr(), out, input.len());
+    }
+
+    return input.len() as i32;
+}
+
+fn crypt(
+    input_bytes: *const u8, input_size: libc::size_t,
+    key_bytes: *const u8, key_size: libc::size_t,
+    iv_bytes: *const u8, iv_size: libc::size_t,
+    algorithm: u64,
+    encrypt: bool,
+    out: *mut u8) -> i32 {
+
+    let input = unsafe { slice::from_raw_parts(input_bytes, input_size) }.to_vec();
+    let key = unsafe { slice::from_raw_parts(key_bytes, key_size) }.to_vec();
+    let iv = unsafe { slice::from_raw_parts(iv_bytes, iv_size) }.to_vec();
+
+    if is_cipher_aes_128_ofb(algorithm) {
+        return ofb_crypt::<Aes128>(input, key, iv, encrypt, out);
+    } else if is_cipher_aes_192_ofb(algorithm) {
+        return ofb_crypt::<Aes192>(input, key, iv, encrypt, out);
+    } else if is_cipher_aes_256_ofb(algorithm) {
+        return ofb_crypt::<Aes256>(input, key, iv, encrypt, out);
+    } else if is_cipher_cast5_ofb(algorithm) {
+        return ofb_crypt::<Cast5>(input, key, iv, encrypt, out);
+    } else if is_cipher_idea_ofb(algorithm) {
+        return ofb_crypt::<Idea>(input, key, iv, encrypt, out);
+    } else if is_cipher_blowfish_ofb(algorithm) {
+        return ofb_crypt::<Blowfish>(input, key, iv, encrypt, out);
+    } else if is_cipher_twofish_ofb(algorithm) {
+        return ofb_crypt::<Twofish>(input, key, iv, encrypt, out);
+    } else if is_cipher_threefish_512_ofb(algorithm) {
+        return ofb_crypt::<Threefish512>(input, key, iv, encrypt, out);
+    } else if is_cipher_serpent_ofb(algorithm) {
+        return ofb_crypt::<Serpent>(input, key, iv, encrypt, out);
+    } else if is_cipher_sm4_ofb(algorithm) {
+        return ofb_crypt::<Sm4>(input, key, iv, encrypt, out);
+    } else if is_cipher_des_ofb(algorithm) {
+        return ofb_crypt::<Des>(input, key, iv, encrypt, out);
+
+    } else if is_cipher_aes_128_cfb(algorithm) {
+        return cfb_crypt::<Aes128>(input, key, iv, encrypt, out);
+    } else if is_cipher_aes_192_cfb(algorithm) {
+        return cfb_crypt::<Aes192>(input, key, iv, encrypt, out);
+    } else if is_cipher_aes_256_cfb(algorithm) {
+        return cfb_crypt::<Aes256>(input, key, iv, encrypt, out);
+    } else if is_cipher_cast5_cfb(algorithm) {
+        return cfb_crypt::<Cast5>(input, key, iv, encrypt, out);
+    } else if is_cipher_idea_cfb(algorithm) {
+        return cfb_crypt::<Idea>(input, key, iv, encrypt, out);
+    } else if is_cipher_blowfish_cfb(algorithm) {
+        return cfb_crypt::<Blowfish>(input, key, iv, encrypt, out);
+    } else if is_cipher_twofish_cfb(algorithm) {
+        return cfb_crypt::<Twofish>(input, key, iv, encrypt, out);
+    } else if is_cipher_threefish_512_cfb(algorithm) {
+        return cfb_crypt::<Threefish512>(input, key, iv, encrypt, out);
+    } else if is_cipher_serpent_cfb(algorithm) {
+        return cfb_crypt::<Serpent>(input, key, iv, encrypt, out);
+    } else if is_cipher_sm4_cfb(algorithm) {
+        return cfb_crypt::<Sm4>(input, key, iv, encrypt, out);
+    } else if is_cipher_des_cfb(algorithm) {
+        return cfb_crypt::<Des>(input, key, iv, encrypt, out);
+
+    } else if is_cipher_aes_128_cfb8(algorithm) {
+        return cfb8_crypt::<Aes128>(input, key, iv, encrypt, out);
+    } else if is_cipher_aes_192_cfb8(algorithm) {
+        return cfb8_crypt::<Aes192>(input, key, iv, encrypt, out);
+    } else if is_cipher_aes_256_cfb8(algorithm) {
+        return cfb8_crypt::<Aes256>(input, key, iv, encrypt, out);
+    } else if is_cipher_des_cfb8(algorithm) {
+        return cfb8_crypt::<Des>(input, key, iv, encrypt, out);
+
+    } else {
+        return -1;
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn rustcrypto_symmetric_encrypt(
+    input_bytes: *const u8, input_size: libc::size_t,
+    key_bytes: *const u8, key_size: libc::size_t,
+    iv_bytes: *const u8, iv_size: libc::size_t,
+    algorithm: u64,
+    out: *mut u8) -> i32 {
+
+    return crypt(
+        input_bytes, input_size,
+        key_bytes, key_size,
+        iv_bytes, iv_size,
+        algorithm,
+        true,
+        out);
+}
+
+#[no_mangle]
+pub extern "C" fn rustcrypto_symmetric_decrypt(
+    input_bytes: *const u8, input_size: libc::size_t,
+    key_bytes: *const u8, key_size: libc::size_t,
+    iv_bytes: *const u8, iv_size: libc::size_t,
+    algorithm: u64,
+    out: *mut u8) -> i32 {
+
+    return crypt(
+        input_bytes, input_size,
+        key_bytes, key_size,
+        iv_bytes, iv_size,
+        algorithm,
+        false,
+        out);
 }
 
 #[no_mangle]

@@ -44,5 +44,19 @@ argon2 = {git = "https://github.com/RustCrypto/password-hashes"}
 crypto-bigint = {git = "https://github.com/RustCrypto/crypto-bigint"}
 
 cmac = {git = "https://github.com/RustCrypto/MACs"}
+
+ofb = {git = "https://github.com/RustCrypto/stream-ciphers.git"}
+cfb-mode = {git = "https://github.com/RustCrypto/stream-ciphers.git"}
+cfb8 = {git = "https://github.com/RustCrypto/stream-ciphers.git"}
+cipher = "0.3"
 aes = {git = "https://github.com/RustCrypto/block-ciphers"}
+cast5 = {git = "https://github.com/RustCrypto/block-ciphers"}
+idea = {git = "https://github.com/RustCrypto/block-ciphers"}
+blowfish = {git = "https://github.com/RustCrypto/block-ciphers"}
+twofish = {git = "https://github.com/RustCrypto/block-ciphers"}
+threefish = {git = "https://github.com/RustCrypto/block-ciphers"}
+serpent = {git = "https://github.com/RustCrypto/block-ciphers"}
+sm4 = {git = "https://github.com/RustCrypto/block-ciphers"}
+des = {git = "https://github.com/RustCrypto/block-ciphers"}
+
 libc = "0.2.0"

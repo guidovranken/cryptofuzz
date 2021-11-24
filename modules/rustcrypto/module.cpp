@@ -52,6 +52,18 @@ extern "C" {
             const uint32_t iterations,
             const uint64_t keysize,
             uint8_t* out);
+    int rustcrypto_symmetric_encrypt(
+            const uint8_t* input_bytes, const size_t input_size,
+            const uint8_t* key_bytes, const size_t key_size,
+            const uint8_t* iv_bytes, const size_t iv_size,
+            const uint64_t algorithm,
+            uint8_t* out);
+    int rustcrypto_symmetric_decrypt(
+            const uint8_t* input_bytes, const size_t input_size,
+            const uint8_t* key_bytes, const size_t key_size,
+            const uint8_t* iv_bytes, const size_t iv_size,
+            const uint64_t algorithm,
+            uint8_t* out);
     int rustcrypto_bigint_bignumcalc(
             uint64_t op,
             uint8_t* bn0_bytes,
@@ -262,6 +274,48 @@ std::optional<component::MAC> rustcrypto::OpCMAC(operation::CMAC& op) {
     }
 
 end:
+    return ret;
+}
+        
+std::optional<component::Ciphertext> rustcrypto::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
+    std::optional<component::Ciphertext> ret = std::nullopt;
+
+    uint8_t* out = util::malloc(op.cleartext.GetSize());
+
+    const auto size = rustcrypto_symmetric_encrypt(
+            op.cleartext.GetPtr(), op.cleartext.GetSize(),
+            op.cipher.key.GetPtr(), op.cipher.key.GetSize(),
+            op.cipher.iv.GetPtr(), op.cipher.iv.GetSize(),
+            op.cipher.cipherType.Get(),
+            out);
+    CF_CHECK_GTE(size, 0);
+
+    ret = component::Ciphertext(Buffer(out, size));
+
+end:
+    util::free(out);
+
+    return ret;
+}
+        
+std::optional<component::Cleartext> rustcrypto::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
+    std::optional<component::Cleartext> ret = std::nullopt;
+
+    uint8_t* out = util::malloc(op.ciphertext.GetSize());
+
+    const auto size = rustcrypto_symmetric_decrypt(
+            op.ciphertext.GetPtr(), op.ciphertext.GetSize(),
+            op.cipher.key.GetPtr(), op.cipher.key.GetSize(),
+            op.cipher.iv.GetPtr(), op.cipher.iv.GetSize(),
+            op.cipher.cipherType.Get(),
+            out);
+    CF_CHECK_GTE(size, 0);
+
+    ret = component::Cleartext(Buffer(out, size));
+
+end:
+    util::free(out);
+
     return ret;
 }
 
