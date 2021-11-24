@@ -20,6 +20,7 @@ use sha3::{Sha3_224, Sha3_256, Sha3_384, Sha3_512};
 use sha3::{Keccak224, Keccak256, Keccak384, Keccak512};
 use fsb::{Fsb160, Fsb224, Fsb256, Fsb384, Fsb512};
 use shabal::{Shabal256, Shabal512};
+use k12::{KangarooTwelve, digest::{ExtendableOutput}};
 
 use digest::{BlockInput, FixedOutput, Reset, Update};
 use hkdf::Hkdf;
@@ -97,6 +98,25 @@ fn hash<D: Digest>(
     return res.len().try_into().unwrap();
 }
 
+fn k12(
+    parts: Vec<Vec<u8>>,
+    size: usize,
+    out: *mut u8) -> i32 {
+    let mut k12 = KangarooTwelve::new();
+
+    for part in parts.iter() {
+        k12.update(part);
+    }
+
+    let res = k12.finalize_boxed(size);
+
+    unsafe {
+        ptr::copy_nonoverlapping(res.as_ptr(), out, res.len());
+    }
+
+    return size as i32;
+}
+
 #[no_mangle]
 pub extern "C" fn rustcrypto_hashes_hash(
     input_bytes: *const u8, input_size: libc::size_t,
@@ -145,6 +165,8 @@ pub extern "C" fn rustcrypto_hashes_hash(
     else if is_shabal_256(algorithm)      { return hash::<Shabal256>(parts, resets, out); }
     else if is_shabal_512(algorithm)      { return hash::<Shabal512>(parts, resets, out); }
     else if is_tiger(algorithm)           { return hash::<Tiger>(parts, resets, out); }
+    else if is_k12_256(algorithm)         { return k12(parts, 32, out); }
+    else if is_k12_512(algorithm)         { return k12(parts, 64, out); }
     else {
         return -1;
     }
