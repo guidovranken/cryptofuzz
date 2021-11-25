@@ -167,7 +167,9 @@ std::optional<component::Key> rustcrypto::OpKDF_HKDF(operation::KDF_HKDF& op) {
                 out), 0);
 
     ret = component::Key(out, op.keySize);
+
 end:
+    util::free(out);
     return ret;
 }
 
@@ -209,6 +211,8 @@ std::optional<component::Key> rustcrypto::OpKDF_PBKDF2(operation::KDF_PBKDF2& op
     ret = component::Key(out, op.keySize);
 
 end:
+    util::free(out);
+
     return ret;
 }
 
@@ -228,6 +232,8 @@ std::optional<component::Key> rustcrypto::OpKDF_BCRYPT(operation::KDF_BCRYPT& op
     ret = component::Key(out, op.keySize);
 
 end:
+    util::free(out);
+
     return ret;
 }
 
@@ -249,6 +255,7 @@ std::optional<component::Key> rustcrypto::OpKDF_ARGON2(operation::KDF_ARGON2& op
     ret = component::Key(out, op.keySize);
 
 end:
+    util::free(out);
     return ret;
 }
 
