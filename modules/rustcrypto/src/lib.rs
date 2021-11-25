@@ -818,7 +818,8 @@ pub extern "C" fn rustcrypto_bigint_bignumcalc(
     } else if is_xor(op) {
         res = bn0.wrapping_xor(&bn1);
     } else if is_not(op) {
-        res = bn0.not();
+        let bn0_ = bn0.wrapping_sub(&U256::ONE);
+        res = bn0_.not();
     } else if is_iseq(op) {
         res = if bn0 == bn1 { U256::ONE } else { U256::ZERO }
     } else if is_isgt(op) {
