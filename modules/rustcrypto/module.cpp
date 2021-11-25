@@ -74,6 +74,7 @@ extern "C" {
     int rustcrypto_cmac(
             const uint8_t* input_bytes, const size_t input_size,
             const size_t* parts_bytes, const size_t parts_size,
+            const uint8_t* resets_bytes, const size_t resets_size,
             const uint8_t* key_bytes, const size_t key_size,
             uint8_t* out);
 }
@@ -277,10 +278,16 @@ std::optional<component::MAC> rustcrypto::OpCMAC(operation::CMAC& op) {
         }
     }
 
+    std::vector<uint8_t> resets;
+    try {
+        resets = ds.GetData(0);
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
     {
         const auto size = rustcrypto_cmac(
                 op.cleartext.GetPtr(), op.cleartext.GetSize(),
                 parts.data(), parts.size(),
+                resets.data(), resets.size(),
                 op.cipher.key.GetPtr(), op.cipher.key.GetSize(),
                 out);
         CF_CHECK_GTE(size, 0);

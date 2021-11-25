@@ -559,18 +559,41 @@ pub extern "C" fn rustcrypto_argon2(
 pub extern "C" fn rustcrypto_cmac(
     input_bytes: *const u8, input_size: libc::size_t,
     parts_bytes: *const libc::size_t, parts_size: libc::size_t,
+    resets_bytes: *const u8, resets_size: libc::size_t,
     key_bytes: *const u8, key_size: libc::size_t,
     out: *mut u8) -> i32 {
     let parts = create_parts(input_bytes, input_size, parts_bytes, parts_size);
     let key = unsafe { slice::from_raw_parts(key_bytes, key_size) }.to_vec();
+    let resets = unsafe { slice::from_raw_parts(resets_bytes, resets_size) }.to_vec();
 
     let mut mac = match Cmac::<Aes128>::new_from_slice(&key) {
         Ok(v) => (v),
         Err(_e) => return -1,
     };
 
-    for part in parts.iter() {
-        mac.update(part);
+    let mut resetidx: usize = 0;
+    let mut numresets: usize = 0;
+
+    loop {
+        let mut doreset: bool = false;
+        for part in parts.iter() {
+            if numresets < 5 && resetidx < resets.len() {
+                doreset = (resets[resetidx] % 2) == 0;
+                resetidx += 1;
+
+                if doreset {
+                    numresets += 1;
+                    break;
+                }
+            }
+
+            mac.update(part);
+        }
+        if !doreset {
+            break;
+        }
+
+        mac.reset();
     }
 
     let res = mac.finalize().into_bytes();
