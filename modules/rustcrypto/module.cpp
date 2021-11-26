@@ -12,6 +12,7 @@ extern "C" {
     int rustcrypto_hmac(
             const uint8_t* input_bytes, const size_t input_size,
             const size_t* parts_bytes, const size_t parts_size,
+            const uint8_t* resets_bytes, const size_t resets_size,
             const uint8_t* key_bytes, const size_t key_size,
             const uint64_t algorithm,
             uint8_t* out);
@@ -52,15 +53,29 @@ extern "C" {
             const uint32_t iterations,
             const uint64_t keysize,
             uint8_t* out);
+    int rustcrypto_symmetric_encrypt(
+            const uint8_t* input_bytes, const size_t input_size,
+            const uint8_t* key_bytes, const size_t key_size,
+            const uint8_t* iv_bytes, const size_t iv_size,
+            const uint64_t algorithm,
+            uint8_t* out);
+    int rustcrypto_symmetric_decrypt(
+            const uint8_t* input_bytes, const size_t input_size,
+            const uint8_t* key_bytes, const size_t key_size,
+            const uint8_t* iv_bytes, const size_t iv_size,
+            const uint64_t algorithm,
+            uint8_t* out);
     int rustcrypto_bigint_bignumcalc(
             uint64_t op,
             uint8_t* bn0_bytes,
             uint8_t* bn1_bytes,
             uint8_t* bn2_bytes,
+            uint8_t modifier,
             uint8_t* result);
     int rustcrypto_cmac(
             const uint8_t* input_bytes, const size_t input_size,
             const size_t* parts_bytes, const size_t parts_size,
+            const uint8_t* resets_bytes, const size_t resets_size,
             const uint8_t* key_bytes, const size_t key_size,
             uint8_t* out);
 }
@@ -119,10 +134,16 @@ std::optional<component::MAC> rustcrypto::OpHMAC(operation::HMAC& op) {
         }
     }
 
+    std::vector<uint8_t> resets;
+    try {
+        resets = ds.GetData(0);
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
     {
         const auto size = rustcrypto_hmac(
                 op.cleartext.GetPtr(), op.cleartext.GetSize(),
                 parts.data(), parts.size(),
+                resets.data(), resets.size(),
                 op.cipher.key.GetPtr(), op.cipher.key.GetSize(),
                 op.digestType.Get(),
                 out);
@@ -148,7 +169,9 @@ std::optional<component::Key> rustcrypto::OpKDF_HKDF(operation::KDF_HKDF& op) {
                 out), 0);
 
     ret = component::Key(out, op.keySize);
+
 end:
+    util::free(out);
     return ret;
 }
 
@@ -190,6 +213,8 @@ std::optional<component::Key> rustcrypto::OpKDF_PBKDF2(operation::KDF_PBKDF2& op
     ret = component::Key(out, op.keySize);
 
 end:
+    util::free(out);
+
     return ret;
 }
 
@@ -209,6 +234,8 @@ std::optional<component::Key> rustcrypto::OpKDF_BCRYPT(operation::KDF_BCRYPT& op
     ret = component::Key(out, op.keySize);
 
 end:
+    util::free(out);
+
     return ret;
 }
 
@@ -230,6 +257,7 @@ std::optional<component::Key> rustcrypto::OpKDF_ARGON2(operation::KDF_ARGON2& op
     ret = component::Key(out, op.keySize);
 
 end:
+    util::free(out);
     return ret;
 }
 
@@ -251,10 +279,16 @@ std::optional<component::MAC> rustcrypto::OpCMAC(operation::CMAC& op) {
         }
     }
 
+    std::vector<uint8_t> resets;
+    try {
+        resets = ds.GetData(0);
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
     {
         const auto size = rustcrypto_cmac(
                 op.cleartext.GetPtr(), op.cleartext.GetSize(),
                 parts.data(), parts.size(),
+                resets.data(), resets.size(),
                 op.cipher.key.GetPtr(), op.cipher.key.GetSize(),
                 out);
         CF_CHECK_GTE(size, 0);
@@ -264,9 +298,52 @@ std::optional<component::MAC> rustcrypto::OpCMAC(operation::CMAC& op) {
 end:
     return ret;
 }
+        
+std::optional<component::Ciphertext> rustcrypto::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
+    std::optional<component::Ciphertext> ret = std::nullopt;
+
+    uint8_t* out = util::malloc(op.cleartext.GetSize());
+
+    const auto size = rustcrypto_symmetric_encrypt(
+            op.cleartext.GetPtr(), op.cleartext.GetSize(),
+            op.cipher.key.GetPtr(), op.cipher.key.GetSize(),
+            op.cipher.iv.GetPtr(), op.cipher.iv.GetSize(),
+            op.cipher.cipherType.Get(),
+            out);
+    CF_CHECK_GTE(size, 0);
+
+    ret = component::Ciphertext(Buffer(out, size));
+
+end:
+    util::free(out);
+
+    return ret;
+}
+        
+std::optional<component::Cleartext> rustcrypto::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
+    std::optional<component::Cleartext> ret = std::nullopt;
+
+    uint8_t* out = util::malloc(op.ciphertext.GetSize());
+
+    const auto size = rustcrypto_symmetric_decrypt(
+            op.ciphertext.GetPtr(), op.ciphertext.GetSize(),
+            op.cipher.key.GetPtr(), op.cipher.key.GetSize(),
+            op.cipher.iv.GetPtr(), op.cipher.iv.GetSize(),
+            op.cipher.cipherType.Get(),
+            out);
+    CF_CHECK_GTE(size, 0);
+
+    ret = component::Cleartext(Buffer(out, size));
+
+end:
+    util::free(out);
+
+    return ret;
+}
 
 std::optional<component::Bignum> rustcrypto::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     if ( op.modulo == std::nullopt ) {
         return ret;
@@ -276,10 +353,15 @@ std::optional<component::Bignum> rustcrypto::OpBignumCalc(operation::BignumCalc&
 
     uint8_t result[32] = {0};
     std::optional<std::vector<uint8_t>> bn0, bn1, bn2;
+    uint8_t modifier = 0;
 
     CF_CHECK_NE(bn0 = util::DecToBin(op.bn0.ToTrimmedString(), 32), std::nullopt);
     CF_CHECK_NE(bn1 = util::DecToBin(op.bn1.ToTrimmedString(), 32), std::nullopt);
     CF_CHECK_NE(bn2 = util::DecToBin(op.bn2.ToTrimmedString(), 32), std::nullopt);
+
+    try {
+        modifier = ds.Get<uint8_t>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
     {
         const auto res = rustcrypto_bigint_bignumcalc(
@@ -287,6 +369,7 @@ std::optional<component::Bignum> rustcrypto::OpBignumCalc(operation::BignumCalc&
                 bn0->data(),
                 bn1->data(),
                 bn2->data(),
+                modifier,
                 result
         );
 
