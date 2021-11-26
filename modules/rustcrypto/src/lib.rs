@@ -30,6 +30,8 @@ use hmac::{Mac, Hmac, NewMac};
 use scrypt::{scrypt, Params as ScryptParams};
 
 use crypto_bigint::{U256, Encoding, Integer, Zero};
+use crypto_bigint::subtle::{ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess, ConditionallySelectable};
+use crypto_bigint::{CheckedAdd, CheckedSub, CheckedMul};
 
 use argon2::{
     Algorithm, Argon2, ParamsBuilder, Version,
@@ -785,6 +787,7 @@ pub extern "C" fn rustcrypto_bigint_bignumcalc(
             bn0: &[u8; 32],
             bn1: &[u8; 32],
             bn2: &[u8; 32],
+            modifier: u8,
             result: &mut [u8; 32]) -> i32 {
     let bn0 = U256::from_be_bytes(*bn0);
     let bn1 = U256::from_be_bytes(*bn1);
@@ -792,11 +795,41 @@ pub extern "C" fn rustcrypto_bigint_bignumcalc(
 
     let res: U256;
     if is_add(op) {
-        res = bn0.wrapping_add(&bn1);
+        match modifier % 2 {
+            0 => res = bn0.wrapping_add(&bn1),
+            1 => {
+                let r = bn0.checked_add(&bn1);
+                if bool::from(r.is_none()) {
+                    return -1;
+                }
+                res = r.unwrap();
+            },
+            _ => panic!(),
+        }
     } else if is_sub(op) {
-        res = bn0.wrapping_sub(&bn1);
+        match modifier % 2 {
+            0 => res = bn0.wrapping_sub(&bn1),
+            1 => {
+                let r = bn0.checked_sub(&bn1);
+                if bool::from(r.is_none()) {
+                    return -1;
+                }
+                res = r.unwrap();
+            },
+            _ => panic!(),
+        }
     } else if is_mul(op) {
-        res = bn0.wrapping_mul(&bn1);
+        match modifier % 2 {
+            0 => res = bn0.wrapping_mul(&bn1),
+            1 => {
+                let r = bn0.checked_mul(&bn1);
+                if bool::from(r.is_none()) {
+                    return -1;
+                }
+                res = r.unwrap();
+            },
+            _ => panic!(),
+        }
     } else if is_div(op) {
         if bool::from(bn1.is_zero()) {
             return -1;
@@ -806,30 +839,71 @@ pub extern "C" fn rustcrypto_bigint_bignumcalc(
         if bool::from(bn1.is_zero()) {
             return -1;
         }
+        if bn0 < bn1 {
+            return -1;
+        }
         res = bn0.wrapping_rem(&bn1);
     } else if is_addmod(op) {
+        /* Docs: "Assumes self and rhs are < p." */
+        if bn0 >= bn2 || bn1 >= bn2 {
+            return -1;
+        }
         res = bn0.add_mod(&bn1, &bn2);
     } else if is_submod(op) {
+        /* Docs: "Assumes self and rhs are < p." */
+        if bn0 >= bn2 || bn1 >= bn2 {
+            return -1;
+        }
         res = bn0.sub_mod(&bn1, &bn2);
     } else if is_and(op) {
-        res = bn0.wrapping_and(&bn1);
+        match modifier % 3 {
+            0 => res = bn0.bitand(&bn1),
+            1 => res = bn0.wrapping_and(&bn1),
+            2 => res = bn0.checked_and(&bn1).unwrap(),
+            _ => panic!(),
+        }
     } else if is_or(op) {
-        res = bn0.wrapping_or(&bn1);
+        match modifier % 3 {
+            0 => res = bn0.bitor(&bn1),
+            1 => res = bn0.wrapping_or(&bn1),
+            2 => res = bn0.checked_or(&bn1).unwrap(),
+            _ => panic!(),
+        }
     } else if is_xor(op) {
-        res = bn0.wrapping_xor(&bn1);
+        match modifier % 3 {
+            0 => res = bn0.bitxor(&bn1),
+            1 => res = bn0.wrapping_xor(&bn1),
+            2 => res = bn0.checked_xor(&bn1).unwrap(),
+            _ => panic!(),
+        }
     } else if is_not(op) {
         let bn0_ = bn0.wrapping_sub(&U256::ONE);
         res = bn0_.not();
     } else if is_iseq(op) {
-        res = if bn0 == bn1 { U256::ONE } else { U256::ZERO }
+        res = match modifier % 3 {
+            0 => if bn0 == bn1 { U256::ONE } else { U256::ZERO },
+            1 => if bn0.eq(&bn1) { U256::ONE } else { U256::ZERO },
+            2 => if bool::from(bn0.ct_eq(&bn1)) { U256::ONE } else { U256::ZERO },
+            _ => panic!(),
+        };
     } else if is_isgt(op) {
-        res = if bn0 > bn1 { U256::ONE } else { U256::ZERO }
+        res = match modifier % 3 {
+            0 => if bn0 > bn1 { U256::ONE } else { U256::ZERO },
+            1 => if bn0.gt(&bn1) { U256::ONE } else { U256::ZERO },
+            2 => if bool::from(bn0.ct_gt(&bn1)) { U256::ONE } else { U256::ZERO },
+            _ => panic!(),
+        };
     } else if is_isgte(op) {
-        res = if bn0 >= bn1 { U256::ONE } else { U256::ZERO }
+        res = if bn0 >= bn1 { U256::ONE } else { U256::ZERO };
     } else if is_islt(op) {
-        res = if bn0 < bn1 { U256::ONE } else { U256::ZERO }
+        res = match modifier % 3 {
+            0 => if bn0 < bn1 { U256::ONE } else { U256::ZERO },
+            1 => if bn0.lt(&bn1) { U256::ONE } else { U256::ZERO },
+            2 => if bool::from(bn0.ct_lt(&bn1)) { U256::ONE } else { U256::ZERO },
+            _ => panic!(),
+        };
     } else if is_islte(op) {
-        res = if bn0 <= bn1 { U256::ONE } else { U256::ZERO }
+        res = if bn0 <= bn1 { U256::ONE } else { U256::ZERO };
     } else if is_sqrt(op) {
         res = bn0.wrapping_sqrt();
     } else if is_iseven(op) {
@@ -844,6 +918,21 @@ pub extern "C" fn rustcrypto_bigint_bignumcalc(
         res = bn0.min(bn1);
     } else if is_max(op) {
         res = bn0.max(bn1);
+    } else if is_lshift1(op) {
+        res = bn0 << 1;
+    } else if is_one(op) {
+        res = U256::ONE;
+    } else if is_condset(op) {
+        let mut r = U256::ZERO;
+        r.conditional_assign(&bn0, !bn1.is_zero());
+        res = r;
+    } else if is_set(op) {
+        res = match modifier % 2 {
+            0 => bn0,
+            1 => U256::new(*bn0.limbs()),
+            2 => U256::from_uint_array(bn0.to_uint_array()),
+            _ => panic!(),
+        };
     } else {
         return -1;
     }

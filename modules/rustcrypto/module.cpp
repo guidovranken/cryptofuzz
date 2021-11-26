@@ -70,6 +70,7 @@ extern "C" {
             uint8_t* bn0_bytes,
             uint8_t* bn1_bytes,
             uint8_t* bn2_bytes,
+            uint8_t modifier,
             uint8_t* result);
     int rustcrypto_cmac(
             const uint8_t* input_bytes, const size_t input_size,
@@ -342,6 +343,7 @@ end:
 
 std::optional<component::Bignum> rustcrypto::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     if ( op.modulo == std::nullopt ) {
         return ret;
@@ -351,10 +353,15 @@ std::optional<component::Bignum> rustcrypto::OpBignumCalc(operation::BignumCalc&
 
     uint8_t result[32] = {0};
     std::optional<std::vector<uint8_t>> bn0, bn1, bn2;
+    uint8_t modifier = 0;
 
     CF_CHECK_NE(bn0 = util::DecToBin(op.bn0.ToTrimmedString(), 32), std::nullopt);
     CF_CHECK_NE(bn1 = util::DecToBin(op.bn1.ToTrimmedString(), 32), std::nullopt);
     CF_CHECK_NE(bn2 = util::DecToBin(op.bn2.ToTrimmedString(), 32), std::nullopt);
+
+    try {
+        modifier = ds.Get<uint8_t>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
     {
         const auto res = rustcrypto_bigint_bignumcalc(
@@ -362,6 +369,7 @@ std::optional<component::Bignum> rustcrypto::OpBignumCalc(operation::BignumCalc&
                 bn0->data(),
                 bn1->data(),
                 bn2->data(),
+                modifier,
                 result
         );
 
