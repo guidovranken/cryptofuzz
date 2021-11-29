@@ -5,6 +5,7 @@
 
 extern "C" {
     #include <libsig.h>
+    #include <hash/hmac.h>
 }
 
 namespace cryptofuzz {
@@ -243,6 +244,79 @@ std::optional<component::Digest> libecc::OpDigest(operation::Digest& op) {
     }
 
 end:
+    util::free(out);
+
+    return ret;
+}
+
+std::optional<component::MAC> libecc::OpHMAC(operation::HMAC& op) {
+    std::optional<component::MAC> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    bool oneShot = false;
+    uint8_t outlen = 0;
+    uint8_t* out = nullptr;
+    std::optional<hash_alg_type> hash;
+
+    CF_CHECK_NE(hash = libecc_detail::To_hash_alg_type(op.digestType.Get()), std::nullopt);
+
+    try {
+        outlen = ds.Get<uint8_t>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+    try {
+        oneShot = ds.Get<bool>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+    out = util::malloc(outlen);
+
+    if ( oneShot == true ) {
+        CF_INSTALL_JMP();
+
+        CF_CHECK_EQ(hmac(
+                    op.cipher.key.GetPtr(),
+                    op.cipher.key.GetSize(),
+                    *hash,
+                    op.cleartext.GetPtr(),
+                    op.cleartext.GetSize(),
+                    out, &outlen
+                    ), 0);
+
+        ret = component::Digest(out, outlen);
+    } else {
+        CF_INSTALL_JMP();
+
+        hmac_context ctx;
+
+        /* Initialize */
+        CF_CHECK_EQ(hmac_init(
+                    &ctx,
+                    op.cipher.key.GetPtr(),
+                    op.cipher.key.GetSize(),
+                    *hash), 0);
+
+        {
+            const auto parts = util::ToParts(ds, op.cleartext);
+
+            for (const auto& part : parts) {
+                if ( part.first == nullptr ) {
+                    continue;
+                }
+
+                CF_CHECK_EQ(hmac_update(&ctx, part.first, part.second), 0);
+            }
+        }
+
+        /* Finalize */
+        {
+            CF_CHECK_EQ(hmac_finalize(&ctx, out, &outlen), 0);
+            ret = component::Digest(out, outlen);
+        }
+    }
+
+end:
+    CF_RESTORE_JMP();
+
     util::free(out);
 
     return ret;

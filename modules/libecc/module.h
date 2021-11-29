@@ -11,6 +11,7 @@ class libecc : public Module {
     public:
         libecc(void);
         std::optional<component::Digest> OpDigest(operation::Digest& op) override;
+        std::optional<component::MAC> OpHMAC(operation::HMAC& op) override;
         std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) override;
         std::optional<component::ECDSA_Signature> OpECDSA_Sign(operation::ECDSA_Sign& op) override;
         std::optional<component::ECGDSA_Signature> OpECGDSA_Sign(operation::ECGDSA_Sign& op) override;
