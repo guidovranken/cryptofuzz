@@ -51,6 +51,25 @@ static GoSlice toGoSlice(std::string& in) {
     return {in.data(), static_cast<GoInt>(in.size()), static_cast<GoInt>(in.size())};
 }
 
+std::optional<bool> Gnark_bn254::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+
+    Gnark_bn254_BLS_IsG1OnCurve(toGoSlice(jsonStr));
+
+    return getResultAs<bool>();
+}
+
+std::optional<bool> Gnark_bn254::OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    Gnark_bn254_BLS_IsG2OnCurve(toGoSlice(jsonStr));
+
+    return getResultAs<bool>();
+}
+
 std::optional<component::G1> Gnark_bn254::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
     auto json = op.ToJSON();
     json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
