@@ -739,6 +739,7 @@ end:
 
 std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     nn result, a, b, c;
 
@@ -889,18 +890,32 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("AddMod(A,B,C)"):
-            CF_NORET(nn_init(&result, 0));
+            {
+                CF_NORET(nn_init(&result, 0));
 
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn2, &c));
+                CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+                CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+                CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn2, &c));
 
-            CF_CHECK_GT(nn_cmp(&c, &a), 0);
-            CF_CHECK_GT(nn_cmp(&c, &b), 0);
+                CF_CHECK_GT(nn_cmp(&c, &a), 0);
+                CF_CHECK_GT(nn_cmp(&c, &b), 0);
 
-            CF_NORET(nn_mod_add(&result, &a, &b, &c));
+                bool mod_inc = false;
 
-            ret = libecc_detail::To_Component_Bignum(&result);
+                if ( op.bn1.ToTrimmedString() == "1") {
+                    try {
+                        mod_inc = ds.Get<bool>();
+                    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+                }
+
+                if ( mod_inc == false ) {
+                    CF_NORET(nn_mod_add(&result, &a, &b, &c));
+                } else {
+                    CF_NORET(nn_mod_inc(&result, &a, &c));
+                }
+
+                ret = libecc_detail::To_Component_Bignum(&result);
+            }
             break;
         case    CF_CALCOP("SubMod(A,B,C)"):
             CF_NORET(nn_init(&result, 0));
