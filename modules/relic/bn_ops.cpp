@@ -206,10 +206,18 @@ bool LShift1::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 bool Jacobi::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    RLC_TRY {
-        /* noret */ bn_smb_jac(res.Get(), bn[0].Get(), bn[1].Get());
+    int resInt;
+
+    try {
+        resInt = bn_smb_jac(bn[0].Get(), bn[1].Get());
     } RLC_CATCH_ANY {
         return false;
+    }
+
+    if ( resInt == -1 ) {
+	res.Set("-1");
+    } else {
+	res.Set(resInt);
     }
 
     return true;
