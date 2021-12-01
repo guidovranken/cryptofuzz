@@ -454,8 +454,8 @@ void test(const operation::ECDSA_Recover& op, const std::optional<component::ECC
     }
     if ( result != std::nullopt ) {
         test_ECDSA_Signature(op.curveType.Get(),
-                result->first.ToTrimmedString(),
-                result->second.ToTrimmedString());
+                op.signature.first.ToTrimmedString(),
+                op.signature.second.ToTrimmedString());
     }
 }
 
