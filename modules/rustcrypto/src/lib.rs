@@ -220,6 +220,26 @@ pub extern "C" fn rustcrypto_hkdf(
     keysize: u64,
     algorithm: u64,
     out: *mut u8) -> i32 {
+    /* Prevent time-outs of slow hash algorithms.
+     *
+     * https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=41536#c2
+     */
+    if keysize > 100 {
+        if  is_gost_r_34_11_94(algorithm) ||
+            is_md2(algorithm) ||
+            is_groestl_224(algorithm) ||
+            is_groestl_256(algorithm) ||
+            is_groestl_384(algorithm) ||
+            is_groestl_512(algorithm) ||
+            is_fsb_160(algorithm) ||
+            is_fsb_224(algorithm) ||
+            is_fsb_256(algorithm) ||
+            is_fsb_384(algorithm) ||
+            is_fsb_512(algorithm) {
+                return -1;
+            }
+    }
+
     let password = unsafe { slice::from_raw_parts(password_bytes, password_size) }.to_vec();
     let salt = unsafe { slice::from_raw_parts(salt_bytes, salt_size) }.to_vec();
     let info = unsafe { slice::from_raw_parts(info_bytes, info_size) }.to_vec();
