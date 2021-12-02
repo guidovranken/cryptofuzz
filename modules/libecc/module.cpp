@@ -223,6 +223,16 @@ libecc::libecc(void) :
     libecc_detail::AddCurve(CF_ECC_CURVE("secp521r1"), "SECP521R1");
     libecc_detail::AddCurve(CF_ECC_CURVE("frp256v1"), "FRP256V1");
     libecc_detail::AddCurve(CF_ECC_CURVE("secp256k1"), "SECP256K1");
+    /* NOTE: Ed25519 and Ed448 are mapped to WEI25519 and WEI448 by libecc
+     * through isogenies.
+     */
+    libecc_detail::AddCurve(CF_ECC_CURVE("ed25519"), "WEI25519");
+    libecc_detail::AddCurve(CF_ECC_CURVE("ed448"), "WEI448");
+    /* NOTE: x25519 and x448 are mapped to WEI25519 and WEI448 by libecc
+     * through isogenies.
+     */
+    libecc_detail::AddCurve(CF_ECC_CURVE("x25519"), "WEI25519");
+    libecc_detail::AddCurve(CF_ECC_CURVE("x448"), "WEI448");
 
     /* TODO */
 #if 0
@@ -274,43 +284,96 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, co
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
 
     libecc_detail::global_ds = &ds;
-
-    ec_priv_key priv;
-    ec_pub_key pub;
     uint8_t* out = nullptr;
+    const ec_str_params* curve_params;
     ec_params params;
     ec_alg_type sig_type;
+    ec_priv_key priv;
+    ec_pub_key pub;
     std::optional<std::vector<uint8_t>> priv_bytes;
-    const ec_str_params* curve_params;
     std::string priv_str;
-    aff_pt Q_aff;
-
-    /* Load curve */
+    /* Load curve.
+     * NOTE: this will be WEI25519 or WEI448 (libecc uses isogenies for ed25519, ed448, x25519 and x448)
+     */
     CF_CHECK_NE(curve_params = libecc_detail::GetCurve(curveType), nullptr);
     CF_ASSERT(!import_params(&params, curve_params), "import_params error " __FILE__ ":" TOSTRING(__LINE__));
 
-    sig_type = libecc_detail::sm_ecdsa->type;
-
+    /* Extract the private key */
     priv_str = _priv.ToTrimmedString();
     CF_CHECK_NE(priv_str, "0");
     CF_CHECK_NE(priv_str, *cryptofuzz::repository::ECC_CurveToOrder(curveType.Get()));
     CF_CHECK_NE(priv_bytes = util::DecToBin(priv_str), std::nullopt);
     CF_CHECK_LTE((8 * priv_bytes->size()), NN_USABLE_MAX_BIT_LEN);
 
-    CF_ASSERT(!ec_priv_key_import_from_buf(&priv, &params, priv_bytes->data(), priv_bytes->size(), sig_type), "ec_priv_key_import_from_buf error " __FILE__ ":" TOSTRING(__LINE__));
-    memset(&pub, 0, sizeof(pub));
-    CF_CHECK_EQ(init_pubkey_from_privkey(&pub, &priv), 0);
-    CF_CHECK_EQ(pub.magic, PUB_KEY_MAGIC);
-
-    CF_ASSERT(!prj_pt_to_aff(&Q_aff, &pub.y), "prj_pt_to_aff error " __FILE__ ":" TOSTRING(__LINE__));
-    CF_ASSERT(!ec_shortw_aff_to_prj(&pub.y, &Q_aff), "ec_shortw_aff_to_prj error " __FILE__ ":" TOSTRING(__LINE__));
-
-    {
-        const auto _ret = libecc_detail::To_Component_BignumPair(pub);
-        CF_CHECK_TRUE(_priv.IsLessThan(*cryptofuzz::repository::ECC_CurveToOrder(curveType.Get())));
-        ret = _ret;
+    /* EdDSA case is apart */
+    if ( curveType.Is(CF_ECC_CURVE("ed25519")) || curveType.Is(CF_ECC_CURVE("ed448")) ) {
+        u8 key_size = 0;
+        u8 pub_buff[56];
+        if ( curveType.Is(CF_ECC_CURVE("ed25519")) ){
+            sig_type = EDDSA25519;
+            key_size = 32;
+        }
+        else{
+            sig_type = EDDSA448;
+            key_size = 56;
+        }
+        /* Sanity check on the private key size */
+        CF_CHECK_EQ(priv_bytes->size(), key_size);
+        /* Import our private key */
+        CF_ASSERT(!eddsa_import_priv_key(&priv, priv_bytes->data(), priv_bytes->size(), &params, sig_type), "eddsa_import_priv_key error " __FILE__ ":" TOSTRING(__LINE__));
+        /* Import our public key */
+        memset(&pub, 0, sizeof(pub));
+        CF_ASSERT(!eddsa_init_pub_key(&pub, &priv), "eddsa_init_pub_key error" __FILE__ ":" TOSTRING(__LINE__));
+        /* Export our public key to a buffer */
+        memset(&pub_buff, 0, sizeof(pub_buff));
+        CF_ASSERT(!eddsa_export_pub_key(&pub, pub_buff, key_size), "eddsa_export_pub_key error" __FILE__ ":" TOSTRING(__LINE__));
+        /* Now export to a big int */
+        {
+            ret = { util::BinToDec(pub_buff, key_size), "0" };
+        }
     }
+    /* X25519/X448 case is apart */
+    else if ( curveType.Is(CF_ECC_CURVE("x25519")) || curveType.Is(CF_ECC_CURVE("x448")) ) {
+        u8 key_size = 0;
+        u8 pub_buff[56];
+        if ( curveType.Is(CF_ECC_CURVE("x25519")) ){
+            key_size = 32;
+        }
+        else{
+            key_size = 56;
+        }
+        /* Sanity check on the private key size */
+        CF_CHECK_EQ(priv_bytes->size(), key_size);
+        /* Derive our public key */
+        memset(&pub_buff, 0, sizeof(pub_buff));
+        if(key_size == 32){
+            CF_ASSERT(!x25519_init_pub_key(priv_bytes->data(), pub_buff), "x25519_init_pub_key error" __FILE__ ":" TOSTRING(__LINE__));
+        }
+        else{
+            CF_ASSERT(!x448_init_pub_key(priv_bytes->data(), pub_buff), "x448_init_pub_key error" __FILE__ ":" TOSTRING(__LINE__));
+        }
+        /* Now export to a big int */
+        {
+            ret = { util::BinToDec(pub_buff, key_size), "0" };
+        }
+    }
+    else {
+        sig_type = libecc_detail::sm_ecdsa->type;
 
+        CF_ASSERT(!ec_priv_key_import_from_buf(&priv, &params, priv_bytes->data(), priv_bytes->size(), sig_type), "ec_priv_key_import_from_buf error " __FILE__ ":" TOSTRING(__LINE__));
+        memset(&pub, 0, sizeof(pub));
+        CF_CHECK_EQ(init_pubkey_from_privkey(&pub, &priv), 0);
+        CF_CHECK_EQ(pub.magic, PUB_KEY_MAGIC);
+
+        /* Get the unique affine point representation */
+        CF_ASSERT(!prj_pt_unique(&pub.y, &pub.y), "prj_pt_unique error" __FILE__ ":" TOSTRING(__LINE__));
+
+        {
+            const auto _ret = libecc_detail::To_Component_BignumPair(pub);
+            CF_CHECK_TRUE(_priv.IsLessThan(*cryptofuzz::repository::ECC_CurveToOrder(curveType.Get())));
+            ret = _ret;
+        }
+    }
 end:
     util::free(out);
 
@@ -565,27 +628,230 @@ end:
     }
 } /* namespace libecc_detail */
 
+
+/* EdDSA cases */
+namespace libecc_detail {
+    std::optional<component::ECDSA_Signature> EdDSA_Sign(operation::ECDSA_Sign& op) {
+        ec_key_pair kp;
+        const ec_str_params* curve_params;
+        ec_params params;
+        ec_alg_type sig_type;
+        hash_alg_type hash_type;
+        uint8_t* signature = nullptr;
+        std::optional<component::ECDSA_Signature> ret = std::nullopt;
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+        std::optional<component::ECC_PublicKey> pub = std::nullopt;
+        libecc_detail::global_ds = &ds;
+        u8 key_size = 0;
+        u8 siglen;
+
+        /* Load curve.
+         * NOTE: this will be WEI25519 or WEI448 (libecc uses isogenies for ed25519, ed448, x25519 and x448)
+         */
+        CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
+        CF_ASSERT(!import_params(&params, curve_params), "import_params error " __FILE__ ":" TOSTRING(__LINE__));
+
+        if ( op.curveType.Is(CF_ECC_CURVE("ed25519")) ){
+printf("=====> EdDSA_Sign ed25519\n");
+            /* Ed25519 case */
+            key_size = 32;
+            sig_type = EDDSA25519;
+#if 0
+            if ( !op.digestType.Is(CF_DIGEST("NULL")) && !op.digestType.Is(CF_DIGEST("SHA512")) ) {
+                return std::nullopt;
+            }
+#endif
+            hash_type = SHA512;
+        }
+        else if ( op.curveType.Is(CF_ECC_CURVE("ed448")) ){
+printf("=====> EdDSA_Sign ed448\n");
+            /* Ed448 case */
+            key_size = 56;
+            sig_type = EDDSA448;
+#if 0
+            if ( !op.digestType.Is(CF_DIGEST("NULL")) && !op.digestType.Is(CF_DIGEST("SHAKE256_114")) ) {
+                return std::nullopt;
+            }
+#endif
+            hash_type = SHAKE256;
+        }
+        else{
+            return std::nullopt;
+        }
+        {
+            /* Extract the private key */
+            const auto _priv_bytes = util::DecToBin(op.priv.ToTrimmedString(), key_size);
+            if ( (_priv_bytes == std::nullopt) || (_priv_bytes->size() != key_size) ) {
+                return std::nullopt;
+            }
+            /* Import our key pair */
+   	    CF_ASSERT(!eddsa_import_key_pair_from_priv_key_buf(&kp, _priv_bytes->data(), key_size, &params, sig_type), "eddsa_import_key_pair_from_priv_key_buf error " __FILE__ ":" TOSTRING(__LINE__));
+  	    /* Now sign */
+            siglen = (2 * key_size);
+            signature = util::malloc(siglen);
+	    CF_ASSERT(!_ec_sign(signature, siglen, &kp, op.cleartext.GetPtr(), op.cleartext.GetSize(), nullptr, sig_type, hash_type, nullptr, 0), "_ec_sign (EdDSA) error " __FILE__ ":" TOSTRING(__LINE__));
+        }
+        /* Get the public key */
+        CF_CHECK_NE(pub = libecc_detail::OpECC_PrivateToPublic(ds, op.curveType, op.priv), std::nullopt);
+
+        ret = {
+            {
+                util::BinToDec(signature, siglen / 2),
+                util::BinToDec(signature + (siglen / 2), siglen / 2),
+            },
+            *pub
+        };
+end:
+        util::free(signature);
+
+        return ret;
+    }
+    /***************************************************************************/
+    std::optional<bool> EdDSA_Verify(operation::ECDSA_Verify& op) {
+        std::optional<bool> ret = std::nullopt;
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+        libecc_detail::global_ds = &ds;
+
+        const ec_str_params* curve_params;
+        ec_params params;
+        struct ec_verify_context ctx;
+        ec_pub_key pub_key;
+        std::vector<uint8_t> pub;
+        std::vector<uint8_t> sig;
+        u8 key_size = 0;
+        ec_alg_type sig_type;
+        hash_alg_type hash_type;
+        bool oneShot = true;
+
+        /* Streaming mode or not? */
+        try { oneShot = ds.Get<bool>(); } catch ( ... ) { }
+
+        /* Load curve.
+         * NOTE: this will be WEI25519 or WEI448 (libecc uses isogenies for ed25519, ed448, x25519 and x448)
+         */
+        CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
+        CF_ASSERT(!import_params(&params, curve_params), "import_params error " __FILE__ ":" TOSTRING(__LINE__));
+
+        if ( op.curveType.Is(CF_ECC_CURVE("ed25519")) ){
+printf("=====> EdDSA_Verify ed25519\n");
+            /* Ed25519 case */
+            key_size = 32;
+            sig_type = EDDSA25519;
+#if 0
+            if ( !op.digestType.Is(CF_DIGEST("NULL")) && !op.digestType.Is(CF_DIGEST("SHA512")) ) {
+                return std::nullopt;
+            }
+#endif
+            hash_type = SHA512;
+        }
+        else if ( op.curveType.Is(CF_ECC_CURVE("ed448")) ){
+printf("=====> EdDSA_Verify ed448\n");
+            /* Ed448 case */
+            key_size = 56;
+            sig_type = EDDSA448;
+#if 0
+            if ( !op.digestType.Is(CF_DIGEST("NULL")) && !op.digestType.Is(CF_DIGEST("SHAKE256_114")) ) {
+                return std::nullopt;
+            }
+#endif
+            hash_type = SHAKE256;
+        }
+        else{
+            return std::nullopt;
+        }
+
+        {
+            /* Extract our signature */
+            const size_t signature_size = (2 * key_size);
+            CF_ASSERT((signature_size % 2) == 0, "Signature size is not multiple of 2");
+
+            std::optional<std::vector<uint8_t>> R, S;
+            CF_CHECK_NE(R = util::DecToBin(op.signature.signature.first.ToTrimmedString(), signature_size / 2), std::nullopt);
+            CF_CHECK_NE(S = util::DecToBin(op.signature.signature.second.ToTrimmedString(), signature_size / 2), std::nullopt);
+
+            sig.insert(std::end(sig), std::begin(*R), std::end(*R));
+            sig.insert(std::end(sig), std::begin(*S), std::end(*S));
+        }
+
+        {
+            /* Extract the public key */
+            std::optional<std::vector<uint8_t>> PUB;
+            CF_CHECK_NE(PUB = util::DecToBin(op.signature.pub.first.ToTrimmedString(), key_size), std::nullopt);
+
+            sig.insert(std::end(pub), std::begin(*PUB), std::end(*PUB));
+
+            /* Import it */
+            CF_ASSERT(!eddsa_import_pub_key(&pub_key, pub.data(), pub.size(), &params, sig_type), "eddsa_import_pub_key error " __FILE__ ":" TOSTRING(__LINE__));
+        }
+
+        /* Proceed with the verification */
+        if ( oneShot == true ) {
+            /* Non streaming mode */
+            ret = ec_verify(sig.data(), sig.size(), &pub_key, op.cleartext.GetPtr(), op.cleartext.GetSize(), sig_type, hash_type, nullptr, 0) == 0;
+        }
+        else{
+            /* Sreaming mode */
+            const auto parts = util::ToParts(ds, op.cleartext);
+
+            CF_ASSERT(!ec_verify_init(&ctx, &pub_key, sig.data(), sig.size(), sig_type, hash_type, nullptr, 0), "ec_verify_init error " __FILE__ ":" TOSTRING(__LINE__));
+            for (const auto& part : parts) {
+                CF_ASSERT(!ec_verify_update(&ctx, part.first, part.second), "ec_verify_update error " __FILE__ ":" TOSTRING(__LINE__));
+            }
+
+            ret = ec_verify_finalize(&ctx) == 0;
+        }
+
+end:
+        libecc_detail::global_ds = nullptr;
+
+        return ret;
+    }
+} /* namespace libecc_detail */
+
+
+/*************************/
 std::optional<component::ECDSA_Signature> libecc::OpECDSA_Sign(operation::ECDSA_Sign& op) {
-    return libecc_detail::ECxDSA_Sign<operation::ECDSA_Sign, ECDSA>(op, ecdsa_sign_raw, _ecdsa_sign_update, _ecdsa_sign_finalize, __ecdsa_sign_finalize);
+printf("=====> libecc::OpECDSA_Sign\n");
+    if ( op.curveType.Is(CF_ECC_CURVE("ed25519")) || op.curveType.Is(CF_ECC_CURVE("ed448")) ) {
+printf("=====> libecc::OpECDSA_Sign ed25519 ed448\n");
+        /* EdDSA cases */
+        return libecc_detail::EdDSA_Sign(op);
+    }
+    else{
+        /* ECxDSA cases */
+        return libecc_detail::ECxDSA_Sign<operation::ECDSA_Sign, ECDSA>(op, ecdsa_sign_raw, _ecdsa_sign_update, _ecdsa_sign_finalize, __ecdsa_sign_finalize);
+    }
 }
 
 std::optional<component::ECGDSA_Signature> libecc::OpECGDSA_Sign(operation::ECGDSA_Sign& op) {
+printf("=====> libecc::OpECGDSA_Sign\n");
     return libecc_detail::ECxDSA_Sign<operation::ECGDSA_Sign, ECGDSA>(op, ecgdsa_sign_raw, _ecgdsa_sign_update, _ecgdsa_sign_finalize);
 }
 
 std::optional<component::ECRDSA_Signature> libecc::OpECRDSA_Sign(operation::ECRDSA_Sign& op) {
+printf("=====> libecc::OpECRDSA_Sign\n");
     return libecc_detail::ECxDSA_Sign<operation::ECRDSA_Sign, ECRDSA>(op, ecrdsa_sign_raw, _ecrdsa_sign_update, _ecrdsa_sign_finalize);
 }
 
 std::optional<bool> libecc::OpECDSA_Verify(operation::ECDSA_Verify& op) {
-    return libecc_detail::ECxDSA_Verify<operation::ECDSA_Verify, ECDSA>(op, libecc_detail::sm_ecdsa, ecdsa_verify_raw, _ecdsa_verify_update, _ecdsa_verify_finalize);
+printf("=====> libecc::OpECDSA_Verify\n");
+    if ( op.curveType.Is(CF_ECC_CURVE("ed25519")) || op.curveType.Is(CF_ECC_CURVE("ed448")) ) {
+printf("=====> libecc::OpECDSA_Verify ed25519 or ed448\n");
+        /* EdDSA cases */
+        return libecc_detail::EdDSA_Verify(op);
+    }
+    else{
+        return libecc_detail::ECxDSA_Verify<operation::ECDSA_Verify, ECDSA>(op, libecc_detail::sm_ecdsa, ecdsa_verify_raw, _ecdsa_verify_update, _ecdsa_verify_finalize);
+    }
 }
 
 std::optional<bool> libecc::OpECGDSA_Verify(operation::ECGDSA_Verify& op) {
+printf("=====> libecc::OpECGDSA_Verify\n");
     return libecc_detail::ECxDSA_Verify<operation::ECGDSA_Verify, ECGDSA>(op, libecc_detail::sm_ecgdsa, ecgdsa_verify_raw, _ecgdsa_verify_update, _ecgdsa_verify_finalize);
 }
 
 std::optional<bool> libecc::OpECRDSA_Verify(operation::ECRDSA_Verify& op) {
+printf("=====> libecc::OpECRDSA_Verify\n");
     return libecc_detail::ECxDSA_Verify<operation::ECRDSA_Verify, ECRDSA>(op, libecc_detail::sm_ecrdsa, ecrdsa_verify_raw, _ecrdsa_verify_update, _ecrdsa_verify_finalize);
 }
 
@@ -603,6 +869,7 @@ std::optional<component::ECC_Point> libecc::OpECC_Point_Add(operation::ECC_Point
     const auto bx_bin = util::DecToBin(op.b.first.ToTrimmedString());
     const auto by_bin = util::DecToBin(op.b.second.ToTrimmedString());
 
+printf("=====> libecc::OpECC_Point_Add\n");
     /* Load curve */
     CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
     CF_ASSERT(!import_params(&params, curve_params), "import_params error " __FILE__ ":" TOSTRING(__LINE__));
@@ -670,6 +937,7 @@ std::optional<component::ECC_Point> libecc::OpECC_Point_Mul(operation::ECC_Point
     std::optional<component::ECC_Point> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
+printf("=====> libecc::OpECC_Point_Mul\n");
     const ec_str_params* curve_params;
     ec_params params;
     prj_pt res, a;
@@ -739,9 +1007,9 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
     nn result, a, b, c;
     int check;
     bitcnt_t blen;
-
     switch ( op.calcOp.Get() ) {
         case    CF_CALCOP("Add(A,B)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "Add(A,B)");
             CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
@@ -751,6 +1019,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("Sub(A,B)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "Sub(A,B)");
             CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
@@ -762,6 +1031,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("Mul(A,B)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "Mul(A,B)");
             CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
@@ -771,6 +1041,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("Mod(A,B)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "Mod(A,B)");
             CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
@@ -783,6 +1054,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("InvMod(A,B)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "InvMod(A,B)");
             CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
@@ -793,6 +1065,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("LShift1(A)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "LShift1(A)");
             CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
 
@@ -805,6 +1078,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             break;
         case    CF_CALCOP("RShift(A,B)"):
             {
+printf("=====> libecc::OpBignumCalc: %s\n", "RShift(A,B)");
                 std::optional<uint16_t> count;
                 CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
                 CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
@@ -816,6 +1090,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             }
             break;
         case    CF_CALCOP("GCD(A,B)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "GCD(A,B)");
             CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
@@ -825,6 +1100,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("Sqr(A)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "Sqr(A)");
             CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
 
@@ -833,6 +1109,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("IsZero(A)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "IsZero(A)");
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
 
             CF_ASSERT(!nn_iszero(&a, &check), "nn_iszero error " __FILE__ ":" TOSTRING(__LINE__));
@@ -840,6 +1117,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = std::to_string( check );
             break;
         case    CF_CALCOP("IsOne(A)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "IsOne(A)");
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
 
             CF_ASSERT(!nn_isone(&a, &check), "nn_isone error " __FILE__ ":" TOSTRING(__LINE__));
@@ -847,6 +1125,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = std::to_string( check );
             break;
         case    CF_CALCOP("IsOdd(A)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "IsOdd(A)");
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
 
             CF_ASSERT(!nn_isodd(&a, &check), "nn_isodd error " __FILE__ ":" TOSTRING(__LINE__));
@@ -854,6 +1133,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = std::to_string( check );
             break;
         case    CF_CALCOP("And(A,B)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "And(A,B)");
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
 
@@ -862,6 +1142,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("Or(A,B)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "Or(A,B)");
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
 
@@ -870,6 +1151,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("Xor(A,B)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "Xor(A,B)");
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
 
@@ -878,6 +1160,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("NumBits(A)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "NumBits(A)");
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
 
             CF_ASSERT(!nn_bitlen(&a, &blen), "nn_bitlen error " __FILE__ ":" TOSTRING(__LINE__));
@@ -885,6 +1168,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = std::to_string( blen );
             break;
         case    CF_CALCOP("MulMod(A,B,C)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "MulMod(A,B,C)");
             CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
 
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
@@ -899,11 +1183,12 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             CF_ASSERT(!nn_cmp(&c, &b, &check), "nn_cmp error " __FILE__ ":" TOSTRING(__LINE__));
             CF_CHECK_GT(check, 0);
 
-            CF_ASSERT(!nn_mul_mod(&result, &a, &b, &c), "nn_mul_mod error " __FILE__ ":" TOSTRING(__LINE__));
+            CF_ASSERT(!nn_mod_mul(&result, &a, &b, &c), "nn_mul_mod error " __FILE__ ":" TOSTRING(__LINE__));
 
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("AddMod(A,B,C)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "AddMod(A,B,C)");
             CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
 
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
@@ -920,6 +1205,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("SubMod(A,B,C)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "SubMod(A,B,C)");
             CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
 
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
@@ -935,7 +1221,20 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
 
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
+        case    CF_CALCOP("ExpMod(A,B,C)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "ExpMod(A,B,C)");
+            CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
+
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn2, &c));
+
+            CF_ASSERT(!nn_mod_pow(&result, &a, &b, &c), "nn_mod_exp error " __FILE__ ":" TOSTRING(__LINE__));
+
+            ret = libecc_detail::To_Component_Bignum(&result);
+            break;
         case    CF_CALCOP("Bit(A,B)"):
+printf("=====> libecc::OpBignumCalc: %s\n", "Bit(A,B)");
             try {
                 CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
                 const auto count = boost::lexical_cast<bitcnt_t>(op.bn1.ToTrimmedString());
