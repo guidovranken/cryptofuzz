@@ -136,6 +136,9 @@ std::optional<component::Bignum> libgmp::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("NumLSZeroBits(A)"):
             opRunner = std::make_unique<libgmp_bignum::NumLSZeroBits>();
             break;
+        case    CF_CALCOP("Factorial(A)"):
+            opRunner = std::make_unique<libgmp_bignum::Factorial>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
