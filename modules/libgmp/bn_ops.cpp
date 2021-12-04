@@ -429,6 +429,14 @@ end:
     return ret;
 }
 
+bool Cbrt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    /* ignore ret */ mpz_root(res.GetPtr(), bn[0].GetPtr(), 3);
+
+    return true;
+}
+
 } /* namespace libgmp_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

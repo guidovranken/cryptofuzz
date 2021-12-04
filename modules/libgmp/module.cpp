@@ -139,6 +139,9 @@ std::optional<component::Bignum> libgmp::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("Factorial(A)"):
             opRunner = std::make_unique<libgmp_bignum::Factorial>();
             break;
+        case    CF_CALCOP("Cbrt(A)"):
+            opRunner = std::make_unique<libgmp_bignum::Cbrt>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
