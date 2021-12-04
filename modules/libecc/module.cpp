@@ -1013,6 +1013,34 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             } catch ( const boost::bad_lexical_cast &e ) {
             }
             break;
+        case    CF_CALCOP("LRot(A,B,C)"):
+            {
+                CF_NORET(nn_init(&result, 0));
+
+                std::optional<uint16_t> count, bitlen;
+
+                CF_CHECK_NE(count = libecc_detail::To_uint16_t(op.bn1), std::nullopt);
+                CF_CHECK_NE(bitlen = libecc_detail::To_uint16_t(op.bn2), std::nullopt);
+
+                CF_NORET(nn_lrot(&result, &a, *count, *bitlen));
+
+                ret = libecc_detail::To_Component_Bignum(&result);
+            }
+            break;
+        case    CF_CALCOP("RRot(A,B,C)"):
+            {
+                CF_NORET(nn_init(&result, 0));
+
+                std::optional<uint16_t> count, bitlen;
+
+                CF_CHECK_NE(count = libecc_detail::To_uint16_t(op.bn1), std::nullopt);
+                CF_CHECK_NE(bitlen = libecc_detail::To_uint16_t(op.bn2), std::nullopt);
+
+                CF_NORET(nn_rrot(&result, &a, *count, *bitlen));
+
+                ret = libecc_detail::To_Component_Bignum(&result);
+            }
+            break;
     }
 
 end:
