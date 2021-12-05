@@ -142,6 +142,18 @@ std::optional<component::Bignum> libgmp::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("Cbrt(A)"):
             opRunner = std::make_unique<libgmp_bignum::Cbrt>();
             break;
+        case    CF_CALCOP("SqrtRem(A)"):
+            opRunner = std::make_unique<libgmp_bignum::SqrtRem>();
+            break;
+        case    CF_CALCOP("CbrtRem(A)"):
+            opRunner = std::make_unique<libgmp_bignum::CbrtRem>();
+            break;
+        case    CF_CALCOP("Nthrt(A,B)"):
+            opRunner = std::make_unique<libgmp_bignum::Nthrt>();
+            break;
+        case    CF_CALCOP("NthrtRem(A,B)"):
+            opRunner = std::make_unique<libgmp_bignum::NthrtRem>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
