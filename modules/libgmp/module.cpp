@@ -157,6 +157,42 @@ std::optional<component::Bignum> libgmp::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("IsSquare(A)"):
             opRunner = std::make_unique<libgmp_bignum::IsSquare>();
             break;
+        case    CF_CALCOP("Exp(A,B)"):
+            opRunner = std::make_unique<libgmp_bignum::Exp>();
+            break;
+        case    CF_CALCOP("Or(A,B)"):
+            opRunner = std::make_unique<libgmp_bignum::Or>();
+            break;
+        case    CF_CALCOP("AddMul(A,B,C)"):
+            opRunner = std::make_unique<libgmp_bignum::AddMul>();
+            break;
+        case    CF_CALCOP("SubMul(A,B,C)"):
+            opRunner = std::make_unique<libgmp_bignum::SubMul>();
+            break;
+        case    CF_CALCOP("Primorial(A)"):
+            opRunner = std::make_unique<libgmp_bignum::Primorial>();
+            break;
+        case    CF_CALCOP("Lucas(A)"):
+            opRunner = std::make_unique<libgmp_bignum::Lucas>();
+            break;
+        case    CF_CALCOP("Fibonacci(A)"):
+            opRunner = std::make_unique<libgmp_bignum::Fibonacci>();
+            break;
+        case    CF_CALCOP("Set(A)"):
+            opRunner = std::make_unique<libgmp_bignum::Set>();
+            break;
+        case    CF_CALCOP("BinCoeff(A,B)"):
+            opRunner = std::make_unique<libgmp_bignum::BinCoeff>();
+            break;
+        case    CF_CALCOP("HamDist(A,B)"):
+            opRunner = std::make_unique<libgmp_bignum::HamDist>();
+            break;
+        case    CF_CALCOP("Mod(A,B)"):
+            opRunner = std::make_unique<libgmp_bignum::Mod>();
+            break;
+        case    CF_CALCOP("IsPower(A)"):
+            opRunner = std::make_unique<libgmp_bignum::IsPower>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

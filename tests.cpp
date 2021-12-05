@@ -793,6 +793,12 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
         case    CF_CALCOP("IsZero(A)"):
             BignumCalc::AssertBinary(*result, "IsZero");
             break;
+        case    CF_CALCOP("IsSquare(A)"):
+            BignumCalc::AssertBinary(*result, "IsSquare");
+            break;
+        case    CF_CALCOP("IsPower(A)"):
+            BignumCalc::AssertBinary(*result, "IsPower");
+            break;
         case    CF_CALCOP("Cmp(A,B)"):
             BignumCalc::AssertTertiary(*result, "Cmp");
             break;
