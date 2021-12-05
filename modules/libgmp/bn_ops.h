@@ -43,6 +43,16 @@ end:
             return ret;
         }
 
+        std::optional<unsigned long int> GetUnsignedLong(void) {
+            std::optional<unsigned long int> ret = std::nullopt;
+
+            CF_CHECK_EQ(mpz_fits_ulong_p(GetPtr()), 1);
+
+            ret = mpz_get_ui(GetPtr());
+end:
+            return ret;
+        }
+
         std::optional<component::Bignum> ToComponentBignum(void) {
             std::optional<component::Bignum> ret = std::nullopt;
 
@@ -231,6 +241,11 @@ class IsPow2 : public Operation {
 };
 
 class NumLSZeroBits : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class Factorial : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
 };

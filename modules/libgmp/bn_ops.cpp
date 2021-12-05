@@ -413,6 +413,22 @@ bool NumLSZeroBits::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) co
     return true;
 }
 
+bool Factorial::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    const auto bn0 = bn[0].GetUnsignedLong();
+    CF_CHECK_NE(bn0, std::nullopt);
+    CF_CHECK_LTE(*bn0, 1500);
+
+    CF_NORET(mpz_fac_ui(res.GetPtr(), *bn0));
+
+    ret = true;
+
+end:
+    return ret;
+}
+
 } /* namespace libgmp_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */
