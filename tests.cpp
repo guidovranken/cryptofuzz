@@ -857,6 +857,12 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
             AssertNotSmallerThan(*result, op.bn0, repository::CalcOpToString(calcOp));
             AssertNotSmallerThan(*result, op.bn1, repository::CalcOpToString(calcOp));
             break;
+        case    CF_CALCOP("Nthrt(A,B)"):
+        case    CF_CALCOP("NthrtRem(A,B)"):
+            if ( IsZero(op.bn1) ) {
+                Abort("Root of zero should not produce a result", repository::CalcOpToString(calcOp));
+            }
+            break;
     }
 }
 

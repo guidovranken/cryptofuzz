@@ -234,6 +234,15 @@ pub extern "C" fn rust_num_bigint_bignumcalc(
         } else {
             res = Zero::zero();
         }
+    } else if op == 36 {
+        let n = match bn1.to_u32() {
+            Some(_v) => _v,
+            None => return -1,
+        };
+        if n == 0 {
+            return -1;
+        }
+        res = bn0.nth_root(n);
     } else {
         return -1;
     }

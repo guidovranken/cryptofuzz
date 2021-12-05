@@ -429,6 +429,60 @@ end:
     return ret;
 }
 
+bool Cbrt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    /* ignore ret */ mpz_root(res.GetPtr(), bn[0].GetPtr(), 3);
+
+    return true;
+}
+
+bool SqrtRem::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    /* noret */ mpz_sqrtrem(bn[1].GetPtr(), res.GetPtr(), bn[0].GetPtr());
+
+    return true;
+}
+
+bool CbrtRem::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    /* noret */ mpz_rootrem(bn[1].GetPtr(), res.GetPtr(), bn[0].GetPtr(), 3);
+
+    return true;
+}
+
+bool Nthrt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    const auto bn1 = bn[1].GetUnsignedLong();
+    CF_CHECK_NE(bn1, std::nullopt);
+    CF_CHECK_NE(*bn1, 0);
+
+    /* noret */ mpz_root(res.GetPtr(), bn[0].GetPtr(), *bn1);
+
+    ret = true;
+end:
+    return ret;
+}
+
+bool NthrtRem::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    const auto bn1 = bn[1].GetUnsignedLong();
+    CF_CHECK_NE(bn1, std::nullopt);
+    CF_CHECK_NE(*bn1, 0);
+
+    /* noret */ mpz_rootrem(bn[1].GetPtr(), res.GetPtr(), bn[0].GetPtr(), *bn1);
+
+    ret = true;
+end:
+    return ret;
+}
+
 } /* namespace libgmp_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */
