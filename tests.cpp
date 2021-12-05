@@ -283,14 +283,31 @@ static void test_ECDSA_Signature(const uint64_t curveID, const std::string R, co
         return;
     }
 
-    boost::multiprecision::cpp_int r(R);
-    boost::multiprecision::cpp_int s(S);
+    const boost::multiprecision::cpp_int r(R), s(S);
+
     if ( r < 1 ) {
         std::cout << "ECDSA signature invalid: R < 1" << std::endl;
         ::abort();
     }
     if ( s < 1 ) {
         std::cout << "ECDSA signature invalid: S < 1" << std::endl;
+        ::abort();
+    }
+
+    const auto O = cryptofuzz::repository::ECC_CurveToOrder(curveID);
+    if ( O == std::nullopt ) {
+        return;
+    }
+
+    const boost::multiprecision::cpp_int o(*O);
+
+    if ( r >= o ) {
+        std::cout << "ECDSA signature invalid: R >= order" << std::endl;
+        ::abort();
+    }
+
+    if ( s >= o ) {
+        std::cout << "ECDSA signature invalid: S >= order" << std::endl;
         ::abort();
     }
 }
@@ -437,8 +454,8 @@ void test(const operation::ECDSA_Recover& op, const std::optional<component::ECC
     }
     if ( result != std::nullopt ) {
         test_ECDSA_Signature(op.curveType.Get(),
-                result->first.ToTrimmedString(),
-                result->second.ToTrimmedString());
+                op.signature.first.ToTrimmedString(),
+                op.signature.second.ToTrimmedString());
     }
 }
 

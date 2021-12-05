@@ -446,6 +446,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BignumCalc_Mod_MNT6_P"):
             case    CF_OPERATION("BignumCalc_Mod_2Exp128"):
             case    CF_OPERATION("BignumCalc_Mod_2Exp256"):
+            case    CF_OPERATION("BignumCalc_Mod_2Exp512"):
             case    CF_OPERATION("BignumCalc_Mod_SECP256K1"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);

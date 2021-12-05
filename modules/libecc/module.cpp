@@ -2,12 +2,14 @@
 #include <cryptofuzz/util.h>
 #include <cryptofuzz/repository.h>
 #include <boost/lexical_cast.hpp>
+#include <iostream>
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
 
 extern "C" {
     #include <libsig.h>
+    #include <hash/hmac.h>
 }
 
 namespace cryptofuzz {
@@ -251,6 +253,7 @@ std::optional<component::Digest> libecc::OpDigest(operation::Digest& op) {
 
     CF_CHECK_NE(hash = libecc_detail::To_hash_mapping(op.digestType.Get()), nullptr);
 
+printf("=====> OpDigest\n");
     /* Initialize */
     CF_ASSERT(!(hash->hfunc_init(&ctx)), "hfunc_init error " __FILE__ ":" TOSTRING(__LINE__));
 
@@ -279,6 +282,74 @@ end:
     return ret;
 }
 
+std::optional<component::MAC> libecc::OpHMAC(operation::HMAC& op) {
+    std::optional<component::MAC> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    bool oneShot = false;
+    uint8_t outlen = 0;
+    uint8_t* out = nullptr;
+    std::optional<hash_alg_type> hash;
+
+printf("=====> OpHMAC\n");
+    CF_CHECK_NE(hash = libecc_detail::To_hash_alg_type(op.digestType.Get()), std::nullopt);
+
+    try {
+        outlen = ds.Get<uint8_t>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+    try {
+        oneShot = ds.Get<bool>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+    out = util::malloc(outlen);
+
+    if ( oneShot == true ) {
+        CF_CHECK_EQ(hmac(
+                    op.cipher.key.GetPtr(),
+                    op.cipher.key.GetSize(),
+                    *hash,
+                    op.cleartext.GetPtr(),
+                    op.cleartext.GetSize(),
+                    out, &outlen
+                    ), 0);
+
+        ret = component::Digest(out, outlen);
+    } else {
+        hmac_context ctx;
+
+        /* Initialize */
+        CF_CHECK_EQ(hmac_init(
+                    &ctx,
+                    op.cipher.key.GetPtr(),
+                    op.cipher.key.GetSize(),
+                    *hash), 0);
+
+        {
+            const auto parts = util::ToParts(ds, op.cleartext);
+
+            for (const auto& part : parts) {
+                if ( part.first == nullptr ) {
+                    continue;
+                }
+
+                CF_CHECK_EQ(hmac_update(&ctx, part.first, part.second), 0);
+            }
+        }
+
+        /* Finalize */
+        {
+            CF_CHECK_EQ(hmac_finalize(&ctx, out, &outlen), 0);
+            ret = component::Digest(out, outlen);
+        }
+    }
+
+end:
+    util::free(out);
+
+    return ret;
+}
+
 namespace libecc_detail {
 std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, const component::CurveType& curveType, const component::Bignum& _priv) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
@@ -298,6 +369,7 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, co
     CF_CHECK_NE(curve_params = libecc_detail::GetCurve(curveType), nullptr);
     CF_ASSERT(!import_params(&params, curve_params), "import_params error " __FILE__ ":" TOSTRING(__LINE__));
 
+printf("=====> OpECC_PrivateToPublic\n");
     /* Extract the private key */
     priv_str = _priv.ToTrimmedString();
     CF_CHECK_NE(priv_str, "0");
@@ -676,7 +748,7 @@ printf("=====> EdDSA_Sign ed448\n");
             hash_type = SHAKE256;
         }
         else{
-            return std::nullopt;
+            goto end;
         }
         {
             /* Extract the private key */
@@ -685,11 +757,11 @@ printf("=====> EdDSA_Sign ed448\n");
                 return std::nullopt;
             }
             /* Import our key pair */
-   	    CF_ASSERT(!eddsa_import_key_pair_from_priv_key_buf(&kp, _priv_bytes->data(), key_size, &params, sig_type), "eddsa_import_key_pair_from_priv_key_buf error " __FILE__ ":" TOSTRING(__LINE__));
+   	    CF_CHECK_EQ(eddsa_import_key_pair_from_priv_key_buf(&kp, _priv_bytes->data(), key_size, &params, sig_type), 0);
   	    /* Now sign */
             siglen = (2 * key_size);
             signature = util::malloc(siglen);
-	    CF_ASSERT(!_ec_sign(signature, siglen, &kp, op.cleartext.GetPtr(), op.cleartext.GetSize(), nullptr, sig_type, hash_type, nullptr, 0), "_ec_sign (EdDSA) error " __FILE__ ":" TOSTRING(__LINE__));
+	    CF_CHECK_EQ(_ec_sign(signature, siglen, &kp, op.cleartext.GetPtr(), op.cleartext.GetSize(), nullptr, sig_type, hash_type, nullptr, 0), 0);
         }
         /* Get the public key */
         CF_CHECK_NE(pub = libecc_detail::OpECC_PrivateToPublic(ds, op.curveType, op.priv), std::nullopt);
@@ -703,6 +775,7 @@ printf("=====> EdDSA_Sign ed448\n");
         };
 end:
         util::free(signature);
+        libecc_detail::global_ds = nullptr;
 
         return ret;
     }
@@ -716,7 +789,7 @@ end:
         ec_params params;
         struct ec_verify_context ctx;
         ec_pub_key pub_key;
-        std::vector<uint8_t> pub;
+        std::optional<std::vector<uint8_t>> pub;
         std::vector<uint8_t> sig;
         u8 key_size = 0;
         ec_alg_type sig_type;
@@ -757,7 +830,7 @@ printf("=====> EdDSA_Verify ed448\n");
             hash_type = SHAKE256;
         }
         else{
-            return std::nullopt;
+            goto end;
         }
 
         {
@@ -775,13 +848,10 @@ printf("=====> EdDSA_Verify ed448\n");
 
         {
             /* Extract the public key */
-            std::optional<std::vector<uint8_t>> PUB;
-            CF_CHECK_NE(PUB = util::DecToBin(op.signature.pub.first.ToTrimmedString(), key_size), std::nullopt);
-
-            sig.insert(std::end(pub), std::begin(*PUB), std::end(*PUB));
+            CF_CHECK_NE(pub = util::DecToBin(op.signature.pub.first.ToTrimmedString(), key_size), std::nullopt);
 
             /* Import it */
-            CF_ASSERT(!eddsa_import_pub_key(&pub_key, pub.data(), pub.size(), &params, sig_type), "eddsa_import_pub_key error " __FILE__ ":" TOSTRING(__LINE__));
+            CF_CHECK_EQ(eddsa_import_pub_key(&pub_key, (*pub).data(), (*pub).size(), &params, sig_type), 0);
         }
 
         /* Proceed with the verification */
@@ -792,10 +862,10 @@ printf("=====> EdDSA_Verify ed448\n");
         else{
             /* Sreaming mode */
             const auto parts = util::ToParts(ds, op.cleartext);
+            CF_CHECK_EQ(ec_verify_init(&ctx, &pub_key, sig.data(), sig.size(), sig_type, hash_type, nullptr, 0), 0);
 
-            CF_ASSERT(!ec_verify_init(&ctx, &pub_key, sig.data(), sig.size(), sig_type, hash_type, nullptr, 0), "ec_verify_init error " __FILE__ ":" TOSTRING(__LINE__));
             for (const auto& part : parts) {
-                CF_ASSERT(!ec_verify_update(&ctx, part.first, part.second), "ec_verify_update error " __FILE__ ":" TOSTRING(__LINE__));
+                CF_CHECK_EQ(ec_verify_update(&ctx, part.first, part.second), 0);
             }
 
             ret = ec_verify_finalize(&ctx) == 0;
@@ -813,7 +883,7 @@ end:
 std::optional<component::ECDSA_Signature> libecc::OpECDSA_Sign(operation::ECDSA_Sign& op) {
 printf("=====> libecc::OpECDSA_Sign\n");
     if ( op.curveType.Is(CF_ECC_CURVE("ed25519")) || op.curveType.Is(CF_ECC_CURVE("ed448")) ) {
-printf("=====> libecc::OpECDSA_Sign ed25519 ed448\n");
+printf("=====> libecc::OpECDSA_Sign ed25519 or ed448\n");
         /* EdDSA cases */
         return libecc_detail::EdDSA_Sign(op);
     }
@@ -929,6 +999,10 @@ printf("=====> libecc::OpECC_Point_Add\n");
     prj_pt_uninit(&b);
 
 end:
+printf("=====> END of libecc::OpECC_Point_Add\n");
+if(ret == std::nullopt){
+printf("==> XXXXX OpECC_Point_Add NULL\n");
+}
 
     return ret;
 }
@@ -995,7 +1069,6 @@ printf("=====> libecc::OpECC_Point_Mul\n");
     prj_pt_uninit(&a);
 
 end:
-
     libecc_detail::global_ds = nullptr;
 
     return ret;
@@ -1003,6 +1076,7 @@ end:
 
 std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     nn result, a, b, c;
     int check;
@@ -1188,21 +1262,35 @@ printf("=====> libecc::OpBignumCalc: %s\n", "MulMod(A,B,C)");
             ret = libecc_detail::To_Component_Bignum(&result);
             break;
         case    CF_CALCOP("AddMod(A,B,C)"):
+            {
 printf("=====> libecc::OpBignumCalc: %s\n", "AddMod(A,B,C)");
-            CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
+                CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
 
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn2, &c));
+                CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+                CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+                CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn2, &c));
 
-            CF_ASSERT(!nn_cmp(&c, &a, &check), "nn_cmp error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_CHECK_GT(check, 0);
-            CF_ASSERT(!nn_cmp(&c, &b, &check), "nn_cmp error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_CHECK_GT(check, 0);
+                CF_ASSERT(!nn_cmp(&c, &a, &check), "nn_cmp error " __FILE__ ":" TOSTRING(__LINE__));
+                CF_CHECK_GT(check, 0);
+                CF_ASSERT(!nn_cmp(&c, &b, &check), "nn_cmp error " __FILE__ ":" TOSTRING(__LINE__));
+                CF_CHECK_GT(check, 0);
 
-            CF_ASSERT(!nn_mod_add(&result, &a, &b, &c), "nn_mod_add error " __FILE__ ":" TOSTRING(__LINE__));
+                bool mod_inc = false;
 
-            ret = libecc_detail::To_Component_Bignum(&result);
+                if ( op.bn1.ToTrimmedString() == "1") {
+                    try {
+                        mod_inc = ds.Get<bool>();
+                    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+                }
+
+                if ( mod_inc == false ) {
+                    CF_ASSERT(!nn_mod_add(&result, &a, &b, &c), "nn_mod_add error " __FILE__ ":" TOSTRING(__LINE__));
+                } else {
+                    CF_ASSERT(!nn_mod_inc(&result, &a, &c), "nn_mod_inc error " __FILE__ ":" TOSTRING(__LINE__));
+                }
+
+                ret = libecc_detail::To_Component_Bignum(&result);
+            }
             break;
         case    CF_CALCOP("SubMod(A,B,C)"):
 printf("=====> libecc::OpBignumCalc: %s\n", "SubMod(A,B,C)");

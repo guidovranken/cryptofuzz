@@ -207,7 +207,7 @@ bool Jacobi::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
     RLC_TRY {
-        /* noret */ bn_smb_jac(res.Get(), bn[0].Get(), bn[1].Get());
+        res.Set(std::to_string(bn_smb_jac(bn[0].Get(), bn[1].Get())));
     } RLC_CATCH_ANY {
         return false;
     }

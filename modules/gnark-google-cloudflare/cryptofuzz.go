@@ -43,6 +43,22 @@ func (b *ByteSlice) UnmarshalJSON(in []byte) error {
     return err
 }
 
+type OpBLS_IsG1OnCurve struct {
+    Modifier ByteSlice
+    CurveType uint64
+    G1_x string
+    G1_y string
+}
+
+type OpBLS_IsG2OnCurve struct {
+    Modifier ByteSlice
+    CurveType uint64
+    G2_x string
+    G2_y string
+    G2_v string
+    G2_w string
+}
+
 type OpBLS_G1_Add struct {
     Modifier ByteSlice
     CurveType uint64
@@ -145,6 +161,64 @@ func decodeBignum(s string) *big.Int {
         panic("Cannot decode bignum")
     }
     return bn
+}
+
+//export Gnark_bn254_BLS_IsG1OnCurve
+func Gnark_bn254_BLS_IsG1OnCurve(in []byte) {
+    resetResult()
+
+    var op OpBLS_IsG1OnCurve
+    unmarshal(in, &op)
+
+    a := new(bn254.G1Affine)
+
+    a.X.SetBigInt(decodeBignum(op.G1_x))
+    a.Y.SetBigInt(decodeBignum(op.G1_y))
+
+    var res bool
+    if a.X.IsZero() && a.Y.IsZero() {
+        res = false
+    } else {
+        res = a.IsOnCurve() && a.IsInSubGroup()
+    }
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export Gnark_bn254_BLS_IsG2OnCurve
+func Gnark_bn254_BLS_IsG2OnCurve(in []byte) {
+    resetResult()
+
+    var op OpBLS_IsG2OnCurve
+    unmarshal(in, &op)
+
+    a := new(bn254.G2Affine)
+
+    a.X.A1.SetBigInt(decodeBignum(op.G2_x))
+    a.X.A0.SetBigInt(decodeBignum(op.G2_v))
+    a.Y.A1.SetBigInt(decodeBignum(op.G2_y))
+    a.Y.A0.SetBigInt(decodeBignum(op.G2_w))
+
+    var res bool
+    if a.X.A1.IsZero() && a.X.A0.IsZero() && a.Y.A1.IsZero() && a.Y.A0.IsZero() {
+        res = false
+    } else {
+        res = a.IsOnCurve() && a.IsInSubGroup()
+    }
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
 }
 
 //export Gnark_bn254_BLS_G1_Add
