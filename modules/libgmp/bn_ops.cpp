@@ -483,6 +483,16 @@ end:
     return ret;
 }
 
+bool IsSquare::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    res.Set(
+            mpz_perfect_square_p(bn[0].GetPtr()) == 0 ? std::string("0") : std::string("1")
+    );
+
+    return true;
+}
+
 } /* namespace libgmp_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

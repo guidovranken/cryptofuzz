@@ -154,6 +154,9 @@ std::optional<component::Bignum> libgmp::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("NthrtRem(A,B)"):
             opRunner = std::make_unique<libgmp_bignum::NthrtRem>();
             break;
+        case    CF_CALCOP("IsSquare(A)"):
+            opRunner = std::make_unique<libgmp_bignum::IsSquare>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

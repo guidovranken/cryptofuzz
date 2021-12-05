@@ -275,6 +275,11 @@ class NthrtRem : public Operation {
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
 };
 
+class IsSquare : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
 } /* namespace libgmp_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */
