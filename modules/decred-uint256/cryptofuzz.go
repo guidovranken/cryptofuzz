@@ -163,7 +163,7 @@ func decred_uint256_Cryptofuzz_OpBignumCalc(in []byte) {
         res = u0.Lsh(1)
     } else if isSqr(op.CalcOp) {
         res = u0.Square()
-    } else if isNeg(op.CalcOp) {
+    } else if isNot(op.CalcOp) {
         res = u0.Negate()
     } else if isAnd(op.CalcOp) {
         res = u0.And(u1)
@@ -204,14 +204,16 @@ func decred_uint256_Cryptofuzz_OpBignumCalc(in []byte) {
             res.AddUint64(1)
         }
     } else if isSet(op.CalcOp) {
-        if mod % 3 == 0 {
+        if mod % 4 == 0 {
             if !u0.IsUint64() {
                 return
             }
             res.SetUint64(u0.Uint64())
-        } else if mod % 3 == 1 {
+        } else if mod % 4 == 1 {
             b := u0.Bytes()
             res.SetBytes(&b)
+        } else if mod % 4 == 2 {
+            res.SetBig(u0.ToBig())
         } else {
             b := u0.BytesLE()
             res.SetBytesLE(&b)
