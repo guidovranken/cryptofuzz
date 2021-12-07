@@ -48,6 +48,9 @@ namespace intx_detail {
                 case    CF_CALCOP("Exp(A,B)"):
                     res = ::intx::exp(bn0, bn1);
                     break;
+                case    CF_CALCOP("LShift(A)"):
+                    res = bn0 << bn1;
+                    break;
                 case    CF_CALCOP("LShift1(A)"):
                     res = bn0 << 1;
                     break;
