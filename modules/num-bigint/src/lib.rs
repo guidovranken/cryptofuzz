@@ -239,6 +239,9 @@ pub extern "C" fn rust_num_bigint_bignumcalc(
             Some(_v) => _v,
             None => return -1,
         };
+        if bn0.is_negative() && bn1.is_even() {
+            return -1;
+        }
         if n == 0 {
             return -1;
         }
