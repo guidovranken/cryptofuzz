@@ -9,33 +9,139 @@ namespace module {
 namespace libgmp_bignum {
 
 bool Add::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
-    (void)ds;
+    bool ret = false;
 
-    /* noret */ mpz_add(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
-    return true;
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            /* noret */ mpz_add(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            break;
+        case    1:
+            {
+                const auto bn1 = bn[1].GetUnsignedLong();
+                CF_CHECK_NE(bn1, std::nullopt);
+
+                /* noret */ mpz_add_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+            }
+            break;
+        default:
+            return false;
+    }
+
+    ret = true;
+
+end:
+    return ret;
 }
 
 bool Sub::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
-    (void)ds;
+    bool ret = false;
 
-    /* noret */ mpz_sub(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
-    return true;
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            /* noret */ mpz_sub(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            break;
+        case    1:
+            {
+                const auto bn1 = bn[1].GetUnsignedLong();
+                CF_CHECK_NE(bn1, std::nullopt);
+
+                /* noret */ mpz_sub_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+            }
+            break;
+        case    2:
+            {
+                const auto bn0 = bn[0].GetUnsignedLong();
+                CF_CHECK_NE(bn0, std::nullopt);
+
+                /* noret */ mpz_ui_sub(res.GetPtr(), *bn0, bn[1].GetPtr());
+            }
+            break;
+        default:
+            return false;
+    }
+
+    ret = true;
+
+end:
+    return ret;
 }
 
 bool Mul::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
-    (void)ds;
+    bool ret = false;
 
-    /* noret */ mpz_mul(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
-    return true;
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            /* noret */ mpz_mul(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            break;
+        case    1:
+            {
+                const auto bn1 = bn[1].GetUnsignedLong();
+                CF_CHECK_NE(bn1, std::nullopt);
+
+                /* noret */ mpz_mul_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+            }
+            break;
+        case    2:
+            {
+                const auto bn1 = bn[1].GetSignedLong();
+                CF_CHECK_NE(bn1, std::nullopt);
+
+                /* noret */ mpz_mul_si(res.GetPtr(), bn[0].GetPtr(), *bn1);
+            }
+            break;
+        default:
+            return false;
+    }
+
+    ret = true;
+
+end:
+    return ret;
 }
 
 bool Div::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
-    (void)ds;
     bool ret = false;
 
-    CF_CHECK_NE(mpz_cmp_ui(bn[1].GetPtr(), 0), 0);
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            CF_CHECK_NE(mpz_cmp_ui(bn[1].GetPtr(), 0), 0);
 
-    /* noret */ mpz_div(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            /* noret */ mpz_div(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            break;
+        case    1:
+            {
+                CF_CHECK_NE(mpz_cmp_ui(bn[1].GetPtr(), 0), 0);
+
+                const auto bn1 = bn[1].GetUnsignedLong();
+                CF_CHECK_NE(bn1, std::nullopt);
+
+                /* noret */ mpz_div_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+            }
+            break;
+        case    2:
+            {
+                CF_CHECK_NE(mpz_cmp_ui(bn[1].GetPtr(), 0), 0);
+
+                CF_CHECK_NE(mpz_divisible_p(bn[0].GetPtr(), bn[1].GetPtr()), 0);
+
+                /* noret */ mpz_divexact(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            }
+            break;
+        case    3:
+            {
+                CF_CHECK_NE(mpz_cmp_ui(bn[1].GetPtr(), 0), 0);
+
+                const auto bn1 = bn[1].GetUnsignedLong();
+                CF_CHECK_NE(bn1, std::nullopt);
+
+                CF_CHECK_NE(mpz_divisible_ui_p(bn[0].GetPtr(), *bn1), 0);
+
+                /* noret */ mpz_divexact_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+            }
+            break;
+        default:
+            return false;
+    }
 
     ret = true;
 
@@ -44,12 +150,36 @@ end:
 }
 
 bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
-    (void)ds;
     bool ret = false;
 
     CF_CHECK_NE(mpz_cmp_ui(bn[2].GetPtr(), 0), 0);
 
-    /* noret */ mpz_powm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            /* noret */ mpz_powm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+            break;
+        case    1:
+            {
+                const auto bn1 = bn[1].GetUnsignedLong();
+                CF_CHECK_NE(bn1, std::nullopt);
+
+                /* noret */ mpz_powm_ui(res.GetPtr(), bn[0].GetPtr(), *bn1, bn[2].GetPtr());
+            }
+            break;
+        case    2:
+            {
+                /* "It is required that exp > 0 and that mod is odd." */
+                CF_CHECK_NE(mpz_cmp_ui(bn[1].GetPtr(), 0), 1);
+
+                const auto ptr = bn[2].GetPtr();
+                CF_CHECK_EQ(mpz_odd_p(ptr), 1);
+
+                /* noret */ mpz_powm_sec(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+            }
+            break;
+        default:
+            return false;
+    }
 
     ret = true;
 
@@ -58,11 +188,28 @@ end:
 }
 
 bool GCD::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
-    (void)ds;
+    bool ret = false;
 
-    /* noret */ mpz_gcd(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            /* noret */ mpz_gcd(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            break;
+        case    1:
+            {
+                const auto bn1 = bn[1].GetUnsignedLong();
+                CF_CHECK_NE(bn1, std::nullopt);
 
-    return true;
+                /* ignore ret */ mpz_gcd_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+            }
+            break;
+        default:
+            return false;
+    }
+
+    ret = true;
+
+end:
+    return ret;
 }
 
 bool Jacobi::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
@@ -77,6 +224,13 @@ bool Jacobi::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
                 res.Set( std::to_string(mpz_kronecker_si(bn[0].GetPtr(), *bn1)) );
             }
             return true;
+        case    2:
+            {
+                const auto bn1 = bn[1].GetUnsignedLong();
+                CF_CHECK_NE(bn1, std::nullopt);
+                res.Set( std::to_string(mpz_kronecker_ui(bn[0].GetPtr(), *bn1)) );
+            }
+            return true;
         default:
             return false;
     }
@@ -86,9 +240,33 @@ end:
 }
 
 bool Cmp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
-    (void)ds;
+    bool ret = false;
 
-    const int cmp = mpz_cmp(bn[0].GetPtr(), bn[1].GetPtr());
+    int cmp;
+
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            cmp = mpz_cmp(bn[0].GetPtr(), bn[1].GetPtr());
+            break;
+        case    1:
+            {
+                const auto bn1 = bn[1].GetSignedLong();
+                CF_CHECK_NE(bn1, std::nullopt);
+
+                cmp = mpz_cmp_si(bn[0].GetPtr(), *bn1);
+            }
+            break;
+        case    2:
+            {
+                const auto bn1 = bn[1].GetUnsignedLong();
+                CF_CHECK_NE(bn1, std::nullopt);
+
+                cmp = mpz_cmp_ui(bn[0].GetPtr(), *bn1);
+            }
+            break;
+        default:
+            goto end;
+    }
 
     if ( cmp < 0 ) {
         res.Set("-1");
@@ -98,15 +276,35 @@ bool Cmp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
         res.Set("0");
     }
 
-    return true;
+    ret = true;
+
+end:
+    return ret;
 }
 
 bool LCM::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
-    (void)ds;
+    bool ret = false;
 
-    /* noret */ mpz_lcm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            /* noret */ mpz_lcm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            break;
+        case    1:
+            {
+                const auto bn1 = bn[1].GetUnsignedLong();
+                CF_CHECK_NE(bn1, std::nullopt);
 
-    return true;
+                /* noret */ mpz_lcm_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+            }
+            break;
+        default:
+            return false;
+    }
+
+    ret = true;
+
+end:
+    return ret;
 }
 
 bool Xor::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
@@ -158,9 +356,25 @@ bool Sqr::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 }
 
 bool CmpAbs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
-    (void)ds;
+    bool ret = false;
 
-    const int cmp = mpz_cmpabs(bn[0].GetPtr(), bn[1].GetPtr());
+    int cmp;
+
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            cmp = mpz_cmpabs(bn[0].GetPtr(), bn[1].GetPtr());
+            break;
+        case    1:
+            {
+                const auto bn1 = bn[1].GetUnsignedLong();
+                CF_CHECK_NE(bn1, std::nullopt);
+
+                cmp = mpz_cmpabs_ui(bn[0].GetPtr(), *bn1);
+            }
+            break;
+        default:
+            goto end;
+    }
 
     if ( cmp < 0 ) {
         res.Set("-1");
@@ -170,7 +384,10 @@ bool CmpAbs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
         res.Set("0");
     }
 
-    return true;
+    ret = true;
+
+end:
+    return ret;
 }
 
 bool IsZero::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
@@ -481,6 +698,272 @@ bool NthrtRem::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     ret = true;
 end:
     return ret;
+}
+
+bool IsSquare::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    res.Set(
+            mpz_perfect_square_p(bn[0].GetPtr()) == 0 ? std::string("0") : std::string("1")
+    );
+
+    return true;
+}
+
+bool Exp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    bool ret = false;
+
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            {
+                const auto bn1 = bn[1].GetUnsignedLong();
+                CF_CHECK_NE(bn1, std::nullopt);
+
+                /* noret */ mpz_pow_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+            }
+            break;
+        case    1:
+            {
+                const auto bn0 = bn[0].GetUnsignedLong();
+                CF_CHECK_NE(bn0, std::nullopt);
+
+                const auto bn1 = bn[1].GetUnsignedLong();
+                CF_CHECK_NE(bn1, std::nullopt);
+
+                /* noret */ mpz_ui_pow_ui(res.GetPtr(), *bn0, *bn1);
+            }
+            break;
+        default:
+            return false;
+    }
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Or::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    /* noret */ mpz_ior(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+
+    return true;
+}
+
+bool AddMul::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    bool ret = false;
+
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            /* noret */ mpz_set(res.GetPtr(), bn[0].GetPtr());
+            /* noret */ mpz_addmul(res.GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+            break;
+        case    1:
+            {
+                const auto bn2 = bn[2].GetUnsignedLong();
+                CF_CHECK_NE(bn2, std::nullopt);
+
+                /* noret */ mpz_set(res.GetPtr(), bn[0].GetPtr());
+                /* noret */ mpz_addmul_ui(res.GetPtr(), bn[1].GetPtr(), *bn2);
+            }
+            break;
+        default:
+            return false;
+    }
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool SubMul::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    bool ret = false;
+
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            /* noret */ mpz_set(res.GetPtr(), bn[0].GetPtr());
+            /* noret */ mpz_submul(res.GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+            break;
+        case    1:
+            {
+                const auto bn2 = bn[2].GetUnsignedLong();
+                CF_CHECK_NE(bn2, std::nullopt);
+
+                /* noret */ mpz_set(res.GetPtr(), bn[0].GetPtr());
+                /* noret */ mpz_submul_ui(res.GetPtr(), bn[1].GetPtr(), *bn2);
+            }
+            break;
+        default:
+            return false;
+    }
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Primorial::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    const auto bn0 = bn[0].GetUnsignedLong();
+    CF_CHECK_NE(bn0, std::nullopt);
+    CF_CHECK_LTE(*bn0, 10000);
+
+    /* noret */ mpz_primorial_ui(res.GetPtr(), *bn0);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Lucas::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    const auto bn0 = bn[0].GetUnsignedLong();
+    CF_CHECK_NE(bn0, std::nullopt);
+    CF_CHECK_LTE(*bn0, 10000);
+
+    /* noret */ mpz_lucnum_ui(res.GetPtr(), *bn0);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Fibonacci::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    const auto bn0 = bn[0].GetUnsignedLong();
+    CF_CHECK_NE(bn0, std::nullopt);
+    CF_CHECK_LTE(*bn0, 10000);
+
+    /* noret */ mpz_fac_ui(res.GetPtr(), *bn0);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Set::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    bool ret = false;
+
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            /* noret */ mpz_set(res.GetPtr(), bn[0].GetPtr());
+            break;
+        case    1:
+            {
+                const auto bn0 = bn[0].GetUnsignedLong();
+                CF_CHECK_NE(bn0, std::nullopt);
+
+                /* noret */ mpz_init_set_ui(res.GetPtr(), *bn0);
+            }
+            break;
+        case    2:
+            {
+                const auto bn0 = bn[0].GetSignedLong();
+                CF_CHECK_NE(bn0, std::nullopt);
+
+                /* noret */ mpz_init_set_si(res.GetPtr(), *bn0);
+            }
+            break;
+        case    3:
+            /* noret */ mpz_swap(res.GetPtr(), bn[0].GetPtr());
+            break;
+        default:
+            return false;
+    }
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool BinCoeff::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    bool ret = false;
+
+    std::optional<unsigned long int> bn0, bn1;
+
+    bn0 = bn[0].GetUnsignedLong();
+    CF_CHECK_NE(bn0, std::nullopt);
+    CF_CHECK_LTE(*bn0, 100000);
+
+    bn1 = bn[1].GetUnsignedLong();
+    CF_CHECK_NE(bn1, std::nullopt);
+    CF_CHECK_LTE(*bn1, 100000);
+
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            /* noret */ mpz_bin_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+            break;
+        case    1:
+            /* noret */ mpz_bin_uiui(res.GetPtr(), *bn0, *bn1);
+            break;
+        default:
+            goto end;
+    }
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool HamDist::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    res.Set( std::to_string(mpz_hamdist(bn[0].GetPtr(), bn[1].GetPtr())) );
+
+    return true;
+}
+
+bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    bool ret = false;
+
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            CF_CHECK_NE(mpz_cmp_ui(bn[1].GetPtr(), 0), 0);
+
+            /* noret */ mpz_mod(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            break;
+        case    1:
+            {
+                CF_CHECK_NE(mpz_cmp_ui(bn[1].GetPtr(), 0), 0);
+
+                const auto bn1 = bn[1].GetUnsignedLong();
+                CF_CHECK_NE(bn1, std::nullopt);
+
+                /* ignore ret */ mpz_mod_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+            }
+            break;
+        default:
+            return false;
+    }
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool IsPower::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+
+    res.Set(
+            mpz_perfect_power_p(bn[0].GetPtr()) == 0 ? std::string("0") : std::string("1")
+    );
+
+    return true;
 }
 
 } /* namespace libgmp_bignum */

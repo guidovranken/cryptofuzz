@@ -140,3 +140,6 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Chia/relic: Allows loading invalid point [1](https://github.com/Chia-Network/bls-signatures/issues/247) [2](https://github.com/Chia-Network/bls-signatures/issues/251)
 - blst: [Branching on uninitialize memory](https://github.com/supranational/blst/commit/eb6151961c133a930420e844e1a84708fbb4f6a4)
 - num-bigint: [Panic on multiplication](https://github.com/rust-num/num-bigint/security/advisories/GHSA-v935-pqmr-g8v9)
+- Botan: [Produces invalid ECDSA signatures](https://github.com/randombit/botan/issues/2841)
+- libgcrypt: [gcry_mpi_sub_ui result is positive when it should be negative](https://lists.gnupg.org/pipermail/gcrypt-devel/2021-November/005191.html)
+- Decred uint256: [Incorrect decimal string formatting](https://github.com/decred/dcrd/pull/2844)
