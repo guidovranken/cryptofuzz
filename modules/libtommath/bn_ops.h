@@ -211,6 +211,16 @@ class Sqr : public Operation {
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
 };
 
+class IsSquare : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class NumBits : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
 } /* namespace libtommath_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */
