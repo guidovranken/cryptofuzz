@@ -93,6 +93,11 @@ class CalcOp(Component):
     def __init__(self, operation):
         super(CalcOp, self).__init__(operation)
 
+        m = re.match(r'^[A-Za-z0-9_]+\((.*)\)$', operation)
+        assert(m)
+        params = m.group(1)
+        self.num_params = str(0 if not params else params.count(',') + 1)
+
 # Tables
 class Table(object):
     def __init__(self, prefix, tableDecl):
@@ -256,11 +261,14 @@ class ECC_CurveTable(Table):
 class CalcOpTable(Table):
     def __init__(self):
         tableDecl = [
+                "size_t num_params",
         ]
 
         super(CalcOpTable, self).__init__('CalcOp', tableDecl)
     def getTableEntryList(self, index):
         tableEntry = []
+
+        tableEntry += [ self.table[index].num_params ]
 
         return tableEntry
 
