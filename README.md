@@ -143,3 +143,5 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Botan: [Produces invalid ECDSA signatures](https://github.com/randombit/botan/issues/2841)
 - libgcrypt: [gcry_mpi_sub_ui result is positive when it should be negative](https://lists.gnupg.org/pipermail/gcrypt-devel/2021-November/005191.html)
 - Decred uint256: [Incorrect decimal string formatting](https://github.com/decred/dcrd/pull/2844)
+- Botan: [Undefined behavior upon instantiating DL_Group](https://github.com/randombit/botan/issues/2861)
+- libtommath: [mp_is_square says 0 is not a square](https://github.com/libtom/libtommath/issues/521)

@@ -954,8 +954,6 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
             return EVP_des_ede();
         case CF_CIPHER("DES_EDE3"):
             return EVP_des_ede3();
-        case CF_CIPHER("DES_EDE3_WRAP"):
-            return EVP_des_ede3_wrap();
         case CF_CIPHER("RC4"):
             return EVP_rc4();
         case CF_CIPHER("RC4_40"):
@@ -1046,10 +1044,6 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
             return EVP_aes_128_xts();
         case CF_CIPHER("AES_128_CCM"):
             return EVP_aes_128_ccm();
-        case CF_CIPHER("AES_128_WRAP"):
-            return EVP_aes_128_wrap();
-        case CF_CIPHER("AES_128_WRAP_PAD"):
-            return EVP_aes_128_wrap_pad();
         case CF_CIPHER("AES_192_ECB"):
             return EVP_aes_192_ecb();
         case CF_CIPHER("AES_192_CBC"):
@@ -1068,10 +1062,6 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
             return EVP_aes_192_gcm();
         case CF_CIPHER("AES_192_CCM"):
             return EVP_aes_192_ccm();
-        case CF_CIPHER("AES_192_WRAP"):
-            return EVP_aes_192_wrap();
-        case CF_CIPHER("AES_192_WRAP_PAD"):
-            return EVP_aes_192_wrap_pad();
         case CF_CIPHER("AES_256_ECB"):
             return EVP_aes_256_ecb();
         case CF_CIPHER("AES_256_CBC"):
@@ -1094,10 +1084,6 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
             return EVP_aes_256_xts();
         case CF_CIPHER("AES_256_CCM"):
             return EVP_aes_256_ccm();
-        case CF_CIPHER("AES_256_WRAP"):
-            return EVP_aes_256_wrap();
-        case CF_CIPHER("AES_256_WRAP_PAD"):
-            return EVP_aes_256_wrap_pad();
         case CF_CIPHER("AES_128_CBC_HMAC_SHA1"):
             return EVP_aes_128_cbc_hmac_sha1();
         case CF_CIPHER("AES_256_CBC_HMAC_SHA1"):
@@ -1206,6 +1192,26 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
             return EVP_chacha20();
         case CF_CIPHER("CHACHA20_POLY1305"):
             return EVP_chacha20_poly1305();
+
+        /*  Disabled due to unfixed memory issues with wrap ciphers:
+            https://github.com/openssl/openssl/issues/15728
+            https://github.com/openssl/openssl/issues/12073
+            https://github.com/openssl/openssl/issues/12014
+        */
+        //case CF_CIPHER("DES_EDE3_WRAP"):
+        //    return EVP_des_ede3_wrap();
+        //case CF_CIPHER("AES_128_WRAP"):
+        //    return EVP_aes_128_wrap();
+        //case CF_CIPHER("AES_128_WRAP_PAD"):
+        //    return EVP_aes_128_wrap_pad();
+        //case CF_CIPHER("AES_192_WRAP"):
+        //    return EVP_aes_192_wrap();
+        //case CF_CIPHER("AES_192_WRAP_PAD"):
+        //    return EVP_aes_192_wrap_pad();
+        //case CF_CIPHER("AES_256_WRAP"):
+        //    return EVP_aes_256_wrap();
+        //case CF_CIPHER("AES_256_WRAP_PAD"):
+        //    return EVP_aes_256_wrap_pad();
 #endif
         default:
             return nullptr;

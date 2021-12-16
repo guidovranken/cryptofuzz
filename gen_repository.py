@@ -93,6 +93,11 @@ class CalcOp(Component):
     def __init__(self, operation):
         super(CalcOp, self).__init__(operation)
 
+        m = re.match(r'^[A-Za-z0-9_]+\((.*)\)$', operation)
+        assert(m)
+        params = m.group(1)
+        self.num_params = str(0 if not params else params.count(',') + 1)
+
 # Tables
 class Table(object):
     def __init__(self, prefix, tableDecl):
@@ -256,11 +261,14 @@ class ECC_CurveTable(Table):
 class CalcOpTable(Table):
     def __init__(self):
         tableDecl = [
+                "size_t num_params",
         ]
 
         super(CalcOpTable, self).__init__('CalcOp', tableDecl)
     def getTableEntryList(self, index):
         tableEntry = []
+
+        tableEntry += [ self.table[index].num_params ]
 
         return tableEntry
 
@@ -327,6 +335,7 @@ modules.Add( Module("schnorr_fun") )
 modules.Add( Module("schnorrkel") )
 modules.Add( Module("secp256k1") )
 modules.Add( Module("sjcl") )
+modules.Add( Module("rust-uint") )
 modules.Add( Module("trezor-firmware") )
 modules.Add( Module("uint128_t") )
 modules.Add( Module("wolfCrypt") )
@@ -827,6 +836,7 @@ digests.Add( Digest("CITYHASH64SEED8") )
 digests.Add( Digest("CITYHASHCRC128") )
 digests.Add( Digest("CITYHASHCRC128SEED16") )
 digests.Add( Digest("CITYHASHCRC256") )
+digests.Add( Digest("CRC24-RFC2440", 3) )
 digests.Add( Digest("CRC32", 4) )
 digests.Add( Digest("CRC32-RFC1510") )
 digests.Add( Digest("CRC32-RFC2440") )

@@ -114,6 +114,12 @@ std::optional<component::Bignum> libtommath::OpBignumCalc(operation::BignumCalc&
         case    CF_CALCOP("Sqr(A)"):
             opRunner = std::make_unique<libtommath_bignum::Sqr>();
             break;
+        case    CF_CALCOP("IsSquare(A)"):
+            opRunner = std::make_unique<libtommath_bignum::IsSquare>();
+            break;
+        case    CF_CALCOP("NumBits(A)"):
+            opRunner = std::make_unique<libtommath_bignum::NumBits>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

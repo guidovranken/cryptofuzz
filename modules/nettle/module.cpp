@@ -206,15 +206,19 @@ end:
     Digest<sha3_512_ctx, SHA3_512_DIGEST_SIZE> sha3_512(sha3_512_init, sha3_512_update, sha3_512_digest);
     Digest<streebog256_ctx, STREEBOG256_DIGEST_SIZE> streebog_256(streebog256_init, streebog256_update, streebog256_digest);
     Digest<streebog512_ctx, STREEBOG512_DIGEST_SIZE> streebog_512(streebog512_init, streebog512_update, streebog512_digest);
+    Digest<sm3_ctx, SM3_DIGEST_SIZE> sm3(sm3_init, sm3_update, sm3_digest);
 
     HMAC<hmac_md5_ctx, MD5_DIGEST_SIZE> hmac_md5(hmac_md5_set_key, hmac_md5_update, hmac_md5_digest);
     HMAC<hmac_ripemd160_ctx, RIPEMD160_DIGEST_SIZE> hmac_ripemd160(hmac_ripemd160_set_key, hmac_ripemd160_update, hmac_ripemd160_digest);
     HMAC<hmac_sha1_ctx, SHA1_DIGEST_SIZE> hmac_sha1(hmac_sha1_set_key, hmac_sha1_update, hmac_sha1_digest);
     HMAC<hmac_sha224_ctx, SHA224_DIGEST_SIZE> hmac_sha224(hmac_sha224_set_key, hmac_sha224_update, hmac_sha224_digest);
     HMAC<hmac_sha256_ctx, SHA256_DIGEST_SIZE> hmac_sha256(hmac_sha256_set_key, hmac_sha256_update, hmac_sha256_digest);
+    HMAC<hmac_sha384_ctx, SHA384_DIGEST_SIZE> hmac_sha384(hmac_sha384_set_key, hmac_sha384_update, hmac_sha384_digest);
     HMAC<hmac_sha512_ctx, SHA512_DIGEST_SIZE> hmac_sha512(hmac_sha512_set_key, hmac_sha512_update, hmac_sha512_digest);
     HMAC<hmac_streebog256_ctx, SHA256_DIGEST_SIZE> hmac_streebog256(hmac_streebog256_set_key, hmac_streebog256_update, hmac_streebog256_digest);
     HMAC<hmac_streebog512_ctx, SHA512_DIGEST_SIZE> hmac_streebog512(hmac_streebog512_set_key, hmac_streebog512_update, hmac_streebog512_digest);
+    HMAC<hmac_sm3_ctx, SM3_DIGEST_SIZE> hmac_sm3(hmac_sm3_set_key, hmac_sm3_update, hmac_sm3_digest);
+    HMAC<hmac_gosthash94_ctx, GOSTHASH94_DIGEST_SIZE> hmac_gosthash94(hmac_gosthash94_set_key, hmac_gosthash94_update, hmac_gosthash94_digest);
 
     CMAC<cmac_aes128_ctx, CMAC128_DIGEST_SIZE, 16> cmac_aes128(cmac_aes128_set_key, cmac_aes128_update, cmac_aes128_digest);
     CMAC<cmac_aes256_ctx, CMAC128_DIGEST_SIZE, 32> cmac_aes256(cmac_aes256_set_key, cmac_aes256_update, cmac_aes256_digest);
@@ -279,6 +283,9 @@ std::optional<component::Digest> Nettle::OpDigest(operation::Digest& op) {
         case CF_DIGEST("STREEBOG-512"):
             ret = Nettle_detail::streebog_512.Run(op);
             break;
+        case CF_DIGEST("SM3"):
+            ret = Nettle_detail::sm3.Run(op);
+            break;
     }
 
     return ret;
@@ -297,8 +304,14 @@ std::optional<component::MAC> Nettle::OpHMAC(operation::HMAC& op) {
         case CF_DIGEST("SHA1"):
             ret = Nettle_detail::hmac_sha1.Run(op);
             break;
+        case CF_DIGEST("SHA224"):
+            ret = Nettle_detail::hmac_sha224.Run(op);
+            break;
         case CF_DIGEST("SHA256"):
             ret = Nettle_detail::hmac_sha256.Run(op);
+            break;
+        case CF_DIGEST("SHA384"):
+            ret = Nettle_detail::hmac_sha384.Run(op);
             break;
         case CF_DIGEST("SHA512"):
             ret = Nettle_detail::hmac_sha512.Run(op);
@@ -308,6 +321,12 @@ std::optional<component::MAC> Nettle::OpHMAC(operation::HMAC& op) {
             break;
         case CF_DIGEST("STREEBOG-512"):
             ret = Nettle_detail::hmac_streebog512.Run(op);
+            break;
+        case CF_DIGEST("SM3"):
+            ret = Nettle_detail::hmac_sm3.Run(op);
+            break;
+        case CF_DIGEST("GOST-R-34.11-94-NO-CRYPTOPRO"):
+            ret = Nettle_detail::hmac_gosthash94.Run(op);
             break;
     }
 
@@ -1454,14 +1473,23 @@ std::optional<component::Key> Nettle::OpKDF_HKDF(operation::KDF_HKDF& op) {
         case CF_DIGEST("SHA256"):
             ret = Nettle_detail::HKDF<hmac_sha256_ctx, SHA256_DIGEST_SIZE>(op, (void*)hmac_sha256_set_key, (void*)hmac_sha256_update, (void*)hmac_sha256_digest);
             break;
+        case CF_DIGEST("SHA384"):
+            ret = Nettle_detail::HKDF<hmac_sha384_ctx, SHA384_DIGEST_SIZE>(op, (void*)hmac_sha384_set_key, (void*)hmac_sha384_update, (void*)hmac_sha384_digest);
+            break;
         case CF_DIGEST("SHA512"):
             ret = Nettle_detail::HKDF<hmac_sha512_ctx, SHA512_DIGEST_SIZE>(op, (void*)hmac_sha512_set_key, (void*)hmac_sha512_update, (void*)hmac_sha512_digest);
             break;
         case CF_DIGEST("STREEBOG-256"):
-            ret = Nettle_detail::HKDF<hmac_streebog256_ctx, SHA256_DIGEST_SIZE>(op, (void*)hmac_streebog256_set_key, (void*)hmac_streebog256_update, (void*)hmac_streebog256_digest);
+            ret = Nettle_detail::HKDF<hmac_streebog256_ctx, STREEBOG256_DIGEST_SIZE>(op, (void*)hmac_streebog256_set_key, (void*)hmac_streebog256_update, (void*)hmac_streebog256_digest);
             break;
         case CF_DIGEST("STREEBOG-512"):
-            ret = Nettle_detail::HKDF<hmac_streebog512_ctx, SHA512_DIGEST_SIZE>(op, (void*)hmac_streebog512_set_key, (void*)hmac_streebog512_update, (void*)hmac_streebog512_digest);
+            ret = Nettle_detail::HKDF<hmac_streebog512_ctx, STREEBOG512_DIGEST_SIZE>(op, (void*)hmac_streebog512_set_key, (void*)hmac_streebog512_update, (void*)hmac_streebog512_digest);
+            break;
+        case CF_DIGEST("SM3"):
+            ret = Nettle_detail::HKDF<hmac_sm3_ctx, SM3_DIGEST_SIZE>(op, (void*)hmac_sm3_set_key, (void*)hmac_sm3_update, (void*)hmac_sm3_digest);
+            break;
+        case CF_DIGEST("GOST-R-34.11-94-NO-CRYPTOPRO"):
+            ret = Nettle_detail::HKDF<hmac_gosthash94_ctx, GOSTHASH94_DIGEST_SIZE>(op, (void*)hmac_gosthash94_set_key, (void*)hmac_gosthash94_update, (void*)hmac_gosthash94_digest);
             break;
     }
 
