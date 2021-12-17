@@ -301,6 +301,10 @@
   #include <modules/rust-uint/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_BC)
+  #include <modules/bc/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -607,6 +611,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_RUST_UINT)
     driver->LoadModule( std::make_shared<cryptofuzz::module::rust_uint>() );
+#endif
+
+#if defined(CRYPTOFUZZ_BC)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::bc>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
