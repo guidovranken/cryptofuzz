@@ -1609,6 +1609,38 @@ class ECC_Point_Mul : public Operation {
         }
 };
 
+class ECC_Point_Neg : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::ECC_Point a;
+
+        ECC_Point_Neg(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            a(ds)
+        { }
+        ECC_Point_Neg(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            a(json["a_x"], json["a_y"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const ECC_Point_Neg& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (a == rhs.a) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            a.Serialize(ds);
+        }
+};
+
 class DH_GenerateKeyPair : public Operation {
     public:
         const component::Bignum prime;
