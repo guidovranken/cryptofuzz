@@ -40,6 +40,7 @@ void test(const operation::ECIES_Decrypt& op, const std::optional<component::Cle
 void test(const operation::ECC_Point_Add& op, const std::optional<component::ECC_Point>& result);
 void test(const operation::ECC_Point_Mul& op, const std::optional<component::ECC_Point>& result);
 void test(const operation::ECC_Point_Neg& op, const std::optional<component::ECC_Point>& result);
+void test(const operation::ECC_Point_Dbl& op, const std::optional<component::ECC_Point>& result);
 void test(const operation::DH_GenerateKeyPair& op, const std::optional<component::DH_KeyPair>& result);
 void test(const operation::DH_Derive& op, const std::optional<component::Bignum>& result);
 void test(const operation::BignumCalc& op, const std::optional<component::Bignum>& result);

@@ -873,6 +873,68 @@ end:
     return ret;
 }
 
+std::optional<component::ECC_Point> libecc::OpECC_Point_Dbl(operation::ECC_Point_Dbl& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+
+    const ec_str_params* curve_params;
+    ec_params params;
+    prj_pt res, a;
+    aff_pt res_aff;
+    fp x, y, z;
+
+    const auto ax_bin = util::DecToBin(op.a.first.ToTrimmedString());
+    const auto ay_bin = util::DecToBin(op.a.second.ToTrimmedString());
+
+    /* Load curve */
+    CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
+    CF_NORET(import_params(&params, curve_params));
+
+    CF_INSTALL_JMP();
+
+    prj_pt_init(&res, &(params.ec_curve));
+
+    {
+        fp_init_from_buf(&x, &(params.ec_fp), ax_bin->data(), ax_bin->size());
+
+        fp_init_from_buf(&y, &(params.ec_fp), ay_bin->data(), ay_bin->size());
+
+        fp_init(&z, &(params.ec_fp));
+        fp_one(&z);
+
+        prj_pt_init_from_coords(&a, &(params.ec_curve), &x, &y, &z);
+
+        fp_uninit(&x);
+        fp_uninit(&y);
+        fp_uninit(&z);
+    }
+
+    prj_pt_dbl(&res, &a);
+
+    prj_pt_to_aff(&res_aff, &res);
+
+    {
+        const size_t coordinateSize = BYTECEIL(params.ec_curve.a.ctx->p_bitlen);
+        const size_t pointSize = coordinateSize * 2;
+
+        uint8_t out_bytes[pointSize];
+
+        CF_CHECK_EQ(aff_pt_export_to_buf(&res_aff, out_bytes, pointSize), 0);
+
+        const auto X = util::BinToDec(out_bytes, coordinateSize);
+        const auto Y = util::BinToDec(out_bytes + coordinateSize, coordinateSize);
+
+        ret = {X, Y};
+    }
+
+    prj_pt_uninit(&res);
+    prj_pt_uninit(&a);
+
+end:
+    CF_RESTORE_JMP();
+
+    return ret;
+}
+
 std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());

@@ -137,5 +137,12 @@ std::optional<component::ECC_Point> Golang::OpECC_Point_Mul(operation::ECC_Point
     return getResultAs<component::ECC_Point>();
 }
 
+std::optional<component::ECC_Point> Golang::OpECC_Point_Dbl(operation::ECC_Point_Dbl& op) {
+    auto jsonStr = op.ToJSON().dump();
+    Golang_Cryptofuzz_OpECC_Point_Dbl(toGoSlice(jsonStr));
+
+    return getResultAs<component::ECC_Point>();
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */

@@ -971,6 +971,29 @@ nlohmann::json ECC_Point_Neg::ToJSON(void) const {
     return j;
 }
 
+std::string ECC_Point_Dbl::Name(void) const { return "ECC_Point_Dbl"; }
+std::string ECC_Point_Dbl::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: ECC_Point_Dbl" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "A X: " << a.first.ToString() << std::endl;
+    ss << "A Y: " << a.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json ECC_Point_Dbl::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+
+    j["a_x"] = a.first.ToJSON();
+    j["a_y"] = a.second.ToJSON();
+
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string DH_GenerateKeyPair::Name(void) const { return "DH_GenerateKeyPair"; }
 std::string DH_GenerateKeyPair::ToString(void) const {
     std::stringstream ss;

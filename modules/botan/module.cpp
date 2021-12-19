@@ -1475,6 +1475,44 @@ end:
     return ret;
 }
 
+std::optional<component::ECC_Point> Botan::OpECC_Point_Dbl(operation::ECC_Point_Dbl& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    std::unique_ptr<::Botan::EC_Group> group = nullptr;
+
+    {
+        std::optional<std::string> curveString;
+        CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
+        group = std::make_unique<::Botan::EC_Group>(*curveString);
+    }
+
+    try {
+        const auto a_x = ::Botan::BigInt(op.a.first.ToString(ds));
+        CF_CHECK_GTE(a_x, 0);
+
+        const auto a_y = ::Botan::BigInt(op.a.second.ToString(ds));
+        CF_CHECK_GTE(a_y, 0);
+
+        const auto a = group->point(a_x, a_y);
+        CF_CHECK_TRUE(a.on_the_curve());
+
+        const ::Botan::PointGFp _res = a + a;
+
+        const auto x = _res.get_affine_x();
+        const auto y = _res.get_affine_y();
+
+        ret = {
+            util::HexToDec(x.to_hex_string()),
+            util::HexToDec(y.to_hex_string()),
+        };
+
+    } catch ( ... ) { }
+
+end:
+    return ret;
+}
+
 std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
 
