@@ -21,6 +21,7 @@ class libecc : public Module {
         std::optional<bool> OpECRDSA_Verify(operation::ECRDSA_Verify& op) override;
         std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op) override;
         std::optional<component::ECC_Point> OpECC_Point_Mul(operation::ECC_Point_Mul& op) override;
+        std::optional<component::ECC_Point> OpECC_Point_Neg(operation::ECC_Point_Neg& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
 };
 
