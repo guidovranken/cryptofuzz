@@ -169,6 +169,7 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
             }
             break;
         case    3:
+            CF_NORET(util::HintBignumPow2());
             CF_CHECK_EQ(BN_is_pow2(bn[1].GetPtr()), 1);
             CF_CHECK_EQ(BN_mod_pow2(res.GetDestPtr(), bn[0].GetPtr(), BN_num_bits(bn[1].GetPtr()) - 1), 1);
             break;
@@ -213,6 +214,7 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
             break;
 #if defined(CRYPTOFUZZ_BORINGSSL)
         case    6:
+            CF_NORET(util::HintBignumPow2());
             CF_CHECK_EQ(BN_is_pow2(bn[1].GetPtr()), 1);
             CF_CHECK_EQ(BN_nnmod_pow2(res.GetDestPtr(), bn[0].GetPtr(), BN_num_bits(bn[1].GetPtr()) - 1), 1);
             break;
@@ -966,6 +968,7 @@ bool IsPow2::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
     (void)ds;
 
 #if defined(CRYPTOFUZZ_BORINGSSL)
+    CF_NORET(util::HintBignumPow2());
     res.Set( std::to_string(BN_is_pow2(bn[0].GetPtr())) );
 
     return true;

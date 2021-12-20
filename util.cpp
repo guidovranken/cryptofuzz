@@ -16,6 +16,8 @@
 #include "mutatorpool.h"
 #include "config.h"
 
+uint32_t PRNG(void);
+
 extern "C" {
     sigjmp_buf cryptofuzz_jmpbuf;
     unsigned char cryptofuzz_longjmp_triggered = 0;
@@ -754,6 +756,21 @@ void HintBignum(const std::string bn) {
     if ( bn.size() < config::kMaxBignumSize ) {
         Pool_Bignum.Set(bn);
     }
+}
+
+void HintBignumPow2(size_t maxSize) {
+    if ( maxSize > config::kMaxBignumSize ) {
+        maxSize = config::kMaxBignumSize;
+    }
+
+    if ( maxSize == 0 ) {
+        return;
+    }
+
+    boost::multiprecision::cpp_int pow2(1);
+    const size_t count = PRNG() % static_cast<size_t>(maxSize * 3.322);
+    pow2 <<= count;
+    HintBignum(pow2.str());
 }
 
 void HintBignumOpt(const std::optional<std::string> bn) {

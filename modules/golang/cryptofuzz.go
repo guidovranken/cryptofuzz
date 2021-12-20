@@ -169,6 +169,13 @@ type OpECC_Point_Mul struct {
     B string
 }
 
+type OpECC_Point_Dbl struct {
+    Modifier ByteSlice
+    CurveType Type
+    A_x string
+    A_y string
+}
+
 var result []byte
 
 func resetResult() {
@@ -1226,6 +1233,37 @@ func Golang_Cryptofuzz_OpECC_Point_Mul(in []byte) {
     b := decodeBignum(op.B).Bytes()
 
     rx, ry := curve.ScalarMult(a_x, a_y, b)
+    res := make([]string, 2)
+    res[0], res[1] = rx.String(), ry.String()
+
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export Golang_Cryptofuzz_OpECC_Point_Dbl
+func Golang_Cryptofuzz_OpECC_Point_Dbl(in []byte) {
+    resetResult()
+
+    var op OpECC_Point_Dbl
+    unmarshal(in, &op)
+
+    curve, err := toCurve(op.CurveType)
+    if err != nil {
+        return
+    }
+
+    a_x := decodeBignum(op.A_x)
+    a_y := decodeBignum(op.A_y)
+
+    if curve.IsOnCurve(a_x, a_y) == false {
+        return
+    }
+
+    rx, ry := curve.Double(a_x, a_y)
     res := make([]string, 2)
     res[0], res[1] = rx.String(), ry.String()
 
