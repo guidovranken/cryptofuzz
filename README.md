@@ -145,3 +145,5 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Decred uint256: [Incorrect decimal string formatting](https://github.com/decred/dcrd/pull/2844)
 - Botan: [Undefined behavior upon instantiating DL_Group](https://github.com/randombit/botan/issues/2861)
 - libtommath: [mp_is_square says 0 is not a square](https://github.com/libtom/libtommath/issues/521)
+- OpenSSL: [HMAC use-after-free after copying ctx](https://github.com/openssl/openssl/issues/17261)
+- Golang: TBA
