@@ -251,6 +251,72 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
             goto end;
 #endif
             break;
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+        case    4:
+            {
+                {
+                    uint8_t which = 0;
+
+                    try {
+                        which = ds.Get<uint8_t>() % 4;
+                    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                    int factor_size = 0;
+
+                    switch ( which ) {
+                        case    1:
+                            factor_size = 1024;
+                            break;
+                        case    2:
+                            factor_size = 1536;
+                            break;
+                        case    3:
+                            factor_size = 2048;
+                            break;
+                    }
+
+                    if ( which != 0 ) {
+
+                        {
+                            Bignum hint_base(ds);
+                            CF_CHECK_TRUE(hint_base.New());
+                            BN_rand(hint_base.GetDestPtr(), factor_size, BN_RAND_TOP_ONE, BN_RAND_BOTTOM_ANY);
+                            util::HintBignumOpt(hint_base.ToString());
+                        }
+
+                        {
+                            Bignum hint_exp(ds);
+                            CF_CHECK_TRUE(hint_exp.New());
+                            BN_rand(hint_exp.GetDestPtr(), factor_size, BN_RAND_TOP_ONE, BN_RAND_BOTTOM_ANY);
+                            util::HintBignumOpt(hint_exp.ToString());
+                        }
+
+                        {
+                            Bignum hint_mod(ds);
+                            CF_CHECK_TRUE(hint_mod.New());
+                            BN_rand(hint_mod.GetDestPtr(), factor_size, BN_RAND_TOP_ONE, BN_RAND_BOTTOM_ODD);
+                            util::HintBignumOpt(hint_mod.ToString());
+                        }
+                    }
+                }
+
+                Bignum r_mont_const_x2_2(ds);
+                CF_CHECK_TRUE(r_mont_const_x2_2.New());
+
+                const auto base = bn[0].GetPtr();
+                const auto exp = bn[1].GetPtr();
+                const auto mod = bn[2].GetPtr();
+
+                CF_CHECK_EQ(BN_mod_exp_mont_consttime_x2(
+                            res.GetDestPtr(),
+                            base, exp, mod, nullptr,
+
+                            r_mont_const_x2_2.GetDestPtr(),
+                            base, exp, mod, nullptr,
+                            ctx.GetPtr()), 1);
+            }
+            break;
+#endif
         default:
             goto end;
             break;
