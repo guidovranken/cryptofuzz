@@ -283,6 +283,19 @@ end:
             return ret;
         }
 
+        std::optional<std::string> ToString(void) {
+            std::optional<std::string> ret = std::nullopt;
+
+            char* str = nullptr;
+
+            CF_CHECK_NE(str = BN_bn2dec(GetPtr()), nullptr);
+            ret = { std::string(str) };
+end:
+            OPENSSL_free(str);
+
+            return ret;
+        }
+
         inline bool operator==(const Bignum& rhs) const {
             return BN_cmp(GetPtrConst(), rhs.GetPtrConst()) == 0;
         }
