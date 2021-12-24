@@ -27,5 +27,9 @@ int cryptofuzz_secp256k1_eckey_pubkey_parse(void *elem, const unsigned char *pub
 void cryptofuzz_secp256k1_gej_set_ge(void *r, const void *a);
 void cryptofuzz_secp256k1_gej_add_ge(void *r, const void *a, const void *b);
 void cryptofuzz_secp256k1_gej_add_ge_var(void *r, const void *a, const void *b, void *rzr);
+void cryptofuzz_secp256k1_gej_neg(void *r, const void *a);
+void cryptofuzz_secp256k1_gej_double(void *r, const void *a);
+void cryptofuzz_secp256k1_gej_double_var(void *r, const void *a, void *rzr);
+void cryptofuzz_secp256k1_ecmult(void *r, const void* a, const void* na, const void *ng);
 void cryptofuzz_secp256k1_ge_set_gej(void *r, void *a);
 int cryptofuzz_secp256k1_eckey_pubkey_serialize(void *elem, unsigned char *pub, size_t *size, int compressed);

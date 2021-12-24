@@ -1052,7 +1052,6 @@ end:
     return ret;
 }
 
-#if 0
 std::optional<component::ECC_Point> secp256k1::OpECC_Point_Mul(operation::ECC_Point_Mul& op) {
     std::optional<component::ECC_Point> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -1081,6 +1080,8 @@ std::optional<component::ECC_Point> secp256k1::OpECC_Point_Mul(operation::ECC_Po
 
     CF_NORET(cryptofuzz_secp256k1_gej_set_ge(a_gej, a_ge));
 
+    CF_NORET(cryptofuzz_secp256k1_ecmult(res_gej, a_gej, b, nullptr));
+
     CF_NORET(cryptofuzz_secp256k1_ge_set_gej(res_ge, res_gej));
 
     {
@@ -1108,7 +1109,141 @@ end:
 
     return ret;
 }
-#endif
+
+std::optional<component::ECC_Point> secp256k1::OpECC_Point_Neg(operation::ECC_Point_Neg& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    if ( !op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        return ret;
+    }
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    void* a_ge = util::malloc(cryptofuzz_secp256k1_ge_size());
+    void* res_ge = util::malloc(cryptofuzz_secp256k1_ge_size());
+
+    void* a_gej = util::malloc(cryptofuzz_secp256k1_gej_size());
+    void* res_gej = util::malloc(cryptofuzz_secp256k1_gej_size());
+
+    {
+        uint8_t point_bytes[65];
+        point_bytes[0] = 4;
+        CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                    op.a.first.ToTrimmedString(),
+                    point_bytes + 1), true);
+        CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                    op.a.second.ToTrimmedString(),
+                    point_bytes + 1 + 32), true);
+
+        CF_CHECK_EQ(
+                secp256k1_detail::CheckRet(
+                    cryptofuzz_secp256k1_eckey_pubkey_parse(a_ge, point_bytes, sizeof(point_bytes))
+                ), 1);
+    }
+
+    CF_NORET(cryptofuzz_secp256k1_gej_set_ge(a_gej, a_ge));
+
+    CF_NORET(cryptofuzz_secp256k1_gej_neg(res_gej, a_gej));
+
+    CF_NORET(cryptofuzz_secp256k1_ge_set_gej(res_ge, res_gej));
+
+    {
+        std::vector<uint8_t> point_bytes(65);
+        size_t point_bytes_size = point_bytes.size();
+        CF_CHECK_EQ(
+                secp256k1_detail::CheckRet(
+                    cryptofuzz_secp256k1_eckey_pubkey_serialize(res_ge, point_bytes.data(), &point_bytes_size, 0)
+                    ), 1);
+
+        {
+            boost::multiprecision::cpp_int x, y;
+
+            boost::multiprecision::import_bits(x, point_bytes.begin() + 1, point_bytes.begin() + 1 + 32);
+            boost::multiprecision::import_bits(y, point_bytes.begin() + 1 + 32, point_bytes.end());
+
+            ret = {secp256k1_detail::toString(x), secp256k1_detail::toString(y)};
+        }
+    }
+
+end:
+    util::free(a_ge);
+    util::free(res_ge);
+
+    util::free(a_gej);
+    util::free(res_gej);
+
+    return ret;
+}
+
+std::optional<component::ECC_Point> secp256k1::OpECC_Point_Dbl(operation::ECC_Point_Dbl& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    if ( !op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        return ret;
+    }
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    void* a_ge = util::malloc(cryptofuzz_secp256k1_ge_size());
+    void* res_ge = util::malloc(cryptofuzz_secp256k1_ge_size());
+
+    void* a_gej = util::malloc(cryptofuzz_secp256k1_gej_size());
+    void* res_gej = util::malloc(cryptofuzz_secp256k1_gej_size());
+
+    {
+        uint8_t point_bytes[65];
+        point_bytes[0] = 4;
+        CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                    op.a.first.ToTrimmedString(),
+                    point_bytes + 1), true);
+        CF_CHECK_EQ(secp256k1_detail::EncodeBignum(
+                    op.a.second.ToTrimmedString(),
+                    point_bytes + 1 + 32), true);
+
+        CF_CHECK_EQ(
+                secp256k1_detail::CheckRet(
+                    cryptofuzz_secp256k1_eckey_pubkey_parse(a_ge, point_bytes, sizeof(point_bytes))
+                ), 1);
+    }
+
+    CF_NORET(cryptofuzz_secp256k1_gej_set_ge(a_gej, a_ge));
+
+    {
+        bool var = false;
+        try { var = ds.Get<bool>(); } catch ( ... ) { }
+
+        if ( var == false ) {
+            CF_NORET(cryptofuzz_secp256k1_gej_double(res_gej, a_gej));
+        } else {
+            CF_NORET(cryptofuzz_secp256k1_gej_double_var(res_gej, a_gej, nullptr));
+        }
+    }
+
+    CF_NORET(cryptofuzz_secp256k1_ge_set_gej(res_ge, res_gej));
+
+    {
+        std::vector<uint8_t> point_bytes(65);
+        size_t point_bytes_size = point_bytes.size();
+        CF_CHECK_EQ(
+                secp256k1_detail::CheckRet(
+                    cryptofuzz_secp256k1_eckey_pubkey_serialize(res_ge, point_bytes.data(), &point_bytes_size, 0)
+                    ), 1);
+
+        {
+            boost::multiprecision::cpp_int x, y;
+
+            boost::multiprecision::import_bits(x, point_bytes.begin() + 1, point_bytes.begin() + 1 + 32);
+            boost::multiprecision::import_bits(y, point_bytes.begin() + 1 + 32, point_bytes.end());
+
+            ret = {secp256k1_detail::toString(x), secp256k1_detail::toString(y)};
+        }
+    }
+
+end:
+    util::free(a_ge);
+    util::free(res_ge);
+
+    util::free(a_gej);
+    util::free(res_gej);
+
+    return ret;
+}
 
 std::optional<component::Bignum> secp256k1::OpBignumCalc(operation::BignumCalc& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
