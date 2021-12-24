@@ -9,6 +9,8 @@ extern "C" {
     bool k256_validate_pubkey(const uint8_t pk_bytes[65]);
     bool k256_ecc_point_add(const uint8_t a_bytes[65], const uint8_t b_bytes[65], uint8_t res_bytes[65]);
     bool k256_ecc_point_mul(const uint8_t a_bytes[65], const uint8_t b_bytes[32], uint8_t res_bytes[65]);
+    bool k256_ecc_point_neg(const uint8_t a_bytes[65], uint8_t res_bytes[65]);
+    bool k256_ecc_point_dbl(const uint8_t a_bytes[65], uint8_t res_bytes[65]);
 }
 
 namespace cryptofuzz {
@@ -189,6 +191,62 @@ std::optional<component::ECC_Point> k256::OpECC_Point_Mul(operation::ECC_Point_M
     }
 
     CF_CHECK_TRUE(k256_ecc_point_mul(a_bytes, b_bytes, res_bytes));
+
+    ret = { util::BinToDec(res_bytes + 1, 32), util::BinToDec(res_bytes + 1 + 32, 32) };
+
+end:
+    return ret;
+}
+
+std::optional<component::ECC_Point> k256::OpECC_Point_Neg(operation::ECC_Point_Neg& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    if ( !op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        return ret;
+    }
+
+    uint8_t a_bytes[65], res_bytes[65];
+
+    {
+        a_bytes[0] = 0x04;
+        const auto x_bytes = util::DecToBin(op.a.first.ToTrimmedString(), 32);
+        const auto y_bytes = util::DecToBin(op.a.second.ToTrimmedString(), 32);
+        CF_CHECK_NE(x_bytes, std::nullopt);
+        CF_CHECK_NE(y_bytes, std::nullopt);
+        memcpy(a_bytes + 1, x_bytes->data(), 32);
+        memcpy(a_bytes + 1 + 32, y_bytes->data(), 32);
+    }
+
+    CF_CHECK_TRUE(k256_ecc_point_neg(a_bytes, res_bytes));
+
+    ret = { util::BinToDec(res_bytes + 1, 32), util::BinToDec(res_bytes + 1 + 32, 32) };
+
+end:
+    return ret;
+}
+
+std::optional<component::ECC_Point> k256::OpECC_Point_Dbl(operation::ECC_Point_Dbl& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    if ( !op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        return ret;
+    }
+
+    uint8_t a_bytes[65], res_bytes[65];
+
+    {
+        a_bytes[0] = 0x04;
+        const auto x_bytes = util::DecToBin(op.a.first.ToTrimmedString(), 32);
+        const auto y_bytes = util::DecToBin(op.a.second.ToTrimmedString(), 32);
+        CF_CHECK_NE(x_bytes, std::nullopt);
+        CF_CHECK_NE(y_bytes, std::nullopt);
+        memcpy(a_bytes + 1, x_bytes->data(), 32);
+        memcpy(a_bytes + 1 + 32, y_bytes->data(), 32);
+    }
+
+    CF_CHECK_TRUE(k256_ecc_point_dbl(a_bytes, res_bytes));
 
     ret = { util::BinToDec(res_bytes + 1, 32), util::BinToDec(res_bytes + 1 + 32, 32) };
 
