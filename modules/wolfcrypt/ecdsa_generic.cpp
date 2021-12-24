@@ -880,6 +880,83 @@ end:
     return ret;
 }
 
+std::optional<component::ECC_Point> OpECC_Point_Dbl(operation::ECC_Point_Dbl& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    std::optional<int> curveID;
+    int curveIdx;
+    const ecc_set_type* curve = nullptr;
+
+    CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
+
+    CF_CHECK_NE(curveIdx = wc_ecc_get_curve_idx(*curveID), ECC_CURVE_INVALID);
+    CF_CHECK_NE(curve = wc_ecc_get_curve_params(curveIdx), nullptr);
+
+    /* try/catch because ECCPoint constructor may throw if allocation fails */
+    try {
+        ECCPoint res(ds, *curveID), a(ds, *curveID);
+        wolfCrypt_bignum::Bignum Af(ds), prime(ds), mu(ds);
+        mp_digit mp;
+        bool valid = false;
+
+        /* Set points */
+        CF_CHECK_TRUE(a.Set(op.a));
+
+        valid = a.CurveCheck();
+
+        /* Retrieve curve parameter */
+        CF_CHECK_EQ(Af.Set(util::HexToDec(curve->Af)), true);
+        CF_CHECK_EQ(prime.Set(util::HexToDec(curve->prime)), true);
+
+        CF_CHECK_TRUE(a.ToProjective(prime));
+
+        WC_CHECK_EQ(mp_montgomery_setup(prime.GetPtr(), &mp), MP_OKAY);
+
+#if defined(WOLFSSL_SP_MATH) && !defined(WOLFSSL_PUBLIC_ECC_ADD_DBL)
+        goto end;
+#else
+        {
+            bool safe = false;
+
+#if !(defined(WOLFSSL_SP_MATH) && defined(WOLFSSL_PUBLIC_ECC_ADD_DBL))
+            try { safe = ds.Get<bool>(); } catch ( ... ) { }
+#endif
+
+            if ( safe ) {
+#if defined(WOLFSSL_SP_MATH) && defined(WOLFSSL_PUBLIC_ECC_ADD_DBL)
+                CF_UNREACHABLE();
+#else
+                WC_CHECK_EQ(ecc_projective_dbl_point_safe(a.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp), 0);
+#endif
+            } else {
+                WC_CHECK_EQ(ecc_projective_dbl_point(a.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp), 0);
+            }
+
+            /* Lock to prevent exporting the projective point */
+            res.Lock();
+        }
+#endif
+
+        /* To affine */
+        WC_CHECK_EQ(ecc_map(res.GetPtr(), prime.GetPtr(), mp), MP_OKAY);
+
+        /* Only return the result if the input points are valid */
+        CF_CHECK_TRUE(valid);
+
+        /* Only return the result if the output point is valid */
+        CF_CHECK_TRUE(res.CurveCheck());
+
+        ret = res.ToBignumPair();
+    } catch ( ... ) { }
+
+end:
+    wolfCrypt_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
 } /* namespace wolfCrypt_detail */
 } /* namespace module */
 } /* namespace cryptofuzz */

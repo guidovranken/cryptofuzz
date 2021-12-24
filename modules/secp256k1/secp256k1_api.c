@@ -95,6 +95,21 @@ void cryptofuzz_secp256k1_gej_add_ge_var(secp256k1_gej *r, const secp256k1_gej *
     secp256k1_gej_add_ge_var(r, a, b, rzr);
 }
 
+void cryptofuzz_secp256k1_gej_neg(secp256k1_gej *r, const secp256k1_gej *a) {
+    secp256k1_gej_neg(r, a);
+}
+
+void cryptofuzz_secp256k1_gej_double(void *r, const void *a) {
+    secp256k1_gej_double(r, a);
+}
+void cryptofuzz_secp256k1_gej_double_var(void *r, const void *a, void *rzr) {
+    secp256k1_gej_double_var(r, a, rzr);
+}
+
+void cryptofuzz_secp256k1_ecmult(secp256k1_gej *r, const secp256k1_gej *a, const secp256k1_scalar *na, const secp256k1_scalar *ng) {
+    secp256k1_ecmult(r, a, na, ng);
+}
+
 void cryptofuzz_secp256k1_ge_set_gej(secp256k1_ge *r, secp256k1_gej *a) {
     secp256k1_ge_set_gej(r, a);
 }

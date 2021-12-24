@@ -60,6 +60,7 @@ std::optional<component::Cleartext> OpECIES_Decrypt_Generic(operation::ECIES_Dec
 std::optional<component::Secret> OpECDH_Derive(operation::ECDH_Derive& op);
 std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op);
 std::optional<component::ECC_Point> OpECC_Point_Mul(operation::ECC_Point_Mul& op);
+std::optional<component::ECC_Point> OpECC_Point_Dbl(operation::ECC_Point_Dbl& op);
 
 } /* namespace wolfCrypt_detail */
 } /* namespace module */
