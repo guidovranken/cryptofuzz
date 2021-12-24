@@ -617,6 +617,120 @@ end:
     return ret;
 }
 
+std::optional<component::ECC_Point> relic::OpECC_Point_Dbl(operation::ECC_Point_Dbl& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    ec_t a, res;
+    bool a_initialized = false, res_initialized = false;
+    std::vector<uint8_t> a_bytes;
+
+    /* Set curve */
+    CF_CHECK_TRUE(relic_detail::SetCurve(op.curveType));
+
+    /* Set A */
+    {
+        /* noret */ ec_new(a);
+        a_initialized = true;
+
+        std::optional<std::vector<uint8_t>> x, y;
+        CF_CHECK_NE(x = util::DecToBin(op.a.first.ToTrimmedString(), 32), std::nullopt);
+        CF_CHECK_NE(y = util::DecToBin(op.a.second.ToTrimmedString(), 32), std::nullopt);
+
+        a_bytes.push_back(0x04);
+        a_bytes.insert(std::end(a_bytes), std::begin(*x), std::end(*x));
+        a_bytes.insert(std::end(a_bytes), std::begin(*y), std::end(*y));
+
+        /* noret */ ec_read_bin(a, a_bytes.data(), 65);
+
+        CF_CHECK_NE(ec_on_curve(a), 0)
+    }
+
+    /* Double */
+    /* noret */ ec_new(res);
+    res_initialized = true;
+    ec_dbl(res, a);
+
+    {
+        uint8_t* out = util::malloc(65);
+        ec_write_bin(out, 65, res, 0);
+
+        const auto X = util::BinToDec(out + 1, 32);
+        const auto Y = util::BinToDec(out + 1 + 32, 32);
+
+        util::free(out);
+
+        ret = {X, Y};
+    }
+
+end:
+    if ( a_initialized ) {
+        ec_free(a);
+    }
+    if ( res_initialized ) {
+        ec_free(res);
+    }
+
+    return ret;
+}
+
+std::optional<component::ECC_Point> relic::OpECC_Point_Neg(operation::ECC_Point_Neg& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    ec_t a, res;
+    bool a_initialized = false, res_initialized = false;
+    std::vector<uint8_t> a_bytes;
+
+    /* Set curve */
+    CF_CHECK_TRUE(relic_detail::SetCurve(op.curveType));
+
+    /* Set A */
+    {
+        /* noret */ ec_new(a);
+        a_initialized = true;
+
+        std::optional<std::vector<uint8_t>> x, y;
+        CF_CHECK_NE(x = util::DecToBin(op.a.first.ToTrimmedString(), 32), std::nullopt);
+        CF_CHECK_NE(y = util::DecToBin(op.a.second.ToTrimmedString(), 32), std::nullopt);
+
+        a_bytes.push_back(0x04);
+        a_bytes.insert(std::end(a_bytes), std::begin(*x), std::end(*x));
+        a_bytes.insert(std::end(a_bytes), std::begin(*y), std::end(*y));
+
+        /* noret */ ec_read_bin(a, a_bytes.data(), 65);
+
+        CF_CHECK_NE(ec_on_curve(a), 0)
+    }
+
+    /* Negate */
+    /* noret */ ec_new(res);
+    res_initialized = true;
+    ec_neg(res, a);
+
+    {
+        uint8_t* out = util::malloc(65);
+        ec_write_bin(out, 65, res, 0);
+
+        const auto X = util::BinToDec(out + 1, 32);
+        const auto Y = util::BinToDec(out + 1 + 32, 32);
+
+        util::free(out);
+
+        ret = {X, Y};
+    }
+
+end:
+    if ( a_initialized ) {
+        ec_free(a);
+    }
+    if ( res_initialized ) {
+        ec_free(res);
+    }
+
+    return ret;
+}
+
 std::optional<component::Bignum> relic::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
