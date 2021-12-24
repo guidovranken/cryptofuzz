@@ -646,13 +646,19 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
 
-                    if ( Pool_CurveKeypair.Have() ) {
+                    if ( getBool() && Pool_CurveKeypair.Have() ) {
                         const auto P = Pool_CurveKeypair.Get();
 
                         parameters["curveType"] = P.curveID;
 
                         parameters["pub_x"] = getBool() ? getBignum() : P.pub_x;
                         parameters["pub_y"] = getBool() ? getBignum() : P.pub_y;
+                    } else if ( getBool() && Pool_CurveECC_Point.Have() == true ) {
+                        const auto P = Pool_CurveECC_Point.Get();
+                        parameters["curveType"] = P.curveID;
+
+                        parameters["pub_x"] = getBool() ? getBignum() : P.x;
+                        parameters["pub_y"] = getBool() ? getBignum() : P.y;
                     } else {
                         parameters["curveType"] = getRandomCurve();
                         parameters["pub_x"] = getBignum();
@@ -661,6 +667,8 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     cryptofuzz::operation::ECC_ValidatePubkey op(parameters);
                     op.Serialize(dsOut2);
+
+                    generateECCPoint();
                 }
                 break;
             case    CF_OPERATION("ECDH_Derive"):
