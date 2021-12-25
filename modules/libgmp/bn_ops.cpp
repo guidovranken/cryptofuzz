@@ -8,7 +8,7 @@ namespace cryptofuzz {
 namespace module {
 namespace libgmp_bignum {
 
-bool Add::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -33,7 +33,7 @@ end:
     return ret;
 }
 
-bool Sub::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -66,7 +66,7 @@ end:
     return ret;
 }
 
-bool Mul::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -99,7 +99,7 @@ end:
     return ret;
 }
 
-bool Div::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -149,7 +149,7 @@ end:
     return ret;
 }
 
-bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     CF_CHECK_NE(mpz_cmp_ui(bn[2].GetPtr(), 0), 0);
@@ -187,7 +187,7 @@ end:
     return ret;
 }
 
-bool GCD::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool GCD::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -212,7 +212,7 @@ end:
     return ret;
 }
 
-bool Jacobi::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Jacobi::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     switch ( ds.Get<uint8_t>() ) {
         case    0:
             res.Set( std::to_string(mpz_jacobi(bn[0].GetPtr(), bn[1].GetPtr())) );
@@ -239,7 +239,7 @@ end:
     return false;
 }
 
-bool Cmp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Cmp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     int cmp;
@@ -282,7 +282,7 @@ end:
     return ret;
 }
 
-bool LCM::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool LCM::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -307,7 +307,7 @@ end:
     return ret;
 }
 
-bool Xor::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Xor::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     /* noret */ mpz_xor(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
@@ -315,7 +315,7 @@ bool Xor::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool And::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool And::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     /* noret */ mpz_and(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
@@ -323,7 +323,7 @@ bool And::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool Abs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Abs::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     /* noret */ mpz_abs(res.GetPtr(), bn[0].GetPtr());
@@ -331,7 +331,7 @@ bool Abs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool Neg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Neg::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     /* noret */ mpz_neg(res.GetPtr(), bn[0].GetPtr());
@@ -339,7 +339,7 @@ bool Neg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool Sqrt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Sqrt::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     /* noret */ mpz_sqrt(res.GetPtr(), bn[0].GetPtr());
@@ -347,7 +347,7 @@ bool Sqrt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool Sqr::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Sqr::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     /* noret */ mpz_pow_ui(res.GetPtr(), bn[0].GetPtr(), 2);
@@ -355,7 +355,7 @@ bool Sqr::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool CmpAbs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool CmpAbs::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     int cmp;
@@ -390,7 +390,7 @@ end:
     return ret;
 }
 
-bool IsZero::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsZero::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     res.Set( std::to_string(mpz_sgn(bn[0].GetPtr()) == 0 ? 1 : 0) );
@@ -398,7 +398,7 @@ bool IsZero::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool IsNeg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsNeg::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     res.Set( std::to_string(mpz_sgn(bn[0].GetPtr()) < 0 ? 1 : 0) );
@@ -406,7 +406,7 @@ bool IsNeg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool AddMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool AddMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
@@ -421,7 +421,7 @@ end:
     return ret;
 }
 
-bool SubMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool SubMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
@@ -436,7 +436,7 @@ end:
     return ret;
 }
 
-bool MulMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
@@ -451,7 +451,7 @@ end:
     return ret;
 }
 
-bool SqrMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool SqrMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
@@ -466,7 +466,7 @@ end:
     return ret;
 }
 
-bool Mod_NIST_192::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Mod_NIST_192::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     Bignum p192;
@@ -477,7 +477,7 @@ bool Mod_NIST_192::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) con
     return true;
 }
 
-bool Mod_NIST_224::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Mod_NIST_224::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     Bignum p224;
@@ -488,7 +488,7 @@ bool Mod_NIST_224::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) con
     return true;
 }
 
-bool Mod_NIST_256::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Mod_NIST_256::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     Bignum p256;
@@ -499,7 +499,7 @@ bool Mod_NIST_256::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) con
     return true;
 }
 
-bool Mod_NIST_384::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Mod_NIST_384::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     Bignum p384;
@@ -510,7 +510,7 @@ bool Mod_NIST_384::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) con
     return true;
 }
 
-bool Mod_NIST_521::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Mod_NIST_521::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     Bignum p521;
@@ -521,14 +521,14 @@ bool Mod_NIST_521::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) con
     return true;
 }
 
-bool SetBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool SetBit::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
     const auto position_sl = bn[1].GetSignedLong();
     CF_CHECK_NE(position_sl, std::nullopt);
 
-    /* noret */ mpz_setbit(bn[0].GetPtr(), *position_sl);
+    /* noret */ mpz_setbit(bn.GetDestPtr(0), *position_sl);
     /* noret */ mpz_set(res.GetPtr(), bn[0].GetPtr());
 
     ret = true;
@@ -537,7 +537,7 @@ end:
     return ret;
 }
 
-bool ClearBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool ClearBit::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
@@ -553,7 +553,7 @@ end:
     return ret;
 }
 
-bool Bit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Bit::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
@@ -568,7 +568,7 @@ end:
     return ret;
 }
 
-bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
@@ -586,7 +586,7 @@ end:
     return ret;
 }
 
-bool IsOdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsOdd::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     /* "These macros evaluate their argument more than once." */
@@ -596,7 +596,7 @@ bool IsOdd::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool IsEven::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsEven::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     /* "These macros evaluate their argument more than once." */
@@ -606,7 +606,7 @@ bool IsEven::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool IsPow2::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsPow2::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     if ( mpz_popcount(bn[0].GetPtr()) == 1 ) {
@@ -618,7 +618,7 @@ bool IsPow2::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool NumLSZeroBits::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool NumLSZeroBits::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     auto numBits = mpz_scan1(bn[0].GetPtr(), 0);
@@ -630,7 +630,7 @@ bool NumLSZeroBits::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) co
     return true;
 }
 
-bool Factorial::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Factorial::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
@@ -646,7 +646,7 @@ end:
     return ret;
 }
 
-bool Cbrt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Cbrt::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     /* ignore ret */ mpz_root(res.GetPtr(), bn[0].GetPtr(), 3);
@@ -654,7 +654,7 @@ bool Cbrt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool SqrtRem::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool SqrtRem::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     /* noret */ mpz_sqrtrem(bn[1].GetPtr(), res.GetPtr(), bn[0].GetPtr());
@@ -662,7 +662,7 @@ bool SqrtRem::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool CbrtRem::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool CbrtRem::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     /* noret */ mpz_rootrem(bn[1].GetPtr(), res.GetPtr(), bn[0].GetPtr(), 3);
@@ -670,7 +670,7 @@ bool CbrtRem::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool Nthrt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Nthrt::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
@@ -685,7 +685,7 @@ end:
     return ret;
 }
 
-bool NthrtRem::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool NthrtRem::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
@@ -700,7 +700,7 @@ end:
     return ret;
 }
 
-bool IsSquare::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsSquare::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     res.Set(
@@ -710,7 +710,7 @@ bool IsSquare::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool Exp::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Exp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -743,7 +743,7 @@ end:
     return ret;
 }
 
-bool Or::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Or::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     /* noret */ mpz_ior(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
@@ -751,7 +751,7 @@ bool Or::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool AddMul::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool AddMul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -778,7 +778,7 @@ end:
     return ret;
 }
 
-bool SubMul::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool SubMul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -805,7 +805,7 @@ end:
     return ret;
 }
 
-bool Primorial::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Primorial::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
@@ -821,7 +821,7 @@ end:
     return ret;
 }
 
-bool Lucas::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Lucas::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
@@ -837,7 +837,7 @@ end:
     return ret;
 }
 
-bool Fibonacci::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Fibonacci::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
@@ -853,7 +853,7 @@ end:
     return ret;
 }
 
-bool Set::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Set::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -889,7 +889,7 @@ end:
     return ret;
 }
 
-bool BinCoeff::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool BinCoeff::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     std::optional<unsigned long int> bn0, bn1;
@@ -919,7 +919,7 @@ end:
     return ret;
 }
 
-bool HamDist::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool HamDist::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     res.Set( std::to_string(mpz_hamdist(bn[0].GetPtr(), bn[1].GetPtr())) );
@@ -927,7 +927,7 @@ bool HamDist::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
@@ -956,7 +956,7 @@ end:
     return ret;
 }
 
-bool IsPower::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+bool IsPower::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     res.Set(
