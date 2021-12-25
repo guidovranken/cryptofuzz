@@ -815,20 +815,6 @@ end:
 namespace libgcrypt_detail {
     std::optional<std::string> toCurveString(const component::CurveType& curveType) {
         static const std::map<uint64_t, std::string> LUT = {
-#if 0
-            { CF_ECC_CURVE(""), "Curve25519" },
-            { CF_ECC_CURVE(""), "Ed25519" },
-            { CF_ECC_CURVE(""), "GOST2001-CryptoPro-A" },
-            { CF_ECC_CURVE(""), "GOST2001-CryptoPro-B" },
-            { CF_ECC_CURVE(""), "GOST2001-CryptoPro-C" },
-            { CF_ECC_CURVE(""), "GOST2001-test" },
-            { CF_ECC_CURVE(""), "NIST P-192" },
-            { CF_ECC_CURVE(""), "NIST P-224" },
-            { CF_ECC_CURVE(""), "NIST P-256" },
-            { CF_ECC_CURVE(""), "NIST P-384" },
-            { CF_ECC_CURVE(""), "NIST P-521" },
-            { CF_ECC_CURVE(""), "X448" },
-#endif
             { CF_ECC_CURVE("gost_256A"), "GOST2012-256-tc26-A" },
             { CF_ECC_CURVE("gost_512A"), "GOST2012-512-tc26-A" },
             { CF_ECC_CURVE("brainpool160r1"), "brainpoolP160r1" },
@@ -838,6 +824,11 @@ namespace libgcrypt_detail {
             { CF_ECC_CURVE("brainpool320r1"), "brainpoolP320r1" },
             { CF_ECC_CURVE("brainpool384r1"), "brainpoolP384r1" },
             { CF_ECC_CURVE("brainpool512r1"), "brainpoolP512r1" },
+            { CF_ECC_CURVE("secp192r1"), "NIST P-192" },
+            { CF_ECC_CURVE("secp224r1"), "NIST P-224" },
+            { CF_ECC_CURVE("secp256r1"), "NIST P-256" },
+            { CF_ECC_CURVE("secp384r1"), "NIST P-384" },
+            { CF_ECC_CURVE("secp521r1"), "NIST P-521" },
             { CF_ECC_CURVE("secp256k1"), "secp256k1" },
             { CF_ECC_CURVE("sm2p256v1"), "sm2p256v1" },
         };
