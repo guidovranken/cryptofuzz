@@ -349,6 +349,89 @@ end:
 }
 
 namespace libecc_detail {
+std::optional<bool> OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    libecc_detail::global_ds = &ds;
+
+    const ec_str_params* curve_params;
+    ec_params params;
+    ec_pub_key pub_key;
+
+    /* Load curve.
+     * NOTE: this will be WEI25519 or WEI448 (libecc uses isogenies for ed25519, ed448, x25519 and x448)
+     * for EdDSA and X25519/X448
+     */
+    CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
+    CF_ASSERT(!import_params(&params, curve_params), "import_params error " __FILE__ ":" TOSTRING(__LINE__));
+
+    /* Skip the ed25519, ed448, x25519 and x448 special cases */
+    if ( op.curveType.Is(CF_ECC_CURVE("ed25519")) || op.curveType.Is(CF_ECC_CURVE("ed448")) ) {
+        /* XXX: see if OpECC_ValidatePubkey is called on x coordinates only, or points on Edwards curves? */
+        goto end;
+    }
+    if ( op.curveType.Is(CF_ECC_CURVE("x25519")) || op.curveType.Is(CF_ECC_CURVE("x448")) ) {
+        /* XXX: see if OpECC_ValidatePubkey is called on x coordinates only encoded strings? */
+        goto end;
+    }
+
+    {
+        /* Generic case, extract X and Y, and check the point on the curve */
+        const auto ax_bin = util::DecToBin(op.pub.first.ToTrimmedString());
+        const auto ay_bin = util::DecToBin(op.pub.second.ToTrimmedString());
+        fp x, y;
+        u8 *pub_buff = NULL;
+        u16 coord_len = (u16)BYTECEIL(params.ec_fp.p_bitlen);
+
+        if(fp_init_from_buf(&x, &(params.ec_fp), ax_bin->data(), ax_bin->size())){
+            ret = false;
+            goto end1;
+        }
+
+        if(fp_init_from_buf(&y, &(params.ec_fp), ay_bin->data(), ay_bin->size())){
+            ret = false;
+            goto end1;
+        }
+
+        /* Allocate a buffer for our stringified public key */
+        CF_ASSERT((coord_len % 2) == 0, "Coordinates size is not multiple of 2");
+        pub_buff = util::malloc(coord_len);
+
+        if(fp_export_to_buf(&pub_buff[0], coord_len / 2, &x)){
+            ret = false;
+            goto end1;
+        }
+        if(fp_export_to_buf(&pub_buff[coord_len / 2], coord_len / 2, &y)){
+            ret = false;
+            goto end1;
+        }
+
+        /* Try to import the public key on the curve (and perform the underlying checks).
+         * This will return an error if the public key is rejected!
+         * NOTE: we choose randomly ECDSA as the signature algorithm type as all the signatures expect
+	 * a point on their curve anyways!
+         */
+        if(ec_pub_key_import_from_aff_buf(&pub_key, &params, &pub_buff[0], coord_len, ECDSA)){
+            ret = false;
+            goto end1;
+        }
+
+        ret = true;
+
+end1:
+        if(pub_buff != NULL){
+            util::free(pub_buff);
+        }
+        fp_uninit(&x);
+        fp_uninit(&y);
+    }
+
+end:
+    libecc_detail::global_ds = nullptr;
+
+    return ret;
+}
+
 std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, const component::CurveType& curveType, const component::Bignum& _priv) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
 
@@ -363,6 +446,7 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, co
     std::string priv_str;
     /* Load curve.
      * NOTE: this will be WEI25519 or WEI448 (libecc uses isogenies for ed25519, ed448, x25519 and x448)
+     * for EdDSA and X25519/X448
      */
     CF_CHECK_NE(curve_params = libecc_detail::GetCurve(curveType), nullptr);
     CF_ASSERT(!import_params(&params, curve_params), "import_params error " __FILE__ ":" TOSTRING(__LINE__));
@@ -724,22 +808,18 @@ namespace libecc_detail {
             /* Ed25519 case */
             key_size = 32;
             sig_type = EDDSA25519;
-#if 0
             if ( !op.digestType.Is(CF_DIGEST("NULL")) && !op.digestType.Is(CF_DIGEST("SHA512")) ) {
                 return std::nullopt;
             }
-#endif
             hash_type = SHA512;
         }
         else if ( op.curveType.Is(CF_ECC_CURVE("ed448")) ){
             /* Ed448 case */
             key_size = 56;
             sig_type = EDDSA448;
-#if 0
             if ( !op.digestType.Is(CF_DIGEST("NULL")) && !op.digestType.Is(CF_DIGEST("SHAKE256_114")) ) {
                 return std::nullopt;
             }
-#endif
             hash_type = SHAKE256;
         }
         else{
