@@ -873,6 +873,167 @@ end:
     return ret;
 }
 
+std::optional<bool> mbedTLS::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    mbedTLS_detail::SetGlobalDs(&ds);
+
+    mbedtls_ecp_group grp;
+    mbedtls_ecp_point pub;
+    const mbedtls_ecp_curve_info* curve_info = nullptr;
+
+    CF_NORET(mbedtls_ecp_group_init(&grp));
+    CF_NORET(mbedtls_ecp_point_init(&pub));
+
+    {
+        std::optional<uint16_t> tls_id;
+        CF_CHECK_NE(tls_id = mbedTLS_detail::toTLSID(op.curveType), std::nullopt);
+        CF_CHECK_NE(curve_info = mbedtls_ecp_curve_info_from_tls_id(*tls_id), nullptr);
+    }
+
+    CF_CHECK_EQ(mbedtls_ecp_group_load(&grp, curve_info->grp_id), 0);
+
+    /* Load point */
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&pub.X, 10, op.pub.first.ToString(ds).c_str()), 0);
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&pub.Y, 10, op.pub.second.ToString(ds).c_str()), 0);
+    CF_CHECK_EQ(mbedtls_mpi_lset(&pub.Z, 1), 0);
+
+    ret = mbedtls_ecp_check_pubkey(&grp, &pub) == 0;
+
+end:
+    CF_NORET(mbedtls_ecp_group_free(&grp));
+    CF_NORET(mbedtls_ecp_point_free(&pub));
+
+    mbedTLS_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
+std::optional<component::ECC_Point> mbedTLS::OpECC_Point_Mul(operation::ECC_Point_Mul& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    mbedTLS_detail::SetGlobalDs(&ds);
+
+    mbedtls_ecp_group grp;
+    mbedtls_ecp_point a;
+    mbedtls_mpi b;
+    mbedtls_ecp_point res;
+    const mbedtls_ecp_curve_info* curve_info = nullptr;
+
+    CF_NORET(mbedtls_ecp_group_init(&grp));
+    CF_NORET(mbedtls_ecp_point_init(&a));
+    CF_NORET(mbedtls_mpi_init(&b));
+    CF_NORET(mbedtls_ecp_point_init(&res));
+
+    {
+        std::optional<uint16_t> tls_id;
+        CF_CHECK_NE(tls_id = mbedTLS_detail::toTLSID(op.curveType), std::nullopt);
+        CF_CHECK_NE(curve_info = mbedtls_ecp_curve_info_from_tls_id(*tls_id), nullptr);
+    }
+
+    CF_CHECK_EQ(mbedtls_ecp_group_load(&grp, curve_info->grp_id), 0);
+
+    /* Load point */
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&a.X, 10, op.a.first.ToString(ds).c_str()), 0);
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&a.Y, 10, op.a.second.ToString(ds).c_str()), 0);
+    CF_CHECK_EQ(mbedtls_mpi_lset(&a.Z, 1), 0);
+
+    /* Load scalar */
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&b, 10, op.b.ToString(ds).c_str()), 0);
+
+    /* res = point * scalar */
+    CF_CHECK_EQ(mbedtls_ecp_mul(&grp, &res, &b, &a, nullptr, nullptr), 0);
+
+    {
+        std::optional<std::string> x_str, y_str;
+
+        CF_CHECK_NE(x_str = mbedTLS_detail::MPIToString(&res.X), std::nullopt);
+        CF_CHECK_NE(y_str = mbedTLS_detail::MPIToString(&res.Y), std::nullopt);
+
+        ret = { *x_str, *y_str };
+    }
+end:
+    CF_NORET(mbedtls_ecp_group_free(&grp));
+    CF_NORET(mbedtls_ecp_point_free(&a));
+    CF_NORET(mbedtls_mpi_free(&b));
+    CF_NORET(mbedtls_ecp_point_free(&res));
+
+    mbedTLS_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
+std::optional<component::ECC_Point> mbedTLS::OpECC_Point_Add(operation::ECC_Point_Add& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    mbedTLS_detail::SetGlobalDs(&ds);
+
+    mbedtls_ecp_group grp;
+    mbedtls_ecp_point a, b, res;
+    mbedtls_mpi scalar;
+    const mbedtls_ecp_curve_info* curve_info = nullptr;
+
+    CF_NORET(mbedtls_ecp_group_init(&grp));
+    CF_NORET(mbedtls_ecp_point_init(&a));
+    CF_NORET(mbedtls_ecp_point_init(&b));
+    CF_NORET(mbedtls_mpi_init(&scalar));
+    CF_NORET(mbedtls_ecp_point_init(&res));
+
+    {
+        std::optional<uint16_t> tls_id;
+        CF_CHECK_NE(tls_id = mbedTLS_detail::toTLSID(op.curveType), std::nullopt);
+        CF_CHECK_NE(curve_info = mbedtls_ecp_curve_info_from_tls_id(*tls_id), nullptr);
+    }
+
+    CF_CHECK_EQ(mbedtls_ecp_group_load(&grp, curve_info->grp_id), 0);
+
+    /* Load point a */
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&a.X, 10, op.a.first.ToString(ds).c_str()), 0);
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&a.Y, 10, op.a.second.ToString(ds).c_str()), 0);
+    CF_CHECK_EQ(mbedtls_mpi_lset(&a.Z, 1), 0);
+
+    /* https://github.com/ARMmbed/mbedtls/issues/5376 */
+    CF_CHECK_LT(mbedtls_mpi_cmp_mpi(&a.X, &grp.N), 0);
+    CF_CHECK_LT(mbedtls_mpi_cmp_mpi(&a.Y, &grp.N), 0);
+
+    /* Load point b */
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&b.X, 10, op.b.first.ToString(ds).c_str()), 0);
+    CF_CHECK_EQ(mbedtls_mpi_read_string(&b.Y, 10, op.b.second.ToString(ds).c_str()), 0);
+    CF_CHECK_EQ(mbedtls_mpi_lset(&b.Z, 1), 0);
+
+    /* https://github.com/ARMmbed/mbedtls/issues/5376 */
+    CF_CHECK_LT(mbedtls_mpi_cmp_mpi(&b.X, &grp.N), 0);
+    CF_CHECK_LT(mbedtls_mpi_cmp_mpi(&b.Y, &grp.N), 0);
+
+    CF_CHECK_EQ(mbedtls_mpi_lset(&scalar, 1), 0);
+
+    /* res = a + b */
+    CF_CHECK_EQ(mbedtls_ecp_muladd(&grp, &res, &scalar, &b, &scalar, &a), 0);
+
+    CF_CHECK_EQ(mbedtls_ecp_check_pubkey(&grp, &res), 0);
+    CF_CHECK_EQ(mbedtls_ecp_check_pubkey(&grp, &a), 0);
+    CF_CHECK_EQ(mbedtls_ecp_check_pubkey(&grp, &b), 0);
+
+    {
+        std::optional<std::string> x_str, y_str;
+
+        CF_CHECK_NE(x_str = mbedTLS_detail::MPIToString(&res.X), std::nullopt);
+        CF_CHECK_NE(y_str = mbedTLS_detail::MPIToString(&res.Y), std::nullopt);
+
+        ret = { *x_str, *y_str };
+    }
+end:
+    CF_NORET(mbedtls_ecp_group_free(&grp));
+    CF_NORET(mbedtls_ecp_point_free(&a));
+    CF_NORET(mbedtls_ecp_point_free(&b));
+    CF_NORET(mbedtls_mpi_free(&scalar));
+    CF_NORET(mbedtls_ecp_point_free(&res));
+
+    mbedTLS_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
 std::optional<component::ECDSA_Signature> mbedTLS::OpECDSA_Sign(operation::ECDSA_Sign& op) {
     if ( !op.digestType.Is(CF_DIGEST("NULL")) ) {
         return std::nullopt;
