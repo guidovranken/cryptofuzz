@@ -312,9 +312,6 @@ bool IsSquare::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 
     bool is_square;
 
-    /* https://github.com/libtom/libtommath/issues/521 */
-    CF_CHECK_EQ(mp_iszero(bn[0].GetPtr()), 0);
-
     CF_CHECK_EQ(mp_is_square(bn[0].GetPtr(), &is_square), MP_OKAY);
 
     res.Set( std::to_string(is_square) );
