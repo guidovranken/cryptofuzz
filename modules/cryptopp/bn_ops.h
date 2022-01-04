@@ -168,6 +168,31 @@ class ClearBit : public Operation {
         bool Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const override;
 };
 
+class IsSquare : public Operation {
+    public:
+        bool Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const override;
+};
+
+class Sqrt : public Operation {
+    public:
+        bool Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const override;
+};
+
+class NumBits : public Operation {
+    public:
+        bool Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const override;
+};
+
+class LShift1 : public Operation {
+    public:
+        bool Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const override;
+};
+
+class RShift : public Operation {
+    public:
+        bool Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const override;
+};
+
 } /* namespace CryptoPP_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

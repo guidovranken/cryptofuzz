@@ -2385,6 +2385,21 @@ std::optional<component::Bignum> CryptoPP::OpBignumCalc(operation::BignumCalc& o
         case    CF_CALCOP("ClearBit(A,B)"):
             opRunner = std::make_unique<CryptoPP_bignum::ClearBit>();
             break;
+        case    CF_CALCOP("IsSquare(A)"):
+            opRunner = std::make_unique<CryptoPP_bignum::IsSquare>();
+            break;
+        case    CF_CALCOP("Sqrt(A)"):
+            opRunner = std::make_unique<CryptoPP_bignum::Sqrt>();
+            break;
+        case    CF_CALCOP("NumBits(A)"):
+            opRunner = std::make_unique<CryptoPP_bignum::NumBits>();
+            break;
+        case    CF_CALCOP("LShift1(A)"):
+            opRunner = std::make_unique<CryptoPP_bignum::LShift1>();
+            break;
+        case    CF_CALCOP("RShift(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::RShift>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
