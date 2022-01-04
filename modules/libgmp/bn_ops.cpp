@@ -544,7 +544,7 @@ bool ClearBit::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     const auto position_sl = bn[1].GetSignedLong();
     CF_CHECK_NE(position_sl, std::nullopt);
 
-    /* noret */ mpz_clrbit(bn[0].GetPtr(), *position_sl);
+    /* noret */ mpz_clrbit(bn.GetDestPtr(0), *position_sl);
     /* noret */ mpz_set(res.GetPtr(), bn[0].GetPtr());
 
     ret = true;

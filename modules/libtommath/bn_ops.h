@@ -56,6 +56,17 @@ end:
             return &mpi;
         }
 
+        std::optional<int> GetInt(void) {
+            std::optional<int> ret = std::nullopt;
+
+            CF_CHECK_LTE(mp_count_bits(GetPtr()), 31);
+
+            ret = mp_get_i32(GetPtr());
+
+end:
+            return ret;
+        }
+
         std::optional<component::Bignum> ToComponentBignum(void) {
             std::optional<component::Bignum> ret = std::nullopt;
             char* str = nullptr;
@@ -217,6 +228,26 @@ class IsSquare : public Operation {
 };
 
 class NumBits : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class LShift1 : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class RShift : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class Set : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
+};
+
+class Nthrt : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
 };

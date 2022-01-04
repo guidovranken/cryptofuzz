@@ -23,17 +23,10 @@ std::optional<component::Bignum> libtommath::OpBignumCalc(operation::BignumCalc&
     libtommath_bignum::Bignum res;
 
     CF_CHECK_EQ(res.Set("0"), true);
-#if 0
     CF_CHECK_EQ(bn[0].Set(op.bn0.ToString(ds)), true);
     CF_CHECK_EQ(bn[1].Set(op.bn1.ToString(ds)), true);
     CF_CHECK_EQ(bn[2].Set(op.bn2.ToString(ds)), true);
     CF_CHECK_EQ(bn[3].Set(op.bn3.ToString(ds)), true);
-#endif
-    CF_CHECK_EQ(bn[0].Set(op.bn0.ToTrimmedString()), true);
-    CF_CHECK_EQ(bn[1].Set(op.bn1.ToTrimmedString()), true);
-    CF_CHECK_EQ(bn[2].Set(op.bn2.ToTrimmedString()), true);
-    CF_CHECK_EQ(bn[3].Set(op.bn3.ToTrimmedString()), true);
-
 
     switch ( op.calcOp.Get() ) {
         case    CF_CALCOP("Add(A,B)"):
@@ -119,6 +112,18 @@ std::optional<component::Bignum> libtommath::OpBignumCalc(operation::BignumCalc&
             break;
         case    CF_CALCOP("NumBits(A)"):
             opRunner = std::make_unique<libtommath_bignum::NumBits>();
+            break;
+        case    CF_CALCOP("LShift1(A)"):
+            opRunner = std::make_unique<libtommath_bignum::LShift1>();
+            break;
+        case    CF_CALCOP("RShift(A,B)"):
+            opRunner = std::make_unique<libtommath_bignum::RShift>();
+            break;
+        case    CF_CALCOP("Set(A)"):
+            opRunner = std::make_unique<libtommath_bignum::Set>();
+            break;
+        case    CF_CALCOP("Nthrt(A,B)"):
+            opRunner = std::make_unique<libtommath_bignum::Nthrt>();
             break;
     }
 

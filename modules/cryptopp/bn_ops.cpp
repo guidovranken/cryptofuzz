@@ -296,6 +296,54 @@ bool ClearBit::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::Crypt
     return detail::SetBit(res, bn, false);
 }
 
+bool IsSquare::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const {
+    (void)ds;
+
+    res = bn[0].IsSquare() ? 1 : 0;
+
+    return true;
+}
+
+bool Sqrt::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const {
+    (void)ds;
+
+    res = bn[0].SquareRoot();
+
+    return true;
+}
+
+bool NumBits::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const {
+    (void)ds;
+
+    res = bn[0].BitCount();
+
+    return true;
+}
+
+bool LShift1::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const {
+    (void)ds;
+
+    res = bn[0] << 1;
+
+    return true;
+}
+
+bool RShift::Run(Datasource& ds, ::CryptoPP::Integer& res, std::vector<::CryptoPP::Integer>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    CF_CHECK_TRUE(bn[1].IsConvertableToLong());
+    {
+        const auto count = bn[1].ConvertToLong();
+        res = bn[0] >> count;
+    }
+
+    ret = true;
+
+end:
+    return ret;
+}
+
 } /* namespace CryptoPP_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

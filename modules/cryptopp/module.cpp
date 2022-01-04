@@ -26,6 +26,7 @@
 #include <kalyna.h>
 #include <keccak.h>
 #include <lea.h>
+#include <lsh.h>
 #include <md2.h>
 #include <md4.h>
 #include <md5.h>
@@ -115,6 +116,16 @@ namespace CryptoPP_detail {
                 return Function<::CryptoPP::Keccak_384>::Compute(op);
             case CF_DIGEST("KECCAK_512"):
                 return Function<::CryptoPP::Keccak_512>::Compute(op);
+            case CF_DIGEST("LSH224"):
+                return Function<::CryptoPP::LSH224>::Compute(op);
+            case CF_DIGEST("LSH256"):
+                return Function<::CryptoPP::LSH256>::Compute(op);
+            case CF_DIGEST("LSH384"):
+                return Function<::CryptoPP::LSH384>::Compute(op);
+            case CF_DIGEST("LSH512"):
+                return Function<::CryptoPP::LSH512>::Compute(op);
+            case CF_DIGEST("LSH512_256"):
+                return Function<::CryptoPP::LSH512_256>::Compute(op);
 /*
             Fails in the link step in OSS-Fuzz for unclear reason
 
@@ -2373,6 +2384,21 @@ std::optional<component::Bignum> CryptoPP::OpBignumCalc(operation::BignumCalc& o
             break;
         case    CF_CALCOP("ClearBit(A,B)"):
             opRunner = std::make_unique<CryptoPP_bignum::ClearBit>();
+            break;
+        case    CF_CALCOP("IsSquare(A)"):
+            opRunner = std::make_unique<CryptoPP_bignum::IsSquare>();
+            break;
+        case    CF_CALCOP("Sqrt(A)"):
+            opRunner = std::make_unique<CryptoPP_bignum::Sqrt>();
+            break;
+        case    CF_CALCOP("NumBits(A)"):
+            opRunner = std::make_unique<CryptoPP_bignum::NumBits>();
+            break;
+        case    CF_CALCOP("LShift1(A)"):
+            opRunner = std::make_unique<CryptoPP_bignum::LShift1>();
+            break;
+        case    CF_CALCOP("RShift(A,B)"):
+            opRunner = std::make_unique<CryptoPP_bignum::RShift>();
             break;
     }
 

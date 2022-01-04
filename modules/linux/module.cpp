@@ -18,6 +18,7 @@ std::optional<std::string> toDigestString(const component::DigestType& digestTyp
     static const std::map<uint64_t, std::string> LUT = {
         /* CRC32 mismatches with libgcrypt. TODO. */
         //{ CF_DIGEST("CRC32"), "crc32" },
+        { CF_DIGEST("MD4"), "md4" },
         { CF_DIGEST("MD5"), "md5" },
         { CF_DIGEST("SHA1"), "sha1" },
         { CF_DIGEST("SHA224"), "sha224" },
@@ -28,6 +29,19 @@ std::optional<std::string> toDigestString(const component::DigestType& digestTyp
         /* SKEIN_256 mismatches with Monero. Unclear which one is wrong. TODO. */
         //{ CF_DIGEST("SKEIN_256"), "skein256" },
         { CF_DIGEST("SKEIN_512"), "skein512" },
+        { CF_DIGEST("SM3"), "sm3" },
+        { CF_DIGEST("RIPEMD160"), "rmd160" },
+        { CF_DIGEST("SHA3-224"), "sha3-224" },
+        { CF_DIGEST("SHA3-256"), "sha3-256" },
+        { CF_DIGEST("SHA3-384"), "sha3-384" },
+        { CF_DIGEST("SHA3-512"), "sha3-512" },
+        { CF_DIGEST("WHIRLPOOL"), "wp512" },
+        { CF_DIGEST("BLAKE2B160"), "blake2b-160" },
+        { CF_DIGEST("BLAKE2B256"), "blake2b-256" },
+        { CF_DIGEST("BLAKE2B384"), "blake2b-384" },
+        { CF_DIGEST("BLAKE2B512"), "blake2b-512" },
+        { CF_DIGEST("STREEBOG-256"), "streebog256" },
+        { CF_DIGEST("STREEBOG-512"), "streebog512" },
     };
 
     if ( LUT.find(digestType.Get()) == LUT.end() ) {
