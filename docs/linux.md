@@ -1,5 +1,6 @@
 ```
 git clone --depth 1 https://github.com/smuellerDD/libkcapi.git
+cd libkcapi/
 autoreconf -ivf
 ./configure
 make -j$(nproc)
