@@ -330,6 +330,68 @@ bool NumBits::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
+bool LShift1::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    CF_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+    CF_CHECK_EQ(mp_lshd(res.GetPtr(), 1), MP_OKAY);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool RShift::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    std::optional<int> count;
+
+    CF_CHECK_NE(count = bn[1].GetInt(), std::nullopt);
+    CF_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+    CF_NORET(mp_rshd(res.GetPtr(), *count));
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Set::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    CF_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool Nthrt::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    std::optional<int> bn1;
+
+    /* Prevent timeouts */
+    CF_CHECK_LTE(mp_count_bits(bn[0].GetPtr()), 256);
+
+    CF_CHECK_EQ(mp_iszero(bn[0].GetPtr()), 0);
+    CF_CHECK_NE(bn1 = bn[1].GetInt(), std::nullopt);
+    CF_CHECK_NE(*bn1, 0); /* XXX */
+    CF_CHECK_NE(*bn1, 1); /* XXX */
+    CF_CHECK_EQ(mp_root_n(bn[0].GetPtr(), *bn1, res.GetPtr()), MP_OKAY);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
 } /* namespace libtommath_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */
