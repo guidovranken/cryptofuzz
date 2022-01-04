@@ -375,13 +375,27 @@ bool ClearBit::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
 bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
-    bool ret = false;
 
-    CF_CHECK_EQ(mbedtls_mpi_mod_mpi(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            CF_CHECK_EQ(mbedtls_mpi_mod_mpi(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
+            return true;
+        case    1:
+            {
+                mbedtls_mpi_uint ret;
 
-    ret = true;
+                const auto bn1 = bn[1].GetInt32();
+                CF_CHECK_NE(bn1, std::nullopt);
+
+                CF_CHECK_EQ(mbedtls_mpi_mod_int(&ret, bn[0].GetPtr(), *bn1), 0);
+
+                res.Set( std::to_string(ret) );
+            }
+            return true;
+    }
+
 end:
-    return ret;
+    return false;
 }
 
 bool Set::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
@@ -395,10 +409,26 @@ bool Set::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
         case    2:
             CF_CHECK_EQ(mbedtls_mpi_safe_cond_swap(res.GetDestPtr(), bn[0].GetDestPtr(), 1), 0);
             return true;
+        case    3:
+            {
+                const auto bn0 = bn[0].GetInt32();
+                CF_CHECK_NE(bn0, std::nullopt);
+
+                CF_CHECK_EQ(mbedtls_mpi_lset(res.GetDestPtr(), *bn0), 0);
+            }
+            return true;
     }
 
 end:
     return false;
+}
+
+bool NumLSZeroBits::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    (void)ds;
+
+    res.Set( std::to_string(mbedtls_mpi_lsb(bn[0].GetPtr())) );
+
+    return true;
 }
 
 } /* namespace mbedTLS_bignum */

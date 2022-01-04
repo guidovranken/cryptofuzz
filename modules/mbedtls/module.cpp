@@ -1278,6 +1278,9 @@ std::optional<component::Bignum> mbedTLS::OpBignumCalc(operation::BignumCalc& op
         case    CF_CALCOP("Set(A)"):
             opRunner = std::make_unique<mbedTLS_bignum::Set>();
             break;
+        case    CF_CALCOP("NumLSZeroBits(A)"):
+            opRunner = std::make_unique<mbedTLS_bignum::NumLSZeroBits>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
