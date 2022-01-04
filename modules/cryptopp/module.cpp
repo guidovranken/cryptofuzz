@@ -26,6 +26,7 @@
 #include <kalyna.h>
 #include <keccak.h>
 #include <lea.h>
+#include <lsh.h>
 #include <md2.h>
 #include <md4.h>
 #include <md5.h>
@@ -115,6 +116,16 @@ namespace CryptoPP_detail {
                 return Function<::CryptoPP::Keccak_384>::Compute(op);
             case CF_DIGEST("KECCAK_512"):
                 return Function<::CryptoPP::Keccak_512>::Compute(op);
+            case CF_DIGEST("LSH224"):
+                return Function<::CryptoPP::LSH224>::Compute(op);
+            case CF_DIGEST("LSH256"):
+                return Function<::CryptoPP::LSH256>::Compute(op);
+            case CF_DIGEST("LSH384"):
+                return Function<::CryptoPP::LSH384>::Compute(op);
+            case CF_DIGEST("LSH512"):
+                return Function<::CryptoPP::LSH512>::Compute(op);
+            case CF_DIGEST("LSH512_256"):
+                return Function<::CryptoPP::LSH512_256>::Compute(op);
 /*
             Fails in the link step in OSS-Fuzz for unclear reason
 
