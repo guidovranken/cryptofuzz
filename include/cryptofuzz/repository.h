@@ -33,6 +33,7 @@ std::optional<std::string> ECC_CurveToY(const uint64_t id);
 std::optional<std::string> ECC_CurveToOrderMin1(const uint64_t id);
 std::optional<std::string> ECC_CurveToOrder(const uint64_t id);
 std::string CalcOpToString(const uint64_t id);
+size_t CalcOpToNumParams(const uint64_t id);
 std::optional<size_t> DigestSize(const uint64_t id);
 
 #include "../../repository_tbl.h"
