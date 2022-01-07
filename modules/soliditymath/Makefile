@@ -43,6 +43,11 @@ github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.
 LOADER-github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.json : LOADER-github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.sol github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.sol solc-linux-amd64-v0.8.0+commit.c7dfd78e
 	./solc-linux-amd64-v0.8.0+commit.c7dfd78e LOADER-github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.sol --combined-json hashes,bin-runtime >LOADER-github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.json
 
+github.com-Uniswap-solidity-lib-blob-master-contracts-libraries-Babylonian.sol :
+	wget 'https://raw.githubusercontent.com/Uniswap/solidity-lib/master/contracts/libraries/Babylonian.sol' -O github.com-Uniswap-solidity-lib-blob-master-contracts-libraries-Babylonian.sol
+LOADER-github.com-Uniswap-solidity-lib-blob-master-contracts-libraries-Babylonian.json : LOADER-github.com-Uniswap-solidity-lib-blob-master-contracts-libraries-Babylonian.sol github.com-Uniswap-solidity-lib-blob-master-contracts-libraries-Babylonian.sol solc-linux-amd64-v0.6.12+commit.27d51765
+	./solc-linux-amd64-v0.6.12+commit.27d51765 LOADER-github.com-Uniswap-solidity-lib-blob-master-contracts-libraries-Babylonian.sol --combined-json hashes,bin-runtime >LOADER-github.com-Uniswap-solidity-lib-blob-master-contracts-libraries-Babylonian.json
+
 solc-linux-amd64-v0.8.0+commit.c7dfd78e :
 	wget 'https://github.com/ethereum/solc-bin/raw/gh-pages/linux-amd64/solc-linux-amd64-v0.8.0+commit.c7dfd78e' -O solc-linux-amd64-v0.8.0+commit.c7dfd78e
 	chmod +x solc-linux-amd64-v0.8.0+commit.c7dfd78e
@@ -60,14 +65,16 @@ contracts.h : \
 	LOADER-github.com-sushiswap-sushiswap-master-contracts-uniswapv2-libraries-Math.json \
 	LOADER-github.com-Uniswap-v3-core-main-contracts-libraries-BitMath.json \
 	LOADER-github.com-Uniswap-v3-core-main-contracts-libraries-LowGasSafeMath.json \
-	LOADER-github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.json
+	LOADER-github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.json \
+	LOADER-github.com-Uniswap-solidity-lib-blob-master-contracts-libraries-Babylonian.json
 	./sol-json-to-h.py \
 		LOADER-github.com-Uniswap-v3-core-main-contracts-libraries-FullMath.json \
 		LOADER-github.com-Uniswap-lib-master-contracts-libraries-FullMath.json \
 		LOADER-github.com-sushiswap-sushiswap-master-contracts-uniswapv2-libraries-Math.json \
 		LOADER-github.com-Uniswap-v3-core-main-contracts-libraries-BitMath.json \
 		LOADER-github.com-Uniswap-v3-core-main-contracts-libraries-LowGasSafeMath.json \
-		LOADER-github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.json
+		LOADER-github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.json \
+		LOADER-github.com-Uniswap-solidity-lib-blob-master-contracts-libraries-Babylonian.json
 
 clean:
 	rm -rf github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.sol
@@ -76,6 +83,7 @@ clean:
 	rm -rf github.com-Uniswap-v3-core-main-contracts-libraries-FullMath.sol
 	rm -rf github.com-Uniswap-v3-core-main-contracts-libraries-LowGasSafeMath.sol
 	rm -rf github.com-Uniswap-lib-master-contracts-libraries-FullMath.sol
+	rm -rf github.com-Uniswap-solidity-lib-blob-master-contracts-libraries-Babylonian.sol
 	rm -rf *.json
 	rm -rf solc-linux-amd64-v0.8.0+commit.c7dfd78e
 	rm -rf solc-linux-amd64-v0.7.6+commit.7338295f
