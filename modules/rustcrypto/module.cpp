@@ -121,6 +121,9 @@ end:
 }
 
 std::optional<component::MAC> rustcrypto::OpHMAC(operation::HMAC& op) {
+    (void)op;
+    return std::nullopt;
+    /*
     std::optional<component::Digest> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
@@ -153,6 +156,7 @@ std::optional<component::MAC> rustcrypto::OpHMAC(operation::HMAC& op) {
 
 end:
     return ret;
+    */
 }
 
 std::optional<component::Key> rustcrypto::OpKDF_HKDF(operation::KDF_HKDF& op) {

@@ -16,9 +16,7 @@ k12 = {git = "https://github.com/RustCrypto/hashes"}
 md-5 = {git = "https://github.com/RustCrypto/hashes"}
 md2 = {git = "https://github.com/RustCrypto/hashes"}
 md4 = {git = "https://github.com/RustCrypto/hashes"}
-ripemd160 = {git = "https://github.com/RustCrypto/hashes"}
-ripemd256 = {git = "https://github.com/RustCrypto/hashes"}
-ripemd320 = {git = "https://github.com/RustCrypto/hashes"}
+ripemd = {git = "https://github.com/RustCrypto/hashes"}
 sha-1 = {git = "https://github.com/RustCrypto/hashes"}
 sha2 = {git = "https://github.com/RustCrypto/hashes"}
 sha3 = {git = "https://github.com/RustCrypto/hashes"}
@@ -28,7 +26,7 @@ streebog = {git = "https://github.com/RustCrypto/hashes"}
 tiger = {git = "https://github.com/RustCrypto/hashes"}
 whirlpool = {git = "https://github.com/RustCrypto/hashes"}
 
-digest = { version = "0.9", default-features = false }
+digest = { version = "0.10", default-features = false }
 hkdf = {git = "https://github.com/RustCrypto/KDFs"}
 
 hmac = {git = "https://github.com/RustCrypto/MACs"}

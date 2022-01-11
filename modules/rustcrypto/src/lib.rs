@@ -1,13 +1,11 @@
 use std::slice;
 use std::ptr;
 
-use sha2::{Sha224, Sha256, Sha384, Sha512, Digest};
+use sha2::{Sha224, Sha256, Sha384, Sha512};
 use sha1::{Sha1};
 use streebog::{Streebog256, Streebog512};
 use whirlpool::{Whirlpool};
-use ripemd160::{Ripemd160};
-use ripemd256::{Ripemd256};
-use ripemd320::{Ripemd320};
+use ripemd::{Ripemd160,Ripemd256,Ripemd320};
 use sm3::{Sm3};
 use gost94::{Gost94CryptoPro};
 use md2::{Md2};
@@ -15,17 +13,26 @@ use md4::{Md4};
 use md5::{Md5};
 use groestl::{Groestl224, Groestl256, Groestl384, Groestl512};
 use tiger::{Tiger};
-use blake2::{Blake2b, Blake2s};
+use blake2::{Blake2b512, Blake2s256};
 use sha3::{Sha3_224, Sha3_256, Sha3_384, Sha3_512};
 use sha3::{Keccak224, Keccak256, Keccak384, Keccak512};
 use fsb::{Fsb160, Fsb224, Fsb256, Fsb384, Fsb512};
 use shabal::{Shabal256, Shabal512};
 use k12::{KangarooTwelve, digest::{ExtendableOutput}};
 
-use digest::{BlockInput, FixedOutput, Reset, Update};
+use digest::{Digest,FixedOutput, KeyInit, Update};
+
 use hkdf::Hkdf;
 
-use hmac::{Mac, Hmac, NewMac};
+use hmac::{Mac, Hmac, HmacCore};
+use hmac::digest::{
+    block_buffer::Eager,
+    core_api::{
+        BlockSizeUser, BufferKindUser, CoreProxy,
+        UpdateCore, FixedOutputCore, AlgorithmName, CoreWrapper
+    },
+    HashMarker,
+};
 
 use scrypt::{scrypt, Params as ScryptParams};
 
@@ -37,7 +44,7 @@ use argon2::{
     Algorithm, Argon2, ParamsBuilder, Version,
 };
 
-use cmac::Cmac;
+use cmac::{Cmac,Mac as cMac,NewMac};
 
 use aes::{Aes128, Aes192, Aes256};
 use cast5::Cast5;
@@ -78,7 +85,7 @@ fn create_parts(
     return ret;
 }
 
-fn hash<D: Digest>(
+fn hash<D: Digest + digest::Reset >(
     parts: Vec<Vec<u8>>,
     resets: Vec<u8>,
     out: *mut u8) -> i32 {
@@ -106,7 +113,8 @@ fn hash<D: Digest>(
             break;
         }
 
-        hasher.reset();
+        //hasher.reset();
+        Digest::reset(&mut hasher);
     }
 
     let res = hasher.finalize();
@@ -167,8 +175,8 @@ pub extern "C" fn rustcrypto_hashes_hash(
     else if is_groestl_256(algorithm)     { return hash::<Groestl256>(parts, resets, out); }
     else if is_groestl_384(algorithm)     { return hash::<Groestl384>(parts, resets, out); }
     else if is_groestl_512(algorithm)     { return hash::<Groestl512>(parts, resets, out); }
-    else if is_blake2b512(algorithm)      { return hash::<Blake2b>(parts, resets, out); }
-    else if is_blake2s256(algorithm)      { return hash::<Blake2s>(parts, resets, out); }
+    else if is_blake2b512(algorithm)      { return hash::<Blake2b512>(parts, resets, out); }
+    else if is_blake2s256(algorithm)      { return hash::<Blake2s256>(parts, resets, out); }
     else if is_sha3_224(algorithm)        { return hash::<Sha3_224>(parts, resets, out); }
     else if is_sha3_256(algorithm)        { return hash::<Sha3_256>(parts, resets, out); }
     else if is_sha3_384(algorithm)        { return hash::<Sha3_384>(parts, resets, out); }
@@ -192,13 +200,21 @@ pub extern "C" fn rustcrypto_hashes_hash(
     }
 }
 
-fn hkdf<D: BlockInput + Clone + Default + FixedOutput + Update + Reset>(
+fn hkdf<D: Clone + Default + FixedOutput + Update + digest::Reset + digest::core_api::CoreProxy>(
     password: Vec<u8>,
     salt: Vec<u8>,
     info: Vec<u8>,
     keysize: u64,
-    out: *mut u8) -> i32 {
-
+    out: *mut u8) -> i32
+    where D: CoreProxy,
+    D::Core: HashMarker
+        + UpdateCore
+        + FixedOutputCore
+        + BufferKindUser<BufferKind = Eager>
+        + Default
+        + Clone,
+    <D::Core as BlockSizeUser>::BlockSize: digest::generic_array::typenum::IsLess<digest::generic_array::typenum::U256>,
+    digest::generic_array::typenum::Le<<D::Core as BlockSizeUser>::BlockSize, digest::generic_array::typenum::U256>: digest::generic_array::typenum::NonZero {
     let hk = Hkdf::<D>::new(Some(&salt), &password);
     let mut okm = vec![0u8; keysize.try_into().unwrap()];
     match hk.expand(&info, &mut okm) {
@@ -220,25 +236,6 @@ pub extern "C" fn rustcrypto_hkdf(
     keysize: u64,
     algorithm: u64,
     out: *mut u8) -> i32 {
-    /* Prevent time-outs of slow hash algorithms.
-     *
-     * https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=41536#c2
-     */
-    if keysize > 100 {
-        if  is_gost_r_34_11_94(algorithm) ||
-            is_md2(algorithm) ||
-            is_groestl_224(algorithm) ||
-            is_groestl_256(algorithm) ||
-            is_groestl_384(algorithm) ||
-            is_groestl_512(algorithm) ||
-            is_fsb_160(algorithm) ||
-            is_fsb_224(algorithm) ||
-            is_fsb_256(algorithm) ||
-            is_fsb_384(algorithm) ||
-            is_fsb_512(algorithm) {
-                return -1;
-            }
-    }
 
     let password = unsafe { slice::from_raw_parts(password_bytes, password_size) }.to_vec();
     let salt = unsafe { slice::from_raw_parts(salt_bytes, salt_size) }.to_vec();
@@ -264,8 +261,11 @@ pub extern "C" fn rustcrypto_hkdf(
     else if is_groestl_256(algorithm)     { return hkdf::<Groestl256>(password, salt, info, keysize, out); }
     else if is_groestl_384(algorithm)     { return hkdf::<Groestl384>(password, salt, info, keysize, out); }
     else if is_groestl_512(algorithm)     { return hkdf::<Groestl512>(password, salt, info, keysize, out); }
-    else if is_blake2b512(algorithm)      { return hkdf::<Blake2b>(password, salt, info, keysize, out); }
-    else if is_blake2s256(algorithm)      { return hkdf::<Blake2s>(password, salt, info, keysize, out); }
+    /* TODO */
+    /*
+    else if is_blake2b512(algorithm)      { return hkdf::<Blake2b512>(password, salt, info, keysize, out); }
+    else if is_blake2s256(algorithm)      { return hkdf::<Blake2s256>(password, salt, info, keysize, out); }
+    */
     else if is_sha3_224(algorithm)        { return hkdf::<Sha3_224>(password, salt, info, keysize, out); }
     else if is_sha3_256(algorithm)        { return hkdf::<Sha3_256>(password, salt, info, keysize, out); }
     else if is_sha3_384(algorithm)        { return hkdf::<Sha3_384>(password, salt, info, keysize, out); }
@@ -287,6 +287,7 @@ pub extern "C" fn rustcrypto_hkdf(
     }
 }
 
+/*
 fn hmac<D: BlockInput + Clone + Default + FixedOutput + Update + Reset>(
     parts: Vec<Vec<u8>>,
     resets: Vec<u8>,
@@ -386,6 +387,7 @@ pub extern "C" fn rustcrypto_hmac(
         return -1;
     }
 }
+*/
 
 #[no_mangle]
 pub extern "C" fn rustcrypto_scrypt(
@@ -419,7 +421,7 @@ pub extern "C" fn rustcrypto_scrypt(
     return 0;
 }
 
-fn pbkdf2_<D: Mac + NewMac + Clone + Sync>(
+fn pbkdf2_<D: Mac + Sync + KeyInit + Update + FixedOutput + Clone>(
     password: Vec<u8>,
     salt: Vec<u8>,
     iterations: u32,
@@ -445,26 +447,6 @@ pub extern "C" fn rustcrypto_pbkdf2(
     keysize: u64,
     algorithm: u64,
     out: *mut u8) -> i32 {
-    /* Prevent time-outs of slow hash algorithms.
-     *
-     * https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=41536#c2
-     */
-    if keysize > 100 {
-        if  is_gost_r_34_11_94(algorithm) ||
-            is_md2(algorithm) ||
-            is_groestl_224(algorithm) ||
-            is_groestl_256(algorithm) ||
-            is_groestl_384(algorithm) ||
-            is_groestl_512(algorithm) ||
-            is_fsb_160(algorithm) ||
-            is_fsb_224(algorithm) ||
-            is_fsb_256(algorithm) ||
-            is_fsb_384(algorithm) ||
-            is_fsb_512(algorithm) {
-                return -1;
-            }
-    }
-
     let password = unsafe { slice::from_raw_parts(password_bytes, password_size) }.to_vec();
     let salt = unsafe { slice::from_raw_parts(salt_bytes, salt_size) }.to_vec();
 
@@ -488,8 +470,9 @@ pub extern "C" fn rustcrypto_pbkdf2(
     else if is_groestl_256(algorithm)     { return pbkdf2_::<Hmac<Groestl256>>(password, salt, iterations, keysize, out); }
     else if is_groestl_384(algorithm)     { return pbkdf2_::<Hmac<Groestl384>>(password, salt, iterations, keysize, out); }
     else if is_groestl_512(algorithm)     { return pbkdf2_::<Hmac<Groestl512>>(password, salt, iterations, keysize, out); }
-    else if is_blake2b512(algorithm)      { return pbkdf2_::<Hmac<Blake2b>>(password, salt, iterations, keysize, out); }
-    else if is_blake2s256(algorithm)      { return pbkdf2_::<Hmac<Blake2s>>(password, salt, iterations, keysize, out); }
+    /* TODO */
+    //else if is_blake2b512(algorithm)      { return pbkdf2_::<Hmac<Blake2b512>>(password, salt, iterations, keysize, out); }
+    //else if is_blake2s256(algorithm)      { return pbkdf2_::<Hmac<Blake2s256>>(password, salt, iterations, keysize, out); }
     else if is_sha3_224(algorithm)        { return pbkdf2_::<Hmac<Sha3_224>>(password, salt, iterations, keysize, out); }
     else if is_sha3_256(algorithm)        { return pbkdf2_::<Hmac<Sha3_256>>(password, salt, iterations, keysize, out); }
     else if is_sha3_384(algorithm)        { return pbkdf2_::<Hmac<Sha3_384>>(password, salt, iterations, keysize, out); }
