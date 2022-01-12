@@ -55,7 +55,7 @@ var OpECDSA_Verify = function(FuzzerInput) {
     try {
         var signature = new exports.Signature(r, s);
 
-        verified = exports.verify(signature, msg, pub);
+        verified = exports.verify(signature, msg, pub, { strict: false });
     } catch ( e ) { }
 
     FuzzerOutput = JSON.stringify(verified);
