@@ -6,8 +6,11 @@ Run the steps for building [libfuzzer-js](libfuzzer-js.md) first.
 
 ```sh
 git clone --depth 1 https://github.com/paulmillr/noble-ed25519.git
-export NOBLE_ED25519_PATH=$(realpath noble-ed25519/index.js)
+cd noble-ed25519/
+npm install && npm run build
+export NOBLE_ED25519_PATH=$(realpath lib/index.js)
 export CXXFLAGS="$CXXFLAGS -DCRYPTOFUZZ_NOBLE_ED25519"
+cd ../
 ```
 
 ## Module compilation
