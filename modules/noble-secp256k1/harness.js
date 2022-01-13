@@ -74,9 +74,14 @@ var OpECC_Point_Add = function(FuzzerInput) {
         var b = new exports.Point(b_x, b_y);
 
         a = JacobianPoint.fromAffine(a);
+
         b = JacobianPoint.fromAffine(b);
 
         var res = a.add(b).toAffine();
+
+        a.assertValidity();
+        b.assertValidity();
+        res.assertValidity();
 
         FuzzerOutput = JSON.stringify([res.x.toString(), res.y.toString()]);
     } catch ( e ) { }
@@ -87,14 +92,12 @@ var OpECC_Point_Mul = function(FuzzerInput) {
     var y = BigInt(FuzzerInput['a_y']);
     var b = BigInt(FuzzerInput['b']);
 
-    if ( b == 0n ) {
-        return;
-    }
-
     try {
         var point = new exports.Point(x, y);
 
         var res = JacobianPoint.fromAffine(point).multiplyUnsafe(b).toAffine();
+
+        point.assertValidity();
 
         FuzzerOutput = JSON.stringify([res.x.toString(), res.y.toString()]);
     } catch ( e ) { }
