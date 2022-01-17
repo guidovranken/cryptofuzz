@@ -17,7 +17,7 @@ md-5 = {git = "https://github.com/RustCrypto/hashes"}
 md2 = {git = "https://github.com/RustCrypto/hashes"}
 md4 = {git = "https://github.com/RustCrypto/hashes"}
 ripemd = {git = "https://github.com/RustCrypto/hashes"}
-sha-1 = {git = "https://github.com/RustCrypto/hashes"}
+sha1 = {git = "https://github.com/RustCrypto/hashes"}
 sha2 = {git = "https://github.com/RustCrypto/hashes"}
 sha3 = {git = "https://github.com/RustCrypto/hashes"}
 shabal = {git = "https://github.com/RustCrypto/hashes"}
