@@ -57,4 +57,13 @@ serpent = {git = "https://github.com/RustCrypto/block-ciphers"}
 sm4 = {git = "https://github.com/RustCrypto/block-ciphers"}
 des = {git = "https://github.com/RustCrypto/block-ciphers"}
 
+# Elliptic curves
+
+elliptic-curve = { version = "0.11.7", default-features = false, features = ["hazmat", "sec1"] }
+
+k256 = {git = "https://github.com/RustCrypto/elliptic-curves"}
+p256 = {git = "https://github.com/RustCrypto/elliptic-curves"}
+
+
+generic-array = "0.14.5"
 libc = "0.2.0"

@@ -42,5 +42,15 @@ int main(void)
                 "pub fn is_cipher_%s(cipher: u64) -> bool { if cipher == %s { true } else { false } }\n",
                 cipherStr.c_str(), std::to_string(cipher.first).c_str());
     }
+    for (const auto& curve : ECC_CurveLUTMap ) {
+        auto curveStr = std::string(curve.second.name);
+        curveStr = std::regex_replace(curveStr, std::regex("\\(.*"), "");
+        std::transform(curveStr.begin(), curveStr.end(), curveStr.begin(),
+                [](unsigned char c){ return std::tolower(c); });
+        fprintf(fp,
+                "#[allow(dead_code)]\n"
+                "pub fn is_%s(curve: u64) -> bool { if curve == %s { true } else { false } }\n",
+                curveStr.c_str(), std::to_string(curve.first).c_str());
+    }
     fclose(fp);
 }

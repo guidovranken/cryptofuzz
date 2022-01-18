@@ -69,6 +69,17 @@ use std::convert::TryInto;
 mod ids;
 use crate::ids::{*};
 
+use k256;
+use k256::elliptic_curve::sec1::ToEncodedPoint;
+use k256::ecdsa::signature::Signer;
+use k256::ecdsa::signature::Signature;
+use k256::ecdsa::signature::DigestVerifier;
+use k256::elliptic_curve::sec1::FromEncodedPoint;
+
+use p256;
+
+use generic_array;
+
 fn create_parts(
     input_bytes: *const u8, input_size: libc::size_t,
     parts_bytes: *const libc::size_t, parts_size: libc::size_t) -> Vec<Vec<u8>> {
@@ -963,4 +974,204 @@ pub extern "C" fn rustcrypto_bigint_bignumcalc(
     result.copy_from_slice(&res_bytes);
 
     return 0;
+}
+
+#[no_mangle]
+pub extern "C" fn rustcrypto_ecc_privatetopublic(curve: u64, sk_bytes: &[u8; 32], pk_bytes: &mut [u8; 65]) -> i32 {
+    if is_secp256k1(curve) {
+        let sk = match k256::SecretKey::from_be_bytes(sk_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+        let pk = sk.public_key();
+        let pk_point = pk.to_encoded_point(false);
+        let pk_bin = pk_point.to_bytes();
+        pk_bytes.copy_from_slice(&pk_bin);
+        return 0;
+    } else if is_secp256r1(curve) {
+        let sk = match p256::SecretKey::from_be_bytes(sk_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+        let pk = sk.public_key();
+        let pk_point = pk.to_encoded_point(false);
+        let pk_bin = pk_point.to_bytes();
+        pk_bytes.copy_from_slice(&pk_bin);
+        return 0;
+    }
+
+    panic!("Invalid curve");
+}
+
+#[no_mangle]
+pub extern "C" fn rustcrypto_validate_pubkey(curve: u64, pk_bytes: &[u8; 65]) -> i32 {
+    if is_secp256k1(curve) {
+        return match k256::PublicKey::from_sec1_bytes(pk_bytes) {
+            Ok(_v) => 0,
+            Err(_e) => -1,
+        };
+    } else if is_secp256r1(curve) {
+        return match p256::PublicKey::from_sec1_bytes(pk_bytes) {
+            Ok(_v) => 0,
+            Err(_e) => -1,
+        };
+    }
+
+    panic!("Invalid curve");
+}
+
+#[no_mangle]
+pub extern "C" fn rustcrypto_ecdsa_sign(curve: u64, msg_bytes: &[u8; 32], sk_bytes: &[u8; 32], sig_bytes: &mut [u8; 64]) -> i32 {
+    if is_secp256k1(curve) {
+        let sk = match k256::ecdsa::SigningKey::from_bytes(sk_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+        let sig: k256::ecdsa::Signature = sk.sign(msg_bytes);
+        sig_bytes.copy_from_slice(&sig.as_bytes());
+        return 0;
+    } else if is_secp256r1(curve) {
+        let sk = match p256::ecdsa::SigningKey::from_bytes(sk_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+        let sig: p256::ecdsa::Signature = sk.sign(msg_bytes);
+        sig_bytes.copy_from_slice(&sig.as_bytes());
+        return 0;
+    }
+
+    panic!("Invalid curve");
+}
+
+#[no_mangle]
+pub extern "C" fn rustcrypto_ecc_point_add(curve: u64, a_bytes: &[u8; 65], b_bytes: &[u8; 65], res_bytes: &mut [u8; 65]) -> i32 {
+    if is_secp256k1(curve) {
+        let a = match k256::EncodedPoint::from_bytes(a_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+
+        let a_affine = k256::AffinePoint::from_encoded_point(&a);
+        if bool::from(a_affine.is_none()) {
+            return -1;
+        }
+
+        let a_projective: k256::ProjectivePoint = a_affine.unwrap().into();
+
+        let b = match k256::EncodedPoint::from_bytes(b_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+
+        let b_affine = k256::AffinePoint::from_encoded_point(&b);
+        if bool::from(b_affine.is_none()) {
+            return -1;
+        }
+
+        let b_projective: k256::ProjectivePoint = b_affine.unwrap().into();
+
+        let res_projective = a_projective + b_projective;
+        let res_affine = res_projective.to_affine();
+
+        let res = res_affine.to_encoded_point(false);
+        if res.len() != 65 {
+            return -1;
+        }
+        res_bytes.copy_from_slice(&res.as_bytes());
+
+        return 0;
+    } else if is_secp256r1(curve) {
+        let a = match p256::EncodedPoint::from_bytes(a_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+
+        let a_affine = p256::AffinePoint::from_encoded_point(&a);
+        if bool::from(a_affine.is_none()) {
+            return -1;
+        }
+
+        let a_projective: p256::ProjectivePoint = a_affine.unwrap().into();
+
+        let b = match p256::EncodedPoint::from_bytes(b_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+
+        let b_affine = p256::AffinePoint::from_encoded_point(&b);
+        if bool::from(b_affine.is_none()) {
+            return -1;
+        }
+
+        let b_projective: p256::ProjectivePoint = b_affine.unwrap().into();
+
+        let res_projective = a_projective + b_projective;
+        let res_affine = res_projective.to_affine();
+
+        let res = res_affine.to_encoded_point(false);
+        if res.len() != 65 {
+            return -1;
+        }
+        res_bytes.copy_from_slice(&res.as_bytes());
+
+        return 0;
+    }
+
+    panic!("Invalid curve");
+}
+
+#[no_mangle]
+pub extern "C" fn rustcrypto_ecc_point_mul(curve: u64, a_bytes: &[u8; 65], b_bytes: &[u8; 32], res_bytes: &mut [u8; 65]) -> i32 {
+    if is_secp256k1(curve) {
+        let a = match k256::EncodedPoint::from_bytes(a_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+
+        let a_affine = k256::AffinePoint::from_encoded_point(&a);
+        if bool::from(a_affine.is_none()) {
+            return -1;
+        }
+
+        let a_projective: k256::ProjectivePoint = a_affine.unwrap().into();
+
+        let b = <k256::Scalar as k256::elliptic_curve::ops::Reduce::<elliptic_curve::bigint::U256>>::from_be_bytes_reduced(generic_array::GenericArray::<u8, generic_array::typenum::U32>::clone_from_slice(b_bytes));
+        let res_projective = a_projective * b;
+        let res_affine = res_projective.to_affine();
+
+        let res = res_affine.to_encoded_point(false);
+        if res.len() != 65 {
+            return -1;
+        }
+        res_bytes.copy_from_slice(&res.as_bytes());
+
+        return 0;
+    } else if is_secp256r1(curve) {
+        let a = match p256::EncodedPoint::from_bytes(a_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+
+        let a_affine = p256::AffinePoint::from_encoded_point(&a);
+        if bool::from(a_affine.is_none()) {
+            return -1;
+        }
+
+        let a_projective: p256::ProjectivePoint = a_affine.unwrap().into();
+
+        let b = <p256::Scalar as p256::elliptic_curve::ops::Reduce::<elliptic_curve::bigint::U256>>::from_be_bytes_reduced(generic_array::GenericArray::<u8, generic_array::typenum::U32>::clone_from_slice(b_bytes));
+        let res_projective = a_projective * b;
+        let res_affine = res_projective.to_affine();
+
+        let res = res_affine.to_encoded_point(false);
+        if res.len() != 65 {
+            return -1;
+        }
+        res_bytes.copy_from_slice(&res.as_bytes());
+
+        return 0;
+    }
+
+
+    panic!("Invalid curve");
 }
