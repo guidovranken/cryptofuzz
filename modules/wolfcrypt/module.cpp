@@ -1698,6 +1698,7 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
             const auto cleartext = util::Pkcs7Pad(op.cleartext.Get(), 8);
             out = util::malloc(cleartext.size());
 
+            WC_CHECK_EQ(wc_Des3Init(&ctx, nullptr, -1), 0);
             WC_CHECK_EQ(wc_Des3_SetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.iv.GetPtr(&ds), DES_ENCRYPTION), 0);
             WC_CHECK_EQ(wc_Des3_CbcEncrypt(&ctx, out, cleartext.data(), cleartext.size()), 0);
 
@@ -2370,6 +2371,7 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
 
             out = util::malloc(op.ciphertext.GetSize());
 
+            WC_CHECK_EQ(wc_Des3Init(&ctx, nullptr, -1), 0);
             WC_CHECK_EQ(wc_Des3_SetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.iv.GetPtr(&ds), DES_DECRYPTION), 0);
             WC_CHECK_EQ(wc_Des3_CbcDecrypt(&ctx, out, op.ciphertext.GetPtr(&ds), op.ciphertext.GetSize()), 0);
 
