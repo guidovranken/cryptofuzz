@@ -1457,7 +1457,6 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
 
             CF_CHECK_NE(op.tag, std::nullopt);
             CF_CHECK_EQ(op.tag->GetSize(), SIV_DIGEST_SIZE);
-            CF_CHECK_GTE(op.ciphertext.GetSize(), SIV_DIGEST_SIZE);
             CF_CHECK_EQ(op.cipher.key.GetSize(), SIV_CMAC_AES128_KEY_SIZE);
             CF_CHECK_GTE(op.cipher.iv.GetSize(), SIV_MIN_NONCE_SIZE);
 
@@ -1483,7 +1482,6 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
 
             CF_CHECK_NE(op.tag, std::nullopt);
             CF_CHECK_EQ(op.tag->GetSize(), SIV_DIGEST_SIZE);
-            CF_CHECK_GTE(op.ciphertext.GetSize(), SIV_DIGEST_SIZE);
             CF_CHECK_EQ(op.cipher.key.GetSize(), SIV_CMAC_AES256_KEY_SIZE);
             CF_CHECK_GTE(op.cipher.iv.GetSize(), SIV_MIN_NONCE_SIZE);
 
