@@ -32,7 +32,6 @@ extern "C" {
 #include <wolfssl/wolfcrypt/rabbit.h>
 #include <wolfssl/wolfcrypt/chacha.h>
 #include <wolfssl/wolfcrypt/chacha20_poly1305.h>
-#include <wolfssl/wolfcrypt/hc128.h>
 #include <wolfssl/wolfcrypt/des3.h>
 #include <wolfssl/wolfcrypt/idea.h>
 
@@ -1413,23 +1412,6 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
         }
         break;
 
-        case CF_CIPHER("HC128"):
-        {
-            HC128 ctx;
-
-            CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
-            CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
-
-            out = util::malloc(op.cleartext.GetSize());
-
-            WC_CHECK_EQ(wc_Hc128_SetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.iv.GetPtr(&ds)), 0);
-
-            WC_CHECK_EQ(wc_Hc128_Process(&ctx, out, op.cleartext.GetPtr(&ds), op.cleartext.GetSize()), 0);
-
-            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
-        }
-        break;
-
         case CF_CIPHER("AES_128_XTS"):
         case CF_CIPHER("AES_192_XTS"):
         case CF_CIPHER("AES_256_XTS"):
@@ -2103,22 +2085,6 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
 
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
 #endif
-        }
-        break;
-
-        case CF_CIPHER("HC128"):
-        {
-            HC128 ctx;
-
-            CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
-            CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
-
-            out = util::malloc(op.ciphertext.GetSize());
-
-            WC_CHECK_EQ(wc_Hc128_SetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.iv.GetPtr(&ds)), 0);
-            WC_CHECK_EQ(wc_Hc128_Process(&ctx, out, op.ciphertext.GetPtr(&ds), op.ciphertext.GetSize()), 0);
-
-            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
         }
         break;
 
