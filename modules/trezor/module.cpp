@@ -593,6 +593,7 @@ std::optional<component::ECC_PublicKey> trezor_firmware::OpECDSA_Recover(operati
     uint8_t pubkey_bytes[65];
     uint8_t sig_bytes[64];
 
+    CF_CHECK_LTE(op.id, 3);
     CF_CHECK_EQ(op.cleartext.GetSize(), 32);
     CF_CHECK_TRUE(op.digestType.Is(CF_DIGEST("NULL")));
     CF_CHECK_NE(curve = trezor_firmware_detail::toCurve(op.curveType), std::nullopt);
