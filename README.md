@@ -149,3 +149,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Golang: TBA
 - mbed TLS: [mbedtls_ecp_muladd hangs with oversized point coordinates](https://github.com/ARMmbed/mbedtls/issues/5376)
 - BoringSSL: [EVP_AEAD_CTX_free NULL pointer dereference if pointer is NULL](https://bugs.chromium.org/p/boringssl/issues/detail?id=473)
+- blst: TBA
