@@ -20,6 +20,9 @@ class circl : public Module {
         std::optional<component::ECC_Point> OpECC_Point_Mul(operation::ECC_Point_Mul& op) override;
         std::optional<component::ECC_Point> OpECC_Point_Dbl(operation::ECC_Point_Dbl& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
+        std::optional<component::G1> OpBLS_G1_Add(operation::BLS_G1_Add& op) override;
+        std::optional<component::G1> OpBLS_G1_Mul(operation::BLS_G1_Mul& op) override;
+        std::optional<component::G1> OpBLS_G1_Neg(operation::BLS_G1_Neg& op) override;
         bool SupportsModularBignumCalc(void) const override;
 };
 

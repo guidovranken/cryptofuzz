@@ -98,5 +98,32 @@ bool circl::SupportsModularBignumCalc(void) const {
     return true;
 }
 
+std::optional<component::G1> circl::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    circl_BLS_G1_Add(toGoSlice(jsonStr));
+
+    return getResultAs<component::G1>();
+}
+
+std::optional<component::G1> circl::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    circl_BLS_G1_Mul(toGoSlice(jsonStr));
+
+    return getResultAs<component::G1>();
+}
+
+std::optional<component::G1> circl::OpBLS_G1_Neg(operation::BLS_G1_Neg& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    circl_BLS_G1_Neg(toGoSlice(jsonStr));
+
+    return getResultAs<component::G1>();
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */

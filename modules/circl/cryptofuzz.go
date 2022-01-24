@@ -7,6 +7,7 @@ import (
     "encoding/json"
     "math/big"
     "github.com/cloudflare/circl/ecc/p384"
+    "github.com/cloudflare/circl/ecc/bls12381"
     "github.com/cloudflare/circl/ecc/bls12381/ff"
     "strings"
 )
@@ -84,6 +85,31 @@ type OpBignumCalc struct {
     BN1 string
     BN2 string
     BN3 string
+}
+
+type OpBLS_G1_Add struct {
+    Modifier ByteSlice
+    CurveType uint64
+    A_x string
+    A_y string
+    B_x string
+    B_y string
+}
+
+type OpBLS_G1_Mul struct {
+    Modifier ByteSlice
+    CurveType uint64
+    A_x string
+    A_y string
+    B string
+}
+
+type OpBLS_G1_Neg struct {
+    Modifier ByteSlice
+    CurveType uint64
+    A_x string
+    A_y string
+    B string
 }
 
 var result []byte
@@ -341,6 +367,149 @@ func circl_bn254_BignumCalc_Fr(in []byte) {
     }
 
     result = r2
+}
+
+func encode_G1(x, y string) (*bls12381.G1, error) {
+    a := new(bls12381.G1)
+    var a_x ff.Fp
+    var a_y ff.Fp
+
+    err := a_x.SetString(strings.TrimLeft(x, "0"))
+    if err != nil {
+        return nil, err
+    }
+
+    err = a_y.SetString(strings.TrimLeft(y, "0"))
+    if err != nil {
+        return nil, err
+    }
+
+    a_bytes, _ := a_x.MarshalBinary()
+    a_y_bytes, _ := a_y.MarshalBinary()
+    a_bytes = append(a_bytes, a_y_bytes...)
+    a_bytes[0] = a_bytes[0] & 0x1F
+
+    err = a.SetBytes(a_bytes)
+    if err != nil {
+        return nil, err
+    }
+
+    return a, nil
+}
+
+func save_G1(r *bls12381.G1) {
+    var r_x ff.Fp
+    var r_y ff.Fp
+
+    r_bytes := r.Bytes()
+
+    x := (&[ff.FpSize]byte{})[:]
+    copy(x, r_bytes)
+    x[0] &= 0x1F
+    if err := r_x.UnmarshalBinary(x); err != nil {
+        panic("Cannot decode result")
+    }
+    if err := r_y.UnmarshalBinary(r_bytes[ff.FpSize:(2 * ff.FpSize)]); err != nil {
+        panic("Cannot decode result")
+    }
+
+    x_b, ok := new(big.Int).SetString(r_x.String()[2:], 16)
+    if ok == false {
+        panic("Cannot parse circl output")
+    }
+
+    y_b, ok := new(big.Int).SetString(r_y.String()[2:], 16)
+    if ok == false {
+        panic("Cannot parse circl output")
+    }
+
+    res := make([]string, 2)
+
+    res[0], res[1] = x_b.String(), y_b.String()
+
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export circl_BLS_G1_Add
+func circl_BLS_G1_Add(in []byte) {
+    resetResult()
+
+    var op OpBLS_G1_Add
+    unmarshal(in, &op)
+
+    a, err := encode_G1(op.A_x, op.A_y)
+    if err != nil {
+        return
+    }
+
+    b, err := encode_G1(op.B_x, op.B_y)
+    if err != nil {
+        return
+    }
+
+    r := new(bls12381.G1)
+    r.Add(a, b)
+
+    if a.IsOnG1() == false {
+        return
+    }
+    if b.IsOnG1() == false {
+        return
+    }
+
+    save_G1(r)
+}
+
+//export circl_BLS_G1_Mul
+func circl_BLS_G1_Mul(in []byte) {
+    resetResult()
+
+    var op OpBLS_G1_Mul
+    unmarshal(in, &op)
+
+    a, err := encode_G1(op.A_x, op.A_y)
+    if err != nil {
+        return
+    }
+
+    var b ff.Scalar
+
+    err = b.SetString(strings.TrimLeft(op.B, "0"))
+    if err != nil {
+        return
+    }
+
+    r := new(bls12381.G1)
+    r.ScalarMult(&b, a)
+
+    if a.IsOnG1() == false {
+        return
+    }
+
+    save_G1(r)
+}
+
+//export circl_BLS_G1_Neg
+func circl_BLS_G1_Neg(in []byte) {
+    resetResult()
+
+    var op OpBLS_G1_Neg
+    unmarshal(in, &op)
+
+    a, err := encode_G1(op.A_x, op.A_y)
+    if err != nil {
+        return
+    }
+
+    a.Neg()
+
+    save_G1(a)
+
 }
 
 func main() { }
