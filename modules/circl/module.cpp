@@ -72,5 +72,31 @@ std::optional<component::ECC_Point> circl::OpECC_Point_Dbl(operation::ECC_Point_
     return getResultAs<component::ECC_Point>();
 }
 
+std::optional<component::Bignum> circl::OpBignumCalc(operation::BignumCalc& op) {
+    if ( op.modulo == std::nullopt ) {
+        return std::nullopt;
+    }
+
+    if ( op.modulo->ToTrimmedString() == "4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787" ) {
+        auto json = op.ToJSON();
+        auto jsonStr = json.dump();
+        circl_bn254_BignumCalc_Fp(toGoSlice(jsonStr));
+
+        return getResultAs<component::Bignum>();
+    } else if ( op.modulo->ToTrimmedString() == "52435875175126190479447740508185965837690552500527637822603658699938581184513" ) {
+        auto json = op.ToJSON();
+        auto jsonStr = json.dump();
+        circl_bn254_BignumCalc_Fr(toGoSlice(jsonStr));
+
+        return getResultAs<component::Bignum>();
+    }
+
+    return std::nullopt;
+}
+
+bool circl::SupportsModularBignumCalc(void) const {
+    return true;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */
