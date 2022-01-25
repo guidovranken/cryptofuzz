@@ -125,5 +125,33 @@ std::optional<component::G1> circl::OpBLS_G1_Neg(operation::BLS_G1_Neg& op) {
     return getResultAs<component::G1>();
 }
 
+std::optional<bool> circl::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+
+    circl_BLS_IsG1OnCurve(toGoSlice(jsonStr));
+
+    return getResultAs<bool>();
+}
+
+std::optional<component::G1> circl::OpBLS_Decompress_G1(operation::BLS_Decompress_G1& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    circl_BLS_Decompress_G1(toGoSlice(jsonStr));
+
+    return getResultAs<component::G1>();
+}
+
+std::optional<component::Bignum> circl::OpBLS_Compress_G1(operation::BLS_Compress_G1& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    circl_BLS_Compress_G1(toGoSlice(jsonStr));
+
+    return getResultAs<component::Bignum>();
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */

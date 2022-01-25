@@ -112,6 +112,26 @@ type OpBLS_G1_Neg struct {
     B string
 }
 
+type OpBLS_IsG1OnCurve struct {
+    Modifier ByteSlice
+    CurveType uint64
+    G1_x string
+    G1_y string
+}
+
+type OpBLS_Decompress_G1 struct {
+    Modifier ByteSlice
+    CurveType uint64
+    Compressed string
+}
+
+type OpBLS_Compress_G1 struct {
+    Modifier ByteSlice
+    CurveType uint64
+    G1_x string
+    G1_y string
+}
+
 var result []byte
 
 func resetResult() {
@@ -510,6 +530,70 @@ func circl_BLS_G1_Neg(in []byte) {
 
     save_G1(a)
 
+}
+
+//export circl_BLS_IsG1OnCurve
+func circl_BLS_IsG1OnCurve(in []byte) {
+    resetResult()
+
+    var op OpBLS_IsG1OnCurve
+    unmarshal(in, &op)
+
+    a, err := encode_G1(op.G1_x, op.G1_y)
+    if err != nil {
+        return
+    }
+
+    res := a.IsOnG1()
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export circl_BLS_Decompress_G1
+func circl_BLS_Decompress_G1(in []byte) {
+    resetResult()
+
+    var op OpBLS_Decompress_G1
+    unmarshal(in, &op)
+
+    compressed := decodeBignum(op.Compressed)
+
+    a := new(bls12381.G1)
+
+    err := a.SetBytes(compressed.Bytes())
+    if err != nil {
+        return
+    }
+
+    save_G1(a)
+}
+
+//export circl_BLS_Compress_G1
+func circl_BLS_Compress_G1(in []byte) {
+    resetResult()
+
+    var op OpBLS_Compress_G1
+    unmarshal(in, &op)
+
+    a, err := encode_G1(op.G1_x, op.G1_y)
+    if err != nil {
+        return
+    }
+
+    res := new(big.Int).SetBytes(a.BytesCompressed()).String()
+
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
 }
 
 func main() { }
