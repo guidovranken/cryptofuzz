@@ -95,12 +95,9 @@ static std::string from_mont(const std::string& y_, const std::string& mod_) {
     return res.str();
 }
 
+extern "C" void __msan_unpoison(const volatile void *a, size_t size) __attribute__((weak));
+
 static std::string mutateBinary(const std::string s) {
-#if 0
-    if ( getBool() ) {
-        return s;
-    }
-#endif
     if ( s.size() && s[0] == '0' ) {
         return s;
     }
@@ -112,8 +109,15 @@ static std::string mutateBinary(const std::string s) {
 
     std::vector<uint8_t> bytes;
     export_bits(i, std::back_inserter(bytes), 8);
-    //const auto oldsize = bytes.size();
     auto newsize = LLVMFuzzerMutate(bytes.data(), bytes.size(), bytes.size());
+
+    /* Memory sanitizer doesn't like that LLVMFuzzerMutate is called.
+     * If MSAN is enabled, manually unpoison the region returned by
+     * LLVMFuzzerMutate.
+     */
+    if ( __msan_unpoison ) {
+        __msan_unpoison(bytes.data(), newsize);
+    }
 
     bytes.resize(newsize);
     if ( newsize ) {
