@@ -137,11 +137,6 @@ namespace mbedTLS_detail {
             { CF_CIPHER("DES_EDE_CBC"), MBEDTLS_CIPHER_DES_EDE_CBC  },
             { CF_CIPHER("DES_EDE3_ECB"), MBEDTLS_CIPHER_DES_EDE3_ECB  },
             { CF_CIPHER("DES_EDE3_CBC"), MBEDTLS_CIPHER_DES_EDE3_CBC  },
-            { CF_CIPHER("BLOWFISH_ECB"), MBEDTLS_CIPHER_BLOWFISH_ECB  },
-            { CF_CIPHER("BLOWFISH_CBC"), MBEDTLS_CIPHER_BLOWFISH_CBC  },
-            { CF_CIPHER("BLOWFISH_CFB64"), MBEDTLS_CIPHER_BLOWFISH_CFB64  },
-            { CF_CIPHER("BLOWFISH_CTR"), MBEDTLS_CIPHER_BLOWFISH_CTR  },
-            { CF_CIPHER("RC4"), MBEDTLS_CIPHER_ARC4_128  },
             { CF_CIPHER("AES_128_CCM"), MBEDTLS_CIPHER_AES_128_CCM  },
             { CF_CIPHER("AES_192_CCM"), MBEDTLS_CIPHER_AES_192_CCM  },
             { CF_CIPHER("AES_256_CCM"), MBEDTLS_CIPHER_AES_256_CCM  },
@@ -197,8 +192,6 @@ namespace mbedTLS_detail {
             { CF_DIGEST("SHA256"), MBEDTLS_MD_SHA256 },
             { CF_DIGEST("SHA384"), MBEDTLS_MD_SHA384 },
             { CF_DIGEST("SHA512"), MBEDTLS_MD_SHA512 },
-            { CF_DIGEST("MD2"), MBEDTLS_MD_MD2 },
-            { CF_DIGEST("MD4"), MBEDTLS_MD_MD4 },
             { CF_DIGEST("MD5"), MBEDTLS_MD_MD5 },
             { CF_DIGEST("RIPEMD160"), MBEDTLS_MD_RIPEMD160 },
         };
@@ -304,24 +297,32 @@ std::optional<component::MAC> mbedTLS::OpCMAC(operation::CMAC& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     mbedTLS_detail::SetGlobalDs(&ds);
 
+    mbedtls_cipher_context_t cipher_ctx;
+    bool ctxInited = false;
     const mbedtls_cipher_info_t *cipher_info = nullptr;
     uint8_t* out = nullptr;
 
     /* Initialize */
     {
         CF_CHECK_NE(cipher_info = mbedTLS_detail::to_mbedtls_cipher_info_t(op.cipher.cipherType), nullptr);
-        out = util::malloc(cipher_info->block_size);
+        mbedtls_cipher_init(&cipher_ctx);
+        ctxInited = true;
+        out = util::malloc(mbedtls_cipher_get_block_size(&cipher_ctx));
     }
 
     {
         CF_CHECK_EQ(mbedtls_cipher_cmac(cipher_info, op.cipher.key.GetPtr(), op.cipher.key.GetSize() * 8, op.cleartext.GetPtr(), op.cleartext.GetSize(), out), 0);
 
-        ret = component::MAC(out, cipher_info->block_size);
+        ret = component::MAC(out, mbedtls_cipher_get_block_size(&cipher_ctx));
     }
 
 end:
 
     util::free(out);
+
+    if ( ctxInited == true ) {
+        mbedtls_cipher_free(&cipher_ctx);
+    }
 
     mbedTLS_detail::UnsetGlobalDs();
 
@@ -343,7 +344,6 @@ namespace mbedTLS_detail {
         mbedTLS_detail::SetGlobalDs(&ds);
 
         uint8_t* out = util::malloc(op.ciphertextSize);
-        uint8_t* tag = util::malloc(*op.tagSize);
 
         /* Initialize */
         {
@@ -360,19 +360,18 @@ namespace mbedTLS_detail {
         /* Process/finalize */
         {
             size_t olen;
-            CF_CHECK_EQ(mbedtls_cipher_auth_encrypt(&cipher_ctx,
+            CF_CHECK_EQ(mbedtls_cipher_auth_encrypt_ext(&cipher_ctx,
                         op.cipher.iv.GetPtr(), op.cipher.iv.GetSize(),
                         op.aad != std::nullopt ? op.aad->GetPtr() : nullptr, op.aad != std::nullopt ? op.aad->GetSize() : 0,
                         op.cleartext.GetPtr(), op.cleartext.GetSize(),
-                        out, &olen,
-                        tag, *op.tagSize), 0);
+                        out, op.ciphertextSize,
+                        &olen, *op.tagSize), 0);
 
-            ret = component::Ciphertext(Buffer(out, olen), Buffer(tag, *op.tagSize));
+            ret = component::Ciphertext(Buffer(out, olen), Buffer(out + olen, *op.tagSize));
         }
 
 end:
         util::free(out);
-        util::free(tag);
 
         if ( ctxInited == true ) {
             mbedtls_cipher_free(&cipher_ctx);
@@ -531,12 +530,12 @@ namespace mbedTLS_detail {
         /* Process/finalize */
         {
             size_t olen;
-            CF_CHECK_EQ(mbedtls_cipher_auth_decrypt(&cipher_ctx,
+            CF_CHECK_EQ(mbedtls_cipher_auth_decrypt_ext(&cipher_ctx,
                         op.cipher.iv.GetPtr(), op.cipher.iv.GetSize(),
                         op.aad != std::nullopt ? op.aad->GetPtr() : nullptr, op.aad != std::nullopt ? op.aad->GetSize() : 0,
                         op.ciphertext.GetPtr(), op.ciphertext.GetSize(),
-                        out, &olen,
-                        op.tag != std::nullopt ? op.tag->GetPtr() : nullptr, op.tag != std::nullopt ? op.tag->GetSize() : 0), 0);
+                        out, op.cleartextSize,
+                        &olen, op.tag != std::nullopt ? op.tag->GetSize() : 0), 0);
 
             ret = component::Cleartext(Buffer(out, olen));
         }
@@ -1139,7 +1138,7 @@ std::optional<bool> mbedTLS::OpECDSA_Verify(operation::ECDSA_Verify& op) {
             case    CF_DIGEST("SHA256"):
                 {
                     uint8_t CT[32];
-                    CF_CHECK_EQ(mbedtls_sha256_ret(op.cleartext.GetPtr(), op.cleartext.GetSize(), CT, 0), 0);
+                    CF_CHECK_EQ(mbedtls_sha256(op.cleartext.GetPtr(), op.cleartext.GetSize(), CT, 0), 0);
                     verifyRes = mbedtls_ecdsa_verify(&ctx.grp, CT, sizeof(CT), &ctx.Q, &sig_r, &sig_s);
                 }
                 break;
