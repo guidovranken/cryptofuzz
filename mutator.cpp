@@ -95,8 +95,6 @@ static std::string from_mont(const std::string& y_, const std::string& mod_) {
     return res.str();
 }
 
-extern "C" void __msan_unpoison(const volatile void *a, size_t size) __attribute__((weak));
-
 static std::string mutateBinary(const std::string s) {
     if ( s.size() && s[0] == '0' ) {
         return s;
@@ -115,9 +113,7 @@ static std::string mutateBinary(const std::string s) {
      * If MSAN is enabled, manually unpoison the region returned by
      * LLVMFuzzerMutate.
      */
-    if ( __msan_unpoison ) {
-        __msan_unpoison(bytes.data(), newsize);
-    }
+    cryptofuzz::util::MemorySanitizerUnpoison(bytes.data(), newsize);
 
     bytes.resize(newsize);
     if ( newsize ) {
