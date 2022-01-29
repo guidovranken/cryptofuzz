@@ -445,38 +445,38 @@ func Gnark_bn254_BignumCalc_Fp(in []byte) {
     bn[1].SetBigInt(decodeBignum(op.BN1))
 
     var res string
+    var r *fp.Element
 
     success := false
 
     if false {
     } else if isAdd(op.CalcOp) {
-        res = new(fp.Element).Add(&bn[0], &bn[1]).String()
+        r = new(fp.Element).Add(&bn[0], &bn[1])
         success = true
     } else if isSub(op.CalcOp) {
-        res = new(fp.Element).Sub(&bn[0], &bn[1]).String()
+        r = new(fp.Element).Sub(&bn[0], &bn[1])
         success = true
     } else if isMul(op.CalcOp) {
-        res = new(fp.Element).Mul(&bn[0], &bn[1]).String()
+        r = new(fp.Element).Mul(&bn[0], &bn[1])
         success = true
     } else if isSqr(op.CalcOp) {
-        res = new(fp.Element).Square(&bn[0]).String()
+        r = new(fp.Element).Square(&bn[0])
         success = true
     } else if isNeg(op.CalcOp) {
-        res = new(fp.Element).Neg(&bn[0]).String()
+        r = new(fp.Element).Neg(&bn[0])
         success = true
     } else if isInvMod(op.CalcOp) {
-        res = new(fp.Element).Inverse(&bn[0]).String()
+        r = new(fp.Element).Inverse(&bn[0])
         success = true
     } else if isExp(op.CalcOp) {
-        exp := decodeBignum(op.BN1)
-        res = new(fp.Element).Exp(bn[0], exp).String()
+        r = new(fp.Element).Exp(bn[0], decodeBignum(op.BN1))
         success = true
     } else if isSqrt(op.CalcOp) {
         sqrt := new(fp.Element).Sqrt(&bn[0])
         if sqrt != nil {
-            res = new(fp.Element).Square(sqrt).String()
+            r = new(fp.Element).Square(sqrt)
         } else {
-            res = "0"
+            r = new(fp.Element).SetUint64(0)
         }
         success = true
     }
@@ -484,6 +484,10 @@ func Gnark_bn254_BignumCalc_Fp(in []byte) {
     if success == false {
         return
     }
+
+    var b big.Int
+    r.ToBigIntRegular(&b)
+    res = b.String()
 
     r2, err := json.Marshal(&res)
     if err != nil {
@@ -505,38 +509,38 @@ func Gnark_bn254_BignumCalc_Fr(in []byte) {
     bn[1].SetBigInt(decodeBignum(op.BN1))
 
     var res string
+    var r *fr.Element
 
     success := false
 
     if false {
     } else if isAdd(op.CalcOp) {
-        res = new(fr.Element).Add(&bn[0], &bn[1]).String()
+        r = new(fr.Element).Add(&bn[0], &bn[1])
         success = true
     } else if isSub(op.CalcOp) {
-        res = new(fr.Element).Sub(&bn[0], &bn[1]).String()
+        r = new(fr.Element).Sub(&bn[0], &bn[1])
         success = true
     } else if isMul(op.CalcOp) {
-        res = new(fr.Element).Mul(&bn[0], &bn[1]).String()
+        r = new(fr.Element).Mul(&bn[0], &bn[1])
         success = true
     } else if isSqr(op.CalcOp) {
-        res = new(fr.Element).Square(&bn[0]).String()
+        r = new(fr.Element).Square(&bn[0])
         success = true
     } else if isNeg(op.CalcOp) {
-        res = new(fr.Element).Neg(&bn[0]).String()
+        r = new(fr.Element).Neg(&bn[0])
         success = true
     } else if isInvMod(op.CalcOp) {
-        res = new(fr.Element).Inverse(&bn[0]).String()
+        r = new(fr.Element).Inverse(&bn[0])
         success = true
     } else if isExp(op.CalcOp) {
-        exp := decodeBignum(op.BN1)
-        res = new(fr.Element).Exp(bn[0], exp).String()
+        r = new(fr.Element).Exp(bn[0], decodeBignum(op.BN1))
         success = true
     } else if isSqrt(op.CalcOp) {
         sqrt := new(fr.Element).Sqrt(&bn[0])
         if sqrt != nil {
-            res = new(fr.Element).Square(sqrt).String()
+            r = new(fr.Element).Square(sqrt)
         } else {
-            res = "0"
+            r = new(fr.Element).SetUint64(0)
         }
         success = true
     }
@@ -544,6 +548,10 @@ func Gnark_bn254_BignumCalc_Fr(in []byte) {
     if success == false {
         return
     }
+
+    var b big.Int
+    r.ToBigIntRegular(&b)
+    res = b.String()
 
     r2, err := json.Marshal(&res)
     if err != nil {
