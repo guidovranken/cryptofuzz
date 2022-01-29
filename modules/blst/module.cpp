@@ -1007,8 +1007,19 @@ namespace blst_detail {
                 break;
             case    CF_CALCOP("InvMod(A,B)"):
                 CF_CHECK_TRUE(blst_detail::To_blst_fr(op.bn0, A));
-                PREPARE_RESULT();
-                blst_fr_eucl_inverse(RESULT_PTR(), &A);
+
+                try {
+                    if ( ds.Get<bool>() ) {
+                        PREPARE_RESULT();
+                        CF_NORET(blst_fr_eucl_inverse(RESULT_PTR(), &A));
+                    } else {
+                        PREPARE_RESULT();
+                        CF_NORET(blst_fr_inverse(RESULT_PTR(), &A));
+                    }
+                } catch ( fuzzing::datasource::Base::OutOfData ) {
+                    goto end;
+                }
+
                 ret = blst_detail::To_component_bignum(RESULT());
                 break;
             case    CF_CALCOP("LShift1(A)"):
@@ -1168,6 +1179,15 @@ end:
                     } else {
                         ret = std::string("0");
                     }
+                }
+                break;
+            case    CF_CALCOP("IsSquare(A)"):
+                {
+                    const bool is_square = blst_fp_is_square(&A);
+                    CF_ASSERT(
+                            is_square ==
+                            blst_fp_sqrt(&result, &A), "");
+                    ret = is_square ? std::string("1") : std::string("0");
                 }
                 break;
             case    CF_CALCOP("Not(A)"):
