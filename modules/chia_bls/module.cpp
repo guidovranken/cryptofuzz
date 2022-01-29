@@ -217,8 +217,6 @@ std::optional<component::G2> chia_bls::OpBLS_MapToG2(operation::BLS_MapToG2& op)
     std::optional<component::G2> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    g2_st* g2 = bls::Util::SecAlloc<g2_st>(1);
-
     std::vector<uint8_t> pseudo_random_bytes;
 
     {
@@ -249,6 +247,8 @@ std::optional<component::G2> chia_bls::OpBLS_MapToG2(operation::BLS_MapToG2& op)
         }
         pseudo_random_bytes.insert(pseudo_random_bytes.end(), v_y->begin(), v_y->end());
     }
+
+    g2_st* g2 = bls::Util::SecAlloc<g2_st>(1);
 
     ep2_map_from_field(g2, pseudo_random_bytes.data(), 256);
 
