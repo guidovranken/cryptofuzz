@@ -1140,6 +1140,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("LRot(A,B,C)"):
             {
                 CF_NORET(nn_init(&result, 0));
+                CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
 
                 std::optional<uint16_t> count, bitlen;
 
@@ -1154,6 +1155,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("RRot(A,B,C)"):
             {
                 CF_NORET(nn_init(&result, 0));
+                CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
 
                 std::optional<uint16_t> count, bitlen;
 
