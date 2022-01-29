@@ -1183,6 +1183,7 @@ end:
                 break;
             case    CF_CALCOP("IsSquare(A)"):
                 {
+                    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.bn0, A));
                     const bool is_square = blst_fp_is_square(&A);
                     CF_ASSERT(
                             is_square ==
