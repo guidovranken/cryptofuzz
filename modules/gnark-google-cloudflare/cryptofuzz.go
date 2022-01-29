@@ -8,6 +8,7 @@ import (
     "github.com/consensys/gnark-crypto/ecc/bn254"
     "github.com/consensys/gnark-crypto/ecc/bn254/fp"
     "github.com/consensys/gnark-crypto/ecc/bn254/fr"
+    gnark_bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
     bls12381_fp "github.com/consensys/gnark-crypto/ecc/bls12-381/fp"
     bls12381_fr "github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
     google "github.com/ethereum/go-ethereum/crypto/bn256/google"
@@ -84,6 +85,13 @@ type OpBLS_G1_Neg struct {
     A_x string
     A_y string
     B string
+}
+
+type OpBLS_MapToG1 struct {
+    Modifier ByteSlice
+    CurveType uint64
+    U string
+    V string
 }
 
 type OpBLS_G2_Add struct {
@@ -306,6 +314,48 @@ func Gnark_bn254_BLS_G1_Neg(in []byte) {
 
     res := make([]string, 2)
     res[0], res[1] = r.X.String(), r.Y.String()
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export Gnark_bn254_BLS_MapToG1
+func Gnark_bn254_BLS_MapToG1(in []byte) {
+    resetResult()
+    return
+
+    var op OpBLS_MapToG1
+    unmarshal(in, &op)
+
+    U := decodeBignum(op.U)
+    V := decodeBignum(op.V)
+
+    if U.Cmp(new(big.Int).SetUint64(0)) == 0 {
+        return
+    }
+    if V.Cmp(new(big.Int).SetUint64(0)) == 0 {
+        return
+    }
+    u := new(bls12381_fp.Element).SetBigInt(U)
+    v := new(bls12381_fp.Element).SetBigInt(V)
+
+    /* https://github.com/ConsenSys/gnark-crypto/blob/b04e1f3a5349a57e4f61eff9df377d1440acad25/ecc/bls12-381/hash_to_curve.go#L151-L157 */
+    Q0 := gnark_bls12381.MapToCurveG1Svdw(*u)
+    Q1 := gnark_bls12381.MapToCurveG1Svdw(*v)
+    var _Q0, _Q1, _res gnark_bls12381.G1Jac
+    _Q0.FromAffine(&Q0)
+    _Q1.FromAffine(&Q1)
+    _res.Set(&_Q1).AddAssign(&_Q0)
+    var r_affine gnark_bls12381.G1Affine
+    r_affine.FromJacobian(&_res)
+
+    res := make([]string, 2)
+    res[0], res[1] = r_affine.X.String(), r_affine.Y.String()
 
     r2, err := json.Marshal(&res)
 

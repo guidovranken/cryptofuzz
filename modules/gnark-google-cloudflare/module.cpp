@@ -124,6 +124,15 @@ std::optional<component::G2> Gnark_bn254::OpBLS_G2_Neg(operation::BLS_G2_Neg& op
     return getResultAs<component::G2>();
 }
 
+std::optional<component::G1> Gnark_bn254::OpBLS_MapToG1(operation::BLS_MapToG1& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    Gnark_bn254_BLS_MapToG1(toGoSlice(jsonStr));
+
+    return getResultAs<component::G1>();
+}
+
 std::optional<component::Bignum> Gnark_bn254::OpBignumCalc(operation::BignumCalc& op) {
     if ( op.modulo == std::nullopt ) {
         return std::nullopt;
