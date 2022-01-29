@@ -448,6 +448,7 @@ func Gnark_bn254_BignumCalc_Fp(in []byte) {
     var r *fp.Element
 
     success := false
+    skipconv := false
 
     if false {
     } else if isAdd(op.CalcOp) {
@@ -479,15 +480,49 @@ func Gnark_bn254_BignumCalc_Fp(in []byte) {
             r = new(fp.Element).SetUint64(0)
         }
         success = true
+    } else if isJacobi(op.CalcOp) {
+        legendre := bn[0].Legendre()
+        res = strconv.Itoa(legendre)
+        success = true
+        skipconv = true
+    } else if isNumBits(op.CalcOp) {
+        bitlen := bn[0].BitLen()
+        res = strconv.Itoa(bitlen)
+        success = true
+        skipconv = true
+    } else if isDiv(op.CalcOp) {
+        r = new(fp.Element).Div(&bn[0], &bn[1])
+        success = true
+    } else if isSet(op.CalcOp) {
+        r = new(fp.Element).Set(&bn[0])
+        success = true
+    } else if isIsEq(op.CalcOp) {
+        if bn[0].Equal(&bn[1]) {
+            res = "1"
+        } else {
+            res = "0"
+        }
+        success = true
+        skipconv = true
+    } else if isIsZero(op.CalcOp) {
+        if bn[0].IsZero() {
+            res = "1"
+        } else {
+            res = "0"
+        }
+        success = true
+        skipconv = true
     }
 
     if success == false {
         return
     }
 
-    var b big.Int
-    r.ToBigIntRegular(&b)
-    res = b.String()
+    if skipconv == false {
+        var b big.Int
+        r.ToBigIntRegular(&b)
+        res = b.String()
+    }
 
     r2, err := json.Marshal(&res)
     if err != nil {
@@ -512,6 +547,7 @@ func Gnark_bn254_BignumCalc_Fr(in []byte) {
     var r *fr.Element
 
     success := false
+    skipconv := false
 
     if false {
     } else if isAdd(op.CalcOp) {
@@ -543,15 +579,49 @@ func Gnark_bn254_BignumCalc_Fr(in []byte) {
             r = new(fr.Element).SetUint64(0)
         }
         success = true
+    } else if isJacobi(op.CalcOp) {
+        legendre := bn[0].Legendre()
+        res = strconv.Itoa(legendre)
+        success = true
+        skipconv = true
+    } else if isNumBits(op.CalcOp) {
+        bitlen := bn[0].BitLen()
+        res = strconv.Itoa(bitlen)
+        success = true
+        skipconv = true
+    } else if isDiv(op.CalcOp) {
+        r = new(fr.Element).Div(&bn[0], &bn[1])
+        success = true
+    } else if isSet(op.CalcOp) {
+        r = new(fr.Element).Set(&bn[0])
+        success = true
+    } else if isIsEq(op.CalcOp) {
+        if bn[0].Equal(&bn[1]) {
+            res = "1"
+        } else {
+            res = "0"
+        }
+        success = true
+        skipconv = true
+    } else if isIsZero(op.CalcOp) {
+        if bn[0].IsZero() {
+            res = "1"
+        } else {
+            res = "0"
+        }
+        success = true
+        skipconv = true
     }
 
     if success == false {
         return
     }
 
-    var b big.Int
-    r.ToBigIntRegular(&b)
-    res = b.String()
+    if skipconv == false {
+        var b big.Int
+        r.ToBigIntRegular(&b)
+        res = b.String()
+    }
 
     r2, err := json.Marshal(&res)
     if err != nil {
