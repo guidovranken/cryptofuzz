@@ -132,13 +132,25 @@ std::optional<component::Bignum> Gnark_bn254::OpBignumCalc(operation::BignumCalc
     if ( op.modulo->ToTrimmedString() == "21888242871839275222246405745257275088696311157297823662689037894645226208583" ) {
         auto json = op.ToJSON();
         auto jsonStr = json.dump();
-        Gnark_bn254_BignumCalc_Fp(toGoSlice(jsonStr));
+        Gnark_bn254_BignumCalc_bn254_Fp(toGoSlice(jsonStr));
 
         return getResultAs<component::Bignum>();
     } else if ( op.modulo->ToTrimmedString() == "21888242871839275222246405745257275088548364400416034343698204186575808495617" ) {
         auto json = op.ToJSON();
         auto jsonStr = json.dump();
-        Gnark_bn254_BignumCalc_Fr(toGoSlice(jsonStr));
+        Gnark_bn254_BignumCalc_bn254_Fr(toGoSlice(jsonStr));
+
+        return getResultAs<component::Bignum>();
+    } else if ( op.modulo->ToTrimmedString() == "4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787" ) {
+        auto json = op.ToJSON();
+        auto jsonStr = json.dump();
+        Gnark_bn254_BignumCalc_bls12381_Fp(toGoSlice(jsonStr));
+
+        return getResultAs<component::Bignum>();
+    } else if ( op.modulo->ToTrimmedString() == "52435875175126190479447740508185965837690552500527637822603658699938581184513" ) {
+        auto json = op.ToJSON();
+        auto jsonStr = json.dump();
+        Gnark_bn254_BignumCalc_bls12381_Fr(toGoSlice(jsonStr));
 
         return getResultAs<component::Bignum>();
     }
