@@ -1054,6 +1054,9 @@ end:
 
 std::optional<component::ECC_Point> secp256k1::OpECC_Point_Mul(operation::ECC_Point_Mul& op) {
     std::optional<component::ECC_Point> ret = std::nullopt;
+    if ( !op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        return ret;
+    }
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     void* a_ge = util::malloc(cryptofuzz_secp256k1_ge_size());
