@@ -367,7 +367,10 @@ namespace mbedTLS_detail {
                         out, op.ciphertextSize,
                         &olen, *op.tagSize), 0);
 
-            ret = component::Ciphertext(Buffer(out, olen), Buffer(out + olen, *op.tagSize));
+            CF_ASSERT(olen == op.cleartext.GetSize() + *op.tagSize, "mbedtls_cipher_auth_encrypt_ext: Invalid outlen");
+            ret = component::Ciphertext(
+                    Buffer(out, op.cleartext.GetSize()),
+                    Buffer(out + op.cleartext.GetSize(), *op.tagSize));
         }
 
 end:
@@ -512,6 +515,8 @@ namespace mbedTLS_detail {
         const mbedtls_cipher_info_t *cipher_info = nullptr;
         bool ctxInited = false;
 
+        const size_t insize = op.ciphertext.GetSize() + (op.tag != std::nullopt ? op.tag->GetSize() : 0);
+        uint8_t* in = util::malloc(insize);
         uint8_t* out = util::malloc(op.cleartextSize);
 
         /* Initialize */
@@ -526,6 +531,10 @@ namespace mbedTLS_detail {
             CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
         }
 
+        memcpy(in, op.ciphertext.GetPtr(), op.ciphertext.GetSize());
+        if ( op.tag != std::nullopt ) {
+            memcpy(in + op.ciphertext.GetSize(), op.tag->GetPtr(), op.tag->GetSize());
+        }
 
         /* Process/finalize */
         {
@@ -533,7 +542,7 @@ namespace mbedTLS_detail {
             CF_CHECK_EQ(mbedtls_cipher_auth_decrypt_ext(&cipher_ctx,
                         op.cipher.iv.GetPtr(), op.cipher.iv.GetSize(),
                         op.aad != std::nullopt ? op.aad->GetPtr() : nullptr, op.aad != std::nullopt ? op.aad->GetSize() : 0,
-                        op.ciphertext.GetPtr(), op.ciphertext.GetSize(),
+                        in, insize,
                         out, op.cleartextSize,
                         &olen, op.tag != std::nullopt ? op.tag->GetSize() : 0), 0);
 
@@ -541,6 +550,7 @@ namespace mbedTLS_detail {
         }
 
 end:
+        util::free(in);
         util::free(out);
 
         if ( ctxInited == true ) {
