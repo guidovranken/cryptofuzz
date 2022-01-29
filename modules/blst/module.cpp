@@ -1314,6 +1314,15 @@ namespace blst_detail {
                     }
                 }
                 break;
+            case    CF_CALCOP("IsSquare(A)"):
+                {
+                    CF_CHECK_TRUE(blst_detail::To_blst_fp2(op.bn0, A));
+                    const bool is_square = blst_fp2_is_square(&A);
+                    CF_ASSERT(
+                            is_square ==
+                            blst_fp2_sqrt(&result, &A), "");
+                }
+                break;
             case    CF_CALCOP("Not(A)"):
                 CF_CHECK_TRUE(blst_detail::To_blst_fp2(op.bn0, A));
                 PREPARE_RESULT();
