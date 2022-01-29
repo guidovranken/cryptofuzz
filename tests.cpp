@@ -565,6 +565,16 @@ void test(const operation::BLS_HashToG2& op, const std::optional<component::G2>&
     (void)result;
 }
 
+void test(const operation::BLS_MapToG1& op, const std::optional<component::G1>& result) {
+    (void)op;
+    (void)result;
+}
+
+void test(const operation::BLS_MapToG2& op, const std::optional<component::G2>& result) {
+    (void)op;
+    (void)result;
+}
+
 void test(const operation::BLS_IsG1OnCurve& op, const std::optional<bool>& result) {
     (void)op;
     (void)result;

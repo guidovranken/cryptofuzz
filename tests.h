@@ -58,6 +58,8 @@ void test(const operation::BLS_MillerLoop& op, const std::optional<component::Fp
 void test(const operation::BLS_FinalExp& op, const std::optional<component::Fp12>& result);
 void test(const operation::BLS_HashToG1& op, const std::optional<component::G1>& result);
 void test(const operation::BLS_HashToG2& op, const std::optional<component::G2>& result);
+void test(const operation::BLS_MapToG1& op, const std::optional<component::G1>& result);
+void test(const operation::BLS_MapToG2& op, const std::optional<component::G2>& result);
 void test(const operation::BLS_IsG1OnCurve& op, const std::optional<bool>& result);
 void test(const operation::BLS_IsG2OnCurve& op, const std::optional<bool>& result);
 void test(const operation::BLS_GenerateKeyPair& op, const std::optional<component::BLS_KeyPair>& result);

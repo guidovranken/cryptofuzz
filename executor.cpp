@@ -1346,6 +1346,50 @@ template<> std::optional<component::G1> ExecutorBase<component::G1, operation::B
     return module->OpBLS_HashToG1(op);
 }
 
+/* Specialization for operation::BLS_MapToG1 */
+template<> void ExecutorBase<component::G1, operation::BLS_MapToG1>::postprocess(std::shared_ptr<Module> module, operation::BLS_MapToG1& op, const ExecutorBase<component::G1, operation::BLS_MapToG1>::ResultPair& result) const {
+    (void)module;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto g1_x = result.second->first.ToTrimmedString();
+        const auto g1_y = result.second->second.ToTrimmedString();
+
+        G1AddToPool(curveID, g1_x, g1_y);
+
+        if ( g1_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_x); }
+        if ( g1_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_y); }
+    }
+}
+
+template<> std::optional<component::G1> ExecutorBase<component::G1, operation::BLS_MapToG1>::callModule(std::shared_ptr<Module> module, operation::BLS_MapToG1& op) const {
+    return module->OpBLS_MapToG1(op);
+}
+
+/* Specialization for operation::BLS_MapToG2 */
+template<> void ExecutorBase<component::G2, operation::BLS_MapToG2>::postprocess(std::shared_ptr<Module> module, operation::BLS_MapToG2& op, const ExecutorBase<component::G2, operation::BLS_MapToG2>::ResultPair& result) const {
+    (void)module;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto g2_v = result.second->first.first.ToTrimmedString();
+        const auto g2_w = result.second->first.second.ToTrimmedString();
+        const auto g2_x = result.second->second.first.ToTrimmedString();
+        const auto g2_y = result.second->second.second.ToTrimmedString();
+
+        G2AddToPool(curveID, g2_v, g2_w, g2_x, g2_y);
+
+        if ( g2_v.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_v); }
+        if ( g2_w.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_w); }
+        if ( g2_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_x); }
+        if ( g2_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g2_y); }
+    }
+}
+
+template<> std::optional<component::G2> ExecutorBase<component::G2, operation::BLS_MapToG2>::callModule(std::shared_ptr<Module> module, operation::BLS_MapToG2& op) const {
+    return module->OpBLS_MapToG2(op);
+}
+
 /* Specialization for operation::BLS_IsG1OnCurve */
 template<> void ExecutorBase<bool, operation::BLS_IsG1OnCurve>::postprocess(std::shared_ptr<Module> module, operation::BLS_IsG1OnCurve& op, const ExecutorBase<bool, operation::BLS_IsG1OnCurve>::ResultPair& result) const {
     (void)module;
@@ -2291,6 +2335,8 @@ template class ExecutorBase<component::Fp12, operation::BLS_MillerLoop>;
 template class ExecutorBase<component::Fp12, operation::BLS_FinalExp>;
 template class ExecutorBase<component::G1, operation::BLS_HashToG1>;
 template class ExecutorBase<component::G2, operation::BLS_HashToG2>;
+template class ExecutorBase<component::G1, operation::BLS_MapToG1>;
+template class ExecutorBase<component::G2, operation::BLS_MapToG2>;
 template class ExecutorBase<bool, operation::BLS_IsG1OnCurve>;
 template class ExecutorBase<bool, operation::BLS_IsG2OnCurve>;
 template class ExecutorBase<component::BLS_KeyPair, operation::BLS_GenerateKeyPair>;

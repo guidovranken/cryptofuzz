@@ -231,6 +231,14 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::G1> OpBLS_MapToG1(operation::BLS_MapToG1& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::G2> OpBLS_MapToG2(operation::BLS_MapToG2& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<bool> OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
             (void)op;
             return std::nullopt;

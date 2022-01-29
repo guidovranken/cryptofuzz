@@ -1,6 +1,6 @@
 from py_ecc.bls import G2ProofOfPossession as bls_pop
 from py_ecc.bls.g2_primitives import pubkey_to_G1, G2_to_signature, signature_to_G2, G1_to_pubkey, G2_to_signature, subgroup_check
-from py_ecc.bls.hash_to_curve import hash_to_G2
+from py_ecc.bls.hash_to_curve import hash_to_G2, map_to_curve_G2, clear_cofactor_G2
 from py_ecc.fields import optimized_bls12_381_FQ as FQ
 from py_ecc.fields import optimized_bls12_381_FQ2 as FQ2
 from py_ecc.optimized_bls12_381 import is_on_curve
@@ -96,6 +96,30 @@ def OpBLS_HashToG2(arg):
     msg = aug + cleartext
 
     point = hash_to_G2(msg, dst, sha256)
+
+    x = point[0] / point[2]
+    y = point[1] / point[2]
+
+    point = [[str(x.coeffs[0]), str(y.coeffs[0])], [str(x.coeffs[1]), str(y.coeffs[1])]]
+
+    r = json.dumps(point)
+    return bytes(r, 'utf-8')
+
+def OpBLS_MapToG2(arg):
+    op = json.loads(arg)
+
+    u_x = to_int(op['u_x'])
+    u_y = to_int(op['u_y'])
+    v_x = to_int(op['v_x'])
+    v_y = to_int(op['v_y'])
+
+    u = FQ2((u_x, u_y))
+    v = FQ2((v_x, v_y))
+
+    g2_u = map_to_curve_G2(u)
+    g2_v = map_to_curve_G2(v)
+    r = add(g2_u, g2_v)
+    point = clear_cofactor_G2(r)
 
     x = point[0] / point[2]
     y = point[1] / point[2]

@@ -1921,6 +1921,30 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     op.Serialize(dsOut2);
                 }
                 break;
+            case    CF_OPERATION("BLS_MapToG1"):
+                {
+                    parameters["modifier"] = "";
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
+                    parameters["u"] = getBignum();
+                    parameters["v"] = getBignum();
+
+                    cryptofuzz::operation::BLS_MapToG1 op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("BLS_MapToG2"):
+                {
+                    parameters["modifier"] = "";
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
+                    parameters["u"][0] = getBignum();
+                    parameters["u"][1] = getBignum();
+                    parameters["v"][0] = getBignum();
+                    parameters["v"][1] = getBignum();
+
+                    cryptofuzz::operation::BLS_MapToG2 op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
             case    CF_OPERATION("BLS_Pairing"):
                 {
                     parameters["modifier"] = "";

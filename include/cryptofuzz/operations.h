@@ -2452,6 +2452,92 @@ class BLS_HashToG2 : public Operation {
         }
 };
 
+class BLS_MapToG1 : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::Bignum u;
+        const component::Bignum v;
+
+        BLS_MapToG1(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            u(ds),
+            v(ds)
+        { }
+        BLS_MapToG1(const component::CurveType curveType, const component::Bignum u, const component::Bignum v, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(curveType),
+            u(u),
+            v(v)
+        { }
+        BLS_MapToG1(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            u(json["u"]),
+            v(json["v"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_MapToG1& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (u == rhs.u) &&
+                (v == rhs.v) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            u.Serialize(ds);
+            v.Serialize(ds);
+        }
+};
+
+class BLS_MapToG2 : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::Fp2 u;
+        const component::Fp2 v;
+
+        BLS_MapToG2(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            u(ds),
+            v(ds)
+        { }
+        BLS_MapToG2(const component::CurveType curveType, const component::Fp2 u, const component::Fp2 v, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(curveType),
+            u(u),
+            v(v)
+        { }
+        BLS_MapToG2(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            u(json["u"]),
+            v(json["v"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_MapToG2& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (u == rhs.u) &&
+                (v == rhs.v) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            u.Serialize(ds);
+            v.Serialize(ds);
+        }
+};
+
 class BLS_IsG1OnCurve : public Operation {
     public:
         const component::CurveType curveType;
