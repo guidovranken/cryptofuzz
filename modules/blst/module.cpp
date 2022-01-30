@@ -390,6 +390,65 @@ std::optional<component::G2> blst::OpBLS_HashToG2(operation::BLS_HashToG2& op) {
     return ret;
 }
 
+std::optional<component::G1> blst::OpBLS_MapToG1(operation::BLS_MapToG1& op) {
+    if ( op.curveType.Get() != CF_ECC_CURVE("BLS12_381") ) {
+        //return std::nullopt;
+    }
+
+    std::optional<component::G1> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    blst_p1 g1;
+    blst_p1_affine g1_affine;
+    blst_fp u, v;
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.u, u));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.v, v));
+
+    CF_NORET(blst_map_to_g1(&g1, &u, &v));
+
+    CF_ASSERT(blst_p1_on_curve(&g1) == true, "Generated g1 not on curve");
+    CF_ASSERT(blst_p1_in_g1(&g1) == true, "Generated g1 not in group");
+
+    CF_NORET(blst_p1_to_affine(&g1_affine, &g1));
+
+    {
+        blst_detail::G1 _g1(g1_affine, ds);
+        ret = _g1.To_Component_G1();
+    }
+
+end:
+    return ret;
+}
+
+std::optional<component::G2> blst::OpBLS_MapToG2(operation::BLS_MapToG2& op) {
+    if ( op.curveType.Get() != CF_ECC_CURVE("BLS12_381") ) {
+        //return std::nullopt;
+    }
+
+    std::optional<component::G2> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    blst_p2 g2;
+    blst_p2_affine g2_affine;
+    blst_fp2 u, v;
+
+    CF_CHECK_TRUE(blst_detail::To_blst_fp2(op.u, u));
+    CF_CHECK_TRUE(blst_detail::To_blst_fp2(op.v, v));
+
+    CF_NORET(blst_map_to_g2(&g2, &u, &v));
+
+    CF_ASSERT(blst_p2_on_curve(&g2) == true, "Generated g2 not on curve");
+    CF_ASSERT(blst_p2_in_g2(&g2) == true, "Generated g2 not in group");
+
+    CF_NORET(blst_p2_to_affine(&g2_affine, &g2));
+
+    ret = blst_detail::To_G2(g2_affine);
+
+end:
+    return ret;
+}
+
 std::optional<component::BLS_Signature> blst::OpBLS_Sign(operation::BLS_Sign& op) {
     if ( op.curveType.Get() != CF_ECC_CURVE("BLS12_381") ) {
         //return std::nullopt;
@@ -948,8 +1007,19 @@ namespace blst_detail {
                 break;
             case    CF_CALCOP("InvMod(A,B)"):
                 CF_CHECK_TRUE(blst_detail::To_blst_fr(op.bn0, A));
-                PREPARE_RESULT();
-                blst_fr_eucl_inverse(RESULT_PTR(), &A);
+
+                try {
+                    if ( ds.Get<bool>() ) {
+                        PREPARE_RESULT();
+                        CF_NORET(blst_fr_eucl_inverse(RESULT_PTR(), &A));
+                    } else {
+                        PREPARE_RESULT();
+                        CF_NORET(blst_fr_inverse(RESULT_PTR(), &A));
+                    }
+                } catch ( fuzzing::datasource::Base::OutOfData ) {
+                    goto end;
+                }
+
                 ret = blst_detail::To_component_bignum(RESULT());
                 break;
             case    CF_CALCOP("LShift1(A)"):
@@ -1111,6 +1181,16 @@ end:
                     }
                 }
                 break;
+            case    CF_CALCOP("IsSquare(A)"):
+                {
+                    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.bn0, A));
+                    const bool is_square = blst_fp_is_square(&A);
+                    CF_ASSERT(
+                            is_square ==
+                            blst_fp_sqrt(&result, &A), "");
+                    ret = is_square ? std::string("1") : std::string("0");
+                }
+                break;
             case    CF_CALCOP("Not(A)"):
                 CF_CHECK_TRUE(blst_detail::To_blst_fp(op.bn0, A));
                 PREPARE_RESULT();
@@ -1232,6 +1312,15 @@ namespace blst_detail {
                     } else {
                         ret = { std::string("0"), std::string("0") };
                     }
+                }
+                break;
+            case    CF_CALCOP("IsSquare(A)"):
+                {
+                    CF_CHECK_TRUE(blst_detail::To_blst_fp2(op.bn0, A));
+                    const bool is_square = blst_fp2_is_square(&A);
+                    CF_ASSERT(
+                            is_square ==
+                            blst_fp2_sqrt(&result, &A), "");
                 }
                 break;
             case    CF_CALCOP("Not(A)"):

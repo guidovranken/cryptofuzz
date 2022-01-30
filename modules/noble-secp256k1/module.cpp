@@ -152,5 +152,44 @@ std::optional<component::ECC_Point> noble_secp256k1::OpECC_Point_Mul(operation::
     return ret;
 }
 
+std::optional<component::ECC_Point> noble_secp256k1::OpECC_Point_Neg(operation::ECC_Point_Neg& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+
+    if ( !op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        return ret;
+    }
+
+    auto json = op.ToJSON();
+    json["operation"] = std::to_string(CF_OPERATION("ECC_Point_Neg"));
+
+    const auto res = ((JS*)js)->Run(json.dump());
+
+    if ( res != std::nullopt ) {
+        auto jsonRet = nlohmann::json::parse(*res);
+        ret = component::ECC_Point(jsonRet);
+    }
+
+    return ret;
+}
+std::optional<component::ECC_Point> noble_secp256k1::OpECC_Point_Dbl(operation::ECC_Point_Dbl& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+
+    if ( !op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        return ret;
+    }
+
+    auto json = op.ToJSON();
+    json["operation"] = std::to_string(CF_OPERATION("ECC_Point_Dbl"));
+
+    const auto res = ((JS*)js)->Run(json.dump());
+
+    if ( res != std::nullopt ) {
+        auto jsonRet = nlohmann::json::parse(*res);
+        ret = component::ECC_Point(jsonRet);
+    }
+
+    return ret;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */

@@ -172,6 +172,93 @@ std::optional<component::G2> chia_bls::OpBLS_HashToG2(operation::BLS_HashToG2& o
     return ret;
 }
 
+std::optional<component::G1> chia_bls::OpBLS_MapToG1(operation::BLS_MapToG1& op) {
+    if ( op.curveType.Get() != CF_ECC_CURVE("BLS12_381") ) {
+        //return std::nullopt;
+    }
+
+    std::optional<component::G1> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    std::vector<uint8_t> pseudo_random_bytes;
+
+    {
+        const auto u = util::DecToBin(op.u.ToTrimmedString(), 64);
+        if ( u == std::nullopt ) {
+            return std::nullopt;
+        }
+        pseudo_random_bytes.insert(pseudo_random_bytes.end(), u->begin(), u->end());
+    }
+
+    {
+        const auto v = util::DecToBin(op.v.ToTrimmedString(), 64);
+        if ( v == std::nullopt ) {
+            return std::nullopt;
+        }
+        pseudo_random_bytes.insert(pseudo_random_bytes.end(), v->begin(), v->end());
+    }
+
+    g1_st* g1 = bls::Util::SecAlloc<g1_st>(1);
+
+    ep_map_from_field(g1, pseudo_random_bytes.data(), 128);
+
+    ret = chia_bls_detail::G1_To_Component(g1);
+
+    bls::Util::SecFree(g1);
+
+    return ret;
+}
+
+std::optional<component::G2> chia_bls::OpBLS_MapToG2(operation::BLS_MapToG2& op) {
+    if ( op.curveType.Get() != CF_ECC_CURVE("BLS12_381") ) {
+        //return std::nullopt;
+    }
+
+    std::optional<component::G2> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    std::vector<uint8_t> pseudo_random_bytes;
+
+    {
+        const auto u_x = util::DecToBin(op.u.first.ToTrimmedString(), 64);
+        if ( u_x == std::nullopt ) {
+            return std::nullopt;
+        }
+        pseudo_random_bytes.insert(pseudo_random_bytes.end(), u_x->begin(), u_x->end());
+    }
+    {
+        const auto u_y = util::DecToBin(op.u.second.ToTrimmedString(), 64);
+        if ( u_y == std::nullopt ) {
+            return std::nullopt;
+        }
+        pseudo_random_bytes.insert(pseudo_random_bytes.end(), u_y->begin(), u_y->end());
+    }
+    {
+        const auto v_x = util::DecToBin(op.v.first.ToTrimmedString(), 64);
+        if ( v_x == std::nullopt ) {
+            return std::nullopt;
+        }
+        pseudo_random_bytes.insert(pseudo_random_bytes.end(), v_x->begin(), v_x->end());
+    }
+    {
+        const auto v_y = util::DecToBin(op.v.second.ToTrimmedString(), 64);
+        if ( v_y == std::nullopt ) {
+            return std::nullopt;
+        }
+        pseudo_random_bytes.insert(pseudo_random_bytes.end(), v_y->begin(), v_y->end());
+    }
+
+    g2_st* g2 = bls::Util::SecAlloc<g2_st>(1);
+
+    ep2_map_from_field(g2, pseudo_random_bytes.data(), 256);
+
+    ret = chia_bls_detail::G2_To_Component(g2);
+
+    bls::Util::SecFree(g2);
+
+    return ret;
+}
+
 std::optional<bool> chia_bls::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
     std::optional<bool> ret = std::nullopt;
 

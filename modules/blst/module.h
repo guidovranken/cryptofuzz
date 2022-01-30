@@ -14,6 +14,8 @@ class blst : public Module {
         std::optional<component::G2> OpBLS_PrivateToPublic_G2(operation::BLS_PrivateToPublic_G2& op) override;
         std::optional<component::G1> OpBLS_HashToG1(operation::BLS_HashToG1& op) override;
         std::optional<component::G2> OpBLS_HashToG2(operation::BLS_HashToG2& op) override;
+        std::optional<component::G1> OpBLS_MapToG1(operation::BLS_MapToG1& op) override;
+        std::optional<component::G2> OpBLS_MapToG2(operation::BLS_MapToG2& op) override;
         std::optional<component::BLS_Signature> OpBLS_Sign(operation::BLS_Sign& op) override;
         std::optional<bool> OpBLS_Verify(operation::BLS_Verify& op) override;
         std::optional<bool> OpBLS_BatchVerify(operation::BLS_BatchVerify& op) override;

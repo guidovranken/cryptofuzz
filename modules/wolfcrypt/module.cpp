@@ -32,7 +32,6 @@ extern "C" {
 #include <wolfssl/wolfcrypt/rabbit.h>
 #include <wolfssl/wolfcrypt/chacha.h>
 #include <wolfssl/wolfcrypt/chacha20_poly1305.h>
-#include <wolfssl/wolfcrypt/hc128.h>
 #include <wolfssl/wolfcrypt/des3.h>
 #include <wolfssl/wolfcrypt/idea.h>
 
@@ -1413,23 +1412,6 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
         }
         break;
 
-        case CF_CIPHER("HC128"):
-        {
-            HC128 ctx;
-
-            CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
-            CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
-
-            out = util::malloc(op.cleartext.GetSize());
-
-            WC_CHECK_EQ(wc_Hc128_SetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.iv.GetPtr(&ds)), 0);
-
-            WC_CHECK_EQ(wc_Hc128_Process(&ctx, out, op.cleartext.GetPtr(&ds), op.cleartext.GetSize()), 0);
-
-            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
-        }
-        break;
-
         case CF_CIPHER("AES_128_XTS"):
         case CF_CIPHER("AES_192_XTS"):
         case CF_CIPHER("AES_256_XTS"):
@@ -1698,6 +1680,7 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
             const auto cleartext = util::Pkcs7Pad(op.cleartext.Get(), 8);
             out = util::malloc(cleartext.size());
 
+            WC_CHECK_EQ(wc_Des3Init(&ctx, nullptr, -1), 0);
             WC_CHECK_EQ(wc_Des3_SetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.iv.GetPtr(&ds), DES_ENCRYPTION), 0);
             WC_CHECK_EQ(wc_Des3_CbcEncrypt(&ctx, out, cleartext.data(), cleartext.size()), 0);
 
@@ -1786,6 +1769,28 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
                     Buffer(outTag, *op.tagSize));
         }
         break;
+#if 0
+        case CF_CIPHER("AES_128_SIV_CMAC"):
+        case CF_CIPHER("AES_192_SIV_CMAC"):
+        case CF_CIPHER("AES_256_SIV_CMAC"):
+        {
+            out = util::malloc(op.cleartext.GetSize());
+
+            outTag = util::malloc(AES_BLOCK_SIZE);
+
+            WC_CHECK_EQ(wc_AesSivEncrypt(
+                        op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize(),
+                        op.aad ? op.aad->GetPtr(&ds) : nullptr, op.aad ? op.aad->GetSize() : 0,
+                        op.cipher.iv.GetPtr(&ds), op.cipher.iv.GetSize(),
+                        op.cleartext.GetPtr(&ds), op.cleartext.GetSize(),
+                        outTag, out), 0);
+
+            ret = component::Ciphertext(
+                    Buffer(out, op.cleartext.GetSize()),
+                    Buffer(outTag, AES_BLOCK_SIZE));
+        }
+        break;
+#endif
     }
 
 end:
@@ -2083,22 +2088,6 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
         }
         break;
 
-        case CF_CIPHER("HC128"):
-        {
-            HC128 ctx;
-
-            CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
-            CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
-
-            out = util::malloc(op.ciphertext.GetSize());
-
-            WC_CHECK_EQ(wc_Hc128_SetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.iv.GetPtr(&ds)), 0);
-            WC_CHECK_EQ(wc_Hc128_Process(&ctx, out, op.ciphertext.GetPtr(&ds), op.ciphertext.GetSize()), 0);
-
-            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
-        }
-        break;
-
         case CF_CIPHER("AES_128_XTS"):
         case CF_CIPHER("AES_192_XTS"):
         case CF_CIPHER("AES_256_XTS"):
@@ -2370,6 +2359,7 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
 
             out = util::malloc(op.ciphertext.GetSize());
 
+            WC_CHECK_EQ(wc_Des3Init(&ctx, nullptr, -1), 0);
             WC_CHECK_EQ(wc_Des3_SetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.iv.GetPtr(&ds), DES_DECRYPTION), 0);
             WC_CHECK_EQ(wc_Des3_CbcDecrypt(&ctx, out, op.ciphertext.GetPtr(&ds), op.ciphertext.GetSize()), 0);
 
@@ -2454,6 +2444,29 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
             ret = component::Cleartext(Buffer(op.ciphertext.GetPtr(&ds), op.ciphertext.GetSize()));
         }
         break;
+#if 0
+        case CF_CIPHER("AES_128_SIV_CMAC"):
+        case CF_CIPHER("AES_192_SIV_CMAC"):
+        case CF_CIPHER("AES_256_SIV_CMAC"):
+        {
+            out = util::malloc(op.ciphertext.GetSize());
+
+            CF_CHECK_NE(op.tag, std::nullopt);
+            CF_CHECK_EQ(op.tag->GetSize(), AES_BLOCK_SIZE);
+
+            auto tag = op.tag->Get();
+
+            WC_CHECK_EQ(wc_AesSivDecrypt(
+                        op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize(),
+                        op.aad ? op.aad->GetPtr(&ds) : nullptr, op.aad ? op.aad->GetSize() : 0,
+                        op.cipher.iv.GetPtr(&ds), op.cipher.iv.GetSize(),
+                        op.ciphertext.GetPtr(&ds), op.ciphertext.GetSize(),
+                        tag.data(), out), 0);
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+#endif
     }
 
 end:

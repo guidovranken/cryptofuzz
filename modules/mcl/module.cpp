@@ -490,6 +490,68 @@ std::optional<component::G2> mcl::OpBLS_HashToG2(operation::BLS_HashToG2& op) {
     return ret;
 }
 
+std::optional<component::G1> mcl::OpBLS_MapToG1(operation::BLS_MapToG1& op) {
+    std::optional<component::G1> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    using namespace Namespace;
+    G1 P;
+    ::mcl::bn::Fp u, v;
+    try {
+        u.setStr(op.u.ToTrimmedString(), 10);
+        v.setStr(op.v.ToTrimmedString(), 10);
+    } catch ( cybozu::Exception ) {
+        goto end;
+    }
+    CF_CHECK_NE(op.u.ToTrimmedString(), "0");
+    CF_CHECK_NE(op.v.ToTrimmedString(), "0");
+    CF_CHECK_NE(op.v.ToTrimmedString(), op.u.ToTrimmedString());
+    CF_NORET(BN::param.mapTo.mapTo_WB19_.FpToG1(P, u, &v));
+
+    if ( !P.isValid() ) {
+        ret = component::G1{"0", "0"};
+    } else {
+        ret = mcl_detail::ToComponentG1(P);
+    }
+
+end:
+    return ret;
+}
+
+std::optional<component::G2> mcl::OpBLS_MapToG2(operation::BLS_MapToG2& op) {
+    std::optional<component::G2> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    using namespace Namespace;
+    G2 P;
+    ::mcl::bn::Fp2 u, v;
+    try {
+        u = ::mcl::bn::Fp2(
+                op.u.first.ToTrimmedString(),
+                op.u.second.ToTrimmedString());
+        v = ::mcl::bn::Fp2(
+                op.v.first.ToTrimmedString(),
+                op.v.second.ToTrimmedString());
+    } catch ( cybozu::Exception ) {
+        goto end;
+    }
+    CF_CHECK_NE(op.u.first.ToTrimmedString(), "0");
+    CF_CHECK_NE(op.u.second.ToTrimmedString(), "0");
+    CF_CHECK_NE(op.v.first.ToTrimmedString(), "0");
+    CF_CHECK_NE(op.v.second.ToTrimmedString(), "0");
+    CF_CHECK_NE(u, v);
+    CF_NORET(BN::param.mapTo.mapTo_WB19_.Fp2ToG2(P, u, &v));
+
+    if ( !P.isValid() ) {
+        ret = { "0", "0", "0", "0" };
+    } else {
+        ret = mcl_detail::ToComponentG2(P);
+    }
+
+end:
+    return ret;
+}
+
 std::optional<component::G1> mcl::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
     std::optional<component::G1> ret = std::nullopt;
     using namespace Namespace;

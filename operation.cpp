@@ -1455,6 +1455,52 @@ nlohmann::json BLS_HashToG2::ToJSON(void) const {
     return j;
 }
 
+std::string BLS_MapToG1::Name(void) const { return "BLS_MapToG1"; }
+std::string BLS_MapToG1::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_MapToG1" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "u: " << u.ToString() << std::endl;
+    ss << "v: " << v.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_MapToG1::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+    j["u"] = u.ToJSON();
+    j["v"] = v.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string BLS_MapToG2::Name(void) const { return "BLS_MapToG2"; }
+std::string BLS_MapToG2::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_MapToG2" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "u_x: " << u.first.ToString() << std::endl;
+    ss << "u_y: " << u.second.ToString() << std::endl;
+    ss << "v_x: " << v.first.ToString() << std::endl;
+    ss << "v_y: " << v.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json BLS_MapToG2::ToJSON(void) const {
+    nlohmann::json j;
+
+    j["u_x"] = u.first.ToJSON();
+    j["u_y"] = u.second.ToJSON();
+    j["v_x"] = v.first.ToJSON();
+    j["v_y"] = v.second.ToJSON();
+
+    return j;
+}
+
 std::string BLS_IsG1OnCurve::Name(void) const { return "BLS_IsG1OnCurve"; }
 std::string BLS_IsG1OnCurve::ToString(void) const {
     std::stringstream ss;

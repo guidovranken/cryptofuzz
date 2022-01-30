@@ -6,7 +6,7 @@ RUSTFLAGS := "--cfg fuzzing -Cdebug-assertions -Cdebuginfo=1 -Cforce-frame-point
 module.a: module.o target/x86_64-unknown-linux-gnu/release/libcryptofuzz_rustcrypto_hashes.a
 	bash ../link.sh module.a ./target/x86_64-unknown-linux-gnu/release/libcryptofuzz_rustcrypto_hashes.a
 	ranlib module.a
-target/x86_64-unknown-linux-gnu/release/libcryptofuzz_rustcrypto_hashes.a : generate_ids
+target/x86_64-unknown-linux-gnu/release/libcryptofuzz_rustcrypto_hashes.a : generate_ids src/lib.rs Cargo.toml
 	./generate_ids
 	test ids.rs
 	mv ids.rs src/

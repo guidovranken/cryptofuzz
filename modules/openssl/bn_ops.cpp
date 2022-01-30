@@ -602,6 +602,11 @@ bool IsPrime::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) c
     (void)ctx;
 
 #if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
+    /* Prevent timeouts */
+    if ( BN_num_bits(bn[0].GetPtr()) > 3000 ) {
+        return false;
+    }
+
     const int ret = BN_is_prime_ex(bn[0].GetPtr(), 0, nullptr, nullptr);
     if ( ret == -1 ) {
         return false;

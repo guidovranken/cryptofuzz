@@ -1,6 +1,7 @@
 /* Simple emulation of subtle crypto using crypto-js */
-window.crypto.subtle = {};
-window.crypto.subtle.digest = function(alg, msg) {
+crypto.web = {};
+crypto.web.subtle = {};
+crypto.web.subtle.digest = function(alg, msg) {
     var hasher = CryptoJS.algo.SHA512.create();
     msg = new Uint8Array(msg);
     msg = [...msg].map(x => x.toString(16).padStart(2, '0')).join('');

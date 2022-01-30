@@ -4,7 +4,7 @@ cd mcl/
 mkdir build/
 cd build/
 cmake .. -DMCL_STATIC_LIB=on
-make
+make -j$(nproc)
 export MCL_INCLUDE_PATH=$(realpath ../include/)
 export MCL_LIBMCL_A_PATH=$(realpath lib/libmcl.a)
 export MCL_LIBMCLBN384_A_PATH=$(realpath lib/libmclbn384.a)

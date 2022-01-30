@@ -16,6 +16,7 @@ namespace py_ecc_detail {
     void* OpBLS_IsG1OnCurve = nullptr;
     void* OpBLS_IsG2OnCurve = nullptr;
     void* OpBLS_HashToG2 = nullptr;
+    void* OpBLS_MapToG2 = nullptr;
     void* OpBLS_Verify = nullptr;
     void* OpBLS_Sign = nullptr;
     void* OpBignumCalc_InvMod = nullptr;
@@ -158,6 +159,7 @@ static void ConfigurePython(void) {
     py_ecc_detail::OpBLS_IsG1OnCurve = LoadPythonFunction(pModule, "OpBLS_IsG1OnCurve");
     py_ecc_detail::OpBLS_IsG2OnCurve = LoadPythonFunction(pModule, "OpBLS_IsG2OnCurve");
     py_ecc_detail::OpBLS_HashToG2 = LoadPythonFunction(pModule, "OpBLS_HashToG2");
+    py_ecc_detail::OpBLS_MapToG2 = LoadPythonFunction(pModule, "OpBLS_MapToG2");
     py_ecc_detail::OpBLS_Verify = LoadPythonFunction(pModule, "OpBLS_Verify");
     py_ecc_detail::OpBLS_Sign = LoadPythonFunction(pModule, "OpBLS_Sign");
     py_ecc_detail::OpBignumCalc_InvMod = LoadPythonFunction(pModule, "OpBignumCalc_InvMod");
@@ -209,6 +211,14 @@ std::optional<bool> py_ecc::OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) {
  
 std::optional<component::G2> py_ecc::OpBLS_HashToG2(operation::BLS_HashToG2& op) {
     const auto ret = RunPythonFunction(py_ecc_detail::OpBLS_HashToG2, op.ToJSON().dump());
+    if ( ret == std::nullopt ) {
+        return std::nullopt;
+    }
+    return component::G2(nlohmann::json::parse(*ret));
+}
+
+std::optional<component::G2> py_ecc::OpBLS_MapToG2(operation::BLS_MapToG2& op) {
+    const auto ret = RunPythonFunction(py_ecc_detail::OpBLS_MapToG2, op.ToJSON().dump());
     if ( ret == std::nullopt ) {
         return std::nullopt;
     }

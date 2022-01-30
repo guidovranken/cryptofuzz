@@ -82,6 +82,8 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorBLS_FinalExp executorBLS_FinalExp(CF_OPERATION("BLS_FinalExp"), modules, options);
     static ExecutorBLS_HashToG1 executorBLS_HashToG1(CF_OPERATION("BLS_HashToG1"), modules, options);
     static ExecutorBLS_HashToG2 executorBLS_HashToG2(CF_OPERATION("BLS_HashToG2"), modules, options);
+    static ExecutorBLS_MapToG1 executorBLS_MapToG1(CF_OPERATION("BLS_MapToG1"), modules, options);
+    static ExecutorBLS_MapToG2 executorBLS_MapToG2(CF_OPERATION("BLS_MapToG2"), modules, options);
     static ExecutorBLS_IsG1OnCurve executorBLS_IsG1OnCurve(CF_OPERATION("BLS_IsG1OnCurve"), modules, options);
     static ExecutorBLS_IsG2OnCurve executorBLS_IsG2OnCurve(CF_OPERATION("BLS_IsG2OnCurve"), modules, options);
     static ExecutorBLS_GenerateKeyPair executorBLS_GenerateKeyPair(CF_OPERATION("BLS_GenerateKeyPair"), modules, options);
@@ -310,6 +312,12 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("BLS_HashToG2"):
                 executorBLS_HashToG2.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_MapToG1"):
+                executorBLS_MapToG1.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_MapToG2"):
+                executorBLS_MapToG2.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("BLS_IsG1OnCurve"):
                 executorBLS_IsG1OnCurve.Run(ds, payload.data(), payload.size());

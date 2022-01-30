@@ -8,6 +8,9 @@ import (
     "github.com/consensys/gnark-crypto/ecc/bn254"
     "github.com/consensys/gnark-crypto/ecc/bn254/fp"
     "github.com/consensys/gnark-crypto/ecc/bn254/fr"
+    gnark_bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
+    bls12381_fp "github.com/consensys/gnark-crypto/ecc/bls12-381/fp"
+    bls12381_fr "github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
     google "github.com/ethereum/go-ethereum/crypto/bn256/google"
     cloudflare "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
     "strconv"
@@ -82,6 +85,13 @@ type OpBLS_G1_Neg struct {
     A_x string
     A_y string
     B string
+}
+
+type OpBLS_MapToG1 struct {
+    Modifier ByteSlice
+    CurveType uint64
+    U string
+    V string
 }
 
 type OpBLS_G2_Add struct {
@@ -314,6 +324,48 @@ func Gnark_bn254_BLS_G1_Neg(in []byte) {
     result = r2
 }
 
+//export Gnark_bn254_BLS_MapToG1
+func Gnark_bn254_BLS_MapToG1(in []byte) {
+    resetResult()
+    return
+
+    var op OpBLS_MapToG1
+    unmarshal(in, &op)
+
+    U := decodeBignum(op.U)
+    V := decodeBignum(op.V)
+
+    if U.Cmp(new(big.Int).SetUint64(0)) == 0 {
+        return
+    }
+    if V.Cmp(new(big.Int).SetUint64(0)) == 0 {
+        return
+    }
+    u := new(bls12381_fp.Element).SetBigInt(U)
+    v := new(bls12381_fp.Element).SetBigInt(V)
+
+    /* https://github.com/ConsenSys/gnark-crypto/blob/b04e1f3a5349a57e4f61eff9df377d1440acad25/ecc/bls12-381/hash_to_curve.go#L151-L157 */
+    Q0 := gnark_bls12381.MapToCurveG1Svdw(*u)
+    Q1 := gnark_bls12381.MapToCurveG1Svdw(*v)
+    var _Q0, _Q1, _res gnark_bls12381.G1Jac
+    _Q0.FromAffine(&Q0)
+    _Q1.FromAffine(&Q1)
+    _res.Set(&_Q1).AddAssign(&_Q0)
+    var r_affine gnark_bls12381.G1Affine
+    r_affine.FromJacobian(&_res)
+
+    res := make([]string, 2)
+    res[0], res[1] = r_affine.X.String(), r_affine.Y.String()
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
 //export Gnark_bn254_BLS_G2_Add
 func Gnark_bn254_BLS_G2_Add(in []byte) {
     resetResult()
@@ -433,8 +485,8 @@ func Gnark_bn254_BLS_G2_Neg(in []byte) {
     result = r2
 }
 
-//export Gnark_bn254_BignumCalc_Fp
-func Gnark_bn254_BignumCalc_Fp(in []byte) {
+//export Gnark_bn254_BignumCalc_bn254_Fp
+func Gnark_bn254_BignumCalc_bn254_Fp(in []byte) {
     resetResult()
 
     var op OpBignumCalc
@@ -445,44 +497,83 @@ func Gnark_bn254_BignumCalc_Fp(in []byte) {
     bn[1].SetBigInt(decodeBignum(op.BN1))
 
     var res string
+    var r *fp.Element
 
     success := false
+    skipconv := false
 
     if false {
     } else if isAdd(op.CalcOp) {
-        res = new(fp.Element).Add(&bn[0], &bn[1]).String()
+        r = new(fp.Element).Add(&bn[0], &bn[1])
         success = true
     } else if isSub(op.CalcOp) {
-        res = new(fp.Element).Sub(&bn[0], &bn[1]).String()
+        r = new(fp.Element).Sub(&bn[0], &bn[1])
         success = true
     } else if isMul(op.CalcOp) {
-        res = new(fp.Element).Mul(&bn[0], &bn[1]).String()
+        r = new(fp.Element).Mul(&bn[0], &bn[1])
         success = true
     } else if isSqr(op.CalcOp) {
-        res = new(fp.Element).Square(&bn[0]).String()
+        r = new(fp.Element).Square(&bn[0])
         success = true
     } else if isNeg(op.CalcOp) {
-        res = new(fp.Element).Neg(&bn[0]).String()
+        r = new(fp.Element).Neg(&bn[0])
         success = true
     } else if isInvMod(op.CalcOp) {
-        res = new(fp.Element).Inverse(&bn[0]).String()
+        r = new(fp.Element).Inverse(&bn[0])
         success = true
     } else if isExp(op.CalcOp) {
-        exp := decodeBignum(op.BN1)
-        res = new(fp.Element).Exp(bn[0], exp).String()
+        r = new(fp.Element).Exp(bn[0], decodeBignum(op.BN1))
         success = true
     } else if isSqrt(op.CalcOp) {
         sqrt := new(fp.Element).Sqrt(&bn[0])
         if sqrt != nil {
-            res = new(fp.Element).Square(sqrt).String()
+            r = new(fp.Element).Square(sqrt)
+        } else {
+            r = new(fp.Element).SetUint64(0)
+        }
+        success = true
+    } else if isJacobi(op.CalcOp) {
+        legendre := bn[0].Legendre()
+        res = strconv.Itoa(legendre)
+        success = true
+        skipconv = true
+    } else if isNumBits(op.CalcOp) {
+        bitlen := bn[0].BitLen()
+        res = strconv.Itoa(bitlen)
+        success = true
+        skipconv = true
+    } else if isDiv(op.CalcOp) {
+        r = new(fp.Element).Div(&bn[0], &bn[1])
+        success = true
+    } else if isSet(op.CalcOp) {
+        r = new(fp.Element).Set(&bn[0])
+        success = true
+    } else if isIsEq(op.CalcOp) {
+        if bn[0].Equal(&bn[1]) {
+            res = "1"
         } else {
             res = "0"
         }
         success = true
+        skipconv = true
+    } else if isIsZero(op.CalcOp) {
+        if bn[0].IsZero() {
+            res = "1"
+        } else {
+            res = "0"
+        }
+        success = true
+        skipconv = true
     }
 
     if success == false {
         return
+    }
+
+    if skipconv == false {
+        var b big.Int
+        r.ToBigIntRegular(&b)
+        res = b.String()
     }
 
     r2, err := json.Marshal(&res)
@@ -493,8 +584,107 @@ func Gnark_bn254_BignumCalc_Fp(in []byte) {
     result = r2
 }
 
-//export Gnark_bn254_BignumCalc_Fr
-func Gnark_bn254_BignumCalc_Fr(in []byte) {
+//export Gnark_bn254_BignumCalc_bls12381_Fp
+func Gnark_bn254_BignumCalc_bls12381_Fp(in []byte) {
+    resetResult()
+
+    var op OpBignumCalc
+    unmarshal(in, &op)
+
+    bn := make([]bls12381_fp.Element, 2)
+    bn[0].SetBigInt(decodeBignum(op.BN0))
+    bn[1].SetBigInt(decodeBignum(op.BN1))
+
+    var res string
+    var r *bls12381_fp.Element
+
+    success := false
+    skipconv := false
+
+    if false {
+    } else if isAdd(op.CalcOp) {
+        r = new(bls12381_fp.Element).Add(&bn[0], &bn[1])
+        success = true
+    } else if isSub(op.CalcOp) {
+        r = new(bls12381_fp.Element).Sub(&bn[0], &bn[1])
+        success = true
+    } else if isMul(op.CalcOp) {
+        r = new(bls12381_fp.Element).Mul(&bn[0], &bn[1])
+        success = true
+    } else if isSqr(op.CalcOp) {
+        r = new(bls12381_fp.Element).Square(&bn[0])
+        success = true
+    } else if isNeg(op.CalcOp) {
+        r = new(bls12381_fp.Element).Neg(&bn[0])
+        success = true
+    } else if isInvMod(op.CalcOp) {
+        r = new(bls12381_fp.Element).Inverse(&bn[0])
+        success = true
+    } else if isExp(op.CalcOp) {
+        r = new(bls12381_fp.Element).Exp(bn[0], decodeBignum(op.BN1))
+        success = true
+    } else if isSqrt(op.CalcOp) {
+        sqrt := new(bls12381_fp.Element).Sqrt(&bn[0])
+        if sqrt != nil {
+            r = new(bls12381_fp.Element).Square(sqrt)
+        } else {
+            r = new(bls12381_fp.Element).SetUint64(0)
+        }
+        success = true
+    } else if isJacobi(op.CalcOp) {
+        legendre := bn[0].Legendre()
+        res = strconv.Itoa(legendre)
+        success = true
+        skipconv = true
+    } else if isNumBits(op.CalcOp) {
+        bitlen := bn[0].BitLen()
+        res = strconv.Itoa(bitlen)
+        success = true
+        skipconv = true
+    } else if isDiv(op.CalcOp) {
+        r = new(bls12381_fp.Element).Div(&bn[0], &bn[1])
+        success = true
+    } else if isSet(op.CalcOp) {
+        r = new(bls12381_fp.Element).Set(&bn[0])
+        success = true
+    } else if isIsEq(op.CalcOp) {
+        if bn[0].Equal(&bn[1]) {
+            res = "1"
+        } else {
+            res = "0"
+        }
+        success = true
+        skipconv = true
+    } else if isIsZero(op.CalcOp) {
+        if bn[0].IsZero() {
+            res = "1"
+        } else {
+            res = "0"
+        }
+        success = true
+        skipconv = true
+    }
+
+    if success == false {
+        return
+    }
+
+    if skipconv == false {
+        var b big.Int
+        r.ToBigIntRegular(&b)
+        res = b.String()
+    }
+
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export Gnark_bn254_BignumCalc_bn254_Fr
+func Gnark_bn254_BignumCalc_bn254_Fr(in []byte) {
     resetResult()
 
     var op OpBignumCalc
@@ -505,44 +695,182 @@ func Gnark_bn254_BignumCalc_Fr(in []byte) {
     bn[1].SetBigInt(decodeBignum(op.BN1))
 
     var res string
+    var r *fr.Element
 
     success := false
+    skipconv := false
 
     if false {
     } else if isAdd(op.CalcOp) {
-        res = new(fr.Element).Add(&bn[0], &bn[1]).String()
+        r = new(fr.Element).Add(&bn[0], &bn[1])
         success = true
     } else if isSub(op.CalcOp) {
-        res = new(fr.Element).Sub(&bn[0], &bn[1]).String()
+        r = new(fr.Element).Sub(&bn[0], &bn[1])
         success = true
     } else if isMul(op.CalcOp) {
-        res = new(fr.Element).Mul(&bn[0], &bn[1]).String()
+        r = new(fr.Element).Mul(&bn[0], &bn[1])
         success = true
     } else if isSqr(op.CalcOp) {
-        res = new(fr.Element).Square(&bn[0]).String()
+        r = new(fr.Element).Square(&bn[0])
         success = true
     } else if isNeg(op.CalcOp) {
-        res = new(fr.Element).Neg(&bn[0]).String()
+        r = new(fr.Element).Neg(&bn[0])
         success = true
     } else if isInvMod(op.CalcOp) {
-        res = new(fr.Element).Inverse(&bn[0]).String()
+        r = new(fr.Element).Inverse(&bn[0])
         success = true
     } else if isExp(op.CalcOp) {
-        exp := decodeBignum(op.BN1)
-        res = new(fr.Element).Exp(bn[0], exp).String()
+        r = new(fr.Element).Exp(bn[0], decodeBignum(op.BN1))
         success = true
     } else if isSqrt(op.CalcOp) {
         sqrt := new(fr.Element).Sqrt(&bn[0])
         if sqrt != nil {
-            res = new(fr.Element).Square(sqrt).String()
+            r = new(fr.Element).Square(sqrt)
+        } else {
+            r = new(fr.Element).SetUint64(0)
+        }
+        success = true
+    } else if isJacobi(op.CalcOp) {
+        legendre := bn[0].Legendre()
+        res = strconv.Itoa(legendre)
+        success = true
+        skipconv = true
+    } else if isNumBits(op.CalcOp) {
+        bitlen := bn[0].BitLen()
+        res = strconv.Itoa(bitlen)
+        success = true
+        skipconv = true
+    } else if isDiv(op.CalcOp) {
+        r = new(fr.Element).Div(&bn[0], &bn[1])
+        success = true
+    } else if isSet(op.CalcOp) {
+        r = new(fr.Element).Set(&bn[0])
+        success = true
+    } else if isIsEq(op.CalcOp) {
+        if bn[0].Equal(&bn[1]) {
+            res = "1"
         } else {
             res = "0"
         }
         success = true
+        skipconv = true
+    } else if isIsZero(op.CalcOp) {
+        if bn[0].IsZero() {
+            res = "1"
+        } else {
+            res = "0"
+        }
+        success = true
+        skipconv = true
     }
 
     if success == false {
         return
+    }
+
+    if skipconv == false {
+        var b big.Int
+        r.ToBigIntRegular(&b)
+        res = b.String()
+    }
+
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export Gnark_bn254_BignumCalc_bls12381_Fr
+func Gnark_bn254_BignumCalc_bls12381_Fr(in []byte) {
+    resetResult()
+
+    var op OpBignumCalc
+    unmarshal(in, &op)
+
+    bn := make([]bls12381_fr.Element, 2)
+    bn[0].SetBigInt(decodeBignum(op.BN0))
+    bn[1].SetBigInt(decodeBignum(op.BN1))
+
+    var res string
+    var r *bls12381_fr.Element
+
+    success := false
+    skipconv := false
+
+    if false {
+    } else if isAdd(op.CalcOp) {
+        r = new(bls12381_fr.Element).Add(&bn[0], &bn[1])
+        success = true
+    } else if isSub(op.CalcOp) {
+        r = new(bls12381_fr.Element).Sub(&bn[0], &bn[1])
+        success = true
+    } else if isMul(op.CalcOp) {
+        r = new(bls12381_fr.Element).Mul(&bn[0], &bn[1])
+        success = true
+    } else if isSqr(op.CalcOp) {
+        r = new(bls12381_fr.Element).Square(&bn[0])
+        success = true
+    } else if isNeg(op.CalcOp) {
+        r = new(bls12381_fr.Element).Neg(&bn[0])
+        success = true
+    } else if isInvMod(op.CalcOp) {
+        r = new(bls12381_fr.Element).Inverse(&bn[0])
+        success = true
+    } else if isExp(op.CalcOp) {
+        r = new(bls12381_fr.Element).Exp(bn[0], decodeBignum(op.BN1))
+        success = true
+    } else if isSqrt(op.CalcOp) {
+        sqrt := new(bls12381_fr.Element).Sqrt(&bn[0])
+        if sqrt != nil {
+            r = new(bls12381_fr.Element).Square(sqrt)
+        } else {
+            r = new(bls12381_fr.Element).SetUint64(0)
+        }
+        success = true
+    } else if isJacobi(op.CalcOp) {
+        legendre := bn[0].Legendre()
+        res = strconv.Itoa(legendre)
+        success = true
+        skipconv = true
+    } else if isNumBits(op.CalcOp) {
+        bitlen := bn[0].BitLen()
+        res = strconv.Itoa(bitlen)
+        success = true
+        skipconv = true
+    } else if isDiv(op.CalcOp) {
+        r = new(bls12381_fr.Element).Div(&bn[0], &bn[1])
+        success = true
+    } else if isSet(op.CalcOp) {
+        r = new(bls12381_fr.Element).Set(&bn[0])
+        success = true
+    } else if isIsEq(op.CalcOp) {
+        if bn[0].Equal(&bn[1]) {
+            res = "1"
+        } else {
+            res = "0"
+        }
+        success = true
+        skipconv = true
+    } else if isIsZero(op.CalcOp) {
+        if bn[0].IsZero() {
+            res = "1"
+        } else {
+            res = "0"
+        }
+        success = true
+        skipconv = true
+    }
+
+    if success == false {
+        return
+    }
+
+    if skipconv == false {
+        var b big.Int
+        r.ToBigIntRegular(&b)
+        res = b.String()
     }
 
     r2, err := json.Marshal(&res)

@@ -3,14 +3,12 @@
 ## Library compilation
 
 ```sh
-git clone --depth 1 -b development_2.x https://github.com/ARMmbed/mbedtls.git
+git clone --depth 1 -b development https://github.com/ARMmbed/mbedtls.git
 cd mbedtls/
 scripts/config.pl set MBEDTLS_PLATFORM_MEMORY
 scripts/config.pl set MBEDTLS_CMAC_C
 scripts/config.pl set MBEDTLS_NIST_KW_C
 scripts/config.pl set MBEDTLS_ARIA_C
-scripts/config.pl set MBEDTLS_MD2_C
-scripts/config.pl set MBEDTLS_MD4_C
 mkdir build/
 cd build/
 cmake .. -DENABLE_PROGRAMS=0 -DENABLE_TESTING=0

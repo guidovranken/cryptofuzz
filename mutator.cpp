@@ -14,11 +14,146 @@
 #include "mutatorpool.h"
 #include "third_party/json/json.hpp"
 
+extern "C" size_t LLVMFuzzerMutate(uint8_t* data, size_t size, size_t maxSize);
+
 uint32_t PRNG(void)
 {
     static uint32_t nSeed = 5323;
     nSeed = (8253729 * nSeed + 2396403);
     return nSeed  % 32767;
+}
+
+boost::multiprecision::cpp_int cpp_int_reciprocal(
+        boost::multiprecision::cpp_int x,
+        boost::multiprecision::cpp_int m) {
+    if ( x == 0 || x >= m ) {
+        return x;
+    }
+    boost::multiprecision::cpp_int y = x;
+    x = m;
+    boost::multiprecision::cpp_int a = 0;
+    boost::multiprecision::cpp_int b = 1;
+    while ( y != 0 ) {
+        boost::multiprecision::cpp_int tmp;
+
+        tmp = a;
+        a = b;
+        b = tmp - x / y * b;
+
+        tmp = x;
+        x = y;
+        y = tmp % y;
+    }
+
+    if ( x == 1 ) {
+        return a % m;
+    }
+
+    return 0;
+}
+
+static size_t cpp_int_num_bits(const boost::multiprecision::cpp_int& m) {
+    boost::multiprecision::cpp_int m_copy = m;
+
+    size_t num_bits = 0;
+    while ( m_copy ) {
+        m_copy >>= 1;
+        num_bits++;
+    }
+    num_bits = (num_bits / 8 + 1) * 8;
+
+    return num_bits;
+}
+
+static std::string to_mont(const std::string& y_, const std::string& mod_) {
+    if ( y_ == "" || (y_.size() && (y_[0] == '0' || y_[0] == '-')) ) {
+        return y_;
+    }
+    if ( mod_ == "" || (mod_.size() && (mod_[0] == '0' || mod_[0] == '-')) ) {
+        return y_;
+    }
+    const boost::multiprecision::cpp_int mod(mod_);
+    const boost::multiprecision::cpp_int y(y_);
+    const boost::multiprecision::cpp_int res = (y << cpp_int_num_bits(mod)) % mod;
+    return res.str();
+}
+
+static std::string from_mont(const std::string& y_, const std::string& mod_) {
+    if ( y_ == "" || (y_.size() && (y_[0] == '0' || y_[0] == '-')) ) {
+        return y_;
+    }
+    if ( mod_ == "" || (mod_.size() && (mod_[0] == '0' || mod_[0] == '-')) ) {
+        return y_;
+    }
+    const boost::multiprecision::cpp_int mod(mod_);
+    const auto num_bits = cpp_int_num_bits(mod);
+    boost::multiprecision::cpp_int reducer = 1;
+    reducer <<= num_bits;
+    const auto multiplier = cpp_int_reciprocal(reducer % mod, mod);
+    const boost::multiprecision::cpp_int y(y_);
+    const boost::multiprecision::cpp_int res = (y * multiplier) % mod;
+    return res.str();
+}
+
+static std::string mutateBinary(const std::string s) {
+    if ( s.size() && s[0] == '0' ) {
+        return s;
+    }
+    if ( s.size() && s[0] == '-' ) {
+        return s;
+    }
+
+    const auto i = boost::multiprecision::cpp_int(s);
+
+    std::vector<uint8_t> bytes;
+    export_bits(i, std::back_inserter(bytes), 8);
+    auto newsize = LLVMFuzzerMutate(bytes.data(), bytes.size(), bytes.size());
+
+    /* Memory sanitizer doesn't like that LLVMFuzzerMutate is called.
+     * If MSAN is enabled, manually unpoison the region returned by
+     * LLVMFuzzerMutate.
+     */
+    cryptofuzz::util::MemorySanitizerUnpoison(bytes.data(), newsize);
+
+    bytes.resize(newsize);
+    if ( newsize ) {
+        newsize = PRNG() % (newsize+1);
+        if ( newsize ) {
+            bytes.resize(newsize);
+        }
+    }
+    boost::multiprecision::cpp_int j;
+    import_bits(j, bytes.begin(), bytes.end());
+
+    return j.str();
+}
+
+std::optional<std::string> get_op_mod(const uint64_t& operation) {
+    switch ( operation ) {
+        case CF_OPERATION("BignumCalc_Mod_2Exp128"):
+            return "340282366920938463463374607431768211456";
+        case CF_OPERATION("BignumCalc_Mod_2Exp256"):
+            return "115792089237316195423570985008687907853269984665640564039457584007913129639936";
+        case CF_OPERATION("BignumCalc_Mod_2Exp512"):
+            return "13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084096";
+        case CF_OPERATION("BignumCalc_Mod_BLS12_381_P"):
+            return "4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787";
+        case CF_OPERATION("BignumCalc_Mod_BLS12_381_R"):
+            return "52435875175126190479447740508185965837690552500527637822603658699938581184513";
+        case CF_OPERATION("BignumCalc_Mod_BN128_P"):
+            return "21888242871839275222246405745257275088696311157297823662689037894645226208583";
+        case CF_OPERATION("BignumCalc_Mod_BN128_R"):
+            return "21888242871839275222246405745257275088548364400416034343698204186575808495617";
+        case CF_OPERATION("BignumCalc_Mod_Edwards_P"):
+            return "6210044120409721004947206240885978274523751269793792001";
+        case CF_OPERATION("BignumCalc_Mod_Edwards_R"):
+            return "1552511030102430251236801561344621993261920897571225601";
+        case CF_OPERATION("BignumCalc_Mod_SECP256K1"):
+            return "115792089237316195423570985008687907852837564279074904382605163141518161494337";
+        /* TODO the rest */
+        default:
+            return std::nullopt;
+    }
 }
 
 static uint64_t PRNG64(void) {
@@ -145,7 +280,33 @@ static std::string getBignum(bool mustBePositive = false) {
     return ret;
 }
 
-extern "C" size_t LLVMFuzzerMutate(uint8_t* data, size_t size, size_t maxSize);
+uint64_t hint_ecc_mont(const uint64_t& curveType) {
+    const auto order = cryptofuzz::repository::ECC_CurveToOrder(curveType);
+
+    if ( order != std::nullopt ) {
+        const auto v = from_mont(mutateBinary(getBignum()), *order);
+
+        Pool_Bignum.Set(v);
+    }
+
+    return curveType;
+}
+
+#if 0
+std::string to_mont(const std::string& y_) {
+    static const boost::multiprecision::cpp_int mod("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787");
+    const boost::multiprecision::cpp_int y(y_);
+    const boost::multiprecision::cpp_int res = (y << 384) % mod;
+    return res.str();
+}
+std::string from_mont(const std::string& y_) {
+    static const boost::multiprecision::cpp_int multiplier("3231460744492646417066832100176244795738767926513225105051837195607029917124509527734802654356338138714468589979680");
+    static const boost::multiprecision::cpp_int mod("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787");
+    const boost::multiprecision::cpp_int y(y_);
+    const boost::multiprecision::cpp_int res = (y * multiplier) % mod;
+    return res.str();
+}
+#endif
 
 extern cryptofuzz::Options* cryptofuzz_options;
 
@@ -449,11 +610,40 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BignumCalc_Mod_2Exp512"):
             case    CF_OPERATION("BignumCalc_Mod_SECP256K1"):
                 {
-                    parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["calcOp"] = getRandomCalcOp();
-                    parameters["bn1"] = getBignum();
-                    parameters["bn2"] = getBignum();
-                    parameters["bn3"] = getBignum();
+                    parameters["modifier"] = "";
+
+                    const auto calcop = getRandomCalcOp();
+                    parameters["calcOp"] = calcop;
+
+                    auto bn1 = getBignum();
+                    const auto bn2 = getBignum();
+                    const auto bn3 = getBignum();
+
+                    if ( calcop == CF_CALCOP("InvMod(A,B)") || CF_CALCOP("ExpMod(A,B,C)") ) {
+                        std::optional<std::string> mod = get_op_mod(operation);
+
+                        if ( mod == std::nullopt ) {
+                            if ( calcop == CF_CALCOP("InvMod(A,B)") ) {
+                                mod = bn2;
+                            } else if ( CF_CALCOP("ExpMod(A,B,C)") ) {
+                                mod = bn3;
+                            } else {
+                                abort();
+                            }
+                        }
+
+                        const auto mont = from_mont(mutateBinary(getBignum()), *mod);
+
+                        Pool_Bignum.Set(mont);
+
+                        if ( getBool() ) {
+                            bn1 = mont;
+                        }
+                    }
+
+                    parameters["bn1"] = bn1;
+                    parameters["bn2"] = bn2;
+                    parameters["bn3"] = bn3;
                     parameters["bn4"] = "";
 
                     cryptofuzz::operation::BignumCalc op(parameters);
@@ -618,11 +808,11 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     if ( Pool_CurvePrivkey.Have() && getBool() == true ) {
                         const auto P1 = Pool_CurvePrivkey.Get();
 
-                        parameters["curveType"] = P1.curveID;
+                        parameters["curveType"] = hint_ecc_mont(P1.curveID);
                         parameters["priv"] = P1.priv;
                     } else {
                         const auto curveID = getRandomCurve();
-                        parameters["curveType"] = curveID;
+                        parameters["curveType"] = hint_ecc_mont(curveID);
 
                         if ( getBool() ) {
                             const auto order = cryptofuzz::repository::ECC_CurveToOrder(curveID);
@@ -649,18 +839,18 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     if ( getBool() && Pool_CurveKeypair.Have() ) {
                         const auto P = Pool_CurveKeypair.Get();
 
-                        parameters["curveType"] = P.curveID;
+                        parameters["curveType"] = hint_ecc_mont(P.curveID);
 
                         parameters["pub_x"] = getBool() ? getBignum() : P.pub_x;
                         parameters["pub_y"] = getBool() ? getBignum() : P.pub_y;
                     } else if ( getBool() && Pool_CurveECC_Point.Have() == true ) {
                         const auto P = Pool_CurveECC_Point.Get();
-                        parameters["curveType"] = P.curveID;
+                        parameters["curveType"] = hint_ecc_mont(P.curveID);
 
                         parameters["pub_x"] = getBool() ? getBignum() : P.x;
                         parameters["pub_y"] = getBool() ? getBignum() : P.y;
                     } else {
-                        parameters["curveType"] = getRandomCurve();
+                        parameters["curveType"] = hint_ecc_mont(getRandomCurve());
                         parameters["pub_x"] = getBignum();
                         parameters["pub_y"] = getBignum();
                     }
@@ -681,14 +871,14 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                         CF_CHECK_EQ(P1.curveID, P2.curveID);
 
-                        parameters["curveType"] = P1.curveID;
+                        parameters["curveType"] = hint_ecc_mont(P1.curveID);
 
                         parameters["priv"] = P1.privkey;
 
                         parameters["pub_x"] = P1.pub_x;
                         parameters["pub_y"] = P1.pub_y;
                     } else {
-                        parameters["curveType"] = getRandomCurve();
+                        parameters["curveType"] = hint_ecc_mont(getRandomCurve());
 
                         parameters["priv"] = getBignum();
 
@@ -706,7 +896,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     const auto P1 = Pool_CurvePrivkey.Get();
 
-                    parameters["curveType"] = P1.curveID;
+                    parameters["curveType"] = hint_ecc_mont(P1.curveID);
                     parameters["priv"] = P1.priv;
                     parameters["nonce"] = getBignum();
 
@@ -728,7 +918,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     const auto P1 = Pool_CurvePrivkey.Get();
 
-                    parameters["curveType"] = P1.curveID;
+                    parameters["curveType"] = hint_ecc_mont(P1.curveID);
                     parameters["priv"] = P1.priv;
                     parameters["nonce"] = getBignum();
 
@@ -750,7 +940,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     const auto P1 = Pool_CurvePrivkey.Get();
 
-                    parameters["curveType"] = P1.curveID;
+                    parameters["curveType"] = hint_ecc_mont(P1.curveID);
                     parameters["priv"] = P1.priv;
                     parameters["nonce"] = getBignum();
 
@@ -772,7 +962,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     const auto P1 = Pool_CurvePrivkey.Get();
 
-                    parameters["curveType"] = P1.curveID;
+                    parameters["curveType"] = hint_ecc_mont(P1.curveID);
                     parameters["priv"] = P1.priv;
                     parameters["nonce"] = getBignum();
 
@@ -794,7 +984,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     if ( Pool_CurveECDSASignature.Have() == true ) {
                         const auto P = Pool_CurveECDSASignature.Get();
-                        parameters["curveType"] = P.curveID;
+                        parameters["curveType"] = hint_ecc_mont(P.curveID);
 
                         parameters["signature"]["pub"][0] = getBool() ? getBignum() : P.pub_x;
                         parameters["signature"]["pub"][1] = getBool() ? getBignum() : P.pub_y;
@@ -818,7 +1008,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         parameters["signature"]["signature"][1] = sigS;
                         parameters["cleartext"] = P.cleartext;
                     } else {
-                        parameters["curveType"] = getRandomCurve();
+                        parameters["curveType"] = hint_ecc_mont(getRandomCurve());
 
                         parameters["signature"]["pub"][0] = getBignum();
                         parameters["signature"]["pub"][1] = getBignum();
@@ -841,7 +1031,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     if ( Pool_CurveECDSASignature.Have() == true ) {
                         const auto P = Pool_CurveECDSASignature.Get();
-                        parameters["curveType"] = P.curveID;
+                        parameters["curveType"] = hint_ecc_mont(P.curveID);
 
                         parameters["signature"]["pub"][0] = getBool() ? getBignum() : P.pub_x;
                         parameters["signature"]["pub"][1] = getBool() ? getBignum() : P.pub_y;
@@ -865,7 +1055,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         parameters["signature"]["signature"][1] = sigS;
                         parameters["cleartext"] = P.cleartext;
                     } else {
-                        parameters["curveType"] = getRandomCurve();
+                        parameters["curveType"] = hint_ecc_mont(getRandomCurve());
 
                         parameters["signature"]["pub"][0] = getBignum();
                         parameters["signature"]["pub"][1] = getBignum();
@@ -888,7 +1078,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     if ( Pool_CurveECDSASignature.Have() == true ) {
                         const auto P = Pool_CurveECDSASignature.Get();
-                        parameters["curveType"] = P.curveID;
+                        parameters["curveType"] = hint_ecc_mont(P.curveID);
 
                         parameters["signature"]["pub"][0] = getBool() ? getBignum() : P.pub_x;
                         parameters["signature"]["pub"][1] = getBool() ? getBignum() : P.pub_y;
@@ -912,7 +1102,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         parameters["signature"]["signature"][1] = sigS;
                         parameters["cleartext"] = P.cleartext;
                     } else {
-                        parameters["curveType"] = getRandomCurve();
+                        parameters["curveType"] = hint_ecc_mont(getRandomCurve());
 
                         parameters["signature"]["pub"][0] = getBignum();
                         parameters["signature"]["pub"][1] = getBignum();
@@ -935,7 +1125,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     if ( Pool_CurveECDSASignature.Have() == true ) {
                         const auto P = Pool_CurveECDSASignature.Get();
-                        parameters["curveType"] = P.curveID;
+                        parameters["curveType"] = hint_ecc_mont(P.curveID);
 
                         parameters["signature"]["pub"][0] = getBool() ? getBignum() : P.pub_x;
                         parameters["signature"]["pub"][1] = getBool() ? getBignum() : P.pub_y;
@@ -959,7 +1149,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         parameters["signature"]["signature"][1] = sigS;
                         parameters["cleartext"] = P.cleartext;
                     } else {
-                        parameters["curveType"] = getRandomCurve();
+                        parameters["curveType"] = hint_ecc_mont(getRandomCurve());
 
                         parameters["signature"]["pub"][0] = getBignum();
                         parameters["signature"]["pub"][1] = getBignum();
@@ -982,7 +1172,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     if ( getBool() && Pool_CurveECDSASignature.Have() == true ) {
                         const auto P = Pool_CurveECDSASignature.Get();
-                        parameters["curveType"] = P.curveID;
+                        parameters["curveType"] = hint_ecc_mont(P.curveID);
 
                         parameters["signature"][0] = getBool() ? getBignum() : P.sig_r;
                         parameters["signature"][1] = getBool() ? getBignum() : P.sig_y;
@@ -994,14 +1184,14 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         }
                     } else if ( getBool() && Pool_CurveECC_Point.Have() == true ) {
                         const auto P = Pool_CurveECC_Point.Get();
-                        parameters["curveType"] = P.curveID;
+                        parameters["curveType"] = hint_ecc_mont(P.curveID);
 
                         parameters["signature"][0] = getBool() ? getBignum() : P.x;
                         parameters["signature"][1] = getBool() ? getBignum() : P.y;
 
                         parameters["cleartext"] = cryptofuzz::util::DecToHex(getBignum(true), (PRNG() % 64) * 2);
                     } else {
-                        parameters["curveType"] = getRandomCurve();
+                        parameters["curveType"] = hint_ecc_mont(getRandomCurve());
 
                         parameters["signature"][0] = getBignum();
                         parameters["signature"][1] = getBignum();
@@ -1018,7 +1208,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("ECC_GenerateKeyPair"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 128);
-                    parameters["curveType"] = getRandomCurve();
+                    parameters["curveType"] = hint_ecc_mont(getRandomCurve());
 
                     cryptofuzz::operation::ECC_GenerateKeyPair op(parameters);
                     op.Serialize(dsOut2);
@@ -1042,7 +1232,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     if ( Pool_CurveKeypair.Have() && getBool() == true ) {
                         const auto P = Pool_CurveKeypair.Get();
 
-                        parameters["curveType"] = P.curveID;
+                        parameters["curveType"] = hint_ecc_mont(P.curveID);
                         parameters["pub_x"] = P.pub_x;
                         parameters["pub_y"] = P.pub_y;
 
@@ -1053,7 +1243,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                             }
                         }
                     } else {
-                        parameters["curveType"] = getRandomCurve();
+                        parameters["curveType"] = hint_ecc_mont(getRandomCurve());
                         parameters["pub_x"] = getBignum();
                         parameters["pub_y"] = getBignum();
                     }
@@ -1073,12 +1263,12 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     if ( Pool_CurveECC_Point.Have() == true ) {
                         const auto P = Pool_CurveECC_Point.Get();
-                        parameters["curveType"] = P.curveID;
+                        parameters["curveType"] = hint_ecc_mont(P.curveID);
 
                         parameters["a_x"] = getBool() ? getBignum() : P.x;
                         parameters["a_y"] = getBool() ? getBignum() : P.y;
                     } else {
-                        parameters["curveType"] = getRandomCurve();
+                        parameters["curveType"] = hint_ecc_mont(getRandomCurve());
 
                         parameters["a_x"] = getBignum();
                         parameters["a_y"] = getBignum();
@@ -1086,12 +1276,12 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     if ( Pool_CurveECC_Point.Have() == true ) {
                         const auto P = Pool_CurveECC_Point.Get();
-                        parameters["curveType"] = P.curveID;
+                        parameters["curveType"] = hint_ecc_mont(P.curveID);
 
                         parameters["b_x"] = getBool() ? getBignum() : P.x;
                         parameters["b_y"] = getBool() ? getBignum() : P.y;
                     } else {
-                        parameters["curveType"] = getRandomCurve();
+                        parameters["curveType"] = hint_ecc_mont(getRandomCurve());
 
                         parameters["b_x"] = getBignum();
                         parameters["b_y"] = getBignum();
@@ -1109,12 +1299,12 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     if ( Pool_CurveECC_Point.Have() == true ) {
                         const auto P = Pool_CurveECC_Point.Get();
-                        parameters["curveType"] = P.curveID;
+                        parameters["curveType"] = hint_ecc_mont(P.curveID);
 
                         parameters["a_x"] = getBool() ? getBignum() : P.x;
                         parameters["a_y"] = getBool() ? getBignum() : P.y;
                     } else {
-                        parameters["curveType"] = getRandomCurve();
+                        parameters["curveType"] = hint_ecc_mont(getRandomCurve());
 
                         parameters["a_x"] = getBignum();
                         parameters["a_y"] = getBignum();
@@ -1134,12 +1324,12 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     if ( Pool_CurveECC_Point.Have() == true ) {
                         const auto P = Pool_CurveECC_Point.Get();
-                        parameters["curveType"] = P.curveID;
+                        parameters["curveType"] = hint_ecc_mont(P.curveID);
 
                         parameters["a_x"] = getBool() ? getBignum() : P.x;
                         parameters["a_y"] = getBool() ? getBignum() : P.y;
                     } else {
-                        parameters["curveType"] = getRandomCurve();
+                        parameters["curveType"] = hint_ecc_mont(getRandomCurve());
 
                         parameters["a_x"] = getBignum();
                         parameters["a_y"] = getBignum();
@@ -1157,12 +1347,12 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     if ( Pool_CurveECC_Point.Have() == true ) {
                         const auto P = Pool_CurveECC_Point.Get();
-                        parameters["curveType"] = P.curveID;
+                        parameters["curveType"] = hint_ecc_mont(P.curveID);
 
                         parameters["a_x"] = getBool() ? getBignum() : P.x;
                         parameters["a_y"] = getBool() ? getBignum() : P.y;
                     } else {
-                        parameters["curveType"] = getRandomCurve();
+                        parameters["curveType"] = hint_ecc_mont(getRandomCurve());
 
                         parameters["a_x"] = getBignum();
                         parameters["a_y"] = getBignum();
@@ -1433,7 +1623,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_PrivateToPublic"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
 
                     parameters["priv"] = getBignum();
 
@@ -1444,7 +1634,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_PrivateToPublic_G2"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
 
                     parameters["priv"] = getBignum();
 
@@ -1455,7 +1645,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_Sign"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
                     const auto hashOrPoint = getBool();
                     //const auto hashOrPoint = false;
                     parameters["hashOrPoint"] = hashOrPoint;
@@ -1497,7 +1687,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     if ( Pool_CurveBLSSignature.Have() == true ) {
                         const auto P = Pool_CurveBLSSignature.Get();
 
-                        parameters["curveType"] = P.curveID;
+                        parameters["curveType"] = hint_ecc_mont(P.curveID);
                         parameters["hashOrPoint"] = P.hashOrPoint;
                         parameters["point_v"] = GET_OR_BIGNUM(P.point_v);
                         parameters["point_w"] = GET_OR_BIGNUM(P.point_w);
@@ -1513,7 +1703,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         parameters["sig_x"] = GET_OR_BIGNUM(P.sig_x);
                         parameters["sig_y"] = GET_OR_BIGNUM(P.sig_y);
                     } else {
-                        parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                        parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
                         const auto hashOrPoint = getBool();
                         parameters["hashOrPoint"] = hashOrPoint;
                         if ( hashOrPoint == true ) {
@@ -1554,7 +1744,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                             const auto P = Pool_CurveBLSSignature.Get();
 
                             if ( s == false ) {
-                                parameters["curveType"] = P.curveID;
+                                parameters["curveType"] = hint_ecc_mont(P.curveID);
                                 parameters["hashOrEncode"] = P.hashOrPoint;
                                 parameters["dest"] = P.dest;
                                 parameters["sig_v"] = GET_OR_BIGNUM(P.sig_v);
@@ -1576,7 +1766,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         }
                     }
                     if ( s == false ) {
-                        parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                        parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
                         parameters["hashOrEncode"] = getBool();
                         parameters["dest"] = getBool() ? getBuffer(PRNG() % 512) : get_BLS_predefined_DST();
                         parameters["sig_v"] = getBignum();
@@ -1593,7 +1783,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_IsG1OnCurve"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
 
                     if ( getBool() && Pool_CurveBLSG1.Have() == true ) {
                         const auto P = Pool_CurveBLSG1.Get();
@@ -1613,7 +1803,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_IsG2OnCurve"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
 
                     if ( getBool() && Pool_CurveBLSG2.Have() == true ) {
                         const auto P = Pool_CurveBLSG2.Get();
@@ -1635,7 +1825,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_GenerateKeyPair"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
                     parameters["ikm"] = getBuffer(PRNG() % 512);
                     parameters["info"] = getBuffer(PRNG() % 512);
 
@@ -1646,7 +1836,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_Decompress_G1"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
                     parameters["compressed"] = getBignum();
 
                     cryptofuzz::operation::BLS_Decompress_G1 op(parameters);
@@ -1656,7 +1846,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_Compress_G1"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
 
                     if ( getBool() && Pool_CurveBLSG1.Have() == true ) {
                         const auto P = Pool_CurveBLSG1.Get();
@@ -1676,7 +1866,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_Decompress_G2"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
                     parameters["g1_x"] = getBignum();
                     parameters["g1_y"] = getBignum();
 
@@ -1687,7 +1877,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_Compress_G2"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
 
                     if ( getBool() && Pool_CurveBLSG2.Have() == true ) {
                         const auto P = Pool_CurveBLSG2.Get();
@@ -1709,7 +1899,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_HashToG1"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
                     parameters["cleartext"] = getBuffer(PRNG() % 1024);
                     parameters["dest"] = getBool() ? getBuffer(PRNG() % 512) : get_BLS_predefined_DST();
 
@@ -1722,7 +1912,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_HashToG2"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
                     parameters["cleartext"] = getBuffer(PRNG() % 1024);
                     parameters["dest"] = getBool() ? getBuffer(PRNG() % 512) : get_BLS_predefined_DST();
                     parameters["aug"] = getBuffer(PRNG() % 1024);
@@ -1731,10 +1921,34 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     op.Serialize(dsOut2);
                 }
                 break;
+            case    CF_OPERATION("BLS_MapToG1"):
+                {
+                    parameters["modifier"] = "";
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
+                    parameters["u"] = getBignum();
+                    parameters["v"] = getBignum();
+
+                    cryptofuzz::operation::BLS_MapToG1 op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("BLS_MapToG2"):
+                {
+                    parameters["modifier"] = "";
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
+                    parameters["u"][0] = getBignum();
+                    parameters["u"][1] = getBignum();
+                    parameters["v"][0] = getBignum();
+                    parameters["v"][1] = getBignum();
+
+                    cryptofuzz::operation::BLS_MapToG2 op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
             case    CF_OPERATION("BLS_Pairing"):
                 {
                     parameters["modifier"] = "";
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
 
                     if ( getBool() && Pool_CurveBLSG1.Have() == true ) {
                         const auto P = Pool_CurveBLSG1.Get();
@@ -1767,7 +1981,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_MillerLoop"):
                 {
                     parameters["modifier"] = "";
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
 
                     if ( getBool() && Pool_CurveBLSG1.Have() == true ) {
                         const auto P = Pool_CurveBLSG1.Get();
@@ -1800,7 +2014,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_FinalExp"):
                 {
                     parameters["modifier"] = "";
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
 
                     if ( Pool_Fp12.Have() && getBool() == true ) {
                         const auto Fp12 = Pool_Fp12.Get();
@@ -1839,7 +2053,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_G1_Add"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
 
                     if ( getBool() && Pool_CurveBLSG1.Have() == true ) {
                         const auto P = Pool_CurveBLSG1.Get();
@@ -1868,7 +2082,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_G1_Mul"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
 
                     if ( getBool() && Pool_CurveBLSG1.Have() == true ) {
                         const auto P = Pool_CurveBLSG1.Get();
@@ -1890,7 +2104,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_G1_IsEq"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
 
                     if ( getBool() && Pool_CurveBLSG1.Have() == true ) {
                         const auto P = Pool_CurveBLSG1.Get();
@@ -1919,7 +2133,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_G1_Neg"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
 
                     if ( getBool() && Pool_CurveBLSG1.Have() == true ) {
                         const auto P = Pool_CurveBLSG1.Get();
@@ -1939,7 +2153,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_G2_Add"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
 
                     if ( getBool() && Pool_CurveBLSG2.Have() == true ) {
                         const auto P = Pool_CurveBLSG2.Get();
@@ -1974,7 +2188,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_G2_Mul"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
 
                     if ( getBool() && Pool_CurveBLSG2.Have() == true ) {
                         const auto P = Pool_CurveBLSG2.Get();
@@ -1998,7 +2212,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_G2_IsEq"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
 
                     if ( getBool() && Pool_CurveBLSG2.Have() == true ) {
                         const auto P = Pool_CurveBLSG2.Get();
@@ -2033,7 +2247,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BLS_G2_Neg"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
-                    parameters["curveType"] = CF_ECC_CURVE("BLS12_381");
+                    parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
 
                     if ( getBool() && Pool_CurveBLSG2.Have() == true ) {
                         const auto P = Pool_CurveBLSG2.Get();

@@ -15,6 +15,8 @@ class chia_bls : public Module {
         std::optional<component::G2> OpBLS_PrivateToPublic_G2(operation::BLS_PrivateToPublic_G2& op);
         std::optional<component::G1> OpBLS_HashToG1(operation::BLS_HashToG1& op);
         std::optional<component::G2> OpBLS_HashToG2(operation::BLS_HashToG2& op);
+        std::optional<component::G1> OpBLS_MapToG1(operation::BLS_MapToG1& op);
+        std::optional<component::G2> OpBLS_MapToG2(operation::BLS_MapToG2& op);
         std::optional<bool> OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op);
         std::optional<component::BLS_Signature> OpBLS_Sign(operation::BLS_Sign& op);
         std::optional<bool> OpBLS_Verify(operation::BLS_Verify& op);

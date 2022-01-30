@@ -1757,8 +1757,7 @@ std::optional<component::Ciphertext> OpenSSL::AEAD_Encrypt(operation::SymmetricE
     std::optional<component::Ciphertext> ret = std::nullopt;
 
     const EVP_AEAD* aead = nullptr;
-    EVP_AEAD_CTX ctx;
-    bool ctxInitialized = false;
+    EVP_AEAD_CTX* ctx = nullptr;
     size_t len;
 
     size_t out_size = op.ciphertextSize;
@@ -1769,19 +1768,27 @@ std::optional<component::Ciphertext> OpenSSL::AEAD_Encrypt(operation::SymmetricE
     /* Initialize */
     {
         CF_CHECK_NE(aead = toEVPAEAD(op.cipher.cipherType), nullptr);
+#if defined(CRYPTOFUZZ_LIBRESSL)
+		CF_CHECK_NE(ctx = EVP_AEAD_CTX_new(), nullptr);
         CF_CHECK_NE(EVP_AEAD_CTX_init(
-                    &ctx,
+                    ctx,
                     aead,
                     op.cipher.key.GetPtr(),
                     op.cipher.key.GetSize(),
                     tagSize,
                     nullptr), 0);
-        ctxInitialized = true;
+#else /* CRYPTOFUZZ_BORINGSSL */
+        CF_CHECK_NE(ctx = EVP_AEAD_CTX_new(
+                    aead,
+                    op.cipher.key.GetPtr(),
+                    op.cipher.key.GetSize(),
+                    tagSize), nullptr);
+#endif
     }
 
     /* Process */
     {
-        CF_CHECK_NE(EVP_AEAD_CTX_seal(&ctx,
+        CF_CHECK_NE(EVP_AEAD_CTX_seal(ctx,
                     out,
                     &len,
                     out_size,
@@ -1799,7 +1806,7 @@ std::optional<component::Ciphertext> OpenSSL::AEAD_Encrypt(operation::SymmetricE
         size_t tagSize2 = tagSize;
 #if defined(CRYPTOFUZZ_BORINGSSL)
         if ( tagSize == 0 ) {
-            CF_CHECK_EQ(EVP_AEAD_CTX_tag_len(&ctx, &tagSize2, op.cleartext.GetSize(), 0), 1);
+            CF_CHECK_EQ(EVP_AEAD_CTX_tag_len(ctx, &tagSize2, op.cleartext.GetSize(), 0), 1);
         }
 #elif defined(CRYPTOFUZZ_LIBRESSL)
         /* LibreSSL does not have EVP_AEAD_CTX_tag_len */
@@ -1822,9 +1829,7 @@ std::optional<component::Ciphertext> OpenSSL::AEAD_Encrypt(operation::SymmetricE
     }
 
 end:
-    if ( ctxInitialized == true ) {
-        EVP_AEAD_CTX_cleanup(&ctx);
-    }
+    CF_NORET(EVP_AEAD_CTX_free(ctx));
 
     util::free(out);
 
@@ -2174,8 +2179,7 @@ std::optional<component::Cleartext> OpenSSL::AEAD_Decrypt(operation::SymmetricDe
     std::optional<component::Cleartext> ret = std::nullopt;
 
     const EVP_AEAD* aead = nullptr;
-    EVP_AEAD_CTX ctx;
-    bool ctxInitialized = false;
+    EVP_AEAD_CTX* ctx = nullptr;
     size_t len;
 
     size_t out_size = op.cleartextSize;
@@ -2186,14 +2190,22 @@ std::optional<component::Cleartext> OpenSSL::AEAD_Decrypt(operation::SymmetricDe
     /* Initialize */
     {
         CF_CHECK_NE(aead = toEVPAEAD(op.cipher.cipherType), nullptr);
+#if defined(CRYPTOFUZZ_LIBRESSL)
+		CF_CHECK_NE(ctx = EVP_AEAD_CTX_new(), nullptr);
         CF_CHECK_NE(EVP_AEAD_CTX_init(
-                    &ctx,
+                    ctx,
                     aead,
                     op.cipher.key.GetPtr(),
                     op.cipher.key.GetSize(),
                     tagSize,
                     nullptr), 0);
-        ctxInitialized = true;
+#else /* CRYPTOFUZZ_BORINGSSL */
+        CF_CHECK_NE(ctx = EVP_AEAD_CTX_new(
+                    aead,
+                    op.cipher.key.GetPtr(),
+                    op.cipher.key.GetSize(),
+                    tagSize), nullptr);
+#endif
     }
 
     /* Process */
@@ -2205,7 +2217,7 @@ std::optional<component::Cleartext> OpenSSL::AEAD_Decrypt(operation::SymmetricDe
             memcpy(ciphertextAndTag.data() + op.ciphertext.GetSize(), op.tag->GetPtr(), tagSize);
         }
 
-        CF_CHECK_NE(EVP_AEAD_CTX_open(&ctx,
+        CF_CHECK_NE(EVP_AEAD_CTX_open(ctx,
                     out,
                     &len,
                     out_size,
@@ -2224,9 +2236,7 @@ std::optional<component::Cleartext> OpenSSL::AEAD_Decrypt(operation::SymmetricDe
     }
 
 end:
-    if ( ctxInitialized == true ) {
-        EVP_AEAD_CTX_cleanup(&ctx);
-    }
+    CF_NORET(EVP_AEAD_CTX_free(ctx));
 
     util::free(out);
 

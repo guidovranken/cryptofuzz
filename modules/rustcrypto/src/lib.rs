@@ -1,13 +1,11 @@
 use std::slice;
 use std::ptr;
 
-use sha2::{Sha224, Sha256, Sha384, Sha512, Digest};
+use sha2::{Sha224, Sha256, Sha384, Sha512};
 use sha1::{Sha1};
 use streebog::{Streebog256, Streebog512};
 use whirlpool::{Whirlpool};
-use ripemd160::{Ripemd160};
-use ripemd256::{Ripemd256};
-use ripemd320::{Ripemd320};
+use ripemd::{Ripemd160,Ripemd256,Ripemd320};
 use sm3::{Sm3};
 use gost94::{Gost94CryptoPro};
 use md2::{Md2};
@@ -15,17 +13,26 @@ use md4::{Md4};
 use md5::{Md5};
 use groestl::{Groestl224, Groestl256, Groestl384, Groestl512};
 use tiger::{Tiger};
-use blake2::{Blake2b, Blake2s};
+use blake2::{Blake2b512, Blake2s256};
 use sha3::{Sha3_224, Sha3_256, Sha3_384, Sha3_512};
 use sha3::{Keccak224, Keccak256, Keccak384, Keccak512};
 use fsb::{Fsb160, Fsb224, Fsb256, Fsb384, Fsb512};
 use shabal::{Shabal256, Shabal512};
 use k12::{KangarooTwelve, digest::{ExtendableOutput}};
 
-use digest::{BlockInput, FixedOutput, Reset, Update};
+use digest::{Digest,FixedOutput, KeyInit, Update};
+
 use hkdf::Hkdf;
 
-use hmac::{Mac, Hmac, NewMac};
+use hmac::{Mac, Hmac, HmacCore};
+use hmac::digest::{
+    block_buffer::Eager,
+    core_api::{
+        BlockSizeUser, BufferKindUser, CoreProxy,
+        UpdateCore, FixedOutputCore, AlgorithmName, CoreWrapper
+    },
+    HashMarker,
+};
 
 use scrypt::{scrypt, Params as ScryptParams};
 
@@ -37,7 +44,7 @@ use argon2::{
     Algorithm, Argon2, ParamsBuilder, Version,
 };
 
-use cmac::Cmac;
+use cmac::{Cmac,Mac as cMac,NewMac};
 
 use aes::{Aes128, Aes192, Aes256};
 use cast5::Cast5;
@@ -62,6 +69,17 @@ use std::convert::TryInto;
 mod ids;
 use crate::ids::{*};
 
+use k256;
+use k256::elliptic_curve::sec1::ToEncodedPoint;
+use k256::ecdsa::signature::Signer;
+use k256::ecdsa::signature::Signature;
+use k256::ecdsa::signature::DigestVerifier;
+use k256::elliptic_curve::sec1::FromEncodedPoint;
+
+use p256;
+
+use generic_array;
+
 fn create_parts(
     input_bytes: *const u8, input_size: libc::size_t,
     parts_bytes: *const libc::size_t, parts_size: libc::size_t) -> Vec<Vec<u8>> {
@@ -78,7 +96,7 @@ fn create_parts(
     return ret;
 }
 
-fn hash<D: Digest>(
+fn hash<D: Digest + digest::Reset >(
     parts: Vec<Vec<u8>>,
     resets: Vec<u8>,
     out: *mut u8) -> i32 {
@@ -106,7 +124,8 @@ fn hash<D: Digest>(
             break;
         }
 
-        hasher.reset();
+        //hasher.reset();
+        Digest::reset(&mut hasher);
     }
 
     let res = hasher.finalize();
@@ -167,8 +186,8 @@ pub extern "C" fn rustcrypto_hashes_hash(
     else if is_groestl_256(algorithm)     { return hash::<Groestl256>(parts, resets, out); }
     else if is_groestl_384(algorithm)     { return hash::<Groestl384>(parts, resets, out); }
     else if is_groestl_512(algorithm)     { return hash::<Groestl512>(parts, resets, out); }
-    else if is_blake2b512(algorithm)      { return hash::<Blake2b>(parts, resets, out); }
-    else if is_blake2s256(algorithm)      { return hash::<Blake2s>(parts, resets, out); }
+    else if is_blake2b512(algorithm)      { return hash::<Blake2b512>(parts, resets, out); }
+    else if is_blake2s256(algorithm)      { return hash::<Blake2s256>(parts, resets, out); }
     else if is_sha3_224(algorithm)        { return hash::<Sha3_224>(parts, resets, out); }
     else if is_sha3_256(algorithm)        { return hash::<Sha3_256>(parts, resets, out); }
     else if is_sha3_384(algorithm)        { return hash::<Sha3_384>(parts, resets, out); }
@@ -192,13 +211,21 @@ pub extern "C" fn rustcrypto_hashes_hash(
     }
 }
 
-fn hkdf<D: BlockInput + Clone + Default + FixedOutput + Update + Reset>(
+fn hkdf<D: Clone + Default + FixedOutput + Update + digest::Reset + digest::core_api::CoreProxy>(
     password: Vec<u8>,
     salt: Vec<u8>,
     info: Vec<u8>,
     keysize: u64,
-    out: *mut u8) -> i32 {
-
+    out: *mut u8) -> i32
+    where D: CoreProxy,
+    D::Core: HashMarker
+        + UpdateCore
+        + FixedOutputCore
+        + BufferKindUser<BufferKind = Eager>
+        + Default
+        + Clone,
+    <D::Core as BlockSizeUser>::BlockSize: digest::generic_array::typenum::IsLess<digest::generic_array::typenum::U256>,
+    digest::generic_array::typenum::Le<<D::Core as BlockSizeUser>::BlockSize, digest::generic_array::typenum::U256>: digest::generic_array::typenum::NonZero {
     let hk = Hkdf::<D>::new(Some(&salt), &password);
     let mut okm = vec![0u8; keysize.try_into().unwrap()];
     match hk.expand(&info, &mut okm) {
@@ -220,25 +247,6 @@ pub extern "C" fn rustcrypto_hkdf(
     keysize: u64,
     algorithm: u64,
     out: *mut u8) -> i32 {
-    /* Prevent time-outs of slow hash algorithms.
-     *
-     * https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=41536#c2
-     */
-    if keysize > 100 {
-        if  is_gost_r_34_11_94(algorithm) ||
-            is_md2(algorithm) ||
-            is_groestl_224(algorithm) ||
-            is_groestl_256(algorithm) ||
-            is_groestl_384(algorithm) ||
-            is_groestl_512(algorithm) ||
-            is_fsb_160(algorithm) ||
-            is_fsb_224(algorithm) ||
-            is_fsb_256(algorithm) ||
-            is_fsb_384(algorithm) ||
-            is_fsb_512(algorithm) {
-                return -1;
-            }
-    }
 
     let password = unsafe { slice::from_raw_parts(password_bytes, password_size) }.to_vec();
     let salt = unsafe { slice::from_raw_parts(salt_bytes, salt_size) }.to_vec();
@@ -264,8 +272,11 @@ pub extern "C" fn rustcrypto_hkdf(
     else if is_groestl_256(algorithm)     { return hkdf::<Groestl256>(password, salt, info, keysize, out); }
     else if is_groestl_384(algorithm)     { return hkdf::<Groestl384>(password, salt, info, keysize, out); }
     else if is_groestl_512(algorithm)     { return hkdf::<Groestl512>(password, salt, info, keysize, out); }
-    else if is_blake2b512(algorithm)      { return hkdf::<Blake2b>(password, salt, info, keysize, out); }
-    else if is_blake2s256(algorithm)      { return hkdf::<Blake2s>(password, salt, info, keysize, out); }
+    /* TODO */
+    /*
+    else if is_blake2b512(algorithm)      { return hkdf::<Blake2b512>(password, salt, info, keysize, out); }
+    else if is_blake2s256(algorithm)      { return hkdf::<Blake2s256>(password, salt, info, keysize, out); }
+    */
     else if is_sha3_224(algorithm)        { return hkdf::<Sha3_224>(password, salt, info, keysize, out); }
     else if is_sha3_256(algorithm)        { return hkdf::<Sha3_256>(password, salt, info, keysize, out); }
     else if is_sha3_384(algorithm)        { return hkdf::<Sha3_384>(password, salt, info, keysize, out); }
@@ -287,6 +298,7 @@ pub extern "C" fn rustcrypto_hkdf(
     }
 }
 
+/*
 fn hmac<D: BlockInput + Clone + Default + FixedOutput + Update + Reset>(
     parts: Vec<Vec<u8>>,
     resets: Vec<u8>,
@@ -386,6 +398,7 @@ pub extern "C" fn rustcrypto_hmac(
         return -1;
     }
 }
+*/
 
 #[no_mangle]
 pub extern "C" fn rustcrypto_scrypt(
@@ -419,7 +432,7 @@ pub extern "C" fn rustcrypto_scrypt(
     return 0;
 }
 
-fn pbkdf2_<D: Mac + NewMac + Clone + Sync>(
+fn pbkdf2_<D: Mac + Sync + KeyInit + Update + FixedOutput + Clone>(
     password: Vec<u8>,
     salt: Vec<u8>,
     iterations: u32,
@@ -445,26 +458,6 @@ pub extern "C" fn rustcrypto_pbkdf2(
     keysize: u64,
     algorithm: u64,
     out: *mut u8) -> i32 {
-    /* Prevent time-outs of slow hash algorithms.
-     *
-     * https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=41536#c2
-     */
-    if keysize > 100 {
-        if  is_gost_r_34_11_94(algorithm) ||
-            is_md2(algorithm) ||
-            is_groestl_224(algorithm) ||
-            is_groestl_256(algorithm) ||
-            is_groestl_384(algorithm) ||
-            is_groestl_512(algorithm) ||
-            is_fsb_160(algorithm) ||
-            is_fsb_224(algorithm) ||
-            is_fsb_256(algorithm) ||
-            is_fsb_384(algorithm) ||
-            is_fsb_512(algorithm) {
-                return -1;
-            }
-    }
-
     let password = unsafe { slice::from_raw_parts(password_bytes, password_size) }.to_vec();
     let salt = unsafe { slice::from_raw_parts(salt_bytes, salt_size) }.to_vec();
 
@@ -488,8 +481,9 @@ pub extern "C" fn rustcrypto_pbkdf2(
     else if is_groestl_256(algorithm)     { return pbkdf2_::<Hmac<Groestl256>>(password, salt, iterations, keysize, out); }
     else if is_groestl_384(algorithm)     { return pbkdf2_::<Hmac<Groestl384>>(password, salt, iterations, keysize, out); }
     else if is_groestl_512(algorithm)     { return pbkdf2_::<Hmac<Groestl512>>(password, salt, iterations, keysize, out); }
-    else if is_blake2b512(algorithm)      { return pbkdf2_::<Hmac<Blake2b>>(password, salt, iterations, keysize, out); }
-    else if is_blake2s256(algorithm)      { return pbkdf2_::<Hmac<Blake2s>>(password, salt, iterations, keysize, out); }
+    /* TODO */
+    //else if is_blake2b512(algorithm)      { return pbkdf2_::<Hmac<Blake2b512>>(password, salt, iterations, keysize, out); }
+    //else if is_blake2s256(algorithm)      { return pbkdf2_::<Hmac<Blake2s256>>(password, salt, iterations, keysize, out); }
     else if is_sha3_224(algorithm)        { return pbkdf2_::<Hmac<Sha3_224>>(password, salt, iterations, keysize, out); }
     else if is_sha3_256(algorithm)        { return pbkdf2_::<Hmac<Sha3_256>>(password, salt, iterations, keysize, out); }
     else if is_sha3_384(algorithm)        { return pbkdf2_::<Hmac<Sha3_384>>(password, salt, iterations, keysize, out); }
@@ -980,4 +974,204 @@ pub extern "C" fn rustcrypto_bigint_bignumcalc(
     result.copy_from_slice(&res_bytes);
 
     return 0;
+}
+
+#[no_mangle]
+pub extern "C" fn rustcrypto_ecc_privatetopublic(curve: u64, sk_bytes: &[u8; 32], pk_bytes: &mut [u8; 65]) -> i32 {
+    if is_secp256k1(curve) {
+        let sk = match k256::SecretKey::from_be_bytes(sk_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+        let pk = sk.public_key();
+        let pk_point = pk.to_encoded_point(false);
+        let pk_bin = pk_point.to_bytes();
+        pk_bytes.copy_from_slice(&pk_bin);
+        return 0;
+    } else if is_secp256r1(curve) {
+        let sk = match p256::SecretKey::from_be_bytes(sk_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+        let pk = sk.public_key();
+        let pk_point = pk.to_encoded_point(false);
+        let pk_bin = pk_point.to_bytes();
+        pk_bytes.copy_from_slice(&pk_bin);
+        return 0;
+    }
+
+    panic!("Invalid curve");
+}
+
+#[no_mangle]
+pub extern "C" fn rustcrypto_validate_pubkey(curve: u64, pk_bytes: &[u8; 65]) -> i32 {
+    if is_secp256k1(curve) {
+        return match k256::PublicKey::from_sec1_bytes(pk_bytes) {
+            Ok(_v) => 0,
+            Err(_e) => -1,
+        };
+    } else if is_secp256r1(curve) {
+        return match p256::PublicKey::from_sec1_bytes(pk_bytes) {
+            Ok(_v) => 0,
+            Err(_e) => -1,
+        };
+    }
+
+    panic!("Invalid curve");
+}
+
+#[no_mangle]
+pub extern "C" fn rustcrypto_ecdsa_sign(curve: u64, msg_bytes: &[u8; 32], sk_bytes: &[u8; 32], sig_bytes: &mut [u8; 64]) -> i32 {
+    if is_secp256k1(curve) {
+        let sk = match k256::ecdsa::SigningKey::from_bytes(sk_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+        let sig: k256::ecdsa::Signature = sk.sign(msg_bytes);
+        sig_bytes.copy_from_slice(&sig.as_bytes());
+        return 0;
+    } else if is_secp256r1(curve) {
+        let sk = match p256::ecdsa::SigningKey::from_bytes(sk_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+        let sig: p256::ecdsa::Signature = sk.sign(msg_bytes);
+        sig_bytes.copy_from_slice(&sig.as_bytes());
+        return 0;
+    }
+
+    panic!("Invalid curve");
+}
+
+#[no_mangle]
+pub extern "C" fn rustcrypto_ecc_point_add(curve: u64, a_bytes: &[u8; 65], b_bytes: &[u8; 65], res_bytes: &mut [u8; 65]) -> i32 {
+    if is_secp256k1(curve) {
+        let a = match k256::EncodedPoint::from_bytes(a_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+
+        let a_affine = k256::AffinePoint::from_encoded_point(&a);
+        if bool::from(a_affine.is_none()) {
+            return -1;
+        }
+
+        let a_projective: k256::ProjectivePoint = a_affine.unwrap().into();
+
+        let b = match k256::EncodedPoint::from_bytes(b_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+
+        let b_affine = k256::AffinePoint::from_encoded_point(&b);
+        if bool::from(b_affine.is_none()) {
+            return -1;
+        }
+
+        let b_projective: k256::ProjectivePoint = b_affine.unwrap().into();
+
+        let res_projective = a_projective + b_projective;
+        let res_affine = res_projective.to_affine();
+
+        let res = res_affine.to_encoded_point(false);
+        if res.len() != 65 {
+            return -1;
+        }
+        res_bytes.copy_from_slice(&res.as_bytes());
+
+        return 0;
+    } else if is_secp256r1(curve) {
+        let a = match p256::EncodedPoint::from_bytes(a_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+
+        let a_affine = p256::AffinePoint::from_encoded_point(&a);
+        if bool::from(a_affine.is_none()) {
+            return -1;
+        }
+
+        let a_projective: p256::ProjectivePoint = a_affine.unwrap().into();
+
+        let b = match p256::EncodedPoint::from_bytes(b_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+
+        let b_affine = p256::AffinePoint::from_encoded_point(&b);
+        if bool::from(b_affine.is_none()) {
+            return -1;
+        }
+
+        let b_projective: p256::ProjectivePoint = b_affine.unwrap().into();
+
+        let res_projective = a_projective + b_projective;
+        let res_affine = res_projective.to_affine();
+
+        let res = res_affine.to_encoded_point(false);
+        if res.len() != 65 {
+            return -1;
+        }
+        res_bytes.copy_from_slice(&res.as_bytes());
+
+        return 0;
+    }
+
+    panic!("Invalid curve");
+}
+
+#[no_mangle]
+pub extern "C" fn rustcrypto_ecc_point_mul(curve: u64, a_bytes: &[u8; 65], b_bytes: &[u8; 32], res_bytes: &mut [u8; 65]) -> i32 {
+    if is_secp256k1(curve) {
+        let a = match k256::EncodedPoint::from_bytes(a_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+
+        let a_affine = k256::AffinePoint::from_encoded_point(&a);
+        if bool::from(a_affine.is_none()) {
+            return -1;
+        }
+
+        let a_projective: k256::ProjectivePoint = a_affine.unwrap().into();
+
+        let b = <k256::Scalar as k256::elliptic_curve::ops::Reduce::<elliptic_curve::bigint::U256>>::from_be_bytes_reduced(generic_array::GenericArray::<u8, generic_array::typenum::U32>::clone_from_slice(b_bytes));
+        let res_projective = a_projective * b;
+        let res_affine = res_projective.to_affine();
+
+        let res = res_affine.to_encoded_point(false);
+        if res.len() != 65 {
+            return -1;
+        }
+        res_bytes.copy_from_slice(&res.as_bytes());
+
+        return 0;
+    } else if is_secp256r1(curve) {
+        let a = match p256::EncodedPoint::from_bytes(a_bytes) {
+            Ok(_v) => _v,
+            Err(_e) => return -1,
+        };
+
+        let a_affine = p256::AffinePoint::from_encoded_point(&a);
+        if bool::from(a_affine.is_none()) {
+            return -1;
+        }
+
+        let a_projective: p256::ProjectivePoint = a_affine.unwrap().into();
+
+        let b = <p256::Scalar as p256::elliptic_curve::ops::Reduce::<elliptic_curve::bigint::U256>>::from_be_bytes_reduced(generic_array::GenericArray::<u8, generic_array::typenum::U32>::clone_from_slice(b_bytes));
+        let res_projective = a_projective * b;
+        let res_affine = res_projective.to_affine();
+
+        let res = res_affine.to_encoded_point(false);
+        if res.len() != 65 {
+            return -1;
+        }
+        res_bytes.copy_from_slice(&res.as_bytes());
+
+        return 0;
+    }
+
+
+    panic!("Invalid curve");
 }

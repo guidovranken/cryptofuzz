@@ -27,6 +27,8 @@ class mcl : public Module {
         std::optional<bool> OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op);
         std::optional<component::G1> OpBLS_HashToG1(operation::BLS_HashToG1& op);
         std::optional<component::G2> OpBLS_HashToG2(operation::BLS_HashToG2& op);
+        std::optional<component::G1> OpBLS_MapToG1(operation::BLS_MapToG1& op);
+        std::optional<component::G2> OpBLS_MapToG2(operation::BLS_MapToG2& op);
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op);
         std::optional<component::Fp2> OpBignumCalc_Fp2(operation::BignumCalc_Fp2& op);
         std::optional<component::Fp12> OpBignumCalc_Fp12(operation::BignumCalc_Fp12& op);

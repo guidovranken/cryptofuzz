@@ -586,6 +586,39 @@ end:
     return ret;
 }
 
+std::optional<component::ECC_PublicKey> trezor_firmware::OpECDSA_Recover(operation::ECDSA_Recover& op) {
+    std::optional<component::ECC_PublicKey> ret = std::nullopt;
+
+    std::optional<const ecdsa_curve*> curve = std::nullopt;
+    uint8_t pubkey_bytes[65];
+    uint8_t sig_bytes[64];
+
+    CF_CHECK_LTE(op.id, 3);
+    CF_CHECK_EQ(op.cleartext.GetSize(), 32);
+    CF_CHECK_TRUE(op.digestType.Is(CF_DIGEST("NULL")));
+    CF_CHECK_NE(curve = trezor_firmware_detail::toCurve(op.curveType), std::nullopt);
+    CF_CHECK_EQ(trezor_firmware_detail::EncodeBignum(
+                op.signature.first.ToTrimmedString(),
+                sig_bytes), true);
+    CF_CHECK_EQ(trezor_firmware_detail::EncodeBignum(
+                op.signature.second.ToTrimmedString(),
+                sig_bytes + 32), true);
+
+    CF_CHECK_EQ(ecdsa_recover_pub_from_sig(*curve, pubkey_bytes, sig_bytes, op.cleartext.GetPtr(), op.id), 0);
+
+    {
+        boost::multiprecision::cpp_int x, y;
+
+        boost::multiprecision::import_bits(x, pubkey_bytes + 1, pubkey_bytes + 1 + 32);
+        boost::multiprecision::import_bits(y, pubkey_bytes + 1 + 32, pubkey_bytes + sizeof(pubkey_bytes));
+
+        ret = {trezor_firmware_detail::toString(x), trezor_firmware_detail::toString(y)};
+    }
+
+end:
+    return ret;
+}
+
 std::optional<component::Secret> trezor_firmware::OpECDH_Derive(operation::ECDH_Derive& op) {
     std::optional<component::Secret> ret = std::nullopt;
 

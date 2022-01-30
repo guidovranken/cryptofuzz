@@ -16,10 +16,8 @@ k12 = {git = "https://github.com/RustCrypto/hashes"}
 md-5 = {git = "https://github.com/RustCrypto/hashes"}
 md2 = {git = "https://github.com/RustCrypto/hashes"}
 md4 = {git = "https://github.com/RustCrypto/hashes"}
-ripemd160 = {git = "https://github.com/RustCrypto/hashes"}
-ripemd256 = {git = "https://github.com/RustCrypto/hashes"}
-ripemd320 = {git = "https://github.com/RustCrypto/hashes"}
-sha-1 = {git = "https://github.com/RustCrypto/hashes"}
+ripemd = {git = "https://github.com/RustCrypto/hashes"}
+sha1 = {git = "https://github.com/RustCrypto/hashes"}
 sha2 = {git = "https://github.com/RustCrypto/hashes"}
 sha3 = {git = "https://github.com/RustCrypto/hashes"}
 shabal = {git = "https://github.com/RustCrypto/hashes"}
@@ -28,7 +26,7 @@ streebog = {git = "https://github.com/RustCrypto/hashes"}
 tiger = {git = "https://github.com/RustCrypto/hashes"}
 whirlpool = {git = "https://github.com/RustCrypto/hashes"}
 
-digest = { version = "0.9", default-features = false }
+digest = { version = "0.10", default-features = false }
 hkdf = {git = "https://github.com/RustCrypto/KDFs"}
 
 hmac = {git = "https://github.com/RustCrypto/MACs"}
@@ -59,4 +57,13 @@ serpent = {git = "https://github.com/RustCrypto/block-ciphers"}
 sm4 = {git = "https://github.com/RustCrypto/block-ciphers"}
 des = {git = "https://github.com/RustCrypto/block-ciphers"}
 
+# Elliptic curves
+
+elliptic-curve = { version = "0.12.0-pre.1", default-features = false, features = ["hazmat", "sec1"] }
+
+k256 = {git = "https://github.com/RustCrypto/elliptic-curves"}
+p256 = {git = "https://github.com/RustCrypto/elliptic-curves"}
+
+
+generic-array = "0.14.5"
 libc = "0.2.0"

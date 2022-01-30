@@ -1,6 +1,6 @@
 all: module.a
 
-CXXFLAGS += -Wall -Wextra -Werror -std=c++17 -I ../../include -I ../../fuzzing-headers/include -DFUZZING_HEADERS_NO_IMPL
+CXXFLAGS += -Wall -Wextra -Werror -std=c++17 -I ../../include -I ../../fuzzing-headers/include -DFUZZING_HEADERS_NO_IMPL -DMBEDTLS_ALLOW_PRIVATE_ACCESS
 
 module.a: module.o bn_ops.o
 	test $(MBEDTLS_LIBMBEDCRYPTO_A_PATH)

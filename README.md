@@ -148,3 +148,7 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - OpenSSL: [HMAC use-after-free after copying ctx](https://github.com/openssl/openssl/issues/17261)
 - Golang: TBA
 - mbed TLS: [mbedtls_ecp_muladd hangs with oversized point coordinates](https://github.com/ARMmbed/mbedtls/issues/5376)
+- BoringSSL: [EVP_AEAD_CTX_free NULL pointer dereference if pointer is NULL](https://bugs.chromium.org/p/boringssl/issues/detail?id=473)
+- blst: [blst_fr_eucl_inverse incorrect result](https://github.com/supranational/blst/commit/fd453524b12cc438adc65636fc52375b0f47b17e)
+- circl: [Inadequate scalar reduction in p384 leads to panic](https://github.com/cloudflare/circl/issues/312)
+- Herumi mcl: [map-to-curve incorrect result if both inputs are equivalent](https://github.com/herumi/mcl/commit/0ddbe946423acd5cee2552b09373f4e1e9ba4023)
