@@ -503,9 +503,6 @@ std::optional<component::G1> mcl::OpBLS_MapToG1(operation::BLS_MapToG1& op) {
     } catch ( cybozu::Exception ) {
         goto end;
     }
-    CF_CHECK_NE(op.u.ToTrimmedString(), "0");
-    CF_CHECK_NE(op.v.ToTrimmedString(), "0");
-    CF_CHECK_NE(op.v.ToTrimmedString(), op.u.ToTrimmedString());
     CF_NORET(BN::param.mapTo.mapTo_WB19_.FpToG1(P, u, &v));
 
     if ( !P.isValid() ) {
@@ -535,11 +532,6 @@ std::optional<component::G2> mcl::OpBLS_MapToG2(operation::BLS_MapToG2& op) {
     } catch ( cybozu::Exception ) {
         goto end;
     }
-    CF_CHECK_NE(op.u.first.ToTrimmedString(), "0");
-    CF_CHECK_NE(op.u.second.ToTrimmedString(), "0");
-    CF_CHECK_NE(op.v.first.ToTrimmedString(), "0");
-    CF_CHECK_NE(op.v.second.ToTrimmedString(), "0");
-    CF_CHECK_NE(u, v);
     CF_NORET(BN::param.mapTo.mapTo_WB19_.Fp2ToG2(P, u, &v));
 
     if ( !P.isValid() ) {
