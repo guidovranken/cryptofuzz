@@ -32,7 +32,6 @@ extern "C" {
 #include <wolfssl/wolfcrypt/chacha.h>
 #include <wolfssl/wolfcrypt/chacha20_poly1305.h>
 #include <wolfssl/wolfcrypt/des3.h>
-#include <wolfssl/wolfcrypt/idea.h>
 
 #include <wolfssl/wolfcrypt/hmac.h>
 
@@ -1667,22 +1666,6 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
         }
         break;
 
-        case CF_CIPHER("IDEA_CBC"):
-        {
-            Idea ctx;
-
-            CF_CHECK_EQ(op.cipher.iv.GetSize(), IDEA_BLOCK_SIZE);
-
-            const auto cleartext = util::Pkcs7Pad(op.cleartext.Get(), IDEA_BLOCK_SIZE);
-            out = util::malloc(cleartext.size());
-
-            WC_CHECK_EQ(wc_IdeaSetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize(), op.cipher.iv.GetPtr(&ds), IDEA_ENCRYPTION), 0);
-            WC_CHECK_EQ(wc_IdeaCbcEncrypt(&ctx, out, cleartext.data(), cleartext.size()), 0);
-
-            ret = component::Ciphertext(Buffer(out, cleartext.size()));
-        }
-        break;
-
         case CF_CIPHER("DES_ECB"):
         {
 #if defined(WOLFSSL_DES_ECB)
@@ -1748,7 +1731,6 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
                     Buffer(outTag, *op.tagSize));
         }
         break;
-#if 0
         case CF_CIPHER("AES_128_SIV_CMAC"):
         case CF_CIPHER("AES_192_SIV_CMAC"):
         case CF_CIPHER("AES_256_SIV_CMAC"):
@@ -1769,7 +1751,6 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
                     Buffer(outTag, AES_BLOCK_SIZE));
         }
         break;
-#endif
     }
 
 end:
@@ -2329,23 +2310,6 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
         }
         break;
 
-        case CF_CIPHER("IDEA_CBC"):
-        {
-            Idea ctx;
-
-            CF_CHECK_EQ(op.cipher.iv.GetSize(), IDEA_BLOCK_SIZE);
-
-            out = util::malloc(op.ciphertext.GetSize());
-
-            WC_CHECK_EQ(wc_IdeaSetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize(), op.cipher.iv.GetPtr(&ds), IDEA_DECRYPTION), 0);
-            WC_CHECK_EQ(wc_IdeaCbcDecrypt(&ctx, out, op.ciphertext.GetPtr(&ds), op.ciphertext.GetSize()), 0);
-
-            const auto unpaddedCleartext = util::Pkcs7Unpad( std::vector<uint8_t>(out, out + op.ciphertext.GetSize()), IDEA_BLOCK_SIZE );
-            CF_CHECK_NE(unpaddedCleartext, std::nullopt);
-            ret = component::Cleartext(Buffer(*unpaddedCleartext));
-        }
-        break;
-
         case CF_CIPHER("DES_ECB"):
         {
 #if defined(WOLFSSL_DES_ECB)
@@ -2404,7 +2368,6 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
             ret = component::Cleartext(Buffer(op.ciphertext.GetPtr(&ds), op.ciphertext.GetSize()));
         }
         break;
-#if 0
         case CF_CIPHER("AES_128_SIV_CMAC"):
         case CF_CIPHER("AES_192_SIV_CMAC"):
         case CF_CIPHER("AES_256_SIV_CMAC"):
@@ -2426,7 +2389,6 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
         }
         break;
-#endif
     }
 
 end:
