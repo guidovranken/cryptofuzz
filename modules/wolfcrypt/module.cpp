@@ -29,7 +29,6 @@ extern "C" {
 #include <wolfssl/wolfcrypt/aes.h>
 #include <wolfssl/wolfcrypt/arc4.h>
 #include <wolfssl/wolfcrypt/camellia.h>
-#include <wolfssl/wolfcrypt/rabbit.h>
 #include <wolfssl/wolfcrypt/chacha.h>
 #include <wolfssl/wolfcrypt/chacha20_poly1305.h>
 #include <wolfssl/wolfcrypt/des3.h>
@@ -1610,26 +1609,6 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
         }
         break;
 
-        case CF_CIPHER("RABBIT"):
-        {
-            Rabbit ctx;
-
-            CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
-            CF_CHECK_EQ(op.cipher.iv.GetSize(), 8);
-
-            out = util::malloc(op.cleartext.GetSize());
-
-            WC_CHECK_EQ(wc_RabbitSetKey(
-                        &ctx,
-                        op.cipher.key.GetPtr(&ds),
-                        op.cipher.iv.GetPtr(&ds)), 0);
-
-            WC_CHECK_EQ(wc_RabbitProcess(&ctx, out, op.cleartext.GetPtr(&ds), op.cleartext.GetSize()), 0);
-
-            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
-        }
-        break;
-
         case CF_CIPHER("CHACHA20"):
         {
             ChaCha ctx;
@@ -2285,25 +2264,6 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
                         op.cipher.key.GetPtr(&ds),
                         op.cipher.key.GetSize()), 0);
             WC_CHECK_EQ(wc_Arc4Process(&ctx, out, op.ciphertext.GetPtr(&ds), op.ciphertext.GetSize()), 0);
-
-            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
-        }
-        break;
-
-        case CF_CIPHER("RABBIT"):
-        {
-            Rabbit ctx;
-
-            CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
-            CF_CHECK_EQ(op.cipher.iv.GetSize(), 8);
-
-            out = util::malloc(op.ciphertext.GetSize());
-
-            WC_CHECK_EQ(wc_RabbitSetKey(
-                        &ctx,
-                        op.cipher.key.GetPtr(&ds),
-                        op.cipher.iv.GetPtr(&ds)), 0);
-            WC_CHECK_EQ(wc_RabbitProcess(&ctx, out, op.ciphertext.GetPtr(&ds), op.ciphertext.GetSize()), 0);
 
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
         }
