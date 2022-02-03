@@ -244,13 +244,88 @@ end:
 bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    RLC_TRY {
-        /* noret */ bn_mod(res.Get(), bn[0].Get(), bn[1].Get());
-    } RLC_CATCH_ANY {
-        return false;
-    }
+    try {
+        switch ( ds.Get<uint8_t>() ) {
+            case    0:
+                RLC_TRY {
+                    /* noret */ bn_mod(res.Get(), bn[0].Get(), bn[1].Get());
+                } RLC_CATCH_ANY {
+                    return false;
+                }
+                return true;
+            case    1:
+                RLC_TRY {
+                    /* noret */ bn_mod_basic(res.Get(), bn[0].Get(), bn[1].Get());
+                } RLC_CATCH_ANY {
+                    return false;
+                }
+                return true;
+            case    2:
+                {
+                    /* https://github.com/relic-toolkit/relic/issues/222 */
+                    goto end;
 
-    return true;
+                    Bignum t1(ds);
+
+                    RLC_TRY {
+                        bn_mod_pre_barrt(t1.Get(), bn[1].Get());
+                        bn_mod_barrt(res.Get(), bn[0].Get(), bn[1].Get(), t1.Get());
+                    } RLC_CATCH_ANY {
+                        return false;
+                    }
+
+                    return true;
+                }
+            case    3:
+                {
+                    Bignum t1(ds), t2(ds);
+
+                    RLC_TRY {
+                        bn_mod_monty_conv(t1.Get(), bn[0].Get(), bn[1].Get());
+                        bn_mod_pre_monty(t2.Get(), bn[1].Get());
+                        bn_mod_monty_basic(res.Get(), t1.Get(), bn[1].Get(), t2.Get());
+                    } RLC_CATCH_ANY {
+                        return false;
+                    }
+
+                    return true;
+                }
+            case    4:
+                {
+                    Bignum t1(ds), t2(ds);
+
+                    RLC_TRY {
+                        bn_mod_monty_conv(t1.Get(), bn[0].Get(), bn[1].Get());
+                        bn_mod_pre_monty(t2.Get(), bn[1].Get());
+                        bn_mod_monty_comba(res.Get(), t1.Get(), bn[1].Get(), t2.Get());
+                    } RLC_CATCH_ANY {
+                        return false;
+                    }
+
+                    return true;
+                }
+            case    5:
+                {
+                    /* https://github.com/relic-toolkit/relic/issues/221 */
+                    CF_CHECK_NE(bn_bits(bn[1].Get()), 0);
+
+                    Bignum t1(ds);
+
+                    RLC_TRY {
+                        bn_mod_pre_pmers(t1.Get(), bn[1].Get());
+                        bn_mod_pmers(res.Get(), bn[0].Get(), bn[1].Get(), t1.Get());
+                    } RLC_CATCH_ANY {
+                        return false;
+                    }
+
+                    return true;
+                }
+        }
+    } catch ( ... ) { }
+
+end:
+    return false;
+
 }
 
 bool IsEven::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
