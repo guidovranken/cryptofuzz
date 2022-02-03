@@ -946,7 +946,19 @@ end:
         return ret;
     }
 
-    std::optional<component::Bignum> ToComponentBignum(const void* scalar) {
+    bool ToFe(void* fe, const component::Bignum& bn) {
+        bool ret = false;
+        std::optional<std::vector<uint8_t>> bin;
+
+        CF_CHECK_NE(bin = util::DecToBin(bn.ToTrimmedString(), 32), std::nullopt);
+        CF_CHECK_EQ(cryptofuzz_secp256k1_fe_set_b32(fe, bin->data()), 1);
+
+        ret = true;
+end:
+        return ret;
+    }
+
+    std::optional<component::Bignum> ToComponentBignum_scalar(const void* scalar) {
         std::optional<component::Bignum> ret = std::nullopt;
 
         uint8_t scalar_bytes[32];
@@ -954,6 +966,21 @@ end:
         CF_NORET(cryptofuzz_secp256k1_scalar_get_b32(scalar_bytes, scalar));
 
         ret = component::Bignum(util::BinToDec(scalar_bytes, sizeof(scalar_bytes)));
+
+        return ret;
+    }
+
+    std::optional<component::Bignum> ToComponentBignum_fe(fuzzing::datasource::Datasource& ds, void* fe) {
+        std::optional<component::Bignum> ret = std::nullopt;
+
+        uint8_t fe_bytes[32];
+
+        bool var = false;
+        try { var = ds.Get<bool>(); } catch ( ... ) { }
+
+        CF_NORET(cryptofuzz_secp256k1_fe_get_b32(fe_bytes, fe, var ? 1 : 0));
+
+        ret = component::Bignum(util::BinToDec(fe_bytes, sizeof(fe_bytes)));
 
         return ret;
     }
@@ -1248,135 +1275,288 @@ end:
     return ret;
 }
 
-std::optional<component::Bignum> secp256k1::OpBignumCalc(operation::BignumCalc& op) {
-    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
-    std::optional<component::Bignum> ret = std::nullopt;
-    bool mod;
-    if ( op.modulo == std::nullopt ) {
-        mod = false;
-    } else if ( op.modulo->ToTrimmedString() == "115792089237316195423570985008687907852837564279074904382605163141518161494337" ) {
-        mod = true;
-    } else {
+namespace secp256k1_detail {
+    std::optional<component::Bignum> OpBignumCalc_Mod(operation::BignumCalc& op, const bool mod) {
+        std::optional<component::Bignum> ret = std::nullopt;
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+        void* a = util::malloc(cryptofuzz_secp256k1_scalar_type_size());
+        void* b = util::malloc(cryptofuzz_secp256k1_scalar_type_size());
+        void* res = util::malloc(cryptofuzz_secp256k1_scalar_type_size());
+
+        CF_CHECK_TRUE(secp256k1_detail::ToScalar(a, op.bn0));
+        CF_CHECK_TRUE(secp256k1_detail::ToScalar(b, op.bn1));
+
+        switch ( op.calcOp.Get() ) {
+            case    CF_CALCOP("IsZero(A)"):
+                CF_NORET(cryptofuzz_secp256k1_scalar_set_int(
+                            res,
+                            cryptofuzz_secp256k1_scalar_is_zero(a)));
+                break;
+            case    CF_CALCOP("IsOne(A)"):
+                CF_NORET(cryptofuzz_secp256k1_scalar_set_int(
+                            res,
+                            cryptofuzz_secp256k1_scalar_is_one(a)));
+                break;
+            case    CF_CALCOP("IsEven(A)"):
+                CF_NORET(cryptofuzz_secp256k1_scalar_set_int(
+                            res,
+                            cryptofuzz_secp256k1_scalar_is_even(a)));
+                break;
+            case    CF_CALCOP("IsEq(A,B)"):
+                CF_NORET(cryptofuzz_secp256k1_scalar_set_int(
+                            res,
+                            cryptofuzz_secp256k1_scalar_eq(a, b)));
+                break;
+            case    CF_CALCOP("Add(A,B)"):
+                {
+                    const auto overflow = secp256k1_detail::CheckRet(
+                            cryptofuzz_secp256k1_scalar_add(res, a, b)
+                            );
+
+                    /* Ignore overflow in mod mode */
+                    if ( mod == false ) {
+                        CF_CHECK_EQ(overflow, 0);
+                    }
+                }
+                break;
+            case    CF_CALCOP("Mul(A,B)"):
+                CF_CHECK_TRUE(mod);
+                CF_NORET(cryptofuzz_secp256k1_scalar_mul(res, a, b));
+                break;
+            case    CF_CALCOP("InvMod(A,B)"):
+                {
+                    CF_CHECK_TRUE(mod);
+
+                    bool var = false;
+                    try { var = ds.Get<bool>(); } catch ( ... ) { }
+
+                    if ( var == false ) {
+                        CF_NORET(cryptofuzz_secp256k1_scalar_inverse(res, a));
+                    } else {
+                        CF_NORET(cryptofuzz_secp256k1_scalar_inverse_var(res, a));
+                    }
+                }
+                break;
+            case    CF_CALCOP("CondSet(A,B)"):
+                memset(res, 0, cryptofuzz_secp256k1_scalar_type_size());
+                CF_NORET(cryptofuzz_secp256k1_scalar_cmov(
+                            res,
+                            a,
+                            !cryptofuzz_secp256k1_scalar_is_zero(b)));
+                break;
+            case    CF_CALCOP("Bit(A,B)"):
+                {
+                    std::optional<std::vector<uint8_t>> bin;
+                    CF_CHECK_NE(bin = util::DecToBin(op.bn1.ToTrimmedString(), 1), std::nullopt);
+                    const auto offset = bin->data()[0];
+                    CF_CHECK_LT(offset, 32);
+
+                    bool var = false;
+                    try { var = ds.Get<bool>(); } catch ( ... ) { }
+
+                    if ( var == false ) {
+                        CF_NORET(cryptofuzz_secp256k1_scalar_set_int(
+                                    res,
+                                    cryptofuzz_secp256k1_scalar_get_bits(a, offset, 1)));
+                    } else {
+                        CF_NORET(cryptofuzz_secp256k1_scalar_set_int(
+                                    res,
+                                    cryptofuzz_secp256k1_scalar_get_bits_var(a, offset, 1)));
+                    }
+                }
+                break;
+            case    CF_CALCOP("Set(A)"):
+                {
+                    std::optional<std::vector<uint8_t>> bin;
+                    CF_CHECK_NE(bin = util::DecToBin(op.bn0.ToTrimmedString(), 1), std::nullopt);
+                    CF_NORET(cryptofuzz_secp256k1_scalar_set_int(res, bin->data()[0]));
+                }
+                break;
+            case    CF_CALCOP("RShift(A,B)"):
+                {
+                    CF_CHECK_FALSE(mod);
+                    std::optional<std::vector<uint8_t>> bin;
+                    CF_CHECK_NE(bin = util::DecToBin(op.bn1.ToTrimmedString(), 1), std::nullopt);
+                    CF_CHECK_GT(bin->data()[0], 0);
+                    CF_CHECK_LT(bin->data()[0], 16);
+                    /* ignore ret */ cryptofuzz_secp256k1_scalar_shr_int(a, bin->data()[0]);
+                    memcpy(res, a, cryptofuzz_secp256k1_scalar_type_size());
+                }
+                break;
+            default:
+                goto end;
+        }
+
+        ret = secp256k1_detail::ToComponentBignum_scalar(res);
+
+end:
+        util::free(a);
+        util::free(b);
+        util::free(res);
+
         return ret;
     }
 
-    void* a = util::malloc(cryptofuzz_secp256k1_scalar_type_size());
-    void* b = util::malloc(cryptofuzz_secp256k1_scalar_type_size());
-    void* res = util::malloc(cryptofuzz_secp256k1_scalar_type_size());
+    std::optional<component::Bignum> OpBignumCalc_Prime(operation::BignumCalc& op, const bool mod) {
+        std::optional<component::Bignum> ret = std::nullopt;
+        if ( mod == false ) {
+            /* XXX */
+            return ret;
+        }
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    CF_CHECK_TRUE(secp256k1_detail::ToScalar(a, op.bn0));
-    CF_CHECK_TRUE(secp256k1_detail::ToScalar(b, op.bn1));
+        void* a = util::malloc(cryptofuzz_secp256k1_fe_size());
+        void* b = util::malloc(cryptofuzz_secp256k1_fe_size());
+        void* res = util::malloc(cryptofuzz_secp256k1_fe_size());
 
-    switch ( op.calcOp.Get() ) {
-        case    CF_CALCOP("IsZero(A)"):
-            CF_NORET(cryptofuzz_secp256k1_scalar_set_int(
-                        res,
-                        cryptofuzz_secp256k1_scalar_is_zero(a)));
-            break;
-        case    CF_CALCOP("IsOne(A)"):
-            CF_NORET(cryptofuzz_secp256k1_scalar_set_int(
-                        res,
-                        cryptofuzz_secp256k1_scalar_is_one(a)));
-            break;
-        case    CF_CALCOP("IsEven(A)"):
-            CF_NORET(cryptofuzz_secp256k1_scalar_set_int(
-                        res,
-                        cryptofuzz_secp256k1_scalar_is_even(a)));
-            break;
-        case    CF_CALCOP("IsEq(A,B)"):
-            CF_NORET(cryptofuzz_secp256k1_scalar_set_int(
-                        res,
-                        cryptofuzz_secp256k1_scalar_eq(a, b)));
-            break;
-        case    CF_CALCOP("Add(A,B)"):
-            {
-                const auto overflow = secp256k1_detail::CheckRet(
-                        cryptofuzz_secp256k1_scalar_add(res, a, b)
-                );
+        CF_CHECK_TRUE(secp256k1_detail::ToFe(a, op.bn0));
+        CF_CHECK_TRUE(secp256k1_detail::ToFe(b, op.bn1));
 
-                /* Ignore overflow in mod mode */
-                if ( mod == false ) {
-                    CF_CHECK_EQ(overflow, 0);
+        switch ( op.calcOp.Get() ) {
+            case    CF_CALCOP("Add(A,B)"):
+                {
+                    CF_NORET(cryptofuzz_secp256k1_fe_add(a, b));
+                    memcpy(res, a, cryptofuzz_secp256k1_fe_size());
                 }
-            }
-            break;
-        case    CF_CALCOP("Mul(A,B)"):
-            CF_CHECK_TRUE(mod);
-            CF_NORET(cryptofuzz_secp256k1_scalar_mul(res, a, b));
-            break;
-        case    CF_CALCOP("InvMod(A,B)"):
-            {
-                CF_CHECK_TRUE(mod);
-
-                bool var = false;
-                try { var = ds.Get<bool>(); } catch ( ... ) { }
-
-                if ( var == false ) {
-                    CF_NORET(cryptofuzz_secp256k1_scalar_inverse(res, a));
-                } else {
-                    CF_NORET(cryptofuzz_secp256k1_scalar_inverse_var(res, a));
+                break;
+            case    CF_CALCOP("Mul(A,B)"):
+                {
+                    CF_NORET(cryptofuzz_secp256k1_fe_mul(res, a, b));
                 }
-            }
-            break;
-        case    CF_CALCOP("CondSet(A,B)"):
-            memset(res, 0, cryptofuzz_secp256k1_scalar_type_size());
-            CF_NORET(cryptofuzz_secp256k1_scalar_cmov(
-                        res,
-                        a,
-                        !cryptofuzz_secp256k1_scalar_is_zero(b)));
-            break;
-        case    CF_CALCOP("Bit(A,B)"):
-            {
-                std::optional<std::vector<uint8_t>> bin;
-                CF_CHECK_NE(bin = util::DecToBin(op.bn1.ToTrimmedString(), 1), std::nullopt);
-                const auto offset = bin->data()[0];
-                CF_CHECK_LT(offset, 32);
+                break;
+            case    CF_CALCOP("Sqr(A)"):
+                {
+                    CF_NORET(cryptofuzz_secp256k1_fe_sqr(res, a));
+                }
+                break;
+            case    CF_CALCOP("InvMod(A,B)"):
+                {
+                    bool var = false;
+                    try { var = ds.Get<bool>(); } catch ( ... ) { }
 
-                bool var = false;
-                try { var = ds.Get<bool>(); } catch ( ... ) { }
+                    if ( var == false ) {
+                        CF_NORET(cryptofuzz_secp256k1_fe_inv(res, a));
+                    } else {
+                        CF_NORET(cryptofuzz_secp256k1_fe_inv_var(res, a));
+                    }
+                }
+                break;
+            case    CF_CALCOP("Sqrt(A)"):
+                {
+                    if ( cryptofuzz_secp256k1_fe_sqrt(res, a) == 1 ) {
+                        CF_NORET(cryptofuzz_secp256k1_fe_sqr(res, res));
+                    } else {
+                        CF_NORET(cryptofuzz_secp256k1_fe_clear(res));
+                    }
+                }
+                break;
+            case    CF_CALCOP("IsOdd(A)"):
+                {
+                    CF_NORET(cryptofuzz_secp256k1_fe_set_int(res,
+                        cryptofuzz_secp256k1_fe_is_odd(a)
+                    ));
+                }
+                break;
+            case    CF_CALCOP("IsZero(A)"):
+                {
+                    CF_NORET(cryptofuzz_secp256k1_fe_set_int(res,
+                        cryptofuzz_secp256k1_fe_is_zero(a)
+                    ));
+                }
+                break;
+            case    CF_CALCOP("IsEq(A,B)"):
+                {
+                    bool var = false;
+                    try { var = ds.Get<bool>(); } catch ( ... ) { }
 
-                if ( var == false ) {
-                    CF_NORET(cryptofuzz_secp256k1_scalar_set_int(
+                    const int r =
+                        var == false ?
+                            cryptofuzz_secp256k1_fe_equal(a, b) :
+                            cryptofuzz_secp256k1_fe_equal_var(a, b);
+
+                    CF_NORET(cryptofuzz_secp256k1_fe_set_int(res, r));
+                }
+                break;
+            case    CF_CALCOP("Cmp(A,B)"):
+                {
+                    const auto r = cryptofuzz_secp256k1_fe_cmp_var(a, b);
+
+                    return component::Bignum(std::to_string(r));
+                }
+                break;
+            case    CF_CALCOP("CondSet(A,B)"):
+                {
+                    CF_NORET(cryptofuzz_secp256k1_fe_clear(res));
+
+                    CF_NORET(cryptofuzz_secp256k1_fe_cmov(
                                 res,
-                                cryptofuzz_secp256k1_scalar_get_bits(a, offset, 1)));
-                } else {
-                    CF_NORET(cryptofuzz_secp256k1_scalar_set_int(
-                                res,
-                                cryptofuzz_secp256k1_scalar_get_bits_var(a, offset, 1)));
+                                a,
+                                !cryptofuzz_secp256k1_fe_is_zero(b)));
                 }
-            }
-            break;
-        case    CF_CALCOP("Set(A)"):
-            {
-                std::optional<std::vector<uint8_t>> bin;
-                CF_CHECK_NE(bin = util::DecToBin(op.bn0.ToTrimmedString(), 1), std::nullopt);
-                CF_NORET(cryptofuzz_secp256k1_scalar_set_int(res, bin->data()[0]));
-            }
-            break;
-        case    CF_CALCOP("RShift(A,B)"):
-            {
-                CF_CHECK_FALSE(mod);
-                std::optional<std::vector<uint8_t>> bin;
-                CF_CHECK_NE(bin = util::DecToBin(op.bn1.ToTrimmedString(), 1), std::nullopt);
-                CF_CHECK_GT(bin->data()[0], 0);
-                CF_CHECK_LT(bin->data()[0], 16);
-                /* ignore ret */ cryptofuzz_secp256k1_scalar_shr_int(a, bin->data()[0]);
-                memcpy(res, a, cryptofuzz_secp256k1_scalar_type_size());
-            }
-            break;
-        default:
-            goto end;
-    }
+                break;
+            case    CF_CALCOP("Set(A)"):
+                {
+                    uint8_t which = 0;
+                    try { which = ds.Get<uint8_t>() % 2; } catch ( ... ) { }
 
-    ret = secp256k1_detail::ToComponentBignum(res);
+                    switch ( which ) {
+                        case    0:
+                            {
+                                void* r = util::malloc(cryptofuzz_secp256k1_fe_storage_size());
+                                CF_NORET(cryptofuzz_secp256k1_fe_to_storage(r, a));
+                                CF_NORET(cryptofuzz_secp256k1_fe_from_storage(res, r));
+                                util::free(r);
+                            }
+                            break;
+                        case    1:
+                            {
+                                void* r = util::malloc(cryptofuzz_secp256k1_fe_signed62_size());
+                                CF_NORET(cryptofuzz_secp256k1_fe_to_signed62(r, a));
+                                CF_NORET(cryptofuzz_secp256k1_fe_from_signed62(res, r));
+                                util::free(r);
+                            }
+                            break;
+                        default:
+                            CF_UNREACHABLE();
+                            break;
+                    }
+                }
+                break;
+            default:
+                goto end;
+        }
+
+        ret = secp256k1_detail::ToComponentBignum_fe(ds, res);
 
 end:
-    util::free(a);
-    util::free(b);
-    util::free(res);
+        util::free(a);
+        util::free(b);
+        util::free(res);
 
-    return ret;
+        return ret;
+    }
 }
+
+std::optional<component::Bignum> secp256k1::OpBignumCalc(operation::BignumCalc& op) {
+    if ( op.modulo == std::nullopt ) {
+        return secp256k1_detail::OpBignumCalc_Mod(op, false);
+    } else if ( op.modulo->ToTrimmedString() == "115792089237316195423570985008687907852837564279074904382605163141518161494337" ) {
+        return secp256k1_detail::OpBignumCalc_Mod(op, true);
+    } else if ( op.modulo->ToTrimmedString() == "115792089237316195423570985008687907853269984665640564039457584007908834671663" ) {
+        return secp256k1_detail::OpBignumCalc_Prime(op, true);
+    } else {
+        return std::nullopt;
+    }
+}
+
+#if 0
+        case    CF_CALCOP("Sqrt(A)"):
+            {
+                secp256k1_fe_sqrt(&data->fe[0], &t);
+            }
+            break;
+#endif
 
 bool secp256k1::SupportsModularBignumCalc(void) const {
     return true;

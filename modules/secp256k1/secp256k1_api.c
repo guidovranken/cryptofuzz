@@ -71,6 +71,104 @@ int cryptofuzz_secp256k1_scalar_shr_int(void *r, int n) {
     return secp256k1_scalar_shr_int(r, n);
 }
 
+size_t cryptofuzz_secp256k1_fe_size(void) {
+    return sizeof(secp256k1_fe);
+}
+
+int cryptofuzz_secp256k1_fe_set_b32(secp256k1_fe *r, const unsigned char *b32) {
+    return secp256k1_fe_set_b32(r, b32);
+}
+
+void cryptofuzz_secp256k1_fe_set_int(void *r, const int i) {
+    secp256k1_fe_set_int(r, i);
+}
+
+void cryptofuzz_secp256k1_fe_get_b32(unsigned char *bin, void* a, const int var) {
+    if ( var == 0 ) {
+        secp256k1_fe_normalize(a);
+    } else {
+        secp256k1_fe_normalize_var(a);
+    }
+
+    secp256k1_fe_get_b32(bin, a);
+}
+
+void cryptofuzz_secp256k1_fe_add(void *r, const void *a) {
+    secp256k1_fe_add(r, a);
+}
+
+void cryptofuzz_secp256k1_fe_mul(void *r, const void* a, const void *b) {
+    secp256k1_fe_mul(r, a, b);
+}
+
+void cryptofuzz_secp256k1_fe_sqr(void *r, const void *a) {
+    secp256k1_fe_sqr(r, a);
+}
+
+void cryptofuzz_secp256k1_fe_inv(void *r, const void *a) {
+    secp256k1_fe_inv(r, a);
+}
+
+void cryptofuzz_secp256k1_fe_inv_var(void *r, const void *a) {
+    secp256k1_fe_inv_var(r, a);
+}
+
+int cryptofuzz_secp256k1_fe_sqrt(void *r, const void *a) {
+    return secp256k1_fe_sqrt(r, a);
+}
+
+int cryptofuzz_secp256k1_fe_is_odd(const void *a) {
+    return secp256k1_fe_is_odd(a);
+}
+
+int cryptofuzz_secp256k1_fe_is_zero(const void *a) {
+    return secp256k1_fe_is_zero(a);
+}
+
+void cryptofuzz_secp256k1_fe_clear(void *r) {
+    secp256k1_fe_clear(r);
+}
+
+int cryptofuzz_secp256k1_fe_equal(const void *a, const void *b) {
+    return secp256k1_fe_equal(a, b);
+}
+
+int cryptofuzz_secp256k1_fe_equal_var(const void *a, const void *b) {
+    return secp256k1_fe_equal_var(a, b);
+}
+
+int cryptofuzz_secp256k1_fe_cmp_var(const void *a, const void *b) {
+    return secp256k1_fe_cmp_var(a, b);
+}
+
+void cryptofuzz_secp256k1_fe_cmov(void *r, const void *a, const int flag) {
+    secp256k1_fe_cmov(r, a, flag);
+}
+
+size_t cryptofuzz_secp256k1_fe_storage_size(void) {
+    return sizeof(secp256k1_fe_storage);
+}
+
+void cryptofuzz_secp256k1_fe_to_storage(void *r, const void *a) {
+    secp256k1_fe_to_storage(r, a);
+}
+
+void cryptofuzz_secp256k1_fe_from_storage(void *r, const void *a) {
+    secp256k1_fe_from_storage(r, a);
+}
+
+size_t cryptofuzz_secp256k1_fe_signed62_size(void) {
+    return sizeof(secp256k1_modinv64_signed62);
+}
+
+void cryptofuzz_secp256k1_fe_to_signed62(void *r, const void *a) {
+    secp256k1_fe_to_signed62(r, a);
+}
+
+void cryptofuzz_secp256k1_fe_from_signed62(void *r, const void *a) {
+    secp256k1_fe_from_signed62(r, a);
+}
+
 size_t cryptofuzz_secp256k1_ge_size(void) {
     return sizeof(secp256k1_ge);
 }
