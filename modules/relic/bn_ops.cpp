@@ -116,9 +116,35 @@ bool Div::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     return true;
 }
 
-bool GCD::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+enum GCDType : uint8_t {
+    GCD = 0,
+    ExtGCD_X = 1,
+    ExtGCD_Y = 2,
+};
+
+static void GCD_ExtGCD_SetResult(bn_t& res, const bn_t& X, const bn_t& Y, const GCDType type) {
+    if ( type == GCDType::GCD ) {
+        /* do nothing */
+    } else if ( type == GCDType::ExtGCD_X ) {
+        bn_copy(res, X);
+    } else if ( type == GCDType::ExtGCD_Y ) {
+        bn_copy(res, Y);
+    } else {
+        CF_UNREACHABLE();
+    }
+}
+
+static bool GCD_ExtGCD(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const GCDType type) {
     try {
-        switch ( ds.Get<uint8_t>() ) {
+        auto which = ds.Get<uint8_t>();
+
+        if ( type == GCDType::ExtGCD_X || type == GCDType::ExtGCD_Y ) {
+            if ( which >= 0 && which <= 3 ) {
+                which += 4;
+            }
+        }
+
+        switch ( which ) {
             case    0:
                 RLC_TRY {
                     /* noret */ bn_gcd(res.Get(), bn[0].Get(), bn[1].Get());
@@ -147,10 +173,109 @@ bool GCD::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
                     return false;
                 }
                 return true;
+            case    4:
+                {
+                    CF_CHECK_NE(bn_bits(bn[0].Get()), 0);
+                    CF_CHECK_NE(bn_bits(bn[1].Get()), 0);
+
+                    Bignum t1(ds), t2(ds);
+
+                    RLC_TRY {
+                        /* noret */ bn_gcd_ext(res.Get(), t1.Get(), t2.Get(), bn[0].Get(), bn[1].Get());
+                    } RLC_CATCH_ANY {
+                        return false;
+                    }
+
+                    CF_NORET(GCD_ExtGCD_SetResult(res.Get(), t1.Get(), t2.Get(), type));
+
+                    return true;
+                }
+            case    5:
+                {
+                    CF_CHECK_NE(bn_bits(bn[0].Get()), 0);
+                    CF_CHECK_NE(bn_bits(bn[1].Get()), 0);
+
+                    Bignum t1(ds), t2(ds);
+
+                    RLC_TRY {
+                        /* noret */ bn_gcd_ext_basic(res.Get(), t1.Get(), t2.Get(), bn[0].Get(), bn[1].Get());
+                    } RLC_CATCH_ANY {
+                        return false;
+                    }
+
+                    CF_NORET(GCD_ExtGCD_SetResult(res.Get(), t1.Get(), t2.Get(), type));
+
+                    return true;
+                }
+            case    6:
+                {
+                    CF_CHECK_NE(bn_bits(bn[0].Get()), 0);
+                    CF_CHECK_NE(bn_bits(bn[1].Get()), 0);
+
+                    Bignum t1(ds), t2(ds);
+
+                    RLC_TRY {
+                        /* noret */ bn_gcd_ext_lehme(res.Get(), t1.Get(), t2.Get(), bn[0].Get(), bn[1].Get());
+                    } RLC_CATCH_ANY {
+                        return false;
+                    }
+
+                    CF_NORET(GCD_ExtGCD_SetResult(res.Get(), t1.Get(), t2.Get(), type));
+
+                    return true;
+                }
+            case    7:
+                {
+                    /* https://github.com/relic-toolkit/relic/issues/223 */
+                    goto end;
+                    Bignum t1(ds), t2(ds);
+
+                    RLC_TRY {
+                        /* noret */ bn_gcd_ext_stein(res.Get(), t1.Get(), t2.Get(), bn[0].Get(), bn[1].Get());
+                    } RLC_CATCH_ANY {
+                        return false;
+                    }
+
+                    CF_NORET(GCD_ExtGCD_SetResult(res.Get(), t1.Get(), t2.Get(), type));
+
+                    return true;
+                }
+            case    8:
+                {
+                    /* XXX */
+                    goto end;
+                    CF_CHECK_NE(bn_bits(bn[0].Get()), 0);
+                    CF_CHECK_NE(bn_bits(bn[1].Get()), 0);
+
+                    Bignum t1(ds), t2(ds), t3(ds);
+
+                    RLC_TRY {
+                        /* noret */ bn_gcd_ext_mid(res.Get(), t1.Get(), t2.Get(), t3.Get(), bn[0].Get(), bn[1].Get());
+                    } RLC_CATCH_ANY {
+                        return false;
+                    }
+
+                    CF_NORET(GCD_ExtGCD_SetResult(res.Get(), t1.Get(), t2.Get(), type));
+
+                    return true;
+                }
         }
     } catch ( ... ) { }
 
+end:
     return false;
+}
+
+bool GCD::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    return GCD_ExtGCD(ds, res, bn, GCDType::GCD);
+}
+
+bool ExtGCD_X::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    return GCD_ExtGCD(ds, res, bn, GCDType::ExtGCD_X);
+}
+
+bool ExtGCD_Y::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    return GCD_ExtGCD(ds, res, bn, GCDType::ExtGCD_Y);
 }
 
 bool LCM::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {

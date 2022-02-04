@@ -49,6 +49,12 @@ std::optional<component::Bignum> libgmp::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("GCD(A,B)"):
             opRunner = std::make_unique<libgmp_bignum::GCD>();
             break;
+        case    CF_CALCOP("ExtGCD_X(A,B)"):
+            opRunner = std::make_unique<libgmp_bignum::ExtGCD_X>();
+            break;
+        case    CF_CALCOP("ExtGCD_Y(A,B)"):
+            opRunner = std::make_unique<libgmp_bignum::ExtGCD_Y>();
+            break;
         case    CF_CALCOP("Jacobi(A,B)"):
             opRunner = std::make_unique<libgmp_bignum::Jacobi>();
             break;

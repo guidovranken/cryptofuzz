@@ -187,19 +187,48 @@ end:
     return ret;
 }
 
-bool GCD::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+enum GCDType : uint8_t {
+    GCD = 0,
+    ExtGCD_X = 1,
+    ExtGCD_Y = 2,
+};
+
+static void GCD_ExtGCD_SetResult(mpz_ptr res, const mpz_ptr X, const mpz_ptr Y, const GCDType type) {
+    if ( type == GCDType::GCD ) {
+        /* do nothing */
+    } else if ( type == GCDType::ExtGCD_X ) {
+        /* noret */ mpz_set(res, X);
+    } else if ( type == GCDType::ExtGCD_Y ) {
+        /* noret */ mpz_set(res, Y);
+    } else {
+        CF_UNREACHABLE();
+    }
+}
+
+static bool GCD_ExtGCD(Datasource& ds, Bignum& res, BignumCluster& bn, const GCDType type) {
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
+            CF_CHECK_EQ(type, GCDType::GCD);
             /* noret */ mpz_gcd(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
             break;
         case    1:
             {
+                CF_CHECK_EQ(type, GCDType::GCD);
+
                 const auto bn1 = bn[1].GetUnsignedLong();
                 CF_CHECK_NE(bn1, std::nullopt);
 
                 /* ignore ret */ mpz_gcd_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+            }
+            break;
+        case    2:
+            {
+                Bignum t1, t2;
+
+                /* noret */ mpz_gcdext(res.GetPtr(), t1.GetPtr(), t2.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+                CF_NORET(GCD_ExtGCD_SetResult(res.GetPtr(), t1.GetPtr(), t2.GetPtr(), type));
             }
             break;
         default:
@@ -210,6 +239,18 @@ bool GCD::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
 end:
     return ret;
+}
+
+bool GCD::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    return GCD_ExtGCD(ds, res, bn, GCDType::GCD);
+}
+
+bool ExtGCD_X::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    return GCD_ExtGCD(ds, res, bn, GCDType::ExtGCD_X);
+}
+
+bool ExtGCD_Y::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    return GCD_ExtGCD(ds, res, bn, GCDType::ExtGCD_Y);
 }
 
 bool Jacobi::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {

@@ -69,7 +69,7 @@ end:
         return true;
     }
 
-    component::Bignum To_Component_Bignum(const nn_src_t nn) {
+    component::Bignum To_Component_Bignum(const nn_src_t nn, const bool negative = false) {
         std::vector<uint8_t> data(nn->wlen * WORD_BYTES);
 
         if ( data.size() == 0 ) {
@@ -78,7 +78,13 @@ end:
 
         CF_NORET(nn_export_to_buf(data.data(), data.size(), nn));
 
-        return util::BinToDec(data.data(), data.size());
+        const auto s = util::BinToDec(data.data(), data.size());
+
+        if ( negative && s != "0" ) {
+            return std::string("-") + s;
+        } else {
+            return s;
+        }
     }
 
     std::optional<uint16_t> To_uint16_t(const component::Bignum& bn) {
@@ -939,7 +945,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    nn result, a, b, c;
+    nn result, tmp1, tmp2, a, b, c;
 
     CF_INSTALL_JMP();
 
@@ -1022,6 +1028,35 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             CF_NORET(nn_gcd(&result, &a, &b));
 
             ret = libecc_detail::To_Component_Bignum(&result);
+            break;
+        case    CF_CALCOP("ExtGCD_X(A,B)"):
+            CF_NORET(nn_init(&result, 0));
+            CF_NORET(nn_init(&tmp1, 0));
+            CF_NORET(nn_init(&tmp2, 0));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+            CF_CHECK_EQ(nn_iszero(&a), 0);
+            CF_CHECK_EQ(nn_iszero(&b), 0);
+
+            {
+                const auto sign = nn_xgcd(&tmp1, &result, &tmp2, &a, &b);
+                ret = libecc_detail::To_Component_Bignum(&result, sign == -1);
+            }
+
+            break;
+        case    CF_CALCOP("ExtGCD_Y(A,B)"):
+            CF_NORET(nn_init(&result, 0));
+            CF_NORET(nn_init(&tmp1, 0));
+            CF_NORET(nn_init(&tmp2, 0));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+            CF_CHECK_EQ(nn_iszero(&a), 0);
+            CF_CHECK_EQ(nn_iszero(&b), 0);
+
+            {
+                const int sign = nn_xgcd(&tmp1, &tmp2, &result, &a, &b);
+                ret = libecc_detail::To_Component_Bignum(&result, sign == 1);
+            }
             break;
         case    CF_CALCOP("Sqr(A)"):
             CF_NORET(nn_init(&result, 0));

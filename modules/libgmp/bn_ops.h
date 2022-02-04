@@ -159,6 +159,16 @@ class GCD : public Operation {
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;
 };
 
+class ExtGCD_X : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;
+};
+
+class ExtGCD_Y : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;
+};
+
 class Jacobi : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;

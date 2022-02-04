@@ -72,6 +72,8 @@ std::optional<component::Bignum> num_bigint::OpBignumCalc(operation::BignumCalc&
         { CF_CALCOP("Abs(A)"), 34 },
         { CF_CALCOP("IsNeg(A)"), 35 },
         { CF_CALCOP("Nthrt(A,B)"), 36 },
+        { CF_CALCOP("ExtGCD_X(A,B)"), 37 },
+        { CF_CALCOP("ExtGCD_Y(A,B)"), 38 },
     };
 
     CF_CHECK_TRUE(LUT.find(op.calcOp.Get()) != LUT.end());

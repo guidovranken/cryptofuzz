@@ -770,6 +770,12 @@ std::optional<component::Bignum> relic::OpBignumCalc(operation::BignumCalc& op) 
         case    CF_CALCOP("GCD(A,B)"):
             opRunner = std::make_unique<relic_bignum::GCD>();
             break;
+        case    CF_CALCOP("ExtGCD_X(A,B)"):
+            opRunner = std::make_unique<relic_bignum::ExtGCD_X>();
+            break;
+        case    CF_CALCOP("ExtGCD_Y(A,B)"):
+            opRunner = std::make_unique<relic_bignum::ExtGCD_Y>();
+            break;
         case    CF_CALCOP("LCM(A,B)"):
             opRunner = std::make_unique<relic_bignum::LCM>();
             break;
