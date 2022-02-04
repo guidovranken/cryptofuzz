@@ -18,6 +18,10 @@
 #error "trezor-firmware and relic cannot be used together due to symbol collisions"
 #endif
 
+#if defined(CRYPTOFUZZ_LIBECC) && defined(CRYPTOFUZZ_RELIC)
+#error "libecc and relic cannot be used together due to longjmp issues"
+#endif
+
 #if !defined(CRYPTOFUZZ_NO_OPENSSL)
   #include <modules/openssl/module.h>
   #ifdef SHA1
