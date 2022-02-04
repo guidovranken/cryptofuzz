@@ -862,7 +862,7 @@ std::optional<component::ECC_PublicKey> mbedTLS::OpECC_PrivateToPublic(operation
     /* Private key */
     CF_CHECK_EQ(mbedtls_mpi_read_string(&keypair.d, 10, op.priv.ToString(ds).c_str()), 0);
 
-    CF_CHECK_EQ(mbedtls_ecp_mul(&keypair.grp, &keypair.Q, &keypair.d, &keypair.grp.G, nullptr, nullptr), 0);
+    CF_CHECK_EQ(mbedtls_ecp_mul(&keypair.grp, &keypair.Q, &keypair.d, &keypair.grp.G, mbedTLS_detail::RNG, nullptr), 0);
 
     {
         std::optional<std::string> pub_x_str;
@@ -951,7 +951,19 @@ std::optional<component::ECC_Point> mbedTLS::OpECC_Point_Mul(operation::ECC_Poin
     CF_CHECK_EQ(mbedtls_mpi_read_string(&b, 10, op.b.ToString(ds).c_str()), 0);
 
     /* res = point * scalar */
-    CF_CHECK_EQ(mbedtls_ecp_mul(&grp, &res, &b, &a, nullptr, nullptr), 0);
+    CF_CHECK_EQ(mbedtls_ecp_mul(&grp, &res, &b, &a, mbedTLS_detail::RNG, nullptr), 0);
+
+    if ( mbedtls_mpi_cmp_int(&b, 0) == 0 ) {
+        CF_ASSERT(
+                mbedtls_ecp_check_pubkey(&grp, &res) == 0,
+                "Point multiplication by 0 does not yield point at infinity");
+    }
+
+    if ( mbedtls_ecp_check_pubkey(&grp, &a) != 0 ) {
+            CF_ASSERT(
+                    mbedtls_ecp_check_pubkey(&grp, &res) != 0,
+                    "Point multiplication of invalid point yields valid point");
+    }
 
     {
         std::optional<std::string> x_str, y_str;
@@ -1078,7 +1090,7 @@ std::optional<component::ECDSA_Signature> mbedTLS::OpECDSA_Sign(operation::ECDSA
         CF_CHECK_EQ(mbedtls_ecdsa_sign(&keypair.grp, &sig_r, &sig_s, &keypair.d, CT.GetPtr(), CT.GetSize(), mbedTLS_detail::RNG, nullptr), 0);
     }
 
-    CF_CHECK_EQ(mbedtls_ecp_mul(&keypair.grp, &keypair.Q, &keypair.d, &keypair.grp.G, nullptr, nullptr), 0);
+    CF_CHECK_EQ(mbedtls_ecp_mul(&keypair.grp, &keypair.Q, &keypair.d, &keypair.grp.G, mbedTLS_detail::RNG, nullptr), 0);
 
     CF_ASSERT(
             mbedtls_ecdsa_verify(&keypair.grp, op.cleartext.GetPtr(), op.cleartext.GetSize(), &keypair.Q, &sig_r, &sig_s) == 0,
