@@ -3888,6 +3888,22 @@ std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Mul(operation::ECC_Poin
 
     CF_CHECK_NE(EC_POINT_mul(group->GetPtr(), res->GetPtr(), nullptr, a->GetPtr(), b.GetPtr(), nullptr), 0);
 
+    if ( op.b.ToTrimmedString() == "0" ) {
+        CF_ASSERT(
+                EC_POINT_is_at_infinity(group->GetPtr(), res->GetPtr()) == 1,
+                "Point multiplication by 0 does not yield point at infinity");
+    }
+
+    {
+        OpenSSL_bignum::BN_CTX ctx(ds);
+
+        if ( !EC_POINT_is_on_curve(group->GetPtr(), a->GetPtr(), ctx.GetPtr()) ) {
+            CF_ASSERT(
+                    EC_POINT_is_on_curve(group->GetPtr(), res->GetPtr(), ctx.GetPtr()) == 0,
+                    "Point multiplication of invalid point yields valid point");
+        }
+    }
+
     {
         OpenSSL_bignum::Bignum x(ds);
         OpenSSL_bignum::Bignum y(ds);
