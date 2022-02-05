@@ -148,6 +148,10 @@ end:
             case    CF_DIGEST("STREEBOG-512"):
                 CF_ASSERT(!get_hash_by_type(STREEBOG512, &hm) && (hm != nullptr), "get_hash_by_type error " __FILE__ ":" TOSTRING(__LINE__));
                 return hm;
+            case    CF_DIGEST("RIPEMD160"):
+                CF_ASSERT(!get_hash_by_type(RIPEMD160, &hm) && (hm != nullptr), "get_hash_by_type error " __FILE__ ":" TOSTRING(__LINE__));
+                return hm;
+
             default:
                 return nullptr;
         }
@@ -183,6 +187,8 @@ end:
                 return STREEBOG256;
             case    CF_DIGEST("STREEBOG-512"):
                 return STREEBOG512;
+            case    CF_DIGEST("RIPEMD160"):
+                return RIPEMD160;
             default:
                 return std::nullopt;
         }
