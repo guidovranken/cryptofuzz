@@ -173,6 +173,45 @@ func decodeBignum(s string) *big.Int {
     return bn
 }
 
+func fpToString(v* fp.Element) string {
+    var b big.Int
+    v.ToBigIntRegular(&b)
+    return b.String()
+}
+
+func saveG1(v* bn254.G1Affine) {
+    res := make([]string, 2)
+    res[0] = fpToString(&v.X)
+    res[1] = fpToString(&v.Y)
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+func saveG2(v* bn254.G2Affine) {
+    res := make([][]string, 2)
+    res[0] = make([]string, 2)
+    res[1] = make([]string, 2)
+
+    res[0][0] = fpToString(&v.X.A0)
+    res[0][1] = fpToString(&v.Y.A0)
+    res[1][0] = fpToString(&v.X.A1)
+    res[1][1] = fpToString(&v.Y.A1)
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
 //export Gnark_bn254_BLS_IsG1OnCurve
 func Gnark_bn254_BLS_IsG1OnCurve(in []byte) {
     resetResult()
@@ -254,16 +293,7 @@ func Gnark_bn254_BLS_G1_Add(in []byte) {
 
     r := new(bn254.G1Affine).FromJacobian(a_jac.AddAssign(b_jac))
 
-    res := make([]string, 2)
-    res[0], res[1] = r.X.String(), r.Y.String()
-
-    r2, err := json.Marshal(&res)
-
-    if err != nil {
-        panic("Cannot marshal to JSON")
-    }
-
-    result = r2
+    saveG1(r)
 }
 
 //export Gnark_bn254_BLS_G1_Mul
@@ -286,16 +316,7 @@ func Gnark_bn254_BLS_G1_Mul(in []byte) {
     r.ScalarMultiplication(g1_jac, b)
     r_affine := new(bn254.G1Affine).FromJacobian(r)
 
-    res := make([]string, 2)
-    res[0], res[1] = r_affine.X.String(), r_affine.Y.String()
-
-    r2, err := json.Marshal(&res)
-
-    if err != nil {
-        panic("Cannot marshal to JSON")
-    }
-
-    result = r2
+    saveG1(r_affine)
 }
 
 //export Gnark_bn254_BLS_G1_Neg
@@ -312,16 +333,7 @@ func Gnark_bn254_BLS_G1_Neg(in []byte) {
 
     r := new(bn254.G1Affine).Neg(g1)
 
-    res := make([]string, 2)
-    res[0], res[1] = r.X.String(), r.Y.String()
-
-    r2, err := json.Marshal(&res)
-
-    if err != nil {
-        panic("Cannot marshal to JSON")
-    }
-
-    result = r2
+    saveG1(r)
 }
 
 //export Gnark_bn254_BLS_MapToG1
@@ -393,22 +405,7 @@ func Gnark_bn254_BLS_G2_Add(in []byte) {
 
     r := new(bn254.G2Affine).FromJacobian(a_jac.AddAssign(b_jac))
 
-    res := make([][]string, 2)
-    res[0] = make([]string, 2)
-    res[1] = make([]string, 2)
-
-    res[0][0] = r.X.A0.String()
-    res[0][1] = r.Y.A0.String()
-    res[1][0] = r.X.A1.String()
-    res[1][1] = r.Y.A1.String()
-
-    r2, err := json.Marshal(&res)
-
-    if err != nil {
-        panic("Cannot marshal to JSON")
-    }
-
-    result = r2
+    saveG2(r)
 }
 
 //export Gnark_bn254_BLS_G2_Mul
@@ -433,22 +430,7 @@ func Gnark_bn254_BLS_G2_Mul(in []byte) {
     r.ScalarMultiplication(g2_jac, b)
     r_affine := new(bn254.G2Affine).FromJacobian(r)
 
-    res := make([][]string, 2)
-    res[0] = make([]string, 2)
-    res[1] = make([]string, 2)
-
-    res[0][0] = r_affine.X.A0.String()
-    res[0][1] = r_affine.Y.A0.String()
-    res[1][0] = r_affine.X.A1.String()
-    res[1][1] = r_affine.Y.A1.String()
-
-    r2, err := json.Marshal(&res)
-
-    if err != nil {
-        panic("Cannot marshal to JSON")
-    }
-
-    result = r2
+    saveG2(r_affine)
 }
 
 //export Gnark_bn254_BLS_G2_Neg
@@ -467,22 +449,7 @@ func Gnark_bn254_BLS_G2_Neg(in []byte) {
 
     r := new(bn254.G2Affine).Neg(a)
 
-    res := make([][]string, 2)
-    res[0] = make([]string, 2)
-    res[1] = make([]string, 2)
-
-    res[0][0] = r.X.A0.String()
-    res[0][1] = r.Y.A0.String()
-    res[1][0] = r.X.A1.String()
-    res[1][1] = r.Y.A1.String()
-
-    r2, err := json.Marshal(&res)
-
-    if err != nil {
-        panic("Cannot marshal to JSON")
-    }
-
-    result = r2
+    saveG2(r)
 }
 
 //export Gnark_bn254_BignumCalc_bn254_Fp
@@ -921,16 +888,7 @@ func Cloudflare_bn256_BLS_G1_Add(in []byte) {
         return
     }
 
-    res := make([]string, 2)
-    res[0], res[1] = r.X.String(), r.Y.String()
-
-    r2, err := json.Marshal(&res)
-
-    if err != nil {
-        panic("Cannot marshal to JSON")
-    }
-
-    result = r2
+    saveG1(r)
 }
 
 //export Cloudflare_bn256_BLS_G1_Mul
@@ -960,16 +918,7 @@ func Cloudflare_bn256_BLS_G1_Mul(in []byte) {
         return
     }
 
-    res := make([]string, 2)
-    res[0], res[1] = r.X.String(), r.Y.String()
-
-    r2, err := json.Marshal(&res)
-
-    if err != nil {
-        panic("Cannot marshal to JSON")
-    }
-
-    result = r2
+    saveG1(r)
 }
 
 //export Cloudflare_bn256_BLS_G1_Neg
@@ -997,16 +946,7 @@ func Cloudflare_bn256_BLS_G1_Neg(in []byte) {
         return
     }
 
-    res := make([]string, 2)
-    res[0], res[1] = r.X.String(), r.Y.String()
-
-    r2, err := json.Marshal(&res)
-
-    if err != nil {
-        panic("Cannot marshal to JSON")
-    }
-
-    result = r2
+    saveG1(r)
 }
 
 //export Cloudflare_bn256_BLS_G2_Add
@@ -1048,22 +988,7 @@ func Cloudflare_bn256_BLS_G2_Add(in []byte) {
         return
     }
 
-    res := make([][]string, 2)
-    res[0] = make([]string, 2)
-    res[1] = make([]string, 2)
-
-    res[0][0] = r.X.A0.String()
-    res[0][1] = r.Y.A0.String()
-    res[1][0] = r.X.A1.String()
-    res[1][1] = r.Y.A1.String()
-
-    r2, err := json.Marshal(&res)
-
-    if err != nil {
-        panic("Cannot marshal to JSON")
-    }
-
-    result = r2
+    saveG2(r)
 }
 
 //export Cloudflare_bn256_BLS_G2_Mul
@@ -1095,22 +1020,7 @@ func Cloudflare_bn256_BLS_G2_Mul(in []byte) {
         return
     }
 
-    res := make([][]string, 2)
-    res[0] = make([]string, 2)
-    res[1] = make([]string, 2)
-
-    res[0][0] = r.X.A0.String()
-    res[0][1] = r.Y.A0.String()
-    res[1][0] = r.X.A1.String()
-    res[1][1] = r.Y.A1.String()
-
-    r2, err := json.Marshal(&res)
-
-    if err != nil {
-        panic("Cannot marshal to JSON")
-    }
-
-    result = r2
+    saveG2(r)
 }
 
 //export Cloudflare_bn256_BLS_G2_Neg
@@ -1140,22 +1050,7 @@ func Cloudflare_bn256_BLS_G2_Neg(in []byte) {
         return
     }
 
-    res := make([][]string, 2)
-    res[0] = make([]string, 2)
-    res[1] = make([]string, 2)
-
-    res[0][0] = r.X.A0.String()
-    res[0][1] = r.Y.A0.String()
-    res[1][0] = r.X.A1.String()
-    res[1][1] = r.Y.A1.String()
-
-    r2, err := json.Marshal(&res)
-
-    if err != nil {
-        panic("Cannot marshal to JSON")
-    }
-
-    result = r2
+    saveG2(r)
 }
 
 //export Google_bn256_Cryptofuzz_GetResult
@@ -1198,16 +1093,7 @@ func Google_bn256_BLS_G1_Add(in []byte) {
         return
     }
 
-    res := make([]string, 2)
-    res[0], res[1] = r.X.String(), r.Y.String()
-
-    r2, err := json.Marshal(&res)
-
-    if err != nil {
-        panic("Cannot marshal to JSON")
-    }
-
-    result = r2
+    saveG1(r)
 }
 
 //export Google_bn256_BLS_G1_Mul
@@ -1237,16 +1123,7 @@ func Google_bn256_BLS_G1_Mul(in []byte) {
         return
     }
 
-    res := make([]string, 2)
-    res[0], res[1] = r.X.String(), r.Y.String()
-
-    r2, err := json.Marshal(&res)
-
-    if err != nil {
-        panic("Cannot marshal to JSON")
-    }
-
-    result = r2
+    saveG1(r)
 }
 
 //export Google_bn256_BLS_G1_Neg
@@ -1274,16 +1151,7 @@ func Google_bn256_BLS_G1_Neg(in []byte) {
         return
     }
 
-    res := make([]string, 2)
-    res[0], res[1] = r.X.String(), r.Y.String()
-
-    r2, err := json.Marshal(&res)
-
-    if err != nil {
-        panic("Cannot marshal to JSON")
-    }
-
-    result = r2
+    saveG1(r)
 }
 
 //export Google_bn256_BLS_G2_Add
@@ -1325,22 +1193,7 @@ func Google_bn256_BLS_G2_Add(in []byte) {
         return
     }
 
-    res := make([][]string, 2)
-    res[0] = make([]string, 2)
-    res[1] = make([]string, 2)
-
-    res[0][0] = r.X.A0.String()
-    res[0][1] = r.Y.A0.String()
-    res[1][0] = r.X.A1.String()
-    res[1][1] = r.Y.A1.String()
-
-    r2, err := json.Marshal(&res)
-
-    if err != nil {
-        panic("Cannot marshal to JSON")
-    }
-
-    result = r2
+    saveG2(r)
 }
 
 //export Google_bn256_BLS_G2_Mul
@@ -1372,22 +1225,7 @@ func Google_bn256_BLS_G2_Mul(in []byte) {
         return
     }
 
-    res := make([][]string, 2)
-    res[0] = make([]string, 2)
-    res[1] = make([]string, 2)
-
-    res[0][0] = r.X.A0.String()
-    res[0][1] = r.Y.A0.String()
-    res[1][0] = r.X.A1.String()
-    res[1][1] = r.Y.A1.String()
-
-    r2, err := json.Marshal(&res)
-
-    if err != nil {
-        panic("Cannot marshal to JSON")
-    }
-
-    result = r2
+    saveG2(r)
 }
 
 func main() { }

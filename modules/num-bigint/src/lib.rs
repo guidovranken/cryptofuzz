@@ -246,6 +246,22 @@ pub extern "C" fn rust_num_bigint_bignumcalc(
             return -1;
         }
         res = bn0.nth_root(n);
+    } else if op == 37 {
+        if bn0.is_zero() == true {
+            return -1;
+        }
+        if bn1.is_zero() == true {
+            return -1;
+        }
+        res = bn0.extended_gcd(&bn1).x;
+    } else if op == 38 {
+        if bn0.is_zero() == true {
+            return -1;
+        }
+        if bn1.is_zero() == true {
+            return -1;
+        }
+        res = bn0.extended_gcd(&bn1).y;
     } else {
         return -1;
     }

@@ -76,7 +76,7 @@ end:
         return true;
     }
 
-    component::Bignum To_Component_Bignum(const nn_src_t nn) {
+    component::Bignum To_Component_Bignum(const nn_src_t nn, const bool negative = false) {
         std::vector<uint8_t> data(nn->wlen * WORD_BYTES);
 
         if ( data.size() == 0 ) {
@@ -85,7 +85,13 @@ end:
 
         CF_ASSERT(!nn_export_to_buf(data.data(), data.size(), nn), "nn_export_to_buf error " __FILE__ ":" TOSTRING(__LINE__));
 
-        return util::BinToDec(data.data(), data.size());
+        const auto s = util::BinToDec(data.data(), data.size());
+
+        if ( negative && s != "0" ) {
+            return std::string("-") + s;
+        } else {
+            return s;
+        }
     }
 
     std::optional<uint16_t> To_uint16_t(const component::Bignum& bn) {
@@ -1340,9 +1346,10 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
 
     libecc_detail::global_ds = &ds;
 
-    nn result, a, b, c;
+    nn result, a, b, c, tmp1, tmp2;
     int check;
     bitcnt_t blen;
+
     switch ( op.calcOp.Get() ) {
         case    CF_CALCOP("Add(A,B)"):
             CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
@@ -1424,9 +1431,52 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
 
-            CF_CHECK_EQ(!nn_gcd(&result, &a, &b, &check), 0);
+            {
+                int sign;
+                CF_CHECK_EQ(nn_gcd(&result, &a, &b, &sign), 0);
+            }
 
             ret = libecc_detail::To_Component_Bignum(&result);
+            break;
+        case    CF_CALCOP("ExtGCD_X(A,B)"):
+            CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
+            CF_ASSERT(!nn_init(&tmp1, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
+            CF_ASSERT(!nn_init(&tmp2, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+
+            /* NOTE: internally, libecc should support a = 0 or b = 0. Is this test necessary?
+             */
+            CF_ASSERT(!nn_iszero(&a, &check), "nn_iszero error " __FILE__ ":" TOSTRING(__LINE__));
+            CF_CHECK_EQ(check, 0);
+            CF_ASSERT(!nn_iszero(&b, &check), "nn_iszero error " __FILE__ ":" TOSTRING(__LINE__));
+            CF_CHECK_EQ(check, 0);
+            {
+		int sign;
+                CF_CHECK_EQ(nn_xgcd(&tmp1, &result, &tmp2, &a, &b, &sign), 0);
+
+                ret = libecc_detail::To_Component_Bignum(&result, sign == -1);
+            }
+            break;
+        case    CF_CALCOP("ExtGCD_Y(A,B)"):
+            CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
+            CF_ASSERT(!nn_init(&tmp1, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
+            CF_ASSERT(!nn_init(&tmp2, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+
+            /* NOTE: internally, libecc should support a = 0 or b = 0. Is this test necessary?
+             */
+            CF_ASSERT(!nn_iszero(&a, &check), "nn_iszero error " __FILE__ ":" TOSTRING(__LINE__));
+            CF_CHECK_EQ(check, 0);
+            CF_ASSERT(!nn_iszero(&b, &check), "nn_iszero error " __FILE__ ":" TOSTRING(__LINE__));
+            CF_CHECK_EQ(check, 0);
+            {
+		int sign;
+                CF_CHECK_EQ(nn_xgcd(&tmp1, &tmp2, &result, &a, &b, &sign), 0);
+
+                ret = libecc_detail::To_Component_Bignum(&result, sign == 1);
+            }
             break;
         case    CF_CALCOP("Sqr(A)"):
             CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
