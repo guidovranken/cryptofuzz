@@ -317,6 +317,43 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
             }
             break;
 #endif
+        case    5:
+            {
+                Bignum one(ds);
+                CF_CHECK_EQ(one.New(), true);
+                BN_one(one.GetDestPtr());
+
+                /* https://github.com/openssl/openssl/issues/17648 */
+                CF_CHECK_NE(BN_is_zero(bn[2].GetPtr()), 1);
+
+                BIGNUM const * a2 = one.GetPtr();
+                BIGNUM const * p2 = BN_is_zero(bn[3].GetPtr()) ? a2 : bn[3].GetPtr();
+
+                bool switch_ = false;
+                try { switch_ = ds. Get<bool>(); } catch ( ... ) { }
+
+                if ( switch_ ) {
+                    BIGNUM const * tmp;
+                    tmp = a2;
+                    a2 = p2;
+                    p2 = tmp;
+                }
+
+                /* result = (a1^p1 * a2^p2) % m */
+                CF_CHECK_EQ(BN_mod_exp2_mont(
+                            res.GetDestPtr(),
+                            bn[0].GetPtr(), bn[1].GetPtr(),
+                            a2, p2,
+                            bn[2].GetPtr(),
+                            ctx.GetPtr(), NULL), 1);
+
+                /* Unlike other exponentation functions,
+                 * with BN_mod_exp2_mont,
+                 * exponentiation by 0 doesn't result in 1
+                 */
+                CF_CHECK_NE(BN_is_zero(bn[1].GetPtr()), 1);
+            }
+            break;
         default:
             goto end;
             break;
@@ -451,6 +488,39 @@ bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
         case    0:
             CF_CHECK_EQ(BN_mod_mul(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
             break;
+        case    1:
+            {
+                BN_MONT_CTX mont(ds);
+
+                /* Set mod */
+                CF_CHECK_EQ(BN_MONT_CTX_set(mont.GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
+
+                Bignum bn0_mont(ds);
+                /* bn0 to mont */
+                {
+                    CF_CHECK_TRUE(bn0_mont.New());
+                    CF_CHECK_EQ(BN_nnmod(bn0_mont.GetDestPtr(), bn[0].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
+                    auto bn0_mont_ptr = bn0_mont.GetDestPtr();
+                    CF_CHECK_EQ(BN_to_montgomery(bn0_mont_ptr, bn0_mont_ptr, mont.GetPtr(), ctx.GetPtr()), 1);
+                }
+
+                Bignum bn1_mont(ds);
+                /* bn1 to mont */
+                {
+                    CF_CHECK_TRUE(bn1_mont.New());
+                    CF_CHECK_EQ(BN_nnmod(bn1_mont.GetDestPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
+                    auto bn1_mont_ptr = bn1_mont.GetDestPtr();
+                    CF_CHECK_EQ(BN_to_montgomery(bn1_mont_ptr, bn1_mont_ptr, mont.GetPtr(), ctx.GetPtr()), 1);
+                }
+
+                /* mul mod */
+                CF_CHECK_EQ(BN_mod_mul_montgomery(res.GetDestPtr(), bn0_mont.GetPtr(), bn1_mont.GetPtr(), mont.GetPtr(), ctx.GetPtr()), 1);
+
+                /* result from mont */
+                auto resPtr = res.GetDestPtr();
+                CF_CHECK_EQ(BN_from_montgomery(resPtr, resPtr, mont.GetPtr(), ctx.GetPtr()), 1);
+            }
+            break;
         default:
             goto end;
             break;
@@ -459,6 +529,7 @@ bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
     ret = true;
 
 end:
+
     return ret;
 }
 
@@ -494,6 +565,18 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
                 CF_CHECK_LT(BN_cmp(bn[0].GetPtr(), bn[1].GetPtr()), 0);
                 CF_CHECK_EQ(BN_is_odd(bn[1].GetPtr()), 1);
                 CF_CHECK_EQ(BN_mod_inverse_odd(res.GetDestPtr(), &out_no_inverse, bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            }
+            break;
+        case    2:
+            {
+                int out_no_inverse;
+                BN_MONT_CTX mont(ds);
+
+                /* Set mod */
+                CF_CHECK_EQ(BN_MONT_CTX_set(mont.GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+
+                /* invmod */
+                CF_CHECK_EQ(BN_mod_inverse_blinded(res.GetDestPtr(), &out_no_inverse, bn[0].GetPtr(), mont.GetPtr(), ctx.GetPtr()), 1);
             }
             break;
 #endif
@@ -802,6 +885,7 @@ end:
 }
 #endif
 
+#if 0
 bool SqrtMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     /* Disabled due to slowness of primality testing */
 #if 0
@@ -823,6 +907,30 @@ end:
     (void)ctx;
     return false;
 #endif
+}
+#endif
+
+bool SqrtMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
+    (void)ds;
+    bool ret = false;
+    bool setzero = true;
+
+    CF_CHECK_NE(BN_mod_sqrt(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), nullptr);
+    {
+        auto resPtr = res.GetDestPtr();
+        CF_CHECK_EQ(BN_mod_mul(resPtr, resPtr, resPtr, bn[1].GetPtr(), ctx.GetPtr()), 1);
+    }
+
+    setzero = false;
+
+end:
+    if ( setzero ) {
+        BN_zero(res.GetDestPtr());
+    }
+
+    ret = true;
+
+    return ret;
 }
 
 #if defined(CRYPTOFUZZ_BORINGSSL)

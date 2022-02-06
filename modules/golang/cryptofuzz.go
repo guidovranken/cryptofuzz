@@ -25,6 +25,8 @@ import (
     "hash"
     "hash/adler32"
     "hash/crc32"
+    "hash/crc64"
+    "hash/fnv"
     "io"
     "math"
     "math/big"
@@ -239,6 +241,17 @@ func toHashInstance(digestType Type) (hash.Hash, error) {
     if false {
     } else if isCRC32(digestType) {
         return crc32.NewIEEE(), nil
+    } else if isCRC64(digestType) {
+        tabISO := crc64.MakeTable(crc64.ISO)
+        return crc64.New(tabISO), nil
+    } else if isFNV32(digestType) {
+        return fnv.New32(), nil
+    } else if isFNVA32(digestType) {
+        return fnv.New32a(), nil
+    } else if isFNV64(digestType) {
+        return fnv.New64(), nil
+    } else if isFNVA64(digestType) {
+        return fnv.New64a(), nil
     } else if isADLER32(digestType) {
         return adler32.New(), nil
     } else if isBLAKE2S128(digestType) {
