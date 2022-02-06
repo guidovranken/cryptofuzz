@@ -317,6 +317,43 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
             }
             break;
 #endif
+        case    5:
+            {
+                Bignum one(ds);
+                CF_CHECK_EQ(one.New(), true);
+                BN_one(one.GetDestPtr());
+
+                /* https://github.com/openssl/openssl/issues/17648 */
+                CF_CHECK_NE(BN_is_zero(bn[2].GetPtr()), 1);
+
+                BIGNUM const * a2 = one.GetPtr();
+                BIGNUM const * p2 = BN_is_zero(bn[3].GetPtr()) ? a2 : bn[3].GetPtr();
+
+                bool switch_ = false;
+                try { switch_ = ds. Get<bool>(); } catch ( ... ) { }
+
+                if ( switch_ ) {
+                    BIGNUM const * tmp;
+                    tmp = a2;
+                    a2 = p2;
+                    p2 = tmp;
+                }
+
+                /* result = (a1^p1 * a2^p2) % m */
+                CF_CHECK_EQ(BN_mod_exp2_mont(
+                            res.GetDestPtr(),
+                            bn[0].GetPtr(), bn[1].GetPtr(),
+                            a2, p2,
+                            bn[2].GetPtr(),
+                            ctx.GetPtr(), NULL), 1);
+
+                /* Unlike other exponentation functions,
+                 * with BN_mod_exp2_mont,
+                 * exponentiation by 0 doesn't result in 1
+                 */
+                CF_CHECK_NE(BN_is_zero(bn[1].GetPtr()), 1);
+            }
+            break;
         default:
             goto end;
             break;
