@@ -152,3 +152,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - blst: [blst_fr_eucl_inverse incorrect result](https://github.com/supranational/blst/commit/fd453524b12cc438adc65636fc52375b0f47b17e)
 - circl: [Inadequate scalar reduction in p384 leads to panic](https://github.com/cloudflare/circl/issues/312)
 - Herumi mcl: [map-to-curve incorrect result if both inputs are equivalent](https://github.com/herumi/mcl/commit/0ddbe946423acd5cee2552b09373f4e1e9ba4023)
+- OpenSSL: [BN_mod_exp2_mont NULL pointer dereference if modulus is 0](https://github.com/openssl/openssl/issues/17648)
