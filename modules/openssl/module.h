@@ -105,6 +105,7 @@ class OpenSSL : public Module {
         std::optional<component::ECC_Point> OpECC_Point_Neg(operation::ECC_Point_Neg& op) override;
         std::optional<component::ECC_Point> OpECC_Point_Dbl(operation::ECC_Point_Dbl& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
+        bool SupportsModularBignumCalc(void) const override;
 #endif
 };
 

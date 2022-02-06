@@ -802,6 +802,7 @@ end:
 }
 #endif
 
+#if 0
 bool SqrtMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     /* Disabled due to slowness of primality testing */
 #if 0
@@ -823,6 +824,30 @@ end:
     (void)ctx;
     return false;
 #endif
+}
+#endif
+
+bool SqrtMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
+    (void)ds;
+    bool ret = false;
+    bool setzero = true;
+
+    CF_CHECK_NE(BN_mod_sqrt(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), nullptr);
+    {
+        auto resPtr = res.GetDestPtr();
+        CF_CHECK_EQ(BN_mod_mul(resPtr, resPtr, resPtr, bn[1].GetPtr(), ctx.GetPtr()), 1);
+    }
+
+    setzero = false;
+
+end:
+    if ( setzero ) {
+        BN_zero(res.GetDestPtr());
+    }
+
+    ret = true;
+
+    return ret;
 }
 
 #if defined(CRYPTOFUZZ_BORINGSSL)

@@ -4056,6 +4056,22 @@ end:
 }
 
 std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op) {
+    bool prime_modulus = false;
+
+    if ( op.modulo != std::nullopt ) {
+        if ( op.calcOp.Get() != CF_CALCOP("Sqrt(A)") ) {
+            return std::nullopt;
+        }
+
+        if ( op.modulo->ToTrimmedString() == "52435875175126190479447740508185965837690552500527637822603658699938581184513" ) {
+            prime_modulus = true;
+        } else if ( op.modulo->ToTrimmedString() == "4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787" ) {
+            prime_modulus = true;
+        } else {
+            return std::nullopt;
+        }
+    }
+
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
@@ -4079,7 +4095,11 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
 
         CF_CHECK_EQ(res.Set("0"), true);
         CF_CHECK_EQ(bn.Set(0, op.bn0.ToString(ds)), true);
-        CF_CHECK_EQ(bn.Set(1, op.bn1.ToString(ds)), true);
+        if ( prime_modulus == false ) {
+            CF_CHECK_EQ(bn.Set(1, op.bn1.ToString(ds)), true);
+        } else {
+            CF_CHECK_EQ(bn.Set(1, op.modulo->ToString(ds)), true);
+        }
         CF_CHECK_EQ(bn.Set(2, op.bn2.ToString(ds)), true);
         CF_CHECK_EQ(bn.Set(3, op.bn3.ToString(ds)), true);
 
@@ -4130,7 +4150,11 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
                 opRunner = std::make_unique<OpenSSL_bignum::IsPrime>();
                 break;
             case    CF_CALCOP("Sqrt(A)"):
-                opRunner = std::make_unique<OpenSSL_bignum::Sqrt>();
+                if ( prime_modulus == false ) {
+                    opRunner = std::make_unique<OpenSSL_bignum::Sqrt>();
+                } else {
+                    opRunner = std::make_unique<OpenSSL_bignum::SqrtMod>();
+                }
                 break;
             case    CF_CALCOP("IsNeg(A)"):
                 opRunner = std::make_unique<OpenSSL_bignum::IsNeg>();
@@ -4170,9 +4194,6 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
                 opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_521>();
                 break;
 #endif
-            case    CF_CALCOP("SqrtMod(A,B)"):
-                opRunner = std::make_unique<OpenSSL_bignum::SqrtMod>();
-                break;
 #if defined(CRYPTOFUZZ_BORINGSSL)
             case    CF_CALCOP("LCM(A,B)"):
                 opRunner = std::make_unique<OpenSSL_bignum::LCM>();
@@ -4229,6 +4250,10 @@ end:
     global_ds = nullptr;
 
     return ret;
+}
+
+bool OpenSSL::SupportsModularBignumCalc(void) const {
+    return true;
 }
 
 #endif
