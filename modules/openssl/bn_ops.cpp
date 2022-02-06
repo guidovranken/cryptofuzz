@@ -530,6 +530,18 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
                 CF_CHECK_EQ(BN_mod_inverse_odd(res.GetDestPtr(), &out_no_inverse, bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             }
             break;
+        case    2:
+            {
+                int out_no_inverse;
+                BN_MONT_CTX mont(ds);
+
+                /* Set mod */
+                CF_CHECK_EQ(BN_MONT_CTX_set(mont.GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+
+                /* invmod */
+                CF_CHECK_EQ(BN_mod_inverse_blinded(res.GetDestPtr(), &out_no_inverse, bn[0].GetPtr(), mont.GetPtr(), ctx.GetPtr()), 1);
+            }
+            break;
 #endif
         default:
             goto end;
