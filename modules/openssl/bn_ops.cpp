@@ -451,6 +451,39 @@ bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
         case    0:
             CF_CHECK_EQ(BN_mod_mul(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
             break;
+        case    1:
+            {
+                BN_MONT_CTX mont(ds);
+
+                /* Set mod */
+                CF_CHECK_EQ(BN_MONT_CTX_set(mont.GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
+
+                Bignum bn0_mont(ds);
+                /* bn0 to mont */
+                {
+                    CF_CHECK_TRUE(bn0_mont.New());
+                    CF_CHECK_EQ(BN_nnmod(bn0_mont.GetDestPtr(), bn[0].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
+                    auto bn0_mont_ptr = bn0_mont.GetDestPtr();
+                    CF_CHECK_EQ(BN_to_montgomery(bn0_mont_ptr, bn0_mont_ptr, mont.GetPtr(), ctx.GetPtr()), 1);
+                }
+
+                Bignum bn1_mont(ds);
+                /* bn1 to mont */
+                {
+                    CF_CHECK_TRUE(bn1_mont.New());
+                    CF_CHECK_EQ(BN_nnmod(bn1_mont.GetDestPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
+                    auto bn1_mont_ptr = bn1_mont.GetDestPtr();
+                    CF_CHECK_EQ(BN_to_montgomery(bn1_mont_ptr, bn1_mont_ptr, mont.GetPtr(), ctx.GetPtr()), 1);
+                }
+
+                /* mul mod */
+                CF_CHECK_EQ(BN_mod_mul_montgomery(res.GetDestPtr(), bn0_mont.GetPtr(), bn1_mont.GetPtr(), mont.GetPtr(), ctx.GetPtr()), 1);
+
+                /* result from mont */
+                auto resPtr = res.GetDestPtr();
+                CF_CHECK_EQ(BN_from_montgomery(resPtr, resPtr, mont.GetPtr(), ctx.GetPtr()), 1);
+            }
+            break;
         default:
             goto end;
             break;
@@ -459,6 +492,7 @@ bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
     ret = true;
 
 end:
+
     return ret;
 }
 
