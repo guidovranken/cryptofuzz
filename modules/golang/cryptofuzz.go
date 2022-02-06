@@ -25,6 +25,7 @@ import (
     "hash"
     "hash/adler32"
     "hash/crc32"
+    "hash/crc64"
     "io"
     "math"
     "math/big"
@@ -239,6 +240,9 @@ func toHashInstance(digestType Type) (hash.Hash, error) {
     if false {
     } else if isCRC32(digestType) {
         return crc32.NewIEEE(), nil
+    } else if isCRC64(digestType) {
+        tabISO := crc64.MakeTable(crc64.ISO)
+        return crc64.New(tabISO), nil
     } else if isADLER32(digestType) {
         return adler32.New(), nil
     } else if isBLAKE2S128(digestType) {
