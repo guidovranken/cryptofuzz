@@ -465,8 +465,6 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, co
 
     /* Extract the private key */
     priv_str = _priv.ToTrimmedString();
-    CF_CHECK_NE(priv_str, "0");
-    CF_CHECK_NE(priv_str, *cryptofuzz::repository::ECC_CurveToOrder(curveType.Get()));
     CF_CHECK_NE(priv_bytes = util::DecToBin(priv_str), std::nullopt);
     CF_CHECK_LTE((8 * priv_bytes->size()), NN_USABLE_MAX_BIT_LEN);
 
@@ -531,7 +529,9 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, co
         CF_CHECK_EQ(pub.magic, PUB_KEY_MAGIC);
 
         /* Get the unique affine point representation */
-        CF_ASSERT(!prj_pt_unique(&pub.y, &pub.y), "prj_pt_unique error" __FILE__ ":" TOSTRING(__LINE__));
+        /* prj_pt_unique can fail if scalar is 0 or multiple of curve order */
+        /* TODO assert that IF it fails, it's because of this reason */
+        CF_CHECK_EQ(prj_pt_unique(&pub.y, &pub.y), 0);
 
         {
             const auto _ret = libecc_detail::To_Component_BignumPair(pub);
@@ -611,8 +611,6 @@ namespace libecc_detail {
 
         {
             const auto priv_str = op.priv.ToTrimmedString();
-            CF_CHECK_NE(priv_str, "0");
-            CF_CHECK_NE(priv_str, *cryptofuzz::repository::ECC_CurveToOrder(op.curveType.Get()));
             CF_CHECK_NE(priv_bytes = util::DecToBin(priv_str), std::nullopt);
             CF_CHECK_LTE((8 * priv_bytes->size()), NN_USABLE_MAX_BIT_LEN);
             CF_CHECK_EQ(ec_key_pair_import_from_priv_key_buf(&kp,
@@ -1283,8 +1281,6 @@ std::optional<component::Secret> libecc::OpECDH_Derive(operation::ECDH_Derive& o
     std::optional<std::vector<uint8_t>> priv_bytes;
     std::string priv_str;
     priv_str = op.priv.ToTrimmedString();
-    CF_CHECK_NE(priv_str, "0");
-    CF_CHECK_NE(priv_str, *cryptofuzz::repository::ECC_CurveToOrder(op.curveType.Get()));
     CF_CHECK_NE(priv_bytes = util::DecToBin(priv_str), std::nullopt);
     CF_CHECK_LTE((8 * priv_bytes->size()), NN_USABLE_MAX_BIT_LEN);
 
