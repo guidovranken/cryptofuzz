@@ -328,16 +328,7 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
 
                 BIGNUM const * a2 = one.GetPtr();
                 BIGNUM const * p2 = BN_is_zero(bn[3].GetPtr()) ? a2 : bn[3].GetPtr();
-
-                bool switch_ = false;
-                try { switch_ = ds. Get<bool>(); } catch ( ... ) { }
-
-                if ( switch_ ) {
-                    BIGNUM const * tmp;
-                    tmp = a2;
-                    a2 = p2;
-                    p2 = tmp;
-                }
+                /* a2^p2 == 1 */
 
                 /* result = (a1^p1 * a2^p2) % m */
                 CF_CHECK_EQ(BN_mod_exp2_mont(
