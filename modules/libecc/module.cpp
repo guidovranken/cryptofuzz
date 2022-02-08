@@ -846,7 +846,14 @@ namespace libecc_detail {
   	    /* Now sign */
             siglen = (2 * key_size);
             signature = util::malloc(siglen);
-	    CF_CHECK_EQ(_ec_sign(signature, siglen, &kp, op.cleartext.GetPtr(), op.cleartext.GetSize(), nullptr, sig_type, hash_type, nullptr, 0), 0);
+            /* In case of NULL pointer as cleartext, replace it by an empty string with the same size */
+            if(op.cleartext.GetPtr() == NULL){
+                const unsigned char msg[] = "";
+  	        CF_CHECK_EQ(_ec_sign(signature, siglen, &kp, msg, 0, nullptr, sig_type, hash_type, nullptr, 0), 0);
+            }
+            else{
+  	        CF_CHECK_EQ(_ec_sign(signature, siglen, &kp, op.cleartext.GetPtr(), op.cleartext.GetSize(), nullptr, sig_type, hash_type, nullptr, 0), 0);
+            }
         }
         /* Get the public key */
         CF_CHECK_NE(pub = libecc_detail::OpECC_PrivateToPublic(ds, op.curveType, op.priv), std::nullopt);
@@ -935,7 +942,14 @@ end:
         /* Proceed with the verification */
         if ( oneShot == true ) {
             /* Non streaming mode */
-            ret = ec_verify(sig.data(), sig.size(), &pub_key, op.cleartext.GetPtr(), op.cleartext.GetSize(), sig_type, hash_type, nullptr, 0) == 0;
+            /* In case of NULL pointer as cleartext, replace it by an empty string with the same size */
+            if(op.cleartext.GetPtr() == NULL){
+                const unsigned char msg[] = "";
+                ret = ec_verify(sig.data(), sig.size(), &pub_key, msg, 0, sig_type, hash_type, nullptr, 0) == 0;
+            }
+            else{
+                ret = ec_verify(sig.data(), sig.size(), &pub_key, op.cleartext.GetPtr(), op.cleartext.GetSize(), sig_type, hash_type, nullptr, 0) == 0;
+            }
         }
         else{
             /* Sreaming mode */
