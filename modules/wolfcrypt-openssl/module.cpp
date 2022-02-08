@@ -334,8 +334,6 @@ const EVP_CIPHER* toEVPCIPHER(const component::SymmetricCipherType cipherType) {
             return EVP_des_ecb();
         case CF_CIPHER("DES_EDE3_CBC"):
             return EVP_des_ede3_cbc();
-        case CF_CIPHER("IDEA_CBC"):
-            return EVP_idea_cbc();
         case CF_CIPHER("RC4"):
             return EVP_rc4();
         default:

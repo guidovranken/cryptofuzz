@@ -246,6 +246,48 @@ end:
 bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
+    try {
+        switch ( ds.Get<uint8_t>() % 5 ) {
+            case    0:
+            {
+                auto data = ds.GetData(0, 1024 / 8, 1024 / 8);
+                /* Odd */
+                data[1024 / 8 - 1] |= 1;
+                util::HintBignum(util::BinToDec(data));
+            }
+            break;
+            case    1:
+            {
+                auto data = ds.GetData(0, 1536 / 8, 1536 / 8);
+                data[1536 / 8 - 1] |= 1;
+                util::HintBignum(util::BinToDec(data));
+            }
+            break;
+            case    2:
+            {
+                auto data = ds.GetData(0, 2048 / 8, 2048 / 8);
+                data[2048 / 8 - 1] |= 1;
+                util::HintBignum(util::BinToDec(data));
+            }
+            break;
+            case    3:
+            {
+                auto data = ds.GetData(0, 3072 / 8, 3072 / 8);
+                data[3072 / 8 - 1] |= 1;
+                util::HintBignum(util::BinToDec(data));
+            }
+            break;
+            case    4:
+            {
+                auto data = ds.GetData(0, 4096 / 8, 4096 / 8);
+                data[4096 / 8 - 1] |= 1;
+                util::HintBignum(util::BinToDec(data));
+            }
+            break;
+        }
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    }
+
     switch ( ds.Get<uint8_t>() ) {
         case    0:
             MP_CHECK_EQ(mp_exptmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
