@@ -1003,6 +1003,12 @@ std::optional<component::Bignum> NSS::OpBignumCalc(operation::BignumCalc& op) {
         case    CF_CALCOP("GCD(A,B)"):
             opRunner = std::make_unique<NSS_bignum::GCD>();
             break;
+        case    CF_CALCOP("ExtGCD_X(A,B)"):
+            opRunner = std::make_unique<NSS_bignum::ExtGCD_X>();
+            break;
+        case    CF_CALCOP("ExtGCD_Y(A,B)"):
+            opRunner = std::make_unique<NSS_bignum::ExtGCD_Y>();
+            break;
         case    CF_CALCOP("AddMod(A,B,C)"):
             opRunner = std::make_unique<NSS_bignum::AddMod>();
             break;

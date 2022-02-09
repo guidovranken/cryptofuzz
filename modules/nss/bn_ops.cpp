@@ -133,6 +133,46 @@ end:
     return ret;
 }
 
+bool ExtGCD_X::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    Bignum gcd, y;
+
+    Bignum zero;
+    mp_zero(zero.GetPtr());
+    if ( mp_cmp(zero.GetPtr(), bn[0].GetPtr()) == 0 ) {
+        goto end;
+    }
+
+    CF_CHECK_EQ(mp_xgcd(bn[0].GetPtr(), bn[1].GetPtr(), gcd.GetPtr(), res.GetPtr(), y.GetPtr()), MP_OKAY);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool ExtGCD_Y::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    (void)ds;
+    bool ret = false;
+
+    Bignum gcd, x;
+
+    Bignum zero;
+    mp_zero(zero.GetPtr());
+    if ( mp_cmp(zero.GetPtr(), bn[0].GetPtr()) == 0 ) {
+        goto end;
+    }
+
+    CF_CHECK_EQ(mp_xgcd(bn[0].GetPtr(), bn[1].GetPtr(), gcd.GetPtr(), x.GetPtr(), res.GetPtr()), MP_OKAY);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
 bool AddMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
     bool ret = false;
@@ -185,7 +225,17 @@ bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(mp_invmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+    bool alt = false;
+    try {
+        alt = ds.Get<bool>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    }
+
+    if ( alt == false ) {
+        CF_CHECK_EQ(mp_invmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+    } else {
+        CF_CHECK_EQ(mp_invmod_xgcd(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+    }
 
     ret = true;
 
