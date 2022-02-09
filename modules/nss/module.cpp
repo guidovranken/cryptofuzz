@@ -964,6 +964,33 @@ end:
     return ret;
 }
 
+std::optional<component::Key> NSS::OpKDF_TLS1_PRF(operation::KDF_TLS1_PRF& op) {
+    std::optional<component::Key> ret = std::nullopt;
+
+    if ( !op.digestType.Is(CF_DIGEST("MD5_SHA1")) ) {
+        return ret;
+    }
+
+    uint8_t* out = nullptr;
+    const SECItem secret = {siBuffer, const_cast<uint8_t *>(op.secret.GetPtr()), static_cast<uint32_t>(op.secret.GetSize())};
+    SECItem seed = {siBuffer, const_cast<uint8_t *>(op.seed.GetPtr()), static_cast<uint32_t>(op.seed.GetSize())};
+    CF_CHECK_NE(secret.data, nullptr);
+    CF_CHECK_NE(seed.data, nullptr);
+
+    SECItem out_item;
+    out = util::malloc(op.keySize);
+    CF_CHECK_NE(out, nullptr);
+    out_item = {siBuffer, out, static_cast<unsigned int>(op.keySize)};
+
+    CF_CHECK_EQ(TLS_PRF(&secret, "", &seed, &out_item, false), SECSuccess);
+
+    ret = component::Key(out, op.keySize);
+
+end:
+    util::free(out);
+    return ret;
+}
+
 std::optional<component::Bignum> NSS::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());

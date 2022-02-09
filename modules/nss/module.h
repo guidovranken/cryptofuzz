@@ -23,6 +23,7 @@ class NSS : public Module {
         std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) override;
         std::optional<bool> OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) override;
         std::optional<component::ECDSA_Signature> OpECDSA_Sign(operation::ECDSA_Sign& op) override;
+        std::optional<component::Key> OpKDF_TLS1_PRF(operation::KDF_TLS1_PRF& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
 };
 
