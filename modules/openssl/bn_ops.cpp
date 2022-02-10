@@ -545,9 +545,13 @@ end:
 bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     bool ret = false;
 
+    bool fail = false;
+
     switch ( ds.Get<uint8_t>() ) {
         case    0:
+            fail = true;
             CF_CHECK_NE(BN_mod_inverse(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), nullptr);
+            fail = false;
             break;
 #if defined(CRYPTOFUZZ_BORINGSSL)
         case    1:
@@ -555,7 +559,9 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
                 int out_no_inverse;
                 CF_CHECK_LT(BN_cmp(bn[0].GetPtr(), bn[1].GetPtr()), 0);
                 CF_CHECK_EQ(BN_is_odd(bn[1].GetPtr()), 1);
+                fail = true;
                 CF_CHECK_EQ(BN_mod_inverse_odd(res.GetDestPtr(), &out_no_inverse, bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+                fail = false;
             }
             break;
         case    2:
@@ -568,6 +574,10 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
 
                 /* invmod */
                 CF_CHECK_EQ(BN_mod_inverse_blinded(res.GetDestPtr(), &out_no_inverse, bn[0].GetPtr(), mont.GetPtr(), ctx.GetPtr()), 1);
+
+                if ( out_no_inverse ) {
+                    fail = true;
+                }
             }
             break;
 #endif
@@ -579,6 +589,11 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
     ret = true;
 
 end:
+    if ( fail == true ) {
+        res.Set("0");
+        return true;
+    }
+
     return ret;
 }
 
