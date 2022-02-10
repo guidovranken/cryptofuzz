@@ -1414,10 +1414,12 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
             CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
 
-            /* NOTE: nn_modinv can return an error if there is no modular inverse */
-            CF_CHECK_EQ(nn_modinv(&result, &a, &b), 0);
-
-            ret = libecc_detail::To_Component_Bignum(&result);
+            /* nn_invmod returns non-zero if inverse does not exist */
+            if ( nn_modinv(&result, &a, &b) == 0 ) {
+                ret = libecc_detail::To_Component_Bignum(&result);
+            } else {
+                ret = component::Bignum(std::string("0"));
+            }
             break;
         case    CF_CALCOP("LShift1(A)"):
             CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
