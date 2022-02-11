@@ -1493,7 +1493,9 @@ end:
                 {
                     const auto r = cryptofuzz_secp256k1_fe_cmp_var(a, b);
 
-                    return component::Bignum(std::to_string(r));
+                    ret = component::Bignum(std::to_string(r));
+
+                    goto end;
                 }
                 break;
             case    CF_CALCOP("CondSet(A,B)"):
