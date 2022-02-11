@@ -3,6 +3,7 @@
 #include <array>
 #include <string>
 #include <cstdint>
+#include <vector>
 
 #include "config.h"
 
@@ -100,6 +101,25 @@ typedef struct {
     std::string bn12;
 } Fp12;
 extern MutatorPool<Fp12, cryptofuzz::config::kMutatorPoolSize> Pool_Fp12;
+
+typedef struct {
+    struct G1 {
+        std::string g1_x;
+        std::string g1_y;
+    };
+
+    struct G2 {
+        std::string g2_v;
+        std::string g2_w;
+        std::string g2_x;
+        std::string g2_y;
+    };
+
+    std::vector<
+        std::pair<G1, G2>
+    > msgpub;
+} BLS_BatchSignature_;
+extern MutatorPool<BLS_BatchSignature_, cryptofuzz::config::kMutatorPoolSize> Pool_BLS_BatchSignature;
 
 extern MutatorPool<std::string, cryptofuzz::config::kMutatorPoolSize> Pool_DH_PrivateKey;
 extern MutatorPool<std::string, cryptofuzz::config::kMutatorPoolSize> Pool_DH_PublicKey;

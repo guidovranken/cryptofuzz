@@ -1253,9 +1253,40 @@ nlohmann::json BLS_Verify::ToJSON(void) const {
     return j;
 }
 
+std::string BLS_BatchSign::Name(void) const { return "BLS_BatchSign"; }
+std::string BLS_BatchSign::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_BatchSign" << std::endl;
+
+    for (const auto& cur : bf.c) {
+        ss << "priv: " << cur.priv.ToString() << std::endl;
+        ss << "G1 X: " << cur.g1.first.ToString() << std::endl;
+        ss << "G1 Y: " << cur.g1.second.ToString() << std::endl;
+    }
+    return ss.str();
+}
+
+nlohmann::json BLS_BatchSign::ToJSON(void) const {
+    nlohmann::json j;
+    /* TODO */
+    return j;
+}
+
 std::string BLS_BatchVerify::Name(void) const { return "BLS_BatchVerify"; }
 std::string BLS_BatchVerify::ToString(void) const {
     std::stringstream ss;
+
+    for (const auto& cur : bf.c) {
+        ss << "G1 X: " << cur.g1.first.ToString() << std::endl;
+        ss << "G1 Y: " << cur.g1.second.ToString() << std::endl;
+        ss << std::endl;
+        ss << "G2 V: " << cur.g2.first.first.ToString() << std::endl;
+        ss << "G2 W: " << cur.g2.first.second.ToString() << std::endl;
+        ss << "G2 X: " << cur.g2.second.first.ToString() << std::endl;
+        ss << "G2 Y: " << cur.g2.second.second.ToString() << std::endl;
+        ss << "----------" << std::endl;
+    }
 
     /* TODO */
     return ss.str();

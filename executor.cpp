@@ -1212,6 +1212,45 @@ template<> std::optional<bool> ExecutorBase<bool, operation::BLS_Verify>::callMo
     return module->OpBLS_Verify(op);
 }
 
+/* Specialization for operation::BLS_BatchSign */
+template<> void ExecutorBase<component::BLS_BatchSignature, operation::BLS_BatchSign>::postprocess(std::shared_ptr<Module> module, operation::BLS_BatchSign& op, const ExecutorBase<component::BLS_BatchSignature, operation::BLS_BatchSign>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+
+    if ( result.second != std::nullopt  ) {
+        std::vector< std::pair<BLS_BatchSignature_::G1, BLS_BatchSignature_::G2> > msgpub;
+        for (const auto& mp : result.second->msgpub) {
+            msgpub.push_back(
+                    std::pair<BLS_BatchSignature_::G1, BLS_BatchSignature_::G2>{
+                        {
+                            mp.first.first.ToTrimmedString(),
+                            mp.first.second.ToTrimmedString()
+                        },
+                        {
+                            mp.second.first.first.ToTrimmedString(),
+                            mp.second.first.second.ToTrimmedString(),
+                            mp.second.second.first.ToTrimmedString(),
+                            mp.second.second.second.ToTrimmedString()
+                        }
+                    }
+            );
+            G1AddToPool(CF_ECC_CURVE("BLS12_381"), mp.first.first.ToTrimmedString(), mp.first.second.ToTrimmedString());
+            Pool_CurveBLSG2.Set({
+                    CF_ECC_CURVE("BLS12_381"),
+                    mp.second.first.first.ToTrimmedString(),
+                    mp.second.first.second.ToTrimmedString(),
+                    mp.second.second.first.ToTrimmedString(),
+                    mp.second.second.second.ToTrimmedString()
+            });
+        }
+        Pool_BLS_BatchSignature.Set({msgpub});
+    }
+}
+
+template<> std::optional<component::BLS_BatchSignature> ExecutorBase<component::BLS_BatchSignature, operation::BLS_BatchSign>::callModule(std::shared_ptr<Module> module, operation::BLS_BatchSign& op) const {
+    return module->OpBLS_BatchSign(op);
+}
+
 /* Specialization for operation::BLS_BatchVerify */
 template<> void ExecutorBase<bool, operation::BLS_BatchVerify>::postprocess(std::shared_ptr<Module> module, operation::BLS_BatchVerify& op, const ExecutorBase<bool, operation::BLS_BatchVerify>::ResultPair& result) const {
     (void)module;
@@ -2338,6 +2377,7 @@ template class ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPu
 template class ExecutorBase<component::G2, operation::BLS_PrivateToPublic_G2>;
 template class ExecutorBase<component::BLS_Signature, operation::BLS_Sign>;
 template class ExecutorBase<bool, operation::BLS_Verify>;
+template class ExecutorBase<component::BLS_BatchSignature, operation::BLS_BatchSign>;
 template class ExecutorBase<bool, operation::BLS_BatchVerify>;
 template class ExecutorBase<component::G1, operation::BLS_Aggregate_G1>;
 template class ExecutorBase<component::G2, operation::BLS_Aggregate_G2>;

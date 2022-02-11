@@ -21,6 +21,7 @@ class mcl : public Module {
         std::optional<component::G2> OpBLS_PrivateToPublic_G2(operation::BLS_PrivateToPublic_G2& op);
         std::optional<component::BLS_Signature> OpBLS_Sign(operation::BLS_Sign& op);
         std::optional<bool> OpBLS_Verify(operation::BLS_Verify& op);
+        std::optional<bool> OpBLS_BatchVerify(operation::BLS_BatchVerify& op);
         std::optional<component::Fp12> OpBLS_Pairing(operation::BLS_Pairing& op);
         std::optional<component::Fp12> OpBLS_FinalExp(operation::BLS_FinalExp& op);
         std::optional<bool> OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op);

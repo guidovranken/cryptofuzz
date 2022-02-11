@@ -413,6 +413,96 @@ std::optional<component::Fp12> _libff::OpBLS_FinalExp(operation::BLS_FinalExp& o
     return ret;
 }
 
+std::optional<bool> _libff::OpBLS_BatchVerify(operation::BLS_BatchVerify& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    Fq12Type f = Fq12Type::one();
+
+    for (const auto& cur : op.bf.c) {
+        std::optional<G1Type> g1;
+        std::optional<G2Type> g2;
+
+        CF_CHECK_NE((g1 = libff_detail::Load(cur.g1, ds)), std::nullopt);
+        CF_CHECK_NE((g2 = libff_detail::Load(cur.g2, ds)), std::nullopt);
+
+        CF_CHECK_NE(g1->X, 0);
+        CF_CHECK_NE(g1->Y, 0);
+
+        CF_CHECK_NE(g2->X.c0, 0);
+        CF_CHECK_NE(g2->X.c1, 0);
+        CF_CHECK_NE(g2->Y.c0, 0);
+        CF_CHECK_NE(g2->Y.c1, 0);
+
+        f *=
+#if defined(LIBFF_HAVE_BLS12_381)
+            libff::bls12_381_pp::pairing(*g1, *g2);
+#else
+            libff::alt_bn128_pp::pairing(*g1, *g2);
+#endif
+    }
+
+#if defined(LIBFF_HAVE_BLS12_381)
+    ret = bls12_381_final_exponentiation(f) == Fq12Type::one();
+#else
+    ret = alt_bn128_final_exponentiation(f) == Fq12Type::one();
+#endif
+
+end:
+    return ret;
+}
+
+std::optional<component::BLS_BatchSignature> _libff::OpBLS_BatchSign(operation::BLS_BatchSign& op) {
+    std::optional<component::BLS_BatchSignature> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    G1Type finalsig = G1Type::zero();
+
+    std::vector< std::pair<component::G1, component::G2> > msgpub;
+
+    for (const auto& cur : op.bf.c) {
+        CF_CHECK_LTE(cur.priv.GetSize(), FrMaxSize);
+        const auto priv = FrType(cur.priv.ToTrimmedString().c_str());
+
+        auto pub = priv * G2Type::one();
+
+        auto msg = libff_detail::Load(cur.g1, ds);
+        CF_CHECK_NE(msg, std::nullopt);
+
+        const auto signature = priv * *msg;
+
+        {
+            msg = -(*msg);
+            pub = -pub;
+            msgpub.push_back(
+                    {
+                        libff_detail::Save(*msg),
+                        libff_detail::Save(pub)
+                    }
+            );
+        }
+
+        finalsig = finalsig + signature;
+    }
+
+    {
+        finalsig = -finalsig;
+        auto one_neg = -G2Type::one();
+        msgpub.insert(
+                msgpub.begin(),
+                std::pair<component::G1, component::G2>{
+                    libff_detail::Save(finalsig),
+                    libff_detail::Save(one_neg)
+                }
+        );
+    }
+
+    ret = component::BLS_BatchSignature(msgpub);
+
+end:
+    return ret;
+}
+
 namespace libff_detail {
     template <class T, size_t MaxSize>
     std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) {

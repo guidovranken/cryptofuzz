@@ -75,6 +75,7 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorBLS_PrivateToPublic_G2 executorBLS_PrivateToPublic_G2(CF_OPERATION("BLS_PrivateToPublic_G2"), modules, options);
     static ExecutorBLS_Sign executorBLS_Sign(CF_OPERATION("BLS_Sign"), modules, options);
     static ExecutorBLS_Verify executorBLS_Verify(CF_OPERATION("BLS_Verify"), modules, options);
+    static ExecutorBLS_BatchSign executorBLS_BatchSign(CF_OPERATION("BLS_BatchSign"), modules, options);
     static ExecutorBLS_BatchVerify executorBLS_BatchVerify(CF_OPERATION("BLS_BatchVerify"), modules, options);
     static ExecutorBLS_Aggregate_G1 executorBLS_Aggregate_G1(CF_OPERATION("BLS_Aggregate_G1"), modules, options);
     static ExecutorBLS_Aggregate_G2 executorBLS_Aggregate_G2(CF_OPERATION("BLS_Aggregate_G2"), modules, options);
@@ -292,6 +293,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("BLS_Verify"):
                 executorBLS_Verify.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BLS_BatchSign"):
+                executorBLS_BatchSign.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("BLS_BatchVerify"):
                 executorBLS_BatchVerify.Run(ds, payload.data(), payload.size());

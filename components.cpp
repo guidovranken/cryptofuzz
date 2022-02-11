@@ -636,6 +636,55 @@ nlohmann::json BLS_Signature::ToJSON(void) const {
     return std::vector<nlohmann::json>{signature.ToJSON(), pub.ToJSON()};
 }
 
+/* BLS_BatchSign_Vector */
+
+BLS_BatchSign_Vector::BLS_BatchSign_Vector(Datasource& ds) {
+    const auto num = ds.Get<uint32_t>(0);
+    for (size_t i = 0; i < num; i++) {
+        c.push_back( BatchSign_single{{ds}, {ds}} );
+    }
+}
+
+BLS_BatchSign_Vector::BLS_BatchSign_Vector(nlohmann::json json) {
+    for (const auto& j : json) {
+        c.push_back( BatchSign_single{
+                j["priv"],
+                {j["g1_x"], j["g1_y"]} });
+    }
+}
+
+void BLS_BatchSign_Vector::Serialize(Datasource& ds) const {
+    ds.Put<uint32_t>(c.size());
+    for (const auto& component : c) {
+        component.priv.Serialize(ds);
+        component.g1.Serialize(ds);
+    }
+}
+
+/* BLS_BatchSignature */
+
+BLS_BatchSignature::BLS_BatchSignature(std::vector< std::pair<G1, G2> > msgpub) :
+    msgpub(msgpub)
+{ }
+
+bool BLS_BatchSignature::operator==(const BLS_BatchSignature& rhs) const {
+    return
+        (msgpub == rhs.msgpub);
+}
+
+void BLS_BatchSignature::Serialize(Datasource& ds) const {
+    ds.Put<uint32_t>(msgpub.size());
+    for (const auto& component : msgpub) {
+        component.first.Serialize(ds);
+        component.second.Serialize(ds);
+    }
+}
+
+nlohmann::json BLS_BatchSignature::ToJSON(void) const {
+    return {}; /* TODO */
+}
+
+
 /* BLS_KeyPair */
 
 BLS_KeyPair::BLS_KeyPair(Datasource& ds) :
@@ -668,25 +717,23 @@ nlohmann::json BLS_KeyPair::ToJSON(void) const {
 BLS_BatchVerify_Vector::BLS_BatchVerify_Vector(Datasource& ds) {
     const auto num = ds.Get<uint32_t>(0);
     for (size_t i = 0; i < num; i++) {
-        c.push_back( BatchVerify_single{{ds}, {ds}, {ds}} );
+        c.push_back( BatchVerify_single{{ds}, {ds}} );
     }
 }
 
 BLS_BatchVerify_Vector::BLS_BatchVerify_Vector(nlohmann::json json) {
     for (const auto& j : json) {
         c.push_back( BatchVerify_single{
-                {j["pub_x"], j["pub_y"]},
-                {j["msg"]},
-                {j["aug"]}});
+                {j["g1_x"], j["g1_y"]},
+                {j["g2_v"], j["g2_w"], j["g2_x"], j["g2_y"]} });
     }
 }
 
 void BLS_BatchVerify_Vector::Serialize(Datasource& ds) const {
     ds.Put<uint32_t>(c.size());
     for (const auto& component : c) {
-        component.pub.Serialize(ds);
-        component.msg.Serialize(ds);
-        component.aug.Serialize(ds);
+        component.g1.Serialize(ds);
+        component.g2.Serialize(ds);
     }
 }
 

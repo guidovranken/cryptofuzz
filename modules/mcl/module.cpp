@@ -327,6 +327,36 @@ std::optional<bool> mcl::OpBLS_Verify(operation::BLS_Verify& op) {
     return ret;
 }
 
+std::optional<bool> mcl::OpBLS_BatchVerify(operation::BLS_BatchVerify& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    Namespace::Fp12 f;
+    f.setOne();
+
+    try {
+        for (const auto& cur : op.bf.c) {
+            const auto g1 = mcl_detail::Convert(cur.g1);
+            CF_CHECK_TRUE(g1.isValid());
+
+            const auto g2 = mcl_detail::Convert(cur.g2);
+            CF_CHECK_TRUE(g2.isValid());
+
+            Namespace::Fp12 tmp;
+            Namespace::millerLoop(tmp, g1, g2);
+            f *= tmp;
+        }
+    } catch ( ... ) {
+        goto end;
+    }
+
+    Namespace::finalExp(f, f);
+
+    ret = f.isOne();
+end:
+    return ret;
+}
+
 std::optional<component::Fp12> mcl::OpBLS_Pairing(operation::BLS_Pairing& op) {
     std::optional<component::Fp12> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());

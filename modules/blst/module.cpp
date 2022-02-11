@@ -604,70 +604,37 @@ std::optional<bool> blst::OpBLS_BatchVerify(operation::BLS_BatchVerify& op) {
 
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    blst_pairing* ctx = nullptr;
-    bool useBatchVerify = true;
+    const blst_fp12 one = *blst_fp12_one();
+    blst_fp12 f = *blst_fp12_one();
 
-    try {
-        useBatchVerify = ds.Get<bool>();
-    } catch ( fuzzing::datasource::Base::OutOfData ) { }
+    for (const auto& cur : op.bf.c) {
+            blst_p1_affine g1_affine;
+            blst_p2_affine g2_affine;
 
-    if ( useBatchVerify == true ) {
-        ctx = (blst_pairing*)(malloc(blst_pairing_sizeof()));
+            /* Load G1 */
+            CF_CHECK_TRUE(blst_detail::To_blst_fp(cur.g1.first, g1_affine.x));
+            CF_CHECK_TRUE(blst_detail::To_blst_fp(cur.g1.second, g1_affine.y));
 
-        CF_NORET(blst_pairing_init(ctx, op.hashOrEncode, op.dest.GetPtr(), op.dest.GetSize()));
+            CF_CHECK_TRUE(blst_p1_affine_on_curve(&g1_affine) && blst_p1_affine_in_g1(&g1_affine));
 
-        bool first = true;
-        blst_p2_affine sig;
+            /* Load G2 */
+            CF_CHECK_TRUE(blst_detail::To_blst_fp(cur.g2.first.first, g2_affine.x.fp[0]));
+            CF_CHECK_TRUE(blst_detail::To_blst_fp(cur.g2.first.second, g2_affine.y.fp[0]));
+            CF_CHECK_TRUE(blst_detail::To_blst_fp(cur.g2.second.first, g2_affine.x.fp[1]));
+            CF_CHECK_TRUE(blst_detail::To_blst_fp(cur.g2.second.second, g2_affine.y.fp[1]));
 
-        CF_CHECK_TRUE(blst_detail::To_blst_fp(op.sig.first.first, sig.x.fp[0]));
-        CF_CHECK_TRUE(blst_detail::To_blst_fp(op.sig.first.second, sig.y.fp[0]));
-        CF_CHECK_TRUE(blst_detail::To_blst_fp(op.sig.second.first, sig.x.fp[1]));
-        CF_CHECK_TRUE(blst_detail::To_blst_fp(op.sig.second.second, sig.y.fp[1]));
+            CF_CHECK_TRUE(blst_p2_affine_on_curve(&g2_affine) && blst_p2_affine_in_g2(&g2_affine));
 
-        CF_CHECK_TRUE(blst_p2_affine_on_curve(&sig) && blst_p2_affine_in_g2(&sig));
-
-        for (const auto& cur : op.bf.c) {
-            blst_p1_affine pub;
-
-            /* Load current public key */
-            CF_CHECK_TRUE(blst_detail::To_blst_fp(cur.pub.first, pub.x));
-            CF_CHECK_TRUE(blst_detail::To_blst_fp(cur.pub.second, pub.y));
-
-            CF_CHECK_TRUE(blst_p1_affine_on_curve(&pub) && blst_p1_affine_in_g1(&pub));
-
-            CF_CHECK_EQ(blst_pairing_aggregate_pk_in_g1(
-                        ctx,
-                        &pub,
-                        /* If first iteration, then load the signature, otherwise pass null */
-                        first == true ? &sig : nullptr,
-                        cur.msg.GetPtr(), cur.msg.GetSize(),
-                        cur.aug.GetPtr(), cur.aug.GetSize()
-                        ), BLST_SUCCESS);
-
-            first = false;
-        }
-
-        CF_CHECK_FALSE(first);
-
-        CF_NORET(blst_pairing_commit(ctx));
-
-        ret = static_cast<bool>(blst_pairing_finalverify(ctx, nullptr));
-    } else {
-        for (const auto& cur : op.bf.c) {
-            const auto curRet = blst_detail::Verify(ds, cur.msg, op.dest, cur.aug, cur.pub, op.sig, op.hashOrEncode);
-            if ( curRet == std::nullopt ) {
-                return std::nullopt;
-            }
-            if ( *curRet == false ) {
-                return false;
-            }
-        }
-
-        return true;
+            blst_fp12 tmp;
+            CF_NORET(blst_miller_loop(&tmp, &g2_affine, &g1_affine));
+            CF_NORET(blst_fp12_mul(&f, &f, &tmp));
     }
 
+    CF_NORET(blst_final_exp(&f, &f));
+
+    ret = blst_fp12_is_equal(&f, &one) == 1;
+
 end:
-    free(ctx);
     return ret;
 }
 

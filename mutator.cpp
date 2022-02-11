@@ -8,6 +8,8 @@
 #include <cryptofuzz/util.h>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/lexical_cast.hpp>
+#include <algorithm>
+#include <random>
 #include "config.h"
 #include "repository_tbl.h"
 #include "numbers.h"
@@ -22,6 +24,8 @@ uint32_t PRNG(void)
     nSeed = (8253729 * nSeed + 2396403);
     return nSeed  % 32767;
 }
+
+auto rng = std::default_random_engine {};
 
 boost::multiprecision::cpp_int cpp_int_reciprocal(
         boost::multiprecision::cpp_int x,
@@ -1735,52 +1739,99 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     op.Serialize(dsOut2);
                 }
                 break;
-            case    CF_OPERATION("BLS_BatchVerify"):
+            case    CF_OPERATION("BLS_BatchSign"):
                 {
                     parameters["modifier"] = "";
 
-                    const size_t num = PRNG() % 32;
-                    bool s = false;
+                    //const size_t num = PRNG() % 100;
+                    //const size_t num = (PRNG() % 50) + 30;
+                    const size_t num = (PRNG() % 8) + 1;
+
+                    parameters["bf"] = nlohmann::json::array();
 
                     for (size_t i = 0; i < num; i++) {
-                        if ( Pool_CurveBLSSignature.Have() == true ) {
-                            const auto P = Pool_CurveBLSSignature.Get();
+                        const auto P = Pool_CurveBLSG1.Get();
 
-                            if ( s == false ) {
-                                parameters["curveType"] = hint_ecc_mont(P.curveID);
-                                parameters["hashOrEncode"] = P.hashOrPoint;
-                                parameters["dest"] = P.dest;
-                                parameters["sig_v"] = GET_OR_BIGNUM(P.sig_v);
-                                parameters["sig_w"] = GET_OR_BIGNUM(P.sig_w);
-                                parameters["sig_x"] = GET_OR_BIGNUM(P.sig_x);
-                                parameters["sig_y"] = GET_OR_BIGNUM(P.sig_y);
-                                parameters["bf"] = nlohmann::json::array();
+                        nlohmann::json p;
 
-                                s = true;
+                        p["priv"] = getBignum();
+                        p["g1_x"] = P.g1_x;
+                        p["g1_y"] = P.g1_y;
+
+                        parameters["bf"].push_back(p);
+                    }
+
+                    cryptofuzz::operation::BLS_BatchSign op(parameters);
+                    op.Serialize(dsOut2);
+
+                    generateECCPoint();
+                }
+                break;
+            case    CF_OPERATION("BLS_BatchVerify"):
+                {
+                    parameters["modifier"] = "";
+                    parameters["dest"] = get_BLS_predefined_DST();
+
+                    std::vector<
+                        std::pair<
+                            std::array<std::string, 2>,
+                            std::array<std::string, 4>
+                        >
+                    > points;
+
+                    if ( Pool_BLS_BatchSignature.Have() == true ) {
+                        const auto sig = Pool_BLS_BatchSignature.Get();
+
+                        for (const auto& mp : sig.msgpub) {
+                            std::array<std::string, 2> g1;
+                            std::array<std::string, 4> g2;
+
+                            switch ( PRNG() % 3 ) {
+                                case    0:
+                                    {
+                                        const auto P = Pool_CurveBLSG1.Get();
+                                        g1 = {P.g1_x, P.g1_y};
+                                    }
+                                    break;
+                                case    1:
+                                    g1 = {mp.first.g1_x, mp.first.g1_y};
+                                    break;
+                                case    2:
+                                    g1 = {getBignum(), getBignum()};
+                                    break;
                             }
 
-                            /* Loop */
-                            nlohmann::json p;
-                            p["msg"] = P.cleartext;
-                            p["aug"] = P.aug;
-                            p["pub_x"] = GET_OR_BIGNUM(P.pub_x);
-                            p["pub_y"] = GET_OR_BIGNUM(P.pub_y);
-                            parameters["bf"].push_back(p);
-                        }
-                    }
-                    if ( s == false ) {
-                        parameters["curveType"] = hint_ecc_mont(CF_ECC_CURVE("BLS12_381"));
-                        parameters["hashOrEncode"] = getBool();
-                        parameters["dest"] = getBool() ? getBuffer(PRNG() % 512) : get_BLS_predefined_DST();
-                        parameters["sig_v"] = getBignum();
-                        parameters["sig_w"] = getBignum();
-                        parameters["sig_x"] = getBignum();
-                        parameters["sig_y"] = getBignum();
-                        parameters["bf"] = nlohmann::json::array();
-                    }
+                            if ( (PRNG()%3) == 0 ) {
+                                const auto P2 = Pool_CurveBLSG2.Get();
+                                g2 = {P2.g2_v, P2.g2_w, P2.g2_x, P2.g2_y};
+                            } else {
+                                g2 = {mp.second.g2_v, mp.second.g2_w, mp.second.g2_x, mp.second.g2_y};
+                            }
 
-                    cryptofuzz::operation::BLS_BatchVerify op(parameters);
-                    op.Serialize(dsOut2);
+                            points.push_back({g1, g2});
+                        }
+
+                        parameters["bf"] = nlohmann::json::array();
+
+                        std::shuffle(std::begin(points), std::end(points), rng);
+
+                        for (const auto& p : points) {
+                            nlohmann::json cur;
+                            cur["g1_x"] = p.first[0];
+                            cur["g1_y"] = p.first[1];
+
+                            cur["g2_v"] = p.second[0];
+                            cur["g2_w"] = p.second[1];
+                            cur["g2_x"] = p.second[2];
+                            cur["g2_y"] = p.second[3];
+                            parameters["bf"].push_back(cur);
+                        }
+
+                        cryptofuzz::operation::BLS_BatchVerify op(parameters);
+                        op.Serialize(dsOut2);
+                    } else {
+                        goto end;
+                    }
                 }
                 break;
             case    CF_OPERATION("BLS_IsG1OnCurve"):

@@ -256,17 +256,44 @@ class BLS_KeyPair {
         nlohmann::json ToJSON(void) const;
 };
 
+class BLS_BatchSignature {
+    public:
+        std::vector< std::pair<G1, G2> > msgpub;
+
+        BLS_BatchSignature(std::vector< std::pair<G1, G2> > msgpub);
+
+        bool operator==(const BLS_BatchSignature& rhs) const;
+        void Serialize(Datasource& ds) const;
+        nlohmann::json ToJSON(void) const;
+};
+
+class BLS_BatchSign_Vector {
+    public:
+        typedef struct {
+            Bignum priv;
+            G1 g1;
+        } BatchSign_single;
+        std::vector<BatchSign_single> c;
+
+        BLS_BatchSign_Vector(Datasource& ds);
+        BLS_BatchSign_Vector(G1 g1, G2 g2);
+        BLS_BatchSign_Vector(nlohmann::json json);
+
+        bool operator==(const BLS_BatchSign_Vector& rhs) const;
+        void Serialize(Datasource& ds) const;
+        nlohmann::json ToJSON(void) const;
+};
+
 class BLS_BatchVerify_Vector {
     public:
         typedef struct {
-            BLS_PublicKey pub;
-            Cleartext msg;
-            Cleartext aug;
+            G1 g1;
+            G2 g2;
         } BatchVerify_single;
         std::vector<BatchVerify_single> c;
 
         BLS_BatchVerify_Vector(Datasource& ds);
-        BLS_BatchVerify_Vector(BLS_PublicKey pub, Cleartext msg, Cleartext aug);
+        BLS_BatchVerify_Vector(G1 g1, G2 g2);
         BLS_BatchVerify_Vector(nlohmann::json json);
 
         bool operator==(const BLS_BatchVerify_Vector& rhs) const;

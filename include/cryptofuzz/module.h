@@ -199,6 +199,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::BLS_BatchSignature> OpBLS_BatchSign(operation::BLS_BatchSign& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<bool> OpBLS_BatchVerify(operation::BLS_BatchVerify& op) {
             (void)op;
             return std::nullopt;

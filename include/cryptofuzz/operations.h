@@ -2137,28 +2137,43 @@ class BLS_Verify : public Operation {
         }
 };
 
+class BLS_BatchSign : public Operation {
+    public:
+        component::BLS_BatchSign_Vector bf;
+
+        BLS_BatchSign(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            bf(ds)
+        { }
+        BLS_BatchSign(nlohmann::json json) :
+            Operation(json["modifier"]),
+            bf(json["bf"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_BatchSign& rhs) const {
+            return
+                (bf == rhs.bf) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            bf.Serialize(ds);
+        }
+};
+
 class BLS_BatchVerify : public Operation {
     public:
-        const component::CurveType curveType;
-        const bool hashOrEncode;
-        const component::Cleartext dest;
-        const component::G2 sig;
         component::BLS_BatchVerify_Vector bf;
 
         BLS_BatchVerify(Datasource& ds, component::Modifier modifier) :
             Operation(std::move(modifier)),
-            curveType(ds),
-            hashOrEncode(ds.Get<bool>()),
-            dest(ds),
-            sig(ds),
             bf(ds)
         { }
         BLS_BatchVerify(nlohmann::json json) :
             Operation(json["modifier"]),
-            curveType(json["curveType"]),
-            hashOrEncode(json["hashOrEncode"]),
-            dest(json["dest"]),
-            sig(json["sig_v"], json["sig_w"], json["sig_x"], json["sig_y"]),
             bf(json["bf"])
         { }
 
@@ -2168,18 +2183,10 @@ class BLS_BatchVerify : public Operation {
         nlohmann::json ToJSON(void) const override;
         inline bool operator==(const BLS_BatchVerify& rhs) const {
             return
-                (curveType == rhs.curveType) &&
-                (hashOrEncode == rhs.hashOrEncode) &&
-                (dest == rhs.dest) &&
-                (sig == rhs.sig) &&
                 (bf == rhs.bf) &&
                 (modifier == rhs.modifier);
         }
         void Serialize(Datasource& ds) const {
-            curveType.Serialize(ds);
-            ds.Put<bool>(hashOrEncode);
-            dest.Serialize(ds);
-            sig.Serialize(ds);
             bf.Serialize(ds);
         }
 };

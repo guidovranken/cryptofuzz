@@ -204,6 +204,7 @@ using ExecutorBLS_PrivateToPublic = ExecutorBase<component::BLS_PublicKey, opera
 using ExecutorBLS_PrivateToPublic_G2 = ExecutorBase<component::G2, operation::BLS_PrivateToPublic_G2>;
 using ExecutorBLS_Sign = ExecutorBase<component::BLS_Signature, operation::BLS_Sign>;
 using ExecutorBLS_Verify = ExecutorBase<bool, operation::BLS_Verify>;
+using ExecutorBLS_BatchSign = ExecutorBase<component::BLS_BatchSignature, operation::BLS_BatchSign>;
 using ExecutorBLS_BatchVerify = ExecutorBase<bool, operation::BLS_BatchVerify>;
 using ExecutorBLS_Aggregate_G1 = ExecutorBase<component::G1, operation::BLS_Aggregate_G1>;
 using ExecutorBLS_Aggregate_G2 = ExecutorBase<component::G2, operation::BLS_Aggregate_G2>;

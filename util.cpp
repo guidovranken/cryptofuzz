@@ -311,6 +311,38 @@ std::string ToString(const component::BLS_Signature& val) {
     return ret;
 }
 
+std::string ToString(const component::BLS_BatchSignature& val) {
+    std::string ret;
+
+    for (const auto& cur : val.msgpub) {
+        ret += "G1 X: ";
+        ret += cur.first.first.ToString();
+        ret += "\n";
+        ret += "G1 Y: ";
+        ret += cur.first.second.ToString();
+        ret += "\n";
+
+        ret += "\n";
+
+        ret += "G2 V: ";
+        ret += cur.second.first.first.ToString();
+        ret += "\n";
+        ret += "G2 W: ";
+        ret += cur.second.first.second.ToString();
+        ret += "\n";
+        ret += "G2 X: ";
+        ret += cur.second.second.first.ToString();
+        ret += "\n";
+        ret += "G2 Y: ";
+        ret += cur.second.second.second.ToString();
+        ret += "\n";
+
+        ret += "----------";
+        ret += "\n";
+    }
+    return ret;
+}
+
 std::string ToString(const component::BLS_KeyPair& val) {
     std::string ret;
 
@@ -415,6 +447,10 @@ nlohmann::json ToJSON(const component::G2& val) {
 }
 
 nlohmann::json ToJSON(const component::BLS_Signature& val) {
+    return val.ToJSON();
+}
+
+nlohmann::json ToJSON(const component::BLS_BatchSignature& val) {
     return val.ToJSON();
 }
 

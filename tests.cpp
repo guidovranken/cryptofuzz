@@ -525,6 +525,11 @@ void test(const operation::BLS_Verify& op, const std::optional<bool>& result) {
     (void)result;
 }
 
+void test(const operation::BLS_BatchSign& op, const std::optional<component::BLS_BatchSignature>& result) {
+    (void)op;
+    (void)result;
+}
+
 void test(const operation::BLS_BatchVerify& op, const std::optional<bool>& result) {
     (void)op;
     (void)result;
