@@ -434,6 +434,9 @@ std::optional<bool> _libff::OpBLS_BatchVerify(operation::BLS_BatchVerify& op) {
         CF_CHECK_NE(g2->Y.c0, 0);
         CF_CHECK_NE(g2->Y.c1, 0);
 
+        CF_CHECK_TRUE(libff_detail::IsValid(*g1));
+        CF_CHECK_TRUE(libff_detail::IsValid(*g2));
+
         f *=
 #if defined(LIBFF_HAVE_BLS12_381)
             libff::bls12_381_pp::pairing(*g1, *g2);
