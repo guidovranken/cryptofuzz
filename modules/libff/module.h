@@ -25,6 +25,7 @@ class _libff : public Module {
         std::optional<component::Fp12> OpBLS_FinalExp(operation::BLS_FinalExp& op) override;
         std::optional<bool> OpBLS_BatchVerify(operation::BLS_BatchVerify& op) override;
         std::optional<component::BLS_BatchSignature> OpBLS_BatchSign(operation::BLS_BatchSign& op) override;
+        std::optional<component::Fp12> OpBLS_Pairing(operation::BLS_Pairing& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
         bool SupportsModularBignumCalc(void) const override;
 };

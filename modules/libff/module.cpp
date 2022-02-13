@@ -506,6 +506,41 @@ end:
     return ret;
 }
 
+std::optional<component::Fp12> _libff::OpBLS_Pairing(operation::BLS_Pairing& op) {
+    std::optional<component::Fp12> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    std::optional<G1Type> g1;
+    std::optional<G2Type> g2;
+
+    CF_CHECK_NE((g1 = libff_detail::Load(op.g1, ds)), std::nullopt);
+    CF_CHECK_NE((g2 = libff_detail::Load(op.g2, ds)), std::nullopt);
+
+    CF_CHECK_NE(g1->X, 0);
+    CF_CHECK_NE(g1->Y, 0);
+
+    CF_CHECK_NE(g2->X.c0, 0);
+    CF_CHECK_NE(g2->X.c1, 0);
+    CF_CHECK_NE(g2->Y.c0, 0);
+    CF_CHECK_NE(g2->Y.c1, 0);
+
+    CF_CHECK_TRUE(libff_detail::IsValid(*g1));
+    CF_CHECK_TRUE(libff_detail::IsValid(*g2));
+
+    {
+        auto paired =
+#if defined(LIBFF_HAVE_BLS12_381)
+            libff::bls12_381_pp::reduced_pairing(*g1, *g2);
+#else
+            libff::alt_bn128_pp::reduced_pairing(*g1, *g2);
+#endif
+        ret = libff_detail::Save(paired);
+    }
+
+end:
+    return ret;
+}
+
 namespace libff_detail {
     template <class T, size_t MaxSize>
     std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) {
