@@ -26,6 +26,7 @@ class circl : public Module {
         std::optional<bool> OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) override;
         std::optional<component::G1> OpBLS_Decompress_G1(operation::BLS_Decompress_G1& op) override;
         std::optional<component::Bignum> OpBLS_Compress_G1(operation::BLS_Compress_G1& op) override;
+        std::optional<component::Fp12> OpBLS_Pairing(operation::BLS_Pairing& op) override;
         bool SupportsModularBignumCalc(void) const override;
 };
 

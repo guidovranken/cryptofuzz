@@ -153,5 +153,14 @@ std::optional<component::Bignum> circl::OpBLS_Compress_G1(operation::BLS_Compres
     return getResultAs<component::Bignum>();
 }
 
+std::optional<component::Fp12> circl::OpBLS_Pairing(operation::BLS_Pairing& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    circl_BLS_Pairing(toGoSlice(jsonStr));
+
+    return getResultAs<component::Fp12>();
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */

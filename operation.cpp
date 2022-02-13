@@ -1319,6 +1319,12 @@ nlohmann::json BLS_Pairing::ToJSON(void) const {
     nlohmann::json j;
     j["curveType"] = curveType.ToJSON();
     j["modifier"] = modifier.ToJSON();
+    j["g1_x"] = g1.first.ToJSON();
+    j["g1_y"] = g1.second.ToJSON();
+    j["g2_v"] = g2.first.first.ToJSON();
+    j["g2_w"] = g2.first.second.ToJSON();
+    j["g2_x"] = g2.second.first.ToJSON();
+    j["g2_y"] = g2.second.second.ToJSON();
     return j;
 }
 

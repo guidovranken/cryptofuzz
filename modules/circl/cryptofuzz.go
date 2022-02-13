@@ -132,6 +132,18 @@ type OpBLS_Compress_G1 struct {
     G1_y string
 }
 
+type OpBLS_Pairing struct {
+    Modifier ByteSlice
+    CurveType uint64
+    G1_x string
+    G1_y string
+
+    G2_v string
+    G2_w string
+    G2_x string
+    G2_y string
+}
+
 var result []byte
 
 func resetResult() {
@@ -417,6 +429,50 @@ func encode_G1(x, y string) (*bls12381.G1, error) {
     return a, nil
 }
 
+func encode_G2(v, w, x, y string) (*bls12381.G2, error) {
+    a := new(bls12381.G2)
+    var a_v ff.Fp
+    var a_w ff.Fp
+    var a_x ff.Fp
+    var a_y ff.Fp
+
+    err := a_v.SetString(strings.TrimLeft(v, "0"))
+    if err != nil {
+        return nil, err
+    }
+
+    err = a_w.SetString(strings.TrimLeft(w, "0"))
+    if err != nil {
+        return nil, err
+    }
+
+    err = a_x.SetString(strings.TrimLeft(x, "0"))
+    if err != nil {
+        return nil, err
+    }
+
+    err = a_y.SetString(strings.TrimLeft(y, "0"))
+    if err != nil {
+        return nil, err
+    }
+
+    a_bytes, _ := a_v.MarshalBinary()
+    a_w_bytes, _ := a_w.MarshalBinary()
+    a_x_bytes, _ := a_x.MarshalBinary()
+    a_y_bytes, _ := a_y.MarshalBinary()
+    a_bytes = append(a_bytes, a_w_bytes...)
+    a_bytes = append(a_bytes, a_x_bytes...)
+    a_bytes = append(a_bytes, a_y_bytes...)
+    a_bytes[0] = a_bytes[0] & 0x1F
+
+    err = a.SetBytes(a_bytes)
+    if err != nil {
+        return nil, err
+    }
+
+    return a, nil
+}
+
 func save_G1(r *bls12381.G1) {
     var r_x ff.Fp
     var r_y ff.Fp
@@ -448,6 +504,35 @@ func save_G1(r *bls12381.G1) {
     res[0], res[1] = x_b.String(), y_b.String()
 
     r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+func save_Gt(v* bls12381.Gt) {
+    res := make([]string, 12)
+
+    bin, err := v.MarshalBinary()
+    if err != nil {
+        panic("Gt.MarshalBinary failed")
+    }
+    res[11] = new(big.Int).SetBytes(bin[(48*0):(48*1)]).String()
+    res[10] = new(big.Int).SetBytes(bin[(48*1):(48*2)]).String()
+    res[9] = new(big.Int).SetBytes(bin[(48*2):(48*3)]).String()
+    res[8] = new(big.Int).SetBytes(bin[(48*3):(48*4)]).String()
+    res[7] = new(big.Int).SetBytes(bin[(48*4):(48*5)]).String()
+    res[6] = new(big.Int).SetBytes(bin[(48*5):(48*6)]).String()
+    res[5] = new(big.Int).SetBytes(bin[(48*6):(48*7)]).String()
+    res[4] = new(big.Int).SetBytes(bin[(48*7):(48*8)]).String()
+    res[3] = new(big.Int).SetBytes(bin[(48*8):(48*9)]).String()
+    res[2] = new(big.Int).SetBytes(bin[(48*9):(48*10)]).String()
+    res[1] = new(big.Int).SetBytes(bin[(48*10):(48*11)]).String()
+    res[0] = new(big.Int).SetBytes(bin[(48*11):(48*12)]).String()
+
+    r2, err := json.Marshal(&res)
+
     if err != nil {
         panic("Cannot marshal to JSON")
     }
@@ -594,6 +679,27 @@ func circl_BLS_Compress_G1(in []byte) {
     }
 
     result = r2
+}
+
+//export circl_BLS_Pairing
+func circl_BLS_Pairing(in []byte) {
+    resetResult()
+
+    var op OpBLS_Pairing
+    unmarshal(in, &op)
+
+    g1, err := encode_G1(op.G1_x, op.G1_y)
+    if err != nil {
+        return
+    }
+
+    g2, err := encode_G2(op.G2_x, op.G2_v, op.G2_y, op.G2_w)
+    if err != nil {
+        return
+    }
+
+    paired := bls12381.Pair(g1, g2)
+    save_Gt(paired)
 }
 
 func main() { }
