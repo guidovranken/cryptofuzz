@@ -125,6 +125,33 @@ std::optional<component::G1> circl::OpBLS_G1_Neg(operation::BLS_G1_Neg& op) {
     return getResultAs<component::G1>();
 }
 
+std::optional<component::G2> circl::OpBLS_G2_Add(operation::BLS_G2_Add& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    circl_BLS_G2_Add(toGoSlice(jsonStr));
+
+    return getResultAs<component::G2>();
+}
+
+std::optional<component::G2> circl::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    circl_BLS_G2_Mul(toGoSlice(jsonStr));
+
+    return getResultAs<component::G2>();
+}
+
+std::optional<component::G2> circl::OpBLS_G2_Neg(operation::BLS_G2_Neg& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    circl_BLS_G2_Neg(toGoSlice(jsonStr));
+
+    return getResultAs<component::G2>();
+}
+
 std::optional<bool> circl::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
     auto json = op.ToJSON();
     json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());

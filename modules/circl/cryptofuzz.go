@@ -119,6 +119,38 @@ type OpBLS_IsG1OnCurve struct {
     G1_y string
 }
 
+type OpBLS_G2_Add struct {
+    Modifier ByteSlice
+    CurveType uint64
+    A_x string
+    A_y string
+    A_v string
+    A_w string
+    B_x string
+    B_y string
+    B_v string
+    B_w string
+}
+
+type OpBLS_G2_Mul struct {
+    Modifier ByteSlice
+    CurveType uint64
+    A_x string
+    A_y string
+    A_v string
+    A_w string
+    B string
+}
+
+type OpBLS_G2_Neg struct {
+    Modifier ByteSlice
+    CurveType uint64
+    A_x string
+    A_y string
+    A_v string
+    A_w string
+}
+
 type OpBLS_Decompress_G1 struct {
     Modifier ByteSlice
     CurveType uint64
@@ -511,6 +543,67 @@ func save_G1(r *bls12381.G1) {
     result = r2
 }
 
+func save_G2(r *bls12381.G2) {
+    var r_v ff.Fp
+    var r_w ff.Fp
+    var r_x ff.Fp
+    var r_y ff.Fp
+
+    r_bytes := r.Bytes()
+
+    x := (&[ff.FpSize]byte{})[:]
+    copy(x, r_bytes)
+    x[0] &= 0x1F
+    if err := r_x.UnmarshalBinary(x); err != nil {
+        panic("Cannot decode result")
+    }
+    if err := r_y.UnmarshalBinary(r_bytes[ff.FpSize:(2 * ff.FpSize)]); err != nil {
+        panic("Cannot decode result")
+    }
+    if err := r_v.UnmarshalBinary(r_bytes[ff.FpSize*2:(3 * ff.FpSize)]); err != nil {
+        panic("Cannot decode result")
+    }
+    if err := r_w.UnmarshalBinary(r_bytes[ff.FpSize*3:(4 * ff.FpSize)]); err != nil {
+        panic("Cannot decode result")
+    }
+
+    x_b, ok := new(big.Int).SetString(r_x.String()[2:], 16)
+    if ok == false {
+        panic("Cannot parse circl output")
+    }
+
+    y_b, ok := new(big.Int).SetString(r_y.String()[2:], 16)
+    if ok == false {
+        panic("Cannot parse circl output")
+    }
+
+    v_b, ok := new(big.Int).SetString(r_v.String()[2:], 16)
+    if ok == false {
+        panic("Cannot parse circl output")
+    }
+
+    w_b, ok := new(big.Int).SetString(r_w.String()[2:], 16)
+    if ok == false {
+        panic("Cannot parse circl output")
+    }
+
+    res := make([][]string, 2)
+    res[0] = make([]string, 2)
+    res[1] = make([]string, 2)
+
+    res[0][0] = y_b.String()
+    res[0][1] = w_b.String()
+    res[1][0] = x_b.String()
+    res[1][1] = v_b.String()
+
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
 func save_Gt(v* bls12381.Gt) {
     res := make([]string, 12)
 
@@ -638,6 +731,83 @@ func circl_BLS_IsG1OnCurve(in []byte) {
     }
 
     result = r2
+}
+
+//export circl_BLS_G2_Add
+func circl_BLS_G2_Add(in []byte) {
+    resetResult()
+
+    var op OpBLS_G2_Add
+    unmarshal(in, &op)
+
+    a, err := encode_G2(op.A_x, op.A_v, op.A_y, op.A_w)
+    if err != nil {
+        return
+    }
+
+    b, err := encode_G2(op.B_x, op.B_v, op.B_y, op.B_w)
+    if err != nil {
+        return
+    }
+
+    r := new(bls12381.G2)
+    r.Add(a, b)
+
+    if a.IsOnG2() == false {
+        return
+    }
+    if b.IsOnG2() == false {
+        return
+    }
+
+    save_G2(r)
+}
+
+//export circl_BLS_G2_Mul
+func circl_BLS_G2_Mul(in []byte) {
+    resetResult()
+
+    var op OpBLS_G2_Mul
+    unmarshal(in, &op)
+
+    a, err := encode_G2(op.A_x, op.A_v, op.A_y, op.A_w)
+    if err != nil {
+        return
+    }
+
+    var b ff.Scalar
+
+    err = b.SetString(strings.TrimLeft(op.B, "0"))
+    if err != nil {
+        return
+    }
+
+    r := new(bls12381.G2)
+    r.ScalarMult(&b, a)
+
+    if a.IsOnG2() == false {
+        return
+    }
+
+    save_G2(r)
+}
+
+//export circl_BLS_G2_Neg
+func circl_BLS_G2_Neg(in []byte) {
+    resetResult()
+
+    var op OpBLS_G2_Neg
+    unmarshal(in, &op)
+
+    a, err := encode_G2(op.A_x, op.A_v, op.A_y, op.A_w)
+    if err != nil {
+        return
+    }
+
+    a.Neg()
+
+    save_G2(a)
+
 }
 
 //export circl_BLS_Decompress_G1
