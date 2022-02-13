@@ -157,6 +157,7 @@ void cryptofuzz_secp256k1_fe_from_storage(void *r, const void *a) {
     secp256k1_fe_from_storage(r, a);
 }
 
+#ifdef SECP256K1_WIDEMUL_INT128
 size_t cryptofuzz_secp256k1_fe_signed62_size(void) {
     return sizeof(secp256k1_modinv64_signed62);
 }
@@ -168,6 +169,7 @@ void cryptofuzz_secp256k1_fe_to_signed62(void *r, const void *a) {
 void cryptofuzz_secp256k1_fe_from_signed62(void *r, const void *a) {
     secp256k1_fe_from_signed62(r, a);
 }
+#endif
 
 size_t cryptofuzz_secp256k1_ge_size(void) {
     return sizeof(secp256k1_ge);

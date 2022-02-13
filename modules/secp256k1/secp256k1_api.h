@@ -40,9 +40,11 @@ void cryptofuzz_secp256k1_fe_cmov(void *r, const void *a, const int flag);
 size_t cryptofuzz_secp256k1_fe_storage_size(void);
 void cryptofuzz_secp256k1_fe_to_storage(void *r, const void *a);
 void cryptofuzz_secp256k1_fe_from_storage(void *r, const void *a);
+#ifdef SECP256K1_WIDEMUL_INT128
 size_t cryptofuzz_secp256k1_fe_signed62_size(void);
 void cryptofuzz_secp256k1_fe_to_signed62(void *r, const void *a);
 void cryptofuzz_secp256k1_fe_from_signed62(void *r, const void *a);
+#endif
 
 /* Point ops */
 size_t cryptofuzz_secp256k1_ge_size(void);

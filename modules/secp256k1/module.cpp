@@ -1524,10 +1524,14 @@ end:
                             break;
                         case    1:
                             {
+#ifdef SECP256K1_WIDEMUL_INT128
                                 void* r = util::malloc(cryptofuzz_secp256k1_fe_signed62_size());
                                 CF_NORET(cryptofuzz_secp256k1_fe_to_signed62(r, a));
                                 CF_NORET(cryptofuzz_secp256k1_fe_from_signed62(res, r));
                                 util::free(r);
+#else
+                                goto end;
+#endif
                             }
                             break;
                         default:
