@@ -1294,7 +1294,8 @@ std::string BLS_BatchVerify::ToString(void) const {
 
 nlohmann::json BLS_BatchVerify::ToJSON(void) const {
     nlohmann::json j;
-    /* TODO */
+    j["modifier"] = modifier.ToJSON();
+    j["bf"] = bf.ToJSON();
     return j;
 }
 

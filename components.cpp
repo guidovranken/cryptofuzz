@@ -737,6 +737,21 @@ void BLS_BatchVerify_Vector::Serialize(Datasource& ds) const {
     }
 }
 
+nlohmann::json BLS_BatchVerify_Vector::ToJSON(void) const {
+    nlohmann::json j = nlohmann::json::array();
+    for (const auto& cur : c) {
+        nlohmann::json j;
+        j["g1_x"] = cur.g1.first.ToJSON();
+        j["g1_y"] = cur.g1.second.ToJSON();
+
+        j["g2_v"] = cur.g2.first.first.ToJSON();
+        j["g2_w"] = cur.g2.first.second.ToJSON();
+        j["g2_x"] = cur.g2.second.first.ToJSON();
+        j["g2_y"] = cur.g2.second.second.ToJSON();
+    }
+    return j;
+}
+
 /* BLS_G1_Vector */
 
 BLS_G1_Vector::BLS_G1_Vector(Datasource& ds) {
