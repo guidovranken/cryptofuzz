@@ -23,10 +23,13 @@ class circl : public Module {
         std::optional<component::G1> OpBLS_G1_Add(operation::BLS_G1_Add& op) override;
         std::optional<component::G1> OpBLS_G1_Mul(operation::BLS_G1_Mul& op) override;
         std::optional<component::G1> OpBLS_G1_Neg(operation::BLS_G1_Neg& op) override;
+        std::optional<bool> OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) override;
+        std::optional<component::G1> OpBLS_HashToG1(operation::BLS_HashToG1& op) override;
         std::optional<component::G2> OpBLS_G2_Add(operation::BLS_G2_Add& op) override;
         std::optional<component::G2> OpBLS_G2_Mul(operation::BLS_G2_Mul& op) override;
         std::optional<component::G2> OpBLS_G2_Neg(operation::BLS_G2_Neg& op) override;
-        std::optional<bool> OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) override;
+        std::optional<bool> OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) override;
+        std::optional<component::G2> OpBLS_HashToG2(operation::BLS_HashToG2& op) override;
         std::optional<component::G1> OpBLS_Decompress_G1(operation::BLS_Decompress_G1& op) override;
         std::optional<component::Bignum> OpBLS_Compress_G1(operation::BLS_Compress_G1& op) override;
         std::optional<component::Fp12> OpBLS_Pairing(operation::BLS_Pairing& op) override;

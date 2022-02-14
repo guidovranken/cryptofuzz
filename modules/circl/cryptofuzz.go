@@ -119,6 +119,14 @@ type OpBLS_IsG1OnCurve struct {
     G1_y string
 }
 
+type OpBLS_HashToG1 struct {
+    Modifier ByteSlice
+    CurveType uint64
+    Cleartext ByteSlice
+    Dest ByteSlice
+    Aug ByteSlice
+}
+
 type OpBLS_G2_Add struct {
     Modifier ByteSlice
     CurveType uint64
@@ -149,6 +157,23 @@ type OpBLS_G2_Neg struct {
     A_y string
     A_v string
     A_w string
+}
+
+type OpBLS_IsG2OnCurve struct {
+    Modifier ByteSlice
+    CurveType uint64
+    G2_x string
+    G2_y string
+    G2_v string
+    G2_w string
+}
+
+type OpBLS_HashToG2 struct {
+    Modifier ByteSlice
+    CurveType uint64
+    Cleartext ByteSlice
+    Dest ByteSlice
+    Aug ByteSlice
 }
 
 type OpBLS_Decompress_G1 struct {
@@ -733,6 +758,21 @@ func circl_BLS_IsG1OnCurve(in []byte) {
     result = r2
 }
 
+//export circl_BLS_HashToG1
+func circl_BLS_HashToG1(in []byte) {
+    resetResult()
+
+    var op OpBLS_HashToG1
+    unmarshal(in, &op)
+
+    op.Cleartext = append(op.Aug, op.Cleartext...)
+
+    a := new(bls12381.G1)
+    a.Hash(op.Cleartext, op.Dest)
+
+    save_G1(a)
+}
+
 //export circl_BLS_G2_Add
 func circl_BLS_G2_Add(in []byte) {
     resetResult()
@@ -807,7 +847,44 @@ func circl_BLS_G2_Neg(in []byte) {
     a.Neg()
 
     save_G2(a)
+}
 
+//export circl_BLS_IsG2OnCurve
+func circl_BLS_IsG2OnCurve(in []byte) {
+    resetResult()
+
+    var op OpBLS_IsG2OnCurve
+    unmarshal(in, &op)
+
+    a, err := encode_G2(op.G2_x, op.G2_v, op.G2_y, op.G2_w)
+    if err != nil {
+        return
+    }
+
+    res := a.IsOnG2()
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export circl_BLS_HashToG2
+func circl_BLS_HashToG2(in []byte) {
+    resetResult()
+
+    var op OpBLS_HashToG2
+    unmarshal(in, &op)
+
+    op.Cleartext = append(op.Aug, op.Cleartext...)
+
+    a := new(bls12381.G2)
+    a.Hash(op.Cleartext, op.Dest)
+
+    save_G2(a)
 }
 
 //export circl_BLS_Decompress_G1
