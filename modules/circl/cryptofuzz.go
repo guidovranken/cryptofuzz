@@ -413,6 +413,11 @@ func circl_bn254_BignumCalc_Fp(in []byte) {
     } else if isInvMod(op.CalcOp) {
         r.Inv(&bn0)
         success = true
+    } else if isSqrt(op.CalcOp) {
+        if r.Sqrt(&bn0) == 1 {
+            r.Sqr(&r)
+        }
+        success = true
     }
 
     if success == false {
