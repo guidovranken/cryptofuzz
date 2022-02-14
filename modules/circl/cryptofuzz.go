@@ -736,7 +736,21 @@ func circl_BLS_G1_Add(in []byte) {
     }
 
     r := new(bls12381.G1)
-    r.Add(a, b)
+
+    dbl := false
+
+    if len(op.Modifier) > 0 && op.Modifier[0] & 1 == 1 {
+        if a.IsEqual(b) {
+            dbl = true
+        }
+    }
+
+    if dbl == true {
+        a.Double()
+        r = a
+    } else {
+        r.Add(a, b)
+    }
 
     if a.IsOnG1() == false {
         return
@@ -886,7 +900,20 @@ func circl_BLS_G2_Add(in []byte) {
     }
 
     r := new(bls12381.G2)
-    r.Add(a, b)
+    dbl := false
+
+    if len(op.Modifier) > 0 && op.Modifier[0] & 1 == 1 {
+        if a.IsEqual(b) {
+            dbl = true
+        }
+    }
+
+    if dbl == true {
+        a.Double()
+        r = a
+    } else {
+        r.Add(a, b)
+    }
 
     if a.IsOnG2() == false {
         return
