@@ -98,6 +98,15 @@ bool circl::SupportsModularBignumCalc(void) const {
     return true;
 }
 
+std::optional<component::G1> circl::OpBLS_PrivateToPublic(operation::BLS_PrivateToPublic& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    circl_BLS_PrivateToPublic(toGoSlice(jsonStr));
+
+    return getResultAs<component::G1>();
+}
+
 std::optional<component::G1> circl::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
     auto json = op.ToJSON();
     json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
@@ -135,6 +144,16 @@ std::optional<bool> circl::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
     return getResultAs<bool>();
 }
 
+std::optional<bool> circl::OpBLS_G1_IsEq(operation::BLS_G1_IsEq& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+
+    circl_BLS_G1_IsEq(toGoSlice(jsonStr));
+
+    return getResultAs<bool>();
+}
+
 std::optional<component::G1> circl::OpBLS_HashToG1(operation::BLS_HashToG1& op) {
     auto json = op.ToJSON();
     json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
@@ -142,6 +161,15 @@ std::optional<component::G1> circl::OpBLS_HashToG1(operation::BLS_HashToG1& op) 
     circl_BLS_HashToG1(toGoSlice(jsonStr));
 
     return getResultAs<component::G1>();
+}
+
+std::optional<component::G2> circl::OpBLS_PrivateToPublic_G2(operation::BLS_PrivateToPublic_G2& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    circl_BLS_PrivateToPublic_G2(toGoSlice(jsonStr));
+
+    return getResultAs<component::G2>();
 }
 
 std::optional<component::G2> circl::OpBLS_G2_Add(operation::BLS_G2_Add& op) {
@@ -177,6 +205,16 @@ std::optional<bool> circl::OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) {
     auto jsonStr = json.dump();
 
     circl_BLS_IsG2OnCurve(toGoSlice(jsonStr));
+
+    return getResultAs<bool>();
+}
+
+std::optional<bool> circl::OpBLS_G2_IsEq(operation::BLS_G2_IsEq& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+
+    circl_BLS_G2_IsEq(toGoSlice(jsonStr));
 
     return getResultAs<bool>();
 }

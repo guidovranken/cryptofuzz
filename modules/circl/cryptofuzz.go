@@ -87,6 +87,12 @@ type OpBignumCalc struct {
     BN3 string
 }
 
+type OpBLS_PrivateToPublic struct {
+    Modifier ByteSlice
+    CurveType uint64
+    Priv string
+}
+
 type OpBLS_G1_Add struct {
     Modifier ByteSlice
     CurveType uint64
@@ -112,6 +118,15 @@ type OpBLS_G1_Neg struct {
     B string
 }
 
+type OpBLS_G1_IsEq struct {
+    Modifier ByteSlice
+    CurveType uint64
+    A_x string
+    A_y string
+    B_x string
+    B_y string
+}
+
 type OpBLS_IsG1OnCurve struct {
     Modifier ByteSlice
     CurveType uint64
@@ -125,6 +140,12 @@ type OpBLS_HashToG1 struct {
     Cleartext ByteSlice
     Dest ByteSlice
     Aug ByteSlice
+}
+
+type OpBLS_PrivateToPublic_G2 struct {
+    Modifier ByteSlice
+    CurveType uint64
+    Priv string
 }
 
 type OpBLS_G2_Add struct {
@@ -166,6 +187,19 @@ type OpBLS_IsG2OnCurve struct {
     G2_y string
     G2_v string
     G2_w string
+}
+
+type OpBLS_G2_IsEq struct {
+    Modifier ByteSlice
+    CurveType uint64
+    A_x string
+    A_y string
+    A_v string
+    A_w string
+    B_x string
+    B_y string
+    B_v string
+    B_w string
 }
 
 type OpBLS_HashToG2 struct {
@@ -658,6 +692,32 @@ func save_Gt(v* bls12381.Gt) {
     result = r2
 }
 
+//export circl_BLS_PrivateToPublic
+func circl_BLS_PrivateToPublic(in []byte) {
+    resetResult()
+
+    var op OpBLS_PrivateToPublic
+    unmarshal(in, &op)
+
+    a := bls12381.G1Generator()
+
+    var b ff.Scalar
+
+    err := b.SetString(strings.TrimLeft(op.Priv, "0"))
+    if err != nil {
+        return
+    }
+
+    r := new(bls12381.G1)
+    r.ScalarMult(&b, a)
+
+    if a.IsOnG1() == false {
+        return
+    }
+
+    save_G1(r)
+}
+
 //export circl_BLS_G1_Add
 func circl_BLS_G1_Add(in []byte) {
     resetResult()
@@ -758,6 +818,41 @@ func circl_BLS_IsG1OnCurve(in []byte) {
     result = r2
 }
 
+//export circl_BLS_G1_IsEq
+func circl_BLS_G1_IsEq(in []byte) {
+    resetResult()
+
+    var op OpBLS_G1_IsEq
+    unmarshal(in, &op)
+
+    a, err := encode_G1(op.A_x, op.A_y)
+    if err != nil {
+        return
+    }
+
+    b, err := encode_G1(op.B_x, op.B_y)
+    if err != nil {
+        return
+    }
+
+    res := a.IsEqual(b)
+
+    if a.IsOnG1() == false {
+        return
+    }
+    if b.IsOnG1() == false {
+        return
+    }
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
 //export circl_BLS_HashToG1
 func circl_BLS_HashToG1(in []byte) {
     resetResult()
@@ -832,6 +927,32 @@ func circl_BLS_G2_Mul(in []byte) {
     save_G2(r)
 }
 
+//export circl_BLS_PrivateToPublic_G2
+func circl_BLS_PrivateToPublic_G2(in []byte) {
+    resetResult()
+
+    var op OpBLS_PrivateToPublic_G2
+    unmarshal(in, &op)
+
+    a := bls12381.G2Generator()
+
+    var b ff.Scalar
+
+    err := b.SetString(strings.TrimLeft(op.Priv, "0"))
+    if err != nil {
+        return
+    }
+
+    r := new(bls12381.G2)
+    r.ScalarMult(&b, a)
+
+    if a.IsOnG2() == false {
+        return
+    }
+
+    save_G2(r)
+}
+
 //export circl_BLS_G2_Neg
 func circl_BLS_G2_Neg(in []byte) {
     resetResult()
@@ -862,6 +983,41 @@ func circl_BLS_IsG2OnCurve(in []byte) {
     }
 
     res := a.IsOnG2()
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export circl_BLS_G2_IsEq
+func circl_BLS_G2_IsEq(in []byte) {
+    resetResult()
+
+    var op OpBLS_G2_IsEq
+    unmarshal(in, &op)
+
+    a, err := encode_G2(op.A_x, op.A_v, op.A_y, op.A_w)
+    if err != nil {
+        return
+    }
+
+    b, err := encode_G2(op.B_x, op.B_v, op.B_y, op.B_w)
+    if err != nil {
+        return
+    }
+
+    res := a.IsEqual(b)
+
+    if a.IsOnG2() == false {
+        return
+    }
+    if b.IsOnG2() == false {
+        return
+    }
 
     r2, err := json.Marshal(&res)
 
