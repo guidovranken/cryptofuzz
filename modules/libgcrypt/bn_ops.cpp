@@ -4,8 +4,15 @@
 
 #include "bn_ops.h"
 
+using mpi_barrett_t = void*;
+
 extern "C" {
 void _gcry_mpi_mulpowm( gcry_mpi_t res, gcry_mpi_t *basearray, gcry_mpi_t *exparray, gcry_mpi_t mod);
+
+mpi_barrett_t _gcry_mpi_barrett_init(gcry_mpi_t m, int copy);
+void _gcry_mpi_mod_barrett (gcry_mpi_t r, gcry_mpi_t x, mpi_barrett_t ctx);
+void _gcry_mpi_mul_barrett (gcry_mpi_t w, gcry_mpi_t u, gcry_mpi_t v, mpi_barrett_t ctx);
+void _gcry_mpi_barrett_free(mpi_barrett_t ctx);
 }
 
 namespace cryptofuzz {
@@ -253,9 +260,24 @@ bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-    /* Avoid division by zero */
-    CF_CHECK_NE(gcry_mpi_cmp_ui(bn[2].GetPtr(), 0), 0);
-    /* noret */ gcry_mpi_mulm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            /* Avoid division by zero */
+            CF_CHECK_NE(gcry_mpi_cmp_ui(bn[2].GetPtr(), 0), 0);
+            /* noret */ gcry_mpi_mulm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+            return true;
+        case    1:
+            {
+                CF_CHECK_NE(gcry_mpi_cmp_ui(bn[2].GetPtr(), 0), 0);
+
+                auto ctx = _gcry_mpi_barrett_init(bn[2].GetPtr(), 1);
+                CF_NORET(_gcry_mpi_mul_barrett(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx));
+                CF_NORET(_gcry_mpi_barrett_free(ctx));
+                return true;
+            }
+            break;
+    }
 
     ret = true;
 
@@ -340,13 +362,28 @@ end:
     return ret;
 }
 
+
 bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
     bool ret = false;
 
-    CF_CHECK_NE(gcry_mpi_cmp_ui(bn[1].GetPtr(), 0), 0);
-    /* noret */ gcry_mpi_mod(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+    switch ( ds.Get<uint8_t>() ) {
+        case    0:
+            CF_CHECK_NE(gcry_mpi_cmp_ui(bn[1].GetPtr(), 0), 0);
+            /* noret */ gcry_mpi_mod(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            return true;
+        case    1:
+            {
+                CF_CHECK_NE(gcry_mpi_cmp_ui(bn[1].GetPtr(), 0), 0);
+
+                auto ctx = _gcry_mpi_barrett_init(bn[1].GetPtr(), 1);
+                CF_NORET(_gcry_mpi_mod_barrett(res.GetPtr(), bn[0].GetPtr(), ctx));
+                CF_NORET(_gcry_mpi_barrett_free(ctx));
+                return true;
+            }
+            break;
+    }
 
     ret = true;
 
