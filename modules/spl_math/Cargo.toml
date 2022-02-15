@@ -1,0 +1,12 @@
+[package]
+name = "rust-spl-math-harness"
+version = "0.1.0"
+authors = ["Guido Vranken <guidovranken@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+spl-math = "0.1.0"
+libc = "0.2.0"
