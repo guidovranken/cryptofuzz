@@ -260,7 +260,6 @@ bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-
     switch ( ds.Get<uint8_t>() ) {
         case    0:
             /* Avoid division by zero */
@@ -278,8 +277,6 @@ bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             }
             break;
     }
-
-    ret = true;
 
 end:
     return ret;
@@ -385,9 +382,8 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             break;
     }
 
-    ret = true;
-
 end:
+
     return ret;
 }
 
