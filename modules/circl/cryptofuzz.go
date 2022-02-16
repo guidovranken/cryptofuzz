@@ -318,11 +318,6 @@ func circl_Cryptofuzz_OpECC_Point_Mul(in []byte) {
     a_y := decodeBignum(op.A_y)
 
     b := decodeBignum(op.B)
-    /* https://github.com/cloudflare/circl/issues/312 */
-    order := decodeBignum("39402006196394479212279040100143613805079739270465446667946905279627659399113263569398956308152294913554433653942643")
-    if ( b.Cmp(order) >= 0 ) {
-        return
-    }
 
     res_x, res_y := curve.ScalarMult(a_x, a_y, b.Bytes())
 
