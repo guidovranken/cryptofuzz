@@ -51,6 +51,13 @@ static GoSlice toGoSlice(std::string& in) {
     return {in.data(), static_cast<GoInt>(in.size()), static_cast<GoInt>(in.size())};
 }
 
+std::optional<component::ECC_Point> circl::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
+    auto jsonStr = op.ToJSON().dump();
+    circl_Cryptofuzz_OpECC_PrivateToPublic(toGoSlice(jsonStr));
+
+    return getResultAs<component::ECC_Point>();
+}
+
 std::optional<component::ECC_Point> circl::OpECC_Point_Add(operation::ECC_Point_Add& op) {
     auto jsonStr = op.ToJSON().dump();
     circl_Cryptofuzz_OpECC_Point_Add(toGoSlice(jsonStr));

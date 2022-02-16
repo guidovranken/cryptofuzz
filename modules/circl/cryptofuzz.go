@@ -54,6 +54,12 @@ func decodeBignum(s string) *big.Int {
     return bn
 }
 
+type OpECC_PrivateToPublic struct {
+    Modifier ByteSlice
+    CurveType Type
+    Priv string
+}
+
 type OpECC_Point_Add struct {
     Modifier ByteSlice
     CurveType Type
@@ -259,6 +265,34 @@ func unmarshal(in []byte, op interface{}) {
 //export circl_Cryptofuzz_GetResult
 func circl_Cryptofuzz_GetResult() *C.char {
     return C.CString(string(result))
+}
+
+//export circl_Cryptofuzz_OpECC_PrivateToPublic
+func circl_Cryptofuzz_OpECC_PrivateToPublic(in []byte) {
+    resetResult()
+
+    var op OpECC_PrivateToPublic
+    unmarshal(in, &op)
+
+    if !issecp384r1(op.CurveType) {
+        return
+    }
+
+    curve := p384.P384()
+
+    b := decodeBignum(op.Priv)
+
+    res_x, res_y := curve.ScalarBaseMult(b.Bytes())
+
+    res := make([]string, 2)
+    res[0], res[1] = res_x.String(), res_y.String()
+
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
 }
 
 //export circl_Cryptofuzz_OpECC_Point_Add
