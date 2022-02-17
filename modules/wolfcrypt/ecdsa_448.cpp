@@ -120,7 +120,6 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Ed448(operation::E
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     wolfCrypt_detail::SetGlobalDs(&ds);
 
-    wolfCrypt_bignum::Bignum priv(ds), pub(ds);
     uint8_t pub_bytes[ED448_PUB_KEY_SIZE];
 
     ed448_key key;
@@ -131,8 +130,10 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Ed448(operation::E
 
     /* Load private key */
     {
-        CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
-        CF_CHECK_TRUE(priv.ToBin(key.k, sizeof(key.k)));
+        const auto priv_bytes = util::DecToBin(op.priv.ToTrimmedString(), ED448_KEY_SIZE);
+        CF_CHECK_NE(priv_bytes, std::nullopt);
+
+        WC_CHECK_EQ(wc_ed448_import_private_only(priv_bytes->data(), priv_bytes->size(), &key), 0);
     }
 
     /* Convert to public key */
@@ -142,10 +143,7 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Ed448(operation::E
 
     /* Convert public key */
     {
-        std::optional<std::string> pub_x_str;
-        CF_CHECK_EQ(mp_read_unsigned_bin(pub.GetPtr(), pub_bytes, sizeof(pub_bytes)), MP_OKAY);
-        CF_CHECK_NE(pub_x_str = pub.ToDecString(), std::nullopt);
-        ret = { *pub_x_str, "0" };
+        ret = { util::BinToDec(pub_bytes, sizeof(pub_bytes)), "0" };
     }
 
 end:
