@@ -226,17 +226,46 @@ libecc::libecc(void) :
     CF_ASSERT((!get_sig_by_name("ECRDSA", &(libecc_detail::sm_ecrdsa))) && ((libecc_detail::sm_ecrdsa) != nullptr), "Cannot initialize ECRDSA");
 
     /* Load curves */
+    libecc_detail::AddCurve(CF_ECC_CURVE("brainpool192r1"), "BRAINPOOLP192R1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("brainpool192t1"), "BRAINPOOLP192T1");
     libecc_detail::AddCurve(CF_ECC_CURVE("brainpool224r1"), "BRAINPOOLP224R1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("brainpool224t1"), "BRAINPOOLP224T1");
     libecc_detail::AddCurve(CF_ECC_CURVE("brainpool256r1"), "BRAINPOOLP256R1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("brainpool256t1"), "BRAINPOOLP256T1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("brainpool320r1"), "BRAINPOOLP320R1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("brainpool320t1"), "BRAINPOOLP320T1");
     libecc_detail::AddCurve(CF_ECC_CURVE("brainpool384r1"), "BRAINPOOLP384R1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("brainpool384t1"), "BRAINPOOLP384T1");
     libecc_detail::AddCurve(CF_ECC_CURVE("brainpool512r1"), "BRAINPOOLP512R1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("brainpool512t1"), "BRAINPOOLP512T1");
     libecc_detail::AddCurve(CF_ECC_CURVE("secp192r1"), "SECP192R1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("secp192k1"), "SECP192K1");
     libecc_detail::AddCurve(CF_ECC_CURVE("secp224r1"), "SECP224R1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("secp224k1"), "SECP224K1");
     libecc_detail::AddCurve(CF_ECC_CURVE("secp256r1"), "SECP256R1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("secp256k1"), "SECP256K1");
     libecc_detail::AddCurve(CF_ECC_CURVE("secp384r1"), "SECP384R1");
     libecc_detail::AddCurve(CF_ECC_CURVE("secp521r1"), "SECP521R1");
     libecc_detail::AddCurve(CF_ECC_CURVE("frp256v1"), "FRP256V1");
     libecc_detail::AddCurve(CF_ECC_CURVE("secp256k1"), "SECP256K1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("sm2p256v1"), "SM2P256V1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("gost_256A"), "GOST_R3410_2012_256_PARAMSETA");
+    libecc_detail::AddCurve(CF_ECC_CURVE("gost_512A"), "GOST_R3410_2012_512_PARAMSETA");
+    libecc_detail::AddCurve(CF_ECC_CURVE("gostr3410_2001_cryptopro_a"), "GOST_R3410_2001_CRYPTOPRO_A_PARAMSET");
+    libecc_detail::AddCurve(CF_ECC_CURVE("gostr3410_2001_cryptopro_b"), "GOST_R3410_2001_CRYPTOPRO_B_PARAMSET");
+    libecc_detail::AddCurve(CF_ECC_CURVE("gostr3410_2001_cryptopro_c"), "GOST_R3410_2001_CRYPTOPRO_C_PARAMSET");
+    libecc_detail::AddCurve(CF_ECC_CURVE("gostr3410_2001_cryptopro_xcha"), "GOST_R3410_2001_CRYPTOPRO_XCHA_PARAMSET");
+    libecc_detail::AddCurve(CF_ECC_CURVE("gostr3410_2001_cryptopro_xchb"), "GOST_R3410_2001_CRYPTOPRO_XCHB_PARAMSET");
+    libecc_detail::AddCurve(CF_ECC_CURVE("gostr3410_2001_test"), "GOST_R3410_2001_TESTPARAMSET");
+    libecc_detail::AddCurve(CF_ECC_CURVE("tc26_gost_3410_12_256_a"), "GOST_R3410_2012_256_PARAMSETA");
+    libecc_detail::AddCurve(CF_ECC_CURVE("tc26_gost_3410_12_256_b"), "GOST_R3410_2012_256_PARAMSETB");
+    libecc_detail::AddCurve(CF_ECC_CURVE("tc26_gost_3410_12_256_c"), "GOST_R3410_2012_256_PARAMSETC");
+    libecc_detail::AddCurve(CF_ECC_CURVE("tc26_gost_3410_12_256_d"), "GOST_R3410_2012_256_PARAMSETD");
+    libecc_detail::AddCurve(CF_ECC_CURVE("tc26_gost_3410_12_512_a"), "GOST_R3410_2012_512_PARAMSETA");
+    libecc_detail::AddCurve(CF_ECC_CURVE("tc26_gost_3410_12_512_b"), "GOST_R3410_2012_512_PARAMSETB");
+    libecc_detail::AddCurve(CF_ECC_CURVE("tc26_gost_3410_12_512_c"), "GOST_R3410_2012_512_PARAMSETC");
+    libecc_detail::AddCurve(CF_ECC_CURVE("tc26_gost_3410_12_512_test"), "GOST_R3410_2012_512_PARAMSETTEST");
+
     /* NOTE: Ed25519 and Ed448 are mapped to WEI25519 and WEI448 by libecc
      * through isogenies.
      */
@@ -984,11 +1013,23 @@ std::optional<component::ECDSA_Signature> libecc::OpECDSA_Sign(operation::ECDSA_
 }
 
 std::optional<component::ECGDSA_Signature> libecc::OpECGDSA_Sign(operation::ECGDSA_Sign& op) {
-    return libecc_detail::ECxDSA_Sign<operation::ECGDSA_Sign, ECGDSA>(op, ecgdsa_sign_raw, _ecgdsa_sign_update, _ecgdsa_sign_finalize);
+    if ( op.curveType.Is(CF_ECC_CURVE("ed25519")) || op.curveType.Is(CF_ECC_CURVE("ed448")) ) {
+        /* EdDSA does not make sense in OpECGDSA_Sign */
+        return std::nullopt;
+    }
+    else{
+        return libecc_detail::ECxDSA_Sign<operation::ECGDSA_Sign, ECGDSA>(op, ecgdsa_sign_raw, _ecgdsa_sign_update, _ecgdsa_sign_finalize);
+    }
 }
 
 std::optional<component::ECRDSA_Signature> libecc::OpECRDSA_Sign(operation::ECRDSA_Sign& op) {
-    return libecc_detail::ECxDSA_Sign<operation::ECRDSA_Sign, ECRDSA>(op, ecrdsa_sign_raw, _ecrdsa_sign_update, _ecrdsa_sign_finalize);
+    if ( op.curveType.Is(CF_ECC_CURVE("ed25519")) || op.curveType.Is(CF_ECC_CURVE("ed448")) ) {
+        /* EdDSA does not make sense in OpECRDSA_Sign */
+        return std::nullopt;
+    }
+    else{
+        return libecc_detail::ECxDSA_Sign<operation::ECRDSA_Sign, ECRDSA>(op, ecrdsa_sign_raw, _ecrdsa_sign_update, _ecrdsa_sign_finalize);
+    }
 }
 
 std::optional<bool> libecc::OpECDSA_Verify(operation::ECDSA_Verify& op) {
@@ -1002,11 +1043,23 @@ std::optional<bool> libecc::OpECDSA_Verify(operation::ECDSA_Verify& op) {
 }
 
 std::optional<bool> libecc::OpECGDSA_Verify(operation::ECGDSA_Verify& op) {
-    return libecc_detail::ECxDSA_Verify<operation::ECGDSA_Verify, ECGDSA>(op, libecc_detail::sm_ecgdsa, ecgdsa_verify_raw, _ecgdsa_verify_update, _ecgdsa_verify_finalize);
+    if ( op.curveType.Is(CF_ECC_CURVE("ed25519")) || op.curveType.Is(CF_ECC_CURVE("ed448")) ) {
+        /* EdDSA does not make sense in OpECGDSA_Verify */
+        return std::nullopt;
+    }
+    else{
+        return libecc_detail::ECxDSA_Verify<operation::ECGDSA_Verify, ECGDSA>(op, libecc_detail::sm_ecgdsa, ecgdsa_verify_raw, _ecgdsa_verify_update, _ecgdsa_verify_finalize);
+    }
 }
 
 std::optional<bool> libecc::OpECRDSA_Verify(operation::ECRDSA_Verify& op) {
-    return libecc_detail::ECxDSA_Verify<operation::ECRDSA_Verify, ECRDSA>(op, libecc_detail::sm_ecrdsa, ecrdsa_verify_raw, _ecrdsa_verify_update, _ecrdsa_verify_finalize);
+    if ( op.curveType.Is(CF_ECC_CURVE("ed25519")) || op.curveType.Is(CF_ECC_CURVE("ed448")) ) {
+        /* EdDSA does not make sense in OpECRDSA_Verify */
+        return std::nullopt;
+    }
+    else{
+        return libecc_detail::ECxDSA_Verify<operation::ECRDSA_Verify, ECRDSA>(op, libecc_detail::sm_ecrdsa, ecrdsa_verify_raw, _ecrdsa_verify_update, _ecrdsa_verify_finalize);
+    }
 }
 
 std::optional<component::ECC_Point> libecc::OpECC_Point_Add(operation::ECC_Point_Add& op) {
@@ -1306,16 +1359,28 @@ std::optional<component::Secret> libecc::OpECDH_Derive(operation::ECDH_Derive& o
     CF_ASSERT(!import_params(&params, curve_params), "import_params error " __FILE__ ":" TOSTRING(__LINE__));
 
     if ( op.curveType.Is(CF_ECC_CURVE("x25519")) ){
-	/* FIXME XXX*/
+        u8 shared_secret[X25519_SIZE];
+        std::optional<std::vector<uint8_t>> pub;
         /* X25519 case, check sizes */
         CF_CHECK_EQ(priv_bytes->size(), X25519_SIZE);
-        goto end;
+        /* Import the peer public key in a buffer */
+        CF_CHECK_NE(pub = util::DecToBin(op.pub.first.ToTrimmedString(), X25519_SIZE), std::nullopt);
+        /* Derive our secret */
+        CF_CHECK_EQ(x25519_derive_secret(priv_bytes->data(), pub->data(), shared_secret), 0);
+	/* Return the shared secret */
+        ret = component::Secret(Buffer(shared_secret, X25519_SIZE));
     }
     else if ( op.curveType.Is(CF_ECC_CURVE("x448")) ){
-	/* FIXME XXX */
+        u8 shared_secret[X448_SIZE];
+        std::optional<std::vector<uint8_t>> pub;
         /* X448 case, check size */
         CF_CHECK_EQ(priv_bytes->size(), X448_SIZE);
-        goto end;
+        /* Import the peer public key in a buffer */
+        CF_CHECK_NE(pub = util::DecToBin(op.pub.first.ToTrimmedString(), X448_SIZE), std::nullopt);
+        /* Derive our secret */
+        CF_CHECK_EQ(x448_derive_secret(priv_bytes->data(), pub->data(), shared_secret), 0);
+	/* Return the shared secret */
+        ret = component::Secret(Buffer(shared_secret, X448_SIZE));
     }
     else{
         /* ECCDH generic case */
