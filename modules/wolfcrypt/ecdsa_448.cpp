@@ -85,29 +85,26 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Curve448(operation
 
     static const uint8_t basepoint[CURVE448_KEY_SIZE] = {5};
 
-    wolfCrypt_bignum::Bignum priv(ds), pub(ds);
-    uint8_t pub_bytes[CURVE448_KEY_SIZE];
-    uint8_t priv_bytes[CURVE448_KEY_SIZE];
+    std::optional<std::vector<uint8_t>> priv_bytes = std::nullopt;
+    uint8_t pub_bytes[CURVE448_PUB_KEY_SIZE];
 
     /* Load private key */
     {
-        CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
-        CF_CHECK_TRUE(priv.ToBin(priv_bytes, sizeof(priv_bytes)));
-        priv_bytes[0] &= 0xFC;
-        priv_bytes[55] |= 0x80;
+        priv_bytes = util::DecToBin(op.priv.ToTrimmedString(), CURVE448_KEY_SIZE);
+        CF_CHECK_NE(priv_bytes, std::nullopt);
+
+        priv_bytes->data()[0] &= 0xFC;
+        priv_bytes->data()[55] |= 0x80; static_assert(55 < CURVE448_KEY_SIZE);
     }
 
     /* Convert to public key */
     {
-        CF_CHECK_EQ(curve448(pub_bytes, priv_bytes, basepoint), MP_OKAY);
+        CF_CHECK_EQ(curve448(pub_bytes, priv_bytes->data(), basepoint), MP_OKAY);
     }
 
     /* Convert public key */
     {
-        std::optional<std::string> pub_x_str;
-        CF_CHECK_EQ(mp_read_unsigned_bin(pub.GetPtr(), pub_bytes, sizeof(pub_bytes)), MP_OKAY);
-        CF_CHECK_NE(pub_x_str = pub.ToDecString(), std::nullopt);
-        ret = { *pub_x_str, "0" };
+        ret = { util::BinToDec(pub_bytes, sizeof(pub_bytes)), "0" };
     }
 
 end:
