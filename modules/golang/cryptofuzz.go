@@ -523,6 +523,8 @@ func Golang_Cryptofuzz_OpKDF_ARGON2(in []byte) {
 func decodeBignum(s string) *big.Int {
     if s == "" {
         s = "0"
+    } else if s == "-" {
+        s = "-0"
     }
 
     bn, ok := new(big.Int).SetString(s, 10)
