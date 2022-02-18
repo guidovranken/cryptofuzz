@@ -55,9 +55,11 @@ void cryptofuzz_secp256k1_scalar_inverse_var(secp256k1_scalar *r, const secp256k
     secp256k1_scalar_inverse_var(r, x);
 }
 
+#if !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
 void cryptofuzz_secp256k1_scalar_cmov(secp256k1_scalar *r, const secp256k1_scalar *a, int flag) {
     secp256k1_scalar_cmov(r, a, flag);
 }
+#endif
 
 unsigned int cryptofuzz_secp256k1_scalar_get_bits(const void *a, unsigned int offset, unsigned int count) {
     return secp256k1_scalar_get_bits(a, offset, count);
@@ -199,16 +201,21 @@ void cryptofuzz_secp256k1_gej_neg(secp256k1_gej *r, const secp256k1_gej *a) {
     secp256k1_gej_neg(r, a);
 }
 
+#if !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
 void cryptofuzz_secp256k1_gej_double(void *r, const void *a) {
     secp256k1_gej_double(r, a);
 }
+#endif
+
 void cryptofuzz_secp256k1_gej_double_var(void *r, const void *a, void *rzr) {
     secp256k1_gej_double_var(r, a, rzr);
 }
 
+#if !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
 void cryptofuzz_secp256k1_ecmult(secp256k1_gej *r, const secp256k1_gej *a, const secp256k1_scalar *na, const secp256k1_scalar *ng) {
     secp256k1_ecmult(r, a, na, ng);
 }
+#endif
 
 void cryptofuzz_secp256k1_ge_set_gej(secp256k1_ge *r, secp256k1_gej *a) {
     secp256k1_ge_set_gej(r, a);

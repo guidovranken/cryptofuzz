@@ -7,7 +7,9 @@
 extern "C" {
     #include <secp256k1.h>
     #include <secp256k1_recovery.h>
+#if !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
     #include <secp256k1_schnorrsig.h>
+#endif
     #include <secp256k1_ecdh.h>
     #include "secp256k1_api.h"
 }
@@ -113,6 +115,7 @@ end:
             Datasource& ds;
             secp256k1_context* ctx = nullptr;
             void randomizeContext(void) {
+#if !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
                 std::vector<uint8_t> seed;
 
                 try {
@@ -123,6 +126,7 @@ end:
                                 "Call to secp256k1_context_randomize failed");
                     }
                 } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+#endif
             }
 
             void clone(void) {
@@ -529,6 +533,7 @@ end:
         return counter == 0;
     }
 
+#if !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
     static int nonce_function_schnorrsig(
             unsigned char *nonce32,
             const unsigned char *msg,
@@ -550,6 +555,7 @@ end:
 
         return 1;
     }
+#endif
 }
 
 std::optional<component::ECC_PublicKey> secp256k1::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
@@ -774,6 +780,7 @@ end:
     return ret;
 }
 
+#if !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
 std::optional<component::Schnorr_Signature> secp256k1::OpSchnorr_Sign(operation::Schnorr_Sign& op) {
     std::optional<component::Schnorr_Signature> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -901,6 +908,7 @@ end:
 
     return ret;
 }
+#endif
 
 std::optional<component::Secret> secp256k1::OpECDH_Derive(operation::ECDH_Derive& op) {
     std::optional<component::Secret> ret = std::nullopt;
@@ -1110,7 +1118,12 @@ std::optional<component::ECC_Point> secp256k1::OpECC_Point_Mul(operation::ECC_Po
 
     CF_NORET(cryptofuzz_secp256k1_gej_set_ge(a_gej, a_ge));
 
+#if !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
     CF_NORET(cryptofuzz_secp256k1_ecmult(res_gej, a_gej, b, nullptr));
+#else
+    /* TODO */
+    goto end;
+#endif
 
     CF_NORET(cryptofuzz_secp256k1_ge_set_gej(res_ge, res_gej));
 
@@ -1249,11 +1262,15 @@ std::optional<component::ECC_Point> secp256k1::OpECC_Point_Dbl(operation::ECC_Po
         bool var = false;
         try { var = ds.Get<bool>(); } catch ( ... ) { }
 
+#if !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
         if ( var == false ) {
             CF_NORET(cryptofuzz_secp256k1_gej_double(res_gej, a_gej));
         } else {
             CF_NORET(cryptofuzz_secp256k1_gej_double_var(res_gej, a_gej, nullptr));
         }
+#else
+        CF_NORET(cryptofuzz_secp256k1_gej_double_var(res_gej, a_gej, nullptr));
+#endif
     }
 
     CF_NORET(cryptofuzz_secp256k1_ge_set_gej(res_ge, res_gej));
@@ -1349,6 +1366,7 @@ namespace secp256k1_detail {
                     }
                 }
                 break;
+#if !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
             case    CF_CALCOP("CondSet(A,B)"):
                 memset(res, 0, cryptofuzz_secp256k1_scalar_type_size());
                 CF_NORET(cryptofuzz_secp256k1_scalar_cmov(
@@ -1356,6 +1374,7 @@ namespace secp256k1_detail {
                             a,
                             !cryptofuzz_secp256k1_scalar_is_zero(b)));
                 break;
+#endif
             case    CF_CALCOP("Bit(A,B)"):
                 {
                     std::optional<std::vector<uint8_t>> bin;
