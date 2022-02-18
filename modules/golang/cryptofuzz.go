@@ -709,44 +709,32 @@ func op_RSHIFT(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bo
 }
 
 func op_GCD(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
-    if BN0.Cmp(big.NewInt(0)) > 0 && BN1.Cmp(big.NewInt(0)) > 0 {
-        if direct {
-            res.GCD(nil, nil, BN0, BN1)
-        } else {
-            tmp := big.NewInt(0)
-            tmp.GCD(nil, nil, BN0, BN1)
-            res.Set(tmp)
-        }
-        return true
+    if direct {
+        res.GCD(nil, nil, BN0, BN1)
     } else {
-        return false
+        tmp := big.NewInt(0)
+        tmp.GCD(nil, nil, BN0, BN1)
+        res.Set(tmp)
     }
+    return true
 }
 
 func op_ExtGCD_X(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
-    if BN0.Cmp(big.NewInt(0)) > 0 && BN1.Cmp(big.NewInt(0)) > 0 {
-        tmp := big.NewInt(0)
-        x := big.NewInt(0)
-        y := big.NewInt(0)
-        tmp.GCD(x, y, BN0, BN1)
-        res.Set(x)
-        return true
-    } else {
-        return false
-    }
+    tmp := big.NewInt(0)
+    x := big.NewInt(0)
+    y := big.NewInt(0)
+    tmp.GCD(x, y, BN0, BN1)
+    res.Set(x)
+    return true
 }
 
 func op_ExtGCD_Y(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
-    if BN0.Cmp(big.NewInt(0)) > 0 && BN1.Cmp(big.NewInt(0)) > 0 {
-        tmp := big.NewInt(0)
-        x := big.NewInt(0)
-        y := big.NewInt(0)
-        tmp.GCD(x, y, BN0, BN1)
-        res.Set(y)
-        return true
-    } else {
-        return false
-    }
+    tmp := big.NewInt(0)
+    x := big.NewInt(0)
+    y := big.NewInt(0)
+    tmp.GCD(x, y, BN0, BN1)
+    res.Set(y)
+    return true
 }
 
 func op_MOD_ADD(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
