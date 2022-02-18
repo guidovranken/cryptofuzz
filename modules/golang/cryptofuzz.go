@@ -880,12 +880,16 @@ func op_SET_BIT(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct b
 func op_INV_MOD(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
     if direct {
         if res.ModInverse(BN0, BN1) == nil {
-            return false
+            /* Inverse does not exist */
+            res.SetUint64(0)
+            return true
         }
     } else {
         tmp := big.NewInt(0)
         if tmp.ModInverse(BN0, BN1) == nil {
-            return false
+            /* Inverse does not exist */
+            res.SetUint64(0)
+            return true
         }
         res.Set(tmp)
     }
