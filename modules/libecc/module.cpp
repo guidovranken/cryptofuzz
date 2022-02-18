@@ -484,7 +484,6 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, co
     ec_priv_key priv;
     ec_pub_key pub;
     std::optional<std::vector<uint8_t>> priv_bytes;
-    std::string priv_str;
     /* Load curve.
      * NOTE: this will be WEI25519 or WEI448 (libecc uses isogenies for ed25519, ed448, x25519 and x448)
      * for EdDSA and X25519/X448
@@ -492,25 +491,18 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, co
     CF_CHECK_NE(curve_params = libecc_detail::GetCurve(curveType), nullptr);
     CF_ASSERT(!import_params(&params, curve_params), "import_params error " __FILE__ ":" TOSTRING(__LINE__));
 
-    /* Extract the private key */
-    priv_str = _priv.ToTrimmedString();
-    CF_CHECK_NE(priv_bytes = util::DecToBin(priv_str), std::nullopt);
-    CF_CHECK_LTE((8 * priv_bytes->size()), NN_USABLE_MAX_BIT_LEN);
-
     /* EdDSA case is apart */
     if ( curveType.Is(CF_ECC_CURVE("ed25519")) || curveType.Is(CF_ECC_CURVE("ed448")) ) {
         u8 key_size = 0;
-        u8 pub_buff[56];
-        if ( curveType.Is(CF_ECC_CURVE("ed25519")) ){
+        u8 pub_buff[57];
+        if ( curveType.Is(CF_ECC_CURVE("ed25519")) ) {
             sig_type = EDDSA25519;
             key_size = 32;
-        }
-        else{
+        } else {
             sig_type = EDDSA448;
-            key_size = 56;
+            key_size = 57;
         }
-        /* Sanity check on the private key size */
-        CF_CHECK_EQ(priv_bytes->size(), key_size);
+        CF_CHECK_NE(priv_bytes = util::DecToBin(_priv.ToTrimmedString(), key_size), std::nullopt);
         /* Import our private key */
         CF_ASSERT(!eddsa_import_priv_key(&priv, priv_bytes->data(), priv_bytes->size(), &params, sig_type), "eddsa_import_priv_key error " __FILE__ ":" TOSTRING(__LINE__));
         /* Import our public key */
@@ -528,14 +520,12 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, co
     else if ( curveType.Is(CF_ECC_CURVE("x25519")) || curveType.Is(CF_ECC_CURVE("x448")) ) {
         u8 key_size = 0;
         u8 pub_buff[56];
-        if ( curveType.Is(CF_ECC_CURVE("x25519")) ){
+        if ( curveType.Is(CF_ECC_CURVE("x25519")) ) {
             key_size = 32;
-        }
-        else{
+        } else {
             key_size = 56;
         }
-        /* Sanity check on the private key size */
-        CF_CHECK_EQ(priv_bytes->size(), key_size);
+        CF_CHECK_NE(priv_bytes = util::DecToBin(_priv.ToTrimmedString(), key_size), std::nullopt);
         /* Derive our public key */
         memset(&pub_buff, 0, sizeof(pub_buff));
         if(key_size == 32){
@@ -550,6 +540,9 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, co
         }
     }
     else {
+        CF_CHECK_NE(priv_bytes = util::DecToBin(_priv.ToTrimmedString()), std::nullopt);
+        CF_CHECK_LTE(priv_bytes->size(), NN_USABLE_MAX_BIT_LEN * 8);
+
         sig_type = libecc_detail::sm_ecdsa->type;
 
         CF_ASSERT(!ec_priv_key_import_from_buf(&priv, &params, priv_bytes->data(), priv_bytes->size(), sig_type), "ec_priv_key_import_from_buf error " __FILE__ ":" TOSTRING(__LINE__));
