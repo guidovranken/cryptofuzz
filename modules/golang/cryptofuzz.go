@@ -723,6 +723,32 @@ func op_GCD(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool)
     }
 }
 
+func op_ExtGCD_X(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if BN0.Cmp(big.NewInt(0)) > 0 && BN1.Cmp(big.NewInt(0)) > 0 {
+        tmp := big.NewInt(0)
+        x := big.NewInt(0)
+        y := big.NewInt(0)
+        tmp.GCD(x, y, BN0, BN1)
+        res.Set(x)
+        return true
+    } else {
+        return false
+    }
+}
+
+func op_ExtGCD_Y(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if BN0.Cmp(big.NewInt(0)) > 0 && BN1.Cmp(big.NewInt(0)) > 0 {
+        tmp := big.NewInt(0)
+        x := big.NewInt(0)
+        y := big.NewInt(0)
+        tmp.GCD(x, y, BN0, BN1)
+        res.Set(y)
+        return true
+    } else {
+        return false
+    }
+}
+
 func op_MOD_ADD(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
     if BN2.Cmp(big.NewInt(0)) != 0 {
         if direct {
@@ -1114,6 +1140,10 @@ func Golang_Cryptofuzz_OpBignumCalc(in []byte) {
         success = op_RSHIFT(res, bn[0], bn[1], bn[2], direct)
     } else if isGCD(op.CalcOp) {
         success = op_GCD(res, bn[0], bn[1], bn[2], direct)
+    } else if isExtGCD_X(op.CalcOp) {
+        success = op_ExtGCD_X(res, bn[0], bn[1], bn[2], direct)
+    } else if isExtGCD_Y(op.CalcOp) {
+        success = op_ExtGCD_Y(res, bn[0], bn[1], bn[2], direct)
     } else if isAddMod(op.CalcOp) {
         success = op_MOD_ADD(res, bn[0], bn[1], bn[2], direct)
     } else if isExp(op.CalcOp) {
