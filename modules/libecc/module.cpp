@@ -541,7 +541,7 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, co
     }
     else {
         CF_CHECK_NE(priv_bytes = util::DecToBin(_priv.ToTrimmedString()), std::nullopt);
-        CF_CHECK_LTE(priv_bytes->size(), NN_USABLE_MAX_BIT_LEN * 8);
+        CF_CHECK_LTE(8 * priv_bytes->size(), NN_USABLE_MAX_BIT_LEN);
 
         sig_type = libecc_detail::sm_ecdsa->type;
 
