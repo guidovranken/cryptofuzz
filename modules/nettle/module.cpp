@@ -222,8 +222,9 @@ end:
     HMAC<hmac_sm3_ctx, SM3_DIGEST_SIZE> hmac_sm3(hmac_sm3_set_key, hmac_sm3_update, hmac_sm3_digest);
     HMAC<hmac_gosthash94_ctx, GOSTHASH94_DIGEST_SIZE> hmac_gosthash94(hmac_gosthash94_set_key, hmac_gosthash94_update, hmac_gosthash94_digest);
 
-    CMAC<cmac_aes128_ctx, CMAC128_DIGEST_SIZE, 16> cmac_aes128(cmac_aes128_set_key, cmac_aes128_update, cmac_aes128_digest);
-    CMAC<cmac_aes256_ctx, CMAC128_DIGEST_SIZE, 32> cmac_aes256(cmac_aes256_set_key, cmac_aes256_update, cmac_aes256_digest);
+    CMAC<cmac_aes128_ctx, CMAC128_DIGEST_SIZE, AES128_KEY_SIZE> cmac_aes128(cmac_aes128_set_key, cmac_aes128_update, cmac_aes128_digest);
+    CMAC<cmac_aes256_ctx, CMAC128_DIGEST_SIZE, AES256_KEY_SIZE> cmac_aes256(cmac_aes256_set_key, cmac_aes256_update, cmac_aes256_digest);
+    CMAC<cmac_des3_ctx, CMAC64_DIGEST_SIZE, DES3_KEY_SIZE> cmac_des3(cmac_des3_set_key, cmac_des3_update, cmac_des3_digest);
 
 } /* namespace Nettle_detail */
 
@@ -344,6 +345,9 @@ std::optional<component::MAC> Nettle::OpCMAC(operation::CMAC& op) {
             break;
         case CF_CIPHER("AES_256_CBC"):
             ret = Nettle_detail::cmac_aes256.Run(op);
+            break;
+        case CF_CIPHER("DES3_CBC"):
+            ret = Nettle_detail::cmac_des3.Run(op);
             break;
     }
 
