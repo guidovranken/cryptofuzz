@@ -1045,7 +1045,7 @@ func op_JACOBI(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bo
     return true
 }
 
-func op_SET(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool, modifier byte) bool {
+func op_SET(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool, modifier byte, base byte) bool {
     modifier %= 6
 
     if modifier == 0 {
@@ -1061,9 +1061,13 @@ func op_SET(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool,
 
         res.SetUint64(BN0.Uint64())
     } else if modifier == 2 {
-        _, err := res.SetString(BN0.String(), 10)
+        /* "Base must be between 2 and 62, inclusive" */
+        base %= 60
+        base += 2
+        str := BN0.Text(int(base))
+        _, err := res.SetString(str, int(base))
         if err == false {
-            return false
+            panic("SetString failed")
         }
     } else if modifier == 3 {
         if BN0.Cmp(big.NewInt(0)) < 0 {
@@ -1177,7 +1181,11 @@ func Golang_Cryptofuzz_OpBignumCalc(in []byte) {
         if len(op.Modifier) >= 2 {
             modifier = op.Modifier[1]
         }
-        success = op_SET(res, bn[0], bn[1], bn[2], direct, modifier)
+        var base byte = 0
+        if len(op.Modifier) >= 3 {
+            base = op.Modifier[2]
+        }
+        success = op_SET(res, bn[0], bn[1], bn[2], direct, modifier, base)
     }
 
     if success == false {
