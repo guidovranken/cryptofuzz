@@ -7,6 +7,7 @@
 #include <nettle/chacha-poly1305.h>
 #include <nettle/chacha.h>
 #include <nettle/cmac.h>
+#include <nettle/ctr.h>
 #include <nettle/des.h>
 #include <nettle/eax.h>
 #if defined(HAVE_LIBHOGWEED)
@@ -398,6 +399,42 @@ namespace Nettle_detail {
         util::free(out);
         return ret;
     }
+
+    template <class Cipher, size_t Size>
+    std::optional<Buffer> CTRCrypt(
+            const Buffer& in,
+            const component::SymmetricCipher& cipher,
+            nettle_cipher_func* encrypt,
+            nettle_set_key_func* setkey
+            ) {
+        std::optional<Buffer> ret = std::nullopt;
+        uint8_t* out = nullptr;
+
+        struct CTR_CTX(Cipher, Size) ctx;
+
+        CF_CHECK_EQ(in.GetSize() % Size, 0);
+        CF_CHECK_EQ(cipher.iv.GetSize(), Size);
+        CF_CHECK_EQ(cipher.key.GetSize(), Size);
+
+        CF_NORET(setkey(&ctx.ctx, cipher.key.GetPtr()));
+
+        out = util::malloc(in.GetSize());
+
+        CTR_SET_COUNTER(&ctx, cipher.iv.GetPtr());
+        CTR_CRYPT(
+                &ctx,
+                encrypt,
+                in.GetSize(),
+                out,
+                in.GetPtr());
+
+        ret = Buffer(out, in.GetSize());
+
+end:
+        util::free(out);
+        return ret;
+    }
+
 }
 
 std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
@@ -929,6 +966,60 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
             ret = component::Ciphertext(
                     Buffer(out + SIV_DIGEST_SIZE, op.cleartext.GetSize()),
                     Buffer(out, SIV_DIGEST_SIZE));
+        }
+        break;
+        case CF_CIPHER("AES_128_CTR"):
+        {
+            ret = Nettle_detail::CTRCrypt<struct aes128_ctx, 16>(
+                    op.cleartext,
+                    op.cipher,
+                    (nettle_cipher_func*)aes128_encrypt,
+                    (nettle_set_key_func*)aes128_set_encrypt_key);
+        }
+        break;
+        case CF_CIPHER("AES_192_CTR"):
+        {
+            ret = Nettle_detail::CTRCrypt<struct aes192_ctx, 24>(
+                    op.cleartext,
+                    op.cipher,
+                    (nettle_cipher_func*)aes128_encrypt,
+                    (nettle_set_key_func*)aes128_set_encrypt_key);
+        }
+        break;
+        case CF_CIPHER("AES_256_CTR"):
+        {
+            ret = Nettle_detail::CTRCrypt<struct aes256_ctx, 32>(
+                    op.cleartext,
+                    op.cipher,
+                    (nettle_cipher_func*)aes128_encrypt,
+                    (nettle_set_key_func*)aes128_set_encrypt_key);
+        }
+        break;
+        case CF_CIPHER("CAMELLIA_128_CTR"):
+        {
+            ret = Nettle_detail::CTRCrypt<struct camellia128_ctx, 16>(
+                    op.cleartext,
+                    op.cipher,
+                    (nettle_cipher_func*)camellia128_crypt,
+                    (nettle_set_key_func*)camellia128_set_encrypt_key);
+        }
+        break;
+        case CF_CIPHER("CAMELLIA_192_CTR"):
+        {
+            ret = Nettle_detail::CTRCrypt<struct camellia192_ctx, 24>(
+                    op.cleartext,
+                    op.cipher,
+                    (nettle_cipher_func*)camellia128_crypt,
+                    (nettle_set_key_func*)camellia128_set_encrypt_key);
+        }
+        break;
+        case CF_CIPHER("CAMELLIA_256_CTR"):
+        {
+            ret = Nettle_detail::CTRCrypt<struct camellia256_ctx, 32>(
+                    op.cleartext,
+                    op.cipher,
+                    (nettle_cipher_func*)camellia128_crypt,
+                    (nettle_set_key_func*)camellia128_set_encrypt_key);
         }
         break;
     }
@@ -1499,6 +1590,60 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
                     op.ciphertext.GetSize(), out, outTag), 1);
 
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+        case CF_CIPHER("AES_128_CTR"):
+        {
+            ret = Nettle_detail::CTRCrypt<struct aes128_ctx, 16>(
+                    op.ciphertext,
+                    op.cipher,
+                    (nettle_cipher_func*)aes128_encrypt,
+                    (nettle_set_key_func*)aes128_set_encrypt_key);
+        }
+        break;
+        case CF_CIPHER("AES_192_CTR"):
+        {
+            ret = Nettle_detail::CTRCrypt<struct aes192_ctx, 24>(
+                    op.ciphertext,
+                    op.cipher,
+                    (nettle_cipher_func*)aes128_encrypt,
+                    (nettle_set_key_func*)aes128_set_encrypt_key);
+        }
+        break;
+        case CF_CIPHER("AES_256_CTR"):
+        {
+            ret = Nettle_detail::CTRCrypt<struct aes256_ctx, 32>(
+                    op.ciphertext,
+                    op.cipher,
+                    (nettle_cipher_func*)aes128_encrypt,
+                    (nettle_set_key_func*)aes128_set_encrypt_key);
+        }
+        break;
+        case CF_CIPHER("CAMELLIA_128_CTR"):
+        {
+            ret = Nettle_detail::CTRCrypt<struct camellia128_ctx, 16>(
+                    op.ciphertext,
+                    op.cipher,
+                    (nettle_cipher_func*)camellia128_crypt,
+                    (nettle_set_key_func*)camellia128_set_encrypt_key);
+        }
+        break;
+        case CF_CIPHER("CAMELLIA_192_CTR"):
+        {
+            ret = Nettle_detail::CTRCrypt<struct camellia192_ctx, 24>(
+                    op.ciphertext,
+                    op.cipher,
+                    (nettle_cipher_func*)camellia128_crypt,
+                    (nettle_set_key_func*)camellia128_set_encrypt_key);
+        }
+        break;
+        case CF_CIPHER("CAMELLIA_256_CTR"):
+        {
+            ret = Nettle_detail::CTRCrypt<struct camellia256_ctx, 32>(
+                    op.ciphertext,
+                    op.cipher,
+                    (nettle_cipher_func*)camellia128_crypt,
+                    (nettle_set_key_func*)camellia128_set_encrypt_key);
         }
         break;
     }
