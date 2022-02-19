@@ -1069,6 +1069,37 @@ func op_FACTORIAL(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct
     return true
 }
 
+func op_BIN_COEFF(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    if BN0.IsInt64() == false {
+        return false
+    }
+
+    bn0 := BN0.Int64()
+
+    if bn0 > 100000 {
+        return false
+    }
+
+    if BN1.IsInt64() == false {
+        return false
+    }
+
+    bn1 := BN1.Int64()
+
+    if bn1 > 100000 {
+        return false
+    }
+
+    if direct {
+        res.Binomial(bn0, bn1)
+    } else {
+        tmp := big.NewInt(0)
+        tmp.Binomial(bn0, bn1)
+        res.Set(tmp)
+    }
+    return true
+}
+
 func op_SET(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool, modifier byte, base byte) bool {
     modifier %= 6
 
@@ -1202,6 +1233,8 @@ func Golang_Cryptofuzz_OpBignumCalc(in []byte) {
         success = op_JACOBI(res, bn[0], bn[1], bn[2], direct)
     } else if isFactorial(op.CalcOp) {
         success = op_FACTORIAL(res, bn[0], bn[1], bn[2], direct)
+    } else if isBinCoeff(op.CalcOp) {
+        success = op_BIN_COEFF(res, bn[0], bn[1], bn[2], direct)
     } else if isSet(op.CalcOp) {
         var modifier byte = 0
         if len(op.Modifier) >= 2 {
