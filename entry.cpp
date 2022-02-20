@@ -325,6 +325,10 @@
   #include <modules/spl_math/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_ZIG)
+  #include <modules/zig/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -655,6 +659,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_SPL_MATH)
     driver->LoadModule( std::make_shared<cryptofuzz::module::spl_math>() );
+#endif
+
+#if defined(CRYPTOFUZZ_ZIG)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::Zig>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is

@@ -146,7 +146,7 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Botan: [Undefined behavior upon instantiating DL_Group](https://github.com/randombit/botan/issues/2861)
 - libtommath: [mp_is_square says 0 is not a square](https://github.com/libtom/libtommath/issues/521)
 - OpenSSL: [HMAC use-after-free after copying ctx](https://github.com/openssl/openssl/issues/17261)
-- Golang: [CVE-2022-23806: crypto/elliptic: IsOnCurve returns true for invalid field elements #50974](https://github.com/golang/go/issues/50974)
+- Golang: [CVE-2022-23806: crypto/elliptic: IsOnCurve returns true for invalid field elements](https://github.com/golang/go/issues/50974)
 - mbed TLS: [mbedtls_ecp_muladd hangs with oversized point coordinates](https://github.com/ARMmbed/mbedtls/issues/5376)
 - BoringSSL: [EVP_AEAD_CTX_free NULL pointer dereference if pointer is NULL](https://bugs.chromium.org/p/boringssl/issues/detail?id=473)
 - blst: [blst_fr_eucl_inverse incorrect result](https://github.com/supranational/blst/commit/fd453524b12cc438adc65636fc52375b0f47b17e)
@@ -156,3 +156,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - relic: [bn_mod_pmers hangs if modulus is 0](https://github.com/relic-toolkit/relic/issues/221)
 - relic: [bn_mod_barrt out-of-bounds write and hang](https://github.com/relic-toolkit/relic/issues/222)
 - relic: [bn_gcd_ext_stein returns different Bezout coefficients](https://github.com/relic-toolkit/relic/issues/223)
+- Zig: [std.math.big.int panics (divFloor, gcd, bitAnd)](https://github.com/ziglang/zig/issues/10932)
