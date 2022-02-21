@@ -41,21 +41,21 @@ argon2 = {git = "https://github.com/RustCrypto/password-hashes"}
 
 crypto-bigint = {git = "https://github.com/RustCrypto/crypto-bigint"}
 
-cmac = {git = "https://github.com/RustCrypto/MACs"}
+cmac = {git = "https://github.com/RustCrypto/MACs", rev="9d876cb237bbbddee527d8126663268bea91b6e9"}
 
-ofb = {git = "https://github.com/RustCrypto/stream-ciphers.git"}
-cfb-mode = {git = "https://github.com/RustCrypto/stream-ciphers.git"}
-cfb8 = {git = "https://github.com/RustCrypto/stream-ciphers.git"}
+ofb = {git = "https://github.com/RustCrypto/stream-ciphers.git", rev="97c046f19784822156c040ec0e962ca8ef913c89"}
+cfb-mode = {git = "https://github.com/RustCrypto/stream-ciphers.git", rev="97c046f19784822156c040ec0e962ca8ef913c89"}
+cfb8 = {git = "https://github.com/RustCrypto/stream-ciphers.git", rev="97c046f19784822156c040ec0e962ca8ef913c89"}
 cipher = "0.3"
-aes = {git = "https://github.com/RustCrypto/block-ciphers"}
-cast5 = {git = "https://github.com/RustCrypto/block-ciphers"}
-idea = {git = "https://github.com/RustCrypto/block-ciphers"}
-blowfish = {git = "https://github.com/RustCrypto/block-ciphers"}
-twofish = {git = "https://github.com/RustCrypto/block-ciphers"}
-threefish = {git = "https://github.com/RustCrypto/block-ciphers"}
-serpent = {git = "https://github.com/RustCrypto/block-ciphers"}
-sm4 = {git = "https://github.com/RustCrypto/block-ciphers"}
-des = {git = "https://github.com/RustCrypto/block-ciphers"}
+aes = {git = "https://github.com/RustCrypto/block-ciphers", rev="81e0de582e4d842d17705ca33764a9253ff11f72"}
+cast5 = {git = "https://github.com/RustCrypto/block-ciphers", rev="81e0de582e4d842d17705ca33764a9253ff11f72"}
+idea = {git = "https://github.com/RustCrypto/block-ciphers", rev="81e0de582e4d842d17705ca33764a9253ff11f72"}
+blowfish = {git = "https://github.com/RustCrypto/block-ciphers", rev="81e0de582e4d842d17705ca33764a9253ff11f72"}
+twofish = {git = "https://github.com/RustCrypto/block-ciphers", rev="81e0de582e4d842d17705ca33764a9253ff11f72"}
+threefish = {git = "https://github.com/RustCrypto/block-ciphers", rev="81e0de582e4d842d17705ca33764a9253ff11f72"}
+serpent = {git = "https://github.com/RustCrypto/block-ciphers", rev="81e0de582e4d842d17705ca33764a9253ff11f72"}
+sm4 = {git = "https://github.com/RustCrypto/block-ciphers", rev="81e0de582e4d842d17705ca33764a9253ff11f72"}
+des = {git = "https://github.com/RustCrypto/block-ciphers", rev="81e0de582e4d842d17705ca33764a9253ff11f72"}
 
 # Elliptic curves
 
