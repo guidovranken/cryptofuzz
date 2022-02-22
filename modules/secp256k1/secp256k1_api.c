@@ -5,7 +5,9 @@
 #include <src/field_impl.h>
 #include <src/ecmult_impl.h>
 #include <src/eckey_impl.h>
+#if !defined(SECP255K1_COMMIT_9d560f992db26612ce2630b194aef5f44d63a530)
 #include <src/scratch_impl.h>
+#endif
 
 size_t cryptofuzz_secp256k1_scalar_type_size(void) {
     return sizeof(secp256k1_scalar);
@@ -55,7 +57,11 @@ void cryptofuzz_secp256k1_scalar_inverse_var(secp256k1_scalar *r, const secp256k
     secp256k1_scalar_inverse_var(r, x);
 }
 
-#if !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
+#if \
+        !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && \
+        !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a) && \
+        !defined(SECP256K1_COMMIT_cb32940df3e20ccdcbee7eaf5cda93c18a92fb3e) && \
+        !defined(SECP255K1_COMMIT_9d560f992db26612ce2630b194aef5f44d63a530)
 void cryptofuzz_secp256k1_scalar_cmov(secp256k1_scalar *r, const secp256k1_scalar *a, int flag) {
     secp256k1_scalar_cmov(r, a, flag);
 }
@@ -201,7 +207,11 @@ void cryptofuzz_secp256k1_gej_neg(secp256k1_gej *r, const secp256k1_gej *a) {
     secp256k1_gej_neg(r, a);
 }
 
-#if !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
+#if \
+        !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && \
+        !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a) && \
+        !defined(SECP256K1_COMMIT_cb32940df3e20ccdcbee7eaf5cda93c18a92fb3e) && \
+        !defined(SECP255K1_COMMIT_9d560f992db26612ce2630b194aef5f44d63a530)
 void cryptofuzz_secp256k1_gej_double(void *r, const void *a) {
     secp256k1_gej_double(r, a);
 }
@@ -211,7 +221,11 @@ void cryptofuzz_secp256k1_gej_double_var(void *r, const void *a, void *rzr) {
     secp256k1_gej_double_var(r, a, rzr);
 }
 
-#if !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
+#if \
+        !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && \
+        !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a) && \
+        !defined(SECP256K1_COMMIT_cb32940df3e20ccdcbee7eaf5cda93c18a92fb3e) && \
+        !defined(SECP255K1_COMMIT_9d560f992db26612ce2630b194aef5f44d63a530)
 void cryptofuzz_secp256k1_ecmult(secp256k1_gej *r, const secp256k1_gej *a, const secp256k1_scalar *na, const secp256k1_scalar *ng) {
     secp256k1_ecmult(r, a, na, ng);
 }

@@ -7,7 +7,11 @@
 extern "C" {
     #include <secp256k1.h>
     #include <secp256k1_recovery.h>
-#if !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
+#if \
+    !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && \
+    !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a) && \
+    !defined(SECP256K1_COMMIT_cb32940df3e20ccdcbee7eaf5cda93c18a92fb3e) && \
+    !defined(SECP255K1_COMMIT_9d560f992db26612ce2630b194aef5f44d63a530)
     #include <secp256k1_schnorrsig.h>
 #endif
     #include <secp256k1_ecdh.h>
@@ -115,7 +119,9 @@ end:
             Datasource& ds;
             secp256k1_context* ctx = nullptr;
             void randomizeContext(void) {
-#if !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
+#if !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a) && \
+    !defined(SECP256K1_COMMIT_cb32940df3e20ccdcbee7eaf5cda93c18a92fb3e) && \
+    !defined(SECP255K1_COMMIT_9d560f992db26612ce2630b194aef5f44d63a530)
                 std::vector<uint8_t> seed;
 
                 try {
@@ -363,12 +369,15 @@ end:
                 return ret;
             }
 
+#if !defined(SECP256K1_COMMIT_cb32940df3e20ccdcbee7eaf5cda93c18a92fb3e) && \
+    !defined(SECP255K1_COMMIT_9d560f992db26612ce2630b194aef5f44d63a530)
             bool ECDH(uint8_t out[32], const uint8_t key[32]) {
                 const auto ctxPtr = ctx.GetPtrDirect();
                 const auto pubPtr = GetPtr();
 
                 return CheckRet(secp256k1_ecdh(ctxPtr, out, pubPtr, key, nullptr, nullptr)) == 1;
             }
+#endif
 
             bool Recover(ECDSA_Recoverable_Signature& sig, const uint8_t hash[32]) {
                 const auto ctxPtr = ctx.GetPtrDirect();
@@ -533,7 +542,11 @@ end:
         return counter == 0;
     }
 
-#if !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
+#if \
+        !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && \
+        !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a) && \
+        !defined(SECP256K1_COMMIT_cb32940df3e20ccdcbee7eaf5cda93c18a92fb3e) && \
+        !defined(SECP255K1_COMMIT_9d560f992db26612ce2630b194aef5f44d63a530)
     static int nonce_function_schnorrsig(
             unsigned char *nonce32,
             const unsigned char *msg,
@@ -780,7 +793,11 @@ end:
     return ret;
 }
 
-#if !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
+#if \
+        !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && \
+        !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a) && \
+        !defined(SECP256K1_COMMIT_cb32940df3e20ccdcbee7eaf5cda93c18a92fb3e) && \
+        !defined(SECP255K1_COMMIT_9d560f992db26612ce2630b194aef5f44d63a530)
 std::optional<component::Schnorr_Signature> secp256k1::OpSchnorr_Sign(operation::Schnorr_Sign& op) {
     std::optional<component::Schnorr_Signature> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -910,6 +927,8 @@ end:
 }
 #endif
 
+#if !defined(SECP256K1_COMMIT_cb32940df3e20ccdcbee7eaf5cda93c18a92fb3e) && \
+    !defined(SECP255K1_COMMIT_9d560f992db26612ce2630b194aef5f44d63a530)
 std::optional<component::Secret> secp256k1::OpECDH_Derive(operation::ECDH_Derive& op) {
     std::optional<component::Secret> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -938,6 +957,7 @@ end:
     util::UnsetGlobalDs();
     return ret;
 }
+#endif
 
 namespace secp256k1_detail {
     bool ToScalar(void* scalar, const component::Bignum& bn) {
@@ -1118,7 +1138,11 @@ std::optional<component::ECC_Point> secp256k1::OpECC_Point_Mul(operation::ECC_Po
 
     CF_NORET(cryptofuzz_secp256k1_gej_set_ge(a_gej, a_ge));
 
-#if !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
+#if \
+    !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && \
+    !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a) && \
+    !defined(SECP256K1_COMMIT_cb32940df3e20ccdcbee7eaf5cda93c18a92fb3e) && \
+    !defined(SECP255K1_COMMIT_9d560f992db26612ce2630b194aef5f44d63a530)
     CF_NORET(cryptofuzz_secp256k1_ecmult(res_gej, a_gej, b, nullptr));
 #else
     /* TODO */
@@ -1262,7 +1286,11 @@ std::optional<component::ECC_Point> secp256k1::OpECC_Point_Dbl(operation::ECC_Po
         bool var = false;
         try { var = ds.Get<bool>(); } catch ( ... ) { }
 
-#if !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
+#if \
+    !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && \
+    !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a) && \
+    !defined(SECP256K1_COMMIT_cb32940df3e20ccdcbee7eaf5cda93c18a92fb3e) && \
+    !defined(SECP255K1_COMMIT_9d560f992db26612ce2630b194aef5f44d63a530)
         if ( var == false ) {
             CF_NORET(cryptofuzz_secp256k1_gej_double(res_gej, a_gej));
         } else {
@@ -1366,7 +1394,11 @@ namespace secp256k1_detail {
                     }
                 }
                 break;
-#if !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a)
+#if \
+    !defined(SECP256K1_COMMIT_642cd062bdd2d28a8a84d4cb6dedbfe435ee5869) && \
+    !defined(SECP256K1_COMMIT_c663397f46152e96c548ba392858c730e132dd7a) && \
+    !defined(SECP256K1_COMMIT_cb32940df3e20ccdcbee7eaf5cda93c18a92fb3e) && \
+    !defined(SECP255K1_COMMIT_9d560f992db26612ce2630b194aef5f44d63a530)
             case    CF_CALCOP("CondSet(A,B)"):
                 memset(res, 0, cryptofuzz_secp256k1_scalar_type_size());
                 CF_NORET(cryptofuzz_secp256k1_scalar_cmov(
