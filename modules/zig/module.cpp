@@ -7,6 +7,12 @@ size_t cryptofuzz_zig_bignumcalc(
         const char* a_data, const size_t a_size,
         const char* b_data, const size_t b_size,
         size_t operation);
+void cryptofuzz_zig_hkdf(
+        uint8_t* res_data, const size_t res_size,
+        const uint8_t* password_data, const size_t password_size,
+        const uint8_t* salt_data, const size_t salt_size,
+        const uint8_t* info_data, const size_t info_size,
+        const size_t digest);
 }
 
 namespace cryptofuzz {
@@ -14,6 +20,41 @@ namespace module {
 
 Zig::Zig(void) :
     Module("Zig") { }
+
+std::optional<component::Key> Zig::OpKDF_HKDF(operation::KDF_HKDF& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    size_t digest = 0;
+    if ( op.digestType.Is(CF_DIGEST("SHA256")) ) {
+        if ( op.keySize > 255 * 32 ) {
+            return std::nullopt;
+        }
+        digest = 0;
+    } else if ( op.digestType.Is(CF_DIGEST("SHA512")) ) {
+        if ( op.keySize > 255 * 64 ) {
+            return std::nullopt;
+        }
+        digest = 1;
+    } else {
+        return std::nullopt;
+    }
+
+    uint8_t* out = util::malloc(op.keySize);
+
+    cryptofuzz_zig_hkdf(
+            out, op.keySize,
+            op.password.GetPtr(), op.password.GetSize(),
+            op.salt.GetPtr(), op.salt.GetSize(),
+            op.info.GetPtr(), op.info.GetSize(),
+            digest);
+
+    ret = component::Key(out, op.keySize);
+
+    util::free(out);
+
+    return ret;
+}
 
 std::optional<component::Bignum> Zig::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;

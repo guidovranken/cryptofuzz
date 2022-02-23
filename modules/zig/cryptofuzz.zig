@@ -2,6 +2,34 @@ const io = @import("std").io;
 const std = @import("std");
 const Limb = std.math.big.Limb;
 const mem = std.mem;
+const hkdf = std.crypto.kdf.hkdf;
+
+export fn cryptofuzz_zig_hkdf(
+        res_data: [*:0]u8, res_size: u32,
+        password_data: [*:0]const u8, password_size: u32,
+        salt_data: [*:0]const u8, salt_size: u32,
+        info_data: [*:0]const u8, info_size: u32,
+        digest: u32) callconv(.C) void {
+    if ( digest == 0 ) {
+        const prk = hkdf.HkdfSha256.extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.HkdfSha256.expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+    } else if ( digest == 2 ) {
+        const prk = hkdf.HkdfSha512.extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.HkdfSha512.expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+    } else {
+        unreachable;
+    }
+}
 
 export fn cryptofuzz_zig_bignumcalc(
         res_data: [*:0]u8, res_size: u32,
