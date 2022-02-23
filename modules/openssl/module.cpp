@@ -1643,12 +1643,12 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
         }
         CF_CHECK_EQ(EVP_EncryptInit_ex(ctx.GetPtr(), cipher, nullptr, nullptr, nullptr), 1);
 
-        /* Must be a multiple of the block size of this cipher */
-        //CF_CHECK_EQ(op.cleartext.GetSize() % EVP_CIPHER_block_size(cipher), 0);
-
-        /* Convert cleartext to parts */
-        partsCleartext = util::CipherInputTransform(ds, op.cipher.cipherType, out, out_size, op.cleartext.GetPtr(), op.cleartext.GetSize());
-        //partsCleartext = { { op.cleartext.GetPtr(), op.cleartext.GetSize()} };
+        if ( repository::IsWRAP(op.cipher.cipherType.Get()) ) {
+            partsCleartext = util::Multipart{ {op.cleartext.GetPtr(), op.cleartext.GetSize()} };
+        } else {
+            /* Convert cleartext to parts */
+            partsCleartext = util::CipherInputTransform(ds, op.cipher.cipherType, out, out_size, op.cleartext.GetPtr(), op.cleartext.GetSize());
+        }
 
         if ( op.aad != std::nullopt ) {
             if ( repository::IsCCM( op.cipher.cipherType.Get() ) ) {
@@ -2056,6 +2056,7 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
     /* Initialize */
     {
         CF_CHECK_NE(cipher = toEVPCIPHER(op.cipher.cipherType), nullptr);
+        abort();
         if ( op.tag != std::nullopt || op.aad != std::nullopt ) {
             /* Trying to treat non-AEAD with AEAD-specific features (tag, aad)
              * leads to all kinds of gnarly memory bugs in OpenSSL.
@@ -2070,11 +2071,12 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
 
         CF_CHECK_EQ(EVP_DecryptInit_ex(ctx.GetPtr(), cipher, nullptr, nullptr, nullptr), 1);
 
-        /* Must be a multiple of the block size of this cipher */
-        //CF_CHECK_EQ(op.ciphertext.GetSize() % EVP_CIPHER_block_size(cipher), 0);
-
-        /* Convert ciphertext to parts */
-        partsCiphertext = util::CipherInputTransform(ds, op.cipher.cipherType, out, out_size, op.ciphertext.GetPtr(), op.ciphertext.GetSize());
+        if ( repository::IsWRAP(op.cipher.cipherType.Get()) ) {
+            partsCiphertext = util::Multipart{ {op.ciphertext.GetPtr(), op.ciphertext.GetSize()} };
+        } else {
+            /* Convert ciphertext to parts */
+            partsCiphertext = util::CipherInputTransform(ds, op.cipher.cipherType, out, out_size, op.ciphertext.GetPtr(), op.ciphertext.GetSize());
+        }
 
         if ( op.aad != std::nullopt ) {
             if ( repository::IsCCM( op.cipher.cipherType.Get() ) ) {
