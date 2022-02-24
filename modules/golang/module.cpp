@@ -65,6 +65,30 @@ std::optional<component::MAC> Golang::OpHMAC(operation::HMAC& op) {
     return getResultAs<component::MAC>();
 }
 
+std::optional<component::Ciphertext> Golang::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
+    auto jsonStr = op.ToJSON().dump();
+    Golang_Cryptofuzz_OpSymmetricEncrypt(toGoSlice(jsonStr));
+
+    auto res = getResultAs<component::Ciphertext>();
+
+    if ( res != std::nullopt && op.tagSize != std::nullopt && *op.tagSize ) {
+        const auto ct = res->ciphertext;
+
+        res = component::Ciphertext(
+                    Buffer(ct.GetPtr(), op.cleartext.GetSize()),
+                    Buffer(ct.GetPtr() + op.cleartext.GetSize(), *op.tagSize));
+    }
+
+    return res;
+}
+
+std::optional<component::Cleartext> Golang::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
+    auto jsonStr = op.ToJSON().dump();
+    Golang_Cryptofuzz_OpSymmetricDecrypt(toGoSlice(jsonStr));
+
+    return getResultAs<component::Cleartext>();
+}
+
 std::optional<component::MAC> Golang::OpCMAC(operation::CMAC& op) {
     auto jsonStr = op.ToJSON().dump();
     Golang_Cryptofuzz_OpCMAC(toGoSlice(jsonStr));

@@ -2,6 +2,8 @@ package main
 
 import (
     "bytes"
+    "crypto/aes"
+    "crypto/cipher"
     "crypto/ecdsa"
     "crypto/elliptic"
     "crypto/hmac"
@@ -80,6 +82,28 @@ type OpHMAC struct {
     Cleartext ByteSlice
     DigestType Type
     Cipher ComponentCipher
+}
+
+type OpSymmetricEncrypt struct {
+    Modifier ByteSlice
+    Cleartext ByteSlice
+    Cipher ComponentCipher
+    Aad_Enabled bool
+    Aad ByteSlice
+    CiphertextSize uint64
+    Tagsize_Enabled bool
+    Tagsize uint64
+}
+
+type OpSymmetricDecrypt struct {
+    Modifier ByteSlice
+    Ciphertext ByteSlice
+    Cipher ComponentCipher
+    Aad_Enabled bool
+    Aad ByteSlice
+    CiphertextSize uint64
+    Tag_Enabled bool
+    Tag ByteSlice
 }
 
 type OpCMAC struct {
@@ -416,6 +440,90 @@ func Golang_Cryptofuzz_OpHMAC(in []byte) {
     mac := hmac.Sum(nil)
 
     setResult(mac)
+}
+
+//export Golang_Cryptofuzz_OpSymmetricEncrypt
+func Golang_Cryptofuzz_OpSymmetricEncrypt(in []byte) {
+    resetResult()
+
+    var op OpSymmetricEncrypt
+    unmarshal(in, &op)
+
+    if isAES_128_GCM(op.Cipher.CipherType) {
+        block, err := aes.NewCipher(op.Cipher.Key)
+        if err != nil {
+            return
+        }
+
+        var aead cipher.AEAD
+
+        if len(op.Cipher.IV) == 12 {
+            if op.Tagsize != 16 {
+                aead, err = cipher.NewGCMWithTagSize(block, int(op.Tagsize))
+            } else {
+                aead, err = cipher.NewGCM(block)
+            }
+        } else {
+            if op.Tagsize != 16 {
+                return
+            }
+            aead, err = cipher.NewGCMWithNonceSize(block, len(op.Cipher.IV))
+        }
+
+        if err != nil {
+            return
+        }
+
+        ciphertext := aead.Seal(nil, op.Cipher.IV, op.Cleartext, op.Aad)
+        if len(ciphertext) != len(op.Cleartext) + int(op.Tagsize) {
+            panic("Unexpected AES-GCM ciphertext")
+        }
+
+        setResult(ciphertext)
+    }
+}
+
+//export Golang_Cryptofuzz_OpSymmetricDecrypt
+func Golang_Cryptofuzz_OpSymmetricDecrypt(in []byte) {
+    resetResult()
+
+    var op OpSymmetricDecrypt
+    unmarshal(in, &op)
+
+    if isAES_128_GCM(op.Cipher.CipherType) {
+        block, err := aes.NewCipher(op.Cipher.Key)
+        if err != nil {
+            return
+        }
+
+        var aead cipher.AEAD
+
+        if len(op.Cipher.IV) == 12 {
+            if len(op.Tag) != 16 {
+                aead, err = cipher.NewGCMWithTagSize(block, len(op.Tag))
+            } else {
+                aead, err = cipher.NewGCM(block)
+            }
+        } else {
+            if len(op.Tag) != 16 {
+                return
+            }
+            aead, err = cipher.NewGCMWithNonceSize(block, len(op.Cipher.IV))
+        }
+
+        if err != nil {
+            return
+        }
+
+        ciphertext := append(op.Ciphertext, op.Tag...)
+
+        cleartext, err := aead.Open(nil, op.Cipher.IV, ciphertext, op.Aad)
+        if err != nil {
+            return
+        }
+
+        setResult(cleartext)
+    }
 }
 
 //export Golang_Cryptofuzz_OpCMAC
