@@ -686,13 +686,21 @@ namespace libecc_detail {
             }
         }
 
-        ret = {
-            {
-                util::BinToDec(signature, signature_size / 2),
-                util::BinToDec(signature + (signature_size / 2), signature_size / 2),
-            },
-            *pub
-        };
+        {
+            auto sig = component::ECDSA_Signature{
+                {
+                    util::BinToDec(signature, signature_size / 2),
+                        util::BinToDec(signature + (signature_size / 2), signature_size / 2),
+                },
+                *pub
+            };
+
+            if ( AlgType == ECDSA ) {
+                CF_NORET(util::AdjustECDSASignature(op.curveType.Get(), sig.signature.second));
+            }
+
+            ret = sig;
+        }
 
 end:
         util::free(signature);

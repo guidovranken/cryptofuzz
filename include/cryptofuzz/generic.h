@@ -70,6 +70,7 @@ class Bignum {
         bool IsGreaterThan(const std::string& other) const;
         bool IsLessThan(const std::string& other) const;
         void ToPositive(void);
+        void SubFrom(const std::string& v);
         std::string ToString(void) const;
         std::string ToTrimmedString(void) const;
         std::string ToString(Datasource& ds) const;

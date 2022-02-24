@@ -845,6 +845,23 @@ std::vector<uint8_t> AddLeadingZeroes(fuzzing::datasource::Datasource& ds, const
     return Append(zeroes, stripped);
 }
 
+void AdjustECDSASignature(const uint64_t curveType, component::Bignum& s) {
+    if ( curveType == CF_ECC_CURVE("secp256k1") ) {
+        if ( !s.IsGreaterThan("57896044618658097711785492504343953926418782139537452191302581570759080747168") ) {
+            return;
+        }
+        s.SubFrom("115792089237316195423570985008687907852837564279074904382605163141518161494337");
+    } else if ( curveType == CF_ECC_CURVE("secp256r1") ) {
+        if ( !s.IsGreaterThan("57896044605178124381348723474703786764998477612067880171211129530534256022184") ) {
+            return;
+        }
+        s.SubFrom("115792089210356248762697446949407573529996955224135760342422259061068512044369");
+    } else {
+        /* No modification required */
+        return;
+    }
+}
+
 static inline boost::multiprecision::cpp_int sqrt_mod(
         const boost::multiprecision::cpp_int& in,
         const boost::multiprecision::cpp_int& prime) {

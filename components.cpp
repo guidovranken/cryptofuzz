@@ -313,6 +313,14 @@ void Bignum::ToPositive(void) {
     data.GetVectorPtr().erase(data.GetVectorPtr().begin());
 }
 
+void Bignum::SubFrom(const std::string& v) {
+    boost::multiprecision::cpp_int A(ToTrimmedString());
+    boost::multiprecision::cpp_int B(v);
+    boost::multiprecision::cpp_int res = B - A;
+    const auto s = res.str();
+    data = {(const uint8_t*)s.data(), s.size()};
+}
+
 std::string Bignum::ToString(void) const {
     const auto ptr = data.GetPtr();
     return std::string(ptr, ptr + data.GetSize());
