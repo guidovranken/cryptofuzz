@@ -2056,7 +2056,6 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
     /* Initialize */
     {
         CF_CHECK_NE(cipher = toEVPCIPHER(op.cipher.cipherType), nullptr);
-        abort();
         if ( op.tag != std::nullopt || op.aad != std::nullopt ) {
             /* Trying to treat non-AEAD with AEAD-specific features (tag, aad)
              * leads to all kinds of gnarly memory bugs in OpenSSL.
