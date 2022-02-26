@@ -8,6 +8,7 @@
 #include <cryptofuzz/ecc_diff_fuzzer_importer.h>
 #include <cryptofuzz/ecc_diff_fuzzer_exporter.h>
 #include <cryptofuzz/botan_importer.h>
+#include <cryptofuzz/openssl_importer.h>
 #include <cryptofuzz/util.h>
 
 namespace cryptofuzz {
@@ -351,6 +352,24 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
             CF_ASSERT(curveID != std::nullopt, "Unknown curve");
 
             Botan_Importer importer(args[0], args[1], *curveID);
+            importer.Run();
+
+            exit(0);
+        } else if ( !parts.empty() && parts[0] == "--from-openssl-expmod" ) {
+            if ( parts.size() != 2 ) {
+                std::cout << "Expected argument after --from-openssl-expmod=" << std::endl;
+                exit(1);
+            }
+
+            std::vector<std::string> args;
+            boost::split(args, parts[1], boost::is_any_of(","));
+
+            if ( args.size() != 2 ) {
+                std::cout << "Expected 2 arguments after --from-openssl-expmod=" << std::endl;
+                exit(1);
+            }
+
+            OpenSSL_Importer importer(args[0], args[1], OpenSSL_Importer::type::ExpMod);
             importer.Run();
 
             exit(0);
