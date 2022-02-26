@@ -49,7 +49,7 @@ void OpenSSL_Importer::LoadInput(const std::vector<uint8_t> data) {
         const auto bn2 = util::BinToDec(ptr + l1, l2);
         auto bn3 = util::BinToDec(ptr + l1 + l2, l3);
         if ( bn3_neg ) {
-            bn3 = "-" + bn1;
+            bn3 = "-" + bn3;
         }
 
         if ( bn1.size() > cryptofuzz::config::kMaxBignumSize ) {
