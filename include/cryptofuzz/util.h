@@ -96,6 +96,8 @@ std::string BinToDec(const std::vector<uint8_t> data);
 std::optional<std::vector<uint8_t>> ToDER(const std::string A, const std::string B);
 std::optional<std::pair<std::string, std::string>> SignatureFromDER(const std::string s);
 std::optional<std::pair<std::string, std::string>> SignatureFromDER(const std::vector<uint8_t> data);
+std::optional<std::pair<std::string, std::string>> PubkeyFromASN1(const uint64_t curveType, const std::string s);
+std::optional<std::pair<std::string, std::string>> PubkeyFromASN1(const uint64_t curveType, const std::vector<uint8_t> data);
 std::string SHA1(const std::vector<uint8_t> data);
 void HintBignum(const std::string bn);
 void HintBignumPow2(size_t maxSize = 4000);

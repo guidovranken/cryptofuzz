@@ -784,6 +784,33 @@ end:
     return ret;
 }
 
+std::optional<std::pair<std::string, std::string>> PubkeyFromASN1(const uint64_t curveType, const std::string s) {
+    return PubkeyFromASN1(curveType, HexToBin(s));
+}
+
+std::optional<std::pair<std::string, std::string>> PubkeyFromASN1(const uint64_t curveType, const std::vector<uint8_t> data) {
+    const auto numBits = cryptofuzz::repository::ECC_CurveToBits(curveType);
+    if ( numBits == std::nullopt ) {
+        return std::nullopt;
+    }
+    const size_t coordsize = (*numBits + 7) / 8;
+    if ( data.size() < ((coordsize*2) + 2) ) {
+        return std::nullopt;
+    }
+
+    const uint8_t* start2 = data.data() + data.size() - (coordsize * 2);
+    const uint8_t* start1 = start2 - 2;
+
+    if ( start1[0] != 0x00 || start1[1] != 0x04 ) {
+        return std::nullopt;
+    }
+
+    return std::pair<std::string, std::string>{
+        BinToDec({start2, start2 + coordsize}),
+        BinToDec({start2 + coordsize, start2 + (coordsize * 2)}),
+    };
+}
+
 std::string SHA1(const std::vector<uint8_t> data) {
     return BinToHex(crypto::sha1(data));
 }

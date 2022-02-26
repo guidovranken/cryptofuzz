@@ -21,6 +21,8 @@ void Wycheproof::Run(void) {
         ECDSA_Verify(groups);
     } else if ( j["schema"].get<std::string>() == "eddsa_verify_schema.json" ) {
         EDDSA_Verify(groups);
+    } else if ( j["schema"].get<std::string>() == "ecdh_test_schema.json" ) {
+        ECDH(groups);
     }
 }
 
@@ -285,6 +287,69 @@ void Wycheproof::EDDSA_Verify(const nlohmann::json& groups) {
                 write(CF_OPERATION("ECDSA_Verify"), dsOut2);
             }
 
+end:
+            (void)1;
+        }
+    }
+}
+
+void Wycheproof::ECDH(const nlohmann::json& groups) {
+    for (const auto &group : groups) {
+        for (const auto &test : group["tests"]) {
+            nlohmann::json parameters;
+
+            parameters["modifier"] = "";
+
+            {
+                const std::string curve = group["curve"];
+                auto curveID = repository::ECC_CurveFromString(curve);
+
+                if ( curveID == std::nullopt ) {
+                    if ( curve == "brainpoolP224r1" ) {
+                        curveID = CF_ECC_CURVE("brainpool224r1");
+                    } else if ( curve == "brainpoolP224t1" ) {
+                        curveID = CF_ECC_CURVE("brainpool224t1");
+                    } else if ( curve == "brainpoolP256r1" ) {
+                        curveID = CF_ECC_CURVE("brainpool256r1");
+                    } else if ( curve == "brainpoolP256t1" ) {
+                        curveID = CF_ECC_CURVE("brainpool256t1");
+                    } else if ( curve == "brainpoolP320r1" ) {
+                        curveID = CF_ECC_CURVE("brainpool320r1");
+                    } else if ( curve == "brainpoolP320t1" ) {
+                        curveID = CF_ECC_CURVE("brainpool320t1");
+                    } else if ( curve == "brainpoolP384r1" ) {
+                        curveID = CF_ECC_CURVE("brainpool384r1");
+                    } else if ( curve == "brainpoolP384t1" ) {
+                        curveID = CF_ECC_CURVE("brainpool384t1");
+                    } else if ( curve == "brainpoolP512r1" ) {
+                        curveID = CF_ECC_CURVE("brainpool512r1");
+                    } else if ( curve == "brainpoolP512t1" ) {
+                        curveID = CF_ECC_CURVE("brainpool512t1");
+                    } else {
+                        CF_ASSERT(0, "Curve not recognized");
+                    }
+                }
+
+                parameters["curveType"] = *curveID;
+
+                parameters["priv"] = util::HexToDec(test["private"]);
+
+                {
+                    const auto pub = util::PubkeyFromASN1(*curveID, test["public"].get<std::string>());
+                    CF_CHECK_NE(pub, std::nullopt);
+
+                    parameters["pub_x"] = pub->first;
+                    parameters["pub_y"] = pub->second;
+                }
+            }
+
+            {
+                fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+                cryptofuzz::operation::ECDH_Derive op(parameters);
+                op.Serialize(dsOut2);
+
+                write(CF_OPERATION("ECDH_Derive"), dsOut2);
+            }
 end:
             (void)1;
         }

@@ -31,5 +31,6 @@ fi
 
 git clone --depth 1 https://github.com/google/wycheproof
 find wycheproof/testvectors/ -type f -name 'ecdsa_*' -exec ./cryptofuzz --from-wycheproof={},$CORPUS_DIR \;
+find wycheproof/testvectors/ -type f -name 'ecdh_*' -exec ./cryptofuzz --from-wycheproof={},$CORPUS_DIR \;
 
 rm -rf wycheproof/
