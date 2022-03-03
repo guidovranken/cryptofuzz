@@ -323,9 +323,6 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
                 CF_CHECK_EQ(one.New(), true);
                 BN_one(one.GetDestPtr());
 
-                /* https://github.com/openssl/openssl/issues/17648 */
-                CF_CHECK_NE(BN_is_zero(bn[2].GetPtr()), 1);
-
                 BIGNUM const * a2 = one.GetPtr();
                 BIGNUM const * p2 = BN_is_zero(bn[3].GetPtr()) ? a2 : bn[3].GetPtr();
                 /* a2^p2 == 1 */
