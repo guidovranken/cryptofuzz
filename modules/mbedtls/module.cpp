@@ -1198,12 +1198,12 @@ std::optional<component::Bignum> mbedTLS::OpBignumCalc(operation::BignumCalc& op
     std::unique_ptr<mbedTLS_bignum::Operation> opRunner = nullptr;
 
     mbedTLS_bignum::BignumCluster bn{ds,
-        mbedTLS_bignum::Bignum(),
-        mbedTLS_bignum::Bignum(),
-        mbedTLS_bignum::Bignum(),
-        mbedTLS_bignum::Bignum()
+        mbedTLS_bignum::Bignum(ds),
+        mbedTLS_bignum::Bignum(ds),
+        mbedTLS_bignum::Bignum(ds),
+        mbedTLS_bignum::Bignum(ds)
     };
-    mbedTLS_bignum::Bignum res;
+    mbedTLS_bignum::Bignum res(ds);
 
     CF_CHECK_EQ(res.Set("0"), true);
     CF_CHECK_EQ(bn.Set(0, op.bn0.ToString(ds)), true);

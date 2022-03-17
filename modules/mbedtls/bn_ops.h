@@ -9,10 +9,30 @@ namespace mbedTLS_bignum {
 
 class Bignum {
     private:
+        Datasource& ds;
         mbedtls_mpi mpi;
+        void convert(void) {
+            bool write_bin = false;
+            uint16_t size = 0;
+
+            try {
+                write_bin = ds.Get<bool>();
+                if ( write_bin == true ) {
+                    size = ds.Get<uint16_t>();
+                }
+            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+            if ( write_bin == true ) {
+                uint8_t* out = util::malloc(size);
+                /* ignore ret */ mbedtls_mpi_write_binary(&mpi, out, size);
+                util::free(out);
+            }
+
+        }
     public:
 
-        Bignum(void) {
+        Bignum(fuzzing::datasource::Datasource& ds) :
+            ds(ds) {
             CF_NORET(mbedtls_mpi_init(&mpi));
         }
 
@@ -39,6 +59,7 @@ end:
         }
 
         const mbedtls_mpi* GetPtr(void) {
+            CF_NORET(convert());
             return &mpi;
         }
 
