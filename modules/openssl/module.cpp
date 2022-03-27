@@ -3776,6 +3776,8 @@ std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Add(operation::ECC_Poin
     std::optional<component::ECC_Point> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
+    global_ds = &ds;
+
     std::shared_ptr<CF_EC_GROUP> group = nullptr;
     std::unique_ptr<CF_EC_POINT> a = nullptr, b = nullptr, res = nullptr;
     char* x_str = nullptr;
@@ -3847,12 +3849,16 @@ end:
     OPENSSL_free(x_str);
     OPENSSL_free(y_str);
 
+    global_ds = nullptr;
+
     return ret;
 }
 
 std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Mul(operation::ECC_Point_Mul& op) {
     std::optional<component::ECC_Point> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    global_ds = &ds;
 
     std::shared_ptr<CF_EC_GROUP> group = nullptr;
     std::unique_ptr<CF_EC_POINT> a = nullptr, res = nullptr;
@@ -3929,6 +3935,8 @@ end:
     OPENSSL_free(x_str);
     OPENSSL_free(y_str);
 
+    global_ds = nullptr;
+
     return ret;
 }
 
@@ -3997,6 +4005,8 @@ std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Dbl(operation::ECC_Poin
     std::optional<component::ECC_Point> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
+    global_ds = &ds;
+
     std::shared_ptr<CF_EC_GROUP> group = nullptr;
     std::unique_ptr<CF_EC_POINT> a = nullptr, res = nullptr;
     char* x_str = nullptr;
@@ -4052,6 +4062,8 @@ std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Dbl(operation::ECC_Poin
 end:
     OPENSSL_free(x_str);
     OPENSSL_free(y_str);
+
+    global_ds = nullptr;
 
     return ret;
 }
