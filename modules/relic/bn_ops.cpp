@@ -168,7 +168,7 @@ static bool GCD_ExtGCD(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, con
                 return true;
             case    3:
                 RLC_TRY {
-                    /* noret */ bn_gcd_stein(res.Get(), bn[0].Get(), bn[1].Get());
+                    /* noret */ bn_gcd_binar(res.Get(), bn[0].Get(), bn[1].Get());
                 } RLC_CATCH_ANY {
                     return false;
                 }
@@ -231,7 +231,7 @@ static bool GCD_ExtGCD(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, con
                     Bignum t1(ds), t2(ds);
 
                     RLC_TRY {
-                        /* noret */ bn_gcd_ext_stein(res.Get(), t1.Get(), t2.Get(), bn[0].Get(), bn[1].Get());
+                        /* noret */ bn_gcd_ext_binar(res.Get(), t1.Get(), t2.Get(), bn[0].Get(), bn[1].Get());
                     } RLC_CATCH_ANY {
                         return false;
                     }
