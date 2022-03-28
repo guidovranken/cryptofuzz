@@ -157,3 +157,5 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - relic: [bn_mod_barrt out-of-bounds write and hang](https://github.com/relic-toolkit/relic/issues/222)
 - relic: [bn_gcd_ext_stein returns different Bezout coefficients](https://github.com/relic-toolkit/relic/issues/223)
 - Zig: [std.math.big.int panics (divFloor, gcd, bitAnd)](https://github.com/ziglang/zig/issues/10932)
+- NSS: [mp_xgcd produces incorrect Bezout coefficients](https://bugzilla.mozilla.org/show_bug.cgi?id=1761708)
+- Nettle: TBA
