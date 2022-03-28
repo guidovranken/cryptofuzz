@@ -305,7 +305,7 @@ end:
         {
             CF_CHECK_TRUE(h.Open(macType));
 
-            CF_CHECK_EQ(gcry_mac_setkey(h.Get(), cipher.key.GetPtr(), cipher.key.GetSize()), GPG_ERR_NO_ERROR);
+            CF_CHECK_EQ(gcry_mac_setkey(h.Get(), cipher.key.GetPtr(&ds), cipher.key.GetSize()), GPG_ERR_NO_ERROR);
 
             parts = util::ToParts(ds, cleartext);
         }
@@ -607,13 +607,13 @@ namespace libgcrypt_detail {
                 CF_CHECK_EQ(gcry_cipher_open(&h, cipherModePair.first, cipherModePair.second, useSecMem ? GCRY_CIPHER_SECURE : 0), GPG_ERR_NO_ERROR);
                 hOpen = true;
 
-                CF_CHECK_EQ(gcry_cipher_setkey(h, cipher.key.GetPtr(), cipher.key.GetSize()), GPG_ERR_NO_ERROR);
+                CF_CHECK_EQ(gcry_cipher_setkey(h, cipher.key.GetPtr(&ds), cipher.key.GetSize()), GPG_ERR_NO_ERROR);
                 if ( cipher.cipherType.Get() == CF_CIPHER("CHACHA20") ) {
-                    CF_CHECK_EQ(gcry_cipher_setiv(h, cipher.iv.GetPtr(), cipher.iv.GetSize()), GPG_ERR_NO_ERROR);
+                    CF_CHECK_EQ(gcry_cipher_setiv(h, cipher.iv.GetPtr(&ds), cipher.iv.GetSize()), GPG_ERR_NO_ERROR);
                 } else if ( repository::IsCTR(cipher.cipherType.Get()) ) {
-                    CF_CHECK_EQ(gcry_cipher_setctr(h, cipher.iv.GetPtr(), cipher.iv.GetSize()), GPG_ERR_NO_ERROR);
+                    CF_CHECK_EQ(gcry_cipher_setctr(h, cipher.iv.GetPtr(&ds), cipher.iv.GetSize()), GPG_ERR_NO_ERROR);
                 } else {
-                    CF_CHECK_EQ(gcry_cipher_setiv(h, cipher.iv.GetPtr(), cipher.iv.GetSize()), GPG_ERR_NO_ERROR);
+                    CF_CHECK_EQ(gcry_cipher_setiv(h, cipher.iv.GetPtr(&ds), cipher.iv.GetSize()), GPG_ERR_NO_ERROR);
                 }
 
                 switch ( cipherModePair.second ) {
@@ -724,7 +724,7 @@ namespace libgcrypt_detail {
                 CF_CHECK_EQ(op.tag, std::nullopt);
                 CF_CHECK_EQ(op.aad, std::nullopt);
 
-                CF_CHECK_EQ(initialize(op.cipher, op.ciphertext.GetPtr(), op.ciphertext.GetSize()), true);
+                CF_CHECK_EQ(initialize(op.cipher, op.ciphertext.GetPtr(&ds), op.ciphertext.GetSize()), true);
                 std::optional<size_t> outputSize = process<false>();
                 CF_CHECK_NE(outputSize, std::nullopt);
 
@@ -759,6 +759,7 @@ std::optional<component::Cleartext> libgcrypt::OpSymmetricDecrypt(operation::Sym
 
 std::optional<component::Key> libgcrypt::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
     std::optional<component::Key> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     const size_t outSize = op.keySize;
     uint8_t* out = util::malloc(outSize);
@@ -767,11 +768,11 @@ std::optional<component::Key> libgcrypt::OpKDF_SCRYPT(operation::KDF_SCRYPT& op)
     CF_CHECK_EQ(op.r, 8);
 
     CF_CHECK_EQ(gcry_kdf_derive(
-                op.password.GetPtr(),
+                op.password.GetPtr(&ds),
                 op.password.GetSize(),
                 GCRY_KDF_SCRYPT,
                 op.N,
-                op.salt.GetPtr(),
+                op.salt.GetPtr(&ds),
                 op.salt.GetSize(),
                 op.p,
                 outSize,
@@ -787,6 +788,7 @@ end:
 
 std::optional<component::Key> libgcrypt::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
     std::optional<component::Key> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     const size_t outSize = op.keySize;
     uint8_t* out = util::malloc(outSize);
@@ -794,11 +796,11 @@ std::optional<component::Key> libgcrypt::OpKDF_PBKDF2(operation::KDF_PBKDF2& op)
     std::optional<int> digestType = std::nullopt;
     CF_CHECK_NE(digestType = libgcrypt_detail::DigestIDToID(op.digestType.Get()), std::nullopt);
     CF_CHECK_EQ(gcry_kdf_derive(
-                op.password.GetPtr(),
+                op.password.GetPtr(&ds),
                 op.password.GetSize(),
                 GCRY_KDF_PBKDF2,
                 *digestType,
-                op.salt.GetPtr(),
+                op.salt.GetPtr(&ds),
                 op.salt.GetSize(),
                 op.iterations,
                 outSize,
@@ -814,6 +816,7 @@ end:
 
 std::optional<component::Key> libgcrypt::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
     std::optional<component::Key> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     if ( op.threads == 0 ) return std::nullopt;
     if ( op.keySize > 64 ) return std::nullopt;
@@ -848,8 +851,8 @@ std::optional<component::Key> libgcrypt::OpKDF_ARGON2(operation::KDF_ARGON2& op)
     out = util::malloc(outSize);
 
     CF_CHECK_EQ(gcry_kdf_open(&hd, GCRY_KDF_ARGON2, subalgo, params, 4,
-                op.password.GetPtr(), op.password.GetSize(),
-                op.salt.GetPtr(), op.salt.GetSize(),
+                op.password.GetPtr(&ds), op.password.GetSize(),
+                op.salt.GetPtr(&ds), op.salt.GetSize(),
                 nullptr, 0,
                 nullptr, 0), GPG_ERR_NO_ERROR);
     initialized = true;
