@@ -226,8 +226,6 @@ static bool GCD_ExtGCD(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, con
                 }
             case    7:
                 {
-                    /* https://github.com/relic-toolkit/relic/issues/223 */
-                    goto end;
                     Bignum t1(ds), t2(ds);
 
                     RLC_TRY {
