@@ -812,6 +812,62 @@ end:
     return ret;
 }
 
+std::optional<component::Key> libgcrypt::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
+    std::optional<component::Key> ret = std::nullopt;
+
+    if ( op.threads == 0 ) return std::nullopt;
+    if ( op.keySize > 64 ) return std::nullopt;
+
+    bool initialized = false;
+    const size_t outSize = op.keySize;
+    uint8_t* out = nullptr;
+
+    gcry_kdf_hd_t hd;
+    int subalgo;
+    unsigned long params[4];
+
+    switch ( op.type ) {
+        case    0:
+            subalgo = GCRY_KDF_ARGON2D;
+            break;
+        case    1:
+            subalgo = GCRY_KDF_ARGON2I;
+            break;
+        case    2:
+            subalgo = GCRY_KDF_ARGON2ID;
+            break;
+        default:
+            return std::nullopt;
+    }
+
+    params[0] = outSize;
+    params[1] = op.iterations;
+    params[2] = op.memory;
+    params[3] = op.threads;
+
+    out = util::malloc(outSize);
+
+    CF_CHECK_EQ(gcry_kdf_open(&hd, GCRY_KDF_ARGON2, subalgo, params, 4,
+                op.password.GetPtr(), op.password.GetSize(),
+                op.salt.GetPtr(), op.salt.GetSize(),
+                nullptr, 0,
+                nullptr, 0), GPG_ERR_NO_ERROR);
+    initialized = true;
+
+    CF_CHECK_EQ(gcry_kdf_compute(hd, nullptr), GPG_ERR_NO_ERROR);
+    CF_CHECK_EQ(gcry_kdf_final(hd, outSize, out), GPG_ERR_NO_ERROR);
+
+    ret = component::Key(out, outSize);
+
+end:
+    util::free(out);
+    if ( initialized ) {
+        CF_NORET(gcry_kdf_close(hd));
+    }
+
+    return ret;
+}
+
 namespace libgcrypt_detail {
     std::optional<std::string> toCurveString(const component::CurveType& curveType) {
         static const std::map<uint64_t, std::string> LUT = {
