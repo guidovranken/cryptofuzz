@@ -48,6 +48,32 @@ nlohmann::json HMAC::ToJSON(void) const {
     return j;
 }
 
+std::string UMAC::Name(void) const { return "UMAC"; }
+std::string UMAC::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: UMAC" << std::endl;
+    ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+    ss << "key: " << util::HexDump(key.Get()) << std::endl;
+    ss << "iv: " << util::HexDump(iv.Get()) << std::endl;
+    ss << "type: " << std::to_string(type) << std::endl;
+    ss << "outSize: " << std::to_string(outSize) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json UMAC::ToJSON(void) const {
+    nlohmann::json j;
+    j["operation"] = "UMAC";
+    j["cleartext"] = cleartext.ToJSON();
+    j["key"] = key.ToJSON();
+    j["iv"] = iv.ToJSON();
+    j["type"] = type;
+    j["outSize"] = outSize;
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string SymmetricEncrypt::Name(void) const { return "SymmetricEncrypt"; }
 std::string SymmetricEncrypt::ToString(void) const {
     std::stringstream ss;

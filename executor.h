@@ -165,6 +165,7 @@ class ExecutorBignumCalc_Fp12 : public ExecutorBase<component::Fp12, operation::
 /* Declare aliases */
 using ExecutorDigest = ExecutorBase<component::Digest, operation::Digest>;
 using ExecutorHMAC = ExecutorBase<component::MAC, operation::HMAC>;
+using ExecutorUMAC = ExecutorBase<component::MAC, operation::UMAC>;
 using ExecutorCMAC = ExecutorBase<component::MAC, operation::CMAC>;
 using ExecutorSymmetricEncrypt = ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>;
 using ExecutorSymmetricDecrypt = ExecutorBase<component::Cleartext, operation::SymmetricDecrypt>;

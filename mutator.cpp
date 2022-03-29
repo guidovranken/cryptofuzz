@@ -468,6 +468,19 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     op.Serialize(dsOut2);
                 }
                 break;
+            case    CF_OPERATION("UMAC"):
+                {
+                    parameters["modifier"] = "";
+                    parameters["cleartext"] = getBuffer(PRNG64() % maxSize);
+                    parameters["key"] = getBuffer(16);
+                    parameters["iv"] = getBuffer(PRNG() % 17);
+                    parameters["type"] = PRNG() % 4;
+                    parameters["outSize"] = PRNG() % 1024;
+
+                    cryptofuzz::operation::UMAC op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
             case    CF_OPERATION("CMAC"):
                 {
                     size_t numParts = 0;

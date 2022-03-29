@@ -18,6 +18,7 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
 
     static ExecutorDigest executorDigest(CF_OPERATION("Digest"), modules, options);
     static ExecutorHMAC executorHMAC(CF_OPERATION("HMAC"), modules, options);
+    static ExecutorUMAC executorUMAC(CF_OPERATION("UMAC"), modules, options);
     static ExecutorCMAC executorCMAC(CF_OPERATION("CMAC"), modules, options);
     static ExecutorSymmetricEncrypt executorSymmetricEncrypt(CF_OPERATION("SymmetricEncrypt"), modules, options);
     static ExecutorSymmetricDecrypt executorSymmetricDecrypt(CF_OPERATION("SymmetricDecrypt"), modules, options);
@@ -122,6 +123,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("HMAC"):
                 executorHMAC.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("UMAC"):
+                executorUMAC.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("CMAC"):
                 executorCMAC.Run(ds, payload.data(), payload.size());

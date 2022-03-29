@@ -8,6 +8,7 @@ namespace tests {
 
 void test(const operation::Digest& op, const std::optional<component::Digest>& result);
 void test(const operation::HMAC& op, const std::optional<component::MAC>& result);
+void test(const operation::UMAC& op, const std::optional<component::MAC>& result);
 void test(const operation::SymmetricEncrypt& op, const std::optional<component::Ciphertext>& result);
 void test(const operation::SymmetricDecrypt& op, const std::optional<component::Cleartext>& result);
 void test(const operation::CMAC& op, const std::optional<component::MAC>& result);

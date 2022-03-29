@@ -28,6 +28,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::MAC> OpUMAC(operation::UMAC& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::Ciphertext> OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
             (void)op;
             return std::nullopt;

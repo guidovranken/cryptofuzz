@@ -107,6 +107,53 @@ class HMAC : public Operation {
         }
 };
 
+class UMAC : public Operation {
+    public:
+        const component::Cleartext cleartext;
+        const component::Cleartext key;
+        const component::Cleartext iv;
+        uint8_t type;
+        const uint64_t outSize;
+
+        UMAC(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            cleartext(ds),
+            key(ds),
+            iv(ds),
+            type(ds.Get<uint64_t>() % 4),
+            outSize(ds.Get<uint64_t>() % 1024)
+        { }
+        UMAC(nlohmann::json json) :
+            Operation(json["modifier"]),
+            cleartext(json["cleartext"]),
+            key(json["key"]),
+            iv(json["iv"]),
+            type(json["type"].get<uint64_t>()),
+            outSize(json["outSize"].get<uint64_t>())
+        { }
+
+        static size_t MaxOperations(void) { return 20; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const UMAC& rhs) const {
+            return
+                (cleartext == rhs.cleartext) &&
+                (key == rhs.key) &&
+                (iv == rhs.iv) &&
+                (type == rhs.type) &&
+                (outSize == rhs.outSize) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            cleartext.Serialize(ds);
+            key.Serialize(ds);
+            iv.Serialize(ds);
+            ds.Put<>(type);
+            ds.Put<>(outSize);
+        }
+};
+
 class SymmetricEncrypt : public Operation {
     public:
         const component::Cleartext cleartext;

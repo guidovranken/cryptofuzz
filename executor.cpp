@@ -79,6 +79,20 @@ template<> std::optional<component::MAC> ExecutorBase<component::MAC, operation:
     return module->OpHMAC(op);
 }
 
+/* Specialization for operation::UMAC */
+template<> void ExecutorBase<component::MAC, operation::UMAC>::postprocess(std::shared_ptr<Module> module, operation::UMAC& op, const ExecutorBase<component::MAC, operation::UMAC>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+
+    if ( result.second != std::nullopt ) {
+        fuzzing::memory::memory_test_msan(result.second->GetPtr(), result.second->GetSize());
+    }
+}
+
+template<> std::optional<component::MAC> ExecutorBase<component::MAC, operation::UMAC>::callModule(std::shared_ptr<Module> module, operation::UMAC& op) const {
+    return module->OpUMAC(op);
+}
+
 /* Specialization for operation::CMAC */
 template<> void ExecutorBase<component::MAC, operation::CMAC>::postprocess(std::shared_ptr<Module> module, operation::CMAC& op, const ExecutorBase<component::MAC, operation::CMAC>::ResultPair& result) const {
     (void)module;
@@ -2335,6 +2349,7 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
 /* Explicit template instantiation */
 template class ExecutorBase<component::Digest, operation::Digest>;
 template class ExecutorBase<component::MAC, operation::HMAC>;
+template class ExecutorBase<component::MAC, operation::UMAC>;
 template class ExecutorBase<component::MAC, operation::CMAC>;
 template class ExecutorBase<component::Ciphertext, operation::SymmetricEncrypt>;
 template class ExecutorBase<component::Cleartext, operation::SymmetricDecrypt>;

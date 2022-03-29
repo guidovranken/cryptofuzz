@@ -35,6 +35,7 @@
 #include <nettle/siv-cmac.h>
 #include <nettle/streebog.h>
 #include <nettle/twofish.h>
+#include <nettle/umac.h>
 #include <nettle/xts.h>
 
 namespace cryptofuzz {
@@ -146,6 +147,59 @@ namespace Nettle_detail {
             }
     };
 
+    template <class CTXType, uint64_t MaxDigestSize>
+    class UMAC : public Operation<operation::UMAC, component::MAC, CTXType> {
+        private:
+            void (*set_key)(CTXType*, const uint8_t*);
+            void (*set_nonce)(CTXType*, size_t, const uint8_t*);
+            void (*update)(CTXType*, size_t, const uint8_t*);
+            void (*digest)(CTXType*, size_t, uint8_t*);
+            uint64_t outSize;
+        public:
+            UMAC(
+                void (*set_key)(CTXType*, const uint8_t*),
+                void (*set_nonce)(CTXType*, size_t, const uint8_t*),
+                void (*update)(CTXType*, size_t, const uint8_t*),
+                void (*digest)(CTXType*, size_t, uint8_t*)
+            ) :
+                Operation<operation::UMAC, component::MAC, CTXType>(),
+                set_key(set_key),
+                set_nonce(set_nonce),
+                update(update),
+                digest(digest)
+            { }
+
+            bool runInit(operation::UMAC& op) override {
+                bool ret = false;
+                outSize = op.outSize;
+
+                CF_CHECK_GT(outSize, 0);
+                CF_CHECK_LTE(outSize, MaxDigestSize);
+                CF_CHECK_EQ(op.key.GetSize(), UMAC_KEY_SIZE);
+                CF_CHECK_GTE(op.iv.GetSize(), UMAC_MIN_NONCE_SIZE);
+                CF_CHECK_LTE(op.iv.GetSize(), UMAC_MAX_NONCE_SIZE);
+
+                CF_NORET(set_key(&this->ctx, op.key.GetPtr()));
+                CF_NORET(set_nonce(&this->ctx, op.iv.GetSize(), op.iv.GetPtr()));
+
+                ret = true;
+end:
+                return ret;
+            }
+
+            void runUpdate(util::Multipart& parts) override {
+                for (const auto& part : parts) {
+                    CF_NORET(update(&this->ctx, part.second, part.first));
+                }
+            }
+
+            std::vector<uint8_t> runFinalize(void) override {
+                std::vector<uint8_t> ret(outSize);
+                CF_NORET(digest(&this->ctx, outSize, ret.data()));
+                return ret;
+            }
+    };
+
     template <class CTXType, size_t DigestSize, size_t KeySize>
     class CMAC : public Operation<operation::CMAC, component::MAC, CTXType> {
         private:
@@ -221,6 +275,11 @@ end:
     HMAC<hmac_streebog512_ctx, SHA512_DIGEST_SIZE> hmac_streebog512(hmac_streebog512_set_key, hmac_streebog512_update, hmac_streebog512_digest);
     HMAC<hmac_sm3_ctx, SM3_DIGEST_SIZE> hmac_sm3(hmac_sm3_set_key, hmac_sm3_update, hmac_sm3_digest);
     HMAC<hmac_gosthash94_ctx, GOSTHASH94_DIGEST_SIZE> hmac_gosthash94(hmac_gosthash94_set_key, hmac_gosthash94_update, hmac_gosthash94_digest);
+
+    UMAC<umac32_ctx, UMAC32_DIGEST_SIZE> umac32(umac32_set_key, umac32_set_nonce, umac32_update, umac32_digest);
+    UMAC<umac64_ctx, UMAC64_DIGEST_SIZE> umac64(umac64_set_key, umac64_set_nonce, umac64_update, umac64_digest);
+    UMAC<umac96_ctx, UMAC96_DIGEST_SIZE> umac96(umac96_set_key, umac96_set_nonce, umac96_update, umac96_digest);
+    UMAC<umac128_ctx, UMAC128_DIGEST_SIZE> umac128(umac128_set_key, umac128_set_nonce, umac128_update, umac128_digest);
 
     CMAC<cmac_aes128_ctx, CMAC128_DIGEST_SIZE, AES128_KEY_SIZE> cmac_aes128(cmac_aes128_set_key, cmac_aes128_update, cmac_aes128_digest);
     CMAC<cmac_aes256_ctx, CMAC128_DIGEST_SIZE, AES256_KEY_SIZE> cmac_aes256(cmac_aes256_set_key, cmac_aes256_update, cmac_aes256_digest);
@@ -330,6 +389,27 @@ std::optional<component::MAC> Nettle::OpHMAC(operation::HMAC& op) {
             break;
         case CF_DIGEST("GOST-R-34.11-94-NO-CRYPTOPRO"):
             ret = Nettle_detail::hmac_gosthash94.Run(op);
+            break;
+    }
+
+    return ret;
+}
+
+std::optional<component::MAC> Nettle::OpUMAC(operation::UMAC& op) {
+    std::optional<component::MAC> ret = std::nullopt;
+
+    switch ( op.type ) {
+        case    0:
+            ret = Nettle_detail::umac32.Run(op);
+            break;
+        case    1:
+            ret = Nettle_detail::umac64.Run(op);
+            break;
+        case    2:
+            ret = Nettle_detail::umac96.Run(op);
+            break;
+        case    3:
+            ret = Nettle_detail::umac128.Run(op);
             break;
     }
 

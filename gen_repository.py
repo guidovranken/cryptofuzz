@@ -437,6 +437,7 @@ operations.Add( Operation("Schnorr_Sign") )
 operations.Add( Operation("Schnorr_Verify") )
 operations.Add( Operation("SymmetricDecrypt") )
 operations.Add( Operation("SymmetricEncrypt") )
+operations.Add( Operation("UMAC") )
 
 ciphers = CipherTable()
 

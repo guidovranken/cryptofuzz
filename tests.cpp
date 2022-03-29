@@ -50,6 +50,22 @@ void test(const operation::HMAC& op, const std::optional<component::MAC>& result
     }
 }
 
+void test(const operation::UMAC& op, const std::optional<component::MAC>& result) {
+    if ( result == std::nullopt ) {
+        return;
+    }
+
+    if (
+            ( op.type == 0 && result->GetSize() > (32/8) ) ||
+            ( op.type == 1 && result->GetSize() > (64/8) ) ||
+            ( op.type == 2 && result->GetSize() > (96/8) ) ||
+            ( op.type == 3 && result->GetSize() > (128/8) )
+    ) {
+        printf("UMAC: Overlong result: %zu\n", result->GetSize());
+        abort();
+    }
+}
+
 static void test_ChaCha20_Poly1305_IV(const operation::SymmetricEncrypt& op, const std::optional<component::Ciphertext>& result) {
     using fuzzing::datasource::ID;
 
