@@ -818,9 +818,6 @@ std::optional<component::Key> libgcrypt::OpKDF_ARGON2(operation::KDF_ARGON2& op)
     std::optional<component::Key> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    if ( op.threads == 0 ) return std::nullopt;
-    if ( op.keySize > 64 ) return std::nullopt;
-
     bool initialized = false;
     const size_t outSize = op.keySize;
     uint8_t* out = nullptr;

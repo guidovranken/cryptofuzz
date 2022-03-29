@@ -159,3 +159,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Zig: [std.math.big.int panics (divFloor, gcd, bitAnd)](https://github.com/ziglang/zig/issues/10932)
 - NSS: [mp_xgcd produces incorrect Bezout coefficients](https://bugzilla.mozilla.org/show_bug.cgi?id=1761708)
 - Nettle: TBA
+- libgcrypt: [Argon2 incorrect result and division by zero](https://lists.gnupg.org/pipermail/gcrypt-devel/2022-March/005290.html)
