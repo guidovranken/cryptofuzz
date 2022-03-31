@@ -205,16 +205,22 @@ end:
         bool set_compressed(OpenSSL_bignum::Bignum& pub_x, OpenSSL_bignum::Bignum& pub_y) {
             bool ret = false;
 
-            if (
+            const bool is_prime_curve =
 #if defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_BORINGSSL)
-                    EC_METHOD_get_field_type(EC_GROUP_method_of(group->GetPtr()))
+                EC_METHOD_get_field_type(EC_GROUP_method_of(group->GetPtr()))
 #else
-                    EC_GROUP_get_field_type(group->GetPtr())
+                EC_GROUP_get_field_type(group->GetPtr())
 #endif
-                    != NID_X9_62_prime_field ) {
+                == NID_X9_62_prime_field;
+
+#if defined(CRYPTOFUZZ_BORINGSSL)
+            if ( is_prime_curve ) {
                 return set(pub_x, pub_y);
             }
+#endif
 
+            OpenSSL_bignum::Bignum field(ds);
+            CF_CHECK_TRUE(field.New());
             int y_bit;
 
             /* Reduction of Y is necessary in order to correctly determine y_bit */
@@ -226,25 +232,42 @@ end:
                 /* LibreSSL and BoringSSL don't have EC_GROUP_get0_field(),
                  * so try to retrieve the prime from the repository
                  */
-                OpenSSL_bignum::Bignum field(ds);
-                const auto prime = cryptofuzz::repository::ECC_CurveToOrder(curveType);
+                const auto prime = cryptofuzz::repository::ECC_CurveToPrime(curveType);
                 CF_CHECK_NE(prime, std::nullopt);
                 CF_CHECK_EQ(field.Set(*prime), true);
-
-                CF_CHECK_EQ(BN_mod(y, y, field.GetPtr(), ctx.GetPtr()), 1);
 #else
                 (void)curveType;
 
-                const BIGNUM* field;
+                const BIGNUM* _field;
                 CF_ASSERT(
-                        (field = EC_GROUP_get0_field(group->GetPtr())) != nullptr,
+                        (_field = EC_GROUP_get0_field(group->GetPtr())) != nullptr,
                         "EC_GROUP_get0_field returned NULL");
-
-                CF_CHECK_EQ(BN_mod(y, y, field, ctx.GetPtr()), 1);
+                CF_CHECK_NE(BN_copy(field.GetDestPtr(), _field), nullptr);
 #endif
+
+                CF_CHECK_EQ(BN_mod(y, y, field.GetPtr(), ctx.GetPtr()), 1);
             }
 
-            y_bit = BN_is_bit_set(pub_y.GetPtr(), 0);
+            if ( is_prime_curve == true ) {
+                y_bit = BN_is_bit_set(pub_y.GetPtr(), 0);
+            } else {
+                /* Binary curve */
+#if defined(CRYPTOFUZZ_BORINGSSL)
+                CF_UNREACHABLE();
+#else
+                if ( BN_is_zero(pub_x.GetPtr()) ) {
+                    y_bit = 0;
+                } else {
+                    OpenSSL_bignum::BN_CTX ctx(ds);
+                    OpenSSL_bignum::Bignum div(ds);
+
+                    CF_CHECK_TRUE(div.New());
+                    CF_CHECK_EQ(BN_GF2m_mod_div(div.GetDestPtr(), pub_y.GetPtr(), pub_x.GetPtr(), field.GetPtr(), ctx.GetPtr()), 1);
+
+                    y_bit = BN_is_bit_set(div.GetPtr(), 0);
+                }
+#endif
+            }
 
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
             CF_CHECK_NE(EC_POINT_set_compressed_coordinates(group->GetPtr(), GetPtr(), pub_x.GetPtr(), y_bit, nullptr), 0);
