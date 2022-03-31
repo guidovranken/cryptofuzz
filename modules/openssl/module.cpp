@@ -3272,7 +3272,7 @@ std::optional<component::ECC_PublicKey> OpenSSL::OpECC_PrivateToPublic(operation
             CF_CHECK_EQ(EC_KEY_set_private_key(key.GetPtr(), prv.GetPtr()), 1);
 
             /* Compute public key */
-            CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+            CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group, op.curveType.Get()), nullptr);
             CF_CHECK_EQ(EC_POINT_mul(group->GetPtr(), pub->GetPtr(), prv.GetPtr(), nullptr, nullptr, nullptr), 1);
 
             CF_CHECK_EQ(pub_x.New(), true);
@@ -3338,7 +3338,7 @@ std::optional<component::ECC_KeyPair> OpenSSL::OpECC_GenerateKeyPair(operation::
             CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
             group->Lock();
             CF_CHECK_NE(group->GetPtr(), nullptr);
-            CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+            CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group, op.curveType.Get()), nullptr);
             CF_CHECK_EQ(EC_POINT_mul(group->GetPtr(), pub->GetPtr(), priv, nullptr, nullptr, nullptr), 1);
 
 #if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
@@ -3380,8 +3380,6 @@ std::optional<bool> OpenSSL::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey&
     std::shared_ptr<CF_EC_GROUP> group = nullptr;
 
     std::unique_ptr<CF_EC_POINT> pub = nullptr;
-    OpenSSL_bignum::Bignum pub_x(ds);
-    OpenSSL_bignum::Bignum pub_y(ds);
 
     {
         std::optional<int> curveNID;
@@ -3394,14 +3392,8 @@ std::optional<bool> OpenSSL::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey&
     CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group->GetPtr()), 1);
 
     /* Construct key */
-    CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
-    CF_CHECK_EQ(pub_x.Set(op.pub.first.ToString(ds)), true);
-    CF_CHECK_EQ(pub_y.Set(op.pub.second.ToString(ds)), true);
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
-    CF_CHECK_NE(EC_POINT_set_affine_coordinates(group->GetPtr(), pub->GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
-#else
-    CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group->GetPtr(), pub->GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
-#endif
+    CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group, op.curveType.Get()), nullptr);
+    CF_CHECK_TRUE(pub->Set(op.pub.first, op.pub.second, false));
     ret = EC_KEY_set_public_key(key.GetPtr(), pub->GetPtr()) == 1;
 end:
     return ret;
@@ -3452,7 +3444,7 @@ std::optional<component::ECDSA_Signature> OpenSSL::OpECDSA_Sign(operation::ECDSA
         CF_CHECK_EQ(EC_KEY_set_private_key(key.GetPtr(), prv.GetPtr()), 1);
 
         /* Compute public key */
-        CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+        CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group, op.curveType.Get()), nullptr);
         CF_CHECK_EQ(EC_POINT_mul(group->GetPtr(), pub->GetPtr(), prv.GetPtr(), nullptr, nullptr, nullptr), 1);
 
         CF_CHECK_EQ(pub_x.New(), true);
@@ -3523,8 +3515,6 @@ std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         std::shared_ptr<CF_EC_GROUP> group = nullptr;
 
         std::unique_ptr<CF_EC_POINT> pub = nullptr;
-        OpenSSL_bignum::Bignum pub_x(ds);
-        OpenSSL_bignum::Bignum pub_y(ds);
 
         OpenSSL_bignum::Bignum sig_s(ds);
         OpenSSL_bignum::Bignum sig_r(ds);
@@ -3557,14 +3547,8 @@ std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
             sig_s.ReleaseOwnership();
 
             /* Construct key */
-            CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
-            CF_CHECK_EQ(pub_x.Set(op.signature.pub.first.ToString(ds)), true);
-            CF_CHECK_EQ(pub_y.Set(op.signature.pub.second.ToString(ds)), true);
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
-            CF_CHECK_NE(EC_POINT_set_affine_coordinates(group->GetPtr(), pub->GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
-#else
-            CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group->GetPtr(), pub->GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
-#endif
+            CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group, op.curveType.Get()), nullptr);
+            CF_CHECK_TRUE(pub->Set(op.signature.pub.first, op.signature.pub.second, false));
             CF_CHECK_EQ(EC_KEY_set_public_key(key.GetPtr(), pub->GetPtr()), 1);
         }
 
@@ -3791,37 +3775,13 @@ std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Add(operation::ECC_Poin
         CF_CHECK_NE(group->GetPtr(), nullptr);
     }
 
-    {
-        OpenSSL_bignum::Bignum a_x(ds);
-        OpenSSL_bignum::Bignum a_y(ds);
+    CF_CHECK_NE(a = std::make_unique<CF_EC_POINT>(ds, group, op.curveType.Get()), nullptr);
+    CF_CHECK_TRUE(a->Set(op.a.first, op.a.second));
 
-        CF_CHECK_NE(a = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
-        CF_CHECK_EQ(a_x.Set(op.a.first.ToString(ds)), true);
-        CF_CHECK_EQ(a_y.Set(op.a.second.ToString(ds)), true);
+    CF_CHECK_NE(b = std::make_unique<CF_EC_POINT>(ds, group, op.curveType.Get()), nullptr);
+    CF_CHECK_TRUE(b->Set(op.b.first, op.b.second));
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
-        CF_CHECK_NE(EC_POINT_set_affine_coordinates(group->GetPtr(), a->GetPtr(), a_x.GetPtr(), a_y.GetPtr(), nullptr), 0);
-#else
-        CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group->GetPtr(), a->GetPtr(), a_x.GetPtr(), a_y.GetPtr(), nullptr), 0);
-#endif
-    }
-
-    {
-        OpenSSL_bignum::Bignum b_x(ds);
-        OpenSSL_bignum::Bignum b_y(ds);
-
-        CF_CHECK_NE(b = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
-        CF_CHECK_EQ(b_x.Set(op.b.first.ToString(ds)), true);
-        CF_CHECK_EQ(b_y.Set(op.b.second.ToString(ds)), true);
-
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
-        CF_CHECK_NE(EC_POINT_set_affine_coordinates(group->GetPtr(), b->GetPtr(), b_x.GetPtr(), b_y.GetPtr(), nullptr), 0);
-#else
-        CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group->GetPtr(), b->GetPtr(), b_x.GetPtr(), b_y.GetPtr(), nullptr), 0);
-#endif
-    }
-
-    CF_CHECK_NE(res = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+    CF_CHECK_NE(res = std::make_unique<CF_EC_POINT>(ds, group, op.curveType.Get()), nullptr);
 
     CF_CHECK_NE(EC_POINT_add(group->GetPtr(), res->GetPtr(), a->GetPtr(), b->GetPtr(), nullptr), 0);
 
@@ -3874,22 +3834,10 @@ std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Mul(operation::ECC_Poin
         CF_CHECK_NE(group->GetPtr(), nullptr);
     }
 
-    {
-        OpenSSL_bignum::Bignum a_x(ds);
-        OpenSSL_bignum::Bignum a_y(ds);
+    CF_CHECK_NE(a = std::make_unique<CF_EC_POINT>(ds, group, op.curveType.Get()), nullptr);
+    CF_CHECK_TRUE(a->Set(op.a.first, op.a.second));
 
-        CF_CHECK_NE(a = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
-        CF_CHECK_EQ(a_x.Set(op.a.first.ToString(ds)), true);
-        CF_CHECK_EQ(a_y.Set(op.a.second.ToString(ds)), true);
-
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
-        CF_CHECK_NE(EC_POINT_set_affine_coordinates(group->GetPtr(), a->GetPtr(), a_x.GetPtr(), a_y.GetPtr(), nullptr), 0);
-#else
-        CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group->GetPtr(), a->GetPtr(), a_x.GetPtr(), a_y.GetPtr(), nullptr), 0);
-#endif
-    }
-
-    CF_CHECK_NE(res = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+    CF_CHECK_NE(res = std::make_unique<CF_EC_POINT>(ds, group, op.curveType.Get()), nullptr);
 
     CF_CHECK_EQ(b.Set(op.b.ToString(ds)), true);
 
@@ -3911,25 +3859,7 @@ std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Mul(operation::ECC_Poin
         }
     }
 
-    {
-        OpenSSL_bignum::Bignum x(ds);
-        OpenSSL_bignum::Bignum y(ds);
-
-        CF_CHECK_EQ(x.New(), true);
-        CF_CHECK_EQ(y.New(), true);
-
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
-        CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), res->GetPtr(), x.GetDestPtr(), y.GetDestPtr(), nullptr), 0);
-#else
-        CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group->GetPtr(), res->GetPtr(), x.GetDestPtr(), y.GetDestPtr(), nullptr), 0);
-#endif
-
-        /* Convert bignum x/y to strings */
-        CF_CHECK_NE(x_str = BN_bn2dec(x.GetPtr()), nullptr);
-        CF_CHECK_NE(y_str = BN_bn2dec(y.GetPtr()), nullptr);
-
-        ret = { std::string(x_str), std::string(y_str) };
-    }
+    ret = res->Get();
 
 end:
     OPENSSL_free(x_str);
@@ -3957,20 +3887,8 @@ std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Neg(operation::ECC_Poin
         CF_CHECK_NE(group->GetPtr(), nullptr);
     }
 
-    {
-        OpenSSL_bignum::Bignum a_x(ds);
-        OpenSSL_bignum::Bignum a_y(ds);
-
-        CF_CHECK_NE(a = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
-        CF_CHECK_EQ(a_x.Set(op.a.first.ToString(ds)), true);
-        CF_CHECK_EQ(a_y.Set(op.a.second.ToString(ds)), true);
-
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
-        CF_CHECK_NE(EC_POINT_set_affine_coordinates(group->GetPtr(), a->GetPtr(), a_x.GetPtr(), a_y.GetPtr(), nullptr), 0);
-#else
-        CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group->GetPtr(), a->GetPtr(), a_x.GetPtr(), a_y.GetPtr(), nullptr), 0);
-#endif
-    }
+    CF_CHECK_NE(a = std::make_unique<CF_EC_POINT>(ds, group, op.curveType.Get()), nullptr);
+    CF_CHECK_TRUE(a->Set(op.a.first, op.a.second));
 
     CF_CHECK_NE(EC_POINT_invert(group->GetPtr(), a->GetPtr(), nullptr), 0);
 
@@ -4020,22 +3938,10 @@ std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Dbl(operation::ECC_Poin
         CF_CHECK_NE(group->GetPtr(), nullptr);
     }
 
-    {
-        OpenSSL_bignum::Bignum a_x(ds);
-        OpenSSL_bignum::Bignum a_y(ds);
+    CF_CHECK_NE(a = std::make_unique<CF_EC_POINT>(ds, group, op.curveType.Get()), nullptr);
+    CF_CHECK_TRUE(a->Set(op.a.first, op.a.second));
 
-        CF_CHECK_NE(a = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
-        CF_CHECK_EQ(a_x.Set(op.a.first.ToString(ds)), true);
-        CF_CHECK_EQ(a_y.Set(op.a.second.ToString(ds)), true);
-
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
-        CF_CHECK_NE(EC_POINT_set_affine_coordinates(group->GetPtr(), a->GetPtr(), a_x.GetPtr(), a_y.GetPtr(), nullptr), 0);
-#else
-        CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group->GetPtr(), a->GetPtr(), a_x.GetPtr(), a_y.GetPtr(), nullptr), 0);
-#endif
-    }
-
-    CF_CHECK_NE(res = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+    CF_CHECK_NE(res = std::make_unique<CF_EC_POINT>(ds, group, op.curveType.Get()), nullptr);
 
     CF_CHECK_NE(EC_POINT_dbl(group->GetPtr(), res->GetPtr(), a->GetPtr(), nullptr), 0);
 

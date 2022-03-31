@@ -130,6 +130,7 @@ class EC_POINT_Copier {
         std::shared_ptr<EC_GROUP_Copier> group;
         EC_POINT* point = nullptr;
         Datasource& ds;
+        const uint64_t curveType;
 
         EC_POINT* newPoint(void) {
             return EC_POINT_new(group->GetPtr());
@@ -187,9 +188,82 @@ class EC_POINT_Copier {
             return point;
         }
 
+        bool set(OpenSSL_bignum::Bignum& pub_x, OpenSSL_bignum::Bignum& pub_y) {
+            bool ret = false;
+
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+            CF_CHECK_NE(EC_POINT_set_affine_coordinates(group->GetPtr(), GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+#else
+            CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group->GetPtr(), GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+#endif
+
+            ret = true;
+end:
+            return ret;
+        }
+
+        bool set_compressed(OpenSSL_bignum::Bignum& pub_x, OpenSSL_bignum::Bignum& pub_y) {
+            bool ret = false;
+
+            if (
+#if defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_BORINGSSL)
+                    EC_METHOD_get_field_type(EC_GROUP_method_of(group->GetPtr()))
+#else
+                    EC_GROUP_get_field_type(group->GetPtr())
+#endif
+                    != NID_X9_62_prime_field ) {
+                return set(pub_x, pub_y);
+            }
+
+            int y_bit;
+
+            /* Reduction of Y is necessary in order to correctly determine y_bit */
+            {
+                OpenSSL_bignum::BN_CTX ctx(ds);
+                BIGNUM* y = pub_y.GetDestPtr();
+
+#if defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_BORINGSSL)
+                /* LibreSSL and BoringSSL don't have EC_GROUP_get0_field(),
+                 * so try to retrieve the prime from the repository
+                 */
+                OpenSSL_bignum::Bignum field(ds);
+                const auto prime = cryptofuzz::repository::ECC_CurveToOrder(curveType);
+                CF_CHECK_NE(prime, std::nullopt);
+                CF_CHECK_EQ(field.Set(*prime), true);
+
+                CF_CHECK_EQ(BN_mod(y, y, field.GetPtr(), ctx.GetPtr()), 1);
+#else
+                (void)curveType;
+
+                const BIGNUM* field;
+                CF_ASSERT(
+                        (field = EC_GROUP_get0_field(group->GetPtr())) != nullptr,
+                        "EC_GROUP_get0_field returned NULL");
+
+                CF_CHECK_EQ(BN_mod(y, y, field, ctx.GetPtr()), 1);
+#endif
+            }
+
+            y_bit = BN_is_bit_set(pub_y.GetPtr(), 0);
+
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+            CF_CHECK_NE(EC_POINT_set_compressed_coordinates(group->GetPtr(), GetPtr(), pub_x.GetPtr(), y_bit, nullptr), 0);
+#else
+            CF_CHECK_NE(EC_POINT_set_compressed_coordinates_GFp(group->GetPtr(), GetPtr(), pub_x.GetPtr(), y_bit, nullptr), 0);
+#endif
+
+            CF_ASSERT(
+                    EC_POINT_is_on_curve(group->GetPtr(), GetPtr(), nullptr) == 1,
+                    "Decompressed point not on curve")
+
+            ret = true;
+end:
+            return ret;
+        }
+
     public:
-        EC_POINT_Copier(Datasource& ds, std::shared_ptr<EC_GROUP_Copier> group) :
-            group(group), ds(ds) {
+        EC_POINT_Copier(Datasource& ds, std::shared_ptr<EC_GROUP_Copier> group, const uint64_t curveType) :
+            group(group), ds(ds), curveType(curveType) {
             point = newPoint();
 
             CF_ASSERT(point != nullptr, "Cannot create EC_POINT");
@@ -201,6 +275,76 @@ class EC_POINT_Copier {
 
         ~EC_POINT_Copier() {
             freePoint(point);
+        }
+
+        bool Set(OpenSSL_bignum::Bignum& pub_x, OpenSSL_bignum::Bignum& pub_y, const bool allowCompressed = true) {
+            bool compressed = false;
+            try {
+                compressed = ds.Get<bool>();
+            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+            if ( allowCompressed == false ) {
+                compressed = false;
+            }
+
+            return compressed ?
+                set_compressed(pub_x, pub_y) :
+                set(pub_x, pub_y);
+        }
+
+        bool Set(const component::Bignum& pub_x, const component::Bignum& pub_y, const bool allowCompressed = true) {
+            bool ret = false;
+
+            OpenSSL_bignum::Bignum _pub_x(ds), _pub_y(ds);
+
+            CF_CHECK_EQ(_pub_x.Set(pub_x.ToString(ds)), true);
+            CF_CHECK_EQ(_pub_y.Set(pub_y.ToString(ds)), true);
+
+            CF_CHECK_TRUE(Set(_pub_x, _pub_y, allowCompressed));
+
+            ret = true;
+end:
+            return ret;
+        }
+
+        bool Get(OpenSSL_bignum::Bignum& pub_x, OpenSSL_bignum::Bignum& pub_y) {
+            bool ret = false;
+
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+            CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
+#else
+            CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group->GetPtr(), GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
+#endif
+
+            ret = true;
+end:
+            return ret;
+        }
+
+        std::optional<component::ECC_Point> Get(void) {
+            std::optional<component::ECC_Point> ret = std::nullopt;
+
+            char* x_str = nullptr;
+            char* y_str = nullptr;
+
+            OpenSSL_bignum::Bignum x(ds);
+            OpenSSL_bignum::Bignum y(ds);
+
+            CF_CHECK_EQ(x.New(), true);
+            CF_CHECK_EQ(y.New(), true);
+
+            CF_CHECK_TRUE(Get(x, y));
+
+            CF_CHECK_NE(x_str = BN_bn2dec(x.GetPtr()), nullptr);
+            CF_CHECK_NE(y_str = BN_bn2dec(y.GetPtr()), nullptr);
+
+            ret = { std::string(x_str), std::string(y_str) };
+
+end:
+            OPENSSL_free(x_str);
+            OPENSSL_free(y_str);
+
+            return ret;
         }
 };
 
