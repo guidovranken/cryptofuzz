@@ -160,3 +160,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - NSS: [mp_xgcd produces incorrect Bezout coefficients](https://bugzilla.mozilla.org/show_bug.cgi?id=1761708)
 - Nettle: TBA
 - libgcrypt: [Argon2 incorrect result and division by zero](https://lists.gnupg.org/pipermail/gcrypt-devel/2022-March/005290.html)
+- Herumi mcl: [Incorrect result for G1 multiplication by Fp](https://github.com/herumi/mcl/issues/141)
