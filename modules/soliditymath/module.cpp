@@ -131,13 +131,26 @@ std::optional<component::Bignum> SolidityMath::OpBignumCalc(operation::BignumCal
     SolidityMath_detail::append(calldata, contract->hashes.at(calcop).second);
 
     {
+        if ( calcop == CF_CALCOP("MulDiv(A,B,C)") ) {
+            if ( op.bn0.ToTrimmedString() == "0" || op.bn1.ToTrimmedString() == "0" ) {
+                goto end;
+            }
+        }
+
+        if ( calcop == CF_CALCOP("InvMod(A,B)") ) {
+            CF_CHECK_EQ(op.bn1.ToTrimmedString(), "115792089237316195423570985008687907853269984665640564039457584007913129639936");
+        }
         const auto numParams = repository::CalcOpToNumParams(calcop);
 
         if ( numParams > 0 ) {
             CF_CHECK_TRUE(SolidityMath_detail::append(calldata, op.bn0));
         }
         if ( numParams > 1 ) {
-            CF_CHECK_TRUE(SolidityMath_detail::append(calldata, op.bn1));
+            if ( calcop == CF_CALCOP("InvMod(A,B)") ) {
+                CF_CHECK_TRUE(SolidityMath_detail::append(calldata, op.bn0));
+            } else {
+                CF_CHECK_TRUE(SolidityMath_detail::append(calldata, op.bn1));
+            }
         }
         if ( numParams > 2 ) {
             CF_CHECK_TRUE(SolidityMath_detail::append(calldata, op.bn2));

@@ -50,6 +50,8 @@ for f in sys.argv[1:]:
                     calcop = 'CF_CALCOP("Exp(A,B)")'
                 elif k == 'expDiv(uint256,uint256,uint256)':
                     calcop = 'CF_CALCOP("ExpDiv(A,B,C)")'
+                elif k == 'invmod(uint256,uint256)':
+                    calcop = 'CF_CALCOP("InvMod(A,B)")'
                 else:
                     assert(False)
 
