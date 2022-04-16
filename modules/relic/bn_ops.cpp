@@ -385,9 +385,6 @@ bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
                 return true;
             case    2:
                 {
-                    /* https://github.com/relic-toolkit/relic/issues/222 */
-                    goto end;
-
                     Bignum t1(ds);
 
                     RLC_TRY {
@@ -429,9 +426,6 @@ bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
                 }
             case    5:
                 {
-                    /* https://github.com/relic-toolkit/relic/issues/221 */
-                    CF_CHECK_NE(bn_bits(bn[1].Get()), 0);
-
                     Bignum t1(ds);
 
                     RLC_TRY {
@@ -446,7 +440,6 @@ bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
         }
     } catch ( ... ) { }
 
-end:
     return false;
 
 }
