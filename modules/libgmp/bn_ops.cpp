@@ -156,6 +156,11 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     switch ( ds.Get<uint8_t>() ) {
         case    0:
+            /* "Negative exp is supported if the inverse base-1 mod mod exists.
+             *  If an inverse doesn’t exist then a divide by zero is raised."
+             */
+            CF_CHECK_GTE(mpz_sgn(bn[1].GetPtr()), 0);
+
             /* noret */ mpz_powm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
             break;
         case    1:
@@ -168,6 +173,8 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             break;
         case    2:
             {
+                CF_CHECK_GTE(mpz_sgn(bn[1].GetPtr()), 0);
+
                 /* "It is required that exp > 0 and that mod is odd." */
                 CF_CHECK_NE(mpz_cmp_ui(bn[1].GetPtr(), 0), 1);
 
@@ -381,11 +388,16 @@ bool Neg::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 }
 
 bool Sqrt::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    bool ret = false;
     (void)ds;
 
-    /* noret */ mpz_sqrt(res.GetPtr(), bn[0].GetPtr());
+    CF_CHECK_GTE(mpz_sgn(bn[0].GetPtr()), 0);
 
-    return true;
+    /* noret */ mpz_sqrt(res.GetPtr(), bn[0].GetPtr());
+    ret = true;
+
+end:
+    return ret;
 }
 
 bool Sqr::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
@@ -568,6 +580,8 @@ bool SetBit::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     const auto position_sl = bn[1].GetSignedLong();
     CF_CHECK_NE(position_sl, std::nullopt);
+    CF_CHECK_GTE(mpz_sgn(bn[0].GetPtr()), 0);
+    CF_CHECK_GTE(mpz_sgn(bn[1].GetPtr()), 0);
 
     /* noret */ mpz_setbit(bn.GetDestPtr(0), *position_sl);
     /* noret */ mpz_set(res.GetPtr(), bn[0].GetPtr());
@@ -584,6 +598,7 @@ bool ClearBit::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     const auto position_sl = bn[1].GetSignedLong();
     CF_CHECK_NE(position_sl, std::nullopt);
+    CF_CHECK_GTE(mpz_sgn(bn[0].GetPtr()), 0);
 
     /* noret */ mpz_clrbit(bn.GetDestPtr(0), *position_sl);
     /* noret */ mpz_set(res.GetPtr(), bn[0].GetPtr());
@@ -696,11 +711,16 @@ bool Cbrt::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 }
 
 bool SqrtRem::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    bool ret = false;
     (void)ds;
 
-    /* noret */ mpz_sqrtrem(bn[1].GetPtr(), res.GetPtr(), bn[0].GetPtr());
+    CF_CHECK_GTE(mpz_sgn(bn[0].GetPtr()), 0);
 
-    return true;
+    /* noret */ mpz_sqrtrem(bn[1].GetPtr(), res.GetPtr(), bn[0].GetPtr());
+    ret = true;
+
+end:
+    return ret;
 }
 
 bool CbrtRem::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
@@ -718,6 +738,7 @@ bool Nthrt::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     const auto bn1 = bn[1].GetUnsignedLong();
     CF_CHECK_NE(bn1, std::nullopt);
     CF_CHECK_NE(*bn1, 0);
+    CF_CHECK_GTE(mpz_sgn(bn[0].GetPtr()), 0);
 
     /* noret */ mpz_root(res.GetPtr(), bn[0].GetPtr(), *bn1);
 
@@ -733,6 +754,7 @@ bool NthrtRem::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     const auto bn1 = bn[1].GetUnsignedLong();
     CF_CHECK_NE(bn1, std::nullopt);
     CF_CHECK_NE(*bn1, 0);
+    CF_CHECK_GTE(mpz_sgn(bn[0].GetPtr()), 0);
 
     /* noret */ mpz_rootrem(bn[1].GetPtr(), res.GetPtr(), bn[0].GetPtr(), *bn1);
 
