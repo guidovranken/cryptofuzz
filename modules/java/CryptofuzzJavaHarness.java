@@ -2,6 +2,18 @@ import java.math.BigInteger;
 
 public class CryptofuzzJavaHarness
 {
+  public static boolean ECDSA_Verify(String hash, String curve, String _x, String _y, String _r, String _s, byte[] msg)
+  {
+      BigInteger x = new BigInteger(_x);
+      BigInteger y = new BigInteger(_y);
+      BigInteger r = new BigInteger(_r);
+      BigInteger s = new BigInteger(_s);
+
+      /* TODO */
+
+      return false;
+  }
+
   public static String BignumCalc(String _bn1, String _bn2, String _bn3, int op)
   {
       BigInteger bn1 = new BigInteger(_bn1);
