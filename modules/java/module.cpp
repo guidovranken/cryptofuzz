@@ -54,6 +54,7 @@ std::optional<component::Bignum> Java::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
+    bool initialized = false;
     jstring bn1, bn2, bn3;
     jint calcop;
     jstring rv;
@@ -70,6 +71,8 @@ std::optional<component::Bignum> Java::OpBignumCalc(operation::BignumCalc& op) {
             calcop = 2;
             break;
         case    CF_CALCOP("Div(A,B)"):
+            CF_CHECK_FALSE(op.bn0.IsNegative());
+            CF_CHECK_FALSE(op.bn1.IsNegative());
             calcop = 3;
             break;
         case    CF_CALCOP("GCD(A,B)"):
@@ -115,12 +118,14 @@ std::optional<component::Bignum> Java::OpBignumCalc(operation::BignumCalc& op) {
             calcop = 17;
             break;
         case    CF_CALCOP("RShift(A,B)"):
+            CF_CHECK_FALSE(op.bn1.IsNegative());
             calcop = 18;
             break;
         case    CF_CALCOP("Bit(A,B)"):
             calcop = 19;
             break;
         case    CF_CALCOP("ClearBit(A,B)"):
+            CF_CHECK_FALSE(op.bn0.IsNegative());
             calcop = 20;
             break;
         case    CF_CALCOP("SetBit(A,B)"):
@@ -148,6 +153,8 @@ std::optional<component::Bignum> Java::OpBignumCalc(operation::BignumCalc& op) {
     bn3 = Java_detail::env->NewStringUTF(op.bn2.ToString(ds).c_str());
     CF_ASSERT(bn3 != nullptr, "Cannot create string argument");
 
+    initialized = true;
+
     rv = static_cast<jstring>(
             Java_detail::env->CallStaticObjectMethod(
                 Java_detail::jclass,
@@ -167,6 +174,11 @@ std::optional<component::Bignum> Java::OpBignumCalc(operation::BignumCalc& op) {
     ret = rv_str;
 
 end:
+    if ( initialized ) {
+        Java_detail::env->DeleteLocalRef(bn1);
+        Java_detail::env->DeleteLocalRef(bn2);
+        Java_detail::env->DeleteLocalRef(bn3);
+    }
     return ret;
 }
 
