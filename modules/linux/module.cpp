@@ -30,7 +30,9 @@ std::optional<std::string> toDigestString(const component::DigestType& digestTyp
         //{ CF_DIGEST("SKEIN_256"), "skein256" },
         { CF_DIGEST("SKEIN_512"), "skein512" },
         { CF_DIGEST("SM3"), "sm3" },
+        { CF_DIGEST("RIPEMD128"), "rmd128" },
         { CF_DIGEST("RIPEMD160"), "rmd160" },
+        { CF_DIGEST("RIPEMD320"), "rmd320" },
         { CF_DIGEST("SHA3-224"), "sha3-224" },
         { CF_DIGEST("SHA3-256"), "sha3-256" },
         { CF_DIGEST("SHA3-384"), "sha3-384" },
@@ -42,6 +44,8 @@ std::optional<std::string> toDigestString(const component::DigestType& digestTyp
         { CF_DIGEST("BLAKE2B512"), "blake2b-512" },
         { CF_DIGEST("STREEBOG-256"), "streebog256" },
         { CF_DIGEST("STREEBOG-512"), "streebog512" },
+        /* Mismatch with other libraries. TODO. */
+        //{ CF_DIGEST("TIGER"), "tgr192" },
     };
 
     if ( LUT.find(digestType.Get()) == LUT.end() ) {
