@@ -161,3 +161,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Nettle: TBA
 - libgcrypt: [Argon2 incorrect result and division by zero](https://lists.gnupg.org/pipermail/gcrypt-devel/2022-March/005290.html)
 - Herumi mcl: [Incorrect result for G1 multiplication by Fp](https://github.com/herumi/mcl/issues/141)
+- libgcrypt: [gcry_mpi_invm incorrect result](https://lists.gnupg.org/pipermail/gcrypt-devel/2022-April/005303.html)
