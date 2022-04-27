@@ -39,7 +39,11 @@ public class CryptofuzzJavaHarness
       } else if ( op == 7 ) {
           res = bn1.xor(bn2);
       } else if ( op == 8 ) {
-          res = bn1.modInverse(bn2);
+          try {
+              res = bn1.modInverse(bn2);
+          } catch ( ArithmeticException e ) {
+              /* res remains 0 */
+          }
       } else if ( op == 9 ) {
           res = bn1.modPow(bn2, bn3);
       } else if ( op == 10 ) {
