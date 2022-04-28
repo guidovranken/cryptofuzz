@@ -1,6 +1,13 @@
 import java.math.BigInteger;
 import java.security.MessageDigest;
-
+import java.security.Signature;
+import java.security.KeyFactory;
+import java.security.spec.EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.security.PublicKey;
+import java.security.InvalidKeyException;
+import java.security.spec.InvalidKeySpecException;
+import java.security.SignatureException;
 
 public class CryptofuzzJavaHarness
 {
@@ -15,16 +22,26 @@ public class CryptofuzzJavaHarness
       }
   }
 
-  public static boolean ECDSA_Verify(String hash, String curve, String _x, String _y, String _r, String _s, byte[] msg)
+  public static boolean ECDSA_Verify(String hash, byte[] pub, byte[] sig, byte[] msg)
   {
-      BigInteger x = new BigInteger(_x);
-      BigInteger y = new BigInteger(_y);
-      BigInteger r = new BigInteger(_r);
-      BigInteger s = new BigInteger(_s);
+      try {
+          EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(pub);
+          KeyFactory keyFactory = KeyFactory.getInstance("EC");
+          PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
 
-      /* TODO */
-
-      return false;
+          Signature signature = Signature.getInstance(hash + "withECDSA");
+          signature.initVerify(publicKey);
+          signature.update(msg);
+          return signature.verify(sig);
+      } catch ( java.security.NoSuchAlgorithmException e ) {
+          return false;
+      } catch ( InvalidKeyException e ) {
+          return false;
+      } catch ( InvalidKeySpecException e ) {
+          return false;
+      } catch ( SignatureException e ) {
+          return false;
+      }
   }
 
   public static String BignumCalc(String _bn1, String _bn2, String _bn3, int op)

@@ -1,3 +1,7 @@
+#include <openssl/ecdsa.h>
+#include <openssl/obj_mac.h>
+#include <openssl/x509.h>
+
 #include "module.h"
 #include <cryptofuzz/util.h>
 #include <fuzzing/datasource/id.hpp>
@@ -12,6 +16,7 @@ namespace Java_detail {
     JNIEnv* env = nullptr;
     jclass jclass;
     jmethodID method_Digest;
+    jmethodID method_ECDSA_Verify;
     jmethodID method_BignumCalc;
 
     static JNIEnv* create_vm(JavaVM ** jvm) {
@@ -44,9 +49,81 @@ namespace Java_detail {
         method_Digest = env->GetStaticMethodID(jclass, "Digest", "(Ljava/lang/String;[B)[B");
         CF_ASSERT(method_Digest != nullptr, "Cannot find method");
 
+        method_ECDSA_Verify = env->GetStaticMethodID(jclass, "ECDSA_Verify", "(Ljava/lang/String;[B[B[B)Z");
+        CF_ASSERT(method_ECDSA_Verify != nullptr, "Cannot find method");
+
         method_BignumCalc = env->GetStaticMethodID(jclass, "BignumCalc", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;");
         CF_ASSERT(method_BignumCalc != nullptr, "Cannot find method");
 
+    }
+
+    static std::optional<std::vector<uint8_t>> PubkeyToX509(const component::BignumPair& pub, const int nid)
+    {
+        std::optional<std::vector<uint8_t>> ret = std::nullopt;
+
+        EC_GROUP* group = nullptr;
+        EC_POINT* point = nullptr;
+        EC_KEY* key = nullptr;
+        BIGNUM *pub_x = nullptr, *pub_y = nullptr;
+        uint8_t* encoded = nullptr;
+
+        CF_CHECK_NE(key = EC_KEY_new(), nullptr);
+        CF_CHECK_NE(group = EC_GROUP_new_by_curve_name(nid), nullptr);
+        CF_CHECK_EQ(EC_KEY_set_group(key, group), 1);
+
+        CF_CHECK_NE(point = EC_POINT_new(group), nullptr);
+        CF_CHECK_NE(BN_dec2bn(&pub_x, pub.first.ToTrimmedString().c_str()), 0);
+        CF_CHECK_NE(BN_dec2bn(&pub_y, pub.second.ToTrimmedString().c_str()), 0);
+        CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group, point, pub_x, pub_y, nullptr), 0);
+        CF_CHECK_EQ(EC_KEY_set_public_key(key, point), 1);
+
+        {
+            const auto size = i2d_EC_PUBKEY(key, &encoded);
+            CF_CHECK_GT(size, 0);
+
+            ret = std::vector<uint8_t>(encoded, encoded + size);
+        }
+
+end:
+        EC_GROUP_free(group);
+        EC_POINT_free(point);
+        EC_KEY_free(key);
+        BN_free(pub_x);
+        BN_free(pub_y);
+        OPENSSL_free(encoded);
+
+        return ret;
+    }
+
+    static std::optional<std::vector<uint8_t>> SignatureToX509(const component::BignumPair& sig)
+    {
+        std::optional<std::vector<uint8_t>> ret = std::nullopt;
+
+        ECDSA_SIG* signature = nullptr;
+        BIGNUM *sig_r = nullptr, *sig_s = nullptr;
+        uint8_t* encoded = nullptr;
+
+        CF_CHECK_NE(signature = ECDSA_SIG_new(), nullptr);
+        CF_CHECK_NE(BN_dec2bn(&sig_r, sig.first.ToTrimmedString().c_str()), 0);
+        CF_CHECK_NE(BN_dec2bn(&sig_s, sig.second.ToTrimmedString().c_str()), 0);
+        CF_CHECK_EQ(ECDSA_SIG_set0(signature, sig_r, sig_s), 1);
+        sig_r = nullptr;
+        sig_s = nullptr;
+
+        {
+            const auto size = i2d_ECDSA_SIG(signature, &encoded);
+            CF_CHECK_GT(size, 0);
+
+            ret = std::vector<uint8_t>(encoded, encoded + size);
+        }
+
+end:
+        ECDSA_SIG_free(signature);
+        BN_free(sig_r);
+        BN_free(sig_s);
+        OPENSSL_free(encoded);
+
+        return ret;
     }
 }
 
@@ -58,7 +135,7 @@ Java::Java(void) :
 std::optional<component::Digest> Java::OpDigest(operation::Digest& op) {
     std::optional<component::Digest> ret = std::nullopt;
 
-    bool initialized;
+    bool initialized = false;
     jstring hash;
     jbyteArray msg;
     jbyteArray rv;
@@ -135,6 +212,88 @@ end:
         Java_detail::env->DeleteLocalRef(hash);
     }
 
+    return ret;
+}
+
+std::optional<bool> Java::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+
+    jstring hash = nullptr;
+    jbyteArray pub = nullptr;
+    jbyteArray sig = nullptr;
+    jbyteArray msg = nullptr;
+    int nid = -1;
+
+    std::optional<std::vector<uint8_t>> pub_encoded = std::nullopt;
+    std::optional<std::vector<uint8_t>> sig_encoded = std::nullopt;
+
+    switch ( op.digestType.Get() ) {
+        case CF_DIGEST("NULL"):
+            hash = Java_detail::env->NewStringUTF("NONE");
+            break;
+        case CF_DIGEST("SHA1"):
+            hash = Java_detail::env->NewStringUTF("SHA1");
+            break;
+        case CF_DIGEST("SHA256"):
+            hash = Java_detail::env->NewStringUTF("SHA256");
+            break;
+        default:
+            goto end;
+    }
+
+    switch ( op.curveType.Get() ) {
+        case CF_ECC_CURVE("secp192r1"):
+            nid = NID_X9_62_prime192v1;
+            break;
+        case CF_ECC_CURVE("secp256r1"):
+            nid = NID_X9_62_prime256v1;
+            break;
+        case CF_ECC_CURVE("secp384r1"):
+            nid = NID_secp384r1;
+            break;
+        case CF_ECC_CURVE("secp256k1"):
+            nid = NID_secp256k1;
+            break;
+        default:
+            goto end;
+    }
+
+    {
+        pub_encoded = Java_detail::PubkeyToX509(op.signature.pub, nid);
+        CF_CHECK_NE(pub_encoded, std::nullopt);
+
+        pub = Java_detail::env->NewByteArray(pub_encoded->size());
+        CF_ASSERT(pub != nullptr, "Cannot create byte array argument");
+        Java_detail::env->SetByteArrayRegion(pub, 0, pub_encoded->size(), (const jbyte*)pub_encoded->data());
+    }
+
+    {
+        sig_encoded = Java_detail::SignatureToX509(op.signature.signature);
+        CF_CHECK_NE(sig_encoded, std::nullopt);
+
+        sig = Java_detail::env->NewByteArray(sig_encoded->size());
+        CF_ASSERT(sig != nullptr, "Cannot create byte array argument");
+        Java_detail::env->SetByteArrayRegion(sig, 0, sig_encoded->size(), (const jbyte*)sig_encoded->data());
+    }
+
+    msg = Java_detail::env->NewByteArray(op.cleartext.GetSize());
+    CF_ASSERT(msg != nullptr, "Cannot create byte array argument");
+    Java_detail::env->SetByteArrayRegion(msg, 0, op.cleartext.GetSize(), (const jbyte*)op.cleartext.GetPtr());
+
+    {
+        const jboolean rv = Java_detail::env->CallStaticBooleanMethod(
+                Java_detail::jclass,
+                Java_detail::method_ECDSA_Verify,
+                hash, pub, sig, msg);
+
+        ret = rv;
+    }
+
+end:
+    Java_detail::env->DeleteLocalRef(hash);
+    Java_detail::env->DeleteLocalRef(pub);
+    Java_detail::env->DeleteLocalRef(sig);
+    Java_detail::env->DeleteLocalRef(msg);
     return ret;
 }
 
