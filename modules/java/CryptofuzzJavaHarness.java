@@ -1,7 +1,20 @@
 import java.math.BigInteger;
+import java.security.MessageDigest;
+
 
 public class CryptofuzzJavaHarness
 {
+  public static byte[] Digest(String hash, byte[] msg)
+  {
+      try {
+          MessageDigest md = MessageDigest.getInstance(hash);
+          md.update(msg);
+          return md.digest();
+      } catch ( java.security.NoSuchAlgorithmException e ) {
+          return new byte[0];
+      }
+  }
+
   public static boolean ECDSA_Verify(String hash, String curve, String _x, String _y, String _r, String _s, byte[] msg)
   {
       BigInteger x = new BigInteger(_x);
