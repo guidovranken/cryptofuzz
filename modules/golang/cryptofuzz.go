@@ -169,6 +169,19 @@ type OpECDSA_Verify struct {
     Sig_S string
 }
 
+type OpECDSA_Sign struct {
+    Modifier ByteSlice
+    CurveType Type
+    DigestType Type
+    Priv string
+    Cleartext ByteSlice
+}
+
+type ECDSA_Signature struct {
+    Pub [2]string `json:"pub"`
+    Signature [2]string `json:"signature"`
+}
+
 type OpBignumCalc struct {
     Modifier ByteSlice
     CalcOp Type
@@ -716,6 +729,53 @@ func Golang_Cryptofuzz_OpECDSA_Verify(in []byte) {
     } else {
         res = ecdsa.Verify(pubKey, op.Cleartext, sigR, sigS)
     }
+
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export Golang_Cryptofuzz_OpECDSA_Sign
+func Golang_Cryptofuzz_OpECDSA_Sign(in []byte) {
+    resetResult()
+
+    var op OpECDSA_Sign
+    unmarshal(in, &op)
+
+    if isNULL(op.DigestType) == false {
+        return
+    }
+
+    curve, err := toCurve(op.CurveType)
+    if err != nil {
+        return
+    }
+
+    priv := decodeBignum(op.Priv)
+    x, y := curve.ScalarBaseMult(priv.Bytes())
+
+    if x.String() == "0" { return } /* XXX */
+
+    var priv_ecdsa ecdsa.PrivateKey
+    priv_ecdsa.D = priv
+    priv_ecdsa.PublicKey.Curve = curve
+
+    randreader := bytes.NewReader(op.Modifier)
+
+    r, s, err := ecdsa.Sign(randreader, &priv_ecdsa, op.Cleartext)
+    if err != nil {
+        return
+    }
+
+    var res ECDSA_Signature
+    res.Pub[0] = x.String()
+    res.Pub[1] = y.String()
+
+    res.Signature[0] = r.String()
+    res.Signature[1] = s.String()
 
     r2, err := json.Marshal(&res)
     if err != nil {

@@ -140,6 +140,18 @@ std::optional<bool> Golang::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     return getResultAs<bool>();
 }
 
+std::optional<component::ECDSA_Signature> Golang::OpECDSA_Sign(operation::ECDSA_Sign& op) {
+    if ( op.UseRandomNonce() != true ) {
+        return std::nullopt;
+    }
+
+    auto json = op.ToJSON();
+    auto jsonStr = json.dump();
+    Golang_Cryptofuzz_OpECDSA_Sign(toGoSlice(jsonStr));
+
+    return getResultAs<component::ECDSA_Signature>();
+}
+
 std::optional<component::Bignum> Golang::OpBignumCalc(operation::BignumCalc& op) {
     auto jsonStr = op.ToJSON().dump();
     Golang_Cryptofuzz_OpBignumCalc(toGoSlice(jsonStr));
