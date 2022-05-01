@@ -5,9 +5,12 @@ import java.security.KeyFactory;
 import java.security.spec.EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.security.PublicKey;
-import java.security.InvalidKeyException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.SignatureException;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.SecretKey;
 
 public class CryptofuzzJavaHarness
 {
@@ -18,6 +21,20 @@ public class CryptofuzzJavaHarness
           md.update(msg);
           return md.digest();
       } catch ( java.security.NoSuchAlgorithmException e ) {
+          return new byte[0];
+      }
+  }
+
+  public static byte[] HMAC(String hash, byte[] key, byte[] msg)
+  {
+      try {
+          SecretKey keyKi = new SecretKeySpec(key, "HMAC");
+          Mac m = Mac.getInstance("Hmac" + hash);
+          m.init(keyKi);
+          return m.doFinal(msg);
+      } catch ( java.security.NoSuchAlgorithmException e ) {
+          return new byte[0];
+      } catch ( java.security.InvalidKeyException e ) {
           return new byte[0];
       }
   }
@@ -35,9 +52,9 @@ public class CryptofuzzJavaHarness
           return signature.verify(sig);
       } catch ( java.security.NoSuchAlgorithmException e ) {
           return false;
-      } catch ( InvalidKeyException e ) {
+      } catch ( java.security.InvalidKeyException e ) {
           return false;
-      } catch ( InvalidKeySpecException e ) {
+      } catch ( java.security.spec.InvalidKeySpecException e ) {
           return false;
       } catch ( SignatureException e ) {
           return false;

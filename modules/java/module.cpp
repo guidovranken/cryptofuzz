@@ -16,6 +16,7 @@ namespace Java_detail {
     JNIEnv* env = nullptr;
     jclass jclass;
     jmethodID method_Digest;
+    jmethodID method_HMAC;
     jmethodID method_ECDSA_Verify;
     jmethodID method_BignumCalc;
 
@@ -48,6 +49,9 @@ namespace Java_detail {
 
         method_Digest = env->GetStaticMethodID(jclass, "Digest", "(Ljava/lang/String;[B)[B");
         CF_ASSERT(method_Digest != nullptr, "Cannot find method");
+
+        method_HMAC = env->GetStaticMethodID(jclass, "HMAC", "(Ljava/lang/String;[B[B)[B");
+        CF_ASSERT(method_HMAC != nullptr, "Cannot find method");
 
         method_ECDSA_Verify = env->GetStaticMethodID(jclass, "ECDSA_Verify", "(Ljava/lang/String;[B[B[B)Z");
         CF_ASSERT(method_ECDSA_Verify != nullptr, "Cannot find method");
@@ -202,6 +206,91 @@ std::optional<component::Digest> Java::OpDigest(operation::Digest& op) {
         const auto data = Java_detail::env->GetPrimitiveArrayCritical(rv, nullptr);
 
         ret = component::Digest((const uint8_t*)data, size);
+
+        Java_detail::env->ReleasePrimitiveArrayCritical(rv, data, 0);
+    }
+
+end:
+    if ( initialized ) {
+        Java_detail::env->DeleteLocalRef(msg);
+        Java_detail::env->DeleteLocalRef(hash);
+    }
+
+    return ret;
+}
+
+std::optional<component::MAC> Java::OpHMAC(operation::HMAC& op) {
+    std::optional<component::MAC> ret = std::nullopt;
+
+    bool initialized = false;
+    jstring hash;
+    jbyteArray msg;
+    jbyteArray key;
+    jbyteArray rv;
+
+    switch ( op.digestType.Get() ) {
+        case    CF_DIGEST("MD5"):
+            hash = Java_detail::env->NewStringUTF("MD5");
+            break;
+        case    CF_DIGEST("SHA1"):
+            hash = Java_detail::env->NewStringUTF("SHA1");
+            break;
+        case    CF_DIGEST("SHA224"):
+            hash = Java_detail::env->NewStringUTF("SHA224");
+            break;
+        case    CF_DIGEST("SHA256"):
+            hash = Java_detail::env->NewStringUTF("SHA256");
+            break;
+        case    CF_DIGEST("SHA384"):
+            hash = Java_detail::env->NewStringUTF("SHA384");
+            break;
+        case    CF_DIGEST("SHA512"):
+            hash = Java_detail::env->NewStringUTF("SHA512");
+            break;
+        case    CF_DIGEST("SHA3-224"):
+            hash = Java_detail::env->NewStringUTF("SHA3-224");
+            break;
+        case    CF_DIGEST("SHA3-256"):
+            hash = Java_detail::env->NewStringUTF("SHA3-256");
+            break;
+        case    CF_DIGEST("SHA3-384"):
+            hash = Java_detail::env->NewStringUTF("SHA3-384");
+            break;
+        case    CF_DIGEST("SHA3-512"):
+            hash = Java_detail::env->NewStringUTF("SHA3-512");
+            break;
+        default:
+            return ret;
+
+    }
+    CF_ASSERT(hash != nullptr, "Cannot create string argument");
+
+    key = Java_detail::env->NewByteArray(op.cipher.key.GetSize());
+    CF_ASSERT(key != nullptr, "Cannot create byte array argument");
+    Java_detail::env->SetByteArrayRegion(key, 0, op.cipher.key.GetSize(), (const jbyte*)op.cipher.key.GetPtr());
+
+    msg = Java_detail::env->NewByteArray(op.cleartext.GetSize());
+    CF_ASSERT(msg != nullptr, "Cannot create byte array argument");
+    Java_detail::env->SetByteArrayRegion(msg, 0, op.cleartext.GetSize(), (const jbyte*)op.cleartext.GetPtr());
+
+    initialized = true;
+
+    rv = static_cast<jbyteArray>(
+            Java_detail::env->CallStaticObjectMethod(
+                Java_detail::jclass,
+                Java_detail::method_HMAC,
+                hash, key, msg));
+
+    CF_CHECK_NE(rv, nullptr);
+
+    {
+        const auto size = Java_detail::env->GetArrayLength(rv);
+        const auto data = Java_detail::env->GetPrimitiveArrayCritical(rv, nullptr);
+
+        if ( size > 0 ) {
+            ((uint8_t*)data)[0]++;
+            ret = component::MAC((const uint8_t*)data, size);
+        }
 
         Java_detail::env->ReleasePrimitiveArrayCritical(rv, data, 0);
     }
