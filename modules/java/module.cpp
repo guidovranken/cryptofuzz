@@ -47,10 +47,10 @@ namespace Java_detail {
         jclass = env->FindClass("CryptofuzzJavaHarness");
         CF_ASSERT(jclass != nullptr, "Cannot find class");
 
-        method_Digest = env->GetStaticMethodID(jclass, "Digest", "(Ljava/lang/String;[B)[B");
+        method_Digest = env->GetStaticMethodID(jclass, "Digest", "(Ljava/lang/String;[B[I)[B");
         CF_ASSERT(method_Digest != nullptr, "Cannot find method");
 
-        method_HMAC = env->GetStaticMethodID(jclass, "HMAC", "(Ljava/lang/String;[B[B)[B");
+        method_HMAC = env->GetStaticMethodID(jclass, "HMAC", "(Ljava/lang/String;[B[B[I)[B");
         CF_ASSERT(method_HMAC != nullptr, "Cannot find method");
 
         method_ECDSA_Verify = env->GetStaticMethodID(jclass, "ECDSA_Verify", "(Ljava/lang/String;[B[B[B)Z");
@@ -138,18 +138,18 @@ Java::Java(void) :
 
 std::optional<component::Digest> Java::OpDigest(operation::Digest& op) {
     std::optional<component::Digest> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     bool initialized = false;
+    std::vector<int> parts;
     jstring hash;
     jbyteArray msg;
+    jintArray chunks;
     jbyteArray rv;
 
     switch ( op.digestType.Get() ) {
         case    CF_DIGEST("MD2"):
             hash = Java_detail::env->NewStringUTF("MD2");
-            break;
-        case    CF_DIGEST("MD4"):
-            hash = Java_detail::env->NewStringUTF("MD4");
             break;
         case    CF_DIGEST("MD5"):
             hash = Java_detail::env->NewStringUTF("MD5");
@@ -191,15 +191,22 @@ std::optional<component::Digest> Java::OpDigest(operation::Digest& op) {
     CF_ASSERT(msg != nullptr, "Cannot create byte array argument");
     Java_detail::env->SetByteArrayRegion(msg, 0, op.cleartext.GetSize(), (const jbyte*)op.cleartext.GetPtr());
 
+    for (const auto& part : util::ToParts(ds, op.cleartext)) {
+        parts.push_back(part.second);
+    }
+    chunks = Java_detail::env->NewIntArray(parts.size());
+    CF_ASSERT(chunks != nullptr, "Cannot create byte array argument");
+    Java_detail::env->SetIntArrayRegion(chunks, 0, parts.size(), parts.data());
+
     initialized = true;
 
     rv = static_cast<jbyteArray>(
             Java_detail::env->CallStaticObjectMethod(
                 Java_detail::jclass,
                 Java_detail::method_Digest,
-                hash, msg));
+                hash, msg, chunks));
 
-    CF_CHECK_NE(rv, nullptr);
+    CF_ASSERT(rv != nullptr, "Expected result");
 
     {
         const auto size = Java_detail::env->GetArrayLength(rv);
@@ -221,11 +228,14 @@ end:
 
 std::optional<component::MAC> Java::OpHMAC(operation::HMAC& op) {
     std::optional<component::MAC> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     bool initialized = false;
+    std::vector<int> parts;
     jstring hash;
     jbyteArray msg;
     jbyteArray key;
+    jintArray chunks;
     jbyteArray rv;
 
     switch ( op.digestType.Get() ) {
@@ -273,13 +283,20 @@ std::optional<component::MAC> Java::OpHMAC(operation::HMAC& op) {
     CF_ASSERT(msg != nullptr, "Cannot create byte array argument");
     Java_detail::env->SetByteArrayRegion(msg, 0, op.cleartext.GetSize(), (const jbyte*)op.cleartext.GetPtr());
 
+    for (const auto& part : util::ToParts(ds, op.cleartext)) {
+        parts.push_back(part.second);
+    }
+    chunks = Java_detail::env->NewIntArray(parts.size());
+    CF_ASSERT(chunks != nullptr, "Cannot create byte array argument");
+    Java_detail::env->SetIntArrayRegion(chunks, 0, parts.size(), parts.data());
+
     initialized = true;
 
     rv = static_cast<jbyteArray>(
             Java_detail::env->CallStaticObjectMethod(
                 Java_detail::jclass,
                 Java_detail::method_HMAC,
-                hash, key, msg));
+                hash, key, msg, chunks));
 
     CF_CHECK_NE(rv, nullptr);
 
@@ -288,7 +305,6 @@ std::optional<component::MAC> Java::OpHMAC(operation::HMAC& op) {
         const auto data = Java_detail::env->GetPrimitiveArrayCritical(rv, nullptr);
 
         if ( size > 0 ) {
-            ((uint8_t*)data)[0]++;
             ret = component::MAC((const uint8_t*)data, size);
         }
 

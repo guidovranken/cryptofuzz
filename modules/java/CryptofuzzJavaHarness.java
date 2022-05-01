@@ -1,3 +1,4 @@
+import java.util.Arrays;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.Signature;
@@ -14,24 +15,35 @@ import javax.crypto.SecretKey;
 
 public class CryptofuzzJavaHarness
 {
-  public static byte[] Digest(String hash, byte[] msg)
+  public static byte[] Digest(String hash, byte[] msg, int[] chunks)
   {
       try {
           MessageDigest md = MessageDigest.getInstance(hash);
-          md.update(msg);
+          int curpos = 0;
+          for (int i = 0; i < chunks.length; i++) {
+              int cursize = chunks[i];
+              md.update(Arrays.copyOfRange(msg, curpos, curpos + cursize));
+              curpos += cursize;
+          }
           return md.digest();
       } catch ( java.security.NoSuchAlgorithmException e ) {
           return new byte[0];
       }
   }
 
-  public static byte[] HMAC(String hash, byte[] key, byte[] msg)
+  public static byte[] HMAC(String hash, byte[] key, byte[] msg, int[] chunks)
   {
       try {
           SecretKey keyKi = new SecretKeySpec(key, "HMAC");
           Mac m = Mac.getInstance("Hmac" + hash);
           m.init(keyKi);
-          return m.doFinal(msg);
+          int curpos = 0;
+          for (int i = 0; i < chunks.length; i++) {
+              int cursize = chunks[i];
+              m.update(Arrays.copyOfRange(msg, curpos, curpos + cursize));
+              curpos += cursize;
+          }
+          return m.doFinal();
       } catch ( java.security.NoSuchAlgorithmException e ) {
           return new byte[0];
       } catch ( java.security.InvalidKeyException e ) {
