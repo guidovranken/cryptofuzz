@@ -53,7 +53,7 @@ namespace Java_detail {
         method_HMAC = env->GetStaticMethodID(jclass, "HMAC", "(Ljava/lang/String;[B[B[I)[B");
         CF_ASSERT(method_HMAC != nullptr, "Cannot find method");
 
-        method_ECDSA_Verify = env->GetStaticMethodID(jclass, "ECDSA_Verify", "(Ljava/lang/String;[B[B[B)Z");
+        method_ECDSA_Verify = env->GetStaticMethodID(jclass, "ECDSA_Verify", "(Ljava/lang/String;[B[B[B[I)Z");
         CF_ASSERT(method_ECDSA_Verify != nullptr, "Cannot find method");
 
         method_BignumCalc = env->GetStaticMethodID(jclass, "BignumCalc", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;");
@@ -321,12 +321,15 @@ end:
 }
 
 std::optional<bool> Java::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     std::optional<bool> ret = std::nullopt;
 
+    std::vector<int> parts;
     jstring hash = nullptr;
     jbyteArray pub = nullptr;
     jbyteArray sig = nullptr;
     jbyteArray msg = nullptr;
+    jintArray chunks = nullptr;
     int nid = -1;
 
     std::optional<std::vector<uint8_t>> pub_encoded = std::nullopt;
@@ -351,6 +354,9 @@ std::optional<bool> Java::OpECDSA_Verify(operation::ECDSA_Verify& op) {
             nid = NID_X9_62_prime192v1;
             break;
         case CF_ECC_CURVE("secp256r1"):
+            if ( op.cleartext.GetSize() != 32 ) {
+                goto end;
+            }
             nid = NID_X9_62_prime256v1;
             break;
         case CF_ECC_CURVE("secp384r1"):
@@ -381,6 +387,13 @@ std::optional<bool> Java::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         Java_detail::env->SetByteArrayRegion(sig, 0, sig_encoded->size(), (const jbyte*)sig_encoded->data());
     }
 
+    for (const auto& part : util::ToParts(ds, op.cleartext)) {
+        parts.push_back(part.second);
+    }
+    chunks = Java_detail::env->NewIntArray(parts.size());
+    CF_ASSERT(chunks != nullptr, "Cannot create byte array argument");
+    Java_detail::env->SetIntArrayRegion(chunks, 0, parts.size(), parts.data());
+
     msg = Java_detail::env->NewByteArray(op.cleartext.GetSize());
     CF_ASSERT(msg != nullptr, "Cannot create byte array argument");
     Java_detail::env->SetByteArrayRegion(msg, 0, op.cleartext.GetSize(), (const jbyte*)op.cleartext.GetPtr());
@@ -389,7 +402,7 @@ std::optional<bool> Java::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         const jboolean rv = Java_detail::env->CallStaticBooleanMethod(
                 Java_detail::jclass,
                 Java_detail::method_ECDSA_Verify,
-                hash, pub, sig, msg);
+                hash, pub, sig, msg, chunks);
 
         ret = rv;
     }

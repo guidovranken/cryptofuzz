@@ -51,7 +51,7 @@ public class CryptofuzzJavaHarness
       }
   }
 
-  public static boolean ECDSA_Verify(String hash, byte[] pub, byte[] sig, byte[] msg)
+  public static boolean ECDSA_Verify(String hash, byte[] pub, byte[] sig, byte[] msg, int[] chunks)
   {
       try {
           EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(pub);
@@ -60,7 +60,12 @@ public class CryptofuzzJavaHarness
 
           Signature signature = Signature.getInstance(hash + "withECDSA");
           signature.initVerify(publicKey);
-          signature.update(msg);
+          int curpos = 0;
+          for (int i = 0; i < chunks.length; i++) {
+              int cursize = chunks[i];
+              signature.update(Arrays.copyOfRange(msg, curpos, curpos + cursize));
+              curpos += cursize;
+          }
           return signature.verify(sig);
       } catch ( java.security.NoSuchAlgorithmException e ) {
           return false;
