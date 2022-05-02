@@ -9,6 +9,10 @@ namespace cryptofuzz {
 namespace module {
 
 namespace py_ecc_detail {
+    void* OpECC_Point_Add = nullptr;
+    void* OpECC_Point_Mul = nullptr;
+    void* OpECC_Point_Dbl = nullptr;
+    void* OpECC_Point_Neg = nullptr;
     void* OpBignumCalc_AddMod = nullptr;
     void* OpBignumCalc_SubMod = nullptr;
     void* OpBignumCalc_Mul = nullptr;
@@ -134,6 +138,10 @@ static void ConfigurePython(void) {
 
     Py_DECREF(pValue);
 
+    py_ecc_detail::OpECC_Point_Add = LoadPythonFunction(pModule, "OpECC_Point_Add");
+    py_ecc_detail::OpECC_Point_Mul = LoadPythonFunction(pModule, "OpECC_Point_Mul");
+    py_ecc_detail::OpECC_Point_Dbl = LoadPythonFunction(pModule, "OpECC_Point_Dbl");
+    py_ecc_detail::OpECC_Point_Neg = LoadPythonFunction(pModule, "OpECC_Point_Neg");
     py_ecc_detail::OpBignumCalc_AddMod = LoadPythonFunction(pModule, "OpBignumCalc_AddMod");
     py_ecc_detail::OpBignumCalc_SubMod = LoadPythonFunction(pModule, "OpBignumCalc_SubMod");
     py_ecc_detail::OpBignumCalc_Mul = LoadPythonFunction(pModule, "OpBignumCalc_Mul");
@@ -145,6 +153,74 @@ Starkware::Starkware(void) :
     Module("Starkware") {
         ConfigurePython();
     }
+
+std::optional<component::ECC_Point> Starkware::OpECC_Point_Add(operation::ECC_Point_Add& op) {
+    if ( op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        return std::nullopt;
+    }
+
+    std::optional<std::string> ret = std::nullopt;
+
+    ret = RunPythonFunction(py_ecc_detail::OpECC_Point_Add, op.ToJSON().dump());
+
+    CF_CHECK_NE(ret, std::nullopt);
+
+    return component::ECC_Point(nlohmann::json::parse(*ret));
+
+end:
+    return std::nullopt;
+}
+
+std::optional<component::ECC_Point> Starkware::OpECC_Point_Mul(operation::ECC_Point_Mul& op) {
+    if ( op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        return std::nullopt;
+    }
+
+    std::optional<std::string> ret = std::nullopt;
+
+    ret = RunPythonFunction(py_ecc_detail::OpECC_Point_Mul, op.ToJSON().dump());
+
+    CF_CHECK_NE(ret, std::nullopt);
+
+    return component::ECC_Point(nlohmann::json::parse(*ret));
+
+end:
+    return std::nullopt;
+}
+
+std::optional<component::ECC_Point> Starkware::OpECC_Point_Dbl(operation::ECC_Point_Dbl& op) {
+    if ( op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        return std::nullopt;
+    }
+
+    std::optional<std::string> ret = std::nullopt;
+
+    ret = RunPythonFunction(py_ecc_detail::OpECC_Point_Dbl, op.ToJSON().dump());
+
+    CF_CHECK_NE(ret, std::nullopt);
+
+    return component::ECC_Point(nlohmann::json::parse(*ret));
+
+end:
+    return std::nullopt;
+}
+
+std::optional<component::ECC_Point> Starkware::OpECC_Point_Neg(operation::ECC_Point_Neg& op) {
+    if ( op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        return std::nullopt;
+    }
+
+    std::optional<std::string> ret = std::nullopt;
+
+    ret = RunPythonFunction(py_ecc_detail::OpECC_Point_Neg, op.ToJSON().dump());
+
+    CF_CHECK_NE(ret, std::nullopt);
+
+    return component::ECC_Point(nlohmann::json::parse(*ret));
+
+end:
+    return std::nullopt;
+}
 
 std::optional<component::Bignum> Starkware::OpBignumCalc(operation::BignumCalc& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -160,7 +236,7 @@ std::optional<component::Bignum> Starkware::OpBignumCalc(operation::BignumCalc& 
     } else if ( op.calcOp.Get() == CF_CALCOP("SubMod(A,B,C)") ){
         ret = RunPythonFunction(py_ecc_detail::OpBignumCalc_SubMod, j.dump());
     } else if ( op.calcOp.Get() == CF_CALCOP("Mul(A,B)") ){
-        bool which;
+        bool which = false;
 
         try {
             which = ds.Get<bool>();
