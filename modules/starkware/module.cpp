@@ -12,6 +12,7 @@ namespace py_ecc_detail {
     void* OpBignumCalc_AddMod = nullptr;
     void* OpBignumCalc_SubMod = nullptr;
     void* OpBignumCalc_Mul = nullptr;
+    void* OpBignumCalc_Mul_u = nullptr;
     void* OpBignumCalc_MulMod = nullptr;
 }
 
@@ -136,6 +137,7 @@ static void ConfigurePython(void) {
     py_ecc_detail::OpBignumCalc_AddMod = LoadPythonFunction(pModule, "OpBignumCalc_AddMod");
     py_ecc_detail::OpBignumCalc_SubMod = LoadPythonFunction(pModule, "OpBignumCalc_SubMod");
     py_ecc_detail::OpBignumCalc_Mul = LoadPythonFunction(pModule, "OpBignumCalc_Mul");
+    py_ecc_detail::OpBignumCalc_Mul_u = LoadPythonFunction(pModule, "OpBignumCalc_Mul_u");
     py_ecc_detail::OpBignumCalc_MulMod = LoadPythonFunction(pModule, "OpBignumCalc_MulMod");
 }
 
@@ -145,6 +147,7 @@ Starkware::Starkware(void) :
     }
 
 std::optional<component::Bignum> Starkware::OpBignumCalc(operation::BignumCalc& op) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     nlohmann::json j;
     j["bn0"] = op.bn0.ToTrimmedString();
     j["bn1"] = op.bn1.ToTrimmedString();
@@ -153,14 +156,26 @@ std::optional<component::Bignum> Starkware::OpBignumCalc(operation::BignumCalc& 
     std::optional<std::string> ret = std::nullopt;
 
     if ( op.calcOp.Get() == CF_CALCOP("AddMod(A,B,C)") ){
-        CF_CHECK_NE(RunPythonFunction(py_ecc_detail::OpBignumCalc_AddMod, j.dump()), std::nullopt);
+        ret = RunPythonFunction(py_ecc_detail::OpBignumCalc_AddMod, j.dump());
     } else if ( op.calcOp.Get() == CF_CALCOP("SubMod(A,B,C)") ){
-        CF_CHECK_NE(RunPythonFunction(py_ecc_detail::OpBignumCalc_SubMod, j.dump()), std::nullopt);
+        ret = RunPythonFunction(py_ecc_detail::OpBignumCalc_SubMod, j.dump());
     } else if ( op.calcOp.Get() == CF_CALCOP("Mul(A,B)") ){
-        CF_CHECK_NE(RunPythonFunction(py_ecc_detail::OpBignumCalc_Mul, j.dump()), std::nullopt);
+        bool which;
+
+        try {
+            which = ds.Get<bool>();
+        } catch ( ... ) { }
+
+        if ( which ) {
+            ret = RunPythonFunction(py_ecc_detail::OpBignumCalc_Mul, j.dump());
+        } else {
+            ret = RunPythonFunction(py_ecc_detail::OpBignumCalc_Mul_u, j.dump());
+        }
     } else if ( op.calcOp.Get() == CF_CALCOP("MulMod(A,B,C)") ){
-        CF_CHECK_NE(RunPythonFunction(py_ecc_detail::OpBignumCalc_MulMod, j.dump()), std::nullopt);
+        ret = RunPythonFunction(py_ecc_detail::OpBignumCalc_MulMod, j.dump());
     }
+
+    CF_CHECK_NE(ret, std::nullopt);
 
     return component::Bignum(nlohmann::json::parse(*ret));
 end:

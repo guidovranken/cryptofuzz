@@ -4,6 +4,7 @@ from bigint import UnreducedBigInt5
 #from bigint import bigint_add_mod
 from bigint import bigint_sub_mod
 from bigint import bigint_mul
+from bigint import bigint_mul_u
 from bigint import bigint_div_mod
 from bigint import bigint_mul_mod
 
@@ -30,6 +31,13 @@ func cryptofuzz_bigint_mul{range_check_ptr}(
         a : BigInt3,
         b : BigInt3) -> (res: UnreducedBigInt5):
     let (res) = bigint_mul(a, b)
+    return (res)
+end
+
+func cryptofuzz_bigint_mul_u{range_check_ptr}(
+        a : UnreducedBigInt3,
+        b : BigInt3) -> (res: UnreducedBigInt5):
+    let (res) = bigint_mul_u(a, b)
     return (res)
 end
 
