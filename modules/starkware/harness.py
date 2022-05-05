@@ -15,6 +15,9 @@ with open(os.path.dirname(sys.argv[0]) + '/ff-cairo-harness.json', 'rb') as fp:
 with open(os.path.dirname(sys.argv[0]) + '/common-ec-cairo-harness.json', 'rb') as fp:
     common_ec_cairo = json.loads(fp.read())
 
+with open(os.path.dirname(sys.argv[0]) + '/cairo_alt_bn128-harness.json', 'rb') as fp:
+    cairo_alt_bn128= json.loads(fp.read())
+
 def call_func(lib, func, args, retsize):
     program = Program.load(data=lib)
     initial_memory = MemoryDict()
@@ -297,6 +300,85 @@ def OpECC_Point_Neg(arg):
 
     res = from_EcPoint(
         call_func(common_ec_cairo, 'cryptofuzz_ecc_point_neg', params, 6)
+    )
+
+    return_point(res)
+
+def OpECC_ValidatePubkey(arg):
+    op = json.loads(arg)
+
+    params = []
+
+    try:
+        params += to_BigInt3(op['a_x'])
+        params += to_BigInt3(op['a_y'])
+    except:
+        return
+
+    params = pack_params(params)
+
+    res = from_EcPoint(
+        call_func(common_ec_cairo, 'cryptofuzz_ecc_validatepubkey', params, 6)
+    )
+
+    return_point(res)
+
+def OpBLS_G1_Add(arg):
+    op = json.loads(arg)
+
+    params = []
+
+    try:
+        params += to_BigInt3(op['a_x'])
+        params += to_BigInt3(op['a_y'])
+        params += to_BigInt3(op['b_x'])
+        params += to_BigInt3(op['b_y'])
+    except:
+        return
+
+    params = pack_params(params)
+
+    res = from_EcPoint(
+        call_func(common_ec_cairo, 'cryptofuzz_bls_g1_add', params, 6)
+    )
+
+    return_point(res)
+
+def OpBLS_G1_Mul(arg):
+    op = json.loads(arg)
+
+    params = []
+
+    try:
+        params += to_BigInt3(op['a_x'])
+        params += to_BigInt3(op['a_y'])
+        params += to_BigInt3(op['b'])
+    except:
+        return
+
+    params = pack_params(params)
+
+    res = from_EcPoint(
+        call_func(common_ec_cairo, 'cryptofuzz_bls_g1_mul', params, 6)
+    )
+
+    return_point(res)
+
+def OpBLS_G1_Mul(arg):
+    op = json.loads(arg)
+
+    params = []
+
+    try:
+        params += to_BigInt3(op['a_x'])
+        params += to_BigInt3(op['a_y'])
+    except:
+        return
+
+    params = pack_params(params)
+
+    res = from_EcPoint(
+        call_func(common_ec_cairo, 'cryptofuzz_bls_g1_dbl', params, 6)
     )
 
     return_point(res)

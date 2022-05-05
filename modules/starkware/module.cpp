@@ -8,11 +8,14 @@
 namespace cryptofuzz {
 namespace module {
 
-namespace py_ecc_detail {
+namespace Starkware_detail {
     void* OpECC_Point_Add = nullptr;
     void* OpECC_Point_Mul = nullptr;
     void* OpECC_Point_Dbl = nullptr;
     void* OpECC_Point_Neg = nullptr;
+    void* OpECC_ValidatePubkey = nullptr;
+    void* OpBLS_G1_Add = nullptr;
+    void* OpBLS_G1_Mul = nullptr;
     void* OpBignumCalc_AddMod = nullptr;
     void* OpBignumCalc_SubMod = nullptr;
     void* OpBignumCalc_Mul = nullptr;
@@ -138,15 +141,18 @@ static void ConfigurePython(void) {
 
     Py_DECREF(pValue);
 
-    py_ecc_detail::OpECC_Point_Add = LoadPythonFunction(pModule, "OpECC_Point_Add");
-    py_ecc_detail::OpECC_Point_Mul = LoadPythonFunction(pModule, "OpECC_Point_Mul");
-    py_ecc_detail::OpECC_Point_Dbl = LoadPythonFunction(pModule, "OpECC_Point_Dbl");
-    py_ecc_detail::OpECC_Point_Neg = LoadPythonFunction(pModule, "OpECC_Point_Neg");
-    py_ecc_detail::OpBignumCalc_AddMod = LoadPythonFunction(pModule, "OpBignumCalc_AddMod");
-    py_ecc_detail::OpBignumCalc_SubMod = LoadPythonFunction(pModule, "OpBignumCalc_SubMod");
-    py_ecc_detail::OpBignumCalc_Mul = LoadPythonFunction(pModule, "OpBignumCalc_Mul");
-    py_ecc_detail::OpBignumCalc_Mul_u = LoadPythonFunction(pModule, "OpBignumCalc_Mul_u");
-    py_ecc_detail::OpBignumCalc_MulMod = LoadPythonFunction(pModule, "OpBignumCalc_MulMod");
+    Starkware_detail::OpECC_Point_Add = LoadPythonFunction(pModule, "OpECC_Point_Add");
+    Starkware_detail::OpECC_Point_Mul = LoadPythonFunction(pModule, "OpECC_Point_Mul");
+    Starkware_detail::OpECC_Point_Dbl = LoadPythonFunction(pModule, "OpECC_Point_Dbl");
+    Starkware_detail::OpECC_Point_Neg = LoadPythonFunction(pModule, "OpECC_Point_Neg");
+    Starkware_detail::OpECC_ValidatePubkey = LoadPythonFunction(pModule, "OpECC_ValidatePubkey");
+    Starkware_detail::OpBLS_G1_Add = LoadPythonFunction(pModule, "OpBLS_G1_Add");
+    Starkware_detail::OpBLS_G1_Mul = LoadPythonFunction(pModule, "OpBLS_G1_Mul");
+    Starkware_detail::OpBignumCalc_AddMod = LoadPythonFunction(pModule, "OpBignumCalc_AddMod");
+    Starkware_detail::OpBignumCalc_SubMod = LoadPythonFunction(pModule, "OpBignumCalc_SubMod");
+    Starkware_detail::OpBignumCalc_Mul = LoadPythonFunction(pModule, "OpBignumCalc_Mul");
+    Starkware_detail::OpBignumCalc_Mul_u = LoadPythonFunction(pModule, "OpBignumCalc_Mul_u");
+    Starkware_detail::OpBignumCalc_MulMod = LoadPythonFunction(pModule, "OpBignumCalc_MulMod");
 }
 
 Starkware::Starkware(void) :
@@ -161,7 +167,7 @@ std::optional<component::ECC_Point> Starkware::OpECC_Point_Add(operation::ECC_Po
 
     std::optional<std::string> ret = std::nullopt;
 
-    ret = RunPythonFunction(py_ecc_detail::OpECC_Point_Add, op.ToJSON().dump());
+    ret = RunPythonFunction(Starkware_detail::OpECC_Point_Add, op.ToJSON().dump());
 
     CF_CHECK_NE(ret, std::nullopt);
 
@@ -178,7 +184,7 @@ std::optional<component::ECC_Point> Starkware::OpECC_Point_Mul(operation::ECC_Po
 
     std::optional<std::string> ret = std::nullopt;
 
-    ret = RunPythonFunction(py_ecc_detail::OpECC_Point_Mul, op.ToJSON().dump());
+    ret = RunPythonFunction(Starkware_detail::OpECC_Point_Mul, op.ToJSON().dump());
 
     CF_CHECK_NE(ret, std::nullopt);
 
@@ -195,7 +201,7 @@ std::optional<component::ECC_Point> Starkware::OpECC_Point_Dbl(operation::ECC_Po
 
     std::optional<std::string> ret = std::nullopt;
 
-    ret = RunPythonFunction(py_ecc_detail::OpECC_Point_Dbl, op.ToJSON().dump());
+    ret = RunPythonFunction(Starkware_detail::OpECC_Point_Dbl, op.ToJSON().dump());
 
     CF_CHECK_NE(ret, std::nullopt);
 
@@ -212,7 +218,7 @@ std::optional<component::ECC_Point> Starkware::OpECC_Point_Neg(operation::ECC_Po
 
     std::optional<std::string> ret = std::nullopt;
 
-    ret = RunPythonFunction(py_ecc_detail::OpECC_Point_Neg, op.ToJSON().dump());
+    ret = RunPythonFunction(Starkware_detail::OpECC_Point_Neg, op.ToJSON().dump());
 
     CF_CHECK_NE(ret, std::nullopt);
 
@@ -220,6 +226,41 @@ std::optional<component::ECC_Point> Starkware::OpECC_Point_Neg(operation::ECC_Po
 
 end:
     return std::nullopt;
+}
+
+std::optional<bool> Starkware::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
+    if ( op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        return std::nullopt;
+    }
+
+    std::optional<std::string> ret = std::nullopt;
+
+    ret = RunPythonFunction(Starkware_detail::OpECC_ValidatePubkey, op.ToJSON().dump());
+
+    CF_CHECK_NE(ret, std::nullopt);
+
+    return bool(nlohmann::json::parse(*ret));
+
+end:
+    return std::nullopt;
+}
+
+std::optional<component::G1> Starkware::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
+    const auto ret = RunPythonFunction(Starkware_detail::OpBLS_G1_Add, op.ToJSON().dump());
+    if ( ret == std::nullopt ) {
+        return std::nullopt;
+    }
+
+    return component::G1(nlohmann::json::parse(*ret));
+}
+
+std::optional<component::G1> Starkware::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
+    const auto ret = RunPythonFunction(Starkware_detail::OpBLS_G1_Mul, op.ToJSON().dump());
+    if ( ret == std::nullopt ) {
+        return std::nullopt;
+    }
+
+    return component::G1(nlohmann::json::parse(*ret));
 }
 
 std::optional<component::Bignum> Starkware::OpBignumCalc(operation::BignumCalc& op) {
@@ -232,9 +273,9 @@ std::optional<component::Bignum> Starkware::OpBignumCalc(operation::BignumCalc& 
     std::optional<std::string> ret = std::nullopt;
 
     if ( op.calcOp.Get() == CF_CALCOP("AddMod(A,B,C)") ){
-        ret = RunPythonFunction(py_ecc_detail::OpBignumCalc_AddMod, j.dump());
+        ret = RunPythonFunction(Starkware_detail::OpBignumCalc_AddMod, j.dump());
     } else if ( op.calcOp.Get() == CF_CALCOP("SubMod(A,B,C)") ){
-        ret = RunPythonFunction(py_ecc_detail::OpBignumCalc_SubMod, j.dump());
+        ret = RunPythonFunction(Starkware_detail::OpBignumCalc_SubMod, j.dump());
     } else if ( op.calcOp.Get() == CF_CALCOP("Mul(A,B)") ){
         bool which = false;
 
@@ -243,12 +284,12 @@ std::optional<component::Bignum> Starkware::OpBignumCalc(operation::BignumCalc& 
         } catch ( ... ) { }
 
         if ( which ) {
-            ret = RunPythonFunction(py_ecc_detail::OpBignumCalc_Mul, j.dump());
+            ret = RunPythonFunction(Starkware_detail::OpBignumCalc_Mul, j.dump());
         } else {
-            ret = RunPythonFunction(py_ecc_detail::OpBignumCalc_Mul_u, j.dump());
+            ret = RunPythonFunction(Starkware_detail::OpBignumCalc_Mul_u, j.dump());
         }
     } else if ( op.calcOp.Get() == CF_CALCOP("MulMod(A,B,C)") ){
-        ret = RunPythonFunction(py_ecc_detail::OpBignumCalc_MulMod, j.dump());
+        ret = RunPythonFunction(Starkware_detail::OpBignumCalc_MulMod, j.dump());
     }
 
     CF_CHECK_NE(ret, std::nullopt);
