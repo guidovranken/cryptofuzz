@@ -2,7 +2,7 @@
 hg clone https://gmplib.org/repo/gmp/ libgmp/
 cd libgmp
 autoreconf -ivf
-./configure --enable-maintainer-mode
+./configure --enable-maintainer-mode --enable-assert
 make -j$(nproc)
 export CXXFLAGS="$CXXFLAGS -DCRYPTOFUZZ_LIBGMP"
 export LIBGMP_INCLUDE_PATH=$(realpath .)
