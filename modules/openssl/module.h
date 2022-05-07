@@ -90,16 +90,24 @@ class OpenSSL : public Module {
 #endif
         std::optional<component::MAC> OpCMAC(operation::CMAC& op) override;
 #if !(defined(CRYPTOFUZZ_LIBRESSL) && defined(SANITIZER_MSAN))
+#if !defined(CRYPTOFUZZ_OPENSSL_102)
         std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) override;
+#endif
         std::optional<bool> OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) override;
         std::optional<component::ECC_KeyPair> OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) override;
+#if !defined(CRYPTOFUZZ_OPENSSL_102)
         std::optional<component::ECDSA_Signature> OpECDSA_Sign(operation::ECDSA_Sign& op) override;
+#endif
         std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) override;
 #if 0
         std::optional<component::Secret> OpECDH_Derive(operation::ECDH_Derive& op) override;
 #endif
+#if !defined(CRYPTOFUZZ_OPENSSL_102)
         std::optional<component::DH_KeyPair> OpDH_GenerateKeyPair(operation::DH_GenerateKeyPair& op) override;
+#endif
+#if !defined(CRYPTOFUZZ_OPENSSL_102)
         std::optional<component::Bignum> OpDH_Derive(operation::DH_Derive& op) override;
+#endif
         std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op) override;
         std::optional<component::ECC_Point> OpECC_Point_Mul(operation::ECC_Point_Mul& op) override;
         std::optional<component::ECC_Point> OpECC_Point_Neg(operation::ECC_Point_Neg& op) override;

@@ -206,7 +206,7 @@ end:
             bool ret = false;
 
             const bool is_prime_curve =
-#if defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_BORINGSSL)
+#if defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_OPENSSL_102)
                 EC_METHOD_get_field_type(EC_GROUP_method_of(group->GetPtr()))
 #else
                 EC_GROUP_get_field_type(group->GetPtr())
@@ -228,7 +228,7 @@ end:
                 OpenSSL_bignum::BN_CTX ctx(ds);
                 BIGNUM* y = pub_y.GetDestPtr();
 
-#if defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_BORINGSSL)
+#if defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_OPENSSL_102)
                 /* LibreSSL and BoringSSL don't have EC_GROUP_get0_field(),
                  * so try to retrieve the prime from the repository
                  */

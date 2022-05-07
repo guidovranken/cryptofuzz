@@ -1391,7 +1391,7 @@ namespace OpenSSL_detail {
         ret = component::MAC(ret_uint8_t, sizeof(ret_uint8_t));
 
         return ret;
-#elif defined(CRYPTOFUZZ_LIBRESSL)
+#elif defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_OPENSSL_102)
         (void)op;
 #else
         Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -3195,6 +3195,8 @@ static std::optional<int> toCurveNID(const component::CurveType& curveType) {
     return LUT.at(curveType.Get());
 }
 
+/* TODO OpenSSL 1.0.2 */
+#if !defined(CRYPTOFUZZ_OPENSSL_102)
 std::optional<component::ECC_PublicKey> OpenSSL::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -3303,6 +3305,7 @@ end:
 
     return ret;
 }
+#endif /* CRYPTOFUZZ_OPENSSL_102 */
 
 std::optional<component::ECC_KeyPair> OpenSSL::OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) {
     std::optional<component::ECC_KeyPair> ret = std::nullopt;
@@ -3401,6 +3404,8 @@ end:
     return ret;
 }
 
+/* TODO OpenSSL 1.0.2 */
+#if !defined(CRYPTOFUZZ_OPENSSL_102)
 std::optional<component::ECDSA_Signature> OpenSSL::OpECDSA_Sign(operation::ECDSA_Sign& op) {
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -3503,6 +3508,7 @@ end:
 
     return ret;
 }
+#endif /* CRYPTOFUZZ_OPENSSL_102 */
 
 std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
@@ -3539,8 +3545,8 @@ std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
 #if defined(CRYPTOFUZZ_OPENSSL_102)
             BN_free(signature->r);
             BN_free(signature->s);
-            signature->r = sig_r.GetPtr(false);
-            signature->s = sig_s.GetPtr(false);
+            signature->r = sig_r.GetPtrConst();
+            signature->s = sig_s.GetPtrConst();
 #else
             CF_CHECK_EQ(ECDSA_SIG_set0(signature, sig_r.GetDestPtr(false), sig_s.GetDestPtr(false)), 1);
 #endif
@@ -3663,6 +3669,8 @@ end:
 }
 #endif
 
+/* TODO OpenSSL 1.0.2 */
+#if !defined(CRYPTOFUZZ_OPENSSL_102)
 std::optional<component::DH_KeyPair> OpenSSL::OpDH_GenerateKeyPair(operation::DH_GenerateKeyPair& op) {
     std::optional<component::DH_KeyPair> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -3711,7 +3719,10 @@ end:
 
     return ret;
 }
+#endif /* CRYPTOFUZZ_OPENSSL_102 */
 
+/* TODO OpenSSL 1.0.2 */
+#if !defined(CRYPTOFUZZ_OPENSSL_102)
 std::optional<component::Bignum> OpenSSL::OpDH_Derive(operation::DH_Derive& op) {
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -3757,6 +3768,7 @@ end:
     util::free(derived_bytes);
     return ret;
 }
+#endif /* CRYPTOFUZZ_OPENSSL_102 */
 
 std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Add(operation::ECC_Point_Add& op) {
     std::optional<component::ECC_Point> ret = std::nullopt;
