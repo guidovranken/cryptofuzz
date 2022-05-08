@@ -79,7 +79,7 @@ end:
             try {
                 switch ( ds.Get<uint8_t>() ) {
                     case    0:
-#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
                         {
                             /* BN_bn2binpad is not supported by LibreSSL and OpenSSL 1.0.2 */
 
@@ -108,7 +108,7 @@ end:
 #endif
                         break;
                     case    1:
-#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
                         {
                             ASN1_INTEGER* asn1 = nullptr;
                             uint64_t v;
@@ -523,7 +523,7 @@ class Jacobi : public Operation {
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
-#if !defined(CRYPTOFUZZ_BORINGSSL)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_OPENSSL_098)
 class Mod_NIST_192 : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;

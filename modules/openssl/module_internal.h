@@ -191,7 +191,7 @@ class EC_POINT_Copier {
         bool set(OpenSSL_bignum::Bignum& pub_x, OpenSSL_bignum::Bignum& pub_y) {
             bool ret = false;
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110) && !defined(CRYPTOFUZZ_OPENSSL_098)
             CF_CHECK_NE(EC_POINT_set_affine_coordinates(group->GetPtr(), GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
 #else
             CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group->GetPtr(), GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
@@ -206,7 +206,7 @@ end:
             bool ret = false;
 
             const bool is_prime_curve =
-#if defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_OPENSSL_102)
+#if defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_OPENSSL_102) || defined(CRYPTOFUZZ_OPENSSL_098)
                 EC_METHOD_get_field_type(EC_GROUP_method_of(group->GetPtr()))
 #else
                 EC_GROUP_get_field_type(group->GetPtr())
@@ -228,7 +228,7 @@ end:
                 OpenSSL_bignum::BN_CTX ctx(ds);
                 BIGNUM* y = pub_y.GetDestPtr();
 
-#if defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_OPENSSL_102)
+#if defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_OPENSSL_102) || defined(CRYPTOFUZZ_OPENSSL_098)
                 /* LibreSSL and BoringSSL don't have EC_GROUP_get0_field(),
                  * so try to retrieve the prime from the repository
                  */
@@ -269,7 +269,7 @@ end:
 #endif
             }
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110) && !defined(CRYPTOFUZZ_OPENSSL_098)
             CF_CHECK_NE(EC_POINT_set_compressed_coordinates(group->GetPtr(), GetPtr(), pub_x.GetPtr(), y_bit, nullptr), 0);
 #else
             CF_CHECK_NE(EC_POINT_set_compressed_coordinates_GFp(group->GetPtr(), GetPtr(), pub_x.GetPtr(), y_bit, nullptr), 0);
@@ -333,7 +333,7 @@ end:
         bool Get(OpenSSL_bignum::Bignum& pub_x, OpenSSL_bignum::Bignum& pub_y) {
             bool ret = false;
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110) && !defined(CRYPTOFUZZ_OPENSSL_098)
             CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
 #else
             CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group->GetPtr(), GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
@@ -371,7 +371,7 @@ end:
         }
 };
 
-#if !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
 template<> EVP_MD_CTX* CTX_Copier<EVP_MD_CTX>::newCTX(void) const { return EVP_MD_CTX_new(); }
 #else
 template<> EVP_MD_CTX* CTX_Copier<EVP_MD_CTX>::newCTX(void) const {
@@ -383,25 +383,31 @@ template<> EVP_MD_CTX* CTX_Copier<EVP_MD_CTX>::newCTX(void) const {
 
 template<> int CTX_Copier<EVP_MD_CTX>::copyCTX(EVP_MD_CTX* dest, EVP_MD_CTX* src) const { return EVP_MD_CTX_copy(dest, src); }
 
-#if !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
 template<> void CTX_Copier<EVP_MD_CTX>::freeCTX(EVP_MD_CTX* ctx) const { EVP_MD_CTX_free(ctx); }
 #else
 template<> void CTX_Copier<EVP_MD_CTX>::freeCTX(EVP_MD_CTX* ctx) const { EVP_MD_CTX_cleanup(ctx); free(ctx); }
 #endif
 
 template<> EVP_CIPHER_CTX* CTX_Copier<EVP_CIPHER_CTX>::newCTX(void) const { return EVP_CIPHER_CTX_new(); }
+#if !defined(CRYPTOFUZZ_OPENSSL_098)
 template<> int CTX_Copier<EVP_CIPHER_CTX>::copyCTX(EVP_CIPHER_CTX* dest, EVP_CIPHER_CTX* src) const { return EVP_CIPHER_CTX_copy(dest, src); }
+#else
+template<> int CTX_Copier<EVP_CIPHER_CTX>::copyCTX(EVP_CIPHER_CTX* dest, EVP_CIPHER_CTX* src) const { (void)dest; (void)src; return 0; }
+#endif
 template<> void CTX_Copier<EVP_CIPHER_CTX>::freeCTX(EVP_CIPHER_CTX* ctx) const { return EVP_CIPHER_CTX_free(ctx); }
 
-#if !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
 template<> HMAC_CTX* CTX_Copier<HMAC_CTX>::newCTX(void) const { return HMAC_CTX_new(); }
 template<> int CTX_Copier<HMAC_CTX>::copyCTX(HMAC_CTX* dest, HMAC_CTX* src) const { return HMAC_CTX_copy(dest, src); }
 template<> void CTX_Copier<HMAC_CTX>::freeCTX(HMAC_CTX* ctx) const { return HMAC_CTX_free(ctx); }
 #endif
 
+#if !defined(CRYPTOFUZZ_OPENSSL_098)
 template<> CMAC_CTX* CTX_Copier<CMAC_CTX>::newCTX(void) const { return CMAC_CTX_new(); }
 template<> int CTX_Copier<CMAC_CTX>::copyCTX(CMAC_CTX* dest, CMAC_CTX* src) const { return CMAC_CTX_copy(dest, src); }
 template<> void CTX_Copier<CMAC_CTX>::freeCTX(CMAC_CTX* ctx) const { return CMAC_CTX_free(ctx); }
+#endif
 
 template<> EC_KEY* CTX_Copier<EC_KEY>::newCTX(void) const { return EC_KEY_new(); }
 template<> int CTX_Copier<EC_KEY>::copyCTX(EC_KEY* dest, EC_KEY* src) const {

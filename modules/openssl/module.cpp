@@ -7,7 +7,7 @@
 #if defined(CRYPTOFUZZ_BORINGSSL)
 #include <openssl/siphash.h>
 #endif
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110) && !defined(CRYPTOFUZZ_OPENSSL_098)
 #include <openssl/kdf.h>
 #include <openssl/core_names.h>
 #endif
@@ -34,7 +34,7 @@ namespace module {
 
 fuzzing::datasource::Datasource* global_ds = nullptr;
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
 const RAND_METHOD* cryptofuzz_openssl_rand_default_method;
 
 static int cryptofuzz_openssl_default_rand_bytes(unsigned char *buf, int num) {
@@ -87,8 +87,7 @@ static RAND_METHOD cryptofuzz_openssl_rand_method = {
 };
 #endif
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
-#if 1
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
 static void* OPENSSL_custom_malloc(size_t n, const char* file, int line) {
     (void)file;
     (void)line;
@@ -110,11 +109,10 @@ static void OPENSSL_custom_free(void* ptr, const char* file, int line) {
     util::free(ptr);
 }
 #endif
-#endif
 
 OpenSSL::OpenSSL(void) :
     Module("OpenSSL") {
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
     CF_ASSERT(
             CRYPTO_set_mem_functions(
                 OPENSSL_custom_malloc,
@@ -123,13 +121,13 @@ OpenSSL::OpenSSL(void) :
     "Cannot set memory functions");
 #endif
 
-#if !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
      OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS, nullptr);
 #else
      OpenSSL_add_all_algorithms();
 #endif
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
      CF_ASSERT((cryptofuzz_openssl_rand_default_method = RAND_get_rand_method()) != nullptr,
          "Cannot retrieve default rand method");
      CF_ASSERT(RAND_set_rand_method(&cryptofuzz_openssl_rand_method) == 1,
@@ -139,6 +137,11 @@ OpenSSL::OpenSSL(void) :
 
 
 bool OpenSSL::isAEAD(const EVP_CIPHER* ctx, const uint64_t cipherType) const {
+#if defined(CRYPTOFUZZ_OPENSSL_098)
+    (void)ctx;
+    (void)cipherType;
+    return false;
+#else
     bool ret = false;
 
     /* Special TLS AEAD ciphers that should not be attempted to use with aad/tag or
@@ -153,6 +156,7 @@ bool OpenSSL::isAEAD(const EVP_CIPHER* ctx, const uint64_t cipherType) const {
 
 end:
     return ret;
+#endif
 }
 
 const EVP_MD* OpenSSL::toEVPMD(const component::DigestType& digestType) const {
@@ -213,6 +217,16 @@ const EVP_MD* OpenSSL::toEVPMD(const component::DigestType& digestType) const {
         { CF_DIGEST("WHIRLPOOL"), EVP_whirlpool() },
         { CF_DIGEST("BLAKE2B512"), EVP_blake2b512() },
         { CF_DIGEST("BLAKE2S256"), EVP_blake2s256() },
+#elif defined(CRYPTOFUZZ_OPENSSL_098)
+        { CF_DIGEST("SHA1"), EVP_sha1() },
+        { CF_DIGEST("SHA224"), EVP_sha224() },
+        { CF_DIGEST("SHA256"), EVP_sha256() },
+        { CF_DIGEST("SHA384"), EVP_sha384() },
+        { CF_DIGEST("SHA512"), EVP_sha512() },
+        { CF_DIGEST("MD2"), EVP_md2() },
+        { CF_DIGEST("MD4"), EVP_md4() },
+        { CF_DIGEST("MD5"), EVP_md5() },
+        { CF_DIGEST("RIPEMD160"), EVP_ripemd160() },
 #else
         { CF_DIGEST("SHA1"), EVP_sha1() },
         { CF_DIGEST("SHA224"), EVP_sha224() },
@@ -493,6 +507,117 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
             return EVP_camellia_256_ofb();
         case CF_CIPHER("CHACHA20"):
             return EVP_chacha20();
+#elif defined(CRYPTOFUZZ_OPENSSL_098)
+        case CF_CIPHER("DES_CFB"):
+            return EVP_des_cfb();
+        case CF_CIPHER("DES_CFB1"):
+            return EVP_des_cfb1();
+        case CF_CIPHER("DES_CFB8"):
+            return EVP_des_cfb8();
+        case CF_CIPHER("DES_EDE_CFB"):
+            return EVP_des_ede_cfb();
+        case CF_CIPHER("DES_EDE3_CFB"):
+            return EVP_des_ede3_cfb();
+        case CF_CIPHER("DES_EDE3_CFB1"):
+            return EVP_des_ede3_cfb1();
+        case CF_CIPHER("DES_EDE3_CFB8"):
+            return EVP_des_ede3_cfb8();
+        case CF_CIPHER("DES_OFB"):
+            return EVP_des_ofb();
+        case CF_CIPHER("DES_EDE_OFB"):
+            return EVP_des_ede_ofb();
+        case CF_CIPHER("DES_EDE3_OFB"):
+            return EVP_des_ede3_ofb();
+        case CF_CIPHER("DESX_A_CBC"):
+            return EVP_desx_cbc();
+        case CF_CIPHER("DES_CBC"):
+            return EVP_des_cbc();
+        case CF_CIPHER("DES_EDE_CBC"):
+            return EVP_des_ede_cbc();
+        case CF_CIPHER("DES_EDE3_CBC"):
+            return EVP_des_ede3_cbc();
+        case CF_CIPHER("DES_ECB"):
+            return EVP_des_ecb();
+        case CF_CIPHER("DES_EDE"):
+            return EVP_des_ede();
+        case CF_CIPHER("DES_EDE3"):
+            return EVP_des_ede3();
+        case CF_CIPHER("RC4"):
+            return EVP_rc4();
+        case CF_CIPHER("RC4_40"):
+            return EVP_rc4_40();
+        case CF_CIPHER("IDEA_ECB"):
+            return EVP_idea_ecb();
+        case CF_CIPHER("IDEA_CFB"):
+            return EVP_idea_cfb();
+        case CF_CIPHER("IDEA_OFB"):
+            return EVP_idea_ofb();
+        case CF_CIPHER("IDEA_CBC"):
+            return EVP_idea_cbc();
+        case CF_CIPHER("RC2_ECB"):
+            return EVP_rc2_ecb();
+        case CF_CIPHER("RC2_CFB"):
+            return EVP_rc2_cfb();
+        case CF_CIPHER("RC2_OFB"):
+            return EVP_rc2_ofb();
+        case CF_CIPHER("RC2_CBC"):
+            return EVP_rc2_cbc();
+        case CF_CIPHER("RC2_40_CBC"):
+            return EVP_rc2_40_cbc();
+        case CF_CIPHER("RC2_64_CBC"):
+            return EVP_rc2_64_cbc();
+        case CF_CIPHER("BF_ECB"):
+            return EVP_bf_ecb();
+        case CF_CIPHER("BF_CFB"):
+            return EVP_bf_cfb();
+        case CF_CIPHER("BF_OFB"):
+            return EVP_bf_ofb();
+        case CF_CIPHER("BF_CBC"):
+            return EVP_bf_cbc();
+        case CF_CIPHER("CAST5_ECB"):
+            return EVP_cast5_ecb();
+        case CF_CIPHER("CAST5_CFB"):
+            return EVP_cast5_cfb();
+        case CF_CIPHER("CAST5_OFB"):
+            return EVP_cast5_ofb();
+        case CF_CIPHER("CAST5_CBC"):
+            return EVP_cast5_cbc();
+        case CF_CIPHER("AES_128_ECB"):
+            return EVP_aes_128_ecb();
+        case CF_CIPHER("AES_128_CBC"):
+            return EVP_aes_128_cbc();
+        case CF_CIPHER("AES_128_CFB"):
+            return EVP_aes_128_cfb();
+        case CF_CIPHER("AES_128_CFB1"):
+            return EVP_aes_128_cfb1();
+        case CF_CIPHER("AES_128_CFB8"):
+            return EVP_aes_128_cfb8();
+        case CF_CIPHER("AES_128_OFB"):
+            return EVP_aes_128_ofb();
+        case CF_CIPHER("AES_192_ECB"):
+            return EVP_aes_192_ecb();
+        case CF_CIPHER("AES_192_CBC"):
+            return EVP_aes_192_cbc();
+        case CF_CIPHER("AES_192_CFB"):
+            return EVP_aes_192_cfb();
+        case CF_CIPHER("AES_192_CFB1"):
+            return EVP_aes_192_cfb1();
+        case CF_CIPHER("AES_192_CFB8"):
+            return EVP_aes_192_cfb8();
+        case CF_CIPHER("AES_192_OFB"):
+            return EVP_aes_192_ofb();
+        case CF_CIPHER("AES_256_ECB"):
+            return EVP_aes_256_ecb();
+        case CF_CIPHER("AES_256_CBC"):
+            return EVP_aes_256_cbc();
+        case CF_CIPHER("AES_256_CFB"):
+            return EVP_aes_256_cfb();
+        case CF_CIPHER("AES_256_CFB1"):
+            return EVP_aes_256_cfb1();
+        case CF_CIPHER("AES_256_CFB8"):
+            return EVP_aes_256_cfb8();
+        case CF_CIPHER("AES_256_OFB"):
+            return EVP_aes_256_ofb();
 #elif defined(CRYPTOFUZZ_OPENSSL_102)
         case CF_CIPHER("DES_CFB"):
             return EVP_des_cfb();
@@ -1289,7 +1414,7 @@ end:
     return ret;
 }
 
-#if !defined(CRYPTOFUZZ_BORINGSSL)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_OPENSSL_098)
 std::optional<component::MAC> OpenSSL::OpHMAC_EVP(operation::HMAC& op, Datasource& ds) {
     std::optional<component::MAC> ret = std::nullopt;
 
@@ -1329,7 +1454,7 @@ end:
 }
 #endif
 
-#if !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
 std::optional<component::MAC> OpenSSL::OpHMAC_HMAC(operation::HMAC& op, Datasource& ds) {
     std::optional<component::MAC> ret = std::nullopt;
 
@@ -1391,7 +1516,7 @@ namespace OpenSSL_detail {
         ret = component::MAC(ret_uint8_t, sizeof(ret_uint8_t));
 
         return ret;
-#elif defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_OPENSSL_102)
+#elif defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_OPENSSL_102) || defined(CRYPTOFUZZ_OPENSSL_098)
         (void)op;
 #else
         Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -1440,6 +1565,7 @@ end:
     }
 }
 
+#if !defined(CRYPTOFUZZ_OPENSSL_098)
 std::optional<component::MAC> OpenSSL::OpHMAC(operation::HMAC& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
@@ -1462,14 +1588,14 @@ std::optional<component::MAC> OpenSSL::OpHMAC(operation::HMAC& op) {
         return OpHMAC_HMAC(op, ds);
 #endif
     } else {
-#if !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
         return OpHMAC_HMAC(op, ds);
 #else
         return OpHMAC_EVP(op, ds);
 #endif
     }
 }
-
+#endif
 
 bool OpenSSL::checkSetIVLength(const uint64_t cipherType, const EVP_CIPHER* cipher, EVP_CIPHER_CTX* ctx, const size_t inputIvLength) const {
     bool ret = false;
@@ -1497,7 +1623,10 @@ bool OpenSSL::checkSetIVLength(const uint64_t cipherType, const EVP_CIPHER* ciph
      */
 
     if ( isCCM || ivLengthMismatch ) {
-#if defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_OPENSSL_102)
+#if defined(CRYPTOFUZZ_OPENSSL_098)
+        (void)ctx;
+        goto end;
+#elif defined(CRYPTOFUZZ_LIBRESSL) || defined(CRYPTOFUZZ_OPENSSL_102)
         if ( isCCM == true ) {
             CF_CHECK_EQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_CCM_SET_IVLEN, inputIvLength, nullptr), 1);
         } else if ( isGCM == true ) {
@@ -1566,12 +1695,12 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_BIO(operation::
         CF_CHECK_EQ(static_cast<int>(op.cipher.iv.GetSize()), EVP_CIPHER_iv_length(cipher));
 
         CF_CHECK_NE(bio_cipher = BIO_new(BIO_f_cipher()), nullptr);
-#if !defined(CRYPTOFUZZ_OPENSSL_102)
-        /* In OpenSSL 1.0.2, BIO_set_cipher does not return a value */
+#if !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
+        /* In OpenSSL 1.0.2 and 0.9.8, BIO_set_cipher does not return a value */
         CF_CHECK_EQ(
 #endif
                 BIO_set_cipher(bio_cipher, cipher, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr(), 1 /* encrypt */)
-#if !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
         , 1)
 #endif
            ;
@@ -1579,7 +1708,11 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_BIO(operation::
 
     /* Process */
     {
+#if defined(CRYPTOFUZZ_OPENSSL_098)
+        BIO_push(bio_cipher, BIO_new_mem_buf((void*)op.cleartext.GetPtr(), op.cleartext.GetSize()));
+#else
         BIO_push(bio_cipher, BIO_new_mem_buf(op.cleartext.GetPtr(), op.cleartext.GetSize()));
+#endif
         //CF_CHECK_EQ(BIO_write(bio_out, op.cleartext.GetPtr(), op.cleartext.GetSize()), static_cast<int>(op.cleartext.GetSize()));
     }
 
@@ -1639,7 +1772,11 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
         }
 
         if ( repository::IsWRAP(op.cipher.cipherType.Get()) ) {
+#if defined(CRYPTOFUZZ_OPENSSL_098)
+            goto end;
+#else
             /* noret */ EVP_CIPHER_CTX_set_flags(ctx.GetPtr(), EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
+#endif
         }
         CF_CHECK_EQ(EVP_EncryptInit_ex(ctx.GetPtr(), cipher, nullptr, nullptr, nullptr), 1);
 
@@ -1728,7 +1865,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt_EVP(operation::
         outIdx += len;
 
         if ( op.tagSize != std::nullopt ) {
-#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
             /* Get tag.
              *
              * See comments around EVP_CTRL_AEAD_SET_TAG in OpSymmetricDecrypt_EVP for reasons
@@ -1993,12 +2130,12 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_BIO(operation::S
         CF_CHECK_EQ(static_cast<int>(op.cipher.iv.GetSize()), EVP_CIPHER_iv_length(cipher));
 
         CF_CHECK_NE(bio_cipher = BIO_new(BIO_f_cipher()), nullptr);
-#if !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
         /* In OpenSSL 1.0.2, BIO_set_cipher does not return a value */
         CF_CHECK_EQ(
 #endif
                 BIO_set_cipher(bio_cipher, cipher, op.cipher.key.GetPtr(), op.cipher.iv.GetPtr(), 0 /* decrypt */)
-#if !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
         , 1)
 #endif
            ;
@@ -2006,7 +2143,11 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_BIO(operation::S
 
     /* Process */
     {
+#if defined(CRYPTOFUZZ_OPENSSL_098)
+        BIO_push(bio_cipher, BIO_new_mem_buf((void*)op.ciphertext.GetPtr(), op.ciphertext.GetSize()));
+#else
         BIO_push(bio_cipher, BIO_new_mem_buf(op.ciphertext.GetPtr(), op.ciphertext.GetSize()));
+#endif
         //CF_CHECK_EQ(BIO_write(bio_out, op.cleartext.GetPtr(), op.cleartext.GetSize()), static_cast<int>(op.cleartext.GetSize()));
     }
 
@@ -2065,7 +2206,11 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
         }
 
         if ( repository::IsWRAP(op.cipher.cipherType.Get()) ) {
+#if defined(CRYPTOFUZZ_OPENSSL_098)
+            goto end;
+#else
             /* noret */ EVP_CIPHER_CTX_set_flags(ctx.GetPtr(), EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
+#endif
         }
 
         CF_CHECK_EQ(EVP_DecryptInit_ex(ctx.GetPtr(), cipher, nullptr, nullptr, nullptr), 1);
@@ -2095,7 +2240,7 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt_EVP(operation::S
         }
         CF_CHECK_EQ(checkSetKeyLength(cipher, ctx.GetPtr(), op.cipher.key.GetSize()), true);
 
-#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
         /* Set tag.
          *
          * LibreSSL supports setting the tag via the EVP interface with EVP_CTRL_GCM_SET_TAG for GCM,
@@ -2357,7 +2502,7 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt(operation::Symme
     }
 }
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110) && !defined(CRYPTOFUZZ_OPENSSL_098)
 std::optional<component::Key> OpenSSL::OpKDF_SCRYPT_EVP_PKEY(operation::KDF_SCRYPT& op) const {
     std::optional<component::Key> ret = std::nullopt;
     EVP_PKEY_CTX* pctx = nullptr;
@@ -2393,7 +2538,7 @@ end:
 }
 #endif
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110) && !defined(CRYPTOFUZZ_OPENSSL_098)
 std::optional<component::Key> OpenSSL::OpKDF_SCRYPT_EVP_KDF(operation::KDF_SCRYPT& op) const {
     std::optional<component::Key> ret = std::nullopt;
     EVP_KDF_CTX* kctx = nullptr;
@@ -2452,7 +2597,7 @@ end:
 }
 #endif
 
-#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110) && !defined(CRYPTOFUZZ_OPENSSL_098)
 std::optional<component::Key> OpenSSL::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
  #if defined(CRYPTOFUZZ_BORINGSSL)
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -2503,7 +2648,7 @@ end:
 }
 #endif
 
-#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
 std::optional<component::Key> OpenSSL::OpKDF_HKDF(operation::KDF_HKDF& op) {
  #if defined(CRYPTOFUZZ_BORINGSSL)
     std::optional<component::Key> ret = std::nullopt;
@@ -2568,7 +2713,7 @@ end:
 }
 #endif
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
 std::optional<component::Key> OpenSSL::OpKDF_TLS1_PRF(operation::KDF_TLS1_PRF& op) {
     std::optional<component::Key> ret = std::nullopt;
     EVP_PKEY_CTX* pctx = nullptr;
@@ -2612,7 +2757,7 @@ end:
 }
 #endif
 
-#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110)
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110) && !defined(CRYPTOFUZZ_OPENSSL_098)
 std::optional<component::Key> OpenSSL::OpKDF_PBKDF(operation::KDF_PBKDF& op) {
     std::optional<component::Key> ret = std::nullopt;
     EVP_KDF_CTX* kctx = nullptr;
@@ -2673,7 +2818,7 @@ end:
 }
 #endif
 
-#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110)
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110) && !defined(CRYPTOFUZZ_OPENSSL_098)
 std::optional<component::Key> OpenSSL::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
  #if defined(CRYPTOFUZZ_BORINGSSL)
     std::optional<component::Key> ret = std::nullopt;
@@ -2832,7 +2977,7 @@ end:
 }
 #endif
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_111) && !defined(CRYPTOFUZZ_OPENSSL_110) && !defined(CRYPTOFUZZ_OPENSSL_098)
 std::optional<component::Key> OpenSSL::OpKDF_SSH(operation::KDF_SSH& op) {
     std::optional<component::Key> ret = std::nullopt;
     EVP_KDF_CTX* kctx = nullptr;
@@ -3038,6 +3183,7 @@ end:
 }
 #endif
 
+#if !defined(CRYPTOFUZZ_OPENSSL_098)
 std::optional<component::MAC> OpenSSL::OpCMAC(operation::CMAC& op) {
     std::optional<component::MAC> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -3071,6 +3217,7 @@ std::optional<component::MAC> OpenSSL::OpCMAC(operation::CMAC& op) {
 end:
     return ret;
 }
+#endif
 
 /* LibreSSL uses getentropy() in ECC operations.
  * MemorySanitizer erroneously does not unpoison the destination buffer.
@@ -3079,6 +3226,7 @@ end:
 #if !(defined(CRYPTOFUZZ_LIBRESSL) && defined(SANITIZER_MSAN))
 static std::optional<int> toCurveNID(const component::CurveType& curveType) {
     static const std::map<uint64_t, int> LUT = {
+#if !defined(CRYPTOFUZZ_OPENSSL_098)
         { CF_ECC_CURVE("brainpool160r1"), NID_brainpoolP160r1 },
         { CF_ECC_CURVE("brainpool160t1"), NID_brainpoolP160t1 },
         { CF_ECC_CURVE("brainpool192r1"), NID_brainpoolP192r1 },
@@ -3093,6 +3241,7 @@ static std::optional<int> toCurveNID(const component::CurveType& curveType) {
         { CF_ECC_CURVE("brainpool384t1"), NID_brainpoolP384t1 },
         { CF_ECC_CURVE("brainpool512r1"), NID_brainpoolP512r1 },
         { CF_ECC_CURVE("brainpool512t1"), NID_brainpoolP512t1 },
+#endif
         { CF_ECC_CURVE("secp112r1"), NID_secp112r1 },
         { CF_ECC_CURVE("secp112r2"), NID_secp112r2 },
         { CF_ECC_CURVE("secp128r1"), NID_secp128r1 },
@@ -3124,7 +3273,7 @@ static std::optional<int> toCurveNID(const component::CurveType& curveType) {
         { CF_ECC_CURVE("sect409r1"), NID_sect409r1 },
         { CF_ECC_CURVE("sect571k1"), NID_sect571k1 },
         { CF_ECC_CURVE("sect571r1"), NID_sect571r1 },
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110) && !defined(CRYPTOFUZZ_OPENSSL_098)
         { CF_ECC_CURVE("sm2p256v1"), NID_sm2 },
 #endif
         { CF_ECC_CURVE("wap_wsg_idm_ecid_wtls1"), NID_wap_wsg_idm_ecid_wtls1 },
@@ -3195,8 +3344,8 @@ static std::optional<int> toCurveNID(const component::CurveType& curveType) {
     return LUT.at(curveType.Get());
 }
 
-/* TODO OpenSSL 1.0.2 */
-#if !defined(CRYPTOFUZZ_OPENSSL_102)
+/* TODO OpenSSL 1.0.2, 0.9.8 */
+#if !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
 std::optional<component::ECC_PublicKey> OpenSSL::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -3305,7 +3454,7 @@ end:
 
     return ret;
 }
-#endif /* CRYPTOFUZZ_OPENSSL_102 */
+#endif /* CRYPTOFUZZ_OPENSSL_102, CRYPTOFUZZ_OPENSSL_098 */
 
 std::optional<component::ECC_KeyPair> OpenSSL::OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) {
     std::optional<component::ECC_KeyPair> ret = std::nullopt;
@@ -3346,7 +3495,7 @@ std::optional<component::ECC_KeyPair> OpenSSL::OpECC_GenerateKeyPair(operation::
             CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group, op.curveType.Get()), nullptr);
             CF_CHECK_EQ(EC_POINT_mul(group->GetPtr(), pub->GetPtr(), priv, nullptr, nullptr, nullptr), 1);
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110) && !defined(CRYPTOFUZZ_OPENSSL_098)
             CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), pub->GetPtr(), pub_x, pub_y, nullptr), 0);
 #else
             CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group->GetPtr(), pub->GetPtr(), pub_x, pub_y, nullptr), 0);
@@ -3404,8 +3553,8 @@ end:
     return ret;
 }
 
-/* TODO OpenSSL 1.0.2 */
-#if !defined(CRYPTOFUZZ_OPENSSL_102)
+/* TODO OpenSSL 1.0.2, 0.9.8 */
+#if !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
 std::optional<component::ECDSA_Signature> OpenSSL::OpECDSA_Sign(operation::ECDSA_Sign& op) {
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -3508,7 +3657,7 @@ end:
 
     return ret;
 }
-#endif /* CRYPTOFUZZ_OPENSSL_102 */
+#endif /* CRYPTOFUZZ_OPENSSL_102, CRYPTOFUZZ_OPENSSL_098 */
 
 std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
@@ -3542,7 +3691,7 @@ std::optional<bool> OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
             CF_CHECK_EQ(sig_r.Set(op.signature.signature.first.ToString(ds)), true);
             CF_CHECK_EQ(sig_s.Set(op.signature.signature.second.ToString(ds)), true);
             CF_CHECK_NE(signature = ECDSA_SIG_new(), nullptr);
-#if defined(CRYPTOFUZZ_OPENSSL_102)
+#if defined(CRYPTOFUZZ_OPENSSL_102) || defined(CRYPTOFUZZ_OPENSSL_098)
             BN_free(signature->r);
             BN_free(signature->s);
             signature->r = sig_r.GetPtrConst();
@@ -3669,8 +3818,8 @@ end:
 }
 #endif
 
-/* TODO OpenSSL 1.0.2 */
-#if !defined(CRYPTOFUZZ_OPENSSL_102)
+/* TODO OpenSSL 1.0.2, 0.9.8 */
+#if !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
 std::optional<component::DH_KeyPair> OpenSSL::OpDH_GenerateKeyPair(operation::DH_GenerateKeyPair& op) {
     std::optional<component::DH_KeyPair> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -3719,10 +3868,10 @@ end:
 
     return ret;
 }
-#endif /* CRYPTOFUZZ_OPENSSL_102 */
+#endif /* CRYPTOFUZZ_OPENSSL_102, CRYPTOFUZZ_OPENSSL_098 */
 
-/* TODO OpenSSL 1.0.2 */
-#if !defined(CRYPTOFUZZ_OPENSSL_102)
+/* TODO OpenSSL 1.0.2, 0.9.8 */
+#if !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
 std::optional<component::Bignum> OpenSSL::OpDH_Derive(operation::DH_Derive& op) {
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -3768,7 +3917,7 @@ end:
     util::free(derived_bytes);
     return ret;
 }
-#endif /* CRYPTOFUZZ_OPENSSL_102 */
+#endif /* CRYPTOFUZZ_OPENSSL_102, CRYPTOFUZZ_OPENSSL_098 */
 
 std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Add(operation::ECC_Point_Add& op) {
     std::optional<component::ECC_Point> ret = std::nullopt;
@@ -3806,7 +3955,7 @@ std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Add(operation::ECC_Poin
         CF_CHECK_EQ(x.New(), true);
         CF_CHECK_EQ(y.New(), true);
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110) && !defined(CRYPTOFUZZ_OPENSSL_098)
         CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), res->GetPtr(), x.GetDestPtr(), y.GetDestPtr(), nullptr), 0);
 #else
         CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group->GetPtr(), res->GetPtr(), x.GetDestPtr(), y.GetDestPtr(), nullptr), 0);
@@ -3863,6 +4012,8 @@ std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Mul(operation::ECC_Poin
                 "Point multiplication by 0 does not yield point at infinity");
     }
 
+    /* Bug */
+#if !defined(CRYPTOFUZZ_OPENSSL_098)
     {
         OpenSSL_bignum::BN_CTX ctx(ds);
 
@@ -3872,6 +4023,7 @@ std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Mul(operation::ECC_Poin
                     "Point multiplication of invalid point yields valid point");
         }
     }
+#endif
 
     ret = res->Get();
 
@@ -3913,7 +4065,7 @@ std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Neg(operation::ECC_Poin
         CF_CHECK_EQ(x.New(), true);
         CF_CHECK_EQ(y.New(), true);
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110) && !defined(CRYPTOFUZZ_OPENSSL_098)
         CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), a->GetPtr(), x.GetDestPtr(), y.GetDestPtr(), nullptr), 0);
 #else
         CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group->GetPtr(), a->GetPtr(), x.GetDestPtr(), y.GetDestPtr(), nullptr), 0);
@@ -3966,7 +4118,7 @@ std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Dbl(operation::ECC_Poin
         CF_CHECK_EQ(x.New(), true);
         CF_CHECK_EQ(y.New(), true);
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110) && !defined(CRYPTOFUZZ_OPENSSL_098)
         CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), res->GetPtr(), x.GetDestPtr(), y.GetDestPtr(), nullptr), 0);
 #else
         CF_CHECK_NE(EC_POINT_get_affine_coordinates_GFp(group->GetPtr(), res->GetPtr(), x.GetDestPtr(), y.GetDestPtr(), nullptr), 0);
@@ -4110,7 +4262,7 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
             case    CF_CALCOP("Jacobi(A,B)"):
                 opRunner = std::make_unique<OpenSSL_bignum::Jacobi>();
                 break;
-#if !defined(CRYPTOFUZZ_BORINGSSL)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_OPENSSL_098)
             case    CF_CALCOP("Mod_NIST_192(A)"):
                 opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_192>();
                 break;

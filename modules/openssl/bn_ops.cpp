@@ -233,7 +233,14 @@ end:
 bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ctx;
     bool ret = false;
-
+#if defined(CRYPTOFUZZ_OPENSSL_098)
+    {
+        Bignum zero(ds);
+        CF_CHECK_EQ(zero.New(), true);
+        CF_CHECK_NE(BN_cmp(bn[1].GetPtr(), zero.GetPtr()), 0);
+        CF_CHECK_NE(BN_cmp(bn[2].GetPtr(), zero.GetPtr()), 0);
+    }
+#endif
     switch ( ds.Get<uint8_t>() ) {
         case    0:
             CF_CHECK_EQ(BN_mod_exp_mont_consttime(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr(), nullptr), 1);
@@ -251,7 +258,7 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
             goto end;
 #endif
             break;
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
         case    4:
             {
                 {
@@ -276,7 +283,6 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
                     }
 
                     if ( which != 0 ) {
-
                         {
                             Bignum hint_base(ds);
                             CF_CHECK_TRUE(hint_base.New());
@@ -476,6 +482,8 @@ bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
         case    0:
             CF_CHECK_EQ(BN_mod_mul(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
             break;
+#if !defined(CRYPTOFUZZ_OPENSSL_098)
+        /* Bug */
         case    1:
             {
                 BN_MONT_CTX mont(ds);
@@ -509,6 +517,7 @@ bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
                 CF_CHECK_EQ(BN_from_montgomery(resPtr, resPtr, mont.GetPtr(), ctx.GetPtr()), 1);
             }
             break;
+#endif
         default:
             goto end;
             break;
@@ -826,7 +835,8 @@ end:
     return ret;
 }
 
-#if !defined(CRYPTOFUZZ_BORINGSSL)
+/* OpenSSL 0.9.8 has memory bugs in these functions */
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_OPENSSL_098)
 bool Mod_NIST_192::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;
@@ -1203,20 +1213,31 @@ end:
 
 bool Rand::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ctx;
+#if defined(CRYPTOFUZZ_OPENSSL_098)
+    (void)bn;
+#endif
+
     bool ret = false;
 
     switch ( ds.Get<uint8_t>() ) {
+#if !defined(CRYPTOFUZZ_OPENSSL_098)
         case    0:
             CF_CHECK_EQ(BN_rand_range(res.GetDestPtr(), bn[0].GetPtr()), 1);
             break;
         case    1:
             CF_CHECK_EQ(BN_pseudo_rand_range(res.GetDestPtr(), bn[0].GetPtr()), 1);
             break;
+#endif
+
         case    2:
             {
                 const auto bits = ds.Get<uint8_t>();
                 const auto top = ds.Get<uint8_t>();
                 const auto bottom = ds.Get<uint8_t>();
+#if defined(CRYPTOFUZZ_OPENSSL_098)
+                /* Bug */
+                goto end;
+#endif
                 CF_CHECK_EQ(BN_rand(res.GetDestPtr(), bits, top, bottom), 1);
             }
             break;
@@ -1225,6 +1246,10 @@ bool Rand::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) cons
                 const auto bits = ds.Get<uint8_t>();
                 const auto top = ds.Get<uint8_t>();
                 const auto bottom = ds.Get<uint8_t>();
+#if defined(CRYPTOFUZZ_OPENSSL_098)
+                /* Bug */
+                goto end;
+#endif
                 CF_CHECK_EQ(BN_pseudo_rand(res.GetDestPtr(), bits, top, bottom), 1);
             }
             break;
