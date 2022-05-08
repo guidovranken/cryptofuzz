@@ -248,6 +248,40 @@ end:
                             }
                         }
                     }
+
+                    {
+                        if ( allowDup == true ) {
+                            const bool mpiConvert = ds.Get<bool>();
+
+                            if ( mpiConvert == true ) {
+                                const auto size = BN_bn2mpi(bn, nullptr);
+                                uint8_t* p = util::malloc(size);
+                                const auto size2 = BN_bn2mpi(bn, p);
+                                CF_ASSERT(size == size2, "BN_bn2mpi size discrepancy");
+                                BIGNUM* newbn = BN_new();
+                                CF_ASSERT(BN_mpi2bn(p, size, newbn) != nullptr, "BN_mpi2bn failed");
+                                CF_ASSERT(BN_copy(bn, newbn) != nullptr, "BN_copy failed");
+                                BN_free(newbn);
+                                util::free(p);
+                            }
+                        }
+
+                        if ( allowDup == true ) {
+                            const bool binConvert = ds.Get<bool>();
+
+                            if ( binConvert == true && BN_is_negative(bn) == 0 ) {
+                                const auto size = BN_num_bytes(bn);
+                                uint8_t* p = util::malloc(size);
+                                const auto size2 = BN_bn2bin(bn, p);
+                                CF_ASSERT(size == size2, "BN_bn2bin size discrepancy");
+                                BIGNUM* newbn = BN_new();
+                                CF_ASSERT(BN_bin2bn(p, size, newbn) != nullptr, "BN_bin2bn failed");
+                                CF_ASSERT(BN_copy(bn, newbn) != nullptr, "BN_copy failed");
+                                BN_free(newbn);
+                                util::free(p);
+                            }
+                        }
+                    }
                 } catch ( ... ) { }
             }
 
