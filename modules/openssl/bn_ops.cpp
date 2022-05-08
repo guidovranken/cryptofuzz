@@ -23,6 +23,8 @@ extern "C" {
 }
 #endif
 
+#define GET_WHICH() uint8_t which = 0; try { which = ds.Get<uint8_t>(); } catch ( ... ) { }
+
 namespace cryptofuzz {
 namespace module {
 namespace OpenSSL_bignum {
@@ -31,7 +33,8 @@ bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     (void)ctx;
     bool ret = false;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             CF_CHECK_EQ(BN_add(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
             break;
@@ -65,7 +68,8 @@ bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     (void)ctx;
     bool ret = false;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             CF_CHECK_EQ(BN_sub(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
             break;
@@ -114,7 +118,8 @@ bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     (void)ctx;
     bool ret = false;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             {
                 CF_CHECK_EQ(BN_mul(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
@@ -145,7 +150,8 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     (void)ctx;
     bool ret = false;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             CF_CHECK_EQ(BN_mod(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             break;
@@ -241,7 +247,8 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
         CF_CHECK_NE(BN_cmp(bn[2].GetPtr(), zero.GetPtr()), 0);
     }
 #endif
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             CF_CHECK_EQ(BN_mod_exp_mont_consttime(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr(), nullptr), 1);
             break;
@@ -376,7 +383,8 @@ bool GCD::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     (void)ds;
     bool ret = false;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             CF_CHECK_EQ(BN_gcd(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             break;
@@ -398,7 +406,8 @@ end:
 bool AddMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     bool ret = false;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             CF_CHECK_EQ(BN_mod_add(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
             break;
@@ -429,7 +438,8 @@ end:
 bool SubMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     bool ret = false;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             CF_CHECK_EQ(BN_mod_sub(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
             break;
@@ -478,7 +488,8 @@ end:
 bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     bool ret = false;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             CF_CHECK_EQ(BN_mod_mul(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
             break;
@@ -533,7 +544,8 @@ end:
 bool SqrMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     bool ret = false;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             CF_CHECK_EQ(BN_mod_sqr(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             break;
@@ -553,7 +565,8 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
 
     bool fail = false;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             fail = true;
             CF_CHECK_NE(BN_mod_inverse(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), nullptr);
@@ -610,7 +623,8 @@ bool Cmp::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
 
     int cmpRes;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             cmpRes = BN_cmp(bn[0].GetPtr(), bn[1].GetPtr());
             break;
@@ -652,7 +666,8 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     (void)ctx;
     bool ret = false;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             CF_CHECK_EQ(BN_div(res.GetDestPtr(), nullptr, bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             break;
@@ -752,7 +767,8 @@ bool IsEq::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) cons
 #if defined(CRYPTOFUZZ_BORINGSSL)
     bool ret = false;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             res.Set( std::to_string(BN_equal_consttime(bn[0].GetPtr(), bn[1].GetPtr())) );
             break;
@@ -981,7 +997,8 @@ bool Abs::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
         Bignum zero(ds);
         CF_CHECK_EQ(zero.New(), true);
 
-        switch ( ds.Get<uint8_t>() ) {
+        GET_WHICH();
+    switch ( which ) {
             case    0:
                 CF_CHECK_EQ(BN_sub(res.GetDestPtr(), zero.GetPtr(), bn[0].GetPtr()), 1);
                 break;
@@ -1014,9 +1031,11 @@ bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
     bool ret = false;
     std::optional<int> places;
 
+    GET_WHICH();
+
     CF_CHECK_NE(places = bn[1].AsInt(), std::nullopt);
 
-    switch ( ds.Get<uint8_t>() ) {
+    switch ( which ) {
         case    0:
             CF_CHECK_EQ(BN_rshift(res.GetDestPtr(), bn[0].GetPtr(), *places), 1);
             break;
@@ -1122,9 +1141,11 @@ bool ModLShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx)
     bool ret = false;
     std::optional<uint64_t> places;
 
+    GET_WHICH();
+
     CF_CHECK_NE(places = bn[1].AsInt(), std::nullopt);
 
-    switch ( ds.Get<uint8_t>() ) {
+    switch ( which ) {
         case    0:
             CF_CHECK_EQ(BN_mod_lshift(res.GetDestPtr(), bn[0].GetPtr(), *places, bn[2].GetPtr(), ctx.GetPtr()), 1);
             break;
@@ -1219,7 +1240,8 @@ bool Rand::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) cons
 
     bool ret = false;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
 #if !defined(CRYPTOFUZZ_OPENSSL_098)
         case    0:
             CF_CHECK_EQ(BN_rand_range(res.GetDestPtr(), bn[0].GetPtr()), 1);
