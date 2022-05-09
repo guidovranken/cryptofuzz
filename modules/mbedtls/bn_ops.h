@@ -68,7 +68,7 @@ end:
             uint32_t out;
 
             /* Must not be negative */
-            CF_CHECK_NE(mbedtls_mpi_cmp_int(GetPtr(), -1), 0);
+            CF_CHECK_NE(mbedtls_mpi_cmp_int(GetPtr(), 0), -1);
 
             /* XXX use mbedtls_mpi_write_binary on big endian systems */
             CF_CHECK_EQ(mbedtls_mpi_write_binary_le(GetPtr(), (unsigned char*)&out, sizeof(out)), 0);
