@@ -4,12 +4,15 @@
 
 #include "bn_ops.h"
 
+#define GET_WHICH() uint8_t which = 0; try { which = ds.Get<uint8_t>(); } catch ( ... ) { }
+
 namespace cryptofuzz {
 namespace module {
 namespace mbedTLS_bignum {
 
 bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             CF_CHECK_EQ(mbedtls_mpi_add_mpi(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
             return true;
@@ -35,7 +38,8 @@ end:
 }
 
 bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             CF_CHECK_EQ(mbedtls_mpi_sub_mpi(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
             return true;
@@ -57,7 +61,8 @@ end:
 }
 
 bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             CF_CHECK_EQ(mbedtls_mpi_mul_mpi(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
             return true;
@@ -76,7 +81,8 @@ end:
 }
 
 bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             CF_CHECK_EQ(mbedtls_mpi_div_mpi(res.GetDestPtr(), nullptr, bn[0].GetPtr(), bn[1].GetPtr()), 0);
             return true;
@@ -151,7 +157,8 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 }
 
 bool Cmp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             res.Set( std::to_string(mbedtls_mpi_cmp_mpi(bn[0].GetPtr(), bn[1].GetPtr())) );
             return true;
@@ -376,7 +383,8 @@ bool ClearBit::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             CF_CHECK_EQ(mbedtls_mpi_mod_mpi(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
             return true;
@@ -399,7 +407,8 @@ end:
 }
 
 bool Set::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             CF_NORET(mbedtls_mpi_swap(res.GetDestPtr(), bn[0].GetDestPtr()));
             return true;
