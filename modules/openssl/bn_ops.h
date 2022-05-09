@@ -85,6 +85,8 @@ end:
 
                             uint64_t v;
 
+                            CF_CHECK_NE(BN_is_negative(bn), 1);
+
                             CF_CHECK_LTE(BN_num_bytes(bn), (int)sizeof(uint64_t));
                             CF_CHECK_NE(BN_bn2binpad(bn, (unsigned char*)&v, sizeof(v)), -1);
 
