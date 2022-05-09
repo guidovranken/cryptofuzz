@@ -61,6 +61,7 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorBignumCalc_Mod_BLS12_381_P executorBignumCalc_mod_bls12_381_p(CF_OPERATION("BignumCalc_Mod_BLS12_381_P"), modules, options);
     static ExecutorBignumCalc_Mod_BN128_R executorBignumCalc_mod_bn128_r(CF_OPERATION("BignumCalc_Mod_BN128_R"), modules, options);
     static ExecutorBignumCalc_Mod_BN128_P executorBignumCalc_mod_bn128_p(CF_OPERATION("BignumCalc_Mod_BN128_P"), modules, options);
+    static ExecutorBignumCalc_Mod_ED25519 executorBignumCalc_mod_ed25519(CF_OPERATION("BignumCalc_Mod_ED25519"), modules, options);
     static ExecutorBignumCalc_Mod_Edwards_R executorBignumCalc_mod_edwards_r(CF_OPERATION("BignumCalc_Mod_Edwards_R"), modules, options);
     static ExecutorBignumCalc_Mod_Edwards_P executorBignumCalc_mod_edwards_p(CF_OPERATION("BignumCalc_Mod_Edwards_P"), modules, options);
     static ExecutorBignumCalc_Mod_MNT4_R executorBignumCalc_mod_mnt4_r(CF_OPERATION("BignumCalc_Mod_MNT4_R"), modules, options);
@@ -252,6 +253,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("BignumCalc_Mod_BN128_P"):
                 executorBignumCalc_mod_bn128_p.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("BignumCalc_Mod_ED25519"):
+                executorBignumCalc_mod_ed25519.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("BignumCalc_Mod_Edwards_R"):
                 executorBignumCalc_mod_edwards_r.Run(ds, payload.data(), payload.size());
