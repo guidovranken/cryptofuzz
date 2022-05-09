@@ -101,7 +101,11 @@ end:
 
             CF_CHECK_EQ(mbedtls_mpi_write_string(&mpi, 16, str, olen, &olen), 0);
 
-            ret = { util::HexToDec(str) };
+            if ( strcmp(str, "-00") == 0 ) {
+                ret = std::string("0");
+            } else {
+                ret = { util::HexToDec(str) };
+            }
 end:
             free(str);
 
