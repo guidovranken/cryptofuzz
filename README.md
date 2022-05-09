@@ -165,3 +165,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - OpenSSL, LibreSSL: [Incorrect NIST curve math](https://cvsweb.openbsd.org/src/lib/libcrypto/bn/bn_nist.c?rev=1.20&content-type=text/x-cvsweb-markup)
 - relic: [bn_lcm incorrect result with negative zero input](https://github.com/relic-toolkit/relic/issues/235)
 - relic: [bn_gcd_lehme hangs with negative input](https://github.com/relic-toolkit/relic/issues/236)
+- relic: [Modulo functions hang with negative inputs](https://github.com/relic-toolkit/relic/issues/237)
