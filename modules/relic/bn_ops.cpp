@@ -2,6 +2,8 @@
 #include <cryptofuzz/util.h>
 #include <limits>
 
+#define GET_WHICH() uint8_t which = 0; try { which = ds.Get<uint8_t>(); } catch ( ... ) { }
+
 namespace cryptofuzz {
 namespace module {
 namespace relic_bignum {
@@ -32,7 +34,8 @@ bool Sub::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 
 bool Mul::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     try {
-        switch ( ds.Get<uint8_t>() ) {
+        GET_WHICH();
+        switch ( which ) {
             case    0:
                 RLC_TRY {
                     /* noret */ bn_mul(res.Get(), bn[0].Get(), bn[1].Get());
@@ -69,7 +72,8 @@ bool Mul::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 
 bool Sqr::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     try {
-        switch ( ds.Get<uint8_t>() ) {
+        GET_WHICH();
+        switch ( which ) {
             case    0:
                 RLC_TRY {
                     /* noret */ bn_sqr(res.Get(), bn[0].Get());
@@ -305,7 +309,8 @@ bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 
 bool LShift1::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     try {
-        switch ( ds.Get<uint8_t>() ) {
+        GET_WHICH();
+        switch ( which ) {
             case    0:
                 RLC_TRY {
                     bn_lsh(res.Get(), bn[0].Get(), 1);
@@ -368,7 +373,8 @@ bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
     try {
-        switch ( ds.Get<uint8_t>() ) {
+        GET_WHICH();
+        switch ( which ) {
             case    0:
                 RLC_TRY {
                     /* noret */ bn_mod(res.Get(), bn[0].Get(), bn[1].Get());
@@ -551,7 +557,8 @@ bool Abs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 
 bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     try {
-        switch ( ds.Get<uint8_t>() ) {
+        GET_WHICH();
+        switch ( which ) {
             case    0:
                 RLC_TRY {
                     /* noret */ bn_mxp(res.Get(), bn[0].Get(), bn[1].Get(), bn[2].Get());
