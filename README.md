@@ -163,3 +163,5 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Herumi mcl: [Incorrect result for G1 multiplication by Fp](https://github.com/herumi/mcl/issues/141)
 - libgcrypt: [gcry_mpi_invm incorrect result](https://lists.gnupg.org/pipermail/gcrypt-devel/2022-April/005303.html)
 - OpenSSL, LibreSSL: [Incorrect NIST curve math](https://cvsweb.openbsd.org/src/lib/libcrypto/bn/bn_nist.c?rev=1.20&content-type=text/x-cvsweb-markup)
+- relic: [bn_lcm incorrect result with negative zero input](https://github.com/relic-toolkit/relic/issues/235)
+- relic: [bn_gcd_lehme hangs with negative input](https://github.com/relic-toolkit/relic/issues/236)
