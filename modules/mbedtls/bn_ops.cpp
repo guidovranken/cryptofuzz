@@ -52,6 +52,9 @@ bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             }
             return true;
         case    2:
+            CF_CHECK_NE(mbedtls_mpi_cmp_int(bn[0].GetPtr(), 0), -1);
+            CF_CHECK_NE(mbedtls_mpi_cmp_int(bn[1].GetPtr(), 0), -1);
+
             CF_CHECK_EQ(mbedtls_mpi_sub_abs(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
             return true;
     }
