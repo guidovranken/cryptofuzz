@@ -79,9 +79,9 @@ end:
             try {
                 switch ( ds.Get<uint8_t>() ) {
                     case    0:
-#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
+#if !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
                         {
-                            /* BN_bn2binpad is not supported by LibreSSL and OpenSSL 1.0.2 */
+                            /* BN_bn2binpad is not supported by OpenSSL 1.0.2 and 0.9.8 */
 
                             uint64_t v;
 
