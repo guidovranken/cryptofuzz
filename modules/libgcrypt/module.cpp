@@ -968,8 +968,11 @@ std::optional<component::ECDSA_Signature> libgcrypt::OpECDSA_Sign(operation::ECD
     bool sig_sexp_set = false;
     std::string R, S;
 
-    static const char data_sexp_tpl[] =
+    static const char data_sexp_tpl_rfc6979[] =
         "(data (flags rfc6979)\n"
+        " (hash sha256 %b))";
+    static const char data_sexp_tpl_random[] =
+        "(data (flags raw)\n"
         " (hash sha256 %b))";
     static const char priv_sexp_tpl[] =
         "(private-key\n"
@@ -978,13 +981,18 @@ std::optional<component::ECDSA_Signature> libgcrypt::OpECDSA_Sign(operation::ECD
         "  (d %M)"
         "))";
 
-    CF_CHECK_TRUE(op.UseRFC6979Nonce());
     CF_CHECK_NE(curveStr = libgcrypt_detail::toCurveString(op.curveType), std::nullopt);
     CF_CHECK_TRUE(op.digestType.Is(CF_DIGEST("NULL")));
 
     CF_CHECK_NE(pub = libgcrypt_detail::ECC_PrivateToPublic(ds, op.curveType, op.priv), std::nullopt);
 
-    CF_CHECK_EQ(gcry_sexp_build(&data_sexp, nullptr, data_sexp_tpl, op.cleartext.GetSize(), op.cleartext.GetPtr()), GPG_ERR_NO_ERROR);
+    if ( op.UseRFC6979Nonce() ) {
+        CF_CHECK_EQ(gcry_sexp_build(&data_sexp, nullptr, data_sexp_tpl_rfc6979, op.cleartext.GetSize(), op.cleartext.GetPtr()), GPG_ERR_NO_ERROR);
+    } else if ( op.UseRandomNonce() ) {
+        CF_CHECK_EQ(gcry_sexp_build(&data_sexp, nullptr, data_sexp_tpl_random, op.cleartext.GetSize(), op.cleartext.GetPtr()), GPG_ERR_NO_ERROR);
+    } else {
+        goto end;
+    }
 
     data_sexp_set = true;
 
