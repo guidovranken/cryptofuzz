@@ -238,7 +238,10 @@ bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     }
 
     if ( alt == false ) {
-        CF_CHECK_EQ(mp_invmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+        if ( mp_invmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()) != MP_OKAY ) {
+            /* Inverse does not exist */
+            res.Set("0");
+        }
     } else {
         CF_CHECK_EQ(mp_invmod_xgcd(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
     }
