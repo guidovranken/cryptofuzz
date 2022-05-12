@@ -47,6 +47,8 @@ class Bignum {
         bool Set(const std::string s) {
             if ( s.empty() ) {
                 mpd_set_string(mpd, "0", ctx);
+            } else if ( s == "-" ) {
+                mpd_set_string(mpd, "-0", ctx);
             } else {
                 mpd_set_string(mpd, s.c_str(), ctx);
             }
@@ -66,7 +68,11 @@ class Bignum {
             str = std::string(c_str);
 
             if ( (dotpos = str.find(".")) == std::string::npos ) {
-                ret = str;
+                if ( str == "-0" ) {
+                    ret = "0";
+                } else {
+                    ret = str;
+                }
             } else {
                 ret = str.substr(0, dotpos);
             }
