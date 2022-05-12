@@ -147,7 +147,10 @@ bool ExtGCD_X::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 
     CF_CHECK_EQ(mp_xgcd(bn[0].GetPtr(), bn[1].GetPtr(), gcd.GetPtr(), res.GetPtr(), y.GetPtr()), MP_OKAY);
 
-    ret = true;
+    /* Don't return results because incorrect Bezout coefficients are returned and it will not be fixed:
+     * https://bugzilla.mozilla.org/show_bug.cgi?id=1761708
+     */
+    //ret = true;
 
 end:
     return ret;
@@ -167,7 +170,10 @@ bool ExtGCD_Y::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 
     CF_CHECK_EQ(mp_xgcd(bn[0].GetPtr(), bn[1].GetPtr(), gcd.GetPtr(), x.GetPtr(), res.GetPtr()), MP_OKAY);
 
-    ret = true;
+    /* Don't return results because incorrect Bezout coefficients are returned and it will not be fixed:
+     * https://bugzilla.mozilla.org/show_bug.cgi?id=1761708
+     */
+    //ret = true;
 
 end:
     return ret;
