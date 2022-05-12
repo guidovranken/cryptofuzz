@@ -895,56 +895,140 @@ namespace libgcrypt_detail {
 
         return LUT.at(curveType.Get());
     }
+
+    std::optional<component::ECC_PublicKey> ECC_PrivateToPublic(
+            Datasource& ds,
+            const component::CurveType curveType,
+            const component::ECC_PrivateKey _priv) {
+        std::optional<component::ECC_PublicKey> ret = std::nullopt;
+
+        std::optional<std::string> curveStr = std::nullopt;
+
+        gcry_ctx_t ctx = nullptr;
+        gcry_mpi_point_t Q = nullptr;
+        gcry_mpi_point_t G = nullptr;
+
+        libgcrypt_bignum::Bignum priv;
+        libgcrypt_bignum::Bignum x;
+        libgcrypt_bignum::Bignum y;
+        CF_CHECK_EQ(priv.Set(_priv.ToString(ds)), true);
+        CF_CHECK_EQ(x.Set("0"), true);
+        CF_CHECK_EQ(y.Set("0"), true);
+
+        /* Initialize */
+        {
+            CF_CHECK_NE(curveStr = libgcrypt_detail::toCurveString(curveType), std::nullopt);
+            CF_CHECK_EQ(gcry_mpi_ec_new(&ctx, nullptr, curveStr->c_str()), 0);
+        }
+
+        /* Process */
+        {
+            CF_CHECK_NE(G = gcry_mpi_ec_get_point("g", ctx, 1), nullptr);
+            CF_CHECK_NE(Q = gcry_mpi_point_new(0), nullptr);
+            /* noret */ gcry_mpi_ec_mul(Q, priv.GetPtr(), G, ctx);
+        }
+
+        /* Finalize */
+        {
+            CF_CHECK_EQ(gcry_mpi_ec_get_affine(x.GetPtr(), y.GetPtr(), Q, ctx), 0);
+
+            std::optional<std::string> x_str;
+            std::optional<std::string> y_str;
+
+            CF_CHECK_NE(x_str = x.ToString(), std::nullopt);
+            CF_CHECK_NE(y_str = y.ToString(), std::nullopt);
+
+            ret = { *x_str, *y_str };
+        }
+
+end:
+        gcry_ctx_release(ctx);
+        gcry_mpi_point_release(Q);
+        gcry_mpi_point_release(G);
+
+        return ret;
+    }
 } /* namespace libgcrypt_detail */
 
 std::optional<component::ECC_PublicKey> libgcrypt::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
-    std::optional<component::ECC_PublicKey> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
+    return libgcrypt_detail::ECC_PrivateToPublic(ds, op.curveType, op.priv);
+}
+
+std::optional<component::ECDSA_Signature> libgcrypt::OpECDSA_Sign(operation::ECDSA_Sign& op) {
+    std::optional<component::ECDSA_Signature> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    std::optional<component::ECC_PublicKey> pub = std::nullopt;
     std::optional<std::string> curveStr = std::nullopt;
+    gcry_sexp_t sig_sexp, data_sexp, priv_sexp;
+    bool data_sexp_set = false;
+    bool priv_sexp_set = false;
+    bool sig_sexp_set = false;
+    std::string R, S;
 
-    gcry_ctx_t ctx = nullptr;
-    gcry_mpi_point_t Q = nullptr;
-    gcry_mpi_point_t G = nullptr;
+    static const char data_sexp_tpl[] =
+        "(data (flags rfc6979)\n"
+        " (hash sha256 %b))";
+    static const char priv_sexp_tpl[] =
+        "(private-key\n"
+        " (ecdsa\n"
+        "  (curve %s)\n"
+        "  (d %M)"
+        "))";
 
-    libgcrypt_bignum::Bignum priv;
-    libgcrypt_bignum::Bignum x;
-    libgcrypt_bignum::Bignum y;
-    CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
-    CF_CHECK_EQ(x.Set("0"), true);
-    CF_CHECK_EQ(y.Set("0"), true);
+    CF_CHECK_TRUE(op.UseRFC6979Nonce());
+    CF_CHECK_NE(curveStr = libgcrypt_detail::toCurveString(op.curveType), std::nullopt);
+    CF_CHECK_TRUE(op.digestType.Is(CF_DIGEST("NULL")));
 
-    /* Initialize */
+    CF_CHECK_NE(pub = libgcrypt_detail::ECC_PrivateToPublic(ds, op.curveType, op.priv), std::nullopt);
+
+    CF_CHECK_EQ(gcry_sexp_build(&data_sexp, nullptr, data_sexp_tpl, op.cleartext.GetSize(), op.cleartext.GetPtr()), GPG_ERR_NO_ERROR);
+
+    data_sexp_set = true;
+
     {
-        CF_CHECK_NE(curveStr = libgcrypt_detail::toCurveString(op.curveType), std::nullopt);
-        CF_CHECK_EQ(gcry_mpi_ec_new(&ctx, nullptr, curveStr->c_str()), 0);
+        libgcrypt_bignum::Bignum priv;
+        CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
+        CF_CHECK_EQ(gcry_sexp_build(&priv_sexp, nullptr, priv_sexp_tpl, curveStr->c_str(), priv.GetPtr()), GPG_ERR_NO_ERROR);
+        priv_sexp_set = true;
     }
 
-    /* Process */
+    CF_CHECK_EQ(gcry_pk_sign(&sig_sexp, data_sexp, priv_sexp), GPG_ERR_NO_ERROR);
+    sig_sexp_set = true;
+
     {
-        CF_CHECK_NE(G = gcry_mpi_ec_get_point("g", ctx, 1), nullptr);
-        CF_CHECK_NE(Q = gcry_mpi_point_new(0), nullptr);
-        /* noret */ gcry_mpi_ec_mul(Q, priv.GetPtr(), G, ctx);
+        gcry_sexp_t r = gcry_sexp_find_token(sig_sexp, "r", 0);
+        size_t datalen;
+        const void* data = gcry_sexp_nth_data(r, 1, &datalen);
+        CF_ASSERT(data != nullptr, "Signature s-expression does not contain R");
+        R = util::BinToDec((const uint8_t*)data, datalen);
+        gcry_sexp_release(r);
+    }
+    {
+        gcry_sexp_t s = gcry_sexp_find_token(sig_sexp, "s", 0);
+        size_t datalen;
+        const void* data = gcry_sexp_nth_data(s, 1, &datalen);
+        CF_ASSERT(data != nullptr, "Signature s-expression does not contain S");
+        auto s_bn = component::Bignum(util::BinToDec((const uint8_t*)data, datalen));
+        CF_NORET(util::AdjustECDSASignature(op.curveType.Get(), s_bn));
+        S = s_bn.ToTrimmedString();
+        gcry_sexp_release(s);
     }
 
-    /* Finalize */
-    {
-        CF_CHECK_EQ(gcry_mpi_ec_get_affine(x.GetPtr(), y.GetPtr(), Q, ctx), 0);
-
-        std::optional<std::string> x_str;
-        std::optional<std::string> y_str;
-
-        CF_CHECK_NE(x_str = x.ToString(), std::nullopt);
-        CF_CHECK_NE(y_str = y.ToString(), std::nullopt);
-
-        ret = { *x_str, *y_str };
-    }
+    ret = component::ECDSA_Signature({R, S}, *pub);
 
 end:
-    gcry_ctx_release(ctx);
-    gcry_mpi_point_release(Q);
-    gcry_mpi_point_release(G);
-
+    if ( data_sexp_set ) {
+        gcry_sexp_release(data_sexp);
+    }
+    if ( priv_sexp_set ) {
+        gcry_sexp_release(priv_sexp);
+    }
+    if ( sig_sexp_set ) {
+        gcry_sexp_release(sig_sexp);
+    }
     return ret;
 }
 
