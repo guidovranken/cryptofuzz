@@ -3641,7 +3641,11 @@ std::optional<component::ECDSA_Signature> OpenSSL::OpECDSA_Sign(operation::ECDSA
         CF_CHECK_NE(sig_r_str = BN_bn2dec(R), nullptr);
         CF_CHECK_NE(sig_s_str = BN_bn2dec(S), nullptr);
 
-        ret = { {sig_r_str, sig_s_str}, {pub_x_str, pub_y_str} };
+
+        component::Bignum S_corrected{std::string(sig_s_str)};
+        CF_NORET(util::AdjustECDSASignature(op.curveType.Get(), S_corrected));
+
+        ret = { {sig_r_str, S_corrected.ToTrimmedString()}, {pub_x_str, pub_y_str} };
     } catch ( ... ) { }
 
 end:
