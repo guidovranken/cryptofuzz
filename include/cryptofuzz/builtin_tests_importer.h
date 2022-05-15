@@ -10,6 +10,7 @@ class Builtin_tests_importer {
     public:
     private:
         const std::string outDir;
+        void ecdsa_verify_tests(void);
         void write(const uint64_t operation, fuzzing::datasource::Datasource& dsOut2);
     public:
         Builtin_tests_importer(const std::string outDir);

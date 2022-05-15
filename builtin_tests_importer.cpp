@@ -13,6 +13,61 @@ Builtin_tests_importer::Builtin_tests_importer(const std::string outDir) :
     outDir(outDir) {
 }
 
+void Builtin_tests_importer::ecdsa_verify_tests(void) {
+    /* Test ECDSA_Verify with valid pubkey, null signature and bogus msg */
+    /* Java CVE-2022-21449 */
+
+    constexpr std::array<uint64_t, 3> digests{
+        CF_DIGEST("NULL"),
+        CF_DIGEST("SHA1"),
+        CF_DIGEST("SHA256"),
+    };
+
+    for (size_t i = 0; i < (sizeof(repository::ECC_CurveLUT) / sizeof(repository::ECC_CurveLUT[0])); i++) {
+        const uint64_t curveType = repository::ECC_CurveLUT[i].id;
+
+        const auto x = cryptofuzz::repository::ECC_CurveToX(curveType);
+        if ( x == std::nullopt ) {
+            continue;
+        }
+
+        const auto y = cryptofuzz::repository::ECC_CurveToY(curveType);
+        if ( y == std::nullopt ) {
+            continue;
+        }
+
+        const auto bits = cryptofuzz::repository::ECC_CurveToBits(curveType);
+        if ( bits == std::nullopt ) {
+            continue;
+        }
+
+        for (const auto& digestType : digests) {
+            nlohmann::json parameters;
+
+            parameters["modifier"] = "";
+            parameters["curveType"] = curveType;
+            parameters["signature"]["pub"][0] = *x;
+            parameters["signature"]["pub"][1] = *y;
+            parameters["signature"]["signature"][0] = "0";
+            parameters["signature"]["signature"][1] = "0";
+
+            std::string cleartext;
+            const size_t bytes = ((*bits) + 7) / 8;
+            for (size_t j = 0; j < bytes; j++) {
+                cleartext += std::string("ab");
+            }
+            parameters["cleartext"] = cleartext;
+
+            parameters["digestType"] = digestType;
+
+            fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+            cryptofuzz::operation::ECDSA_Verify op(parameters);
+            op.Serialize(dsOut2);
+            write(CF_OPERATION("ECDSA_Verify"), dsOut2);
+        }
+    }
+}
+
 void Builtin_tests_importer::Run(void) {
     {
         /* https://lists.gnupg.org/pipermail/gcrypt-devel/2022-April/005303.html */
@@ -166,6 +221,10 @@ void Builtin_tests_importer::Run(void) {
         cryptofuzz::operation::Digest op(parameters);
         op.Serialize(dsOut2);
         write(CF_OPERATION("Digest"), dsOut2);
+    }
+
+    {
+        ecdsa_verify_tests();
     }
 }
 
