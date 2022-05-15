@@ -152,6 +152,21 @@ void Builtin_tests_importer::Run(void) {
         op.Serialize(dsOut2);
         write(CF_OPERATION("BignumCalc"), dsOut2);
     }
+
+    {
+        /* SHA256 hash with 8 trailing zero bytes */
+        /* Bitcoin block 125552 */
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["cleartext"] = "b9d751533593ac10cdfb7b8e03cad8babc67d8eaeac0a3699b82857dacac9390";
+        parameters["digestType"] = CF_DIGEST("SHA256");
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::Digest op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("Digest"), dsOut2);
+    }
 }
 
 void Builtin_tests_importer::write(const uint64_t operation, fuzzing::datasource::Datasource& dsOut2) {
