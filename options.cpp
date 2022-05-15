@@ -9,6 +9,7 @@
 #include <cryptofuzz/ecc_diff_fuzzer_exporter.h>
 #include <cryptofuzz/botan_importer.h>
 #include <cryptofuzz/openssl_importer.h>
+#include <cryptofuzz/builtin_tests_importer.h>
 #include <cryptofuzz/util.h>
 
 namespace cryptofuzz {
@@ -370,6 +371,24 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
             }
 
             OpenSSL_Importer importer(args[0], args[1], OpenSSL_Importer::type::ExpMod);
+            importer.Run();
+
+            exit(0);
+        } else if ( !parts.empty() && parts[0] == "--from-builtin-tests" ) {
+            if ( parts.size() != 2 ) {
+                std::cout << "Expected argument after --from-builtin-tests=" << std::endl;
+                exit(1);
+            }
+
+            std::vector<std::string> args;
+            boost::split(args, parts[1], boost::is_any_of(","));
+
+            if ( args.size() != 1 ) {
+                std::cout << "Expected 2 arguments after --from-builtin-tests=" << std::endl;
+                exit(1);
+            }
+
+            Builtin_tests_importer importer(args[0]);
             importer.Run();
 
             exit(0);
