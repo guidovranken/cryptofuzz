@@ -272,6 +272,10 @@ size_t Bignum::GetSize(void) const {
     return data.GetSize();
 }
 
+bool Bignum::IsZero(void) const {
+    return ToTrimmedString() == "0";
+}
+
 bool Bignum::IsNegative(void) const {
     return data.GetSize() && data.GetConstVectorPtr()[0] == '-';
 }

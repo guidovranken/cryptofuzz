@@ -217,7 +217,6 @@ std::optional<component::Digest> Java::OpDigest(operation::Digest& op) {
         Java_detail::env->ReleasePrimitiveArrayCritical(rv, data, 0);
     }
 
-end:
     if ( initialized ) {
         Java_detail::env->DeleteLocalRef(msg);
         Java_detail::env->DeleteLocalRef(hash);
@@ -526,6 +525,63 @@ std::optional<component::Bignum> Java::OpBignumCalc(operation::BignumCalc& op) {
                 Java_detail::method_BignumCalc,
                 bn1, bn2, bn3, calcop));
 
+    if ( rv == nullptr ) {
+        switch ( op.calcOp.Get() ) {
+            case    CF_CALCOP("ExpMod(A,B,C)"):
+                {
+                    bool abortOk = false;
+
+                    if ( op.bn2.IsZero() || op.bn2.IsNegative() ) {
+                        abortOk = true;
+                    }
+
+                    CF_ASSERT(abortOk == true, "ExpMod unexpectedly failed")
+                }
+                break;
+            case    CF_CALCOP("Div(A,B)"):
+                {
+                    bool abortOk = false;
+
+                    if ( op.bn1.IsZero() ) {
+                        abortOk = true;
+                    }
+
+                    CF_ASSERT(abortOk == true, "Div unexpectedly failed")
+                }
+                break;
+            case    CF_CALCOP("Mod(A,B)"):
+                {
+                    bool abortOk = false;
+
+                    if ( op.bn1.IsZero() ) {
+                        abortOk = true;
+                    }
+
+                    CF_ASSERT(abortOk == true, "Mod unexpectedly failed")
+                }
+                break;
+            case    CF_CALCOP("Exp(A,B)"):
+                {
+                    bool abortOk = false;
+
+                    if ( op.bn1.IsNegative() ) {
+                        abortOk = true;
+                    }
+
+                    CF_ASSERT(abortOk == true, "Exp unexpectedly failed")
+                }
+                break;
+            case    CF_CALCOP("RShift(A,B)"):
+            case    CF_CALCOP("Bit(A,B)"):
+            case    CF_CALCOP("ClearBit(A,B)"):
+            case    CF_CALCOP("SetBit(A,B)"):
+                /* TODO can fail if B does not fit in int */
+                break;
+            default:
+                CF_ASSERT(0, "Operation unexpectedly failed")
+                break;
+        }
+    }
     CF_CHECK_NE(rv, nullptr);
 
     {

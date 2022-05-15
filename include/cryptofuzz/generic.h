@@ -66,6 +66,7 @@ class Bignum {
 
         bool operator==(const Bignum& rhs) const;
         size_t GetSize(void) const;
+        bool IsZero(void) const;
         bool IsNegative(void) const;
         bool IsGreaterThan(const std::string& other) const;
         bool IsLessThan(const std::string& other) const;
