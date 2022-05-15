@@ -224,6 +224,23 @@ void Builtin_tests_importer::Run(void) {
     }
 
     {
+        /* https://github.com/supranational/blst/commit/fd453524b12cc438adc65636fc52375b0f47b17e */
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["calcOp"] = CF_CALCOP("InvMod(A,B)");
+        parameters["bn1"] = "2277032426030151018417255337824965917622007080189340990097450826378373618725";
+        parameters["bn2"] = "";
+        parameters["bn3"] = "";
+        parameters["bn4"] = "";
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::BignumCalc op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("BignumCalc_Mod_BLS12_381_R"), dsOut2);
+    }
+
+    {
         ecdsa_verify_tests();
     }
 }
