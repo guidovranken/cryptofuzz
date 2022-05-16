@@ -345,6 +345,10 @@
   #include <modules/stint/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_KRYPTOLOGY)
+  #include <modules/kryptology/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -695,6 +699,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_STINT)
     driver->LoadModule( std::make_shared<cryptofuzz::module::stint>() );
+#endif
+
+#if defined(CRYPTOFUZZ_KRYPTOLOGY)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::Kryptology>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
