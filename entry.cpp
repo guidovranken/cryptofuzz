@@ -349,6 +349,10 @@
   #include <modules/kryptology/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_NIM_BIGINTS)
+  #include <modules/nim-bigints/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -703,6 +707,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_KRYPTOLOGY)
     driver->LoadModule( std::make_shared<cryptofuzz::module::Kryptology>() );
+#endif
+
+#if defined(CRYPTOFUZZ_NIM_BIGINTS)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::nim_bigints>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
