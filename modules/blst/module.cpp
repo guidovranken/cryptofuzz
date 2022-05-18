@@ -1144,14 +1144,27 @@ end:
                         CF_NORET(blst_fp_sqr(&result, &result));
                         ret = blst_detail::To_component_bignum(result);
                     } else {
+                        CF_NORET(blst_fp_cneg(&A, &A, 1));
+                        CF_ASSERT(blst_fp_sqrt(&A, &A) == true, "Square root must exist");
+
                         ret = std::string("0");
                     }
                 }
                 break;
             case    CF_CALCOP("IsSquare(A)"):
                 {
+                    blst_fp tmp;
+
                     CF_CHECK_TRUE(blst_detail::To_blst_fp(op.bn0, A));
                     const bool is_square = blst_fp_is_square(&A);
+
+                    if ( !is_square ) {
+                        CF_NORET(blst_fp_cneg(&tmp, &A, 1));
+                        CF_ASSERT(blst_fp_is_square(&tmp) == true, "Must be square");
+                    } else {
+                        CF_ASSERT(blst_fp_sqrt(&tmp, &A) == true, "Square root must exist");
+                    }
+
                     CF_ASSERT(
                             is_square ==
                             blst_fp_sqrt(&result, &A), "");
