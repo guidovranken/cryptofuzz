@@ -839,6 +839,21 @@ bool MulDiv::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std
     return true;
 }
 
+bool MulDivCeil::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)modulo;
+    (void)ds;
+
+    if ( bn[2].Ref() == 0 ) {
+        return false;
+    }
+
+    const auto mulRes = bn[0].Ref() * bn[1].Ref();
+    const auto modRes = mulRes % bn[2].Ref();
+    res = mulRes / bn[2].Ref() + (modRes != 0 ? 1 : 0);
+
+    return true;
+}
+
 bool Exp2::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
     (void)modulo;
     (void)ds;

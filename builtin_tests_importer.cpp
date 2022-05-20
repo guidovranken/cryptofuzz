@@ -241,6 +241,42 @@ void Builtin_tests_importer::Run(void) {
     }
 
     {
+        /* https://github.com/Uniswap/v3-core/pull/430/files */
+
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["calcOp"] = CF_CALCOP("MulDivCeil(A,B,C)");
+        parameters["bn1"] = "535006138814359";
+        parameters["bn2"] = "432862656469423142931042426214547535783388063929571229938474969";
+        parameters["bn3"] = "2";
+        parameters["bn4"] = "";
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::BignumCalc op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("BignumCalc"), dsOut2);
+    }
+
+    {
+        /* https://github.com/Uniswap/v3-core/pull/430/files */
+
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["calcOp"] = CF_CALCOP("MulDivCeil(A,B,C)");
+        parameters["bn1"] = "115792089237316195423570985008687907853269984659341747863450311749907997002549";
+        parameters["bn2"] = "115792089237316195423570985008687907853269984659341747863450311749907997002550";
+        parameters["bn3"] = "115792089237316195423570985008687907853269984653042931687443039491902864365164";
+        parameters["bn4"] = "";
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::BignumCalc op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("BignumCalc"), dsOut2);
+    }
+
+    {
         ecdsa_verify_tests();
     }
 }

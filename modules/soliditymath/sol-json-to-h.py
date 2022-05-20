@@ -30,6 +30,8 @@ for f in sys.argv[1:]:
 
                 if k == 'mulDiv(uint256,uint256,uint256)':
                     calcop = 'CF_CALCOP("MulDiv(A,B,C)")'
+                elif k == 'mulDivCeil(uint256,uint256,uint256)':
+                    calcop = 'CF_CALCOP("MulDivCeil(A,B,C)")'
                 elif k == 'sqrt(uint256)':
                     calcop = 'CF_CALCOP("Sqrt(A)")'
                 elif k == 'min(uint256,uint256)':

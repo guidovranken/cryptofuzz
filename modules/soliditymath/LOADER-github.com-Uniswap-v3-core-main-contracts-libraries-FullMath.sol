@@ -11,4 +11,11 @@ contract LOADER_github_com_Uniswap_v3_core_main_contracts_libraries_FullMath {
     ) public pure returns (uint256 result) {
         return FullMath.mulDiv(a, b, denominator);
     }
+    function mulDivCeil(
+        uint256 a,
+        uint256 b,
+        uint256 denominator
+    ) public pure returns (uint256 result) {
+        return FullMath.mulDivRoundingUp(a, b, denominator);
+    }
 }
