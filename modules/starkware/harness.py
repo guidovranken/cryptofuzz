@@ -15,7 +15,7 @@ with open(os.path.dirname(sys.argv[0]) + '/ff-cairo-harness.json', 'rb') as fp:
 with open(os.path.dirname(sys.argv[0]) + '/common-ec-cairo-harness.json', 'rb') as fp:
     common_ec_cairo = json.loads(fp.read())
 
-with open(os.path.dirname(sys.argv[0]) + '/cairo_alt_bn128-harness.json', 'rb') as fp:
+with open(os.path.dirname(sys.argv[0]) + '/cairo-alt_bn128-harness.json', 'rb') as fp:
     cairo_alt_bn128= json.loads(fp.read())
 
 def call_func(lib, func, args, retsize):
