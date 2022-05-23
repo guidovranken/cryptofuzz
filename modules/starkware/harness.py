@@ -8,6 +8,9 @@ from starkware.cairo.lang.compiler.program import Program
 
 MOD = 0x800000000000011000000000000000000000000000000000000000000000001
 BASE = 77371252455336267181195264
+BASE_MIN_ONE = BASE - 1
+BASE_BITS = 86
+assert(1 << BASE_BITS == BASE)
 
 with open(os.path.dirname(sys.argv[0]) + '/ff-cairo-harness.json', 'rb') as fp:
     lib_ff_cairo = json.loads(fp.read())
@@ -16,7 +19,7 @@ with open(os.path.dirname(sys.argv[0]) + '/common-ec-cairo-harness.json', 'rb') 
     common_ec_cairo = json.loads(fp.read())
 
 with open(os.path.dirname(sys.argv[0]) + '/cairo-alt_bn128-harness.json', 'rb') as fp:
-    cairo_alt_bn128= json.loads(fp.read())
+    cairo_alt_bn128 = json.loads(fp.read())
 
 def call_func(lib, func, args, retsize):
     program = Program.load(data=lib)
@@ -55,14 +58,14 @@ def to_BigInt3(s):
 
     ret = []
 
-    ret += [ i % BASE ]
-    i //= BASE
+    ret += [ i & BASE_MIN_ONE ]
+    i >>= BASE_BITS
 
-    ret += [ i % BASE ]
-    i //= BASE
+    ret += [ i & BASE_MIN_ONE ]
+    i >>= BASE_BITS
 
-    ret += [ i % BASE ]
-    i //= BASE
+    ret += [ i & BASE_MIN_ONE ]
+    i >>= BASE_BITS
 
     if i != 0:
         raise Exception("Value too large for felt")

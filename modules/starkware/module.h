@@ -2,7 +2,6 @@
 
 #include <cryptofuzz/components.h>
 #include <cryptofuzz/module.h>
-#include <boost/uuid/sha1.hpp>
 #include <optional>
 
 namespace cryptofuzz {
