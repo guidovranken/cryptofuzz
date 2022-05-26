@@ -5,6 +5,7 @@
 
 #include "bn_ops.h"
 
+#define GET_WHICH() uint8_t which = 0; try { which = ds.Get<uint8_t>(); } catch ( ... ) { }
 #define GET_OPTIONAL_BN() (ds.Get<bool>() ? bn.GetDestPtr(3) : nullptr)
 
 namespace cryptofuzz {
@@ -86,7 +87,8 @@ end:
 bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_add(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             ret = true;
@@ -121,7 +123,8 @@ bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     }
 #endif
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_sub(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             ret = true;
@@ -148,7 +151,8 @@ end:
 bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_mul(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             ret = true;
@@ -199,7 +203,8 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)bn;
 #else
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_div(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr(), GET_OPTIONAL_BN()), MP_OKAY);
             break;
@@ -288,7 +293,8 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     } catch ( fuzzing::datasource::Datasource::OutOfData ) {
     }
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_exptmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
@@ -388,7 +394,8 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_invmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
@@ -411,7 +418,8 @@ bool Cmp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     int cmpRes = 0;
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             cmpRes = wolfCrypt_bignum_detail::compare(bn[0], bn[1], ds);
             break;
@@ -484,12 +492,13 @@ bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     std::optional<uint64_t> _numBits;
     int numBits;
 
+    GET_WHICH();
     CF_CHECK_NE(_numBits = bn[1].AsUint64(), std::nullopt);
     CF_CHECK_LTE(_numBits, 2147483647);
 
     numBits = *_numBits;
 
-    switch ( ds.Get<uint8_t>() ) {
+    switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
             CF_NORET(mp_rshb(res.GetPtr(), numBits));
@@ -617,7 +626,8 @@ bool AddMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)res;
     (void)bn;
 #else
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_addmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
@@ -650,7 +660,8 @@ bool SubMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)res;
     (void)bn;
 #else
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_submod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
@@ -791,7 +802,8 @@ end:
 bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_mod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
@@ -925,7 +937,8 @@ end:
 bool Set::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
             ret = true;
@@ -1099,7 +1112,8 @@ bool Rand::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-    switch ( ds.Get<uint8_t>() ) {
+    GET_WHICH();
+    switch ( which ) {
         case    0:
             {
                 const auto len = ds.Get<uint16_t>() % 512;
