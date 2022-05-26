@@ -3186,6 +3186,8 @@ std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& 
     );
     wolfCrypt_bignum::Bignum res(ds);
 
+    CF_NORET(res.Randomize());
+
     CF_CHECK_EQ(bn.Set(0, op.bn0.ToString(ds)), true);
     CF_CHECK_EQ(bn.Set(1, op.bn1.ToString(ds)), true);
     CF_CHECK_EQ(bn.Set(2, op.bn2.ToString(ds)), true);

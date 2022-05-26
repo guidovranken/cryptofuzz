@@ -73,6 +73,7 @@ end:
         static bool ToBin(Datasource& ds, const component::BignumPair b, uint8_t* dest, const size_t size);
         static std::optional<component::Bignum> BinToBignum(Datasource& ds, const uint8_t* src, const size_t size);
         static std::optional<component::BignumPair> BinToBignumPair(Datasource& ds, const uint8_t* src, const size_t size);
+        void Randomize(void);
         bool operator==(const Bignum& rhs) const;
 };
 

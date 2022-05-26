@@ -440,6 +440,17 @@ end:
     return ret;
 }
 
+void Bignum::Randomize(void) {
+    std::vector<uint8_t> data;
+    try {
+        data = ds.GetData(0, 1, 1024);
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+    if ( !data.empty() ) {
+        /* ignore return value */ mp_read_unsigned_bin(GetPtrDirect(), data.data(), data.size());
+    }
+}
+
 bool Bignum::operator==(const Bignum& rhs) const {
     return mp_cmp(GetPtr(), rhs.GetPtr()) == MP_EQ;
 }
