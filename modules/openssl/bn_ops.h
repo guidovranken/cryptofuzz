@@ -332,6 +332,17 @@ end:
             return ret;
         }
 
+        void Randomize(void) {
+            std::vector<uint8_t> data;
+            try {
+                data = ds.GetData(0, 1, 1024);
+            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+            if ( !data.empty() ) {
+                /* ignore return value */ BN_bin2bn(data.data(), data.size(), bn);
+            }
+        }
+
         inline bool operator==(const Bignum& rhs) const {
             return BN_cmp(GetPtrConst(), rhs.GetPtrConst()) == 0;
         }

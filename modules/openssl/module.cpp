@@ -4173,7 +4173,9 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
                 OpenSSL_bignum::Bignum(ds),
                 OpenSSL_bignum::Bignum(ds),
                 OpenSSL_bignum::Bignum(ds));
+
         OpenSSL_bignum::Bignum res(ds);
+
         std::unique_ptr<OpenSSL_bignum::Operation> opRunner = nullptr;
 
         CF_CHECK_EQ(res.New(), true);
@@ -4182,7 +4184,7 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
         CF_CHECK_EQ(bn.New(2), true);
         CF_CHECK_EQ(bn.New(3), true);
 
-        CF_CHECK_EQ(res.Set("0"), true);
+        CF_NORET(res.Randomize());
         CF_CHECK_EQ(bn.Set(0, op.bn0.ToString(ds)), true);
         if ( prime_modulus == false ) {
             CF_CHECK_EQ(bn.Set(1, op.bn1.ToString(ds)), true);
