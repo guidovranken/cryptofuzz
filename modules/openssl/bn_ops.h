@@ -76,59 +76,60 @@ end:
 
         std::optional<uint64_t> AsUint64(void) const {
             std::optional<uint64_t> ret = std::nullopt;
-            try {
-                switch ( ds.Get<uint8_t>() ) {
-                    case    0:
+
+            uint8_t which = 0; try { which = ds.Get<uint8_t>(); } catch ( ... ) { }
+
+            switch ( which ) {
+                case    0:
 #if !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
-                        {
-                            /* BN_bn2binpad is not supported by OpenSSL 1.0.2 and 0.9.8 */
+                    {
+                        /* BN_bn2binpad is not supported by OpenSSL 1.0.2 and 0.9.8 */
 
-                            uint64_t v;
+                        uint64_t v;
 
-                            CF_CHECK_NE(BN_is_negative(bn), 1);
+                        CF_CHECK_NE(BN_is_negative(bn), 1);
 
-                            CF_CHECK_LTE(BN_num_bytes(bn), (int)sizeof(uint64_t));
-                            CF_CHECK_NE(BN_bn2binpad(bn, (unsigned char*)&v, sizeof(v)), -1);
+                        CF_CHECK_LTE(BN_num_bytes(bn), (int)sizeof(uint64_t));
+                        CF_CHECK_NE(BN_bn2binpad(bn, (unsigned char*)&v, sizeof(v)), -1);
 
-                            /* Manual reversing is required because
-                             * BN_bn2lebinpad is not supported by BoringSSL.
-                             *
-                             * TODO This must be omitted on big-endian platforms.
-                             */
-                            v =
-                                ((v & 0xFF00000000000000) >> 56) |
-                                ((v & 0x00FF000000000000) >> 40) |
-                                ((v & 0x0000FF0000000000) >> 24) |
-                                ((v & 0x000000FF00000000) >>  8) |
-                                ((v & 0x00000000FF000000) <<  8) |
-                                ((v & 0x0000000000FF0000) << 24) |
-                                ((v & 0x000000000000FF00) << 40) |
-                                ((v & 0x00000000000000FF) << 56);
+                        /* Manual reversing is required because
+                         * BN_bn2lebinpad is not supported by BoringSSL.
+                         *
+                         * TODO This must be omitted on big-endian platforms.
+                         */
+                        v =
+                            ((v & 0xFF00000000000000) >> 56) |
+                            ((v & 0x00FF000000000000) >> 40) |
+                            ((v & 0x0000FF0000000000) >> 24) |
+                            ((v & 0x000000FF00000000) >>  8) |
+                            ((v & 0x00000000FF000000) <<  8) |
+                            ((v & 0x0000000000FF0000) << 24) |
+                            ((v & 0x000000000000FF00) << 40) |
+                            ((v & 0x00000000000000FF) << 56);
 
-                            ret = v;
-                        }
+                        ret = v;
+                    }
 #endif
-                        break;
-                    case    1:
+                    break;
+                case    1:
 #if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
-                        {
-                            ASN1_INTEGER* asn1 = nullptr;
-                            uint64_t v;
+                    {
+                        ASN1_INTEGER* asn1 = nullptr;
+                        uint64_t v;
 
-                            CF_CHECK_NE( (asn1 = BN_to_ASN1_INTEGER(bn, nullptr)), nullptr);
-                            const auto r = ASN1_INTEGER_get_uint64(&v, asn1);
-                            ASN1_INTEGER_free(asn1);
-                            CF_CHECK_EQ(r, 1);
+                        CF_CHECK_NE( (asn1 = BN_to_ASN1_INTEGER(bn, nullptr)), nullptr);
+                        const auto r = ASN1_INTEGER_get_uint64(&v, asn1);
+                        ASN1_INTEGER_free(asn1);
+                        CF_CHECK_EQ(r, 1);
 
-                            ret = v;
-                        }
+                        ret = v;
+                    }
 #endif
-                        break;
-                    default:
-                        break;
+                    break;
+                default:
+                    break;
 
-                }
-            } catch ( ... ) { }
+            }
 
             /* Silence compiler */
             goto end;
@@ -137,6 +138,8 @@ end:
         }
 
         std::optional<int> AsInt(void) const {
+            CF_NORET(util::HintBignumInt());
+
             std::optional<int> ret = std::nullopt;
             const auto u64 = AsUint64();
 

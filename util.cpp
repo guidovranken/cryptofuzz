@@ -836,6 +836,10 @@ void HintBignumPow2(size_t maxSize) {
     HintBignum(pow2.str());
 }
 
+void HintBignumInt(void) {
+    HintBignum( std::to_string(PRNG() % 2147483648) );
+}
+
 void HintBignumOpt(const std::optional<std::string> bn) {
     if ( bn != std::nullopt ) {
         HintBignum(*bn);

@@ -1072,7 +1072,7 @@ bool SetBit::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
     (void)ctx;
     (void)ds;
     bool ret = false;
-    std::optional<uint64_t> pos;
+    std::optional<int> pos;
 
     CF_CHECK_NE(pos = bn[1].AsInt(), std::nullopt);
 
@@ -1139,7 +1139,7 @@ bool ModLShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx)
     (void)ctx;
     (void)ds;
     bool ret = false;
-    std::optional<uint64_t> places;
+    std::optional<int> places;
 
     GET_WHICH();
 
@@ -1156,10 +1156,12 @@ bool ModLShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx)
             CF_CHECK_EQ(BN_mod_lshift_quick(res.GetDestPtr(), bn[0].GetPtr(), *places, bn[2].GetPtr()), 1);
             break;
         case    2:
+            CF_NORET(util::HintBignum("1"));
             CF_CHECK_EQ(*places, 1);
             CF_CHECK_EQ(BN_mod_lshift1(res.GetDestPtr(), bn[0].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
             break;
         case    3:
+            CF_NORET(util::HintBignum("1"));
             CF_CHECK_EQ(*places, 1);
             /* BN_mod_lshift1_quick acts like BN_mod_lshift1 but requires that a be non-negative and less than m. */
             CF_CHECK_EQ(BN_is_negative(bn[0].GetPtr()), 0);
@@ -1198,7 +1200,7 @@ bool Mask::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) cons
     (void)ds;
     bool ret = false;
 
-    std::optional<uint64_t> places;
+    std::optional<int> places;
 
     CF_CHECK_NE(places = bn[1].AsInt(), std::nullopt);
     CF_CHECK_EQ(BN_mask_bits(bn[0].GetDestPtr(), *places), 1);
