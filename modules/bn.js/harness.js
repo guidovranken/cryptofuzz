@@ -45,13 +45,13 @@ try {
     } else if ( IsGCD(calcOp) ) {
         FuzzerOutput = String(bn[0].gcd(bn[1]));
     } else if ( IsInvMod(calcOp) ) {
-        /*
-         * Returns wrong result
-         *
-         * https://github.com/indutny/bn.js/issues/217
-         *
-         * FuzzerOutput = String(bn[0].invm(bn[1]));
-         */
+        var res = bn[0].invm(bn[1]);
+
+        if ( res.mul(bn[0]).mod(bn[1]).cmp(new BN("1")) == 0 ) {
+            FuzzerOutput = String(res);
+        } else {
+            FuzzerOutput = "0";
+        }
     } else if ( IsSetBit(calcOp) ) {
         FuzzerOutput = String(bn[0].setn(bn[1]));
     } else if ( IsExpMod(calcOp) ) {
