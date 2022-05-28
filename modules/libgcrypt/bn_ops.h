@@ -74,6 +74,17 @@ end:
             return ret;
         }
 
+        void Randomize(fuzzing::datasource::Datasource& ds) {
+            std::vector<uint8_t> data;
+            try {
+                data = ds.GetData(0, 1, 1024);
+            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+            if ( !data.empty() ) {
+                /* ignore return value */ Set(util::BinToDec(data));
+            }
+        }
+
         inline bool operator==(const Bignum& rhs) const {
             return gcry_mpi_cmp(GetPtr(), rhs.GetPtr()) == 0;
         }
