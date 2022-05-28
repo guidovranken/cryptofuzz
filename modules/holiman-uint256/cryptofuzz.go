@@ -194,6 +194,8 @@ func holiman_uint256_Cryptofuzz_OpBignumCalc(in []byte) {
         res.AddMod(u0, u1, res)
     } else if isMulMod(op.CalcOp) {
         res.MulMod(u0, u1, res)
+    } else if isSDiv(op.CalcOp) {
+        res.SDiv(u0, u1)
     } else {
         return
     }

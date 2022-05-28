@@ -114,6 +114,10 @@ namespace intx_detail {
                         goto end;
                     }
                     break;
+                case    CF_CALCOP("SDiv(A,B)"):
+                    CF_CHECK_NE(bn1, 0);
+                    res = sdivrem(bn0, bn1).quot;
+                    break;
                 default:
                     goto end;
             }
