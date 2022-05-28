@@ -1067,6 +1067,11 @@ func op_INV_MOD(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct b
         return false
     }
 
+    if BN0.Cmp(big.NewInt(1)) == 0 && BN1.Cmp(big.NewInt(0)) == 0 {
+        /* Golang incorrectly states InvMod(1, 0) is 1 */
+        return false
+    }
+
     if direct {
         if res.ModInverse(BN0, BN1) == nil {
             /* Inverse does not exist */
