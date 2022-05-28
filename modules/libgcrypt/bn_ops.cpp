@@ -77,8 +77,25 @@ bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             break;
         case    2:
             {
-                goto end;
-                /* TODO gcry_mpi_mul_2exp */
+                util::HintBignumPow2();
+
+                /* Test if bn[1] is exponent of 2 */
+                CF_CHECK_NE(gcry_mpi_cmp_ui(bn[1].GetPtr(), 0), 0);
+
+                const size_t num_bits = gcry_mpi_get_nbits(bn[1].GetPtr());
+                size_t num_1_bits = 0;
+                unsigned int pos = 0;
+                for (size_t i = 0; i < num_bits; i++) {
+                    if ( gcry_mpi_test_bit(bn[1].GetPtr(), i) ) {
+                        pos = i;
+                        num_1_bits++;
+                        CF_CHECK_LTE(num_1_bits, 1);
+                    }
+                }
+
+                gcry_mpi_mul_2exp(res.GetPtr(), bn[0].GetPtr(), pos);
+
+                return true;
             }
             break;
     }
