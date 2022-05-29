@@ -250,6 +250,24 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
     GET_WHICH(5);
     switch ( which ) {
         case    0:
+            {
+                /* Hint to call RSAZ_1024_mod_exp_avx2 */
+                /* https://github.com/openssl/openssl/blob/128d1c3c0a12fe68175a460e06daf1e0d940f681/crypto/bn/bn_exp.c#L664 */
+                try {
+                    const auto data = ds.GetData(0, 128, 128);
+                    util::HintBignum(util::BinToDec(data));
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            }
+
+            {
+                /* Hint to call RSAZ_512_mod_exp */
+                /* https://github.com/openssl/openssl/blob/128d1c3c0a12fe68175a460e06daf1e0d940f681/crypto/bn/bn_exp.c#L675 */
+                try {
+                    const auto data = ds.GetData(0, 64, 64);
+                    util::HintBignum(util::BinToDec(data));
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            }
+
             CF_CHECK_EQ(BN_mod_exp_mont_consttime(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr(), nullptr), 1);
             break;
         case    1:
