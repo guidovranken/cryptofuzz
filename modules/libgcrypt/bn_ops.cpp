@@ -4,7 +4,7 @@
 
 #include "bn_ops.h"
 
-#define GET_WHICH() uint8_t which = 0; try { which = ds.Get<uint8_t>(); } catch ( ... ) { }
+#define GET_WHICH(max) uint8_t which = 0; try { which = ds.Get<uint8_t>(); which %= ((max)+1); } catch ( ... ) { }
 
 using mpi_barrett_t = void*;
 
@@ -22,7 +22,7 @@ namespace module {
 namespace libgcrypt_bignum {
 
 bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
-    GET_WHICH();
+    GET_WHICH(1);
     switch ( which ) {
         case    0:
             /* noret */ gcry_mpi_add(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
@@ -42,7 +42,7 @@ end:
 }
 
 bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
-    GET_WHICH();
+    GET_WHICH(1);
     switch ( which ) {
         case    0:
             /* noret */ gcry_mpi_sub(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
@@ -62,7 +62,7 @@ end:
 }
 
 bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
-    GET_WHICH();
+    GET_WHICH(2);
     switch ( which ) {
         case    0:
             /* noret */ gcry_mpi_mul(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
@@ -120,7 +120,7 @@ end:
 }
 
 bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
-    GET_WHICH();
+    GET_WHICH(1);
 
     /* Avoid division by zero */
     CF_CHECK_NE(gcry_mpi_cmp_ui(bn[2].GetPtr(), 0), 0);
@@ -176,7 +176,7 @@ end:
 }
 
 bool Cmp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
-    GET_WHICH();
+    GET_WHICH(1);
     switch ( which ) {
         case    0:
             {
@@ -285,7 +285,7 @@ bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(1);
     switch ( which ) {
         case    0:
             /* Avoid division by zero */
@@ -391,7 +391,7 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(1);
     switch ( which ) {
         case    0:
             CF_CHECK_NE(gcry_mpi_cmp_ui(bn[1].GetPtr(), 0), 0);

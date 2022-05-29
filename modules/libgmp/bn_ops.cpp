@@ -4,7 +4,7 @@
 
 #include "bn_ops.h"
 
-#define GET_WHICH() uint8_t which = 0; try { which = ds.Get<uint8_t>(); } catch ( ... ) { }
+#define GET_WHICH(max) uint8_t which = 0; try { which = ds.Get<uint8_t>(); which %= ((max)+1); } catch ( ... ) { }
 
 namespace cryptofuzz {
 namespace module {
@@ -13,7 +13,7 @@ namespace libgmp_bignum {
 bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(1);
     switch ( which ) {
         case    0:
             /* noret */ mpz_add(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
@@ -39,7 +39,7 @@ end:
 bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(2);
     switch ( which ) {
         case    0:
             /* noret */ mpz_sub(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
@@ -73,7 +73,7 @@ end:
 bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(2);
     switch ( which ) {
         case    0:
             /* noret */ mpz_mul(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
@@ -107,7 +107,7 @@ end:
 bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(3);
     switch ( which ) {
         case    0:
             CF_CHECK_NE(mpz_cmp_ui(bn[1].GetPtr(), 0), 0);
@@ -158,7 +158,7 @@ end:
 bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(2);
 
     CF_CHECK_NE(mpz_cmp_ui(bn[2].GetPtr(), 0), 0);
 
@@ -223,7 +223,7 @@ static void GCD_ExtGCD_SetResult(mpz_ptr res, const mpz_ptr X, const mpz_ptr Y, 
 static bool GCD_ExtGCD(Datasource& ds, Bignum& res, BignumCluster& bn, const GCDType type) {
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(2);
     switch ( which ) {
         case    0:
             CF_CHECK_EQ(type, GCDType::GCD);
@@ -270,7 +270,7 @@ bool ExtGCD_Y::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 }
 
 bool Jacobi::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
-    GET_WHICH();
+    GET_WHICH(2);
     switch ( which ) {
         case    0:
             res.Set( std::to_string(mpz_jacobi(bn[0].GetPtr(), bn[1].GetPtr())) );
@@ -302,7 +302,7 @@ bool Cmp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     int cmp;
 
-    GET_WHICH();
+    GET_WHICH(2);
     switch ( which ) {
         case    0:
             cmp = mpz_cmp(bn[0].GetPtr(), bn[1].GetPtr());
@@ -344,7 +344,7 @@ end:
 bool LCM::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(1);
     switch ( which ) {
         case    0:
             /* noret */ mpz_lcm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
@@ -425,7 +425,7 @@ bool CmpAbs::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     int cmp;
 
-    GET_WHICH();
+    GET_WHICH(1);
     switch ( which ) {
         case    0:
             cmp = mpz_cmpabs(bn[0].GetPtr(), bn[1].GetPtr());
@@ -789,7 +789,7 @@ bool IsSquare::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 bool Exp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(1);
     switch ( which ) {
         case    0:
             {
@@ -831,7 +831,7 @@ bool Or::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 bool AddMul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(1);
     switch ( which ) {
         case    0:
             /* noret */ mpz_set(res.GetPtr(), bn[0].GetPtr());
@@ -859,7 +859,7 @@ end:
 bool SubMul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(1);
     switch ( which ) {
         case    0:
             /* noret */ mpz_set(res.GetPtr(), bn[0].GetPtr());
@@ -935,7 +935,7 @@ end:
 bool Set::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(3);
     switch ( which ) {
         case    0:
             /* noret */ mpz_set(res.GetPtr(), bn[0].GetPtr());
@@ -974,7 +974,7 @@ bool BinCoeff::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     std::optional<unsigned long int> bn0, bn1;
 
-    GET_WHICH();
+    GET_WHICH(1);
 
     bn0 = bn[0].GetUnsignedLong();
     CF_CHECK_NE(bn0, std::nullopt);
@@ -1012,7 +1012,7 @@ bool HamDist::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(1);
     switch ( which ) {
         case    0:
             CF_CHECK_NE(mpz_cmp_ui(bn[1].GetPtr(), 0), 0);

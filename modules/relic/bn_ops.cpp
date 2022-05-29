@@ -2,7 +2,7 @@
 #include <cryptofuzz/util.h>
 #include <limits>
 
-#define GET_WHICH() uint8_t which = 0; try { which = ds.Get<uint8_t>(); } catch ( ... ) { }
+#define GET_WHICH(max) uint8_t which = 0; try { which = ds.Get<uint8_t>(); which %= ((max)+1); } catch ( ... ) { }
 
 namespace cryptofuzz {
 namespace module {
@@ -33,77 +33,73 @@ bool Sub::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 }
 
 bool Mul::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
-    try {
-        GET_WHICH();
-        switch ( which ) {
-            case    0:
-                RLC_TRY {
-                    /* noret */ bn_mul(res.Get(), bn[0].Get(), bn[1].Get());
-                } RLC_CATCH_ANY {
-                    return false;
-                }
-                return true;
-            case    1:
-                RLC_TRY {
-                    /* noret */ bn_mul_basic(res.Get(), bn[0].Get(), bn[1].Get());
-                } RLC_CATCH_ANY {
-                    return false;
-                }
-                return true;
-            case    2:
-                RLC_TRY {
-                    /* noret */ bn_mul_comba(res.Get(), bn[0].Get(), bn[1].Get());
-                } RLC_CATCH_ANY {
-                    return false;
-                }
-                return true;
-            case    3:
-                RLC_TRY {
-                    /* noret */ bn_mul_karat(res.Get(), bn[0].Get(), bn[1].Get());
-                } RLC_CATCH_ANY {
-                    return false;
-                }
-                return true;
-        }
-    } catch ( ... ) { }
+    GET_WHICH(3);
+    switch ( which ) {
+        case    0:
+            RLC_TRY {
+                /* noret */ bn_mul(res.Get(), bn[0].Get(), bn[1].Get());
+            } RLC_CATCH_ANY {
+                return false;
+            }
+            return true;
+        case    1:
+            RLC_TRY {
+                /* noret */ bn_mul_basic(res.Get(), bn[0].Get(), bn[1].Get());
+            } RLC_CATCH_ANY {
+                return false;
+            }
+            return true;
+        case    2:
+            RLC_TRY {
+                /* noret */ bn_mul_comba(res.Get(), bn[0].Get(), bn[1].Get());
+            } RLC_CATCH_ANY {
+                return false;
+            }
+            return true;
+        case    3:
+            RLC_TRY {
+                /* noret */ bn_mul_karat(res.Get(), bn[0].Get(), bn[1].Get());
+            } RLC_CATCH_ANY {
+                return false;
+            }
+            return true;
+    }
 
     return false;
 }
 
 bool Sqr::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
-    try {
-        GET_WHICH();
-        switch ( which ) {
-            case    0:
-                RLC_TRY {
-                    /* noret */ bn_sqr(res.Get(), bn[0].Get());
-                } RLC_CATCH_ANY {
-                    return false;
-                }
-                return true;
-            case    1:
-                RLC_TRY {
-                    /* noret */ bn_sqr_basic(res.Get(), bn[0].Get());
-                } RLC_CATCH_ANY {
-                    return false;
-                }
-                return true;
-            case    2:
-                RLC_TRY {
-                    /* noret */ bn_sqr_comba(res.Get(), bn[0].Get());
-                } RLC_CATCH_ANY {
-                    return false;
-                }
-                return true;
-            case    3:
-                RLC_TRY {
-                    /* noret */ bn_sqr_karat(res.Get(), bn[0].Get());
-                } RLC_CATCH_ANY {
-                    return false;
-                }
-                return true;
-        }
-    } catch ( ... ) { }
+    GET_WHICH(3);
+    switch ( which ) {
+        case    0:
+            RLC_TRY {
+                /* noret */ bn_sqr(res.Get(), bn[0].Get());
+            } RLC_CATCH_ANY {
+                return false;
+            }
+            return true;
+        case    1:
+            RLC_TRY {
+                /* noret */ bn_sqr_basic(res.Get(), bn[0].Get());
+            } RLC_CATCH_ANY {
+                return false;
+            }
+            return true;
+        case    2:
+            RLC_TRY {
+                /* noret */ bn_sqr_comba(res.Get(), bn[0].Get());
+            } RLC_CATCH_ANY {
+                return false;
+            }
+            return true;
+        case    3:
+            RLC_TRY {
+                /* noret */ bn_sqr_karat(res.Get(), bn[0].Get());
+            } RLC_CATCH_ANY {
+                return false;
+            }
+            return true;
+    }
 
     return false;
 }
@@ -139,130 +135,128 @@ static void GCD_ExtGCD_SetResult(bn_t& res, const bn_t& X, const bn_t& Y, const 
 }
 
 static bool GCD_ExtGCD(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const GCDType type) {
-    try {
-        auto which = ds.Get<uint8_t>();
+    GET_WHICH(8);
 
-        if ( type == GCDType::ExtGCD_X || type == GCDType::ExtGCD_Y ) {
-            if ( which >= 0 && which <= 3 ) {
-                which += 4;
+    if ( type == GCDType::ExtGCD_X || type == GCDType::ExtGCD_Y ) {
+        if ( which >= 0 && which <= 3 ) {
+            which += 4;
+        }
+    }
+
+    switch ( which ) {
+        case    0:
+            RLC_TRY {
+                /* noret */ bn_gcd(res.Get(), bn[0].Get(), bn[1].Get());
+            } RLC_CATCH_ANY {
+                return false;
             }
-        }
+            return true;
+        case    1:
+            RLC_TRY {
+                /* noret */ bn_gcd_basic(res.Get(), bn[0].Get(), bn[1].Get());
+            } RLC_CATCH_ANY {
+                return false;
+            }
+            return true;
+        case    2:
+            RLC_TRY {
+                /* noret */ bn_gcd_lehme(res.Get(), bn[0].Get(), bn[1].Get());
+            } RLC_CATCH_ANY {
+                return false;
+            }
+            return true;
+        case    3:
+            RLC_TRY {
+                /* noret */ bn_gcd_binar(res.Get(), bn[0].Get(), bn[1].Get());
+            } RLC_CATCH_ANY {
+                return false;
+            }
+            return true;
+        case    4:
+            {
+                CF_CHECK_NE(bn_bits(bn[0].Get()), 0);
+                CF_CHECK_NE(bn_bits(bn[1].Get()), 0);
 
-        switch ( which ) {
-            case    0:
+                Bignum t1(ds), t2(ds);
+
                 RLC_TRY {
-                    /* noret */ bn_gcd(res.Get(), bn[0].Get(), bn[1].Get());
+                    /* noret */ bn_gcd_ext(res.Get(), t1.Get(), t2.Get(), bn[0].Get(), bn[1].Get());
                 } RLC_CATCH_ANY {
                     return false;
                 }
+
+                CF_NORET(GCD_ExtGCD_SetResult(res.Get(), t1.Get(), t2.Get(), type));
+
                 return true;
-            case    1:
+            }
+        case    5:
+            {
+                CF_CHECK_NE(bn_bits(bn[0].Get()), 0);
+                CF_CHECK_NE(bn_bits(bn[1].Get()), 0);
+
+                Bignum t1(ds), t2(ds);
+
                 RLC_TRY {
-                    /* noret */ bn_gcd_basic(res.Get(), bn[0].Get(), bn[1].Get());
+                    /* noret */ bn_gcd_ext_basic(res.Get(), t1.Get(), t2.Get(), bn[0].Get(), bn[1].Get());
                 } RLC_CATCH_ANY {
                     return false;
                 }
+
+                CF_NORET(GCD_ExtGCD_SetResult(res.Get(), t1.Get(), t2.Get(), type));
+
                 return true;
-            case    2:
+            }
+        case    6:
+            {
+                CF_CHECK_NE(bn_bits(bn[0].Get()), 0);
+                CF_CHECK_NE(bn_bits(bn[1].Get()), 0);
+
+                Bignum t1(ds), t2(ds);
+
                 RLC_TRY {
-                    /* noret */ bn_gcd_lehme(res.Get(), bn[0].Get(), bn[1].Get());
+                    /* noret */ bn_gcd_ext_lehme(res.Get(), t1.Get(), t2.Get(), bn[0].Get(), bn[1].Get());
                 } RLC_CATCH_ANY {
                     return false;
                 }
+
+                CF_NORET(GCD_ExtGCD_SetResult(res.Get(), t1.Get(), t2.Get(), type));
+
                 return true;
-            case    3:
+            }
+        case    7:
+            {
+                Bignum t1(ds), t2(ds);
+
                 RLC_TRY {
-                    /* noret */ bn_gcd_binar(res.Get(), bn[0].Get(), bn[1].Get());
+                    /* noret */ bn_gcd_ext_binar(res.Get(), t1.Get(), t2.Get(), bn[0].Get(), bn[1].Get());
                 } RLC_CATCH_ANY {
                     return false;
                 }
+
+                CF_NORET(GCD_ExtGCD_SetResult(res.Get(), t1.Get(), t2.Get(), type));
+
                 return true;
-            case    4:
-                {
-                    CF_CHECK_NE(bn_bits(bn[0].Get()), 0);
-                    CF_CHECK_NE(bn_bits(bn[1].Get()), 0);
+            }
+        case    8:
+            {
+                /* XXX */
+                goto end;
+                CF_CHECK_NE(bn_bits(bn[0].Get()), 0);
+                CF_CHECK_NE(bn_bits(bn[1].Get()), 0);
 
-                    Bignum t1(ds), t2(ds);
+                Bignum t1(ds), t2(ds), t3(ds);
 
-                    RLC_TRY {
-                        /* noret */ bn_gcd_ext(res.Get(), t1.Get(), t2.Get(), bn[0].Get(), bn[1].Get());
-                    } RLC_CATCH_ANY {
-                        return false;
-                    }
-
-                    CF_NORET(GCD_ExtGCD_SetResult(res.Get(), t1.Get(), t2.Get(), type));
-
-                    return true;
+                RLC_TRY {
+                    /* noret */ bn_gcd_ext_mid(res.Get(), t1.Get(), t2.Get(), t3.Get(), bn[0].Get(), bn[1].Get());
+                } RLC_CATCH_ANY {
+                    return false;
                 }
-            case    5:
-                {
-                    CF_CHECK_NE(bn_bits(bn[0].Get()), 0);
-                    CF_CHECK_NE(bn_bits(bn[1].Get()), 0);
 
-                    Bignum t1(ds), t2(ds);
+                CF_NORET(GCD_ExtGCD_SetResult(res.Get(), t1.Get(), t2.Get(), type));
 
-                    RLC_TRY {
-                        /* noret */ bn_gcd_ext_basic(res.Get(), t1.Get(), t2.Get(), bn[0].Get(), bn[1].Get());
-                    } RLC_CATCH_ANY {
-                        return false;
-                    }
-
-                    CF_NORET(GCD_ExtGCD_SetResult(res.Get(), t1.Get(), t2.Get(), type));
-
-                    return true;
-                }
-            case    6:
-                {
-                    CF_CHECK_NE(bn_bits(bn[0].Get()), 0);
-                    CF_CHECK_NE(bn_bits(bn[1].Get()), 0);
-
-                    Bignum t1(ds), t2(ds);
-
-                    RLC_TRY {
-                        /* noret */ bn_gcd_ext_lehme(res.Get(), t1.Get(), t2.Get(), bn[0].Get(), bn[1].Get());
-                    } RLC_CATCH_ANY {
-                        return false;
-                    }
-
-                    CF_NORET(GCD_ExtGCD_SetResult(res.Get(), t1.Get(), t2.Get(), type));
-
-                    return true;
-                }
-            case    7:
-                {
-                    Bignum t1(ds), t2(ds);
-
-                    RLC_TRY {
-                        /* noret */ bn_gcd_ext_binar(res.Get(), t1.Get(), t2.Get(), bn[0].Get(), bn[1].Get());
-                    } RLC_CATCH_ANY {
-                        return false;
-                    }
-
-                    CF_NORET(GCD_ExtGCD_SetResult(res.Get(), t1.Get(), t2.Get(), type));
-
-                    return true;
-                }
-            case    8:
-                {
-                    /* XXX */
-                    goto end;
-                    CF_CHECK_NE(bn_bits(bn[0].Get()), 0);
-                    CF_CHECK_NE(bn_bits(bn[1].Get()), 0);
-
-                    Bignum t1(ds), t2(ds), t3(ds);
-
-                    RLC_TRY {
-                        /* noret */ bn_gcd_ext_mid(res.Get(), t1.Get(), t2.Get(), t3.Get(), bn[0].Get(), bn[1].Get());
-                    } RLC_CATCH_ANY {
-                        return false;
-                    }
-
-                    CF_NORET(GCD_ExtGCD_SetResult(res.Get(), t1.Get(), t2.Get(), type));
-
-                    return true;
-                }
-        }
-    } catch ( ... ) { }
+                return true;
+            }
+    }
 
 end:
     return false;
@@ -293,6 +287,7 @@ bool LCM::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 }
 
 bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
+    return false;
     (void)ds;
 
     RLC_TRY {
@@ -308,25 +303,23 @@ bool InvMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 }
 
 bool LShift1::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
-    try {
-        GET_WHICH();
-        switch ( which ) {
-            case    0:
-                RLC_TRY {
-                    bn_lsh(res.Get(), bn[0].Get(), 1);
-                } RLC_CATCH_ANY {
-                    return false;
-                }
-                return true;
-            case    1:
-                RLC_TRY {
-                    bn_dbl(res.Get(), bn[0].Get());
-                } RLC_CATCH_ANY {
-                    return false;
-                }
-                return true;
-        }
-    } catch ( ... ) { }
+    GET_WHICH(1);
+    switch ( which ) {
+        case    0:
+            RLC_TRY {
+                bn_lsh(res.Get(), bn[0].Get(), 1);
+            } RLC_CATCH_ANY {
+                return false;
+            }
+            return true;
+        case    1:
+            RLC_TRY {
+                bn_dbl(res.Get(), bn[0].Get());
+            } RLC_CATCH_ANY {
+                return false;
+            }
+            return true;
+    }
 
     return false;
 }
@@ -370,81 +363,77 @@ end:
 }
 
 bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
-    (void)ds;
+    GET_WHICH(5);
+    switch ( which ) {
+        case    0:
+            RLC_TRY {
+                /* noret */ bn_mod(res.Get(), bn[0].Get(), bn[1].Get());
+            } RLC_CATCH_ANY {
+                return false;
+            }
+            return true;
+        case    1:
+            RLC_TRY {
+                /* noret */ bn_mod_basic(res.Get(), bn[0].Get(), bn[1].Get());
+            } RLC_CATCH_ANY {
+                return false;
+            }
+            return true;
+        case    2:
+            {
+                Bignum t1(ds);
 
-    try {
-        GET_WHICH();
-        switch ( which ) {
-            case    0:
                 RLC_TRY {
-                    /* noret */ bn_mod(res.Get(), bn[0].Get(), bn[1].Get());
+                    bn_mod_pre_barrt(t1.Get(), bn[1].Get());
+                    bn_mod_barrt(res.Get(), bn[0].Get(), bn[1].Get(), t1.Get());
                 } RLC_CATCH_ANY {
                     return false;
                 }
+
                 return true;
-            case    1:
+            }
+        case    3:
+            {
+                Bignum t1(ds), t2(ds);
+
                 RLC_TRY {
-                    /* noret */ bn_mod_basic(res.Get(), bn[0].Get(), bn[1].Get());
+                    bn_mod_monty_conv(t1.Get(), bn[0].Get(), bn[1].Get());
+                    bn_mod_pre_monty(t2.Get(), bn[1].Get());
+                    bn_mod_monty_basic(res.Get(), t1.Get(), bn[1].Get(), t2.Get());
                 } RLC_CATCH_ANY {
                     return false;
                 }
+
                 return true;
-            case    2:
-                {
-                    Bignum t1(ds);
+            }
+        case    4:
+            {
+                Bignum t1(ds), t2(ds);
 
-                    RLC_TRY {
-                        bn_mod_pre_barrt(t1.Get(), bn[1].Get());
-                        bn_mod_barrt(res.Get(), bn[0].Get(), bn[1].Get(), t1.Get());
-                    } RLC_CATCH_ANY {
-                        return false;
-                    }
-
-                    return true;
+                RLC_TRY {
+                    bn_mod_monty_conv(t1.Get(), bn[0].Get(), bn[1].Get());
+                    bn_mod_pre_monty(t2.Get(), bn[1].Get());
+                    bn_mod_monty_comba(res.Get(), t1.Get(), bn[1].Get(), t2.Get());
+                } RLC_CATCH_ANY {
+                    return false;
                 }
-            case    3:
-                {
-                    Bignum t1(ds), t2(ds);
 
-                    RLC_TRY {
-                        bn_mod_monty_conv(t1.Get(), bn[0].Get(), bn[1].Get());
-                        bn_mod_pre_monty(t2.Get(), bn[1].Get());
-                        bn_mod_monty_basic(res.Get(), t1.Get(), bn[1].Get(), t2.Get());
-                    } RLC_CATCH_ANY {
-                        return false;
-                    }
+                return true;
+            }
+        case    5:
+            {
+                Bignum t1(ds);
 
-                    return true;
+                RLC_TRY {
+                    bn_mod_pre_pmers(t1.Get(), bn[1].Get());
+                    bn_mod_pmers(res.Get(), bn[0].Get(), bn[1].Get(), t1.Get());
+                } RLC_CATCH_ANY {
+                    return false;
                 }
-            case    4:
-                {
-                    Bignum t1(ds), t2(ds);
 
-                    RLC_TRY {
-                        bn_mod_monty_conv(t1.Get(), bn[0].Get(), bn[1].Get());
-                        bn_mod_pre_monty(t2.Get(), bn[1].Get());
-                        bn_mod_monty_comba(res.Get(), t1.Get(), bn[1].Get(), t2.Get());
-                    } RLC_CATCH_ANY {
-                        return false;
-                    }
-
-                    return true;
-                }
-            case    5:
-                {
-                    Bignum t1(ds);
-
-                    RLC_TRY {
-                        bn_mod_pre_pmers(t1.Get(), bn[1].Get());
-                        bn_mod_pmers(res.Get(), bn[0].Get(), bn[1].Get(), t1.Get());
-                    } RLC_CATCH_ANY {
-                        return false;
-                    }
-
-                    return true;
-                }
-        }
-    } catch ( ... ) { }
+                return true;
+            }
+    }
 
     return false;
 
@@ -556,39 +545,37 @@ bool Abs::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 }
 
 bool ExpMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
-    try {
-        GET_WHICH();
-        switch ( which ) {
-            case    0:
-                RLC_TRY {
-                    /* noret */ bn_mxp(res.Get(), bn[0].Get(), bn[1].Get(), bn[2].Get());
-                } RLC_CATCH_ANY {
-                    return false;
-                }
-                return true;
-            case    1:
-                RLC_TRY {
-                    /* noret */ bn_mxp_basic(res.Get(), bn[0].Get(), bn[1].Get(), bn[2].Get());
-                } RLC_CATCH_ANY {
-                    return false;
-                }
-                return true;
-            case    2:
-                RLC_TRY {
-                    /* noret */ bn_mxp_slide(res.Get(), bn[0].Get(), bn[1].Get(), bn[2].Get());
-                } RLC_CATCH_ANY {
-                    return false;
-                }
-                return true;
-            case    3:
-                RLC_TRY {
-                    /* noret */ bn_mxp_monty(res.Get(), bn[0].Get(), bn[1].Get(), bn[2].Get());
-                } RLC_CATCH_ANY {
-                    return false;
-                }
-                return true;
-        }
-    } catch ( ... ) { }
+    GET_WHICH(3);
+    switch ( which ) {
+        case    0:
+            RLC_TRY {
+                /* noret */ bn_mxp(res.Get(), bn[0].Get(), bn[1].Get(), bn[2].Get());
+            } RLC_CATCH_ANY {
+                return false;
+            }
+            return true;
+        case    1:
+            RLC_TRY {
+                /* noret */ bn_mxp_basic(res.Get(), bn[0].Get(), bn[1].Get(), bn[2].Get());
+            } RLC_CATCH_ANY {
+                return false;
+            }
+            return true;
+        case    2:
+            RLC_TRY {
+                /* noret */ bn_mxp_slide(res.Get(), bn[0].Get(), bn[1].Get(), bn[2].Get());
+            } RLC_CATCH_ANY {
+                return false;
+            }
+            return true;
+        case    3:
+            RLC_TRY {
+                /* noret */ bn_mxp_monty(res.Get(), bn[0].Get(), bn[1].Get(), bn[2].Get());
+            } RLC_CATCH_ANY {
+                return false;
+            }
+            return true;
+    }
 
     return false;
 }
