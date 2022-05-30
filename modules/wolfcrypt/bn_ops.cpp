@@ -5,7 +5,7 @@
 
 #include "bn_ops.h"
 
-#define GET_WHICH() uint8_t which = 0; try { which = ds.Get<uint8_t>(); } catch ( ... ) { }
+#define GET_WHICH(max) uint8_t which = 0; try { which = ds.Get<uint8_t>(); which %= ((max)+1); } catch ( ... ) { }
 #define GET_OPTIONAL_BN() (ds.Get<bool>() ? bn.GetDestPtr(3) : nullptr)
 
 namespace cryptofuzz {
@@ -87,7 +87,7 @@ end:
 bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(1);
     switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_add(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
@@ -123,7 +123,7 @@ bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     }
 #endif
 
-    GET_WHICH();
+    GET_WHICH(1);
     switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_sub(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
@@ -151,7 +151,7 @@ end:
 bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(3);
     switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_mul(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
@@ -203,7 +203,7 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)bn;
 #else
 
-    GET_WHICH();
+    GET_WHICH(3);
     switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_div(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr(), GET_OPTIONAL_BN()), MP_OKAY);
@@ -293,7 +293,7 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     } catch ( fuzzing::datasource::Datasource::OutOfData ) {
     }
 
-    GET_WHICH();
+    GET_WHICH(9);
     switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_exptmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
@@ -394,7 +394,7 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(1);
     switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_invmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
@@ -418,7 +418,7 @@ bool Cmp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     int cmpRes = 0;
-    GET_WHICH();
+    GET_WHICH(1);
     switch ( which ) {
         case    0:
             cmpRes = wolfCrypt_bignum_detail::compare(bn[0], bn[1], ds);
@@ -492,7 +492,7 @@ bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     std::optional<uint64_t> _numBits;
     int numBits;
 
-    GET_WHICH();
+    GET_WHICH(2);
     CF_CHECK_NE(_numBits = bn[1].AsUint64(), std::nullopt);
     CF_CHECK_LTE(_numBits, 2147483647);
 
@@ -626,7 +626,7 @@ bool AddMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)res;
     (void)bn;
 #else
-    GET_WHICH();
+    GET_WHICH(1);
     switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_addmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
@@ -660,7 +660,7 @@ bool SubMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)res;
     (void)bn;
 #else
-    GET_WHICH();
+    GET_WHICH(1);
     switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_submod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
@@ -802,7 +802,7 @@ end:
 bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(4);
     switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_mod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
@@ -937,7 +937,7 @@ end:
 bool Set::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(3);
     switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
@@ -1113,7 +1113,7 @@ bool Rand::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-    GET_WHICH();
+    GET_WHICH(1);
     switch ( which ) {
         case    0:
             {
