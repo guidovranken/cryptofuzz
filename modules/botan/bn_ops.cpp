@@ -1041,7 +1041,7 @@ bool Ressol::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std
     try {
         auto mod = modulo == std::nullopt ? bn[1] : *modulo;
 
-        const auto r = ::Botan::ressol(bn[0].Ref(), mod.Ref());
+        const auto r = ::Botan::sqrt_modulo_prime(bn[0].Ref(), mod.Ref());
 
         if ( r < 1 ) {
             if ( modulo != std::nullopt ) {
