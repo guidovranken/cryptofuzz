@@ -167,3 +167,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - relic: [bn_gcd_lehme hangs with negative input](https://github.com/relic-toolkit/relic/issues/236)
 - relic: [Modulo functions hang with negative inputs](https://github.com/relic-toolkit/relic/issues/237)
 - blst: [blst_fp_is_square incorrect result on ARM](https://github.com/supranational/blst/commit/69d380745b64c8e72128263434762770a9162622)
+- OpenSSL, BoringSSL: [BN_mod_exp_mont_consttime returns modulus when it should return 0](https://boringssl-review.googlesource.com/c/boringssl/+/52825)
