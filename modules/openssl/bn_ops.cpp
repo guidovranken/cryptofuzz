@@ -1,6 +1,7 @@
 #include <cryptofuzz/util.h>
 #include <cryptofuzz/repository.h>
 #include <fuzzing/datasource/id.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 
 #include "bn_ops.h"
 
@@ -255,7 +256,7 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
                 /* https://github.com/openssl/openssl/blob/128d1c3c0a12fe68175a460e06daf1e0d940f681/crypto/bn/bn_exp.c#L664 */
                 try {
                     const auto data = ds.GetData(0, 128, 128);
-                    util::HintBignum(util::BinToDec(data));
+                    CF_NORET(util::HintBignum(util::BinToDec(data)));
                 } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
             }
 
@@ -264,8 +265,17 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
                 /* https://github.com/openssl/openssl/blob/128d1c3c0a12fe68175a460e06daf1e0d940f681/crypto/bn/bn_exp.c#L675 */
                 try {
                     const auto data = ds.GetData(0, 64, 64);
-                    util::HintBignum(util::BinToDec(data));
+                    CF_NORET(util::HintBignum(util::BinToDec(data)));
                 } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            }
+
+            {
+                /* Hint to find https://boringssl-review.googlesource.com/c/boringssl/+/52825 */
+                /* (and possibly similar bugs) */
+                const boost::multiprecision::cpp_int v = rand() % 50;
+                const boost::multiprecision::cpp_int h = boost::multiprecision::pow(v, 95 + (rand() % 10));
+                const auto hint = h.str();
+                CF_NORET(util::HintBignum(hint));
             }
 
             CF_CHECK_EQ(BN_mod_exp_mont_consttime(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr(), nullptr), 1);

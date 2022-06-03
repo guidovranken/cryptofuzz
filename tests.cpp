@@ -710,9 +710,22 @@ namespace BignumCalc {
     static bool LargerThan(const component::Bignum& A, const component::Bignum& B) {
         return A.ToTrimmedString().size() > B.ToTrimmedString().size();
     }
+    static bool IsEqualOrLargerThan(const component::Bignum& A, const component::Bignum& B) {
+        const auto a = A.ToTrimmedString();
+        const auto b = B.ToTrimmedString();
+        if ( a.size() > b.size() ) {
+            return true;
+        }
+        if ( a.size() == b.size() ) {
+            if ( a == b ) {
+                return true;
+            }
+        }
+        return false;
+    }
     static void AssertModResult(const component::Bignum& result, const component::Bignum& mod, const std::string& opStr) {
-        if ( LargerThan(result, mod) ) {
-            Abort("Result is larger than modulo", opStr);
+        if ( IsEqualOrLargerThan(result, mod) ) {
+            Abort("Result is equal to or larger than modulo", opStr);
         }
     }
     static void AssertNotSmallerThan(const component::Bignum& result, const component::Bignum& A, const std::string& opStr) {
