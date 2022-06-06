@@ -96,6 +96,7 @@ bool Mod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     bool ret = false;
 
     CF_CHECK_EQ(mp_mod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+    CF_CHECK_FALSE(bn[1].IsZero());
 
     ret = true;
 
@@ -184,6 +185,7 @@ bool AddMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     bool ret = false;
 
     CF_CHECK_EQ(mp_addmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+    CF_CHECK_FALSE(bn[2].IsZero());
 
     ret = true;
 
@@ -196,6 +198,7 @@ bool SubMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     bool ret = false;
 
     CF_CHECK_EQ(mp_submod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+    CF_CHECK_FALSE(bn[2].IsZero());
 
     ret = true;
 
@@ -208,6 +211,7 @@ bool MulMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     bool ret = false;
 
     CF_CHECK_EQ(mp_mulmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
+    CF_CHECK_FALSE(bn[2].IsZero());
 
     ret = true;
 
@@ -220,6 +224,7 @@ bool SqrMod::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     bool ret = false;
 
     CF_CHECK_EQ(mp_sqrmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
+    CF_CHECK_FALSE(bn[1].IsZero());
 
     ret = true;
 

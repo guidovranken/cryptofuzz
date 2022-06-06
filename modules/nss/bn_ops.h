@@ -35,6 +35,12 @@ end:
             return &mpi;
         }
 
+        bool IsZero(void) {
+            Bignum zero;
+            mp_zero(zero.GetPtr());
+            return mp_cmp(zero.GetPtr(), GetPtr()) == 0;
+        }
+
         std::optional<component::Bignum> ToComponentBignum(void) {
             std::optional<component::Bignum> ret = std::nullopt;
             char* str = nullptr;
