@@ -248,7 +248,7 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
         CF_CHECK_NE(BN_cmp(bn[2].GetPtr(), zero.GetPtr()), 0);
     }
 #endif
-    GET_WHICH(5);
+    GET_WHICH(6);
     switch ( which ) {
         case    0:
             {
@@ -381,6 +381,13 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
                  * exponentiation by 0 doesn't result in 1
                  */
                 CF_CHECK_NE(BN_is_zero(bn[1].GetPtr()), 1);
+            }
+            break;
+        case    6:
+            {
+                const auto val = bn[0].AsBN_ULONG();
+                CF_CHECK_NE(val, std::nullopt);
+                CF_CHECK_EQ(BN_mod_exp_mont_word(res.GetDestPtr(), *val, bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr(), nullptr), 1);
             }
             break;
         default:
