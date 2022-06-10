@@ -15,6 +15,7 @@
 #include "repository_tbl.h"
 #include "numbers.h"
 #include "mutatorpool.h"
+#include "_z3.h"
 #include "third_party/json/json.hpp"
 
 extern "C" size_t LLVMFuzzerMutate(uint8_t* data, size_t size, size_t maxSize);
@@ -187,7 +188,7 @@ static std::vector<size_t> SplitLength(size_t left, const size_t numParts) {
     return lengths_randomized;
 }
 
-static bool getBool(void) {
+bool getBool(void) {
     return PRNG() % 2 == 0;
 }
 
@@ -244,7 +245,7 @@ static std::vector<uint8_t> getBufferBin(const size_t size) {
     return ret;
 }
 
-static std::string getBignum(bool mustBePositive = false) {
+std::string getBignum(bool mustBePositive = false) {
     std::string ret;
 
     if ( (PRNG() % 10) == 0 ) {
@@ -797,6 +798,14 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                             }
                         }
                     }
+#if defined(CRYPTOFUZZ_HAVE_Z3)
+                    else if ( getBool() ) {
+                        const auto p = cryptofuzz::Z3::Generate(calcop);
+                        if ( p != std::nullopt ) {
+                            parameters = *p;
+                        }
+                    }
+#endif
                     cryptofuzz::operation::BignumCalc op(parameters);
                     op.Serialize(dsOut2);
                 }
