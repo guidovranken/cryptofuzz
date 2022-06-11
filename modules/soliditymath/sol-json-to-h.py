@@ -50,12 +50,16 @@ for f in sys.argv[1:]:
                     calcop = 'CF_CALCOP("Sub(A,B)")'
                 elif k == 'mul(uint256,uint256)':
                     calcop = 'CF_CALCOP("Mul(A,B)")'
+                elif k == 'mul512(uint256,uint256)':
+                    calcop = 'CF_CALCOP("Mul(A,B)")'
                 elif k == 'exp(uint256,uint256)':
                     calcop = 'CF_CALCOP("Exp(A,B)")'
                 elif k == 'expDiv(uint256,uint256,uint256)':
                     calcop = 'CF_CALCOP("ExpDiv(A,B,C)")'
                 elif k == 'invmod(uint256,uint256)':
                     calcop = 'CF_CALCOP("InvMod(A,B)")'
+                elif k == 'mulMod(uint256,uint256,uint256)':
+                    calcop = 'CF_CALCOP("MulMod(A,B,C)")'
                 else:
                     assert(False)
 

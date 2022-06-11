@@ -80,7 +80,8 @@ end:
         }
     }
 
-    std::optional<component::Bignum> parseU256(const bool mustSucceed = false) {
+    template <size_t Size>
+    std::optional<component::Bignum> parseInt(const bool mustSucceed = false) {
         const auto res = getJsonResult();
         if ( res == std::nullopt ) {
             if ( mustSucceed == true ) {
@@ -92,7 +93,7 @@ end:
         std::vector<uint8_t> data;
         boost::algorithm::unhex(s, std::back_inserter(data));
 
-        CF_ASSERT(data.size() == 32, "return value of type 'uint' is not 32 bytes");
+        CF_ASSERT(data.size() == Size, "return value is invalid size");
 
         return component::Bignum{util::BinToDec(data)};
     }
@@ -128,7 +129,8 @@ std::optional<component::Bignum> SolidityMath::OpBignumCalc(operation::BignumCal
 
     const auto& contract = contracts[which % amount];
 
-    SolidityMath_detail::append(calldata, contract->hashes.at(calcop).second);
+    const auto hash = contract->hashes.at(calcop).second;
+    SolidityMath_detail::append(calldata, hash);
 
     {
         if ( calcop == CF_CALCOP("MulDiv(A,B,C)") ) {
@@ -167,7 +169,15 @@ std::optional<component::Bignum> SolidityMath::OpBignumCalc(operation::BignumCal
                 SolidityMath_detail::toGoSlice(calldata),
                 gas);
 
-        ret = SolidityMath_detail::parseU256();
+        {
+            static const std::array<uint8_t, 4> mul512{0x73, 0xd0, 0xb5, 0x12};
+
+            if ( hash == mul512 ) {
+                ret = SolidityMath_detail::parseInt<64>(gas ? false : true);
+            } else {
+                ret = SolidityMath_detail::parseInt<32>();
+            }
+        }
     }
 
 end:
