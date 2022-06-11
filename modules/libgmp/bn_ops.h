@@ -209,6 +209,11 @@ class Sqrt : public Operation {
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;
 };
 
+class SqrtCeil : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;
+};
+
 class Sqr : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;

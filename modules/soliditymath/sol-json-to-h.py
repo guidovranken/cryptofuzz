@@ -34,6 +34,8 @@ for f in sys.argv[1:]:
                     calcop = 'CF_CALCOP("MulDivCeil(A,B,C)")'
                 elif k == 'sqrt(uint256)':
                     calcop = 'CF_CALCOP("Sqrt(A)")'
+                elif k == 'sqrtCeil(uint256)':
+                    calcop = 'CF_CALCOP("SqrtCeil(A)")'
                 elif k == 'min(uint256,uint256)':
                     calcop = 'CF_CALCOP("Min(A,B)")'
                 elif k == 'max(uint256,uint256)':

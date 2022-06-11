@@ -412,6 +412,25 @@ end:
     return ret;
 }
 
+bool SqrtCeil::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    bool ret = false;
+    (void)ds;
+
+    libgmp_bignum::Bignum rem;
+
+    CF_CHECK_GTE(mpz_sgn(bn[0].GetPtr()), 0);
+
+    /* noret */ mpz_sqrt(res.GetPtr(), bn[0].GetPtr());
+    /* noret */ mpz_sqrtrem(bn[1].GetPtr(), rem.GetPtr(), bn[0].GetPtr());
+    if ( mpz_sgn(rem.GetPtr()) != 0 ) {
+        /* noret */ mpz_add_ui(res.GetPtr(), res.GetPtr(), 1);
+    }
+    ret = true;
+
+end:
+    return ret;
+}
+
 bool Sqr::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 

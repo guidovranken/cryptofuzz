@@ -79,6 +79,9 @@ std::optional<component::Bignum> libgmp::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("Sqrt(A)"):
             opRunner = std::make_unique<libgmp_bignum::Sqrt>();
             break;
+        case    CF_CALCOP("SqrtCeil(A)"):
+            opRunner = std::make_unique<libgmp_bignum::SqrtCeil>();
+            break;
         case    CF_CALCOP("Sqr(A)"):
             opRunner = std::make_unique<libgmp_bignum::Sqr>();
             break;
