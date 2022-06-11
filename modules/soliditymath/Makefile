@@ -23,10 +23,10 @@ github.com-Uniswap-lib-master-contracts-libraries-FullMath.sol :
 LOADER-github.com-Uniswap-lib-master-contracts-libraries-FullMath.json : LOADER-github.com-Uniswap-lib-master-contracts-libraries-FullMath.sol github.com-Uniswap-lib-master-contracts-libraries-FullMath.sol solc-linux-amd64-v0.7.6+commit.7338295f
 	./solc-linux-amd64-v0.7.6+commit.7338295f LOADER-github.com-Uniswap-lib-master-contracts-libraries-FullMath.sol --combined-json hashes,bin-runtime >LOADER-github.com-Uniswap-lib-master-contracts-libraries-FullMath.json
 
-github.com-sushiswap-sushiswap-master-contracts-uniswapv2-libraries-Math.sol :
-	wget 'https://raw.githubusercontent.com/sushiswap/sushiswap/master/contracts/uniswapv2/libraries/Math.sol' -O github.com-sushiswap-sushiswap-master-contracts-uniswapv2-libraries-Math.sol
-LOADER-github.com-sushiswap-sushiswap-master-contracts-uniswapv2-libraries-Math.json : LOADER-github.com-sushiswap-sushiswap-master-contracts-uniswapv2-libraries-Math.sol github.com-sushiswap-sushiswap-master-contracts-uniswapv2-libraries-Math.sol solc-linux-amd64-v0.6.12+commit.27d51765
-	./solc-linux-amd64-v0.6.12+commit.27d51765 LOADER-github.com-sushiswap-sushiswap-master-contracts-uniswapv2-libraries-Math.sol --combined-json hashes,bin-runtime >LOADER-github.com-sushiswap-sushiswap-master-contracts-uniswapv2-libraries-Math.json
+#github.com-sushiswap-sushiswap-master-contracts-uniswapv2-libraries-Math.sol :
+#	wget 'https://raw.githubusercontent.com/sushiswap/sushiswap/master/contracts/uniswapv2/libraries/Math.sol' -O github.com-sushiswap-sushiswap-master-contracts-uniswapv2-libraries-Math.sol
+#LOADER-github.com-sushiswap-sushiswap-master-contracts-uniswapv2-libraries-Math.json : LOADER-github.com-sushiswap-sushiswap-master-contracts-uniswapv2-libraries-Math.sol github.com-sushiswap-sushiswap-master-contracts-uniswapv2-libraries-Math.sol solc-linux-amd64-v0.6.12+commit.27d51765
+#	./solc-linux-amd64-v0.6.12+commit.27d51765 LOADER-github.com-sushiswap-sushiswap-master-contracts-uniswapv2-libraries-Math.sol --combined-json hashes,bin-runtime >LOADER-github.com-sushiswap-sushiswap-master-contracts-uniswapv2-libraries-Math.json
 
 github.com-Uniswap-v3-core-main-contracts-libraries-BitMath.sol :
 	wget 'https://raw.githubusercontent.com/Uniswap/uniswap-v3-core/main/contracts/libraries/BitMath.sol' -O github.com-Uniswap-v3-core-main-contracts-libraries-BitMath.sol
@@ -68,7 +68,6 @@ contracts.h : \
 	sol-json-to-h.py \
 	LOADER-github.com-Uniswap-v3-core-main-contracts-libraries-FullMath.json \
 	LOADER-github.com-Uniswap-lib-master-contracts-libraries-FullMath.json \
-	LOADER-github.com-sushiswap-sushiswap-master-contracts-uniswapv2-libraries-Math.json \
 	LOADER-github.com-Uniswap-v3-core-main-contracts-libraries-BitMath.json \
 	LOADER-github.com-Uniswap-v3-core-main-contracts-libraries-LowGasSafeMath.json \
 	LOADER-github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.json \
@@ -77,7 +76,6 @@ contracts.h : \
 	./sol-json-to-h.py \
 		LOADER-github.com-Uniswap-v3-core-main-contracts-libraries-FullMath.json \
 		LOADER-github.com-Uniswap-lib-master-contracts-libraries-FullMath.json \
-		LOADER-github.com-sushiswap-sushiswap-master-contracts-uniswapv2-libraries-Math.json \
 		LOADER-github.com-Uniswap-v3-core-main-contracts-libraries-BitMath.json \
 		LOADER-github.com-Uniswap-v3-core-main-contracts-libraries-LowGasSafeMath.json \
 		LOADER-github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.json \
@@ -86,7 +84,6 @@ contracts.h : \
 
 clean:
 	rm -rf github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.sol
-	rm -rf github.com-sushiswap-sushiswap-master-contracts-uniswapv2-libraries-Math.sol
 	rm -rf github.com-Uniswap-v3-core-main-contracts-libraries-BitMath.sol
 	rm -rf github.com-Uniswap-v3-core-main-contracts-libraries-FullMath.sol
 	rm -rf github.com-Uniswap-v3-core-main-contracts-libraries-LowGasSafeMath.sol
