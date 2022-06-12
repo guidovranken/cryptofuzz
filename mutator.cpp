@@ -136,6 +136,8 @@ static std::string mutateBinary(const std::string s) {
 
 std::optional<std::string> get_op_mod(const uint64_t& operation) {
     switch ( operation ) {
+        case CF_OPERATION("BignumCalc_Mod_2Exp64"):
+            return "18446744073709551616";
         case CF_OPERATION("BignumCalc_Mod_2Exp128"):
             return "340282366920938463463374607431768211456";
         case CF_OPERATION("BignumCalc_Mod_2Exp256"):
@@ -741,6 +743,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BignumCalc_Mod_MNT4_P"):
             case    CF_OPERATION("BignumCalc_Mod_MNT6_R"):
             case    CF_OPERATION("BignumCalc_Mod_MNT6_P"):
+            case    CF_OPERATION("BignumCalc_Mod_2Exp64"):
             case    CF_OPERATION("BignumCalc_Mod_2Exp128"):
             case    CF_OPERATION("BignumCalc_Mod_2Exp256"):
             case    CF_OPERATION("BignumCalc_Mod_2Exp512"):

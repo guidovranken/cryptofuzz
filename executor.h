@@ -118,6 +118,12 @@ class ExecutorBignumCalc_Mod_MNT6_P : public ExecutorBignumCalc {
         operation::BignumCalc getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const override;
 };
 
+class ExecutorBignumCalc_Mod_2Exp64 : public ExecutorBignumCalc {
+    public:
+        ExecutorBignumCalc_Mod_2Exp64(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options);
+        operation::BignumCalc getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const override;
+};
+
 class ExecutorBignumCalc_Mod_2Exp128 : public ExecutorBignumCalc {
     public:
         ExecutorBignumCalc_Mod_2Exp128(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options);

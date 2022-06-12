@@ -357,6 +357,10 @@
   #include <modules/holiman-uint256/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_CPU)
+  #include <modules/cpu/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -719,6 +723,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_HOLIMAN_UINT256)
     driver->LoadModule( std::make_shared<cryptofuzz::module::holiman_uint256>() );
+#endif
+
+#if defined(CRYPTOFUZZ_CPU)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::CPU>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
