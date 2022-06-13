@@ -50,7 +50,17 @@ namespace Geth_detail {
         }
     }
 
-    std::optional<component::Bignum> parse(const bool mustSucceed = false) {
+    std::optional<Buffer> parseBuffer(const bool mustSucceed = false) {
+        const auto res = getJsonResult();
+        if ( res == std::nullopt ) {
+            if ( mustSucceed == true ) {
+                abort();
+            }
+            return std::nullopt;
+        }
+        return Buffer(*res);
+    }
+    std::optional<component::Bignum> parseBignum(const bool mustSucceed = false) {
         const auto res = getJsonResult();
         if ( res == std::nullopt ) {
             if ( mustSucceed == true ) {
@@ -63,6 +73,25 @@ namespace Geth_detail {
         boost::algorithm::unhex(s, std::back_inserter(data));
         return component::Bignum{util::BinToDec(data)};
     }
+}
+std::optional<component::Digest> Geth::OpDigest(operation::Digest& op) {
+    if ( op.digestType.Is(CF_DIGEST("SHA256")) ) {
+        auto input = op.cleartext.Get();
+        Geth_Call(0x02, Geth_detail::toGoSlice(input), 0);
+    } else if ( op.digestType.Is(CF_DIGEST("RIPEMD160")) ) {
+        auto input = op.cleartext.Get();
+        Geth_Call(0x03, Geth_detail::toGoSlice(input), 0);
+    } else {
+        return std::nullopt;
+    }
+
+    auto ret = *Geth_detail::parseBuffer(true);
+    if ( op.digestType.Is(CF_DIGEST("RIPEMD160")) ) {
+        const auto v = ret.Get();
+        CF_ASSERT(v.size() == 32, "RIPEMD160 result is not 32 bytes");
+        ret = Buffer(std::vector<uint8_t>(v.data() + 12, v.data() + 32));
+    }
+    return ret;
 }
 
 std::optional<component::Bignum> Geth::OpBignumCalc(operation::BignumCalc& op) {
@@ -98,10 +127,10 @@ std::optional<component::Bignum> Geth::OpBignumCalc(operation::BignumCalc& op) {
     input.insert(input.end(), m.begin(), m.end());
 
     CF_NORET(
-            Geth_ModExp(Geth_detail::toGoSlice(input), 0)
+            Geth_Call(0x05, Geth_detail::toGoSlice(input), 0)
     );
 
-    ret = Geth_detail::parse(true);
+    ret = Geth_detail::parseBignum(true);
 
     return ret;
 }

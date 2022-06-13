@@ -10,6 +10,7 @@ namespace module {
 class Geth : public Module {
     public:
         Geth(void);
+        std::optional<component::Digest> OpDigest(operation::Digest& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
 };
 

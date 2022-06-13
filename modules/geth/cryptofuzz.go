@@ -43,12 +43,12 @@ func setResult(r ByteSlice) {
     result = r2
 }
 
-//export Geth_ModExp
-func Geth_ModExp(input []byte, gas uint64) {
+//export Geth_Call
+func Geth_Call(address byte, input []byte, gas uint64) {
     resetResult()
 
     statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
-	ret, _, err := runtime.Call(common.BytesToAddress([]byte{0x05}), input, &runtime.Config{
+	ret, _, err := runtime.Call(common.BytesToAddress([]byte{address}), input, &runtime.Config{
         EVMConfig: vm.Config{
             Debug:  false,
         },
