@@ -73,7 +73,57 @@ namespace Geth_detail {
         boost::algorithm::unhex(s, std::back_inserter(data));
         return component::Bignum{util::BinToDec(data)};
     }
+    std::optional<component::G1> parseG1(const bool mustSucceed = false) {
+        const auto res = getJsonResult();
+        if ( res == std::nullopt ) {
+            if ( mustSucceed == true ) {
+                abort();
+            }
+            return std::nullopt;
+        }
+        const auto s = res->get<std::string>();
+        std::vector<uint8_t> data;
+        boost::algorithm::unhex(s, std::back_inserter(data));
+        CF_ASSERT(data.size() == 64, "BN precompile return data size is not 64");
+
+        return component::G1{
+            util::BinToDec(std::vector<uint8_t>(data.data(), data.data() + 32)),
+            util::BinToDec(std::vector<uint8_t>(data.data() + 32, data.data() + 64)),
+        };
+    }
+
+    std::optional<bool> parseBool(const bool mustSucceed = false) {
+        const auto res = getJsonResult();
+        if ( res == std::nullopt ) {
+            if ( mustSucceed == true ) {
+                abort();
+            }
+            return false;
+        }
+
+        const auto s = res->get<std::string>();
+        std::vector<uint8_t> data;
+        boost::algorithm::unhex(s, std::back_inserter(data));
+
+        static const std::vector<uint8_t> zero{
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        };
+        static const std::vector<uint8_t> one{
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+        };
+
+        if ( data == zero ) {
+            return false;
+        } else if ( data == one ) {
+            return true;
+        } else {
+            CF_ASSERT(0, "BN pairing return data is not 0 or 1");
+        }
+    }
 }
+
 std::optional<component::Digest> Geth::OpDigest(operation::Digest& op) {
     if ( op.digestType.Is(CF_DIGEST("SHA256")) ) {
         auto input = op.cleartext.Get();
@@ -91,6 +141,94 @@ std::optional<component::Digest> Geth::OpDigest(operation::Digest& op) {
         CF_ASSERT(v.size() == 32, "RIPEMD160 result is not 32 bytes");
         ret = Buffer(std::vector<uint8_t>(v.data() + 12, v.data() + 32));
     }
+    return ret;
+}
+
+std::optional<component::G1> Geth::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
+    std::optional<component::G1> ret = std::nullopt;
+
+    std::vector<uint8_t> input;
+    std::optional<std::vector<uint8_t>> a_x, a_y, b_x, b_y;
+
+    CF_CHECK_FALSE(op.a.first.ToTrimmedString() == "1" &&
+                op.a.second.ToTrimmedString() == "2");
+    CF_CHECK_FALSE(op.b.first.ToTrimmedString() == "1" &&
+                op.b.second.ToTrimmedString() == "2");
+    CF_CHECK_NE(a_x = op.a.first.ToBin(32), std::nullopt);
+    CF_CHECK_NE(a_y = op.a.second.ToBin(32), std::nullopt);
+    CF_CHECK_NE(b_x = op.b.first.ToBin(32), std::nullopt);
+    CF_CHECK_NE(b_y = op.b.second.ToBin(32), std::nullopt);
+
+    CF_NORET(
+            Geth_Call(0x06, Geth_detail::toGoSlice(input), 0)
+    );
+
+    input.insert(input.end(), a_x->begin(), a_x->end());
+    input.insert(input.end(), a_y->begin(), a_y->end());
+    input.insert(input.end(), b_x->begin(), b_x->end());
+    input.insert(input.end(), b_y->begin(), b_y->end());
+
+    ret = Geth_detail::parseG1(false);
+
+end:
+    return ret;
+}
+
+std::optional<component::G1> Geth::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
+    std::optional<component::G1> ret = std::nullopt;
+
+    std::vector<uint8_t> input;
+    std::optional<std::vector<uint8_t>> a_x, a_y, b;
+
+    CF_CHECK_FALSE(op.a.first.ToTrimmedString() == "1" &&
+                op.a.second.ToTrimmedString() == "2");
+    CF_CHECK_NE(a_x = op.a.first.ToBin(32), std::nullopt);
+    CF_CHECK_NE(a_y = op.a.second.ToBin(32), std::nullopt);
+    CF_CHECK_NE(b = op.b.ToBin(32), std::nullopt);
+
+    input.insert(input.end(), a_x->begin(), a_x->end());
+    input.insert(input.end(), a_y->begin(), a_y->end());
+    input.insert(input.end(), b->begin(), b->end());
+
+    CF_NORET(
+            Geth_Call(0x07, Geth_detail::toGoSlice(input), 0)
+    );
+
+    ret = Geth_detail::parseG1(false);
+
+end:
+    return ret;
+}
+
+std::optional<bool> Geth::OpBLS_BatchVerify(operation::BLS_BatchVerify& op) {
+    std::optional<bool> ret = std::nullopt;
+
+    std::vector<uint8_t> input;
+
+    for (const auto& cur : op.bf.c) {
+        std::optional<std::vector<uint8_t>> a_x, a_y, b_v, b_w, b_x, b_y;
+        CF_CHECK_NE(a_x = cur.g1.first.ToBin(32), std::nullopt);
+        CF_CHECK_NE(a_y = cur.g1.second.ToBin(32), std::nullopt);
+        CF_CHECK_NE(b_v = cur.g2.first.first.ToBin(32), std::nullopt);
+        CF_CHECK_NE(b_w = cur.g2.first.second.ToBin(32), std::nullopt);
+        CF_CHECK_NE(b_x = cur.g2.second.first.ToBin(32), std::nullopt);
+        CF_CHECK_NE(b_y = cur.g2.second.second.ToBin(32), std::nullopt);
+
+        input.insert(input.end(), a_x->begin(), a_x->end());
+        input.insert(input.end(), a_y->begin(), a_y->end());
+        input.insert(input.end(), b_x->begin(), b_x->end());
+        input.insert(input.end(), b_v->begin(), b_v->end());
+        input.insert(input.end(), b_y->begin(), b_y->end());
+        input.insert(input.end(), b_w->begin(), b_w->end());
+    }
+
+    CF_NORET(
+            Geth_Call(0x08, Geth_detail::toGoSlice(input), 0)
+    );
+
+    ret = Geth_detail::parseBool(false);
+
+end:
     return ret;
 }
 
