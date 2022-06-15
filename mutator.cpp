@@ -802,7 +802,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         }
                     }
 #if defined(CRYPTOFUZZ_HAVE_Z3)
-                    else if ( getBool() ) {
+                    else if ( (PRNG() % 1000) == 0 ) {
                         const auto p = cryptofuzz::Z3::Generate(calcop);
                         if ( p != std::nullopt ) {
                             parameters = *p;
