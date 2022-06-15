@@ -3548,6 +3548,23 @@ std::optional<bool> OpenSSL::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey&
     /* Construct key */
     CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group, op.curveType.Get()), nullptr);
     CF_CHECK_TRUE(pub->Set(op.pub.first, op.pub.second, false));
+
+    /* Reject oversized pubkeys until it is fixed in OpenSSL
+     * https://github.com/openssl/openssl/issues/17590
+     */
+    {
+        CF_CHECK_TRUE(
+                op.pub.first.IsLessThan(
+                    *cryptofuzz::repository::ECC_CurveToOrder(op.curveType.Get())
+                )
+        );
+        CF_CHECK_TRUE(
+                op.pub.second.IsLessThan(
+                    *cryptofuzz::repository::ECC_CurveToOrder(op.curveType.Get())
+                )
+        );
+    }
+
     ret = EC_KEY_set_public_key(key.GetPtr(), pub->GetPtr()) == 1;
 end:
     return ret;
