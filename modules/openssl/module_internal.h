@@ -310,6 +310,9 @@ end:
                 compressed = false;
             }
 
+            /* Currently disabled because it leads to spurious discrepancies */
+            compressed = false;
+
             return compressed ?
                 set_compressed(pub_x, pub_y) :
                 set(pub_x, pub_y);
