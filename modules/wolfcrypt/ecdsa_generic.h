@@ -34,6 +34,7 @@ class ECCPoint {
         void SetInitialized(void);
         std::optional<component::BignumPair> ToBignumPair(void);
         int Compare(ECCPoint& other);
+        std::optional<bool> IsNeg(ECCPoint& other, wolfCrypt_bignum::Bignum& prime);
 };
 
 class ECCKey {

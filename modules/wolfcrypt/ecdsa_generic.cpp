@@ -325,6 +325,17 @@ int ECCPoint::Compare(ECCPoint& other) {
     return wc_ecc_cmp_point(GetPtr(), other.GetPtr());
 }
 
+std::optional<bool> ECCPoint::IsNeg(ECCPoint& other, wolfCrypt_bignum::Bignum& prime) {
+    std::optional<bool> ret = std::nullopt;
+
+    wolfCrypt_bignum::Bignum neg(ds);
+    if ( mp_sub(prime.GetPtr(), other.GetPtr()->y, neg.GetPtr()) == MP_OKAY) {
+        ret = static_cast<bool>(mp_cmp(point->y, neg.GetPtr()) == MP_EQ);
+    }
+
+    return ret;
+}
+
 std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Generic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -760,6 +771,7 @@ std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op
         wolfCrypt_bignum::Bignum Af(ds), prime(ds), mu(ds);
         mp_digit mp;
         bool valid = false;
+        std::optional<bool> is_neg = std::nullopt;
 
         /* Set points */
         CF_CHECK_TRUE(a.Set(op.a));
@@ -770,6 +782,8 @@ std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op
         /* Retrieve curve parameter */
         CF_CHECK_EQ(Af.Set(util::HexToDec(curve->Af)), true);
         CF_CHECK_EQ(prime.Set(util::HexToDec(curve->prime)), true);
+
+        is_neg = a.IsNeg(b, prime);
 
         CF_CHECK_TRUE(a.ToProjective(prime));
         CF_CHECK_TRUE(b.ToProjective(prime));
@@ -808,6 +822,9 @@ std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op
                     WC_CHECK_EQ(ecc_projective_dbl_point(a.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp), 0);
                 } else {
                     WC_CHECK_EQ(ecc_projective_add_point(a.GetPtr(), b.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp), 0);
+
+                    /* Do not return result if inputs are negations of the same point */
+                    CF_CHECK_FALSE(is_neg && *is_neg);
                 }
             }
 
