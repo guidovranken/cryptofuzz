@@ -23,7 +23,11 @@ std::optional<component::Bignum> libgmp::OpBignumCalc(operation::BignumCalc& op)
     };
     libgmp_bignum::Bignum res;
 
-    CF_NORET(res.Randomize(ds));
+    if ( op.calcOp.Is(CF_CALCOP("Set(A)")) ) {
+        CF_CHECK_EQ(res.Set("0"), true);
+    } else {
+        CF_NORET(res.Randomize(ds));
+    }
     CF_CHECK_EQ(bn.Set(0, op.bn0.ToString(ds)), true);
     CF_CHECK_EQ(bn.Set(1, op.bn1.ToString(ds)), true);
     CF_CHECK_EQ(bn.Set(2, op.bn2.ToString(ds)), true);
