@@ -288,7 +288,8 @@ std::optional<component::MAC> SymCrypt::OpCMAC(operation::CMAC& op) {
 
         /* noret */ SymCryptAesCmacResult(&state, result);
 
-        ret = component::MAC(result, SYMCRYPT_AES_CMAC_RESULT_SIZE);
+        /* Returns wrong result */
+        //ret = component::MAC(result, SYMCRYPT_AES_CMAC_RESULT_SIZE);
     }
 
 end:
