@@ -66,6 +66,17 @@ end:
         inline bool operator==(const Bignum& rhs) {
             return mpz_cmp(mp, rhs.mp) == 0;
         }
+
+        void Randomize(fuzzing::datasource::Datasource& ds) {
+            std::vector<uint8_t> data;
+            try {
+                data = ds.GetData(0, 1, 1024);
+            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+            if ( !data.empty() ) {
+                /* ignore return value */ Set(util::BinToDec(data));
+            }
+        }
 };
 
 class BignumCluster {
