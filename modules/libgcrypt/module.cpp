@@ -757,6 +757,83 @@ std::optional<component::Cleartext> libgcrypt::OpSymmetricDecrypt(operation::Sym
     return crypt.Decrypt(op);
 }
 
+std::optional<component::Key> libgcrypt::OpKDF_HKDF(operation::KDF_HKDF& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    gcry_kdf_hd_t hd = {0};
+    unsigned long param[1];
+    const size_t outSize = op.keySize;
+    uint8_t* out = util::malloc(outSize);
+    int macType = -1;
+    bool initialized = false;
+
+    static const std::map<uint64_t, int> LUT = {
+        { CF_DIGEST("BLAKE2B160"), GCRY_MAC_HMAC_BLAKE2B_160 },
+        { CF_DIGEST("BLAKE2B256"), GCRY_MAC_HMAC_BLAKE2B_256 },
+        { CF_DIGEST("BLAKE2B384"), GCRY_MAC_HMAC_BLAKE2B_384 },
+        { CF_DIGEST("BLAKE2B512"), GCRY_MAC_HMAC_BLAKE2B_512 },
+        { CF_DIGEST("BLAKE2S128"), GCRY_MAC_HMAC_BLAKE2S_128 },
+        { CF_DIGEST("BLAKE2S160"), GCRY_MAC_HMAC_BLAKE2S_160 },
+        { CF_DIGEST("BLAKE2S224"), GCRY_MAC_HMAC_BLAKE2S_224 },
+        { CF_DIGEST("BLAKE2S256"), GCRY_MAC_HMAC_BLAKE2S_256 },
+        { CF_DIGEST("GOST-R-34.11-94"), GCRY_MAC_HMAC_GOSTR3411_CP },
+        { CF_DIGEST("MD4"), GCRY_MAC_HMAC_MD4 },
+        { CF_DIGEST("MD5"), GCRY_MAC_HMAC_MD5 },
+        { CF_DIGEST("RIPEMD160"), GCRY_MAC_HMAC_RMD160 },
+        { CF_DIGEST("SHA1"), GCRY_MAC_HMAC_SHA1 },
+        { CF_DIGEST("SHA224"), GCRY_MAC_HMAC_SHA224 },
+        { CF_DIGEST("SHA256"), GCRY_MAC_HMAC_SHA256 },
+        { CF_DIGEST("SHA3-224"), GCRY_MAC_HMAC_SHA3_224 },
+        { CF_DIGEST("SHA3-256"), GCRY_MAC_HMAC_SHA3_256 },
+        { CF_DIGEST("SHA3-384"), GCRY_MAC_HMAC_SHA3_384 },
+        { CF_DIGEST("SHA3-512"), GCRY_MAC_HMAC_SHA3_512 },
+        { CF_DIGEST("SHA384"), GCRY_MAC_HMAC_SHA384 },
+        { CF_DIGEST("SHA512"), GCRY_MAC_HMAC_SHA512 },
+        { CF_DIGEST("SHA512-224"), GCRY_MAC_HMAC_SHA512_224 },
+        { CF_DIGEST("SHA512-256"), GCRY_MAC_HMAC_SHA512_256 },
+        { CF_DIGEST("SM3"), GCRY_MAC_HMAC_SM3 },
+        { CF_DIGEST("STREEBOG-256"), GCRY_MAC_HMAC_STRIBOG256 },
+        { CF_DIGEST("STREEBOG-512"), GCRY_MAC_HMAC_STRIBOG512 },
+        { CF_DIGEST("TIGER"), GCRY_MAC_HMAC_TIGER1 },
+        { CF_DIGEST("WHIRLPOOL"), GCRY_MAC_HMAC_WHIRLPOOL },
+    };
+
+    CF_CHECK_NE(LUT.find(op.digestType.Get()), LUT.end());
+    macType = LUT.at(op.digestType.Get());
+
+    param[0] = outSize;
+
+    CF_CHECK_EQ(gcry_kdf_open(
+                &hd,
+                GCRY_KDF_HKDF,
+                macType,
+                param,
+                1,
+                op.password.GetPtr(&ds),
+                op.password.GetSize(),
+                nullptr, 0,
+                op.salt.GetPtr(&ds),
+                op.salt.GetSize(),
+                op.info.GetPtr(&ds),
+                op.info.GetSize()), GPG_ERR_NO_ERROR);
+    initialized = true;
+
+    CF_CHECK_EQ(gcry_kdf_compute(hd, nullptr), GPG_ERR_NO_ERROR);
+    CF_CHECK_EQ(gcry_kdf_final(hd, outSize, out), GPG_ERR_NO_ERROR);
+
+    ret = component::Key(out, outSize);
+
+end:
+    util::free(out);
+
+    if ( initialized == true ) {
+        gcry_kdf_close(hd);
+    }
+
+    return ret;
+}
+
 std::optional<component::Key> libgcrypt::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
     std::optional<component::Key> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
