@@ -50,6 +50,7 @@ typedef struct {
 extern MutatorPool<CurveECC_Point_Pair, cryptofuzz::config::kMutatorPoolSize> Pool_CurveECC_Point;
 
 extern MutatorPool<std::string, cryptofuzz::config::kMutatorPoolSize> Pool_Bignum;
+extern MutatorPool<std::string, cryptofuzz::config::kMutatorPoolSize> Pool_Bignum_Primes;
 
 typedef struct {
     uint64_t curveID;

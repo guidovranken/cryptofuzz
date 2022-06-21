@@ -16,6 +16,7 @@
 #include "numbers.h"
 #include "mutatorpool.h"
 #include "_z3.h"
+#include "expmod.h"
 #include "third_party/json/json.hpp"
 
 extern "C" size_t LLVMFuzzerMutate(uint8_t* data, size_t size, size_t maxSize);
@@ -292,6 +293,10 @@ std::string getBignum(bool mustBePositive = false) {
     return ret;
 }
 
+std::string getPrime(void) {
+    return Pool_Bignum_Primes.Get();
+}
+
 uint64_t hint_ecc_mont(const uint64_t& curveType) {
     const auto order = cryptofuzz::repository::ECC_CurveToOrder(curveType);
 
@@ -401,118 +406,6 @@ static void generateECCPoint(void) {
         Pool_CurveBLSG1.Set({ curveID, x, y });
     } else {
         Pool_CurveECC_Point.Set({ curveID, x, y });
-    }
-}
-
-namespace ExpModGenerator {
-    using namespace boost::multiprecision;
-    using namespace boost::random;
-
-    inline std::vector<size_t> prime_factors(const cpp_int& v) noexcept {
-        static const std::vector<size_t> primes{2, 3, 5, 7, 11, 13, 17, 19};
-
-        std::vector<size_t> ret;
-
-        for (const auto& p : primes) {
-            if ( v % p == 0 ) {
-                ret.push_back(p);
-            }
-        }
-
-        return ret;
-    }
-
-    /* Compute E such that base^E <= v */
-    inline size_t log(const cpp_int& v, const cpp_int& base) {
-        size_t i = 0;
-        auto x = base;
-        while ( x <= v ) {
-            x *= base;
-            i++;
-        }
-        return i;
-    }
-
-    /* This is slightly faster than native boost::multiprecision::pow */
-    inline cpp_int pow(const cpp_int& v, const size_t exponent) {
-        if ( exponent == 0 ) {
-            static const cpp_int one(1);
-            return one;
-        } else if ( exponent == 1 ) {
-            return v;
-        } else {
-            return boost::multiprecision::pow(v, exponent);
-        }
-    }
-
-    /* Create an ExpMod operation where base, exp and mod are of size 'bits'
-     * and base^exp%mod == 0.
-     */
-    static std::optional<nlohmann::json> generate_exp_mod(const size_t bits)
-    {
-        CF_ASSERT(bits > 0, "Bits must be non-zero");
-        static mt19937 mt;
-
-        /* For some reason this crashes with high optimization */
-        /*
-        const auto min = cpp_int(1) << (bits - 1);
-        const auto max = (cpp_int(1) << bits) - 1;
-        */
-
-        auto min = cpp_int(1);
-        min <<= (bits - 1);
-
-        auto max = cpp_int(1);
-        max <<= bits;
-        max--;
-
-        /* Create random base/exponent */
-        const cpp_int BE = uniform_int_distribution<cpp_int>(min, max)(mt);
-
-        /* Compute some prime factors of base/exponent */
-        const auto factors = prime_factors(BE);
-        if ( factors.empty() ) {
-            return std::nullopt;
-        }
-
-        /* Pick two random prime factors */
-        const auto P1 = cpp_int(factors[mt() % factors.size()]);
-        const auto P2 = factors[mt() % factors.size()];
-
-        /* I = P1^[0..P2] */
-        const cpp_int I = pow(P1, mt() % (P2+1));
-
-        /* Any J = P2^[0..I] would yield a valid modulus.
-         *
-         * However, we want I*J to not exceed the bitsize.
-         * Therefore, compute the max J.
-         */
-        const cpp_int maxJ = max / I;
-
-        //assert(I * maxJ <= max);
-
-        /* Compute the max exponent such that
-         * J = P2^exp does not exceed the bitsize.
-         */
-        const size_t maxJExp = log(maxJ, P2);
-
-        const cpp_int J = pow(cpp_int(P2), maxJExp);
-
-        const cpp_int M = I * J;
-
-        //assert(M <= max);
-        //assert(powm(BE, BE, M) == 0);
-
-        nlohmann::json ret;
-
-        ret["modifier"] = "";
-        ret["calcOp"] = CF_CALCOP("ExpMod(A,B,C)");
-        ret["bn1"] = BE.str();
-        ret["bn2"] = BE.str();
-        ret["bn3"] = M.str();
-        ret["bn4"] = "";
-
-        return ret;
     }
 }
 
@@ -787,14 +680,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
                     if ( calcop == CF_CALCOP("ExpMod(A,B,C)") && operation == CF_OPERATION("BignumCalc") ) {
                         if ( PRNG() % 100 == 0 ) {
-                            /* To find certain modexp reduction bugs such as:
-                             *
-                             * https://boringssl.googlesource.com/boringssl/+/13c9d5c69d04485a7a8840c12185c832026c8315
-                             * https://boringssl.googlesource.com/boringssl/+/801a801024febe1a33add5ddaa719e257d97aba5
-                             */
-                            static const std::array<size_t, 6> bitsizes{256, 512, 1024, 2048, 4096, 8192};
-
-                            const auto p = ExpModGenerator::generate_exp_mod(bitsizes[PRNG() % bitsizes.size()]);
+                            const auto p = cryptofuzz::mutator::ExpModGenerator::generate_exp_mod(getBignum(true));
 
                             if ( p != std::nullopt ) {
                                 parameters = *p;

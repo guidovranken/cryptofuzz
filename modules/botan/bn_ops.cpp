@@ -5,6 +5,8 @@
 #include <botan/reducer.h>
 #include <botan/internal/divide.h>
 #include <botan/internal/curve_nistp.h>
+#include <botan/internal/primality.h>
+#include <botan/system_rng.h>
 
 #include "bn_ops.h"
 
@@ -396,11 +398,19 @@ bool Neg::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::o
 bool IsPrime::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
     (void)modulo;
     (void)ds;
-    (void)res;
-    (void)bn;
 
-    /* TODO */
-    return false;
+    if ( bn[0].Ref().is_negative() ) {
+        return false;
+    }
+
+    Botan::Modular_Reducer mod_n(bn[0].Ref());
+    if ( Botan::is_bailie_psw_probable_prime(bn[0].Ref(), mod_n) ) {
+        res = 1;
+    } else {
+        res = 0;
+    }
+
+    return true;
 }
 
 bool RShift::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
@@ -843,7 +853,7 @@ bool MulDivCeil::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const
     (void)modulo;
     (void)ds;
 
-    if ( bn[2].Ref() == 0 ) {
+    if ( bn[2].Ref() <= 0 ) {
         return false;
     }
 
@@ -1084,6 +1094,17 @@ bool Not::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::o
     res = max.Ref() - bn[0].Ref();
 
     APPLY_MODULO;
+
+    return true;
+}
+
+bool Prime::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)ds;
+    (void)bn;
+    (void)modulo;
+
+    ::Botan::System_RNG rng;
+    res = Botan::random_prime(rng, (rand() % 512) + 2);
 
     return true;
 }

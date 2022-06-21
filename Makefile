@@ -28,7 +28,9 @@ wycheproof.o : wycheproof.cpp
 	$(CXX) $(CXXFLAGS) wycheproof.cpp -c -o wycheproof.o
 crypto.o : crypto.cpp
 	$(CXX) $(CXXFLAGS) crypto.cpp -c -o crypto.o
-mutator.o : mutator.cpp config.h
+expmod.o : expmod.cpp
+	$(CXX) $(CXXFLAGS) expmod.cpp -c -o expmod.o
+mutator.o : mutator.cpp config.h expmod.h
 	$(CXX) $(CXXFLAGS) mutator.cpp -c -o mutator.o
 z3.o : z3.cpp config.h _z3.h
 	$(CXX) $(CXXFLAGS) z3.cpp -c -o z3.o
@@ -50,9 +52,9 @@ builtin_tests_importer.o : builtin_tests_importer.cpp
 third_party/cpu_features/build/libcpu_features.a :
 	cd third_party/cpu_features && rm -rf build && mkdir build && cd build && cmake .. && make
 
-cryptofuzz : driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o options.o components.o wycheproof.o crypto.o mutator.o z3.o numbers.o mutatorpool.o ecc_diff_fuzzer_importer.o ecc_diff_fuzzer_exporter.o botan_importer.o openssl_importer.o builtin_tests_importer.o third_party/cpu_features/build/libcpu_features.a
+cryptofuzz : driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o options.o components.o wycheproof.o crypto.o expmod.o mutator.o z3.o numbers.o mutatorpool.o ecc_diff_fuzzer_importer.o ecc_diff_fuzzer_exporter.o botan_importer.o openssl_importer.o builtin_tests_importer.o third_party/cpu_features/build/libcpu_features.a
 	test $(LIBFUZZER_LINK)
-	$(CXX) $(CXXFLAGS) driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o options.o components.o wycheproof.o crypto.o mutator.o z3.o numbers.o mutatorpool.o ecc_diff_fuzzer_importer.o ecc_diff_fuzzer_exporter.o botan_importer.o openssl_importer.o builtin_tests_importer.o $(shell find modules -type f -name module.a) $(LIBFUZZER_LINK) third_party/cpu_features/build/libcpu_features.a $(LINK_FLAGS) -o cryptofuzz
+	$(CXX) $(CXXFLAGS) driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o options.o components.o wycheproof.o crypto.o expmod.o mutator.o z3.o numbers.o mutatorpool.o ecc_diff_fuzzer_importer.o ecc_diff_fuzzer_exporter.o botan_importer.o openssl_importer.o builtin_tests_importer.o $(shell find modules -type f -name module.a) $(LIBFUZZER_LINK) third_party/cpu_features/build/libcpu_features.a $(LINK_FLAGS) -o cryptofuzz
 
 generate_dict: generate_dict.cpp
 	$(CXX) $(CXXFLAGS) generate_dict.cpp -o generate_dict

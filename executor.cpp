@@ -922,6 +922,14 @@ template<> void ExecutorBase<component::Bignum, operation::BignumCalc>::postproc
 
         if ( bignum.size() <= config::kMaxBignumSize ) {
             Pool_Bignum.Set(bignum);
+            if ( op.calcOp.Is(CF_CALCOP("Prime()")) ) {
+                Pool_Bignum_Primes.Set(bignum);
+            }
+        }
+        if ( op.calcOp.Is(CF_CALCOP("IsPrime(A)")) ) {
+            if ( bignum == "1" ) {
+                Pool_Bignum_Primes.Set(op.bn0.ToTrimmedString());
+            }
         }
     }
 }
@@ -1973,6 +1981,7 @@ bool ExecutorBase<ResultType, OperationType>::dontCompare(const OperationType& o
 template <>
 bool ExecutorBase<component::Bignum, operation::BignumCalc>::dontCompare(const operation::BignumCalc& operation) const {
     if ( operation.calcOp.Get() == CF_CALCOP("Rand()") ) { return true; }
+    if ( operation.calcOp.Get() == CF_CALCOP("Prime()") ) { return true; }
 
     return false;
 }

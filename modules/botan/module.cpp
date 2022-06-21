@@ -1763,6 +1763,9 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
         case    CF_CALCOP("Not(A)"):
             opRunner = std::make_unique<Botan_bignum::Not>();
             break;
+        case    CF_CALCOP("Prime()"):
+            opRunner = std::make_unique<Botan_bignum::Prime>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
