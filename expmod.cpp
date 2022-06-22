@@ -277,6 +277,30 @@ namespace ExpModGenerator {
         return to_json(B, E, M);
     }
 
+    /* For all prime values p and any positive e, pow(p+1, e, (p+1)*p) == p+1. */
+    static std::optional<nlohmann::json> generate_exp_mod_is_base_2(void) {
+        const cpp_int p = get_prime();
+
+        if ( p < 3 ) {
+            return std::nullopt;
+        }
+
+        const cpp_int B = p + 1;
+        cpp_int E = 1;
+        if ( !multiply_random(E) ) {
+            return std::nullopt;
+        }
+        cpp_int M = p + 1;
+        if ( !multiply(M, p) ) {
+            return std::nullopt;
+        }
+
+        /* This only holds for prime p */
+        //assert(powm(B, E, M) == B);
+
+        return to_json(B, E, M);
+    }
+
     /* For all odd values exp, pow(exp*mul, exp, exp*2) == exp) where mul is any odd integer. */
     static std::optional<nlohmann::json> generate_exp_mod_is_odd_exp_1(const cpp_int& E) {
         if ( !is_odd(E) ) {
@@ -404,7 +428,7 @@ namespace ExpModGenerator {
             const cpp_int result = cpp_int(_result);
 
             if ( is_odd(result) ) {
-                const uint8_t which = PRNG() % 4;
+                const uint8_t which = PRNG() % 5;
 
                 if ( which == 0 ) {
                     return generate_exp_mod_is_odd_base_1(result);
@@ -414,16 +438,20 @@ namespace ExpModGenerator {
                     return generate_exp_mod_is_odd_exp_1(result);
                 } else if ( which == 3 ) {
                     return generate_exp_mod_is_base_1(result);
+                } else if ( which == 4 ) {
+                    return generate_exp_mod_is_base_2();
                 } else {
                     CF_UNREACHABLE();
                 }
             } else {
-                const uint8_t which = PRNG() % 2;
+                const uint8_t which = PRNG() % 3;
 
                 if ( which == 0 ) {
                     return generate_exp_mod_is_even_base_1(result);
                 } else if ( which == 1 ) {
                     return generate_exp_mod_is_base_1(result);
+                } else if ( which == 2 ) {
+                    return generate_exp_mod_is_base_2();
                 } else {
                     CF_UNREACHABLE();
                 }
