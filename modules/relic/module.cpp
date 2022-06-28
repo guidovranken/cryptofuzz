@@ -166,7 +166,7 @@ std::optional<component::Ciphertext> relic::OpSymmetricEncrypt(operation::Symmet
         case CF_CIPHER("AES_256_CBC"):
             {
                 CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
-                int outSize = static_cast<int>(op.ciphertextSize);
+                size_t outSize = static_cast<int>(op.ciphertextSize);
                 out = util::malloc(op.ciphertextSize);
                 CF_CHECK_EQ(
                         bc_aes_cbc_enc(
@@ -196,7 +196,7 @@ std::optional<component::Cleartext> relic::OpSymmetricDecrypt(operation::Symmetr
         case CF_CIPHER("AES_256_CBC"):
             {
                 CF_CHECK_EQ(op.cipher.iv.GetSize(), 16);
-                int outSize = static_cast<int>(op.cleartextSize);
+                size_t outSize = static_cast<int>(op.cleartextSize);
                 out = util::malloc(op.cleartextSize);
                 CF_CHECK_EQ(
                         bc_aes_cbc_dec(
