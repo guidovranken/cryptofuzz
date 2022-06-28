@@ -394,15 +394,17 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-    GET_WHICH(1);
+    GET_WHICH(0);
     switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_invmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
 #if !defined(USE_FAST_MATH) && !defined(WOLFSSL_SP_MATH)
+#if 0
         case    1:
             MP_CHECK_EQ(mp_invmod_slow(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
+#endif
 #endif
         default:
             goto end;
