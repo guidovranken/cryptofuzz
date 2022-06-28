@@ -314,6 +314,10 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
             return EVP_aes_256_gcm();
         case CF_CIPHER("RC4"):
             return EVP_rc4();
+#if defined(CRYPTOFUZZ_AWSLC)
+        case CF_CIPHER("AES_256_XTS"):
+            return EVP_aes_256_xts();
+#endif
 #elif defined(CRYPTOFUZZ_LIBRESSL)
         case CF_CIPHER("DES_CFB"):
             return EVP_des_cfb();
