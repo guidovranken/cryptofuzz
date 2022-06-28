@@ -12,7 +12,9 @@
 #include <boost/algorithm/string/join.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/algorithm/hex.hpp>
-#include "third_party/cpu_features/include/cpuinfo_x86.h"
+#if defined(__x86_64__) || defined(__amd64__)
+  #include "third_party/cpu_features/include/cpuinfo_x86.h"
+#endif
 #include "mutatorpool.h"
 #include "config.h"
 
@@ -535,9 +537,13 @@ void free(void* ptr) {
 }
 
 bool HaveSSE42(void) {
-    const cpu_features::X86Info info = cpu_features::GetX86Info();
-    const auto features = info.features;
-    return features.sse4_2;
+#if defined(__x86_64__) || defined(__amd64__)
+     const cpu_features::X86Info info = cpu_features::GetX86Info();
+     const auto features = info.features;
+     return features.sse4_2;
+#else
+    return false;
+#endif
 }
 
 void abort(const std::vector<std::string> components) {
