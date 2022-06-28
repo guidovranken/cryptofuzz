@@ -2224,7 +2224,11 @@ std::optional<bool> CryptoPP::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey
                     ));
 
         ::CryptoPP::AutoSeededRandomPool prng;
-        ret = publicKey.Validate(prng, 3);
+        /* With higher levels than 1 this fails for certain points, such as
+         * (2000000000655, 933211578285379889546593406879951) on secp112r2 due to
+         * https://github.com/weidai11/cryptopp/blob/9ea66ce4d97d59d61e49c93f5af191107ebd1925/eccrypto.cpp#L657-L660
+         */
+        ret = publicKey.Validate(prng, 1);
     } catch ( ... ) { }
 
     return ret;
