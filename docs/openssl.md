@@ -60,6 +60,26 @@ export OPENSSL_LIBCRYPTO_A_PATH=`realpath build/crypto/libcrypto.a`
 
 Add the parameter ```-DOPENSSL_NO_ASM=1``` to the ```cmake``` command to build without assembly language optimizations.
 
+### AWS-LC
+
+[AWS-LC](https://github.com/awslabs/aws-lc) is a general-purpose cryptographic library based on code from the Google BoringSSL
+project and the OpenSSL project. The ciphers/digests enabled by `CRYPTOFUZZ_BORINGSSL` are applicable to AWS-LC.
+
+```sh
+git clone --depth 1 https://github.com/awslabs/aws-lc.git
+cd aws-lc/
+mkdir build/
+cd build/
+cmake -DCMAKE_CXX_FLAGS="$CXXFLAGS" -DCMAKE_C_FLAGS="$CFLAGS" -DBORINGSSL_ALLOW_CXX_RUNTIME=1 ..
+make crypto -j$(nproc)
+cd ../
+export CXXFLAGS="$CXXFLAGS -DCRYPTOFUZZ_BORINGSSL -DCRYPTOFUZZ_AWSLC"
+export OPENSSL_INCLUDE_PATH=`realpath include/`
+export OPENSSL_LIBCRYPTO_A_PATH=`realpath build/crypto/libcrypto.a`
+```
+
+Add the parameter ```-DOPENSSL_NO_ASM=1``` to the ```cmake``` command to build without assembly language optimizations.
+
 ## Module compilation
 
 ```sh
