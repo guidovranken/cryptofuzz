@@ -42,7 +42,7 @@ ecc_key* ECCKey::GetPtr(void) {
     if ( exportToX963 == true ) {
         CF_CHECK_NE(newKey = wc_ecc_key_new(nullptr), nullptr);
 
-        word32 outLen;
+        word32 outLen = 0;
 
         bool compressed = false;
         try { compressed  = ds.Get<bool>();} catch ( ... ) { }
