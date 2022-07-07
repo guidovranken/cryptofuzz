@@ -1,6 +1,7 @@
 ```
 git clone --depth 1 https://github.com/herumi/mcl.git
 cd mcl/
+make bint_header
 mkdir build/
 cd build/
 cmake .. -DMCL_STATIC_LIB=on
