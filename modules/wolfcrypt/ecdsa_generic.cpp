@@ -55,8 +55,22 @@ ecc_key* ECCKey::GetPtr(void) {
         int curveID;
         CF_CHECK_NE(curveID = wc_ecc_get_curve_id(key->idx), ECC_CURVE_INVALID);
 
+        const bool valid = wc_ecc_check_key(key) == 0;
+
         haveAllocFailure = false;
-        CF_ASSERT(wc_ecc_import_x963_ex(x963, outLen, newKey, curveID) == 0 || haveAllocFailure, "Cannot import X963-exported ECC key");
+        if ( wc_ecc_import_x963_ex(x963, outLen, newKey, curveID) != 0 ) {
+            /* Allowed to fail if either:
+             *
+             * - Compression is used and the input key is invalid
+             * - An allocation failure occured during wc_ecc_import_x963_ex
+             */
+            CF_ASSERT((compressed && !valid) || haveAllocFailure, "Cannot import X963-exported ECC key");
+            goto end;
+        }
+
+        if ( compressed ) {
+            CF_CHECK_TRUE(valid);
+        }
 
         CF_NORET(wc_ecc_key_free(key));
         key = newKey;
