@@ -11,6 +11,7 @@ cd openssl/
 make -j$(nproc)
 export OPENSSL_INCLUDE_PATH=`realpath include/`
 export OPENSSL_LIBCRYPTO_A_PATH=`realpath libcrypto.a`
+export CXXFLAGS="$CXXFLAGS -I $OPENSSL_INCLUDE_PATH"
 ```
 
 Add the parameter ```no-asm``` to the ```./config``` command to build without assembly language optimizations.
@@ -41,6 +42,7 @@ cd ../
 export CXXFLAGS="$CXXFLAGS -DCRYPTOFUZZ_LIBRESSL"
 export OPENSSL_INCLUDE_PATH=`realpath include/`
 export OPENSSL_LIBCRYPTO_A_PATH=`realpath build/crypto/libcrypto.a`
+export CXXFLAGS="$CXXFLAGS -I $OPENSSL_INCLUDE_PATH"
 ```
 
 ### BoringSSL
@@ -56,6 +58,7 @@ cd ../
 export CXXFLAGS="$CXXFLAGS -DCRYPTOFUZZ_BORINGSSL"
 export OPENSSL_INCLUDE_PATH=`realpath include/`
 export OPENSSL_LIBCRYPTO_A_PATH=`realpath build/crypto/libcrypto.a`
+export CXXFLAGS="$CXXFLAGS -I $OPENSSL_INCLUDE_PATH"
 ```
 
 Add the parameter ```-DOPENSSL_NO_ASM=1``` to the ```cmake``` command to build without assembly language optimizations.
@@ -76,6 +79,7 @@ cd ../
 export CXXFLAGS="$CXXFLAGS -DCRYPTOFUZZ_BORINGSSL -DCRYPTOFUZZ_AWSLC"
 export OPENSSL_INCLUDE_PATH=`realpath include/`
 export OPENSSL_LIBCRYPTO_A_PATH=`realpath build/crypto/libcrypto.a`
+export CXXFLAGS="$CXXFLAGS -I $OPENSSL_INCLUDE_PATH"
 ```
 
 Add the parameter ```-DOPENSSL_NO_ASM=1``` to the ```cmake``` command to build without assembly language optimizations.
