@@ -951,7 +951,9 @@ std::optional<component::Secret> secp256k1::OpECDH_Derive(operation::ECDH_Derive
 
     CF_CHECK_TRUE(pub.ECDH(out, privkey_bytes));
 
+#if !defined(CRYPTOFUZZ_DISABLE_SPECIAL_ECDH)
     ret = component::Secret(Buffer(out, sizeof(out)));
+#endif
 
 end:
     util::UnsetGlobalDs();

@@ -655,7 +655,9 @@ std::optional<component::Secret> trezor_firmware::OpECDH_Derive(operation::ECDH_
         out2 = crypto::sha256(sha256_input);
     }
 
+#if !defined(CRYPTOFUZZ_DISABLE_SPECIAL_ECDH)
     ret = component::Secret(Buffer(out2));
+#endif
 
 end:
 
