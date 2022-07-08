@@ -8,6 +8,9 @@
 
 namespace cryptofuzz {
 namespace module {
+namespace libgmp_detail {
+    extern gmp_randstate_t rng_state;
+}
 namespace libgmp_bignum {
 
 bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
@@ -1064,6 +1067,59 @@ bool IsPower::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     res.Set(
             mpz_perfect_power_p(bn[0].GetPtr()) == 0 ? std::string("0") : std::string("1")
     );
+
+    return true;
+}
+
+bool Prime::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    (void)bn;
+
+    uint16_t bits = 0;
+
+    try {
+        bits = ds.Get<uint16_t>();
+    } catch ( ... ) { }
+
+    bits %= (512+1);
+
+    if ( bits == 0 ) {
+        bits = 1;
+    }
+
+    /* noret */ mpz_urandomb(res.GetPtr(), libgmp_detail::rng_state, bits);
+    /* noret */ mpz_nextprime(res.GetPtr(), res.GetPtr());
+
+    return true;
+}
+
+bool IsPrime::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    (void)ds;
+
+    if ( mpz_probab_prime_p(bn[0].GetPtr(), 15) == 0 ) {
+        res.Set("0");
+    } else {
+        res.Set("1");
+    }
+
+    return true;
+}
+
+bool Rand::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    (void)bn;
+
+    uint16_t bits = 0;
+
+    try {
+        bits = ds.Get<uint16_t>();
+    } catch ( ... ) { }
+
+    bits %= (10000+1);
+
+    if ( bits == 0 ) {
+        bits = 1;
+    }
+
+    /* noret */ mpz_urandomb(res.GetPtr(), libgmp_detail::rng_state, 512);
 
     return true;
 }

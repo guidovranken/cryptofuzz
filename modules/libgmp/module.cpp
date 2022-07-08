@@ -7,8 +7,14 @@
 namespace cryptofuzz {
 namespace module {
 
+namespace libgmp_detail {
+    gmp_randstate_t rng_state;
+}
 libgmp::libgmp(void) :
-    Module("libgmp") { }
+    Module("libgmp") {
+    /* noret */ gmp_randinit_default(libgmp_detail::rng_state);
+    /* noret */ gmp_randseed_ui(libgmp_detail::rng_state, rand());
+}
 
 std::optional<component::Bignum> libgmp::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
@@ -205,6 +211,15 @@ std::optional<component::Bignum> libgmp::OpBignumCalc(operation::BignumCalc& op)
             break;
         case    CF_CALCOP("IsPower(A)"):
             opRunner = std::make_unique<libgmp_bignum::IsPower>();
+            break;
+        case    CF_CALCOP("Prime()"):
+            opRunner = std::make_unique<libgmp_bignum::Prime>();
+            break;
+        case    CF_CALCOP("IsPrime(A)"):
+            opRunner = std::make_unique<libgmp_bignum::IsPrime>();
+            break;
+        case    CF_CALCOP("Rand()"):
+            opRunner = std::make_unique<libgmp_bignum::Rand>();
             break;
     }
 
