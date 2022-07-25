@@ -682,8 +682,10 @@ end:
     Digest<Sha, WC_SHA_DIGEST_SIZE, Init_Int<Sha>, DigestUpdate_Int<Sha>, DigestFinalize_Int<Sha>>
         sha1(wc_InitSha, wc_ShaUpdate, wc_ShaFinal, wc_ShaFree, wc_ShaCopy, wc_ShaHash);
 
+#if !defined(__i386__)
     Digest<Sha224, WC_SHA224_DIGEST_SIZE, Init_Int<Sha224>, DigestUpdate_Int<Sha224>, DigestFinalize_Int<Sha224>>
         sha224(wc_InitSha224, wc_Sha224Update, wc_Sha224Final, wc_Sha224Free, wc_Sha224Copy, wc_Sha224Hash);
+#endif
 
     Digest<Sha256, WC_SHA256_DIGEST_SIZE, Init_Int<Sha256>, DigestUpdate_Int<Sha256>, DigestFinalize_Int<Sha256>>
         sha256(wc_InitSha256, wc_Sha256Update, wc_Sha256Final, wc_Sha256Free, wc_Sha256Copy, wc_Sha256Hash);
@@ -751,7 +753,9 @@ end:
             { CF_DIGEST("MD4"), MD4_DIGEST_SIZE },
             { CF_DIGEST("MD5"), MD5_DIGEST_SIZE },
             { CF_DIGEST("SHA1"), WC_SHA_DIGEST_SIZE },
+#if !defined(__i386__)
             { CF_DIGEST("SHA224"), WC_SHA224_DIGEST_SIZE },
+#endif
             { CF_DIGEST("SHA256"), WC_SHA256_DIGEST_SIZE },
             { CF_DIGEST("SHA384"), WC_SHA384_DIGEST_SIZE },
             { CF_DIGEST("SHA512"), WC_SHA512_DIGEST_SIZE },
@@ -826,9 +830,11 @@ std::optional<component::Digest> wolfCrypt::OpDigest(operation::Digest& op) {
             case CF_DIGEST("SHA1"):
                 ret = wolfCrypt_detail::sha1.Run(op, ds);
                 break;
+#if !defined(__i386__)
             case CF_DIGEST("SHA224"):
                 ret = wolfCrypt_detail::sha224.Run(op, ds);
                 break;
+#endif
             case CF_DIGEST("SHA256"):
                 ret = wolfCrypt_detail::sha256.Run(op, ds);
                 break;
