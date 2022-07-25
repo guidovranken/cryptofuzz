@@ -319,9 +319,11 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
         case    6:
             MP_CHECK_EQ(sp_ModExp_3072(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
+#if !defined(__i386__)
         case    7:
             MP_CHECK_EQ(sp_ModExp_4096(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
+#endif
 #endif
 #if !defined(WOLFSSL_SP_MATH) && !defined(WOLFSSL_SP_MATH_ALL) && !defined(USE_FAST_MATH)
         case    8:
