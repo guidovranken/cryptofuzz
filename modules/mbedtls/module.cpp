@@ -1149,6 +1149,11 @@ std::optional<bool> mbedTLS::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     CF_CHECK_EQ(mbedtls_mpi_read_string(&ctx.Q.Y, 10, op.signature.pub.second.ToString(ds).c_str()), 0);
     CF_CHECK_EQ(mbedtls_mpi_lset(&ctx.Q.Z, 1), 0);
 
+    if ( mbedtls_ecp_check_pubkey(&ctx.grp, &ctx.Q) != 0 ) {
+        ret = false;
+        goto end;
+    }
+
     /* Signature */
     CF_CHECK_EQ(mbedtls_mpi_read_string(&sig_r, 10, op.signature.signature.first.ToString(ds).c_str()), 0);
     CF_CHECK_EQ(mbedtls_mpi_read_string(&sig_s, 10, op.signature.signature.second.ToString(ds).c_str()), 0);
