@@ -354,6 +354,7 @@ modules.Add( Module("spl-math") )
 modules.Add( Module("stint") )
 modules.Add( Module("trezor-firmware") )
 modules.Add( Module("uint128_t") )
+modules.Add( Module("wide-integer") )
 modules.Add( Module("wolfCrypt") )
 modules.Add( Module("wolfCrypt-OpenSSL") )
 

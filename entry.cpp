@@ -369,6 +369,10 @@
   #include <modules/jsbn/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_WIDE_INTEGER)
+  #include <modules/wide-integer/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -743,6 +747,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_JSBN)
     driver->LoadModule( std::make_shared<cryptofuzz::module::jsbn>() );
+#endif
+
+#if defined(CRYPTOFUZZ_WIDE_INTEGER)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::wide_integer>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
