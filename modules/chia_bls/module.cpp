@@ -288,8 +288,8 @@ std::optional<bool> chia_bls::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) 
 
     {
         try {
-            /* FromNative calls CheckValid */
             const auto G1 = bls::G1Element::FromNative(g1);
+            G1.CheckValid();
             (void)G1;
             ret = true;
         } catch ( std::invalid_argument ) {
@@ -441,7 +441,9 @@ std::optional<bool> chia_bls::OpBLS_Verify(operation::BLS_Verify& op) {
 
     try {
         const auto pub = bls::G1Element::FromNative(g1);
+        pub.CheckValid();
         const auto sig = bls::G2Element::FromNative(g2);
+        sig.CheckValid();
 
         ret = bls::BasicSchemeMPL().Verify(pub, op.cleartext.Get(), sig);
     } catch ( ... ) {
@@ -537,7 +539,9 @@ std::optional<component::G1> chia_bls::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
 
     try {
         const auto A = bls::G1Element::FromNative(a);
+        A.CheckValid();
         const auto B = bls::G1Element::FromNative(b);
+        B.CheckValid();
 
         ret = chia_bls_detail::G1_To_Component(A + B);
     } catch ( ... ) {
@@ -590,6 +594,7 @@ std::optional<component::G1> chia_bls::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
 
     try {
         const auto A = bls::G1Element::FromNative(a);
+        A.CheckValid();
 
         ret = chia_bls_detail::G1_To_Component(A * b);
     } catch ( ... ) {
@@ -665,6 +670,7 @@ std::optional<component::G2> chia_bls::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
 
     try {
         const auto A = bls::G2Element::FromNative(a);
+        A.CheckValid();
 
         ret = chia_bls_detail::G2_To_Component(A * b);
     } catch ( ... ) {
@@ -704,6 +710,7 @@ std::optional<component::G1> chia_bls::OpBLS_G1_Neg(operation::BLS_G1_Neg& op) {
 
     try {
         const auto A = bls::G1Element::FromNative(a);
+        A.CheckValid();
 
         ret = chia_bls_detail::G1_To_Component(A.Negate());
     } catch ( ... ) {
@@ -766,6 +773,7 @@ std::optional<component::G2> chia_bls::OpBLS_G2_Neg(operation::BLS_G2_Neg& op) {
 
     try {
         const auto A = bls::G2Element::FromNative(a);
+        A.CheckValid();
 
         ret = chia_bls_detail::G2_To_Component(A.Negate());
     } catch ( ... ) {
