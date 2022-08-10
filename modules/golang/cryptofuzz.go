@@ -1343,76 +1343,106 @@ func Golang_Cryptofuzz_OpBignumCalc(in []byte) {
 
     success := false
     direct := false
+    var alias_BN1 uint8 = 0
+    var alias_BN2 uint8 = 0
 
     if len(op.Modifier) >= 1 {
         if op.Modifier[0] & 1 == 1 {
             direct = true
         }
     }
+    if len(op.Modifier) >= 2 {
+        alias_BN1 = op.Modifier[1]
+    }
+    if len(op.Modifier) >= 3 {
+        alias_BN2 = op.Modifier[2]
+    }
+
+    var BN0 *big.Int = bn[0]
+    var BN1 *big.Int
+    if alias_BN1 == 0 {
+        BN1 = bn[1]
+    } else {
+        if bn[1].Cmp(bn[alias_BN1 % 1]) == 0 {
+            BN1 = bn[alias_BN1 % 1]
+        } else {
+            BN1 = bn[1]
+        }
+    }
+    var BN2 *big.Int
+    if alias_BN2 == 0 {
+        BN2 = bn[2]
+    } else {
+        if bn[2].Cmp(bn[alias_BN2 % 2]) == 0 {
+            BN2 = bn[alias_BN2 % 2]
+        } else {
+            BN2 = bn[2]
+        }
+    }
 
     if false {
     } else if isAdd(op.CalcOp) {
-        success = op_ADD(res, bn[0], bn[1], bn[2], direct)
+        success = op_ADD(res, BN0, BN1, BN2, direct)
     } else if isSub(op.CalcOp) {
-        success = op_SUB(res, bn[0], bn[1], bn[2], direct)
+        success = op_SUB(res, BN0, BN1, BN2, direct)
     } else if isMul(op.CalcOp) {
-        success = op_MUL(res, bn[0], bn[1], bn[2], direct)
+        success = op_MUL(res, BN0, BN1, BN2, direct)
     } else if isDiv(op.CalcOp) {
-        success = op_DIV(res, bn[0], bn[1], bn[2], direct)
+        success = op_DIV(res, BN0, BN1, BN2, direct)
     } else if isMod(op.CalcOp) {
-        success = op_MOD(res, bn[0], bn[1], bn[2], direct)
+        success = op_MOD(res, BN0, BN1, BN2, direct)
     } else if isExpMod(op.CalcOp) {
-        success = op_EXP_MOD(res, bn[0], bn[1], bn[2], direct)
+        success = op_EXP_MOD(res, BN0, BN1, BN2, direct)
     } else if isRShift(op.CalcOp) {
-        success = op_RSHIFT(res, bn[0], bn[1], bn[2], direct)
+        success = op_RSHIFT(res, BN0, BN1, BN2, direct)
     } else if isGCD(op.CalcOp) {
-        success = op_GCD(res, bn[0], bn[1], bn[2], direct)
+        success = op_GCD(res, BN0, BN1, BN2, direct)
     } else if isExtGCD_X(op.CalcOp) {
-        success = op_ExtGCD_X(res, bn[0], bn[1], bn[2], direct)
+        success = op_ExtGCD_X(res, BN0, BN1, BN2, direct)
     } else if isExtGCD_Y(op.CalcOp) {
-        success = op_ExtGCD_Y(res, bn[0], bn[1], bn[2], direct)
+        success = op_ExtGCD_Y(res, BN0, BN1, BN2, direct)
     } else if isAddMod(op.CalcOp) {
-        success = op_MOD_ADD(res, bn[0], bn[1], bn[2], direct)
+        success = op_MOD_ADD(res, BN0, BN1, BN2, direct)
     } else if isExp(op.CalcOp) {
-        success = op_EXP(res, bn[0], bn[1], bn[2], direct)
+        success = op_EXP(res, BN0, BN1, BN2, direct)
     } else if isSqr(op.CalcOp) {
-        success = op_SQR(res, bn[0], bn[1], bn[2], direct)
+        success = op_SQR(res, BN0, BN1, BN2, direct)
     } else if isNeg(op.CalcOp) {
-        success = op_NEG(res, bn[0], bn[1], bn[2], direct)
+        success = op_NEG(res, BN0, BN1, BN2, direct)
     } else if isAbs(op.CalcOp) {
-        success = op_ABS(res, bn[0], bn[1], bn[2], direct)
+        success = op_ABS(res, BN0, BN1, BN2, direct)
     } else if isSubMod(op.CalcOp) {
-        success = op_MOD_SUB(res, bn[0], bn[1], bn[2], direct)
+        success = op_MOD_SUB(res, BN0, BN1, BN2, direct)
     } else if isMulMod(op.CalcOp) {
-        success = op_MOD_MUL(res, bn[0], bn[1], bn[2], direct)
+        success = op_MOD_MUL(res, BN0, BN1, BN2, direct)
     } else if isInvMod(op.CalcOp) {
-        success = op_INV_MOD(res, bn[0], bn[1], bn[2], direct)
+        success = op_INV_MOD(res, BN0, BN1, BN2, direct)
     } else if isSqrtMod(op.CalcOp) {
-        success = op_MOD_SQRT(res, bn[0], bn[1], bn[2], direct)
+        success = op_MOD_SQRT(res, BN0, BN1, BN2, direct)
     } else if isSqrt(op.CalcOp) {
-        success = op_SQRT(res, bn[0], bn[1], bn[2], direct)
+        success = op_SQRT(res, BN0, BN1, BN2, direct)
     } else if isAnd(op.CalcOp) {
-        success = op_AND(res, bn[0], bn[1], bn[2], direct)
+        success = op_AND(res, BN0, BN1, BN2, direct)
     } else if isOr(op.CalcOp) {
-        success = op_OR(res, bn[0], bn[1], bn[2], direct)
+        success = op_OR(res, BN0, BN1, BN2, direct)
     } else if isXor(op.CalcOp) {
-        success = op_XOR(res, bn[0], bn[1], bn[2], direct)
+        success = op_XOR(res, BN0, BN1, BN2, direct)
     } else if isSetBit(op.CalcOp) {
-        success = op_SET_BIT(res, bn[0], bn[1], bn[2], direct)
+        success = op_SET_BIT(res, BN0, BN1, BN2, direct)
     } else if isNumBits(op.CalcOp) {
-        success = op_NUM_BITS(res, bn[0], bn[1], bn[2], direct)
+        success = op_NUM_BITS(res, BN0, BN1, BN2, direct)
     } else if isCmp(op.CalcOp) {
-        success = op_CMP(res, bn[0], bn[1], bn[2], direct)
+        success = op_CMP(res, BN0, BN1, BN2, direct)
     } else if isCmpAbs(op.CalcOp) {
-        success = op_CMP_ABS(res, bn[0], bn[1], bn[2], direct)
+        success = op_CMP_ABS(res, BN0, BN1, BN2, direct)
     } else if isBit(op.CalcOp) {
-        success = op_BIT(res, bn[0], bn[1], bn[2], direct)
+        success = op_BIT(res, BN0, BN1, BN2, direct)
     } else if isJacobi(op.CalcOp) {
-        success = op_JACOBI(res, bn[0], bn[1], bn[2], direct)
+        success = op_JACOBI(res, BN0, BN1, BN2, direct)
     } else if isFactorial(op.CalcOp) {
-        success = op_FACTORIAL(res, bn[0], bn[1], bn[2], direct)
+        success = op_FACTORIAL(res, BN0, BN1, BN2, direct)
     } else if isBinCoeff(op.CalcOp) {
-        success = op_BIN_COEFF(res, bn[0], bn[1], bn[2], direct)
+        success = op_BIN_COEFF(res, BN0, BN1, BN2, direct)
     } else if isSet(op.CalcOp) {
         var modifier byte = 0
         if len(op.Modifier) >= 2 {
@@ -1422,7 +1452,7 @@ func Golang_Cryptofuzz_OpBignumCalc(in []byte) {
         if len(op.Modifier) >= 3 {
             base = op.Modifier[2]
         }
-        success = op_SET(res, bn[0], bn[1], bn[2], direct, modifier, base)
+        success = op_SET(res, BN0, BN1, BN2, direct, modifier, base)
     }
 
     if success == false {
