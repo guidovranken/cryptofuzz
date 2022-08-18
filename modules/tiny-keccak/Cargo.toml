@@ -1,0 +1,12 @@
+[package]
+name = "cryptofuzz-tiny-keccak"
+version = "0.1.0"
+authors = ["Guido Vranken <guidovranken@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+tiny-keccak = { git = "https://github.com/debris/tiny-keccak", features = ["keccak"] }
+libc = "0.2.0"
