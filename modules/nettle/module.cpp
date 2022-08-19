@@ -33,6 +33,7 @@
 #include <nettle/sha.h>
 #include <nettle/sha3.h>
 #include <nettle/siv-cmac.h>
+#include <nettle/sm4.h>
 #include <nettle/streebog.h>
 #include <nettle/twofish.h>
 #include <nettle/umac.h>
@@ -1106,6 +1107,15 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
                     (nettle_set_key_func*)camellia128_set_encrypt_key);
         }
         break;
+        case CF_CIPHER("SM4_CTR"):
+        {
+            ret = Nettle_detail::CTRCrypt<struct sm4_ctx, 16>(
+                    op.cleartext,
+                    op.cipher,
+                    (nettle_cipher_func*)sm4_crypt,
+                    (nettle_set_key_func*)sm4_set_encrypt_key);
+        }
+        break;
     }
 
 end:
@@ -1728,6 +1738,15 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
                     op.cipher,
                     (nettle_cipher_func*)camellia128_crypt,
                     (nettle_set_key_func*)camellia128_set_encrypt_key);
+        }
+        break;
+        case CF_CIPHER("SM4_CTR"):
+        {
+            ret = Nettle_detail::CTRCrypt<struct sm4_ctx, 16>(
+                    op.ciphertext,
+                    op.cipher,
+                    (nettle_cipher_func*)sm4_crypt,
+                    (nettle_set_key_func*)sm4_set_encrypt_key);
         }
         break;
     }
