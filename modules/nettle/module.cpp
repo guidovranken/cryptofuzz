@@ -485,7 +485,7 @@ namespace Nettle_detail {
         return ret;
     }
 
-    template <class Cipher, size_t Size>
+    template <class Cipher, size_t BlockSize, size_t KeySize>
     std::optional<Buffer> CTRCrypt(
             const Buffer& in,
             const component::SymmetricCipher& cipher,
@@ -495,11 +495,11 @@ namespace Nettle_detail {
         std::optional<Buffer> ret = std::nullopt;
         uint8_t* out = nullptr;
 
-        struct CTR_CTX(Cipher, Size) ctx;
+        struct CTR_CTX(Cipher, BlockSize) ctx;
 
-        CF_CHECK_EQ(in.GetSize() % Size, 0);
-        CF_CHECK_EQ(cipher.iv.GetSize(), Size);
-        CF_CHECK_EQ(cipher.key.GetSize(), Size);
+        CF_CHECK_EQ(in.GetSize() % BlockSize, 0);
+        CF_CHECK_EQ(cipher.iv.GetSize(), BlockSize);
+        CF_CHECK_EQ(cipher.key.GetSize(), KeySize);
 
         CF_NORET(setkey(&ctx.ctx, cipher.key.GetPtr()));
 
@@ -1055,7 +1055,7 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
         break;
         case CF_CIPHER("AES_128_CTR"):
         {
-            ret = Nettle_detail::CTRCrypt<struct aes128_ctx, 16>(
+            ret = Nettle_detail::CTRCrypt<struct aes128_ctx, 16, 16>(
                     op.cleartext,
                     op.cipher,
                     (nettle_cipher_func*)aes128_encrypt,
@@ -1064,25 +1064,25 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
         break;
         case CF_CIPHER("AES_192_CTR"):
         {
-            ret = Nettle_detail::CTRCrypt<struct aes192_ctx, 24>(
+            ret = Nettle_detail::CTRCrypt<struct aes192_ctx, 16, 24>(
                     op.cleartext,
                     op.cipher,
-                    (nettle_cipher_func*)aes128_encrypt,
-                    (nettle_set_key_func*)aes128_set_encrypt_key);
+                    (nettle_cipher_func*)aes192_encrypt,
+                    (nettle_set_key_func*)aes192_set_encrypt_key);
         }
         break;
         case CF_CIPHER("AES_256_CTR"):
         {
-            ret = Nettle_detail::CTRCrypt<struct aes256_ctx, 32>(
+            ret = Nettle_detail::CTRCrypt<struct aes256_ctx, 16, 32>(
                     op.cleartext,
                     op.cipher,
-                    (nettle_cipher_func*)aes128_encrypt,
-                    (nettle_set_key_func*)aes128_set_encrypt_key);
+                    (nettle_cipher_func*)aes256_encrypt,
+                    (nettle_set_key_func*)aes256_set_encrypt_key);
         }
         break;
         case CF_CIPHER("CAMELLIA_128_CTR"):
         {
-            ret = Nettle_detail::CTRCrypt<struct camellia128_ctx, 16>(
+            ret = Nettle_detail::CTRCrypt<struct camellia128_ctx, 16, 16>(
                     op.cleartext,
                     op.cipher,
                     (nettle_cipher_func*)camellia128_crypt,
@@ -1091,25 +1091,25 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
         break;
         case CF_CIPHER("CAMELLIA_192_CTR"):
         {
-            ret = Nettle_detail::CTRCrypt<struct camellia192_ctx, 24>(
+            ret = Nettle_detail::CTRCrypt<struct camellia192_ctx, 16, 24>(
                     op.cleartext,
                     op.cipher,
-                    (nettle_cipher_func*)camellia128_crypt,
-                    (nettle_set_key_func*)camellia128_set_encrypt_key);
+                    (nettle_cipher_func*)camellia192_crypt,
+                    (nettle_set_key_func*)camellia192_set_encrypt_key);
         }
         break;
         case CF_CIPHER("CAMELLIA_256_CTR"):
         {
-            ret = Nettle_detail::CTRCrypt<struct camellia256_ctx, 32>(
+            ret = Nettle_detail::CTRCrypt<struct camellia256_ctx, 16, 32>(
                     op.cleartext,
                     op.cipher,
-                    (nettle_cipher_func*)camellia128_crypt,
-                    (nettle_set_key_func*)camellia128_set_encrypt_key);
+                    (nettle_cipher_func*)camellia256_crypt,
+                    (nettle_set_key_func*)camellia256_set_encrypt_key);
         }
         break;
         case CF_CIPHER("SM4_CTR"):
         {
-            ret = Nettle_detail::CTRCrypt<struct sm4_ctx, 16>(
+            ret = Nettle_detail::CTRCrypt<struct sm4_ctx, 16, 16>(
                     op.cleartext,
                     op.cipher,
                     (nettle_cipher_func*)sm4_crypt,
@@ -1688,7 +1688,7 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
         break;
         case CF_CIPHER("AES_128_CTR"):
         {
-            ret = Nettle_detail::CTRCrypt<struct aes128_ctx, 16>(
+            ret = Nettle_detail::CTRCrypt<struct aes128_ctx, 16, 16>(
                     op.ciphertext,
                     op.cipher,
                     (nettle_cipher_func*)aes128_encrypt,
@@ -1697,25 +1697,25 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
         break;
         case CF_CIPHER("AES_192_CTR"):
         {
-            ret = Nettle_detail::CTRCrypt<struct aes192_ctx, 24>(
+            ret = Nettle_detail::CTRCrypt<struct aes192_ctx, 16, 24>(
                     op.ciphertext,
                     op.cipher,
-                    (nettle_cipher_func*)aes128_encrypt,
-                    (nettle_set_key_func*)aes128_set_encrypt_key);
+                    (nettle_cipher_func*)aes192_encrypt,
+                    (nettle_set_key_func*)aes192_set_encrypt_key);
         }
         break;
         case CF_CIPHER("AES_256_CTR"):
         {
-            ret = Nettle_detail::CTRCrypt<struct aes256_ctx, 32>(
+            ret = Nettle_detail::CTRCrypt<struct aes256_ctx, 16, 32>(
                     op.ciphertext,
                     op.cipher,
-                    (nettle_cipher_func*)aes128_encrypt,
-                    (nettle_set_key_func*)aes128_set_encrypt_key);
+                    (nettle_cipher_func*)aes256_encrypt,
+                    (nettle_set_key_func*)aes256_set_encrypt_key);
         }
         break;
         case CF_CIPHER("CAMELLIA_128_CTR"):
         {
-            ret = Nettle_detail::CTRCrypt<struct camellia128_ctx, 16>(
+            ret = Nettle_detail::CTRCrypt<struct camellia128_ctx, 16, 16>(
                     op.ciphertext,
                     op.cipher,
                     (nettle_cipher_func*)camellia128_crypt,
@@ -1724,25 +1724,25 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
         break;
         case CF_CIPHER("CAMELLIA_192_CTR"):
         {
-            ret = Nettle_detail::CTRCrypt<struct camellia192_ctx, 24>(
+            ret = Nettle_detail::CTRCrypt<struct camellia192_ctx, 16, 24>(
                     op.ciphertext,
                     op.cipher,
-                    (nettle_cipher_func*)camellia128_crypt,
-                    (nettle_set_key_func*)camellia128_set_encrypt_key);
+                    (nettle_cipher_func*)camellia192_crypt,
+                    (nettle_set_key_func*)camellia192_set_encrypt_key);
         }
         break;
         case CF_CIPHER("CAMELLIA_256_CTR"):
         {
-            ret = Nettle_detail::CTRCrypt<struct camellia256_ctx, 32>(
+            ret = Nettle_detail::CTRCrypt<struct camellia256_ctx, 16, 32>(
                     op.ciphertext,
                     op.cipher,
-                    (nettle_cipher_func*)camellia128_crypt,
-                    (nettle_set_key_func*)camellia128_set_encrypt_key);
+                    (nettle_cipher_func*)camellia256_crypt,
+                    (nettle_set_key_func*)camellia256_set_encrypt_key);
         }
         break;
         case CF_CIPHER("SM4_CTR"):
         {
-            ret = Nettle_detail::CTRCrypt<struct sm4_ctx, 16>(
+            ret = Nettle_detail::CTRCrypt<struct sm4_ctx, 16, 16>(
                     op.ciphertext,
                     op.cipher,
                     (nettle_cipher_func*)sm4_crypt,
