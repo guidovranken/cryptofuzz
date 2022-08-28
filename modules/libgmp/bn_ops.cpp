@@ -8,9 +8,11 @@
 
 namespace cryptofuzz {
 namespace module {
+#if !defined(HAVE_MINI_GMP)
 namespace libgmp_detail {
     extern gmp_randstate_t rng_state;
 }
+#endif
 namespace libgmp_bignum {
 
 bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
@@ -112,6 +114,7 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     GET_WHICH(3);
     switch ( which ) {
+#if !defined(HAVE_MINI_GMP)
         case    0:
             CF_CHECK_NE(mpz_cmp_ui(bn[1].GetPtr(), 0), 0);
 
@@ -127,6 +130,7 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 /* noret */ mpz_div_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
             }
             break;
+#endif
         case    2:
             {
                 CF_CHECK_NE(mpz_cmp_ui(bn[1].GetPtr(), 0), 0);
@@ -164,6 +168,7 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     GET_WHICH(2);
 
     CF_CHECK_NE(mpz_cmp_ui(bn[2].GetPtr(), 0), 0);
+    CF_CHECK_NE(mpz_cmp_ui(bn[2].GetPtr(), 1), 0);
 
     switch ( which ) {
         case    0:
@@ -182,6 +187,7 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 /* noret */ mpz_powm_ui(res.GetPtr(), bn[0].GetPtr(), *bn1, bn[2].GetPtr());
             }
             break;
+#if !defined(HAVE_MINI_GMP)
         case    2:
             {
                 CF_CHECK_GTE(mpz_sgn(bn[1].GetPtr()), 0);
@@ -195,6 +201,7 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 /* noret */ mpz_powm_sec(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
             }
             break;
+#endif
         default:
             return false;
     }
@@ -273,6 +280,7 @@ bool ExtGCD_Y::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 }
 
 bool Jacobi::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+#if !defined(HAVE_MINI_GMP)
     GET_WHICH(2);
     switch ( which ) {
         case    0:
@@ -298,6 +306,13 @@ bool Jacobi::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
 end:
     return false;
+#else
+    (void)ds;
+    (void)res;
+    (void)bn;
+
+    return false;
+#endif
 }
 
 bool Cmp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
@@ -799,6 +814,7 @@ end:
 }
 
 bool IsSquare::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+#if !defined(HAVE_MINI_GMP)
     (void)ds;
 
     res.Set(
@@ -806,6 +822,13 @@ bool IsSquare::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     );
 
     return true;
+#else
+    (void)ds;
+    (void)res;
+    (void)bn;
+
+    return false;
+#endif
 }
 
 bool Exp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
@@ -907,6 +930,7 @@ end:
 }
 
 bool Primorial::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+#if !defined(HAVE_MINI_GMP)
     (void)ds;
     bool ret = false;
 
@@ -920,9 +944,17 @@ bool Primorial::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
 end:
     return ret;
+#else
+    (void)ds;
+    (void)res;
+    (void)bn;
+
+    return false;
+#endif
 }
 
 bool Lucas::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+#if !defined(HAVE_MINI_GMP)
     (void)ds;
     bool ret = false;
 
@@ -936,6 +968,13 @@ bool Lucas::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
 end:
     return ret;
+#else
+    (void)ds;
+    (void)res;
+    (void)bn;
+
+    return false;
+#endif
 }
 
 bool Fibonacci::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
@@ -1007,9 +1046,11 @@ bool BinCoeff::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     CF_CHECK_LTE(*bn1, 100000);
 
     switch ( which ) {
+#if !defined(HAVE_MINI_GMP)
         case    0:
             /* noret */ mpz_bin_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
             break;
+#endif
         case    1:
             /* noret */ mpz_bin_uiui(res.GetPtr(), *bn0, *bn1);
             break;
@@ -1062,6 +1103,7 @@ end:
 }
 
 bool IsPower::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+#if !defined(HAVE_MINI_GMP)
     (void)ds;
 
     res.Set(
@@ -1069,9 +1111,17 @@ bool IsPower::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     );
 
     return true;
+#else
+    (void)ds;
+    (void)res;
+    (void)bn;
+
+    return false;
+#endif
 }
 
 bool Prime::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+#if !defined(HAVE_MINI_GMP)
     (void)bn;
 
     uint16_t bits = 0;
@@ -1090,6 +1140,13 @@ bool Prime::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     /* noret */ mpz_nextprime(res.GetPtr(), res.GetPtr());
 
     return true;
+#else
+    (void)ds;
+    (void)res;
+    (void)bn;
+
+    return false;
+#endif
 }
 
 bool IsPrime::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
@@ -1105,6 +1162,7 @@ bool IsPrime::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 }
 
 bool Rand::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+#if !defined(HAVE_MINI_GMP)
     (void)bn;
 
     uint16_t bits = 0;
@@ -1122,6 +1180,13 @@ bool Rand::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     /* noret */ mpz_urandomb(res.GetPtr(), libgmp_detail::rng_state, 512);
 
     return true;
+#else
+    (void)ds;
+    (void)res;
+    (void)bn;
+
+    return false;
+#endif
 }
 
 } /* namespace libgmp_bignum */
