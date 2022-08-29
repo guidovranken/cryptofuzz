@@ -6,7 +6,6 @@ import (
     "encoding/hex"
     "encoding/json"
     "math/big"
-	"github.com/decred/dcrd/dcrec/edwards"
 	"github.com/decred/dcrd/dcrec/secp256k1"
     "github.com/decred/dcrd/dcrec/secp256k1/ecdsa"
 )
@@ -49,6 +48,19 @@ type OpECDSA_Verify struct {
     Cleartext ByteSlice
     Sig_R string
     Sig_S string
+}
+
+type OpECDSA_Sign struct {
+    Modifier ByteSlice
+    CurveType uint64
+    DigestType uint64
+    Priv string
+    Cleartext ByteSlice
+}
+
+type ECDSA_Signature struct {
+    Pub [2]string `json:"pub"`
+    Sig ByteSlice `json:"sig"`
 }
 
 var result []byte
@@ -221,17 +233,31 @@ func secp256k1_Verify(op OpECDSA_Verify) {
     result = r2
 }
 
-func ed255519_Verify(op OpECDSA_Verify) {
-    sigR := decodeBignum(op.Sig_R)
-    sigS := decodeBignum(op.Sig_S)
-
-    pubXBytes := decodeBignum(op.Pub_X).Bytes()
-    pub, err := edwards.ParsePubKey(pubXBytes)
-    if err != nil {
+func secp256k1_Sign(op OpECDSA_Sign) {
+    privBn := decodeBignum(op.Priv)
+    if privBn.Cmp(decodeBignum("115792089237316195423570985008687907852837564279074904382605163141518161494337")) >= 0 {
         return
     }
+    if privBn.Cmp(new(big.Int).SetUint64(0)) == 0 {
+        return
+    }
+    privBytes := privBn.Bytes()
 
-    res := ed25519.Verify(pub, op.Cleartext, sigR, sigS)
+    priv := secp256k1.PrivKeyFromBytes(privBytes)
+
+    pubKey := secp256k1.PrivKeyFromBytes(privBytes).PubKey().SerializeUncompressed()
+    x := new(big.Int)
+    x.SetBytes(pubKey[1:33])
+
+    y := new(big.Int)
+    y.SetBytes(pubKey[33:65])
+
+    sig := ecdsa.Sign(priv, op.Cleartext).Serialize()
+
+    var res ECDSA_Signature
+    res.Pub[0] = x.String()
+    res.Pub[1] = y.String()
+    res.Sig = sig
 
     r2, err := json.Marshal(&res)
     if err != nil {
@@ -254,8 +280,22 @@ func Decred_Cryptofuzz_OpECDSA_Verify(in []byte) {
 
     if issecp256k1(op.CurveType) {
         secp256k1_Verify(op)
-    } else if ised25519(op.CurveType) {
-        ed25519_Verify(op)
+    }
+}
+
+//export Decred_Cryptofuzz_OpECDSA_Sign
+func Decred_Cryptofuzz_OpECDSA_Sign(in []byte) {
+    resetResult()
+
+    var op OpECDSA_Sign
+    unmarshal(in, &op)
+
+    if isNULL(op.DigestType) == false {
+        return
+    }
+
+    if issecp256k1(op.CurveType) {
+        secp256k1_Sign(op)
     }
 
 }
