@@ -168,7 +168,6 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     GET_WHICH(2);
 
     CF_CHECK_NE(mpz_cmp_ui(bn[2].GetPtr(), 0), 0);
-    CF_CHECK_NE(mpz_cmp_ui(bn[2].GetPtr(), 1), 0);
 
     switch ( which ) {
         case    0:
