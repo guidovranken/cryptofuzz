@@ -169,6 +169,13 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     CF_CHECK_NE(mpz_cmp_ui(bn[2].GetPtr(), 0), 0);
 
+#if defined(HAVE_MINI_GMP)
+    /* Avoid timeouts */
+    CF_CHECK_LTE(mpz_sizeinbase(bn[0].GetPtr(), 2), 2000);
+    CF_CHECK_LTE(mpz_sizeinbase(bn[1].GetPtr(), 2), 2000);
+    CF_CHECK_LTE(mpz_sizeinbase(bn[2].GetPtr(), 2), 2000);
+#endif
+
     switch ( which ) {
         case    0:
             /* "Negative exp is supported if the inverse base-1 mod mod exists.
@@ -781,6 +788,8 @@ bool CbrtRem::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 }
 
 bool Nthrt::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+/* Too slow in mini-gmp */
+#if !defined(HAVE_MINI_GMP)
     (void)ds;
     bool ret = false;
 
@@ -794,9 +803,18 @@ bool Nthrt::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     ret = true;
 end:
     return ret;
+#else
+    (void)ds;
+    (void)res;
+    (void)bn;
+
+    return false;
+#endif
 }
 
 bool NthrtRem::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+/* Too slow in mini-gmp */
+#if !defined(HAVE_MINI_GMP)
     (void)ds;
     bool ret = false;
 
@@ -810,6 +828,13 @@ bool NthrtRem::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     ret = true;
 end:
     return ret;
+#else
+    (void)ds;
+    (void)res;
+    (void)bn;
+
+    return false;
+#endif
 }
 
 bool IsSquare::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
@@ -1005,6 +1030,7 @@ bool Set::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 const auto bn0 = bn[0].GetUnsignedLong();
                 CF_CHECK_NE(bn0, std::nullopt);
 
+                /* noret */ mpz_clear(res.GetPtr());
                 /* noret */ mpz_init_set_ui(res.GetPtr(), *bn0);
             }
             break;
@@ -1013,6 +1039,7 @@ bool Set::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 const auto bn0 = bn[0].GetSignedLong();
                 CF_CHECK_NE(bn0, std::nullopt);
 
+                /* noret */ mpz_clear(res.GetPtr());
                 /* noret */ mpz_init_set_si(res.GetPtr(), *bn0);
             }
             break;
@@ -1038,11 +1065,21 @@ bool BinCoeff::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bn0 = bn[0].GetUnsignedLong();
     CF_CHECK_NE(bn0, std::nullopt);
+#if !defined(HAVE_MINI_GMP)
     CF_CHECK_LTE(*bn0, 100000);
+#else
+    /* Too slow otherwise */
+    CF_CHECK_LTE(*bn0, 1000);
+#endif
 
     bn1 = bn[1].GetUnsignedLong();
     CF_CHECK_NE(bn1, std::nullopt);
+#if !defined(HAVE_MINI_GMP)
     CF_CHECK_LTE(*bn1, 100000);
+#else
+    /* Too slow otherwise */
+    CF_CHECK_LTE(*bn0, 1000);
+#endif
 
     switch ( which ) {
 #if !defined(HAVE_MINI_GMP)
@@ -1150,6 +1187,11 @@ bool Prime::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
 bool IsPrime::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
+    bool ret = false;
+
+#if defined(HAVE_MINI_GMP)
+    CF_CHECK_LTE(mpz_sizeinbase(bn[0].GetPtr(), 2), 2000);
+#endif
 
     if ( mpz_probab_prime_p(bn[0].GetPtr(), 15) == 0 ) {
         res.Set("0");
@@ -1157,7 +1199,11 @@ bool IsPrime::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
         res.Set("1");
     }
 
-    return true;
+    ret = true;
+#if defined(HAVE_MINI_GMP)
+end:
+#endif
+    return ret;
 }
 
 bool Rand::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
