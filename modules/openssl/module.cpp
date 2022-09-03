@@ -3557,16 +3557,10 @@ std::optional<bool> OpenSSL::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey&
      * https://github.com/openssl/openssl/issues/17590
      */
     {
-        CF_CHECK_TRUE(
-                op.pub.first.IsLessThan(
-                    *cryptofuzz::repository::ECC_CurveToOrder(op.curveType.Get())
-                )
-        );
-        CF_CHECK_TRUE(
-                op.pub.second.IsLessThan(
-                    *cryptofuzz::repository::ECC_CurveToOrder(op.curveType.Get())
-                )
-        );
+        const auto order = cryptofuzz::repository::ECC_CurveToOrder(op.curveType.Get());
+        CF_CHECK_NE(order, std::nullopt);
+        CF_CHECK_TRUE(op.pub.first.IsLessThan(*order));
+        CF_CHECK_TRUE(op.pub.second.IsLessThan(*order));
     }
 
     ret = EC_KEY_set_public_key(key.GetPtr(), pub->GetPtr()) == 1;
