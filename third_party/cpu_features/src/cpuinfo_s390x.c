@@ -1,4 +1,4 @@
-// Copyright 2018 IBM.
+// Copyright 2022 IBM.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,10 +46,8 @@ DECLARE_SETTER(S390XFeatures, vxp2)
 DECLARE_SETTER(S390XFeatures, nnpa)
 DECLARE_SETTER(S390XFeatures, pcimio)
 DECLARE_SETTER(S390XFeatures, sie)
-//DECLARE_SETTER(S390XFeatures, htm_no_suspend)
 
 static const CapabilityConfig kConfigs[] = {
-    //for i in `cat ../s390x.txt`; do echo "[S390X_${i^^}] = {{HWCAP_S390_${i^^}, 0}, \"$i\", &set_$i},"; done
   [S390X_ESAN3] = {{HWCAP_S390_ESAN3, 0}, "esan3", &set_esan3},
   [S390X_ZARCH] = {{HWCAP_S390_ZARCH, 0}, "zarch", &set_zarch},
   [S390X_STFLE] = {{HWCAP_S390_STFLE, 0}, "stfle", &set_stfle},
@@ -57,23 +55,22 @@ static const CapabilityConfig kConfigs[] = {
   [S390X_LDISP] = {{HWCAP_S390_LDISP, 0}, "ldisp", &set_ldisp},
   [S390X_EIMM] = {{HWCAP_S390_EIMM, 0}, "eimm", &set_eimm},
   [S390X_DFP] = {{HWCAP_S390_DFP, 0}, "dfp", &set_dfp},
- // [S390X_EDAT] = {{HWCAP_S390_EDAT, 0}, "edat", &set_edat},
+  [S390X_EDAT] = {{HWCAP_S390_HPAGE, 0}, "edat", &set_edat},
   [S390X_ETF3EH] = {{HWCAP_S390_ETF3EH, 0}, "etf3eh", &set_etf3eh},
   [S390X_HIGHGPRS] = {{HWCAP_S390_HIGH_GPRS, 0}, "highgprs", &set_highgprs},
   [S390X_TE] = {{HWCAP_S390_TE, 0}, "te", &set_te},
-  [S390X_VX] = {{HWCAP_S390_VX, 0}, "vx", &set_vx},
-  [S390X_VXD] = {{HWCAP_S390_VXD, 0}, "vxd", &set_vxd},
-  [S390X_VXE] = {{HWCAP_S390_VXE, 0}, "vxe", &set_vxe},
+  [S390X_VX] = {{HWCAP_S390_VXRS, 0}, "vx", &set_vx},
+  [S390X_VXD] = {{HWCAP_S390_VXRS_BCD, 0}, "vxd", &set_vxd},
+  [S390X_VXE] = {{HWCAP_S390_VXRS_EXT, 0}, "vxe", &set_vxe},
   [S390X_GS] = {{HWCAP_S390_GS, 0}, "gs", &set_gs},
-  //[S390X_VXE2] = {{HWCAP_S390_VXE2, 0}, "vxe2", &set_vxe2},
-  //[S390X_VXP] = {{HWCAP_S390_VXP, 0}, "vxp", &set_vxp},
+  [S390X_VXE2] = {{HWCAP_S390_VXRS_EXT2, 0}, "vxe2", &set_vxe2},
+  [S390X_VXP] = {{HWCAP_S390_VXRS_PDE, 0}, "vxp", &set_vxp},
   [S390X_SORT] = {{HWCAP_S390_SORT, 0}, "sort", &set_sort},
   [S390X_DFLT] = {{HWCAP_S390_DFLT, 0}, "dflt", &set_dflt},
-  //[S390X_VXP2] = {{HWCAP_S390_VXP2, 0}, "vxp2", &set_vxp2},
+  [S390X_VXP2] = {{HWCAP_S390_VXRS_PDE2, 0}, "vxp2", &set_vxp2},
   [S390X_NNPA] = {{HWCAP_S390_NNPA, 0}, "nnpa", &set_nnpa},
   [S390X_PCIMIO] = {{HWCAP_S390_PCI_MIO, 0}, "pcimio", &set_pcimio},
   [S390X_SIE] = {{HWCAP_S390_SIE, 0}, "sie", &set_sie},
-//  [S390X_HTM_NO_SUSPEND] = {{0, S390X_FEATURE2_HTM_NO_SUSPEND}, "htm-no-suspend", &set_htm_no_suspend},
 };
 static const size_t kConfigsSize = sizeof(kConfigs) / sizeof(CapabilityConfig);
 
@@ -110,10 +107,6 @@ static void FillProcCpuInfoData(S390XPlatformStrings* const strings) {
 static const S390XInfo kEmptyS390XInfo;
 
 S390XInfo GetS390XInfo(void) {
-  /*
-   * On Power feature flags aren't currently in cpuinfo so we only look at
-   * the auxilary vector.
-   */
   S390XInfo info = kEmptyS390XInfo;
 
   CpuFeatures_OverrideFromHwCaps(kConfigsSize, kConfigs,
