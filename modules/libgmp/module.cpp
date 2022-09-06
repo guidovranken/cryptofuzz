@@ -7,13 +7,18 @@
 namespace cryptofuzz {
 namespace module {
 
+#if !defined(HAVE_MINI_GMP)
 namespace libgmp_detail {
     gmp_randstate_t rng_state;
 }
+#endif
+
 libgmp::libgmp(void) :
     Module("libgmp") {
+#if !defined(HAVE_MINI_GMP)
     /* noret */ gmp_randinit_default(libgmp_detail::rng_state);
     /* noret */ gmp_randseed_ui(libgmp_detail::rng_state, rand());
+#endif
 }
 
 std::optional<component::Bignum> libgmp::OpBignumCalc(operation::BignumCalc& op) {

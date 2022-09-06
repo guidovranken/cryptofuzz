@@ -70,5 +70,32 @@ std::optional<bool> Decred::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     return getResultAs<bool>();
 }
 
+std::optional<component::ECDSA_Signature> Decred::OpECDSA_Sign(operation::ECDSA_Sign& op) {
+    if ( op.UseSpecifiedNonce() ) {
+        return std::nullopt;
+    }
+
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    json["digestType"] = boost::lexical_cast<uint64_t>(json["digestType"].get<std::string>());
+    auto jsonStr = json.dump();
+    Decred_Cryptofuzz_OpECDSA_Sign(toGoSlice(jsonStr));
+
+    auto j = getJsonResult();
+    if ( j == std::nullopt ) {
+        return std::nullopt;
+    }
+
+    const auto pub_x = (*j)["pub"][0].get<std::string>();
+    const auto pub_y = (*j)["pub"][1].get<std::string>();
+    const auto sig_hex = (*j)["sig"].get<std::string>();
+    std::vector<uint8_t> sig_bytes;
+    boost::algorithm::unhex(sig_hex, std::back_inserter(sig_bytes));
+    const auto sig = util::SignatureFromDER(sig_bytes);
+    CF_ASSERT(sig != std::nullopt, "Cannot parse signature");
+
+    return component::ECDSA_Signature{ {sig->first, sig->second}, {pub_x, pub_y} };
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */

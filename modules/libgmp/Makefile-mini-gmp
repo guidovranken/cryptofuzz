@@ -1,0 +1,18 @@
+all: module.a
+
+CXXFLAGS += -Wall -Wextra -std=c++17 -I ../../include -I ../../fuzzing-headers/include -DFUZZING_HEADERS_NO_IMPL
+
+module.a: module.o bn_ops.o mini-gmp.o
+	ar rcs module.a module.o bn_ops.o mini-gmp.o
+	ranlib module.a
+mini-gmp.o :
+	test $(LIBGMP_INCLUDE_PATH)
+	$(CC) $(CFLAGS) $(LIBGMP_INCLUDE_PATH)/mini-gmp/mini-gmp.c -c
+bn_ops.o : bn_ops.cpp bn_ops.h
+	test $(LIBGMP_INCLUDE_PATH)
+	$(CXX) $(CXXFLAGS) -DMINI_GMP_PATH="\"$(LIBGMP_INCLUDE_PATH)/mini-gmp/mini-gmp.h\"" -fPIC -c bn_ops.cpp -o bn_ops.o
+module.o: module.cpp module.h bn_ops.h
+	test $(LIBGMP_INCLUDE_PATH)
+	$(CXX) $(CXXFLAGS) -DMINI_GMP_PATH="\"$(LIBGMP_INCLUDE_PATH)/mini-gmp/mini-gmp.h\"" -fPIC -c module.cpp -o module.o
+clean:
+	rm -rf *.o module.a
