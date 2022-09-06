@@ -18,6 +18,7 @@ class Decred : public Module {
         Decred(void);
         std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) override;
         std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) override;
+        std::optional<component::ECDSA_Signature> OpECDSA_Sign(operation::ECDSA_Sign& op) override;
 };
 
 } /* namespace module */

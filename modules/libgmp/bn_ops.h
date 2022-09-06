@@ -1,6 +1,13 @@
 #include <cryptofuzz/components.h>
 #include <cryptofuzz/operations.h>
+#if !defined(MINI_GMP_PATH)
 #include <gmp.h>
+#else
+extern "C" {
+#include MINI_GMP_PATH
+}
+#define HAVE_MINI_GMP
+#endif
 
 namespace cryptofuzz {
 namespace module {

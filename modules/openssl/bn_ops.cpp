@@ -21,6 +21,10 @@ extern "C" {
 #if defined(CRYPTOFUZZ_LIBRESSL)
 extern "C" {
     int BN_gcd_ct(BIGNUM *r, const BIGNUM *in_a, const BIGNUM *in_b, BN_CTX *ctx);
+    int bn_isqrt(BIGNUM *out_sqrt, int *out_perfect, const BIGNUM *n, BN_CTX *in_ctx);
+    int bn_is_perfect_square(int *out_perfect, const BIGNUM *n, BN_CTX *ctx);
+
+
 }
 #endif
 
@@ -777,6 +781,13 @@ bool Sqrt::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) cons
     ret = true;
 
 end:
+#elif defined(CRYPTOFUZZ_LIBRESSL)
+    int perfect;
+    CF_CHECK_EQ(bn_isqrt(res.GetDestPtr(), &perfect, bn[0].GetPtr(), ctx.GetPtr()), 1);
+
+    ret = true;
+
+end:
 #else
     (void)res;
     (void)bn;
@@ -1320,6 +1331,30 @@ bool Rand::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) cons
     ret = true;
 
 end:
+    return ret;
+}
+
+bool IsSquare::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
+    (void)ds;
+    bool ret = false;
+
+#if defined(CRYPTOFUZZ_LIBRESSL)
+    ret = true;
+
+    int perfect;
+    CF_CHECK_EQ(bn_is_perfect_square(&perfect, bn[0].GetPtr(), ctx.GetPtr()), 1);
+
+    res.Set( std::to_string(perfect) );
+
+    ret = true;
+
+end:
+#else
+    (void)res;
+    (void)bn;
+    (void)ctx;
+
+#endif
     return ret;
 }
 

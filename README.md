@@ -169,3 +169,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - blst: [blst_fp_is_square incorrect result on ARM](https://github.com/supranational/blst/commit/69d380745b64c8e72128263434762770a9162622)
 - OpenSSL, BoringSSL: [BN_mod_exp_mont_consttime returns modulus when it should return 0](https://boringssl-review.googlesource.com/c/boringssl/+/52825)
 - libgcrypt: [Allows invalid HKDF output sizes](https://lists.gnupg.org/pipermail/gcrypt-devel/2022-June/005328.html)
+- libgmp mini-gmp: [mpz_powm incorrect result](https://gmplib.org/list-archives/gmp-bugs/2022-August/005183.html)
