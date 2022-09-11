@@ -273,6 +273,7 @@ class CalcOpTable(Table):
         return tableEntry
 
 modules = ModuleTable()
+# lint sort start
 modules.Add( Module("BearSSL") )
 modules.Add( Module("Beast") )
 modules.Add( Module("Bitcoin") )
@@ -358,8 +359,10 @@ modules.Add( Module("uint128_t") )
 modules.Add( Module("wide-integer") )
 modules.Add( Module("wolfCrypt") )
 modules.Add( Module("wolfCrypt-OpenSSL") )
+# lint sort end
 
 operations = OperationTable()
+# lint sort start
 operations.Add( Operation("BLS_Aggregate_G1") )
 operations.Add( Operation("BLS_Aggregate_G2") )
 operations.Add( Operation("BLS_BatchSign") )
@@ -393,10 +396,10 @@ operations.Add( Operation("BLS_Verify") )
 operations.Add( Operation("BignumCalc") )
 operations.Add( Operation("BignumCalc_Fp12") )
 operations.Add( Operation("BignumCalc_Fp2") )
-operations.Add( Operation("BignumCalc_Mod_2Exp64") )
 operations.Add( Operation("BignumCalc_Mod_2Exp128") )
 operations.Add( Operation("BignumCalc_Mod_2Exp256") )
 operations.Add( Operation("BignumCalc_Mod_2Exp512") )
+operations.Add( Operation("BignumCalc_Mod_2Exp64") )
 operations.Add( Operation("BignumCalc_Mod_BLS12_381_P") )
 operations.Add( Operation("BignumCalc_Mod_BLS12_381_R") )
 operations.Add( Operation("BignumCalc_Mod_BN128_P") )
@@ -450,6 +453,7 @@ operations.Add( Operation("Schnorr_Verify") )
 operations.Add( Operation("SymmetricDecrypt") )
 operations.Add( Operation("SymmetricEncrypt") )
 operations.Add( Operation("UMAC") )
+# lint sort end
 
 ciphers = CipherTable()
 
@@ -845,6 +849,7 @@ ciphers.Add( Cipher("XCHACHA20_POLY1305", True) )
 
 digests = DigestTable()
 
+# lint sort start
 digests.Add( Digest("ADLER32", 4) )
 digests.Add( Digest("BLAKE2B160", 20) )
 digests.Add( Digest("BLAKE2B256", 32) )
@@ -943,6 +948,7 @@ digests.Add( Digest("TIGER", 24) )
 digests.Add( Digest("WHIRLPOOL", 64) )
 digests.Add( Digest("XXHASH32") )
 digests.Add( Digest("XXHASH64") )
+# lint sort end
 
 ecc_curves = ECC_CurveTable()
 
@@ -1631,6 +1637,7 @@ ecc_curves.Add( ECC_Curve("BN384") )
 ecc_curves.Add( ECC_Curve("BN512") )
 
 calcops = CalcOpTable()
+# lint sort start
 calcops.Add( CalcOp("Abs(A)") )
 calcops.Add( CalcOp("Add(A,B)") )
 calcops.Add( CalcOp("AddMod(A,B,C)") )
@@ -1726,6 +1733,7 @@ calcops.Add( CalcOp("SubMod(A,B,C)") )
 calcops.Add( CalcOp("SubMul(A,B,C)") )
 calcops.Add( CalcOp("Xor(A,B)") )
 calcops.Add( CalcOp("Zero()") )
+# lint sort end
 
 tables = [modules, operations, ciphers, digests, ecc_curves, calcops]
 
@@ -1737,3 +1745,24 @@ with open('repository_map.h', 'w') as fp:
     for table in tables:
         fp.write(table.GetTableDecl())
         fp.write(table.ToCPPMap())
+
+# self-lint
+with open(__file__, 'rb') as fp:
+    inSort = False
+    lines = []
+
+    for l in fp.readlines():
+        l = l.decode('utf-8')
+
+        if l.strip() == '# lint sort start':
+            assert(inSort == False)
+            inSort = True
+            lines = []
+            continue
+        elif l.strip() == '# lint sort end':
+            assert(inSort == True)
+            assert(lines == sorted(lines))
+            inSort = False
+            continue
+
+        lines += [ l ]
