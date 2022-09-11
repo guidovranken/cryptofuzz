@@ -1725,6 +1725,7 @@ calcops.Add( CalcOp("Sub(A,B)") )
 calcops.Add( CalcOp("SubMod(A,B,C)") )
 calcops.Add( CalcOp("SubMul(A,B,C)") )
 calcops.Add( CalcOp("Xor(A,B)") )
+calcops.Add( CalcOp("Zero()") )
 
 tables = [modules, operations, ciphers, digests, ecc_curves, calcops]
 

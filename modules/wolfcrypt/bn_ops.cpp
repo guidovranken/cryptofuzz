@@ -1139,6 +1139,22 @@ end:
     return ret;
 }
 
+bool Zero::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    (void)bn;
+
+    GET_WHICH(1);
+    switch ( which ) {
+        case    0:
+            CF_NORET(mp_zero(res.GetPtr()));
+            break;
+        case    1:
+            CF_NORET(mp_forcezero(res.GetPtr()));
+            break;
+    }
+
+    return true;
+}
+
 } /* namespace wolfCrypt_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

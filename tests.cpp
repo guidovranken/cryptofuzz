@@ -923,6 +923,11 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
                 Abort("Root of zero should not produce a result", repository::CalcOpToString(calcOp));
             }
             break;
+        case    CF_CALCOP("Zero()"):
+            if ( !IsZero(*result) ) {
+                Abort("Result should be zero", repository::CalcOpToString(calcOp));
+            }
+            break;
     }
 }
 

@@ -3314,6 +3314,9 @@ std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& 
         case    CF_CALCOP("Rand()"):
             opRunner = std::make_unique<wolfCrypt_bignum::Rand>();
             break;
+        case    CF_CALCOP("Zero()"):
+            opRunner = std::make_unique<wolfCrypt_bignum::Zero>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
