@@ -28,6 +28,8 @@
 #include "cpuinfo_mips.h"
 #elif defined(CPU_FEATURES_ARCH_PPC)
 #include "cpuinfo_ppc.h"
+#elif defined(CPU_FEATURES_ARCH_S390X)
+#include "cpuinfo_s390x.h"
 #endif
 
 static void PrintEscapedAscii(const char* str) {
@@ -161,6 +163,9 @@ DEFINE_PRINT_FLAGS(GetMipsFeaturesEnumValue, GetMipsFeaturesEnumName,
 #elif defined(CPU_FEATURES_ARCH_PPC)
 DEFINE_PRINT_FLAGS(GetPPCFeaturesEnumValue, GetPPCFeaturesEnumName, PPCFeatures,
                    PPC_LAST_)
+#elif defined(CPU_FEATURES_ARCH_S390X)
+DEFINE_PRINT_FLAGS(GetS390XFeaturesEnumValue, GetS390XFeaturesEnumName, S390XFeatures,
+                   S390X_LAST_)
 #endif
 
 static void PrintFeatures(const Printer printer) {
@@ -209,6 +214,17 @@ static void PrintFeatures(const Printer printer) {
   PrintS(printer, "cpu", strings.cpu);
   PrintS(printer, "instruction set", strings.type.platform);
   PrintS(printer, "microarchitecture", strings.type.base_platform);
+  PrintFlags(printer, &info.features);
+#elif defined(CPU_FEATURES_ARCH_S390X)
+  (void)&PrintN;  // Remove unused function warning.
+  const S390XInfo info = GetS390XInfo();
+  const S390XPlatformStrings strings = GetS390XPlatformStrings();
+  PrintS(printer, "arch", "s390x");
+  PrintS(printer, "machine", strings.machine);
+  PrintS(printer, "# processors", strings.num_processors);
+  PrintS(printer, "instruction set", strings.type.platform);
+  if (strstr(strings.machine, "3931") != NULL)
+      PrintS(printer, "microarchitecture", "z16");
   PrintFlags(printer, &info.features);
 #endif
 }

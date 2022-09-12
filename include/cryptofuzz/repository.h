@@ -3,6 +3,7 @@
 #include <fuzzing/datasource/id.hpp>
 #include <string>
 #include <stdexcept>
+#include <optional>
 
 namespace cryptofuzz {
 namespace repository {
