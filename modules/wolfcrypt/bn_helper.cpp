@@ -122,10 +122,19 @@ end:
     util::free(data);
 }
 
+void Bignum::invariants(void) const {
+#if defined(WOLFSSL_SP_MATH) || defined(WOLFSSL_SP_MATH_ALL)
+    CF_ASSERT(mp->used <= mp->size, "used is larger than size");
+#elif !defined(USE_FAST_MATH)
+    CF_ASSERT(mp->used <= mp->alloc, "used is larger than size");
+#endif
+}
+
 Bignum::Bignum(Datasource& ds) :
     ds(ds) {
     mp = (mp_int*)util::malloc(sizeof(mp_int));
-    if ( mp_init(mp) != MP_OKAY ) {
+
+    if ( init_mp_int(mp, ds) != MP_OKAY ) {
         util::free(mp);
         throw std::exception();
     }
@@ -140,7 +149,7 @@ Bignum::Bignum(mp_int* mp, Datasource& ds) :
 Bignum::Bignum(const Bignum& other) :
     ds(other.ds) {
     mp = (mp_int*)util::malloc(sizeof(mp_int));
-    if ( mp_init(mp) != MP_OKAY ) {
+    if ( init_mp_int(mp, ds) != MP_OKAY ) {
         util::free(mp);
         throw std::exception();
     }
@@ -153,7 +162,7 @@ Bignum::Bignum(const Bignum& other) :
 Bignum::Bignum(const Bignum&& other) :
     ds(other.ds) {
     mp = (mp_int*)util::malloc(sizeof(mp_int));
-    if ( mp_init(mp) != MP_OKAY ) {
+    if ( init_mp_int(mp, ds) != MP_OKAY ) {
         util::free(mp);
         throw std::exception();
     }
@@ -164,6 +173,7 @@ Bignum::Bignum(const Bignum&& other) :
 }
 
 Bignum::~Bignum() {
+    invariants();
     if ( noFree == false ) {
         CF_NORET(mp_clear(mp));
         util::free(mp);
@@ -208,13 +218,7 @@ end:
 }
 
 mp_int* Bignum::GetPtr(void) const {
-    {
-#if defined(WOLFSSL_SP_MATH) || defined(WOLFSSL_SP_MATH_ALL)
-        CF_ASSERT(mp->used <= mp->size, "used is larger than size");
-#elif !defined(USE_FAST_MATH)
-        CF_ASSERT(mp->used <= mp->alloc, "used is larger than size");
-#endif
-    }
+    invariants();
 
     {
         /* Optionally clamp the bignum. This should not affect its value. */

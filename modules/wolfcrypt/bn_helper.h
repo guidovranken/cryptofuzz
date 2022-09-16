@@ -33,6 +33,22 @@ class Bignum {
         static read_radix_error_t read_radix(mp_int* dest, const char* str, const size_t base);
         void baseConversion(void) const;
         void binaryConversion(void) const;
+        static int init_mp_int(mp_int* mp, Datasource& ds) {
+            uint8_t size = 127;
+            try {
+                size = ds.Get<uint8_t>();
+            } catch ( ... ) { }
+
+            const auto ret = mp_init_size(mp, size);
+
+            if ( ret != MP_OKAY ) {
+                return mp_init(mp);
+            }
+
+            return ret;
+        }
+        void invariants(void) const;
+
     public:
 
         Bignum(Datasource& ds);
