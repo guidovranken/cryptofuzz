@@ -11,6 +11,7 @@ extern "C" {
 #if defined(WOLFSSL_SP_MATH)
  #include <wolfssl/wolfcrypt/sp.h>
 #endif
+#include <wolfssl/version.h>
 }
 
 namespace cryptofuzz {
@@ -34,6 +35,10 @@ class Bignum {
         void baseConversion(void) const;
         void binaryConversion(void) const;
         static int init_mp_int(mp_int* mp, Datasource& ds) {
+#if LIBWOLFSSL_VERSION_HEX < 0x05005000
+            (void)ds;
+            return mp_init(mp);
+#else
             uint8_t size = 127;
             try {
                 size = ds.Get<uint8_t>();
@@ -46,6 +51,7 @@ class Bignum {
             }
 
             return ret;
+#endif
         }
         void invariants(void) const;
 

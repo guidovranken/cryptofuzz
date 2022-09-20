@@ -65,7 +65,11 @@ namespace wolfCrypt_bignum_detail {
         CF_CHECK_GTE(numBits, 1);
         numBits--;
         MP_CHECK_EQ(mp_copy(A.GetPtr(), tmp.GetPtr()), MP_OKAY);
+#if LIBWOLFSSL_VERSION_HEX < 0x05005000
+        CF_NORET(mp_rshb(tmp.GetPtr(), numBits));
+#else
         MP_CHECK_EQ(mp_rshb(tmp.GetPtr(), numBits), MP_OKAY);
+#endif
         MP_CHECK_EQ(mp_mul_2d(tmp.GetPtr(), numBits, tmp.GetPtr()), MP_OKAY);
 
         {
@@ -505,7 +509,11 @@ bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
+#if LIBWOLFSSL_VERSION_HEX < 0x05005000
+            CF_NORET(mp_rshb(res.GetPtr(), numBits));
+#else
             MP_CHECK_EQ(mp_rshb(res.GetPtr(), numBits), MP_OKAY);
+#endif
             ret = true;
             break;
 #if !defined(WOLFSSL_SP_MATH)
