@@ -33,6 +33,7 @@
 #include <nettle/sha.h>
 #include <nettle/sha3.h>
 #include <nettle/siv-cmac.h>
+#include <nettle/siv-gcm.h>
 #include <nettle/sm4.h>
 #include <nettle/streebog.h>
 #include <nettle/twofish.h>
@@ -1116,6 +1117,54 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
                     (nettle_set_key_func*)sm4_set_encrypt_key);
         }
         break;
+#if 0
+        case CF_CIPHER("AES_128_GCM_SIV"):
+        {
+            struct aes128_ctx ctx;
+
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), SIV_GCM_NONCE_SIZE);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 128 / 8);
+            CF_CHECK_GTE(op.cleartext.GetSize(), SIV_GCM_DIGEST_SIZE);
+
+            out = util::malloc(op.cleartext.GetSize() + SIV_GCM_DIGEST_SIZE);
+
+            CF_NORET(aes128_set_encrypt_key(&ctx, op.cipher.key.GetPtr()));
+            CF_NORET(siv_gcm_aes128_encrypt_message(
+                        &ctx,
+                        op.cipher.iv.GetSize(), op.cipher.iv.GetPtr(),
+                        op.aad ? op.aad->GetSize() : 0, op.aad ? op.aad->GetPtr() : nullptr,
+                        op.cleartext.GetSize() + SIV_GCM_DIGEST_SIZE,
+                        out, op.cleartext.GetPtr()));
+
+            ret = component::Ciphertext(
+                    Buffer(out, op.cleartext.GetSize()),
+                    Buffer(out + op.cleartext.GetSize(), SIV_GCM_DIGEST_SIZE));
+        }
+        break;
+        case CF_CIPHER("AES_256_GCM_SIV"):
+        {
+            struct aes256_ctx ctx;
+
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), SIV_GCM_NONCE_SIZE);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 256 / 8);
+            CF_CHECK_GTE(op.cleartext.GetSize(), SIV_GCM_DIGEST_SIZE);
+
+            out = util::malloc(op.cleartext.GetSize() + SIV_GCM_DIGEST_SIZE);
+
+            CF_NORET(aes256_set_encrypt_key(&ctx, op.cipher.key.GetPtr()));
+            CF_NORET(siv_gcm_aes256_encrypt_message(
+                        &ctx,
+                        op.cipher.iv.GetSize(), op.cipher.iv.GetPtr(),
+                        op.aad ? op.aad->GetSize() : 0, op.aad ? op.aad->GetPtr() : nullptr,
+                        op.cleartext.GetSize() + SIV_GCM_DIGEST_SIZE,
+                        out, op.cleartext.GetPtr()));
+
+            ret = component::Ciphertext(
+                    Buffer(out, op.cleartext.GetSize()),
+                    Buffer(out + op.cleartext.GetSize(), SIV_GCM_DIGEST_SIZE));
+        }
+        break;
+#endif
     }
 
 end:
@@ -1749,6 +1798,60 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
                     (nettle_set_key_func*)sm4_set_encrypt_key);
         }
         break;
+#if 0
+        case CF_CIPHER("AES_128_GCM_SIV"):
+        {
+            struct aes128_ctx ctx;
+
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), SIV_GCM_NONCE_SIZE);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 128 / 8);
+            CF_CHECK_GTE(op.ciphertext.GetSize(), SIV_GCM_DIGEST_SIZE);
+            CF_CHECK_NE(op.tag, std::nullopt);
+            CF_CHECK_EQ(op.tag->GetSize(), SIV_GCM_DIGEST_SIZE);
+
+            uint8_t* in = util::malloc(op.ciphertext.GetSize() + SIV_GCM_DIGEST_SIZE);
+            memcpy(in, op.ciphertext.GetPtr(), op.ciphertext.GetSize());
+            memcpy(in + op.ciphertext.GetSize(), op.tag->GetPtr(), SIV_GCM_DIGEST_SIZE);
+            out = util::malloc(op.ciphertext.GetSize());
+
+            CF_NORET(aes128_set_decrypt_key(&ctx, op.cipher.key.GetPtr()));
+            CF_CHECK_EQ(siv_gcm_aes128_decrypt_message(
+                        &ctx,
+                        op.cipher.iv.GetSize(), op.cipher.iv.GetPtr(),
+                        op.aad ? op.aad->GetSize() : 0, op.aad ? op.aad->GetPtr() : nullptr,
+                        op.ciphertext.GetSize(),
+                        out, in), 1);
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+        case CF_CIPHER("AES_256_GCM_SIV"):
+        {
+            struct aes256_ctx ctx;
+
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), SIV_GCM_NONCE_SIZE);
+            CF_CHECK_EQ(op.cipher.key.GetSize(), 256 / 8);
+            CF_CHECK_GTE(op.ciphertext.GetSize(), SIV_GCM_DIGEST_SIZE);
+            CF_CHECK_NE(op.tag, std::nullopt);
+            CF_CHECK_EQ(op.tag->GetSize(), SIV_GCM_DIGEST_SIZE);
+
+            uint8_t* in = util::malloc(op.ciphertext.GetSize() + SIV_GCM_DIGEST_SIZE);
+            memcpy(in, op.ciphertext.GetPtr(), op.ciphertext.GetSize());
+            memcpy(in + op.ciphertext.GetSize(), op.tag->GetPtr(), SIV_GCM_DIGEST_SIZE);
+            out = util::malloc(op.ciphertext.GetSize());
+
+            CF_NORET(aes256_set_decrypt_key(&ctx, op.cipher.key.GetPtr()));
+            CF_CHECK_EQ(siv_gcm_aes256_decrypt_message(
+                        &ctx,
+                        op.cipher.iv.GetSize(), op.cipher.iv.GetPtr(),
+                        op.aad ? op.aad->GetSize() : 0, op.aad ? op.aad->GetPtr() : nullptr,
+                        op.ciphertext.GetSize(),
+                        out, in), 1);
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+#endif
     }
 
 end:
