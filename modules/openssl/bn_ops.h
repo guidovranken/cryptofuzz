@@ -92,10 +92,12 @@ end:
                         CF_CHECK_LTE(BN_num_bytes(bn), (int)sizeof(uint64_t));
                         CF_CHECK_NE(BN_bn2binpad(bn, (unsigned char*)&v, sizeof(v)), -1);
 
+#if !(defined __s390x__)
                         /* Manual reversing is required because
                          * BN_bn2lebinpad is not supported by BoringSSL.
                          *
-                         * TODO This must be omitted on big-endian platforms.
+                         * Reversal is ommitted for s390x as it is a big-endian
+                         * architecture.
                          */
                         v =
                             ((v & 0xFF00000000000000) >> 56) |
@@ -106,6 +108,7 @@ end:
                             ((v & 0x0000000000FF0000) << 24) |
                             ((v & 0x000000000000FF00) << 40) |
                             ((v & 0x00000000000000FF) << 56);
+#endif
 
                         ret = v;
                     }
