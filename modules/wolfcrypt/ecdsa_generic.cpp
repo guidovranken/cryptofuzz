@@ -838,7 +838,8 @@ std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op
                     WC_CHECK_EQ(ecc_projective_add_point(a.GetPtr(), b.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp), 0);
 
                     /* Do not return result if inputs are negations of the same point */
-                    CF_CHECK_FALSE(is_neg && *is_neg);
+                    CF_CHECK_NE(is_neg, std::nullopt);
+                    CF_CHECK_FALSE(*is_neg);
                 }
             }
 
