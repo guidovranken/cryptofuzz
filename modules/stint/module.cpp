@@ -256,6 +256,9 @@ std::optional<component::Bignum> stint::OpBignumCalc(operation::BignumCalc& op) 
 
         ret = util::BinToDec(result.data(), result.size());
     } else if ( op.calcOp.Is(CF_CALCOP("ExpMod(A,B,C)")) ) {
+        /* Too slow */
+        goto end;
+
         CF_CHECK_EQ(
                 cryptofuzz_stint_expmod(
                     a_bytes->data(), a_bytes->size(),
@@ -276,6 +279,11 @@ std::optional<component::Bignum> stint::OpBignumCalc(operation::BignumCalc& op) 
 
         ret = util::BinToDec(result.data(), result.size());
     } else if ( op.calcOp.Is(CF_CALCOP("MulMod(A,B,C)")) ) {
+        /* Prevent timeouts */
+        CF_CHECK_LTE(op.bn0.GetSize(), 100);
+        CF_CHECK_LTE(op.bn1.GetSize(), 100);
+        CF_CHECK_LTE(op.bn2.GetSize(), 100);
+
         CF_CHECK_EQ(
                 cryptofuzz_stint_mulmod(
                     a_bytes->data(), a_bytes->size(),
