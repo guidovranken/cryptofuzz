@@ -1,0 +1,12 @@
+[package]
+name = "arkworks-algebra-harness"
+version = "0.1.0"
+authors = ["Guido Vranken <guidovranken@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+ark-ff = { git = "https://github.com/arkworks-rs/algebra" }
+libc = "0.2.0"
