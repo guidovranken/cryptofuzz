@@ -511,6 +511,8 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
             return EVP_camellia_256_ofb();
         case CF_CIPHER("CHACHA20"):
             return EVP_chacha20();
+        case CF_CIPHER("CHACHA20_POLY1305"):
+            return EVP_chacha20_poly1305();
 #elif defined(CRYPTOFUZZ_OPENSSL_098)
         case CF_CIPHER("DES_CFB"):
             return EVP_des_cfb();
