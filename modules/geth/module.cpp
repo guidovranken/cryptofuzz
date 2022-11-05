@@ -159,14 +159,14 @@ std::optional<component::G1> Geth::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
     CF_CHECK_NE(b_x = op.b.first.ToBin(32), std::nullopt);
     CF_CHECK_NE(b_y = op.b.second.ToBin(32), std::nullopt);
 
-    CF_NORET(
-            Geth_Call(0x06, Geth_detail::toGoSlice(input), 0)
-    );
-
     input.insert(input.end(), a_x->begin(), a_x->end());
     input.insert(input.end(), a_y->begin(), a_y->end());
     input.insert(input.end(), b_x->begin(), b_x->end());
     input.insert(input.end(), b_y->begin(), b_y->end());
+
+    CF_NORET(
+            Geth_Call(0x06, Geth_detail::toGoSlice(input), 0)
+    );
 
     ret = Geth_detail::parseG1(false);
 
