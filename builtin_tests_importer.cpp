@@ -433,6 +433,22 @@ void Builtin_tests_importer::Run(void) {
     }
 
     {
+        /* https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=52254 */
+        /* https://github.com/wolfSSL/wolfssl/pull/5678 */
+
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["priv"] = "11585786163492885056380767646980529820642384438006324781887073210690758323606587537816654998335339085556313855093008";
+        parameters["curveType"] = CF_ECC_CURVE("x448");
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::ECC_PrivateToPublic op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("ECC_PrivateToPublic"), dsOut2);
+    }
+
+    {
         ecdsa_verify_tests();
     }
 }
