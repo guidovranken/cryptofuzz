@@ -1,0 +1,12 @@
+[package]
+name = "cryptofuzz-ff-harness"
+version = "0.1.0"
+authors = ["Guido Vranken <guidovranken@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+ff = { git = "https://github.com/zkcrypto/ff.git", features = ["derive"] }
+libc = "0.2.0"
