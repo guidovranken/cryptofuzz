@@ -18,7 +18,7 @@ bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             return true;
         case    1:
             {
-                const auto bn1 = bn[1].GetInt32();
+                const auto bn1 = bn[1].To_mbedtls_mpi_sint();
                 CF_CHECK_NE(bn1, std::nullopt);
 
                 CF_CHECK_EQ(mbedtls_mpi_add_int(res.GetDestPtr(), bn[0].GetPtr(), *bn1), 0);
@@ -45,7 +45,7 @@ bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             return true;
         case    1:
             {
-                const auto bn1 = bn[1].GetInt32();
+                const auto bn1 = bn[1].To_mbedtls_mpi_sint();
                 CF_CHECK_NE(bn1, std::nullopt);
 
                 CF_CHECK_EQ(mbedtls_mpi_sub_int(res.GetDestPtr(), bn[0].GetPtr(), *bn1), 0);
@@ -91,7 +91,7 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             return true;
         case    1:
             {
-                const auto bn1 = bn[1].GetInt32();
+                const auto bn1 = bn[1].To_mbedtls_mpi_sint();
                 CF_CHECK_NE(bn1, std::nullopt);
 
                 CF_CHECK_EQ(mbedtls_mpi_div_int(res.GetDestPtr(), nullptr, bn[0].GetPtr(), *bn1), 0);
@@ -167,7 +167,7 @@ bool Cmp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             return true;
         case    1:
             {
-                const auto bn1 = bn[1].GetInt32();
+                const auto bn1 = bn[1].To_mbedtls_mpi_sint();
                 CF_CHECK_NE(bn1, std::nullopt);
 
                 res.Set( std::to_string(mbedtls_mpi_cmp_int(bn[0].GetPtr(), *bn1)) );
@@ -395,7 +395,7 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             {
                 mbedtls_mpi_uint ret;
 
-                const auto bn1 = bn[1].GetInt32();
+                const auto bn1 = bn[1].To_mbedtls_mpi_sint();
                 CF_CHECK_NE(bn1, std::nullopt);
 
                 CF_CHECK_EQ(mbedtls_mpi_mod_int(&ret, bn[0].GetPtr(), *bn1), 0);
@@ -423,7 +423,7 @@ bool Set::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             return true;
         case    3:
             {
-                const auto bn0 = bn[0].GetInt32();
+                const auto bn0 = bn[0].To_mbedtls_mpi_sint();
                 CF_CHECK_NE(bn0, std::nullopt);
 
                 CF_CHECK_EQ(mbedtls_mpi_lset(res.GetDestPtr(), *bn0), 0);
