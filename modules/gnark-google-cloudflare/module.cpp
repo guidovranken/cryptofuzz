@@ -56,7 +56,13 @@ std::optional<bool> Gnark_bn254::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& o
     json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
     auto jsonStr = json.dump();
 
-    Gnark_bn254_BLS_IsG1OnCurve(toGoSlice(jsonStr));
+    if ( op.curveType.Is(CF_ECC_CURVE("BLS12_381")) ) {
+        Gnark_bls12_381_BLS_IsG1OnCurve(toGoSlice(jsonStr));
+    } else if ( op.curveType.Is(CF_ECC_CURVE("alt_bn128")) ) {
+        Gnark_bn254_BLS_IsG1OnCurve(toGoSlice(jsonStr));
+    } else {
+        return std::nullopt;
+    }
 
     return getResultAs<bool>();
 }
@@ -74,7 +80,14 @@ std::optional<component::G1> Gnark_bn254::OpBLS_G1_Add(operation::BLS_G1_Add& op
     auto json = op.ToJSON();
     json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
     auto jsonStr = json.dump();
-    Gnark_bn254_BLS_G1_Add(toGoSlice(jsonStr));
+
+    if ( op.curveType.Is(CF_ECC_CURVE("BLS12_381")) ) {
+        Gnark_bls12_381_BLS_G1_Add(toGoSlice(jsonStr));
+    } else if ( op.curveType.Is(CF_ECC_CURVE("alt_bn128")) ) {
+        Gnark_bn254_BLS_G1_Add(toGoSlice(jsonStr));
+    } else {
+        return std::nullopt;
+    }
 
     return getResultAs<component::G1>();
 }
@@ -83,7 +96,14 @@ std::optional<component::G1> Gnark_bn254::OpBLS_G1_Mul(operation::BLS_G1_Mul& op
     auto json = op.ToJSON();
     json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
     auto jsonStr = json.dump();
-    Gnark_bn254_BLS_G1_Mul(toGoSlice(jsonStr));
+
+    if ( op.curveType.Is(CF_ECC_CURVE("BLS12_381")) ) {
+        Gnark_bls12_381_BLS_G1_Mul(toGoSlice(jsonStr));
+    } else if ( op.curveType.Is(CF_ECC_CURVE("alt_bn128")) ) {
+        Gnark_bn254_BLS_G1_Mul(toGoSlice(jsonStr));
+    } else {
+        return std::nullopt;
+    }
 
     return getResultAs<component::G1>();
 }
@@ -122,15 +142,6 @@ std::optional<component::G2> Gnark_bn254::OpBLS_G2_Neg(operation::BLS_G2_Neg& op
     Gnark_bn254_BLS_G2_Neg(toGoSlice(jsonStr));
 
     return getResultAs<component::G2>();
-}
-
-std::optional<component::G1> Gnark_bn254::OpBLS_MapToG1(operation::BLS_MapToG1& op) {
-    auto json = op.ToJSON();
-    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
-    auto jsonStr = json.dump();
-    Gnark_bn254_BLS_MapToG1(toGoSlice(jsonStr));
-
-    return getResultAs<component::G1>();
 }
 
 std::optional<component::Bignum> Gnark_bn254::OpBignumCalc(operation::BignumCalc& op) {

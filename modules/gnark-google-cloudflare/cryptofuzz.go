@@ -87,13 +87,6 @@ type OpBLS_G1_Neg struct {
     B string
 }
 
-type OpBLS_MapToG1 struct {
-    Modifier ByteSlice
-    CurveType uint64
-    U string
-    V string
-}
-
 type OpBLS_G2_Add struct {
     Modifier ByteSlice
     CurveType uint64
@@ -193,6 +186,26 @@ func saveG1(v* bn254.G1Affine) {
     result = r2
 }
 
+func fp12381ToString(v* bls12381_fp.Element) string {
+    var b big.Int
+    v.ToBigIntRegular(&b)
+    return b.String()
+}
+
+func saveG1_bls12381(v* gnark_bls12381.G1Affine) {
+    res := make([]string, 2)
+    res[0] = fp12381ToString(&v.X)
+    res[1] = fp12381ToString(&v.Y)
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
 func saveG2(v* bn254.G2Affine) {
     res := make([][]string, 2)
     res[0] = make([]string, 2)
@@ -212,6 +225,14 @@ func saveG2(v* bn254.G2Affine) {
     result = r2
 }
 
+func Gnark_bn256_IsG1OnCurve(v* bn254.G1Affine) bool {
+    if v.X.IsZero() && v.Y.IsZero() {
+        return false
+    } else {
+        return v.IsOnCurve() && v.IsInSubGroup()
+    }
+}
+
 //export Gnark_bn254_BLS_IsG1OnCurve
 func Gnark_bn254_BLS_IsG1OnCurve(in []byte) {
     resetResult()
@@ -224,12 +245,38 @@ func Gnark_bn254_BLS_IsG1OnCurve(in []byte) {
     a.X.SetBigInt(decodeBignum(op.G1_x))
     a.Y.SetBigInt(decodeBignum(op.G1_y))
 
-    var res bool
-    if a.X.IsZero() && a.Y.IsZero() {
-        res = false
-    } else {
-        res = a.IsOnCurve() && a.IsInSubGroup()
+    res := Gnark_bn256_IsG1OnCurve(a)
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
     }
+
+    result = r2
+}
+
+func Gnark_bls12_381_IsG1OnCurve(v* gnark_bls12381.G1Affine) bool {
+    if v.X.IsZero() && v.Y.IsZero() {
+        return false
+    } else {
+        return v.IsOnCurve() && v.IsInSubGroup()
+    }
+}
+
+//export Gnark_bls12_381_BLS_IsG1OnCurve
+func Gnark_bls12_381_BLS_IsG1OnCurve(in []byte) {
+    resetResult()
+
+    var op OpBLS_IsG1OnCurve
+    unmarshal(in, &op)
+
+    a := new(gnark_bls12381.G1Affine)
+
+    a.X.SetBigInt(decodeBignum(op.G1_x))
+    a.Y.SetBigInt(decodeBignum(op.G1_y))
+
+    res := Gnark_bls12_381_IsG1OnCurve(a)
 
     r2, err := json.Marshal(&res)
 
@@ -296,6 +343,39 @@ func Gnark_bn254_BLS_G1_Add(in []byte) {
     saveG1(r)
 }
 
+//export Gnark_bls12_381_BLS_G1_Add
+func Gnark_bls12_381_BLS_G1_Add(in []byte) {
+    resetResult()
+
+    var op OpBLS_G1_Add
+    unmarshal(in, &op)
+
+    a := new(gnark_bls12381.G1Affine)
+
+    a.X.SetBigInt(decodeBignum(op.A_x))
+    a.Y.SetBigInt(decodeBignum(op.A_y))
+
+    a_jac := new(gnark_bls12381.G1Jac).FromAffine(a)
+
+    b := new(gnark_bls12381.G1Affine)
+
+    b.X.SetBigInt(decodeBignum(op.B_x))
+    b.Y.SetBigInt(decodeBignum(op.B_y))
+
+    b_jac := new(gnark_bls12381.G1Jac).FromAffine(b)
+
+    r := new(gnark_bls12381.G1Affine).FromJacobian(a_jac.AddAssign(b_jac))
+
+    if !Gnark_bls12_381_IsG1OnCurve(a) {
+        //return
+    }
+    if !Gnark_bls12_381_IsG1OnCurve(b) {
+        //return
+    }
+
+    saveG1_bls12381(r)
+}
+
 //export Gnark_bn254_BLS_G1_Mul
 func Gnark_bn254_BLS_G1_Mul(in []byte) {
     resetResult()
@@ -319,6 +399,29 @@ func Gnark_bn254_BLS_G1_Mul(in []byte) {
     saveG1(r_affine)
 }
 
+//export Gnark_bls12_381_BLS_G1_Mul
+func Gnark_bls12_381_BLS_G1_Mul(in []byte) {
+    resetResult()
+
+    var op OpBLS_G1_Mul
+    unmarshal(in, &op)
+
+    g1 := new(gnark_bls12381.G1Affine)
+
+    g1.X.SetBigInt(decodeBignum(op.A_x))
+    g1.Y.SetBigInt(decodeBignum(op.A_y))
+
+    g1_jac := new(gnark_bls12381.G1Jac).FromAffine(g1)
+
+    b := decodeBignum(op.B)
+
+    r := new(gnark_bls12381.G1Jac)
+    r.ScalarMultiplication(g1_jac, b)
+    r_affine := new(gnark_bls12381.G1Affine).FromJacobian(r)
+
+    saveG1_bls12381(r_affine)
+}
+
 //export Gnark_bn254_BLS_G1_Neg
 func Gnark_bn254_BLS_G1_Neg(in []byte) {
     resetResult()
@@ -334,48 +437,6 @@ func Gnark_bn254_BLS_G1_Neg(in []byte) {
     r := new(bn254.G1Affine).Neg(g1)
 
     saveG1(r)
-}
-
-//export Gnark_bn254_BLS_MapToG1
-func Gnark_bn254_BLS_MapToG1(in []byte) {
-    resetResult()
-    return
-
-    var op OpBLS_MapToG1
-    unmarshal(in, &op)
-
-    U := decodeBignum(op.U)
-    V := decodeBignum(op.V)
-
-    if U.Cmp(new(big.Int).SetUint64(0)) == 0 {
-        return
-    }
-    if V.Cmp(new(big.Int).SetUint64(0)) == 0 {
-        return
-    }
-    u := new(bls12381_fp.Element).SetBigInt(U)
-    v := new(bls12381_fp.Element).SetBigInt(V)
-
-    /* https://github.com/ConsenSys/gnark-crypto/blob/b04e1f3a5349a57e4f61eff9df377d1440acad25/ecc/bls12-381/hash_to_curve.go#L151-L157 */
-    Q0 := gnark_bls12381.MapToCurveG1Svdw(*u)
-    Q1 := gnark_bls12381.MapToCurveG1Svdw(*v)
-    var _Q0, _Q1, _res gnark_bls12381.G1Jac
-    _Q0.FromAffine(&Q0)
-    _Q1.FromAffine(&Q1)
-    _res.Set(&_Q1).AddAssign(&_Q0)
-    var r_affine gnark_bls12381.G1Affine
-    r_affine.FromJacobian(&_res)
-
-    res := make([]string, 2)
-    res[0], res[1] = r_affine.X.String(), r_affine.Y.String()
-
-    r2, err := json.Marshal(&res)
-
-    if err != nil {
-        panic("Cannot marshal to JSON")
-    }
-
-    result = r2
 }
 
 //export Gnark_bn254_BLS_G2_Add
