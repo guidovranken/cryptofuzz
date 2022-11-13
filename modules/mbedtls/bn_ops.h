@@ -83,7 +83,11 @@ end:
         std::optional<mbedtls_mpi_sint> To_mbedtls_mpi_sint(void) {
             std::optional<mbedtls_mpi_sint> ret = std::nullopt;
             mbedtls_mpi_sint r;
-            CF_CHECK_GTE(mbedtls_mpi_cmp_int(GetPtr(), std::numeric_limits<mbedtls_mpi_sint>::min()), 0);
+            CF_CHECK_GTE(mbedtls_mpi_cmp_int(GetPtr(),
+                        std::numeric_limits<mbedtls_mpi_sint>::min()
+                        /* Prevent UB: https://github.com/Mbed-TLS/mbedtls/issues/6597 */
+                        + 1
+            ), 0);
             CF_CHECK_LTE(mbedtls_mpi_cmp_int(GetPtr(), std::numeric_limits<mbedtls_mpi_sint>::max()), 0);
             CF_CHECK_EQ(mbedtls_mpi_write_binary_le(GetPtr(), (unsigned char*)&r, sizeof(r)), 0);
             if ( mbedtls_mpi_cmp_int(GetPtr(), 0) < 0 ) {
