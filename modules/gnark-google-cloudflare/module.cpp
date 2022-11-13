@@ -121,7 +121,14 @@ std::optional<component::G2> Gnark_bn254::OpBLS_G2_Add(operation::BLS_G2_Add& op
     auto json = op.ToJSON();
     json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
     auto jsonStr = json.dump();
-    Gnark_bn254_BLS_G2_Add(toGoSlice(jsonStr));
+
+    if ( op.curveType.Is(CF_ECC_CURVE("BLS12_381")) ) {
+        Gnark_bls12_381_BLS_G2_Add(toGoSlice(jsonStr));
+    } else if ( op.curveType.Is(CF_ECC_CURVE("alt_bn128")) ) {
+        Gnark_bn254_BLS_G2_Add(toGoSlice(jsonStr));
+    } else {
+        return std::nullopt;
+    }
 
     return getResultAs<component::G2>();
 }
@@ -130,7 +137,13 @@ std::optional<component::G2> Gnark_bn254::OpBLS_G2_Mul(operation::BLS_G2_Mul& op
     auto json = op.ToJSON();
     json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
     auto jsonStr = json.dump();
-    Gnark_bn254_BLS_G2_Mul(toGoSlice(jsonStr));
+    if ( op.curveType.Is(CF_ECC_CURVE("BLS12_381")) ) {
+        Gnark_bls12_381_BLS_G2_Mul(toGoSlice(jsonStr));
+    } else if ( op.curveType.Is(CF_ECC_CURVE("alt_bn128")) ) {
+        Gnark_bn254_BLS_G2_Mul(toGoSlice(jsonStr));
+    } else {
+        return std::nullopt;
+    }
 
     return getResultAs<component::G2>();
 }
