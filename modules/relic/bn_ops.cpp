@@ -624,7 +624,7 @@ end:
 bool RShift::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    auto bits = bn[1].ToInt();
+    auto bits = bn[1].ToSizeT();
     if ( bits == std::nullopt ) {
         return false;
     }
@@ -639,13 +639,12 @@ bool Bit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
     bool ret = false;
 
-    auto bit = bn[1].ToInt();
+    auto bit = bn[1].ToSizeT();
     if ( bit == std::nullopt ) {
         return false;
     }
 
-    if ( *bit == std::numeric_limits<int>::max() ||
-         (*bit+1) > bn_bits(bn[0].Get()) ) {
+    if ( (*bit+1) == 0 || (*bit+1) > bn_bits(bn[0].Get()) ) {
         return false;
     }
 
@@ -669,13 +668,12 @@ end:
 bool SetBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    auto bit = bn[1].ToInt();
+    auto bit = bn[1].ToSizeT();
     if ( bit == std::nullopt ) {
         return false;
     }
 
-    if ( *bit == std::numeric_limits<int>::max() ||
-         (*bit+1) > bn_bits(bn[0].Get()) ) {
+    if ( (*bit+1) == 0 || (*bit+1) > bn_bits(bn[0].Get()) ) {
         return false;
     }
 
@@ -690,13 +688,12 @@ bool SetBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
 bool ClearBit::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
 
-    auto bit = bn[1].ToInt();
+    auto bit = bn[1].ToSizeT();
     if ( bit == std::nullopt ) {
         return false;
     }
 
-    if ( *bit == std::numeric_limits<int>::max() ||
-         (*bit+1) > bn_bits(bn[0].Get()) ) {
+    if ( (*bit+1) == 0 || (*bit+1) > bn_bits(bn[0].Get()) ) {
         return false;
     }
 

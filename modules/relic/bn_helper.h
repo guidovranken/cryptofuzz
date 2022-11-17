@@ -22,7 +22,7 @@ class Bignum {
         bool Set(const std::string& s);
         std::optional<std::string> ToString(void);
         std::optional<component::Bignum> ToComponentBignum(void);
-        std::optional<int> ToInt(void);
+        std::optional<size_t> ToSizeT(void);
         bn_t& Get(void);
         ~Bignum(void);
 };

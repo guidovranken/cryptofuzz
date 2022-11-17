@@ -12,7 +12,7 @@ namespace module {
 namespace relic_detail {
     Datasource* global_ds = nullptr;
 
-    void relic_fuzzer_rng(uint8_t* out, int size, void*) {
+    void relic_fuzzer_rng(uint8_t* out, size_t size, void*) {
         CF_ASSERT(global_ds != nullptr, "Global datasource is NULL");
 
         if ( size == 0 ) {
