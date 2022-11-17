@@ -274,6 +274,7 @@ class CalcOpTable(Table):
 
 modules = ModuleTable()
 # lint sort start
+modules.Add( Module("Aleo") )
 modules.Add( Module("BearSSL") )
 modules.Add( Module("Beast") )
 modules.Add( Module("Bitcoin") )
@@ -403,6 +404,8 @@ operations.Add( Operation("BignumCalc_Mod_2Exp128") )
 operations.Add( Operation("BignumCalc_Mod_2Exp256") )
 operations.Add( Operation("BignumCalc_Mod_2Exp512") )
 operations.Add( Operation("BignumCalc_Mod_2Exp64") )
+operations.Add( Operation("BignumCalc_Mod_BLS12_377_P") )
+operations.Add( Operation("BignumCalc_Mod_BLS12_377_R") )
 operations.Add( Operation("BignumCalc_Mod_BLS12_381_P") )
 operations.Add( Operation("BignumCalc_Mod_BLS12_381_R") )
 operations.Add( Operation("BignumCalc_Mod_BN128_P") )
@@ -1584,6 +1587,17 @@ ecc_curves.Add( ECC_Curve("alt_bn128",
                           y="2",
                           order_min_1="21888242871839275222246405745257275088548364400416034343698204186575808495616",
                           order="21888242871839275222246405745257275088548364400416034343698204186575808495617"
+) )
+# TODO
+ecc_curves.Add( ECC_Curve("BLS12_377",
+                          bits=377,
+                          prime="258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458177",
+                          a="0",
+                          b="0",
+                          x="0",
+                          y="0",
+                          order_min_1="8444461749428370424248824938781546531375899335154063827935233455917409239040",
+                          order="8444461749428370424248824938781546531375899335154063827935233455917409239041"
 ) )
 
 # TODO specify curve parameters for these remaining curves

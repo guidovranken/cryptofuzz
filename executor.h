@@ -64,6 +64,18 @@ class ExecutorBignumCalc_Mod_BLS12_381_P : public ExecutorBignumCalc {
         operation::BignumCalc getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const override;
 };
 
+class ExecutorBignumCalc_Mod_BLS12_377_R : public ExecutorBignumCalc {
+    public:
+        ExecutorBignumCalc_Mod_BLS12_377_R(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options);
+        operation::BignumCalc getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const override;
+};
+
+class ExecutorBignumCalc_Mod_BLS12_377_P : public ExecutorBignumCalc {
+    public:
+        ExecutorBignumCalc_Mod_BLS12_377_P(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options);
+        operation::BignumCalc getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const override;
+};
+
 class ExecutorBignumCalc_Mod_BN128_R : public ExecutorBignumCalc {
     public:
         ExecutorBignumCalc_Mod_BN128_R(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options);

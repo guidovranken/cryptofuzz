@@ -1834,6 +1834,16 @@ ExecutorBignumCalc_Mod_BLS12_381_P::ExecutorBignumCalc_Mod_BLS12_381_P(const uin
     CF_NORET(SetModulo("4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787"));
 }
 
+ExecutorBignumCalc_Mod_BLS12_377_R::ExecutorBignumCalc_Mod_BLS12_377_R(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
+    CF_NORET(SetModulo("8444461749428370424248824938781546531375899335154063827935233455917409239041"));
+}
+
+ExecutorBignumCalc_Mod_BLS12_377_P::ExecutorBignumCalc_Mod_BLS12_377_P(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
+    CF_NORET(SetModulo("258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458177"));
+}
+
 ExecutorBignumCalc_Mod_BN128_R::ExecutorBignumCalc_Mod_BN128_R(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
     ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
     CF_NORET(SetModulo("21888242871839275222246405745257275088548364400416034343698204186575808495617"));
@@ -2127,6 +2137,18 @@ operation::BignumCalc ExecutorBignumCalc_Mod_BLS12_381_R::getOpPostprocess(Datas
 }
 
 operation::BignumCalc ExecutorBignumCalc_Mod_BLS12_381_P::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
+    (void)parentDs;
+    op.modulo = modulo;
+    return op;
+}
+
+operation::BignumCalc ExecutorBignumCalc_Mod_BLS12_377_R::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
+    (void)parentDs;
+    op.modulo = modulo;
+    return op;
+}
+
+operation::BignumCalc ExecutorBignumCalc_Mod_BLS12_377_P::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
     (void)parentDs;
     op.modulo = modulo;
     return op;
