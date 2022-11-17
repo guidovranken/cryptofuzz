@@ -4,6 +4,11 @@
 #include <iostream>
 
 extern "C" {
+    int cryptofuzz_aleo_bignumcalc_fq(
+            uint8_t op,
+            uint8_t* bn0_bytes,
+            uint8_t* bn1_bytes,
+            uint8_t* result);
     int cryptofuzz_aleo_bignumcalc_fr(
             uint8_t op,
             uint8_t* bn0_bytes,
@@ -21,13 +26,19 @@ std::optional<component::Bignum> Aleo::OpBignumCalc(operation::BignumCalc& op) {
         return std::nullopt;
     }
 
-    if ( op.modulo->ToTrimmedString() != "8444461749428370424248824938781546531375899335154063827935233455917409239041" ) {
+    size_t size = 0;
+    if ( op.modulo->ToTrimmedString() == "8444461749428370424248824938781546531375899335154063827935233455917409239041" ) {
+        size = 32;
+    } else if ( op.modulo->ToTrimmedString() == "258664426012969094010652733694893533536393512754914660539884262666720468348340822774968888139573360124440321458177" ) {
+        size = 48;
+    } else {
         return std::nullopt;
     }
     std::optional<component::Bignum> ret = std::nullopt;
     std::optional<std::vector<uint8_t>> bn0_bytes;
     std::optional<std::vector<uint8_t>> bn1_bytes;
-    std::array<uint8_t, 32> result;
+    std::array<uint8_t, 32> result_fr;
+    std::array<uint8_t, 48> result_fq;
 
     static const std::map<uint64_t, uint64_t> LUT = {
         { CF_CALCOP("Add(A,B)"), 0 },
@@ -40,20 +51,35 @@ std::optional<component::Bignum> Aleo::OpBignumCalc(operation::BignumCalc& op) {
 
     CF_CHECK_TRUE(LUT.find(op.calcOp.Get()) != LUT.end());
 
-    CF_CHECK_NE(bn0_bytes = util::DecToBin(op.bn0.ToTrimmedString(), 32), std::nullopt);
-    CF_CHECK_NE(bn1_bytes = util::DecToBin(op.bn1.ToTrimmedString(), 32), std::nullopt);
+    CF_CHECK_NE(bn0_bytes = util::DecToBin(op.bn0.ToTrimmedString(), size), std::nullopt);
+    CF_CHECK_NE(bn1_bytes = util::DecToBin(op.bn1.ToTrimmedString(), size), std::nullopt);
 
     {
-        const auto res = cryptofuzz_aleo_bignumcalc_fr(
-                LUT.at(op.calcOp.Get()),
-                bn0_bytes->data(),
-                bn1_bytes->data(),
-                result.data()
-        );
+        if ( size == 32 ) {
+            const auto res = cryptofuzz_aleo_bignumcalc_fr(
+                    LUT.at(op.calcOp.Get()),
+                    bn0_bytes->data(),
+                    bn1_bytes->data(),
+                    result_fr.data()
+                    );
 
-        CF_CHECK_NE(res, -1);
-        std::reverse(result.begin(), result.end());
-        ret = util::BinToDec(result.data(), 32);
+            CF_CHECK_NE(res, -1);
+            std::reverse(result_fr.begin(), result_fr.end());
+            ret = util::BinToDec(result_fr.data(), 32);
+        } else if ( size == 48 ) {
+            const auto res = cryptofuzz_aleo_bignumcalc_fq(
+                    LUT.at(op.calcOp.Get()),
+                    bn0_bytes->data(),
+                    bn1_bytes->data(),
+                    result_fq.data()
+                    );
+
+            CF_CHECK_NE(res, -1);
+            std::reverse(result_fq.begin(), result_fq.end());
+            ret = util::BinToDec(result_fq.data(), 48);
+        } else {
+            CF_UNREACHABLE();
+        }
     }
 
 end:
