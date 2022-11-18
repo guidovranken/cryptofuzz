@@ -4,6 +4,28 @@
 #include <iostream>
 
 extern "C" {
+    int cryptofuzz_aleo_privatetopublic(
+            uint8_t* b_bytes,
+            uint8_t* result_x,
+            uint8_t* result_y);
+    int cryptofuzz_aleo_g1_add(
+            uint8_t* a_x_bytes,
+            uint8_t* a_y_bytes,
+            uint8_t* b_x_bytes,
+            uint8_t* b_y_bytes,
+            uint8_t* result_x,
+            uint8_t* result_y);
+    int cryptofuzz_aleo_g1_mul(
+            uint8_t* a_x_bytes,
+            uint8_t* a_y_bytes,
+            uint8_t* b_bytes,
+            uint8_t* result_x,
+            uint8_t* result_y);
+    int cryptofuzz_aleo_g1_neg(
+            uint8_t* a_x_bytes,
+            uint8_t* a_y_bytes,
+            uint8_t* result_x,
+            uint8_t* result_y);
     int cryptofuzz_aleo_bignumcalc_fq(
             uint8_t op,
             uint8_t* bn0_bytes,
@@ -20,6 +42,134 @@ namespace module {
 
 Aleo::Aleo(void) :
     Module("Aleo") { }
+
+std::optional<component::BLS_PublicKey> Aleo::OpBLS_PrivateToPublic(operation::BLS_PrivateToPublic& op) {
+    std::optional<component::BLS_PublicKey> ret = std::nullopt;
+
+    if ( !op.curveType.Is(CF_ECC_CURVE("BLS12_377")) ) {
+        return ret;
+    }
+
+    std::optional<std::vector<uint8_t>> b_bytes;
+    std::array<uint8_t, 48> result_x, result_y;
+
+    CF_CHECK_NE(b_bytes = util::DecToBin(op.priv.ToTrimmedString(), 32), std::nullopt);
+
+    CF_CHECK_EQ(cryptofuzz_aleo_privatetopublic(
+                    b_bytes->data(),
+                    result_x.data(),
+                    result_y.data()), 0);
+
+    std::reverse(result_x.begin(), result_x.end());
+    std::reverse(result_y.begin(), result_y.end());
+
+    ret = component::BLS_PublicKey{
+        util::BinToDec(result_x.data(), result_x.size()),
+        util::BinToDec(result_y.data(), result_y.size()),
+    };
+
+end:
+    return ret;
+}
+
+std::optional<component::G1> Aleo::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
+    std::optional<component::G1> ret = std::nullopt;
+
+    if ( !op.curveType.Is(CF_ECC_CURVE("BLS12_377")) ) {
+        return ret;
+    }
+
+    std::optional<std::vector<uint8_t>> a_x_bytes, a_y_bytes, b_x_bytes, b_y_bytes;
+    std::array<uint8_t, 48> result_x, result_y;
+
+    CF_CHECK_NE(a_x_bytes = util::DecToBin(op.a.first.ToTrimmedString(), 48), std::nullopt);
+    CF_CHECK_NE(a_y_bytes = util::DecToBin(op.a.second.ToTrimmedString(), 48), std::nullopt);
+    CF_CHECK_NE(b_x_bytes = util::DecToBin(op.b.first.ToTrimmedString(), 48), std::nullopt);
+    CF_CHECK_NE(b_y_bytes = util::DecToBin(op.b.second.ToTrimmedString(), 48), std::nullopt);
+
+    CF_CHECK_EQ(cryptofuzz_aleo_g1_add(
+                    a_x_bytes->data(),
+                    a_y_bytes->data(),
+                    b_x_bytes->data(),
+                    b_y_bytes->data(),
+                    result_x.data(),
+                    result_y.data()), 0);
+
+    std::reverse(result_x.begin(), result_x.end());
+    std::reverse(result_y.begin(), result_y.end());
+
+    ret = component::G1{
+        util::BinToDec(result_x.data(), result_x.size()),
+        util::BinToDec(result_y.data(), result_y.size()),
+    };
+
+end:
+    return ret;
+}
+
+std::optional<component::G1> Aleo::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
+    std::optional<component::G1> ret = std::nullopt;
+
+    if ( !op.curveType.Is(CF_ECC_CURVE("BLS12_377")) ) {
+        return ret;
+    }
+
+    std::optional<std::vector<uint8_t>> a_x_bytes, a_y_bytes, b_bytes;
+    std::array<uint8_t, 48> result_x, result_y;
+
+    CF_CHECK_NE(a_x_bytes = util::DecToBin(op.a.first.ToTrimmedString(), 48), std::nullopt);
+    CF_CHECK_NE(a_y_bytes = util::DecToBin(op.a.second.ToTrimmedString(), 48), std::nullopt);
+    CF_CHECK_NE(b_bytes = util::DecToBin(op.b.ToTrimmedString(), 32), std::nullopt);
+
+    CF_CHECK_EQ(cryptofuzz_aleo_g1_mul(
+                    a_x_bytes->data(),
+                    a_y_bytes->data(),
+                    b_bytes->data(),
+                    result_x.data(),
+                    result_y.data()), 0);
+
+    std::reverse(result_x.begin(), result_x.end());
+    std::reverse(result_y.begin(), result_y.end());
+
+    ret = component::G1{
+        util::BinToDec(result_x.data(), result_x.size()),
+        util::BinToDec(result_y.data(), result_y.size()),
+    };
+
+end:
+    return ret;
+}
+
+std::optional<component::G1> Aleo::OpBLS_G1_Neg(operation::BLS_G1_Neg& op) {
+    std::optional<component::G1> ret = std::nullopt;
+
+    if ( !op.curveType.Is(CF_ECC_CURVE("BLS12_377")) ) {
+        return ret;
+    }
+
+    std::optional<std::vector<uint8_t>> a_x_bytes, a_y_bytes;
+    std::array<uint8_t, 48> result_x, result_y;
+
+    CF_CHECK_NE(a_x_bytes = util::DecToBin(op.a.first.ToTrimmedString(), 48), std::nullopt);
+    CF_CHECK_NE(a_y_bytes = util::DecToBin(op.a.second.ToTrimmedString(), 48), std::nullopt);
+
+    CF_CHECK_EQ(cryptofuzz_aleo_g1_neg(
+                    a_x_bytes->data(),
+                    a_y_bytes->data(),
+                    result_x.data(),
+                    result_y.data()), 0);
+
+    std::reverse(result_x.begin(), result_x.end());
+    std::reverse(result_y.begin(), result_y.end());
+
+    ret = component::G1{
+        util::BinToDec(result_x.data(), result_x.size()),
+        util::BinToDec(result_y.data(), result_y.size()),
+    };
+
+end:
+    return ret;
+}
 
 std::optional<component::Bignum> Aleo::OpBignumCalc(operation::BignumCalc& op) {
     if ( op.modulo == std::nullopt ) {
