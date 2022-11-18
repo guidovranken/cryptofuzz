@@ -11,6 +11,8 @@ import (
     gnark_bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
     bls12381_fp "github.com/consensys/gnark-crypto/ecc/bls12-381/fp"
     bls12381_fr "github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+    gnark_bls12377 "github.com/consensys/gnark-crypto/ecc/bls12-377"
+    bls12377_fp "github.com/consensys/gnark-crypto/ecc/bls12-377/fp"
     google "github.com/ethereum/go-ethereum/crypto/bn256/google"
     cloudflare "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
     "strconv"
@@ -172,6 +174,18 @@ func fpToString(v* fp.Element) string {
     return b.String()
 }
 
+func fp12381ToString(v* bls12381_fp.Element) string {
+    var b big.Int
+    v.ToBigIntRegular(&b)
+    return b.String()
+}
+
+func fp12377ToString(v* bls12377_fp.Element) string {
+    var b big.Int
+    v.ToBigIntRegular(&b)
+    return b.String()
+}
+
 func saveG1(v* bn254.G1Affine) {
     res := make([]string, 2)
     res[0] = fpToString(&v.X)
@@ -186,16 +200,24 @@ func saveG1(v* bn254.G1Affine) {
     result = r2
 }
 
-func fp12381ToString(v* bls12381_fp.Element) string {
-    var b big.Int
-    v.ToBigIntRegular(&b)
-    return b.String()
-}
-
 func saveG1_bls12381(v* gnark_bls12381.G1Affine) {
     res := make([]string, 2)
     res[0] = fp12381ToString(&v.X)
     res[1] = fp12381ToString(&v.Y)
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+func saveG1_bls12377(v* gnark_bls12377.G1Affine) {
+    res := make([]string, 2)
+    res[0] = fp12377ToString(&v.X)
+    res[1] = fp12377ToString(&v.Y)
 
     r2, err := json.Marshal(&res)
 
@@ -276,6 +298,14 @@ func Gnark_bn254_BLS_IsG1OnCurve(in []byte) {
 }
 
 func Gnark_bls12_381_IsG1OnCurve(v* gnark_bls12381.G1Affine) bool {
+    if v.X.IsZero() && v.Y.IsZero() {
+        return false
+    } else {
+        return v.IsOnCurve() && v.IsInSubGroup()
+    }
+}
+
+func Gnark_bls12_377_IsG1OnCurve(v* gnark_bls12377.G1Affine) bool {
     if v.X.IsZero() && v.Y.IsZero() {
         return false
     } else {
@@ -395,6 +425,39 @@ func Gnark_bls12_381_BLS_G1_Add(in []byte) {
     saveG1_bls12381(r)
 }
 
+//export Gnark_bls12_377_BLS_G1_Add
+func Gnark_bls12_377_BLS_G1_Add(in []byte) {
+    resetResult()
+
+    var op OpBLS_G1_Add
+    unmarshal(in, &op)
+
+    a := new(gnark_bls12377.G1Affine)
+
+    a.X.SetBigInt(decodeBignum(op.A_x))
+    a.Y.SetBigInt(decodeBignum(op.A_y))
+
+    a_jac := new(gnark_bls12377.G1Jac).FromAffine(a)
+
+    b := new(gnark_bls12377.G1Affine)
+
+    b.X.SetBigInt(decodeBignum(op.B_x))
+    b.Y.SetBigInt(decodeBignum(op.B_y))
+
+    b_jac := new(gnark_bls12377.G1Jac).FromAffine(b)
+
+    r := new(gnark_bls12377.G1Affine).FromJacobian(a_jac.AddAssign(b_jac))
+
+    if !Gnark_bls12_377_IsG1OnCurve(a) {
+        return
+    }
+    if !Gnark_bls12_377_IsG1OnCurve(b) {
+        return
+    }
+
+    saveG1_bls12377(r)
+}
+
 //export Gnark_bn254_BLS_G1_Mul
 func Gnark_bn254_BLS_G1_Mul(in []byte) {
     resetResult()
@@ -439,6 +502,37 @@ func Gnark_bls12_381_BLS_G1_Mul(in []byte) {
     r_affine := new(gnark_bls12381.G1Affine).FromJacobian(r)
 
     saveG1_bls12381(r_affine)
+}
+
+//export Gnark_bls12_377_BLS_G1_Mul
+func Gnark_bls12_377_BLS_G1_Mul(in []byte) {
+    resetResult()
+
+    var op OpBLS_G1_Mul
+    unmarshal(in, &op)
+
+    g1 := new(gnark_bls12377.G1Affine)
+
+    g1.X.SetBigInt(decodeBignum(op.A_x))
+    g1.Y.SetBigInt(decodeBignum(op.A_y))
+
+    if !Gnark_bls12_377_IsG1OnCurve(g1) {
+        return
+    }
+
+    g1_jac := new(gnark_bls12377.G1Jac).FromAffine(g1)
+
+    b := decodeBignum(op.B)
+
+    if b.BitLen() == 0 {
+        return
+    }
+
+    r := new(gnark_bls12377.G1Jac)
+    r.ScalarMultiplication(g1_jac, b)
+    r_affine := new(gnark_bls12377.G1Affine).FromJacobian(r)
+
+    saveG1_bls12377(r_affine)
 }
 
 //export Gnark_bn254_BLS_G1_Neg

@@ -83,6 +83,8 @@ std::optional<component::G1> Gnark_bn254::OpBLS_G1_Add(operation::BLS_G1_Add& op
 
     if ( op.curveType.Is(CF_ECC_CURVE("BLS12_381")) ) {
         Gnark_bls12_381_BLS_G1_Add(toGoSlice(jsonStr));
+    } else if ( op.curveType.Is(CF_ECC_CURVE("BLS12_377")) ) {
+        Gnark_bls12_377_BLS_G1_Add(toGoSlice(jsonStr));
     } else if ( op.curveType.Is(CF_ECC_CURVE("alt_bn128")) ) {
         Gnark_bn254_BLS_G1_Add(toGoSlice(jsonStr));
     } else {
@@ -99,6 +101,8 @@ std::optional<component::G1> Gnark_bn254::OpBLS_G1_Mul(operation::BLS_G1_Mul& op
 
     if ( op.curveType.Is(CF_ECC_CURVE("BLS12_381")) ) {
         Gnark_bls12_381_BLS_G1_Mul(toGoSlice(jsonStr));
+    } else if ( op.curveType.Is(CF_ECC_CURVE("BLS12_377")) ) {
+        Gnark_bls12_377_BLS_G1_Mul(toGoSlice(jsonStr));
     } else if ( op.curveType.Is(CF_ECC_CURVE("alt_bn128")) ) {
         Gnark_bn254_BLS_G1_Mul(toGoSlice(jsonStr));
     } else {
