@@ -1738,6 +1738,7 @@ std::string BLS_G1_Add::ToString(void) const {
 
 nlohmann::json BLS_G1_Add::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_G1_Add";
     j["curveType"] = curveType.ToJSON();
 
     j["a_x"] = a.first.ToJSON();
@@ -1765,6 +1766,7 @@ std::string BLS_G1_Mul::ToString(void) const {
 
 nlohmann::json BLS_G1_Mul::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_G1_Mul";
     j["curveType"] = curveType.ToJSON();
 
     j["a_x"] = a.first.ToJSON();
