@@ -3,6 +3,10 @@
 import json
 import sys
 from hashlib import sha1
+from typing import List
+
+infile = sys.argv[1]
+outdir = sys.argv[2]
 
 def Push32(val: int) -> bytes:
     ret = bytes()
@@ -46,8 +50,20 @@ def Load(num: int) -> bytes:
         ret += MLoad(i * 32)
     return ret
 
-infile = sys.argv[1]
-outdir = sys.argv[2]
+def Precompile(address: int, params: List[int], retLength: int):
+    ret = bytes()
+
+    i = 0
+    for p in params:
+        ret += Store32(i, p)
+        i += 32
+
+    ret += Call(len(params) * 32, retLength * 32, address)
+    ret += Load(retLength)
+
+    fn = sha1(ret).hexdigest()
+    with open('{}/{}'.format(outdir, fn), 'wb') as fp:
+        fp.write(ret)
 
 with open(infile, 'rb') as fp:
     for l in fp:
@@ -64,20 +80,22 @@ with open(infile, 'rb') as fp:
             if op['operation'] == "BLS_G1_Add":
                 #if op['curveType'] != '9285907260089714809':
                 #    continue
-                ret += Store32(0, int(op['a_x']))
-                ret += Store32(32, int(op['a_y']))
-                ret += Store32(64, int(op['b_x']))
-                ret += Store32(96, int(op['b_y']))
-                ret += Call(4 * 32, 2 * 32, 6)
-                ret += Load(2)
+                params = [
+                        int(op['a_x']),
+                        int(op['a_y']),
+                        int(op['b_x']),
+                        int(op['b_y'])
+                ]
+                Precompile(6, params, 2)
             elif op['operation'] == "BLS_G1_Mul":
                 #if op['curveType'] != '9285907260089714809':
                 #    continue
-                ret += Store32(0, int(op['a_x']))
-                ret += Store32(32, int(op['a_y']))
-                ret += Store32(64, int(op['b']))
-                ret += Call(3 * 32, 2 * 32, 7)
-                ret += Load(2)
+                params = [
+                        int(op['a_x']),
+                        int(op['a_y']),
+                        int(op['b']),
+                ]
+                Precompile(7, params, 2)
             else:
                 continue
 
