@@ -367,10 +367,14 @@ namespace mbedTLS_detail {
                         out, op.ciphertextSize,
                         &olen, *op.tagSize), 0);
 
-            CF_ASSERT(olen == op.cleartext.GetSize() + *op.tagSize, "mbedtls_cipher_auth_encrypt_ext: Invalid outlen");
-            ret = component::Ciphertext(
-                    Buffer(out, op.cleartext.GetSize()),
-                    Buffer(out + op.cleartext.GetSize(), *op.tagSize));
+            if ( !repository::IsWRAP(op.cipher.cipherType.Get()) ) {
+                CF_ASSERT(olen == op.cleartext.GetSize() + *op.tagSize, "mbedtls_cipher_auth_encrypt_ext: Invalid outlen");
+                ret = component::Ciphertext(
+                        Buffer(out, op.cleartext.GetSize()),
+                        Buffer(out + op.cleartext.GetSize(), *op.tagSize));
+            } else {
+                ret = component::Ciphertext(Buffer(out, olen));
+            }
         }
 
 end:
