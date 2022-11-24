@@ -103,7 +103,7 @@ typedef struct {
 } Fp12;
 extern MutatorPool<Fp12, cryptofuzz::config::kMutatorPoolSize> Pool_Fp12;
 
-typedef struct {
+typedef struct BLS_BatchSignature_ {
     struct G1 {
         std::string g1_x;
         std::string g1_y;
