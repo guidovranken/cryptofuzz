@@ -16,8 +16,7 @@
 #if defined(CRYPTOFUZZ_BORINGSSL)
 #include <openssl/curve25519.h>
 #elif defined(CRYPTOFUZZ_LIBRESSL)
-extern "C" { void x25519_public_from_private(uint8_t out_public_value[32], const uint8_t private_key[32]); }
-#define X25519_public_from_private x25519_public_from_private
+extern "C" { void X25519_public_from_private(uint8_t out_public_value[32], const uint8_t private_key[32]); }
 #else
 /* OpenSSL */
 extern "C" { void ossl_x25519_public_from_private(uint8_t out_public_value[32], const uint8_t private_key[32]); }
