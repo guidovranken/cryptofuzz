@@ -3,22 +3,64 @@
 import json
 import sys
 from hashlib import sha1
-from typing import List
+from typing import List, Union
 
 infile = sys.argv[1]
 outdir = sys.argv[2]
 
-def Push32(val: int) -> bytes:
+def ToBytes(i: int, size: int = 32) -> bytes:
+    if size == 0:
+        size = (len(hex(i)[2:]) + 1) // 2
+    return i.to_bytes(size, 'big')
+
+def ToInt(s: str) -> int:
+    if s == '':
+        s = '0'
+    return int(s)
+
+def ToLenBytes(i: int) -> bytes:
+    l = (len(hex(i)[2:]) + 1) // 2
+    return ToBytes(l)
+
+def Push32(val: Union[int, bytes]) -> bytes:
     ret = bytes()
     ret += bytes([0x7f])
-    ret += val.to_bytes(32, 'big')
+
+    if type(val) == int:
+        ret += ToBytes(val)
+    elif type(val) == bytes:
+        assert(len(val) == 32)
+        ret += val
+    else:
+        assert(False)
+
     return ret
 
-def Store32(pos: int, val: int) -> bytes:
+def Store32(pos: int, val: Union[int, bytes]) -> bytes:
     ret = bytes()
     ret += Push32(val)
     ret += Push32(pos)
     ret += bytes([0x52])
+    return ret
+
+def Store(data: bytes) -> bytes:
+    ret = bytes()
+    num32 = len(data) // 32
+    rem = len(data) % 32
+
+    pos = 0
+    for i in range(num32):
+        ret += Store32(pos, data[i*32 : i*32+32])
+        pos += 32
+
+    if rem:
+        remd = data[num32*32:]
+        assert(len(remd) < 32)
+        remd = remd + ((32 - len(remd)) * b'\x00')
+        assert(len(remd) == 32)
+        ret += Store32(pos, remd)
+        pos += 32
+
     return ret
 
 def Gas() -> bytes:
@@ -44,21 +86,39 @@ def MLoad(pos: int) -> bytes:
     ret += bytes([0x51])
     return ret
 
+def MSize() -> bytes:
+    ret = bytes()
+    ret += bytes([0x59])
+    return ret
+
 def Load(num: int) -> bytes:
     ret = bytes()
     for i in range(num):
         ret += MLoad(i * 32)
     return ret
 
-def Precompile(address: int, params: List[int], retLength: int):
+def Precompile(
+        address: int,
+        params: Union[List[int], bytes],
+        retLength: int) -> None:
     ret = bytes()
 
-    i = 0
-    for p in params:
-        ret += Store32(i, p)
-        i += 32
+    if type(params) == List[int]:
+        pos = 0
+        for p in params:
+            ret += Store32(pos, p)
+            pos += 32
+        paramsLength = len(params) * 32
+        retLength *= 32
+    elif type(params) == bytes:
+        ret += params
+        paramsLength = len(params)
+        retLength = 0
+    else:
+        assert(False)
 
-    ret += Call(len(params) * 32, retLength * 32, address)
+    ret += Call(paramsLength, retLength, address)
+    ret += MSize()
     ret += Load(retLength)
 
     fn = sha1(ret).hexdigest()
@@ -71,8 +131,6 @@ with open(infile, 'rb') as fp:
         j = json.loads(l)
         op = j['operation']
 
-        ret = bytes()
-
         if 'operation' not in op.keys():
             continue
 
@@ -81,26 +139,41 @@ with open(infile, 'rb') as fp:
                 #if op['curveType'] != '9285907260089714809':
                 #    continue
                 params = [
-                        int(op['a_x']),
-                        int(op['a_y']),
-                        int(op['b_x']),
-                        int(op['b_y'])
+                        ToInt(op['a_x']),
+                        ToInt(op['a_y']),
+                        ToInt(op['b_x']),
+                        ToInt(op['b_y'])
                 ]
                 Precompile(6, params, 2)
             elif op['operation'] == "BLS_G1_Mul":
                 #if op['curveType'] != '9285907260089714809':
                 #    continue
                 params = [
-                        int(op['a_x']),
-                        int(op['a_y']),
-                        int(op['b']),
+                        ToInt(op['a_x']),
+                        ToInt(op['a_y']),
+                        ToInt(op['b']),
                 ]
                 Precompile(7, params, 2)
+            elif op['operation'] == "BignumCalc":
+                if op['calcOp'] != '1317996975705594123':
+                    continue
+                base = ToInt(op['bn0'])
+                exp = ToInt(op['bn1'])
+                mod = ToInt(op['bn2'])
+
+                modexp_input = bytes()
+                modexp_input += ToLenBytes(base)
+                modexp_input += ToLenBytes(exp)
+                modexp_input += ToLenBytes(mod)
+                modexp_input += ToBytes(base, 0)
+                modexp_input += ToBytes(exp, 0)
+                modexp_input += ToBytes(mod, 0)
+
+                modexp_input = Store(modexp_input)
+
+                Precompile(5, modexp_input, 0)
+                # TODO pop memory
             else:
                 continue
-
-            fn = sha1(ret).hexdigest()
-            with open('{}/{}'.format(outdir, fn), 'wb') as fp2:
-                fp2.write(ret)
         except OverflowError:
             pass
