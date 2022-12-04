@@ -1033,7 +1033,7 @@ namespace Botan_detail {
                     CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
 
                     const std::string emsa1String = Botan_detail::parenthesize("EMSA1", *algoString);
-                    signer.reset(new ::Botan::PK_Signer(*priv, rng, emsa1String, ::Botan::DER_SEQUENCE));
+                    signer.reset(new ::Botan::PK_Signer(*priv, rng, emsa1String, ::Botan::Signature_Format::DerSequence));
                 }
 
                 /* Process */
@@ -1114,7 +1114,7 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
         Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
         BOTAN_FUZZER_RNG;
 
-        signer.reset(new ::Botan::PK_Signer(*priv, rng, "Pure", ::Botan::IEEE_1363));
+        signer.reset(new ::Botan::PK_Signer(*priv, rng, "Pure", ::Botan::Signature_Format::Standard));
 
         const auto signature = signer->sign_message(op.cleartext.Get(), rng);
         CF_ASSERT(signature.size() == 64, "ed25519 signature is not 64 bytes");
