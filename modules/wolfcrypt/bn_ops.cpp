@@ -522,6 +522,7 @@ bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             ret = true;
             break;
 #endif
+#if !defined(WOLFSSL_SP_MATH)
         case    2:
             {
                 /* Check if number of bits to shift is a multiple of a full digit */
@@ -535,6 +536,7 @@ bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 ret = true;
             }
             break;
+#endif
     }
 
 end:
