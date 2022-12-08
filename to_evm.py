@@ -103,7 +103,7 @@ def Precompile(
         retLength: int) -> None:
     ret = bytes()
 
-    if type(params) == List[int]:
+    if type(params) == list:
         pos = 0
         for p in params:
             ret += Store32(pos, p)
@@ -111,7 +111,7 @@ def Precompile(
         paramsLength = len(params) * 32
         retLength *= 32
     elif type(params) == bytes:
-        ret += params
+        ret += Store(params)
         paramsLength = len(params)
         retLength = 0
     else:
@@ -129,7 +129,11 @@ with open(infile, 'rb') as fp:
     for l in fp:
 
         j = json.loads(l)
+
         op = j['operation']
+
+        if op == None:
+            continue
 
         if 'operation' not in op.keys():
             continue
@@ -154,6 +158,19 @@ with open(infile, 'rb') as fp:
                         ToInt(op['b']),
                 ]
                 Precompile(7, params, 2)
+            elif op['operation'] == "BLS_BatchVerify":
+                #if op['curveType'] != '9285907260089714809':
+                #    continue
+                params = []
+                for cur in op['bf']:
+                    params += [ ToInt(cur['g1_x']) ]
+                    params += [ ToInt(cur['g1_y']) ]
+                    params += [ ToInt(cur['g2_x']) ]
+                    params += [ ToInt(cur['g2_v']) ]
+                    params += [ ToInt(cur['g2_y']) ]
+                    params += [ ToInt(cur['g2_w']) ]
+                Precompile(8, params, 0)
+
             elif op['operation'] == "BignumCalc":
                 if op['calcOp'] != '1317996975705594123':
                     continue
