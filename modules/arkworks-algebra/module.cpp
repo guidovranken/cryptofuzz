@@ -9,7 +9,44 @@ extern "C" {
             uint64_t* bn1_bytes,
             uint64_t* bn2_bytes,
             uint64_t* result);
+    int arkworks_algebra_bignumcalc_bn254_fq(
+            uint64_t op,
+            uint64_t* bn0_bytes,
+            uint64_t* bn1_bytes,
+            uint64_t* bn2_bytes,
+            uint64_t* result);
+    int arkworks_algebra_bignumcalc_bn254_fr(
+            uint64_t op,
+            uint64_t* bn0_bytes,
+            uint64_t* bn1_bytes,
+            uint64_t* bn2_bytes,
+            uint64_t* result);
+    int arkworks_algebra_bignumcalc_bls12_381_fr(
+            uint64_t op,
+            uint64_t* bn0_bytes,
+            uint64_t* bn1_bytes,
+            uint64_t* bn2_bytes,
+            uint64_t* result);
+    int arkworks_algebra_g1_add_bn254(
+            uint64_t* ax_bytes,
+            uint64_t* ay_bytes,
+            uint64_t* bx_bytes,
+            uint64_t* by_bytes,
+            uint64_t* result_x,
+            uint64_t* result_y);
+    int arkworks_algebra_g1_mul_bn254(
+            uint64_t* ax_bytes,
+            uint64_t* ay_bytes,
+            uint64_t* b_bytes,
+            uint64_t* result_x,
+            uint64_t* result_y);
+    int arkworks_algebra_g1_neg_bn254(
+            uint64_t* ax_bytes,
+            uint64_t* ay_bytes,
+            uint64_t* result_x,
+            uint64_t* result_y);
 }
+
 namespace cryptofuzz {
 namespace module {
 
@@ -54,14 +91,115 @@ end:
     }
 }
 
+std::optional<component::G1> arkworks_algebra::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
+    if ( op.curveType.Get() != CF_ECC_CURVE("alt_bn128") ) {
+        return std::nullopt;
+    }
+
+    std::optional<component::G1> ret = std::nullopt;
+    std::optional<std::array<uint64_t, 4>> ax, ay, bx, by;
+    std::array<uint64_t, 4> result_x, result_y;
+
+    CF_CHECK_NE(ax = arkworks_algebra_detail::ToU64(op.a.first, 0), std::nullopt);
+    CF_CHECK_NE(ay = arkworks_algebra_detail::ToU64(op.a.second, 1), std::nullopt);
+    CF_CHECK_NE(bx = arkworks_algebra_detail::ToU64(op.b.first, 0), std::nullopt);
+    CF_CHECK_NE(by = arkworks_algebra_detail::ToU64(op.b.second, 1), std::nullopt);
+
+    CF_CHECK_NE(arkworks_algebra_g1_add_bn254(
+            ax->data(),
+            ay->data(),
+            bx->data(),
+            by->data(),
+            result_x.data(),
+            result_y.data()
+    ), -1);
+
+    ret = component::G1{
+        arkworks_algebra_detail::FromU64(result_x).ToTrimmedString(),
+        arkworks_algebra_detail::FromU64(result_y).ToTrimmedString()};
+
+end:
+    return ret;
+}
+
+std::optional<component::G1> arkworks_algebra::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
+    if ( op.curveType.Get() != CF_ECC_CURVE("alt_bn128") ) {
+        return std::nullopt;
+    }
+
+    std::optional<component::G1> ret = std::nullopt;
+    std::optional<std::array<uint64_t, 4>> ax, ay, b;
+    std::array<uint64_t, 4> result_x, result_y;
+
+    CF_CHECK_NE(ax = arkworks_algebra_detail::ToU64(op.a.first, 0), std::nullopt);
+    CF_CHECK_NE(ay = arkworks_algebra_detail::ToU64(op.a.second, 1), std::nullopt);
+    CF_CHECK_NE(b = arkworks_algebra_detail::ToU64(op.b, 2), std::nullopt);
+
+    CF_CHECK_NE(arkworks_algebra_g1_mul_bn254(
+            ax->data(),
+            ay->data(),
+            b->data(),
+            result_x.data(),
+            result_y.data()
+    ), -1);
+
+    ret = component::G1{
+        arkworks_algebra_detail::FromU64(result_x).ToTrimmedString(),
+        arkworks_algebra_detail::FromU64(result_y).ToTrimmedString()};
+
+end:
+    return ret;
+}
+
+std::optional<component::G1> arkworks_algebra::OpBLS_G1_Neg(operation::BLS_G1_Neg& op) {
+    if ( op.curveType.Get() != CF_ECC_CURVE("alt_bn128") ) {
+        return std::nullopt;
+    }
+
+    std::optional<component::G1> ret = std::nullopt;
+    std::optional<std::array<uint64_t, 4>> ax, ay;
+    std::array<uint64_t, 4> result_x, result_y;
+
+    CF_CHECK_NE(ax = arkworks_algebra_detail::ToU64(op.a.first, 0), std::nullopt);
+    CF_CHECK_NE(ay = arkworks_algebra_detail::ToU64(op.a.second, 1), std::nullopt);
+
+    CF_CHECK_NE(arkworks_algebra_g1_neg_bn254(
+            ax->data(),
+            ay->data(),
+            result_x.data(),
+            result_y.data()
+    ), -1);
+
+    ret = component::G1{
+        arkworks_algebra_detail::FromU64(result_x).ToTrimmedString(),
+        arkworks_algebra_detail::FromU64(result_y).ToTrimmedString()};
+
+end:
+    return ret;
+}
+
 std::optional<component::Bignum> arkworks_algebra::OpBignumCalc(operation::BignumCalc& op) {
     if ( op.modulo == std::nullopt ) {
         return std::nullopt;
     }
 
-    if ( op.modulo->ToTrimmedString() != "115792089237316195423570985008687907853269984665640564039457584007913129639936" ) {
+    uint8_t mod = 0;
+    if ( op.modulo->ToTrimmedString() ==
+            "115792089237316195423570985008687907853269984665640564039457584007913129639936" ) {
+        mod = 1;
+    } else if ( op.modulo->ToTrimmedString() ==
+            "21888242871839275222246405745257275088696311157297823662689037894645226208583" ) {
+        mod = 2;
+    } else if ( op.modulo->ToTrimmedString() ==
+            "21888242871839275222246405745257275088548364400416034343698204186575808495617" ) {
+        mod = 3;
+    } else if ( op.modulo->ToTrimmedString() ==
+            "52435875175126190479447740508185965837690552500527637822603658699938581184513" ) {
+        mod = 4;
+    } else {
         return std::nullopt;
     }
+
     std::optional<component::Bignum> ret = std::nullopt;
 
     std::optional<std::array<uint64_t, 4>> bn0, bn1, bn2;
@@ -76,18 +214,55 @@ std::optional<component::Bignum> arkworks_algebra::OpBignumCalc(operation::Bignu
         { CF_CALCOP("LShift1(A)"), 2 },
         { CF_CALCOP("LShift(A)"), 3 },
         { CF_CALCOP("RShift(A,B)"), 4 },
+        { CF_CALCOP("InvMod(A,B)"), 5 },
+        { CF_CALCOP("Sqr(A)"), 6 },
+        { CF_CALCOP("Sqrt(A)"), 7 },
     };
 
     CF_CHECK_TRUE(LUT.find(op.calcOp.Get()) != LUT.end());
 
     {
-        const auto res = arkworks_algebra_bignumcalc(
-                LUT.at(op.calcOp.Get()),
-                bn0->data(),
-                bn1->data(),
-                bn2->data(),
-                result.data()
-        );
+        int res;
+        switch ( mod ) {
+            case    1:
+                res = arkworks_algebra_bignumcalc(
+                        LUT.at(op.calcOp.Get()),
+                        bn0->data(),
+                        bn1->data(),
+                        bn2->data(),
+                        result.data()
+                );
+                break;
+            case    2:
+                res = arkworks_algebra_bignumcalc_bn254_fq(
+                        LUT.at(op.calcOp.Get()),
+                        bn0->data(),
+                        bn1->data(),
+                        bn2->data(),
+                        result.data()
+                );
+                break;
+            case    3:
+                res = arkworks_algebra_bignumcalc_bn254_fr(
+                        LUT.at(op.calcOp.Get()),
+                        bn0->data(),
+                        bn1->data(),
+                        bn2->data(),
+                        result.data()
+                );
+                break;
+            case    4:
+                res = arkworks_algebra_bignumcalc_bls12_381_fr(
+                        LUT.at(op.calcOp.Get()),
+                        bn0->data(),
+                        bn1->data(),
+                        bn2->data(),
+                        result.data()
+                );
+                break;
+            default:
+                CF_UNREACHABLE();
+        }
 
         CF_CHECK_NE(res, -1);
 
