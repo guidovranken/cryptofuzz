@@ -422,6 +422,7 @@ static void addNumbers(void) {
         if ( ECC_CurveLUT[i].y ) curveNumbers.insert(*ECC_CurveLUT[i].y);
         if ( ECC_CurveLUT[i].order_min_1 ) curveNumbers.insert(*ECC_CurveLUT[i].order_min_1);
         if ( ECC_CurveLUT[i].order ) curveNumbers.insert(*ECC_CurveLUT[i].order);
+        if ( ECC_CurveLUT[i].cube_root_of_unity ) curveNumbers.insert(*ECC_CurveLUT[i].cube_root_of_unity);
     }
 
     for (const auto& s : curveNumbers) {

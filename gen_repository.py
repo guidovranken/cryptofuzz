@@ -89,6 +89,17 @@ class ECC_Curve(Component):
         self.order_min_1 = '"' + order_min_1 + '"' if order_min_1 else 'std::nullopt'
         self.order = '"' + order + '"' if order else 'std::nullopt'
 
+        def find_cube_root_of_unity(P):
+            if (P-1) % 3 != 0:
+                return None
+
+            G = (P-1) // 3
+
+            return str(pow(G, G, P))
+
+        cube_root_of_unity = find_cube_root_of_unity(int(prime)) if prime else None
+        self.cube_root_of_unity = '"' + cube_root_of_unity + '"' if cube_root_of_unity else 'std::nullopt'
+
 class CalcOp(Component):
     def __init__(self, operation):
         super(CalcOp, self).__init__(operation)
@@ -241,6 +252,7 @@ class ECC_CurveTable(Table):
                 "std::optional<const char*> y",
                 "std::optional<const char*> order_min_1",
                 "std::optional<const char*> order",
+                "std::optional<const char*> cube_root_of_unity",
         ]
 
         super(ECC_CurveTable, self).__init__('ECC_Curve', tableDecl)
@@ -255,6 +267,7 @@ class ECC_CurveTable(Table):
         tableEntry += [ self.table[index].y ]
         tableEntry += [ self.table[index].order_min_1 ]
         tableEntry += [ self.table[index].order ]
+        tableEntry += [ self.table[index].cube_root_of_unity ]
 
         return tableEntry
 
