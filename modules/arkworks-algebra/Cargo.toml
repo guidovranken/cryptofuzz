@@ -11,5 +11,6 @@ crate-type = ["staticlib"]
 ark-ff = { version = "0.3.0", features = [ "asm" ] }
 ark-bn254 = "0.3.0"
 ark-bls12-381 = "0.3.0"
+ark-bls12-377 = "0.3.0"
 ark-ec = "0.3.0"
 libc = "0.2.0"
