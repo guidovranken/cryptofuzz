@@ -389,6 +389,10 @@
   #include <modules/aleo/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_SHAMATAR)
+  #include <modules/shamatar/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -783,6 +787,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_ALEO)
     driver->LoadModule( std::make_shared<cryptofuzz::module::Aleo>() );
+#endif
+
+#if defined(CRYPTOFUZZ_SHAMATAR)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::Shamatar>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
