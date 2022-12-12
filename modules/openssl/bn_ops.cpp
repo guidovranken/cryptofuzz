@@ -297,7 +297,13 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
                         ctx.GetPtr(),
                         nullptr),
                     1,
+#if !defined(CRYPTOFUZZ_BORINGSSL)
                     BN_is_zero(bn[2].GetPtr()) || !BN_is_odd(bn[2].GetPtr()));
+#else
+                    BN_is_zero(bn[2].GetPtr()) ||
+                    !BN_is_odd(bn[2].GetPtr()) ||
+                    BN_cmp(bn[0].GetPtr(), bn[2].GetPtr()) >= 0);
+#endif
             break;
         case    1:
             CF_ASSERT_EQ_COND(
@@ -309,8 +315,13 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
                         ctx.GetPtr(),
                         nullptr),
                     1,
+#if !defined(CRYPTOFUZZ_BORINGSSL)
                     BN_is_zero(bn[2].GetPtr()) || !BN_is_odd(bn[2].GetPtr()));
-            break;
+#else
+                    BN_is_zero(bn[2].GetPtr()) ||
+                    !BN_is_odd(bn[2].GetPtr()) ||
+                    BN_cmp(bn[0].GetPtr(), bn[2].GetPtr()) >= 0);
+#endif
             break;
         case    2:
             CF_ASSERT_EQ_COND(
