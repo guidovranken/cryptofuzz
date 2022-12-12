@@ -41,19 +41,19 @@ bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     GET_WHICH(2);
     switch ( which ) {
         case    0:
-            CF_CHECK_EQ(BN_add(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
+            CF_ASSERT_EQ(BN_add(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
             break;
         case    1:
             CF_CHECK_EQ(BN_is_negative(bn[0].GetPtr()), 0);
             CF_CHECK_EQ(BN_is_negative(bn[1].GetPtr()), 0);
-            CF_CHECK_EQ(BN_uadd(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
+            CF_ASSERT_EQ(BN_uadd(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
             break;
         case    2:
             {
                 const auto val = bn[1].AsBN_ULONG();
                 CF_CHECK_NE(val, std::nullopt);
 
-                CF_CHECK_EQ(BN_add_word(bn.GetDestPtr(0), *val), 1);
+                CF_ASSERT_EQ(BN_add_word(bn.GetDestPtr(0), *val), 1);
 
                 CF_CHECK_EQ(res.Set(bn[0]), true);
             }
@@ -76,7 +76,7 @@ bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     GET_WHICH(3);
     switch ( which ) {
         case    0:
-            CF_CHECK_EQ(BN_sub(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
+            CF_ASSERT_EQ(BN_sub(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
             break;
 
     /* OpenSSL and LibreSSL return a positive value for BN_usub(A,B)
@@ -94,7 +94,7 @@ bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
                 const auto val = bn[1].AsBN_ULONG();
                 CF_CHECK_NE(val, std::nullopt);
 
-                CF_CHECK_EQ(BN_sub_word(bn.GetDestPtr(0), *val), 1);
+                CF_ASSERT_EQ(BN_sub_word(bn.GetDestPtr(0), *val), 1);
 
                 CF_CHECK_EQ(res.Set(bn[0]), true);
             }
@@ -127,7 +127,7 @@ bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     switch ( which ) {
         case    0:
             {
-                CF_CHECK_EQ(BN_mul(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+                CF_ASSERT_EQ(BN_mul(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             }
             break;
         case    1:
@@ -135,7 +135,7 @@ bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
                 const auto val = bn[1].AsBN_ULONG();
                 CF_CHECK_NE(val, std::nullopt);
 
-                CF_CHECK_EQ(BN_mul_word(bn.GetDestPtr(0), *val), 1);
+                CF_ASSERT_EQ(BN_mul_word(bn.GetDestPtr(0), *val), 1);
 
                 CF_CHECK_EQ(res.Set(bn[0]), true);
             }
@@ -158,11 +158,17 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     GET_WHICH(6);
     switch ( which ) {
         case    0:
-            CF_CHECK_EQ(BN_mod(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            CF_ASSERT_EQ_COND(
+                    BN_mod(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()),
+                    1,
+                    BN_is_zero(bn[1].GetPtr()));
             break;
         case    1:
             /* "BN_mod() corresponds to BN_div() with dv set to NULL" */
-            CF_CHECK_EQ(BN_div(nullptr, res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            CF_ASSERT_EQ_COND(
+                    BN_div(nullptr, res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()),
+                    1,
+                    BN_is_zero(bn[1].GetPtr()));
             break;
 #if defined(CRYPTOFUZZ_BORINGSSL)
         case    2:
@@ -282,13 +288,40 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
                 CF_NORET(util::HintBignum(hint));
             }
 
-            CF_CHECK_EQ(BN_mod_exp_mont_consttime(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr(), nullptr), 1);
+            CF_ASSERT_EQ_COND(
+                    BN_mod_exp_mont_consttime(
+                        res.GetDestPtr(),
+                        bn[0].GetPtr(),
+                        bn[1].GetPtr(),
+                        bn[2].GetPtr(),
+                        ctx.GetPtr(),
+                        nullptr),
+                    1,
+                    BN_is_zero(bn[2].GetPtr()) || !BN_is_odd(bn[2].GetPtr()));
             break;
         case    1:
-            CF_CHECK_EQ(BN_mod_exp_mont(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr(), nullptr), 1);
+            CF_ASSERT_EQ_COND(
+                    BN_mod_exp_mont(
+                        res.GetDestPtr(),
+                        bn[0].GetPtr(),
+                        bn[1].GetPtr(),
+                        bn[2].GetPtr(),
+                        ctx.GetPtr(),
+                        nullptr),
+                    1,
+                    BN_is_zero(bn[2].GetPtr()) || !BN_is_odd(bn[2].GetPtr()));
+            break;
             break;
         case    2:
-            CF_CHECK_EQ(BN_mod_exp(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), ctx.GetPtr()), 1);
+            CF_ASSERT_EQ_COND(
+                    BN_mod_exp(
+                        res.GetDestPtr(),
+                        bn[0].GetPtr(),
+                        bn[1].GetPtr(),
+                        bn[2].GetPtr(),
+                        ctx.GetPtr()),
+                    1,
+                    BN_is_zero(bn[2].GetPtr()) || !BN_is_odd(bn[2].GetPtr()));
             break;
         case    3:
 #if !defined(CRYPTOFUZZ_BORINGSSL)
@@ -410,11 +443,10 @@ bool Sqr::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(BN_sqr(res.GetDestPtr(), bn[0].GetPtr(), ctx.GetPtr()), 1);
+    CF_ASSERT_EQ(BN_sqr(res.GetDestPtr(), bn[0].GetPtr(), ctx.GetPtr()), 1);
 
     ret = true;
 
-end:
     return ret;
 }
 
@@ -425,7 +457,7 @@ bool GCD::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     GET_WHICH(1);
     switch ( which ) {
         case    0:
-            CF_CHECK_EQ(BN_gcd(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            CF_ASSERT_EQ(BN_gcd(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
             break;
 #if defined(CRYPTOFUZZ_LIBRESSL)
         case    1:
@@ -903,11 +935,10 @@ bool Mod_NIST_192::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& c
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(BN_nist_mod_192(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+    CF_ASSERT_EQ(BN_nist_mod_192(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
 
     ret = true;
 
-end:
     return ret;
 }
 
@@ -915,11 +946,10 @@ bool Mod_NIST_224::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& c
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(BN_nist_mod_224(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+    CF_ASSERT_EQ(BN_nist_mod_224(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
 
     ret = true;
 
-end:
     return ret;
 }
 
@@ -927,11 +957,10 @@ bool Mod_NIST_256::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& c
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(BN_nist_mod_256(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+    CF_ASSERT_EQ(BN_nist_mod_256(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
 
     ret = true;
 
-end:
     return ret;
 }
 
@@ -939,11 +968,10 @@ bool Mod_NIST_384::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& c
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(BN_nist_mod_384(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+    CF_ASSERT_EQ(BN_nist_mod_384(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
 
     ret = true;
 
-end:
     return ret;
 }
 
@@ -951,11 +979,10 @@ bool Mod_NIST_521::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& c
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(BN_nist_mod_521(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+    CF_ASSERT_EQ(BN_nist_mod_521(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
 
     ret = true;
 
-end:
     return ret;
 }
 #endif
@@ -1046,16 +1073,16 @@ bool Abs::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
         GET_WHICH(1);
         switch ( which ) {
             case    0:
-                CF_CHECK_EQ(BN_sub(res.GetDestPtr(), zero.GetPtr(), bn[0].GetPtr()), 1);
+                CF_ASSERT_EQ(BN_sub(res.GetDestPtr(), zero.GetPtr(), bn[0].GetPtr()), 1);
                 break;
             case    1:
                 {
                     auto bn0 = bn[0].GetPtr();
-                    CF_CHECK_EQ(BN_sub(res.GetDestPtr(), bn0, bn0), 1);
+                    CF_ASSERT_EQ(BN_sub(res.GetDestPtr(), bn0, bn0), 1);
                 }
                 {
                     auto resPtr = res.GetDestPtr();
-                    CF_CHECK_EQ(BN_sub(resPtr, resPtr, bn[0].GetPtr()), 1);
+                    CF_ASSERT_EQ(BN_sub(resPtr, resPtr, bn[0].GetPtr()), 1);
                 }
                 break;
             default:
@@ -1083,13 +1110,13 @@ bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
 
     switch ( which ) {
         case    0:
-            CF_CHECK_EQ(BN_rshift(res.GetDestPtr(), bn[0].GetPtr(), *places), 1);
+            CF_ASSERT_EQ(BN_rshift(res.GetDestPtr(), bn[0].GetPtr(), *places), 1);
             break;
         case    1:
             if ( *places != 1 ) {
                 goto end;
             }
-            CF_CHECK_EQ(BN_rshift1(res.GetDestPtr(), bn[0].GetPtr()), 1);
+            CF_ASSERT_EQ(BN_rshift1(res.GetDestPtr(), bn[0].GetPtr()), 1);
             break;
         default:
             goto end;
@@ -1106,11 +1133,10 @@ bool LShift1::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) c
     (void)ds;
     bool ret = false;
 
-    CF_CHECK_EQ(BN_lshift1(res.GetDestPtr(), bn[0].GetPtr()), 1);
+    CF_ASSERT_EQ(BN_lshift1(res.GetDestPtr(), bn[0].GetPtr()), 1);
 
     ret = true;
 
-end:
     return ret;
 }
 
@@ -1122,7 +1148,7 @@ bool SetBit::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
 
     CF_CHECK_NE(pos = bn[1].AsInt(), std::nullopt);
 
-    CF_CHECK_EQ(BN_set_bit(bn.GetDestPtr(0), *pos), 1);
+    CF_ASSERT_EQ(BN_set_bit(bn.GetDestPtr(0), *pos), 1);
     CF_CHECK_NE(BN_copy(res.GetDestPtr(), bn[0].GetPtr()), nullptr);
 
     ret = true;
