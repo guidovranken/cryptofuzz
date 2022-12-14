@@ -1,6 +1,6 @@
 all: module.a test_strings
 
-CXXFLAGS += -Wall -Wextra -std=c++17 -I ../../include -I ../../fuzzing-headers/include -DFUZZING_HEADERS_NO_IMPL
+CXXFLAGS += -Wall -Wextra -std=c++20 -I ../../include -I ../../fuzzing-headers/include -DFUZZING_HEADERS_NO_IMPL
 
 module.a: module.o bn_ops.o bn_helper.o
 	test $(LIBBOTAN_A_PATH)
