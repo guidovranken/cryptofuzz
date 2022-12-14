@@ -134,29 +134,41 @@ end:
 
 std::optional<component::Key> Monocypher::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
     std::optional<component::Key> ret = std::nullopt;
+    crypto_argon2_settings settings = {};
+
     if ( op.type != 1 ) {
         /* Not Argon2i */
         return ret;
     }
+    settings.algorithm = CRYPTO_ARGON2_I;
+
     if ( op.threads != 1 ) {
         return ret;
     }
+    settings.nb_lanes = op.threads;
+
     if ( op.memory < 8) {
         return ret;
     }
+    settings.nb_blocks = op.memory;
+
     if ( op.iterations == 0 ) {
         /* iterations == 0 outputs uninitialized memory */
         return ret;
     }
+    settings.nb_iterations = op.iterations;
+
     uint8_t* out = util::malloc(op.keySize);
+    settings.hash_size = op.keySize;
+
     uint8_t* work_area = util::malloc(op.memory * 1024);
 
-    /* noret */ crypto_argon2i(
-            out, op.keySize,
-            work_area, op.memory,
-            op.iterations,
+    settings.salt_size = op.salt.GetSize();
+
+    CF_NORET(crypto_argon2(
+            out, work_area,
             op.password.GetPtr(), op.password.GetSize(),
-            op.salt.GetPtr(), op.salt.GetSize());
+            op.salt.GetPtr(), settings));
 
     ret = component::Key(out, op.keySize);
 
