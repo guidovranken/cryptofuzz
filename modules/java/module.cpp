@@ -1,6 +1,8 @@
+#if defined(JAVA_WITH_ECDSA)
 #include <openssl/ecdsa.h>
 #include <openssl/obj_mac.h>
 #include <openssl/x509.h>
+#endif
 
 #include "module.h"
 #include <cryptofuzz/util.h>
@@ -61,6 +63,7 @@ namespace Java_detail {
 
     }
 
+#if defined(JAVA_WITH_ECDSA)
     static std::optional<std::vector<uint8_t>> PubkeyToX509(const component::BignumPair& pub, const int nid)
     {
         std::optional<std::vector<uint8_t>> ret = std::nullopt;
@@ -129,6 +132,7 @@ end:
 
         return ret;
     }
+#endif
 }
 
 Java::Java(void) :
