@@ -8,6 +8,9 @@
 #include <cryptofuzz/util.h>
 #include <fuzzing/datasource/id.hpp>
 #include <jni.h>
+#if defined(JAVA_OSS_FUZZ)
+#include <libgen.h>
+#endif
 
 namespace cryptofuzz {
 namespace module {
@@ -23,13 +26,25 @@ namespace Java_detail {
     jmethodID method_BignumCalc;
 
     static JNIEnv* create_vm(JavaVM ** jvm) {
-        //char* option_string = "-Djava.class.path=/mnt/2tb/cf-java/cryptofuzz/modules/java/";
-        char* option_string = "-Djava.class.path=" CLASS_PATH;
+#if defined(JAVA_OSS_FUZZ)
+        char exepath[PATH_MAX];
+        memset(exepath, 0, sizeof(exepath));
+        CF_ASSERT(
+                readlink(
+                    "/proc/self/exe",
+                    exepath,
+                    sizeof(exepath)) != -1, "Cannot resolve executable path");
+        const char* classpath = dirname(exepath);
+        std::string option_string = "-Djava.class.path=" + std::string(classpath);
+#else
+        std::string option_string = "-Djava.class.path=" + std::string(CLASS_PATH);
+#endif
+
         JNIEnv* env;
         JavaVMOption options;
         JavaVMInitArgs vm_args;
 
-        options.optionString = option_string;
+        options.optionString = (char*)option_string.c_str();
 
         vm_args.version = JNI_VERSION_1_6;
         vm_args.nOptions = 1;
