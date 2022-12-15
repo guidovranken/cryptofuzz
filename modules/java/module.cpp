@@ -220,6 +220,7 @@ std::optional<component::Digest> Java::OpDigest(operation::Digest& op) {
     if ( initialized ) {
         Java_detail::env->DeleteLocalRef(msg);
         Java_detail::env->DeleteLocalRef(hash);
+        Java_detail::env->DeleteLocalRef(rv);
     }
 
     return ret;
@@ -314,6 +315,7 @@ end:
     if ( initialized ) {
         Java_detail::env->DeleteLocalRef(msg);
         Java_detail::env->DeleteLocalRef(hash);
+        Java_detail::env->DeleteLocalRef(rv);
     }
 
     return ret;
@@ -584,6 +586,7 @@ std::optional<component::Bignum> Java::OpBignumCalc(operation::BignumCalc& op) {
                 break;
         }
     }
+
     CF_CHECK_NE(rv, nullptr);
 
     {
@@ -601,6 +604,7 @@ end:
         Java_detail::env->DeleteLocalRef(bn1);
         Java_detail::env->DeleteLocalRef(bn2);
         Java_detail::env->DeleteLocalRef(bn3);
+        Java_detail::env->DeleteLocalRef(rv);
     }
     return ret;
 }
