@@ -12,7 +12,9 @@ class Java : public Module {
         Java(void);
         std::optional<component::Digest> OpDigest(operation::Digest& op) override;
         std::optional<component::MAC> OpHMAC(operation::HMAC& op) override;
+#if defined(JAVA_WITH_ECDSA)
         std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) override;
+#endif
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
 };
 

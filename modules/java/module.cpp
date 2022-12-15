@@ -319,6 +319,7 @@ end:
     return ret;
 }
 
+#if defined(JAVA_WITH_ECDSA)
 std::optional<bool> Java::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     std::optional<bool> ret = std::nullopt;
@@ -413,6 +414,7 @@ end:
     Java_detail::env->DeleteLocalRef(msg);
     return ret;
 }
+#endif
 
 std::optional<component::Bignum> Java::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
