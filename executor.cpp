@@ -1127,6 +1127,8 @@ template<> void ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToP
 }
 
 template<> std::optional<component::BLS_PublicKey> ExecutorBase<component::BLS_PublicKey, operation::BLS_PrivateToPublic>::callModule(std::shared_ptr<Module> module, operation::BLS_PrivateToPublic& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
+
     const size_t size = op.priv.ToTrimmedString().size();
 
     if ( size == 0 || size > 4096 ) {
@@ -1599,6 +1601,7 @@ template<> void ExecutorBase<component::G1, operation::BLS_G1_Add>::postprocess(
 }
 
 template<> std::optional<component::G1> ExecutorBase<component::G1, operation::BLS_G1_Add>::callModule(std::shared_ptr<Module> module, operation::BLS_G1_Add& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
     if ( op.a.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.a.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.b.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
@@ -1624,6 +1627,7 @@ template<> void ExecutorBase<component::G1, operation::BLS_G1_Mul>::postprocess(
 }
 
 template<> std::optional<component::G1> ExecutorBase<component::G1, operation::BLS_G1_Mul>::callModule(std::shared_ptr<Module> module, operation::BLS_G1_Mul& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
     if ( op.a.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.a.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.b.GetSize() > config::kMaxBignumSize ) return std::nullopt;
@@ -1639,6 +1643,7 @@ template<> void ExecutorBase<bool, operation::BLS_G1_IsEq>::postprocess(std::sha
 }
 
 template<> std::optional<bool> ExecutorBase<bool, operation::BLS_G1_IsEq>::callModule(std::shared_ptr<Module> module, operation::BLS_G1_IsEq& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
     if ( op.a.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.a.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.b.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
@@ -1664,6 +1669,7 @@ template<> void ExecutorBase<component::G1, operation::BLS_G1_Neg>::postprocess(
 }
 
 template<> std::optional<component::G1> ExecutorBase<component::G1, operation::BLS_G1_Neg>::callModule(std::shared_ptr<Module> module, operation::BLS_G1_Neg& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
     if ( op.a.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.a.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
 
@@ -1691,6 +1697,7 @@ template<> void ExecutorBase<component::G2, operation::BLS_G2_Add>::postprocess(
 }
 
 template<> std::optional<component::G2> ExecutorBase<component::G2, operation::BLS_G2_Add>::callModule(std::shared_ptr<Module> module, operation::BLS_G2_Add& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
     if ( op.a.first.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.a.first.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.a.second.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
@@ -1724,6 +1731,7 @@ template<> void ExecutorBase<component::G2, operation::BLS_G2_Mul>::postprocess(
 }
 
 template<> std::optional<component::G2> ExecutorBase<component::G2, operation::BLS_G2_Mul>::callModule(std::shared_ptr<Module> module, operation::BLS_G2_Mul& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
     if ( op.a.first.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.a.first.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.a.second.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
@@ -1741,6 +1749,7 @@ template<> void ExecutorBase<bool, operation::BLS_G2_IsEq>::postprocess(std::sha
 }
 
 template<> std::optional<bool> ExecutorBase<bool, operation::BLS_G2_IsEq>::callModule(std::shared_ptr<Module> module, operation::BLS_G2_IsEq& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
     if ( op.a.first.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.a.first.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.a.second.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
@@ -1774,6 +1783,7 @@ template<> void ExecutorBase<component::G2, operation::BLS_G2_Neg>::postprocess(
 }
 
 template<> std::optional<component::G2> ExecutorBase<component::G2, operation::BLS_G2_Neg>::callModule(std::shared_ptr<Module> module, operation::BLS_G2_Neg& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
     if ( op.a.first.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.a.first.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.a.second.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
