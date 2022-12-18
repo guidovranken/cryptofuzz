@@ -366,6 +366,36 @@ func Gnark_bn254_BLS_IsG2OnCurve(in []byte) {
     result = r2
 }
 
+//export Gnark_bls12_381_BLS_IsG2OnCurve
+func Gnark_bls12_381_BLS_IsG2OnCurve(in []byte) {
+    resetResult()
+
+    var op OpBLS_IsG2OnCurve
+    unmarshal(in, &op)
+
+    a := new(gnark_bls12381.G2Affine)
+
+    a.X.A1.SetBigInt(decodeBignum(op.G2_x))
+    a.X.A0.SetBigInt(decodeBignum(op.G2_v))
+    a.Y.A1.SetBigInt(decodeBignum(op.G2_y))
+    a.Y.A0.SetBigInt(decodeBignum(op.G2_w))
+
+    var res bool
+    if a.X.A1.IsZero() && a.X.A0.IsZero() && a.Y.A1.IsZero() && a.Y.A0.IsZero() {
+        res = false
+    } else {
+        res = a.IsOnCurve() && a.IsInSubGroup()
+    }
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
 //export Gnark_bn254_BLS_G1_Add
 func Gnark_bn254_BLS_G1_Add(in []byte) {
     resetResult()
@@ -501,6 +531,10 @@ func Gnark_bls12_381_BLS_G1_Mul(in []byte) {
     r.ScalarMultiplication(g1_jac, b)
     r_affine := new(gnark_bls12381.G1Affine).FromJacobian(r)
 
+    if !Gnark_bls12_381_IsG1OnCurve(g1) {
+        return
+    }
+
     saveG1_bls12381(r_affine)
 }
 
@@ -550,6 +584,23 @@ func Gnark_bn254_BLS_G1_Neg(in []byte) {
     r := new(bn254.G1Affine).Neg(g1)
 
     saveG1(r)
+}
+
+//export Gnark_bls12_381_BLS_G1_Neg
+func Gnark_bls12_381_BLS_G1_Neg(in []byte) {
+    resetResult()
+
+    var op OpBLS_G1_Neg
+    unmarshal(in, &op)
+
+    g1 := new(gnark_bls12381.G1Affine)
+
+    g1.X.SetBigInt(decodeBignum(op.A_x))
+    g1.Y.SetBigInt(decodeBignum(op.A_y))
+
+    r := new(gnark_bls12381.G1Affine).Neg(g1)
+
+    saveG1_bls12381(r)
 }
 
 //export Gnark_bn254_BLS_G2_Add
@@ -659,6 +710,10 @@ func Gnark_bls12_381_BLS_G2_Mul(in []byte) {
     r.ScalarMultiplication(g2_jac, b)
     r_affine := new(gnark_bls12381.G2Affine).FromJacobian(r)
 
+    if !g2.IsOnCurve() || !g2.IsInSubGroup() {
+        return
+    }
+
     saveG2_bls12381(r_affine)
 }
 
@@ -679,6 +734,25 @@ func Gnark_bn254_BLS_G2_Neg(in []byte) {
     r := new(bn254.G2Affine).Neg(a)
 
     saveG2(r)
+}
+
+//export Gnark_bls12_381_BLS_G2_Neg
+func Gnark_bls12_381_BLS_G2_Neg(in []byte) {
+    resetResult()
+
+    var op OpBLS_G2_Neg
+    unmarshal(in, &op)
+
+    a := new(gnark_bls12381.G2Affine)
+
+    a.X.A1.SetBigInt(decodeBignum(op.A_x))
+    a.X.A0.SetBigInt(decodeBignum(op.A_v))
+    a.Y.A1.SetBigInt(decodeBignum(op.A_y))
+    a.Y.A0.SetBigInt(decodeBignum(op.A_w))
+
+    r := new(gnark_bls12381.G2Affine).Neg(a)
+
+    saveG2_bls12381(r)
 }
 
 //export Gnark_bn254_BignumCalc_bn254_Fp

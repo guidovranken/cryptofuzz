@@ -23,7 +23,7 @@ int main(void)
         }
         fprintf(fp, "func is%s(id uint64) bool { return id == %s }\n", cipherStr.c_str(), std::to_string(cipher.first).c_str());
     }
-    for (const auto curve : ECC_CurveLUTMap ) {
+    for (const auto& curve : ECC_CurveLUTMap ) {
         auto curveStr = std::string(curve.second.name);
         curveStr = std::regex_replace(curveStr, std::regex("[.-]"), "_");
         fprintf(fp, "func is%s(id uint64) bool { return id == %s }\n", curveStr.c_str(), std::to_string(curve.first).c_str());
