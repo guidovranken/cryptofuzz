@@ -67,5 +67,41 @@ std::optional<component::G2> kilic_bls12_381::OpBLS_PrivateToPublic_G2(operation
     return getResultAs<component::G2>();
 }
 
+std::optional<bool> kilic_bls12_381::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    kilic_bls12_381_Cryptofuzz_OpBLS_IsG1OnCurve(toGoSlice(jsonStr));
+
+    return getResultAs<bool>();
+}
+
+std::optional<component::G1> kilic_bls12_381::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    kilic_bls12_381_Cryptofuzz_OpBLS_G1_Add(toGoSlice(jsonStr));
+
+    return getResultAs<component::G1>();
+}
+
+std::optional<component::G1> kilic_bls12_381::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    kilic_bls12_381_Cryptofuzz_OpBLS_G1_Mul(toGoSlice(jsonStr));
+
+    return getResultAs<component::G1>();
+}
+
+std::optional<component::G1> kilic_bls12_381::OpBLS_G1_Neg(operation::BLS_G1_Neg& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    kilic_bls12_381_Cryptofuzz_OpBLS_G1_Neg(toGoSlice(jsonStr));
+
+    return getResultAs<component::G1>();
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */

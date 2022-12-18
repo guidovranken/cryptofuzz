@@ -5,6 +5,7 @@ import (
     "encoding/hex"
     "encoding/json"
     "math/big"
+    "errors"
     kilic "github.com/kilic/bls12-381"
 )
 
@@ -53,6 +54,38 @@ type OpBLS_PrivateToPublic_G2 struct {
     Priv string
 }
 
+type OpBLS_IsG1OnCurve struct {
+    Modifier ByteSlice
+    CurveType uint64
+    G1_x string
+    G1_y string
+}
+
+type OpBLS_G1_Add struct {
+    Modifier ByteSlice
+    CurveType uint64
+    A_x string
+    A_y string
+    B_x string
+    B_y string
+}
+
+type OpBLS_G1_Mul struct {
+    Modifier ByteSlice
+    CurveType uint64
+    A_x string
+    A_y string
+    B string
+}
+
+type OpBLS_G1_Neg struct {
+    Modifier ByteSlice
+    CurveType uint64
+    A_x string
+    A_y string
+    B string
+}
+
 var result []byte
 
 func resetResult() {
@@ -77,6 +110,27 @@ func unmarshal(in []byte, op interface{}) {
     if err != nil {
         panic("Cannot unmarshal JSON, which is expected to be well-formed")
     }
+}
+
+func loadG1(x, y string) (*kilic.PointG1, error) {
+    xbn := decodeBignum(x)
+    ybn := decodeBignum(y)
+
+    if xbn.BitLen() > 384 || ybn.BitLen() > 384 {
+        return nil, errors.New("")
+    }
+
+    xBytes := xbn.Bytes()
+    yBytes := ybn.Bytes()
+
+    result := make([]byte, 96)
+
+    copy(result[:48], xBytes)
+    copy(result[48:], yBytes)
+
+    g := kilic.NewG1()
+    p, err := g.FromBytes(result)
+    return p, err
 }
 
 //export kilic_bls12_381_Cryptofuzz_OpBLS_PrivateToPublic
@@ -145,6 +199,151 @@ func kilic_bls12_381_Cryptofuzz_OpBLS_PrivateToPublic_G2(in []byte) {
     res[0][1] = y.String()
     res[1][0] = v.String()
     res[1][1] = x.String()
+
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export kilic_bls12_381_Cryptofuzz_OpBLS_IsG1OnCurve
+func kilic_bls12_381_Cryptofuzz_OpBLS_IsG1OnCurve(in []byte) {
+    resetResult()
+
+    var op OpBLS_IsG1OnCurve
+    unmarshal(in, &op)
+
+    g := kilic.NewG1()
+
+    g1, err := loadG1(op.G1_x, op.G1_y)
+
+    var res bool
+
+    if err != nil {
+        res = false
+    } else {
+        if g.IsZero(g1) {
+            res = false
+        } else {
+            res = true
+        }
+    }
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export kilic_bls12_381_Cryptofuzz_OpBLS_G1_Add
+func kilic_bls12_381_Cryptofuzz_OpBLS_G1_Add(in []byte) {
+    resetResult()
+
+    var op OpBLS_G1_Add
+    unmarshal(in, &op)
+
+    g := kilic.NewG1()
+
+    a, err := loadG1(op.A_x, op.A_y)
+    if err != nil {
+        return
+    }
+
+    b, err := loadG1(op.B_x, op.B_y)
+    if err != nil {
+        return
+    }
+
+    g.Add(a, a, b)
+
+    r := g.ToBytes(a)
+
+    x := new(big.Int)
+    y := new(big.Int)
+
+    x.SetBytes(r[0:48])
+    y.SetBytes(r[48:96])
+
+    res := make([]string, 2)
+    res[0] = x.String()
+    res[1] = y.String()
+
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export kilic_bls12_381_Cryptofuzz_OpBLS_G1_Mul
+func kilic_bls12_381_Cryptofuzz_OpBLS_G1_Mul(in []byte) {
+    resetResult()
+
+    var op OpBLS_G1_Mul
+    unmarshal(in, &op)
+
+    g := kilic.NewG1()
+    a, err := loadG1(op.A_x, op.A_y)
+    if err != nil {
+        return
+    }
+
+    b := decodeBignum(op.B)
+
+    g.MulScalarBig(a, a, b)
+
+    r := g.ToBytes(a)
+
+    x := new(big.Int)
+    y := new(big.Int)
+
+    x.SetBytes(r[0:48])
+    y.SetBytes(r[48:96])
+
+    res := make([]string, 2)
+    res[0] = x.String()
+    res[1] = y.String()
+
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export kilic_bls12_381_Cryptofuzz_OpBLS_G1_Neg
+func kilic_bls12_381_Cryptofuzz_OpBLS_G1_Neg(in []byte) {
+    resetResult()
+
+    var op OpBLS_G1_Neg
+    unmarshal(in, &op)
+
+    g := kilic.NewG1()
+    a, err := loadG1(op.A_x, op.A_y)
+    if err != nil {
+        return
+    }
+
+    g.Neg(a, a)
+
+    r := g.ToBytes(a)
+
+    x := new(big.Int)
+    y := new(big.Int)
+
+    x.SetBytes(r[0:48])
+    y.SetBytes(r[48:96])
+
+    res := make([]string, 2)
+    res[0] = x.String()
+    res[1] = y.String()
 
     r2, err := json.Marshal(&res)
     if err != nil {
