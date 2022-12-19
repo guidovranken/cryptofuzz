@@ -12,7 +12,7 @@ cryptofuzz.bc : cryptofuzz.zig
 	#$(ZIG_BIN) build-lib -O ReleaseFast -fcompiler-rt cryptofuzz.zig
 	$(ZIG_BIN) build-lib -femit-llvm-bc=cryptofuzz.bc -fno-stack-check cryptofuzz.zig
 cryptofuzz.o : cryptofuzz.bc
-	zig cc -c $(CFLAGS) cryptofuzz.bc
+	$(ZIG_BIN) cc -c $(CFLAGS) cryptofuzz.bc
 
 clean:
 	rm -rf *.o module.a
