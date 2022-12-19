@@ -8,10 +8,13 @@ import java.security.spec.X509EncodedKeySpec;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.SignatureException;
+import java.security.NoSuchAlgorithmException;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 
 public class CryptofuzzJavaHarness
 {
@@ -78,6 +81,18 @@ public class CryptofuzzJavaHarness
       }
   }
 
+  public static byte[] PBKDF2(String hash, byte[] password, byte[] salt, int iterations, int keysize)
+      throws NoSuchAlgorithmException, InvalidKeySpecException
+  {
+      char[] password2 = new char[password.length];
+      for (int i = 0; i < password.length; i++) {
+          password2[i] = (char)password[i];
+      }
+      PBEKeySpec spec = new PBEKeySpec(password2, salt, iterations, keysize);
+      SecretKeyFactory skf = SecretKeyFactory.getInstance(hash);
+      skf.generateSecret(spec).getEncoded();
+      return skf.generateSecret(spec).getEncoded();
+  }
   public static String BignumCalc(String _bn1, String _bn2, String _bn3, int op)
   {
       BigInteger bn1 = new BigInteger(_bn1);

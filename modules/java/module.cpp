@@ -23,6 +23,7 @@ namespace Java_detail {
     jmethodID method_Digest;
     jmethodID method_HMAC;
     jmethodID method_ECDSA_Verify;
+    jmethodID method_PBKDF2;
     jmethodID method_BignumCalc;
 
     static JNIEnv* create_vm(JavaVM ** jvm) {
@@ -72,6 +73,10 @@ namespace Java_detail {
 
         method_ECDSA_Verify = env->GetStaticMethodID(jclass, "ECDSA_Verify", "(Ljava/lang/String;[B[B[B[I)Z");
         CF_ASSERT(method_ECDSA_Verify != nullptr, "Cannot find method");
+
+        //method_PBKDF2 = env->GetStaticMethodID(jclass, "PBKDF2", "(Ljava/lang/String;[C[BII)[B");
+        method_PBKDF2 = env->GetStaticMethodID(jclass, "PBKDF2", "(Ljava/lang/String;[B[BII)[B");
+        CF_ASSERT(method_PBKDF2 != nullptr, "Cannot find method");
 
         method_BignumCalc = env->GetStaticMethodID(jclass, "BignumCalc", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;");
         CF_ASSERT(method_BignumCalc != nullptr, "Cannot find method");
@@ -436,6 +441,93 @@ end:
     return ret;
 }
 #endif
+
+std::optional<component::Key> Java::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
+    std::optional<component::Key> ret = std::nullopt;
+
+    if ( op.iterations == 0 ) {
+        return ret;
+    }
+    if ( op.keySize == 0 ) {
+        return ret;
+    }
+    if ( op.salt.GetSize() == 0 ) {
+        return ret;
+    }
+    for (size_t i = 0; i < op.password.GetSize(); i++) {
+        if ( op.password.GetPtr()[i] > 127 ) {
+            return ret;
+        }
+    }
+
+    bool initialized = false;
+    jstring hash;
+    jbyteArray salt;
+    jbyteArray password;
+    jint iterations;
+    jint keysize;
+    jbyteArray rv;
+
+    switch ( op.digestType.Get() ) {
+        case    CF_DIGEST("SHA1"):
+            hash = Java_detail::env->NewStringUTF("PBKDF2WithHmacSHA1");
+            break;
+        case    CF_DIGEST("SHA224"):
+            hash = Java_detail::env->NewStringUTF("PBKDF2WithHmacSHA224");
+            break;
+        case    CF_DIGEST("SHA256"):
+            hash = Java_detail::env->NewStringUTF("PBKDF2WithHmacSHA256");
+            break;
+        case    CF_DIGEST("SHA384"):
+            hash = Java_detail::env->NewStringUTF("PBKDF2WithHmacSHA384");
+            break;
+        case    CF_DIGEST("SHA512"):
+            hash = Java_detail::env->NewStringUTF("PBKDF2WithHmacSHA512");
+            break;
+        default:
+            return ret;
+
+    }
+    CF_ASSERT(hash != nullptr, "Cannot create string argument");
+
+    salt = Java_detail::env->NewByteArray(op.salt.GetSize());
+    CF_ASSERT(salt != nullptr, "Cannot create byte array argument");
+    Java_detail::env->SetByteArrayRegion(salt, 0, op.salt.GetSize(), (const jbyte*)op.salt.GetPtr());
+
+    password = Java_detail::env->NewByteArray(op.password.GetSize());
+    CF_ASSERT(password != nullptr, "Cannot create byte array argument");
+    Java_detail::env->SetByteArrayRegion(password, 0, op.password.GetSize(), (const jbyte*)op.password.GetPtr());
+
+    iterations = op.iterations;
+    keysize = op.keySize;
+
+    initialized = true;
+    rv = static_cast<jbyteArray>(
+            Java_detail::env->CallStaticObjectMethod(
+                Java_detail::jclass,
+                Java_detail::method_PBKDF2,
+                hash, password, salt, iterations, keysize * 8));
+
+    CF_ASSERT(rv != nullptr, "Expected result");
+
+    {
+        const auto size = Java_detail::env->GetArrayLength(rv);
+        const auto data = Java_detail::env->GetPrimitiveArrayCritical(rv, nullptr);
+
+        ret = component::Key((const uint8_t*)data, size);
+
+        Java_detail::env->ReleasePrimitiveArrayCritical(rv, data, 0);
+    }
+
+    if ( initialized ) {
+        Java_detail::env->DeleteLocalRef(hash);
+        Java_detail::env->DeleteLocalRef(salt);
+        Java_detail::env->DeleteLocalRef(password);
+        Java_detail::env->DeleteLocalRef(rv);
+    }
+
+    return ret;
+}
 
 std::optional<component::Bignum> Java::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;

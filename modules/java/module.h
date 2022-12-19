@@ -15,6 +15,7 @@ class Java : public Module {
 #if defined(JAVA_WITH_ECDSA)
         std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) override;
 #endif
+        std::optional<component::Key> OpKDF_PBKDF2(operation::KDF_PBKDF2& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
 };
 
