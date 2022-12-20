@@ -1,5 +1,4 @@
 #include <secp256k1.h>
-#include <src/libsecp256k1-config.h>
 #include <src/scalar_impl.h>
 #include <src/group_impl.h>
 #include <src/field_impl.h>
