@@ -18,7 +18,7 @@ export fn cryptofuzz_zig_hkdf(
                 res_data[0..res_size],
                 info_data[0..info_size],
                 prk);
-    } else if ( digest == 2 ) {
+    } else if ( digest == 1 ) {
         const prk = hkdf.HkdfSha512.extract(
                 salt_data[0..salt_size],
                 password_data[0..password_size]);
