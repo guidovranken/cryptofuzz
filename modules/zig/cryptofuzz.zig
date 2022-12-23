@@ -5,6 +5,7 @@ const mem = std.mem;
 const hkdf = std.crypto.kdf.hkdf;
 const pbkdf2 = std.crypto.pwhash.pbkdf2;
 const HmacSha1 = std.crypto.auth.hmac.HmacSha1;
+const scrypt = std.crypto.pwhash.scrypt;
 
 export fn cryptofuzz_zig_hkdf(
         res_data: [*:0]u8, res_size: u32,
@@ -44,6 +45,30 @@ export fn cryptofuzz_zig_pbkdf2_sha1(
             salt_data[0..salt_size],
             iterations,
             HmacSha1) catch {
+        return -1;
+    };
+
+    return 0;
+}
+
+export fn cryptofuzz_zig_scrypt(
+        res_data: [*:0]u8, res_size: u32,
+        password_data: [*:0]const u8, password_size: u32,
+        salt_data: [*:0]const u8, salt_size: u32,
+        n: u32,
+        r: u32,
+        p: u32) callconv(.C) i32 {
+    const allocator = std.heap.page_allocator;
+    scrypt.kdf(
+            allocator,
+            res_data[0..res_size],
+            password_data[0..password_size],
+            salt_data[0..salt_size],
+            scrypt.Params{
+                .ln = @intCast(u6, n),
+                .r = @intCast(u30, r),
+                .p = @intCast(u30, p)},
+    ) catch {
         return -1;
     };
 
