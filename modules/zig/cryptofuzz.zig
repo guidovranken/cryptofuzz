@@ -3,6 +3,8 @@ const std = @import("std");
 const Limb = std.math.big.Limb;
 const mem = std.mem;
 const hkdf = std.crypto.kdf.hkdf;
+const pbkdf2 = std.crypto.pwhash.pbkdf2;
+const HmacSha1 = std.crypto.auth.hmac.HmacSha1;
 
 export fn cryptofuzz_zig_hkdf(
         res_data: [*:0]u8, res_size: u32,
@@ -29,6 +31,23 @@ export fn cryptofuzz_zig_hkdf(
     } else {
         unreachable;
     }
+}
+
+export fn cryptofuzz_zig_pbkdf2_sha1(
+        res_data: [*:0]u8, res_size: u32,
+        password_data: [*:0]const u8, password_size: u32,
+        salt_data: [*:0]const u8, salt_size: u32,
+        iterations: u32) callconv(.C) i32 {
+    pbkdf2(
+            res_data[0..res_size],
+            password_data[0..password_size],
+            salt_data[0..salt_size],
+            iterations,
+            HmacSha1) catch {
+        return -1;
+    };
+
+    return 0;
 }
 
 export fn cryptofuzz_zig_bignumcalc(

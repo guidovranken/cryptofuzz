@@ -2,17 +2,22 @@
 #include <cryptofuzz/util.h>
 #include <fuzzing/datasource/id.hpp>
 extern "C" {
-size_t cryptofuzz_zig_bignumcalc(
-        char* res_data, const size_t res_size,
-        const char* a_data, const size_t a_size,
-        const char* b_data, const size_t b_size,
-        size_t operation);
 void cryptofuzz_zig_hkdf(
         uint8_t* res_data, const size_t res_size,
         const uint8_t* password_data, const size_t password_size,
         const uint8_t* salt_data, const size_t salt_size,
         const uint8_t* info_data, const size_t info_size,
         const size_t digest);
+int cryptofuzz_zig_pbkdf2_sha1(
+        uint8_t* res_data, const size_t res_size,
+        const uint8_t* password_data, const size_t password_size,
+        const uint8_t* salt_data, const size_t salt_size,
+        const uint32_t iterations);
+size_t cryptofuzz_zig_bignumcalc(
+        char* res_data, const size_t res_size,
+        const char* a_data, const size_t a_size,
+        const char* b_data, const size_t b_size,
+        size_t operation);
 }
 
 namespace cryptofuzz {
@@ -51,6 +56,29 @@ std::optional<component::Key> Zig::OpKDF_HKDF(operation::KDF_HKDF& op) {
 
     ret = component::Key(out, op.keySize);
 
+    util::free(out);
+
+    return ret;
+}
+
+std::optional<component::Key> Zig::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
+    std::optional<component::Key> ret = std::nullopt;
+
+    if ( !op.digestType.Is(CF_DIGEST("SHA1")) ) {
+        return ret;
+    }
+
+    uint8_t* out = util::malloc(op.keySize);
+
+    CF_CHECK_EQ(cryptofuzz_zig_pbkdf2_sha1(
+            out, op.keySize,
+            op.password.GetPtr(), op.password.GetSize(),
+            op.salt.GetPtr(), op.salt.GetSize(),
+            op.iterations), 0);
+
+    ret = component::Key(out, op.keySize);
+
+end:
     util::free(out);
 
     return ret;
