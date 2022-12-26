@@ -393,6 +393,10 @@
   #include <modules/shamatar/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_MICROSOFT_CALCULATOR)
+  #include <modules/microsoft-calculator/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -792,6 +796,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_SHAMATAR)
     driver->LoadModule( std::make_shared<cryptofuzz::module::Shamatar>() );
+#endif
+
+#if defined(CRYPTOFUZZ_MICROSOFT_CALCULATOR)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::MicrosoftCalculator>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
