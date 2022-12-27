@@ -10,9 +10,9 @@ module.o: module.cpp module.h
 cryptofuzz.bc : cryptofuzz.zig
 	test $(ZIG_BIN)
 	#$(ZIG_BIN) build-lib -O ReleaseFast -fcompiler-rt cryptofuzz.zig
-	$(ZIG_BIN) build-lib -femit-llvm-bc=cryptofuzz.bc -fno-stack-check cryptofuzz.zig
+	$(ZIG_BIN) build-lib -femit-llvm-bc=cryptofuzz.bc -fno-stack-check -mcpu=x86_64 cryptofuzz.zig
 cryptofuzz.o : cryptofuzz.bc
-	$(ZIG_BIN) cc -c $(CFLAGS) cryptofuzz.bc
+	$(ZIG_BIN) cc -c $(CFLAGS) -mcpu=x86_64 cryptofuzz.bc
 
 clean:
 	rm -rf *.o module.a
