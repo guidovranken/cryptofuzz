@@ -6,6 +6,119 @@ const hkdf = std.crypto.kdf.hkdf;
 const pbkdf2 = std.crypto.pwhash.pbkdf2;
 const HmacSha1 = std.crypto.auth.hmac.HmacSha1;
 const scrypt = std.crypto.pwhash.scrypt;
+const hash = std.crypto.hash;
+
+export fn cryptofuzz_zig_digest(
+        res_data: [*:0]u8,
+        cleartext_data: [*:0]const u8,
+        parts_start: [*:0]const u32,
+        parts_end: [*:0]const u32,
+        parts_size: u32,
+        digest: u32) callconv(.C) i32 {
+    var i: u32 = 0;
+
+    if (digest == 0) {
+        var h = hash.Md5.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..16]);
+        return 16;
+    } else if (digest == 1) {
+        var h = hash.Sha1.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..20]);
+        return 20;
+    } else if (digest == 2) {
+        var h = hash.sha2.Sha224.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..28]);
+        return 28;
+    } else if (digest == 3) {
+        var h = hash.sha2.Sha256.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..32]);
+        return 32;
+    } else if (digest == 4) {
+        var h = hash.sha2.Sha384.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..48]);
+        return 48;
+    } else if (digest == 5) {
+        var h = hash.sha2.Sha512.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..64]);
+        return 64;
+    } else if (digest == 6) {
+        var h = hash.blake2.Blake2b128.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..16]);
+        return 16;
+    } else if (digest == 7) {
+        var h = hash.blake2.Blake2b160.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..20]);
+        return 20;
+    } else if (digest == 8) {
+        var h = hash.blake2.Blake2b256.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..32]);
+        return 32;
+    } else if (digest == 9) {
+        var h = hash.blake2.Blake2b384.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..48]);
+        return 48;
+    } else if (digest == 10) {
+        var h = hash.blake2.Blake2b512.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..64]);
+        return 64;
+    } else if (digest == 11) {
+        var h = hash.blake2.Blake2s128.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..16]);
+        return 16;
+    } else if (digest == 12) {
+        var h = hash.blake2.Blake2s160.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..20]);
+        return 20;
+    } else if (digest == 13) {
+        var h = hash.blake2.Blake2s256.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..32]);
+        return 32;
+    } else {
+        return -1;
+    }
+}
 
 export fn cryptofuzz_zig_hkdf(
         res_data: [*:0]u8, res_size: u32,
