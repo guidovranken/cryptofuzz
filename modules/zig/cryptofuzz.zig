@@ -115,6 +115,55 @@ export fn cryptofuzz_zig_digest(
         }
         h.final(res_data[0..32]);
         return 32;
+    } else if (digest == 14) {
+        var h = hash.Blake3.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..32]);
+        return 32;
+    } else if (digest == 15) {
+        var h = hash.sha3.Sha3_224.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..28]);
+        return 28;
+    } else if (digest == 16) {
+        var h = hash.sha3.Sha3_256.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..32]);
+        return 32;
+    } else if (digest == 17) {
+        var h = hash.sha3.Sha3_384.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..48]);
+        return 48;
+    } else if (digest == 18) {
+        var h = hash.sha3.Sha3_512.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..64]);
+        return 64;
+    } else if (digest == 19) {
+        var h = hash.sha3.Keccak_256.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..32]);
+        return 32;
+    } else if (digest == 20) {
+        var h = hash.sha3.Keccak_512.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..64]);
+        return 64;
     } else {
         return -1;
     }

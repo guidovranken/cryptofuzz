@@ -92,6 +92,27 @@ std::optional<component::Digest> Zig::OpDigest(operation::Digest& op) {
         case    CF_DIGEST("BLAKE2S256"):
             digest = 13;
             break;
+        case    CF_DIGEST("BLAKE3"):
+            digest = 14;
+            break;
+        case    CF_DIGEST("SHA3-224"):
+            digest = 15;
+            break;
+        case    CF_DIGEST("SHA3-256"):
+            digest = 16;
+            break;
+        case    CF_DIGEST("SHA3-384"):
+            digest = 17;
+            break;
+        case    CF_DIGEST("SHA3-512"):
+            digest = 18;
+            break;
+        case    CF_DIGEST("KECCAK_256"):
+            digest = 19;
+            break;
+        case    CF_DIGEST("KECCAK_512"):
+            digest = 20;
+            break;
         default:
             return std::nullopt;
     }
