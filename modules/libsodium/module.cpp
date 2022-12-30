@@ -305,8 +305,6 @@ end:
     return ret;
 }
 
-
-
 std::optional<component::MAC> libsodium::OpHMAC(operation::HMAC& op) {
     switch ( op.digestType.Get() ) {
         case CF_DIGEST("SHA256"):
@@ -322,6 +320,68 @@ std::optional<component::MAC> libsodium::OpHMAC(operation::HMAC& op) {
         default:
             return std::nullopt;
     }
+}
+
+std::optional<component::Key> libsodium::OpKDF_HKDF(operation::KDF_HKDF& op) {
+    std::optional<component::Key> ret = std::nullopt;
+
+    uint8_t* prk = nullptr;
+    uint8_t* out = nullptr;
+
+    switch ( op.digestType.Get() ) {
+        case CF_DIGEST("SHA256"):
+            {
+                prk = util::malloc(crypto_kdf_hkdf_sha256_KEYBYTES);
+
+                CF_CHECK_EQ(crypto_kdf_hkdf_sha256_extract(
+                            prk,
+                            op.salt.GetPtr(),
+                            op.salt.GetSize(),
+                            op.password.GetPtr(),
+                            op.password.GetSize()), 0);
+
+                out = util::malloc(op.keySize);
+
+                CF_CHECK_EQ(crypto_kdf_hkdf_sha256_expand(
+                            out,
+                            op.keySize,
+                            (const char*)(op.info.GetPtr()),
+                            op.info.GetSize(),
+                            prk), 0);
+                ret = component::Key(out, op.keySize);
+            }
+            break;
+        case CF_DIGEST("SHA512"):
+            {
+                prk = util::malloc(crypto_kdf_hkdf_sha512_KEYBYTES);
+
+                CF_CHECK_EQ(crypto_kdf_hkdf_sha512_extract(
+                            prk,
+                            op.salt.GetPtr(),
+                            op.salt.GetSize(),
+                            op.password.GetPtr(),
+                            op.password.GetSize()), 0);
+
+                out = util::malloc(op.keySize);
+
+                CF_CHECK_EQ(crypto_kdf_hkdf_sha512_expand(
+                            out,
+                            op.keySize,
+                            (const char*)(op.info.GetPtr()),
+                            op.info.GetSize(),
+                            prk), 0);
+                ret = component::Key(out, op.keySize);
+            }
+            break;
+        default:
+            return std::nullopt;
+    }
+
+end:
+    util::free(prk);
+    util::free(out);
+
+    return ret;
 }
 
 namespace libsodium_detail {
