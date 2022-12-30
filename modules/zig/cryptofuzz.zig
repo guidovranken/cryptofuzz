@@ -7,6 +7,7 @@ const pbkdf2 = std.crypto.pwhash.pbkdf2;
 const HmacSha1 = std.crypto.auth.hmac.HmacSha1;
 const scrypt = std.crypto.pwhash.scrypt;
 const hash = std.crypto.hash;
+const hmac = std.crypto.auth.hmac;
 
 export fn cryptofuzz_zig_digest(
         res_data: [*:0]u8,
@@ -159,6 +160,168 @@ export fn cryptofuzz_zig_digest(
         return 32;
     } else if (digest == 20) {
         var h = hash.sha3.Keccak_512.init(.{});
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..64]);
+        return 64;
+    } else {
+        return -1;
+    }
+}
+
+export fn cryptofuzz_zig_hmac(
+        res_data: [*:0]u8,
+        key_data: [*:0]const u8, key_size: u32,
+        cleartext_data: [*:0]const u8,
+        parts_start: [*:0]const u32,
+        parts_end: [*:0]const u32,
+        parts_size: u32,
+        digest: u32) callconv(.C) i32 {
+    var i: u32 = 0;
+
+    if (digest == 0) {
+        var h = hmac.Hmac(hash.Md5).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..16]);
+        return 16;
+    } else if (digest == 1) {
+        var h = hmac.Hmac(hash.Sha1).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..20]);
+        return 20;
+    } else if (digest == 2) {
+        var h = hmac.Hmac(hash.sha2.Sha224).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..28]);
+        return 28;
+    } else if (digest == 3) {
+        var h = hmac.Hmac(hash.sha2.Sha256).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..32]);
+        return 32;
+    } else if (digest == 4) {
+        var h = hmac.Hmac(hash.sha2.Sha384).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..48]);
+        return 48;
+    } else if (digest == 5) {
+        var h = hmac.Hmac(hash.sha2.Sha512).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..64]);
+        return 64;
+    } else if (digest == 6) {
+        var h = hmac.Hmac(hash.blake2.Blake2b128).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..16]);
+        return 16;
+    } else if (digest == 7) {
+        var h = hmac.Hmac(hash.blake2.Blake2b160).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..20]);
+        return 20;
+    } else if (digest == 8) {
+        var h = hmac.Hmac(hash.blake2.Blake2b256).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..32]);
+        return 32;
+    } else if (digest == 9) {
+        var h = hmac.Hmac(hash.blake2.Blake2b384).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..48]);
+        return 48;
+    } else if (digest == 10) {
+        var h = hmac.Hmac(hash.blake2.Blake2b512).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..64]);
+        return 64;
+    } else if (digest == 11) {
+        var h = hmac.Hmac(hash.blake2.Blake2s128).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..16]);
+        return 16;
+    } else if (digest == 12) {
+        var h = hmac.Hmac(hash.blake2.Blake2s160).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..20]);
+        return 20;
+    } else if (digest == 13) {
+        var h = hmac.Hmac(hash.blake2.Blake2s256).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..32]);
+        return 32;
+    } else if (digest == 14) {
+        var h = hmac.Hmac(hash.Blake3).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..32]);
+        return 32;
+    } else if (digest == 15) {
+        var h = hmac.Hmac(hash.sha3.Sha3_224).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..28]);
+        return 28;
+    } else if (digest == 16) {
+        var h = hmac.Hmac(hash.sha3.Sha3_256).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..32]);
+        return 32;
+    } else if (digest == 17) {
+        var h = hmac.Hmac(hash.sha3.Sha3_384).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..48]);
+        return 48;
+    } else if (digest == 18) {
+        var h = hmac.Hmac(hash.sha3.Sha3_512).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..64]);
+        return 64;
+    } else if (digest == 19) {
+        var h = hmac.Hmac(hash.sha3.Keccak_256).init(key_data[0..key_size]);
+        while (i < parts_size): (i+=1) {
+            h.update(cleartext_data[parts_start[i]..parts_end[i]]);
+        }
+        h.final(res_data[0..32]);
+        return 32;
+    } else if (digest == 20) {
+        var h = hmac.Hmac(hash.sha3.Keccak_512).init(key_data[0..key_size]);
         while (i < parts_size): (i+=1) {
             h.update(cleartext_data[parts_start[i]..parts_end[i]]);
         }

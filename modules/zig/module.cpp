@@ -9,6 +9,14 @@ int cryptofuzz_zig_digest(
         const uint32_t* parts_end,
         const uint32_t parts_size,
         const uint32_t digest);
+int cryptofuzz_zig_hmac(
+        uint8_t* res_data,
+        const uint8_t* key_data, const size_t key_size,
+        const uint8_t* cleartext_data,
+        const uint32_t* parts_start,
+        const uint32_t* parts_end,
+        const uint32_t parts_size,
+        const uint32_t digest);
 void cryptofuzz_zig_hkdf(
         uint8_t* res_data, const size_t res_size,
         const uint8_t* password_data, const size_t password_size,
@@ -141,6 +149,112 @@ std::optional<component::Digest> Zig::OpDigest(operation::Digest& op) {
 
 end:
     ret = component::Digest(out, outsize);
+
+    return ret;
+}
+
+std::optional<component::MAC> Zig::OpHMAC(operation::HMAC& op) {
+    std::optional<component::MAC> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    uint32_t digest = -1;
+    int outsize;
+    uint8_t out[1024];
+    util::Multipart parts;
+
+    switch ( op.digestType.Get() ) {
+        case    CF_DIGEST("MD5"):
+            digest = 0;
+            break;
+        case    CF_DIGEST("SHA1"):
+            digest = 1;
+            break;
+        case    CF_DIGEST("SHA224"):
+            digest = 2;
+            break;
+        case    CF_DIGEST("SHA256"):
+            digest = 3;
+            break;
+        case    CF_DIGEST("SHA384"):
+            digest = 4;
+            break;
+        case    CF_DIGEST("SHA512"):
+            digest = 5;
+            break;
+        case    CF_DIGEST("BLAKE2B128"):
+            digest = 6;
+            break;
+        case    CF_DIGEST("BLAKE2B160"):
+            digest = 7;
+            break;
+        case    CF_DIGEST("BLAKE2B256"):
+            digest = 8;
+            break;
+        case    CF_DIGEST("BLAKE2B384"):
+            digest = 9;
+            break;
+        case    CF_DIGEST("BLAKE2B512"):
+            digest = 10;
+            break;
+        case    CF_DIGEST("BLAKE2S128"):
+            digest = 11;
+            break;
+        case    CF_DIGEST("BLAKE2S160"):
+            digest = 12;
+            break;
+        case    CF_DIGEST("BLAKE2S256"):
+            digest = 13;
+            break;
+        case    CF_DIGEST("BLAKE3"):
+            digest = 14;
+            break;
+        case    CF_DIGEST("SHA3-224"):
+            digest = 15;
+            break;
+        case    CF_DIGEST("SHA3-256"):
+            digest = 16;
+            break;
+        case    CF_DIGEST("SHA3-384"):
+            digest = 17;
+            break;
+        case    CF_DIGEST("SHA3-512"):
+            digest = 18;
+            break;
+        case    CF_DIGEST("KECCAK_256"):
+            digest = 19;
+            break;
+        case    CF_DIGEST("KECCAK_512"):
+            digest = 20;
+            break;
+        default:
+            return std::nullopt;
+    }
+
+    {
+        parts = util::ToParts(ds, op.cleartext);
+
+        std::vector<uint32_t> parts_start(parts.size());
+        std::vector<uint32_t> parts_end(parts.size());
+
+        size_t cur = 0;
+        for (size_t i = 0; i < parts.size(); i++) {
+            parts_start[i] = cur;
+            parts_end[i] = cur + parts[i].second;
+            cur += parts[i].second;
+        }
+
+        CF_CHECK_NE(outsize = cryptofuzz_zig_hmac(
+                    out,
+                    op.cipher.key.GetPtr(), op.cipher.key.GetSize(),
+                    op.cleartext.GetPtr(),
+                    parts_start.data(),
+                    parts_end.data(),
+                    parts.size(),
+                    digest), 1);
+    }
+
+end:
+    ret = component::Key(out, outsize);
 
     return ret;
 }
