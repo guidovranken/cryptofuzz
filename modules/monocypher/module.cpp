@@ -156,7 +156,7 @@ std::optional<component::Key> Monocypher::OpKDF_ARGON2(operation::KDF_ARGON2& op
         /* iterations == 0 outputs uninitialized memory */
         return ret;
     }
-    settings.nb_iterations = op.iterations;
+    settings.nb_passes = op.iterations;
 
     uint8_t* out = util::malloc(op.keySize);
     settings.hash_size = op.keySize;
