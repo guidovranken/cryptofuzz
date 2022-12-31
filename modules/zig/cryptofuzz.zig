@@ -337,26 +337,198 @@ export fn cryptofuzz_zig_hkdf(
         password_data: [*:0]const u8, password_size: u32,
         salt_data: [*:0]const u8, salt_size: u32,
         info_data: [*:0]const u8, info_size: u32,
-        digest: u32) callconv(.C) void {
+        digest: u32) callconv(.C) i32 {
     if ( digest == 0 ) {
-        const prk = hkdf.HkdfSha256.extract(
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.Md5)).extract(
                 salt_data[0..salt_size],
                 password_data[0..password_size]);
-        hkdf.HkdfSha256.expand(
+        hkdf.Hkdf(hmac.Hmac(hash.Md5)).expand(
                 res_data[0..res_size],
                 info_data[0..info_size],
                 prk);
+        return 0;
     } else if ( digest == 1 ) {
-        const prk = hkdf.HkdfSha512.extract(
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.Sha1)).extract(
                 salt_data[0..salt_size],
                 password_data[0..password_size]);
-        hkdf.HkdfSha512.expand(
+        hkdf.Hkdf(hmac.Hmac(hash.Sha1)).expand(
                 res_data[0..res_size],
                 info_data[0..info_size],
                 prk);
-    } else {
-        unreachable;
+        return 0;
+    } else if ( digest == 2 ) {
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha2.Sha224)).extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.Hkdf(hmac.Hmac(hash.sha2.Sha224)).expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+        return 0;
+    } else if ( digest == 3 ) {
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha2.Sha256)).extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.Hkdf(hmac.Hmac(hash.sha2.Sha256)).expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+        return 0;
+    } else if ( digest == 4 ) {
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha2.Sha384)).extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.Hkdf(hmac.Hmac(hash.sha2.Sha384)).expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+        return 0;
+    } else if ( digest == 5 ) {
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha2.Sha512)).extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.Hkdf(hmac.Hmac(hash.sha2.Sha512)).expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+        return 0;
+    } else if ( digest == 6 ) {
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.blake2.Blake2b128)).extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.Hkdf(hmac.Hmac(hash.blake2.Blake2b128)).expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+        return 0;
+    } else if ( digest == 7 ) {
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.blake2.Blake2b160)).extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.Hkdf(hmac.Hmac(hash.blake2.Blake2b160)).expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+        return 0;
+    } else if ( digest == 8 ) {
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.blake2.Blake2b256)).extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.Hkdf(hmac.Hmac(hash.blake2.Blake2b256)).expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+        return 0;
+    } else if ( digest == 9 ) {
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.blake2.Blake2b384)).extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.Hkdf(hmac.Hmac(hash.blake2.Blake2b384)).expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+        return 0;
+    } else if ( digest == 10 ) {
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.blake2.Blake2b512)).extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.Hkdf(hmac.Hmac(hash.blake2.Blake2b512)).expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+        return 0;
+    } else if ( digest == 11 ) {
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.blake2.Blake2s128)).extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.Hkdf(hmac.Hmac(hash.blake2.Blake2s128)).expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+        return 0;
+    } else if ( digest == 12 ) {
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.blake2.Blake2s160)).extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.Hkdf(hmac.Hmac(hash.blake2.Blake2s160)).expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+        return 0;
+    } else if ( digest == 13 ) {
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.blake2.Blake2s256)).extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.Hkdf(hmac.Hmac(hash.blake2.Blake2s256)).expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+        return 0;
+    } else if ( digest == 14 ) {
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.Blake3)).extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.Hkdf(hmac.Hmac(hash.Blake3)).expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+        return 0;
+    } else if ( digest == 15 ) {
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_224)).extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_224)).expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+        return 0;
+    } else if ( digest == 16 ) {
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_256)).extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_256)).expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+        return 0;
+    } else if ( digest == 17 ) {
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_384)).extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_384)).expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+        return 0;
+    } else if ( digest == 18 ) {
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_512)).extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_512)).expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+        return 0;
+    } else if ( digest == 19 ) {
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha3.Keccak_256)).extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.Hkdf(hmac.Hmac(hash.sha3.Keccak_256)).expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+        return 0;
+    } else if ( digest == 20 ) {
+        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha3.Keccak_512)).extract(
+                salt_data[0..salt_size],
+                password_data[0..password_size]);
+        hkdf.Hkdf(hmac.Hmac(hash.sha3.Keccak_512)).expand(
+                res_data[0..res_size],
+                info_data[0..info_size],
+                prk);
+        return 0;
     }
+    return -1;
 }
 
 export fn cryptofuzz_zig_pbkdf2_sha1(
