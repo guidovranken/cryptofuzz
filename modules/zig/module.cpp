@@ -24,11 +24,12 @@ int cryptofuzz_zig_hkdf(
         const uint8_t* salt_data, const size_t salt_size,
         const uint8_t* info_data, const size_t info_size,
         const size_t digest);
-int cryptofuzz_zig_pbkdf2_sha1(
+int cryptofuzz_zig_pbkdf2(
         uint8_t* res_data, const size_t res_size,
         const uint8_t* password_data, const size_t password_size,
         const uint8_t* salt_data, const size_t salt_size,
-        const uint32_t iterations);
+        const uint32_t iterations,
+        const size_t digest);
 int cryptofuzz_zig_scrypt(
         uint8_t* res_data, const size_t res_size,
         const uint8_t* password_data, const size_t password_size,
@@ -214,17 +215,18 @@ end:
 std::optional<component::Key> Zig::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
     std::optional<component::Key> ret = std::nullopt;
 
-    if ( !op.digestType.Is(CF_DIGEST("SHA1")) ) {
-        return ret;
-    }
+    uint8_t* out = nullptr;
+    std::optional<uint32_t> digest = std::nullopt;
+    CF_CHECK_NE(digest = Zig_detail::ToDigestId(op.digestType.Get()), std::nullopt);
 
-    uint8_t* out = util::malloc(op.keySize);
+    out = util::malloc(op.keySize);
 
-    CF_CHECK_EQ(cryptofuzz_zig_pbkdf2_sha1(
+    CF_CHECK_EQ(cryptofuzz_zig_pbkdf2(
             out, op.keySize,
             op.password.GetPtr(), op.password.GetSize(),
             op.salt.GetPtr(), op.salt.GetSize(),
-            op.iterations), 0);
+            op.iterations,
+            *digest), 0);
 
     ret = component::Key(out, op.keySize);
 

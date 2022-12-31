@@ -531,21 +531,224 @@ export fn cryptofuzz_zig_hkdf(
     return -1;
 }
 
-export fn cryptofuzz_zig_pbkdf2_sha1(
+export fn cryptofuzz_zig_pbkdf2(
         res_data: [*:0]u8, res_size: u32,
         password_data: [*:0]const u8, password_size: u32,
         salt_data: [*:0]const u8, salt_size: u32,
-        iterations: u32) callconv(.C) i32 {
-    pbkdf2(
-            res_data[0..res_size],
-            password_data[0..password_size],
-            salt_data[0..salt_size],
-            iterations,
-            HmacSha1) catch {
-        return -1;
-    };
-
-    return 0;
+        iterations: u32,
+        digest: u32) callconv(.C) i32 {
+    if ( digest == 0 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.Md5)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 1 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.Sha1)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 2 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.sha2.Sha224)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 3 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.sha2.Sha256)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 4 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.sha2.Sha384)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 5 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.sha2.Sha512)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 6 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.blake2.Blake2b128)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 7 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.blake2.Blake2b160)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 8 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.blake2.Blake2b256)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 9 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.blake2.Blake2b384)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 10 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.blake2.Blake2b512)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 11 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.blake2.Blake2s128)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 12 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.blake2.Blake2s160)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 13 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.blake2.Blake2s256)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 14 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.Blake3)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 15 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.sha3.Sha3_224)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 16 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.sha3.Sha3_256)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 17 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.sha3.Sha3_384)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 18 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.sha3.Sha3_512)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 19 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.sha3.Keccak_256)) catch {
+            return -1;
+        };
+        return 0;
+    } else if ( digest == 20 ) {
+        pbkdf2(
+                res_data[0..res_size],
+                password_data[0..password_size],
+                salt_data[0..salt_size],
+                iterations,
+                hmac.Hmac(hash.sha3.Keccak_512)) catch {
+            return -1;
+        };
+        return 0;
+    }
+    return -1;
 }
 
 export fn cryptofuzz_zig_scrypt(
