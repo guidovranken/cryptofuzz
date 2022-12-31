@@ -132,6 +132,7 @@ end:
     return ret;
 }
 
+#if 0
 std::optional<component::Key> Monocypher::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
     std::optional<component::Key> ret = std::nullopt;
     crypto_argon2_settings settings = {};
@@ -177,6 +178,7 @@ std::optional<component::Key> Monocypher::OpKDF_ARGON2(operation::KDF_ARGON2& op
 
     return ret;
 }
+#endif
 
 } /* namespace module */
 } /* namespace cryptofuzz */
