@@ -172,3 +172,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - libgmp mini-gmp: [mpz_powm incorrect result](https://gmplib.org/list-archives/gmp-bugs/2022-August/005183.html)
 - mbed TLS: [mbedtls_mpi_mod_int produces incorrect results](https://github.com/Mbed-TLS/mbedtls/issues/6540)
 - Zig: [HKDF rejects maximum key size](https://github.com/ziglang/zig/issues/14050)
+- Zig: [HMAC + SHA3 incorrect output](https://github.com/ziglang/zig/issues/14128)
