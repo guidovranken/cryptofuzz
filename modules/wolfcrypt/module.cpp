@@ -25,6 +25,7 @@ extern "C" {
 #include <wolfssl/wolfcrypt/sha512.h>
 #include <wolfssl/wolfcrypt/sha3.h>
 #include <wolfssl/wolfcrypt/blake2.h>
+#include <wolfssl/wolfcrypt/siphash.h>
 
 #include <wolfssl/wolfcrypt/aes.h>
 #include <wolfssl/wolfcrypt/arc4.h>
@@ -921,6 +922,38 @@ end:
         wolfCrypt_detail::UnsetGlobalDs();
         return ret;
     }
+
+    std::optional<component::MAC> SIPHASH(operation::HMAC& op, const size_t size) {
+        std::optional<component::MAC> ret = std::nullopt;
+        Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+        wolfCrypt_detail::SetGlobalDs(&ds);
+
+        SipHash ctx;
+
+        util::Multipart parts;
+        uint8_t out[size];
+
+        CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
+        WC_CHECK_EQ(wc_InitSipHash(&ctx, op.cipher.key.GetPtr(), size), 0);
+
+        parts = util::ToParts(ds, op.cleartext);
+
+        /* Streaming is broken, enable later */
+#if 0
+        for (const auto& part : parts) {
+            WC_CHECK_EQ(wc_SipHashUpdate(&ctx, part.first, part.second), 0);
+        }
+#else
+        WC_CHECK_EQ(wc_SipHashUpdate(&ctx, op.cleartext.GetPtr(), op.cleartext.GetSize()), 0);
+#endif
+
+        WC_CHECK_EQ(wc_SipHashFinal(&ctx, out, size), 0);
+
+        ret = component::MAC(out, size);
+end:
+        wolfCrypt_detail::UnsetGlobalDs();
+        return ret;
+    }
 } /* namespace wolfCrypt_detail */
 
 std::optional<component::MAC> wolfCrypt::OpHMAC(operation::HMAC& op) {
@@ -928,6 +961,10 @@ std::optional<component::MAC> wolfCrypt::OpHMAC(operation::HMAC& op) {
         op.digestType.Is(CF_DIGEST("BLAKE2B_MAC")) ||
         op.digestType.Is(CF_DIGEST("BLAKE2S_MAC")) ) {
         return wolfCrypt_detail::Blake2_MAC(op);
+    } else if ( op.digestType.Is(CF_DIGEST("SIPHASH64")) ) {
+        return wolfCrypt_detail::SIPHASH(op, 8);
+    } else if ( op.digestType.Is(CF_DIGEST("SIPHASH128")) ) {
+        return wolfCrypt_detail::SIPHASH(op, 16);
     }
 
     std::optional<component::MAC> ret = std::nullopt;
