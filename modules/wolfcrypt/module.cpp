@@ -714,6 +714,8 @@ end:
     Digest<Blake2s, 32, Init_IntFixedParam<Blake2s, 32>, DigestUpdate_Int<Blake2s>, DigestFinalize_IntFixedParam<Blake2s, 32>>
         blake2s256(wc_InitBlake2s, wc_Blake2sUpdate, wc_Blake2sFinal);
 
+    Digest<wc_Shake, 16, Init_IntParams<wc_Shake>, DigestUpdate_Int<wc_Shake>, DigestFinalize_IntFixedParam<wc_Shake, 16>>
+        shake256(wc_InitShake128, wc_Shake128_Update, wc_Shake128_Final, wc_Shake128_Free, wc_Shake128_Copy);
     Digest<wc_Shake, 32, Init_IntParams<wc_Shake>, DigestUpdate_Int<wc_Shake>, DigestFinalize_IntFixedParam<wc_Shake, 32>>
         shake512(wc_InitShake256, wc_Shake256_Update, wc_Shake256_Final, wc_Shake256_Free, wc_Shake256_Copy);
 
@@ -861,6 +863,9 @@ std::optional<component::Digest> wolfCrypt::OpDigest(operation::Digest& op) {
                 break;
             case CF_DIGEST("BLAKE2S256"):
                 ret = wolfCrypt_detail::blake2s256.Run(op, ds);
+                break;
+            case CF_DIGEST("SHAKE128"):
+                ret = wolfCrypt_detail::shake256.Run(op, ds);
                 break;
             case CF_DIGEST("SHAKE256"):
                 ret = wolfCrypt_detail::shake512.Run(op, ds);
