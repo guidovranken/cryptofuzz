@@ -975,6 +975,10 @@ namespace wolfCrypt_detail {
         bool inited = false;
         uint8_t* out = nullptr;
         uint8_t* outTag = nullptr;
+        bool stream = false;
+        try {
+            stream = ds.Get<bool>();
+        } catch ( ... ) { }
 
         switch ( op.cipher.cipherType.Get() ) {
             case CF_CIPHER("AES_128_GCM"):
@@ -995,53 +999,56 @@ namespace wolfCrypt_detail {
         outTag = util::malloc(*op.tagSize);
 
 #ifdef WOLFSSL_AESGCM_STREAM
-        WC_CHECK_EQ(wc_AesInit(&ctx, nullptr, INVALID_DEVID), 0);
-        inited = true;
-        WC_CHECK_EQ(wc_AesGcmInit(&ctx,
-                    op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize(),
-                    op.cipher.iv.GetPtr(&ds), op.cipher.iv.GetSize()), 0);
+        if ( stream ) {
+            WC_CHECK_EQ(wc_AesInit(&ctx, nullptr, INVALID_DEVID), 0);
+            inited = true;
+            WC_CHECK_EQ(wc_AesGcmInit(&ctx,
+                        op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize(),
+                        op.cipher.iv.GetPtr(&ds), op.cipher.iv.GetSize()), 0);
 
-        /* Pass AAD */
-        {
-            const auto parts = util::ToParts(ds, *op.aad);
-            for (const auto& part : parts) {
-                WC_CHECK_EQ(wc_AesGcmEncryptUpdate(&ctx,
-                            nullptr,
-                            nullptr, 0,
-                            part.first, part.second), 0);
+            /* Pass AAD */
+            {
+                const auto parts = util::ToParts(ds, *op.aad);
+                for (const auto& part : parts) {
+                    WC_CHECK_EQ(wc_AesGcmEncryptUpdate(&ctx,
+                                nullptr,
+                                nullptr, 0,
+                                part.first, part.second), 0);
+                }
             }
-        }
 
-        /* Pass cleartext */
-        {
-            const auto parts = util::ToParts(ds, op.cleartext);
-            size_t pos = 0;
-            for (const auto& part : parts) {
-                WC_CHECK_EQ(wc_AesGcmEncryptUpdate(&ctx,
-                            out + pos,
-                            part.first, part.second,
-                            nullptr, 0), 0);
-                pos += part.second;
+            /* Pass cleartext */
+            {
+                const auto parts = util::ToParts(ds, op.cleartext);
+                size_t pos = 0;
+                for (const auto& part : parts) {
+                    WC_CHECK_EQ(wc_AesGcmEncryptUpdate(&ctx,
+                                out + pos,
+                                part.first, part.second,
+                                nullptr, 0), 0);
+                    pos += part.second;
+                }
             }
-        }
 
-        WC_CHECK_EQ(wc_AesGcmEncryptFinal(&ctx, outTag, *op.tagSize), 0);
-#else
-        WC_CHECK_EQ(wc_AesInit(&ctx, nullptr, INVALID_DEVID), 0);
-        inited = true;
-        WC_CHECK_EQ(wc_AesGcmSetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize()), 0);
-        WC_CHECK_EQ(wc_AesGcmEncrypt(
-                    &ctx,
-                    out,
-                    op.cleartext.GetPtr(&ds),
-                    op.cleartext.GetSize(),
-                    op.cipher.iv.GetPtr(&ds),
-                    op.cipher.iv.GetSize(),
-                    outTag,
-                    *op.tagSize,
-                    op.aad->GetPtr(&ds),
-                    op.aad->GetSize()), 0);
+            WC_CHECK_EQ(wc_AesGcmEncryptFinal(&ctx, outTag, *op.tagSize), 0);
+        } else
 #endif
+        {
+            WC_CHECK_EQ(wc_AesInit(&ctx, nullptr, INVALID_DEVID), 0);
+            inited = true;
+            WC_CHECK_EQ(wc_AesGcmSetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize()), 0);
+            WC_CHECK_EQ(wc_AesGcmEncrypt(
+                        &ctx,
+                        out,
+                        op.cleartext.GetPtr(&ds),
+                        op.cleartext.GetSize(),
+                        op.cipher.iv.GetPtr(&ds),
+                        op.cipher.iv.GetSize(),
+                        outTag,
+                        *op.tagSize,
+                        op.aad->GetPtr(&ds),
+                        op.aad->GetSize()), 0);
+        }
 
         ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
 end:
@@ -1062,6 +1069,10 @@ end:
         Aes ctx;
         bool inited = false;
         uint8_t* out = nullptr;
+        bool stream = true;
+        try {
+            stream = ds.Get<bool>();
+        } catch ( ... ) { }
 
         switch ( op.cipher.cipherType.Get() ) {
             case CF_CIPHER("AES_128_GCM"):
@@ -1081,52 +1092,55 @@ end:
         out = util::malloc(op.ciphertext.GetSize());
 
 #ifdef WOLFSSL_AESGCM_STREAM
-        WC_CHECK_EQ(wc_AesInit(&ctx, nullptr, INVALID_DEVID), 0);
-        inited = true;
-        WC_CHECK_EQ(wc_AesGcmInit(&ctx,
-                    op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize(),
-                    op.cipher.iv.GetPtr(&ds), op.cipher.iv.GetSize()), 0);
-        /* Pass AAD */
-        {
-            const auto parts = util::ToParts(ds, *op.aad);
-            for (const auto& part : parts) {
-                WC_CHECK_EQ(wc_AesGcmDecryptUpdate(&ctx,
-                            nullptr,
-                            nullptr, 0,
-                            part.first, part.second), 0);
+        if ( stream ) {
+            WC_CHECK_EQ(wc_AesInit(&ctx, nullptr, INVALID_DEVID), 0);
+            inited = true;
+            WC_CHECK_EQ(wc_AesGcmInit(&ctx,
+                        op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize(),
+                        op.cipher.iv.GetPtr(&ds), op.cipher.iv.GetSize()), 0);
+            /* Pass AAD */
+            {
+                const auto parts = util::ToParts(ds, *op.aad);
+                for (const auto& part : parts) {
+                    WC_CHECK_EQ(wc_AesGcmDecryptUpdate(&ctx,
+                                nullptr,
+                                nullptr, 0,
+                                part.first, part.second), 0);
+                }
             }
-        }
 
-        /* Pass ciphertext */
-        {
-            const auto parts = util::ToParts(ds, op.ciphertext);
-            size_t pos = 0;
-            for (const auto& part : parts) {
-                WC_CHECK_EQ(wc_AesGcmDecryptUpdate(&ctx,
-                            out + pos,
-                            part.first, part.second,
-                            nullptr, 0), 0);
-                pos += part.second;
+            /* Pass ciphertext */
+            {
+                const auto parts = util::ToParts(ds, op.ciphertext);
+                size_t pos = 0;
+                for (const auto& part : parts) {
+                    WC_CHECK_EQ(wc_AesGcmDecryptUpdate(&ctx,
+                                out + pos,
+                                part.first, part.second,
+                                nullptr, 0), 0);
+                    pos += part.second;
+                }
             }
-        }
 
-        WC_CHECK_EQ(wc_AesGcmDecryptFinal(&ctx, op.tag->GetPtr(&ds), op.tag->GetSize()), 0);
-#else
-        WC_CHECK_EQ(wc_AesInit(&ctx, nullptr, INVALID_DEVID), 0);
-        inited = true;
-        WC_CHECK_EQ(wc_AesGcmSetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize()), 0);
-        WC_CHECK_EQ(wc_AesGcmDecrypt(
-                    &ctx,
-                    out,
-                    op.ciphertext.GetPtr(&ds),
-                    op.ciphertext.GetSize(),
-                    op.cipher.iv.GetPtr(&ds),
-                    op.cipher.iv.GetSize(),
-                    op.tag->GetPtr(&ds),
-                    op.tag->GetSize(),
-                    op.aad->GetPtr(&ds),
-                    op.aad->GetSize()), 0);
+            WC_CHECK_EQ(wc_AesGcmDecryptFinal(&ctx, op.tag->GetPtr(&ds), op.tag->GetSize()), 0);
+        } else
 #endif
+        {
+            WC_CHECK_EQ(wc_AesInit(&ctx, nullptr, INVALID_DEVID), 0);
+            inited = true;
+            WC_CHECK_EQ(wc_AesGcmSetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize()), 0);
+            WC_CHECK_EQ(wc_AesGcmDecrypt(
+                        &ctx,
+                        out,
+                        op.ciphertext.GetPtr(&ds),
+                        op.ciphertext.GetSize(),
+                        op.cipher.iv.GetPtr(&ds),
+                        op.cipher.iv.GetSize(),
+                        op.tag->GetPtr(&ds),
+                        op.tag->GetSize(),
+                        op.aad->GetPtr(&ds),
+                        op.aad->GetSize()), 0);
+        }
 
         ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
 
