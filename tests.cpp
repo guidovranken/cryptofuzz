@@ -16,21 +16,37 @@ void verifyKeySize(const OperationType& op, const ResultType& result) {
     }
 }
 
+static void checkZeroResult(const std::optional<Buffer>& b) {
+    if ( b == std::nullopt ) {
+        return;
+    }
+
+    if ( b->GetSize() >= 16 ) {
+        const std::vector<uint8_t> zeroes(b->GetSize(), 0);
+        if ( b->Get() == zeroes ) {
+            printf("An all-zero hash was returned. This might indicate a bug.\n");
+            abort();
+        }
+    }
+}
+
 void test(const operation::Digest& op, const std::optional<component::Digest>& result) {
     if ( result == std::nullopt ) {
         return;
     }
 
-    const auto expectedSize = repository::DigestSize(op.digestType.Get());
+    {
+        const auto expectedSize = repository::DigestSize(op.digestType.Get());
 
-    if ( expectedSize == std::nullopt ) {
-        return;
+        if ( expectedSize != std::nullopt ) {
+            if ( result->GetSize() != *expectedSize ) {
+                printf("Expected vs actual digest size: %zu / %zu\n", *expectedSize, result->GetSize());
+                abort();
+            }
+        }
     }
 
-    if ( result->GetSize() != *expectedSize ) {
-        printf("Expected vs actual digest size: %zu / %zu\n", *expectedSize, result->GetSize());
-        abort();
-    }
+    checkZeroResult(result);
 }
 
 void test(const operation::HMAC& op, const std::optional<component::MAC>& result) {
@@ -38,16 +54,18 @@ void test(const operation::HMAC& op, const std::optional<component::MAC>& result
         return;
     }
 
-    const auto expectedSize = repository::DigestSize(op.digestType.Get());
+    {
+        const auto expectedSize = repository::DigestSize(op.digestType.Get());
 
-    if ( expectedSize == std::nullopt ) {
-        return;
+        if ( expectedSize != std::nullopt ) {
+            if ( result->GetSize() != *expectedSize ) {
+                printf("Expected vs actual digest size: %zu / %zu\n", *expectedSize, result->GetSize());
+                abort();
+            }
+        }
     }
 
-    if ( result->GetSize() != *expectedSize ) {
-        printf("Expected vs actual digest size: %zu / %zu\n", *expectedSize, result->GetSize());
-        abort();
-    }
+    checkZeroResult(result);
 }
 
 void test(const operation::UMAC& op, const std::optional<component::MAC>& result) {
