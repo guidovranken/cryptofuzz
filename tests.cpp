@@ -748,11 +748,29 @@ namespace BignumCalc {
     }
     static void AssertNotSmallerThan(const component::Bignum& result, const component::Bignum& A, const std::string& opStr) {
         if ( SmallerThan(result, A) ) {
-            Abort("Result is larger than the input", opStr);
+            Abort("Result is smaller than the input", opStr);
+        }
+    }
+    static void AssertNotSmallerThan(
+            const component::Bignum& result,
+            const component::Bignum& A,
+            const component::Bignum& B,
+            const std::string& opStr) {
+        if ( SmallerThan(result, A) && SmallerThan(result, B) ) {
+            Abort("Result is smaller than the input", opStr);
         }
     }
     static void AssertNotLargerThan(const component::Bignum& result, const component::Bignum& A, const std::string& opStr) {
         if ( LargerThan(result, A) ) {
+            Abort("Result is larger than the input", opStr);
+        }
+    }
+    static void AssertNotLargerThan(
+            const component::Bignum& result,
+            const component::Bignum& A,
+            const component::Bignum& B,
+            const std::string& opStr) {
+        if ( LargerThan(result, A) && LargerThan(result, B) ) {
             Abort("Result is larger than the input", opStr);
         }
     }
@@ -871,6 +889,12 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
         case    CF_CALCOP("IsPower(A)"):
             BignumCalc::AssertBinary(*result, "IsPower");
             break;
+        case    CF_CALCOP("IsNeg(A)"):
+            BignumCalc::AssertBinary(*result, "IsNeg");
+            break;
+        case    CF_CALCOP("IsNotZero(A)"):
+            BignumCalc::AssertBinary(*result, "IsNotZero");
+            break;
         case    CF_CALCOP("Cmp(A,B)"):
             BignumCalc::AssertTertiary(*result, "Cmp");
             break;
@@ -945,6 +969,20 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
             if ( !IsZero(*result) ) {
                 Abort("Result should be zero", repository::CalcOpToString(calcOp));
             }
+            break;
+        case    CF_CALCOP("GCD(A,B)"):
+            AssertNotLargerThan(*result, op.bn0, op.bn1, repository::CalcOpToString(calcOp));
+            break;
+        case    CF_CALCOP("LCM(A,B)"):
+            AssertNotSmallerThan(*result, op.bn0, op.bn1, repository::CalcOpToString(calcOp));
+            break;
+        case    CF_CALCOP("InvMod(A,B)"):
+            if ( !IsZero(*result) ) {
+                AssertNotLargerThan(*result, op.bn1, repository::CalcOpToString(calcOp));
+            }
+            break;
+        case    CF_CALCOP("Exp(A,B)"):
+            AssertNotSmallerThan(*result, op.bn0, op.bn1, repository::CalcOpToString(calcOp));
             break;
     }
 }
