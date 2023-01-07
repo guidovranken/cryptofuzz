@@ -939,13 +939,9 @@ end:
         parts = util::ToParts(ds, op.cleartext);
 
         /* Streaming is broken, enable later */
-#if 0
         for (const auto& part : parts) {
             WC_CHECK_EQ(wc_SipHashUpdate(&ctx, part.first, part.second), 0);
         }
-#else
-        WC_CHECK_EQ(wc_SipHashUpdate(&ctx, op.cleartext.GetPtr(), op.cleartext.GetSize()), 0);
-#endif
 
         WC_CHECK_EQ(wc_SipHashFinal(&ctx, out, size), 0);
 
