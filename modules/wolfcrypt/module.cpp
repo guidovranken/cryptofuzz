@@ -938,7 +938,6 @@ end:
 
         parts = util::ToParts(ds, op.cleartext);
 
-        /* Streaming is broken, enable later */
         for (const auto& part : parts) {
             WC_CHECK_EQ(wc_SipHashUpdate(&ctx, part.first, part.second), 0);
         }
