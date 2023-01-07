@@ -930,19 +930,31 @@ end:
 
         SipHash ctx;
 
-        util::Multipart parts;
         uint8_t out[size];
 
+        bool stream = false;
+        try {
+            stream = ds.Get<bool>();
+        } catch ( ... ) { }
+
         CF_CHECK_EQ(op.cipher.key.GetSize(), 16);
-        WC_CHECK_EQ(wc_InitSipHash(&ctx, op.cipher.key.GetPtr(), size), 0);
 
-        parts = util::ToParts(ds, op.cleartext);
+        if ( stream == false ) {
+            WC_CHECK_EQ(wc_SipHash(
+                        op.cipher.key.GetPtr(&ds),
+                        op.cleartext.GetPtr(&ds), op.cleartext.GetSize(),
+                        out, size), 0);
+        } else {
+            WC_CHECK_EQ(wc_InitSipHash(&ctx, op.cipher.key.GetPtr(), size), 0);
 
-        for (const auto& part : parts) {
-            WC_CHECK_EQ(wc_SipHashUpdate(&ctx, part.first, part.second), 0);
+            util::Multipart parts = util::ToParts(ds, op.cleartext);
+
+            for (const auto& part : parts) {
+                WC_CHECK_EQ(wc_SipHashUpdate(&ctx, part.first, part.second), 0);
+            }
+
+            WC_CHECK_EQ(wc_SipHashFinal(&ctx, out, size), 0);
         }
-
-        WC_CHECK_EQ(wc_SipHashFinal(&ctx, out, size), 0);
 
         ret = component::MAC(out, size);
 end:
