@@ -486,6 +486,259 @@ end:
     return ret;
 }
 
+std::optional<component::ECCSI_Signature> OpECCSI_Sign(operation::ECCSI_Sign& op) {
+#if !defined(WOLFCRYPT_HAVE_ECCSI)
+    (void)op;
+    return std::nullopt;
+#else
+    std::optional<component::ECCSI_Signature> ret = std::nullopt;
+
+    /* Remove this when ZD 15446 is fixed */
+    if ( op.curveType.Is(CF_ECC_CURVE("secp224k1")) ) {
+        return ret;
+    }
+
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    bool randomHashSize = false;
+    uint8_t hashSz = 0;
+    try {
+        randomHashSize = ds.Get<bool>();
+        if ( randomHashSize ) {
+            hashSz = ds.Get<uint8_t>();
+        }
+    } catch ( ... ) { }
+    if ( !randomHashSize ) {
+        hashSz = WC_MAX_DIGEST_SIZE;
+        static_assert(WC_MAX_DIGEST_SIZE < 256);
+    }
+
+    uint8_t* hash = util::malloc(hashSz);
+
+    uint8_t* encoded = nullptr;
+    EccsiKey eccsi;
+    bool eccsi_initialized = false;
+
+    try {
+        int size;
+        std::optional<component::BignumPair> pubbn = std::nullopt;
+
+        {
+            /* Private to public */
+            ECCKey key(ds);
+            CF_CHECK_EQ(key.SetCurve(op.curveType), true);
+            CF_CHECK_GT(size = key.GetPtr()->dp->size, 0);
+            CF_CHECK_EQ(key.LoadPrivateKey(op.priv), true);
+            auto pub = key.MakePub();
+            CF_CHECK_NE(pub, std::nullopt);
+            CF_CHECK_NE(pubbn = pub->ToBignumPair(), std::nullopt);
+
+            /* Encode private and public */
+            encoded = util::malloc(size * 3);
+
+            WC_CHECK_EQ(mp_to_unsigned_bin_len(&(key.GetPtr()->k), encoded, size), 0);
+            WC_CHECK_EQ(mp_to_unsigned_bin_len(pub->GetPtr()->x, encoded + size, size), 0);
+            WC_CHECK_EQ(mp_to_unsigned_bin_len(pub->GetPtr()->y, encoded + (size * 2), size), 0);
+        }
+
+        {
+            std::optional<int> curveId;
+            CF_CHECK_NE(curveId = toCurveID(op.curveType), std::nullopt);
+
+            WC_CHECK_EQ(wc_InitEccsiKey_ex(&eccsi, size, *curveId, nullptr, -1), 0);
+            eccsi_initialized = true;
+
+            WC_CHECK_EQ(wc_ImportEccsiKey(&eccsi, encoded, size * 3), 0);
+            {
+                uint8_t sig[257]; /* XXX random size */
+                word32 sigSz = sizeof(sig);
+                ECCPoint pvt(ds, *curveId);
+                wolfCrypt_bignum::Bignum ssk(ds);
+                std::optional<wc_HashType> hashType;
+                CF_CHECK_NE(hashType = toHashType(op.digestType), std::nullopt);
+                WC_CHECK_EQ(wc_MakeEccsiPair(
+                            &eccsi,
+                            &rng,
+                            *hashType,
+                            op.id.GetPtr(),
+                            op.id.GetSize(),
+                            ssk.GetPtr(),
+                            pvt.GetPtr()), 0);
+                WC_CHECK_EQ(wc_HashEccsiId(
+                            &eccsi,
+                            *hashType,
+                            op.id.GetPtr(),
+                            op.id.GetSize(),
+                            pvt.GetPtr(),
+                            hash,
+                            &hashSz), 0);
+                WC_CHECK_EQ(wc_SetEccsiHash(&eccsi, hash, hashSz), 0);
+                WC_CHECK_EQ(wc_SetEccsiPair(&eccsi, ssk.GetPtr(), pvt.GetPtr()), 0);
+                WC_CHECK_EQ(wc_SignEccsiHash(
+                            &eccsi,
+                            &rng,
+                            *hashType,
+                            op.cleartext.GetPtr(),
+                            op.cleartext.GetSize(),
+                            sig, &sigSz), 0);
+                CF_ASSERT(sigSz == static_cast<size_t>(size) * 4 + 1, "Unexpected signature size");
+                {
+                    wolfCrypt_bignum::Bignum r(ds), s(ds);
+                    std::optional<std::string> r_str, s_str;
+                    std::optional<component::BignumPair> pvtbn = std::nullopt;
+
+                    WC_CHECK_EQ(mp_read_unsigned_bin(r.GetPtr(), sig, size), 0);
+                    CF_CHECK_NE(r_str = r.ToDecString(), std::nullopt);
+
+                    WC_CHECK_EQ(mp_read_unsigned_bin(s.GetPtr(), sig + size, size), 0);
+                    CF_CHECK_NE(s_str = s.ToDecString(), std::nullopt);
+
+                    CF_CHECK_NE(pvtbn = pvt.ToBignumPair(), std::nullopt);
+
+                    ret = component::ECCSI_Signature{
+                        component::BignumPair{*r_str, *s_str},
+                        *pubbn,
+                        *pvtbn};
+                }
+            }
+        }
+    } catch ( ... ) { }
+
+end:
+    if ( eccsi_initialized ) {
+        CF_NORET(wc_FreeEccsiKey(&eccsi));
+    }
+    util::free(hash);
+    util::free(encoded);
+    wolfCrypt_detail::UnsetGlobalDs();
+    return ret;
+#endif
+}
+
+std::optional<bool> OpECCSI_Verify(operation::ECCSI_Verify& op) {
+#if !defined(WOLFCRYPT_HAVE_ECCSI)
+    (void)op;
+    return std::nullopt;
+#else
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    bool randomHashSize = false;
+    uint8_t hashSz = 0;
+    try {
+        randomHashSize = ds.Get<bool>();
+        if ( randomHashSize ) {
+            hashSz = ds.Get<uint8_t>();
+        }
+    } catch ( ... ) { }
+    if ( !randomHashSize ) {
+        hashSz = WC_MAX_DIGEST_SIZE;
+        static_assert(WC_MAX_DIGEST_SIZE < 256);
+    }
+
+    EccsiKey eccsi;
+
+    uint8_t* hash = util::malloc(hashSz);
+    std::optional<wc_HashType> hashType;
+    std::optional<int> curveId;
+    std::vector<uint8_t> pub, sig;
+    int verified;
+    int size;
+    bool eccsi_initialized = false;
+
+    CF_CHECK_NE(curveId = toCurveID(op.curveType), std::nullopt);
+    CF_CHECK_NE(hashType = toHashType(op.digestType), std::nullopt);
+
+    /*
+    haveAllocFailure = false;
+    ret = false;
+    */
+
+    try {
+    {
+        ECCKey key(ds);
+        CF_CHECK_EQ(key.SetCurve(op.curveType), true);
+        CF_CHECK_GT(size = key.GetPtr()->dp->size, 0);
+    }
+
+    /* Pub to binary */
+    {
+        const auto x = op.signature.pub.first.ToBin(size);
+        CF_CHECK_NE(x, std::nullopt);
+        pub.insert(pub.end(), x->begin(), x->end());
+
+        const auto y = op.signature.pub.second.ToBin(size);
+        CF_CHECK_NE(y, std::nullopt);
+        pub.insert(pub.end(), y->begin(), y->end());
+    }
+
+    /* Sig to binary */
+    {
+        const auto r = op.signature.signature.first.ToBin(size);
+        CF_CHECK_NE(r, std::nullopt);
+        sig.insert(sig.end(), r->begin(), r->end());
+
+        const auto s = op.signature.signature.second.ToBin(size);
+        CF_CHECK_NE(s, std::nullopt);
+        sig.insert(sig.end(), s->begin(), s->end());
+
+        sig.push_back(0x04);
+
+        const auto pvt_x = op.signature.pvt.first.ToBin(size);
+        CF_CHECK_NE(pvt_x, std::nullopt);
+        sig.insert(sig.end(), pvt_x->begin(), pvt_x->end());
+
+        const auto pvt_y = op.signature.pvt.second.ToBin(size);
+        CF_CHECK_NE(pvt_y, std::nullopt);
+        sig.insert(sig.end(), pvt_y->begin(), pvt_y->end());
+    }
+
+    {
+        ECCPoint pvt(ds, *curveId);
+        CF_CHECK_TRUE(pvt.Set(op.signature.pvt));
+
+        WC_CHECK_EQ(wc_InitEccsiKey_ex(&eccsi, size, *curveId, nullptr, -1), 0);
+        eccsi_initialized = true;
+
+        WC_CHECK_EQ(wc_ImportEccsiPublicKey(&eccsi,
+                    pub.data(), pub.size(), 0), 0);
+        WC_CHECK_EQ(wc_HashEccsiId(
+                    &eccsi,
+                    *hashType,
+                    op.id.GetPtr(&ds), op.id.GetSize(),
+                    pvt.GetPtr(),
+                    hash,
+                    &hashSz), 0);
+        WC_CHECK_EQ(wc_SetEccsiHash(&eccsi, hash, hashSz), 0);
+        WC_CHECK_EQ(wc_VerifyEccsiHash(
+                    &eccsi,
+                    *hashType,
+                    op.cleartext.GetPtr(&ds), op.cleartext.GetSize(),
+                    sig.data(), sig.size(),
+                    &verified), 0);
+        ret = verified == 1;
+    }
+    } catch ( ... ) { }
+
+end:
+    if ( eccsi_initialized ) {
+        CF_NORET(wc_FreeEccsiKey(&eccsi));
+    }
+    util::free(hash);
+    wolfCrypt_detail::UnsetGlobalDs();
+    /*
+    if ( ret && *ret == false ) {
+        if ( haveAllocFailure || randomHashSize ) {
+            ret = std::nullopt;
+        }
+    }
+    */
+    return ret;
+#endif
+}
+
 std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_Sign& op) {
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
     if ( op.UseRandomNonce() == false && op.UseSpecifiedNonce() == false ) {

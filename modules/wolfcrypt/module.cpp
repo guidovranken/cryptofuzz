@@ -3209,6 +3209,10 @@ end:
     return ret;
 }
 
+std::optional<component::ECCSI_Signature> wolfCrypt::OpECCSI_Sign(operation::ECCSI_Sign& op) {
+    return wolfCrypt_detail::OpECCSI_Sign(op);
+}
+
 std::optional<component::ECDSA_Signature> wolfCrypt::OpECDSA_Sign(operation::ECDSA_Sign& op) {
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
 
@@ -3219,6 +3223,10 @@ std::optional<component::ECDSA_Signature> wolfCrypt::OpECDSA_Sign(operation::ECD
     } else {
         return wolfCrypt_detail::OpECDSA_Sign_Generic(op);
     }
+}
+
+std::optional<bool> wolfCrypt::OpECCSI_Verify(operation::ECCSI_Verify& op) {
+    return wolfCrypt_detail::OpECCSI_Verify(op);
 }
 
 std::optional<bool> wolfCrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {

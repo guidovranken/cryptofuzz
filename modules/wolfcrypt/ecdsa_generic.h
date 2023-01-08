@@ -8,6 +8,7 @@ extern "C" {
 #include <wolfssl/options.h>
 #include <wolfssl/wolfcrypt/asn.h>
 #include <wolfssl/wolfcrypt/ecc.h>
+#include <wolfssl/wolfcrypt/eccsi.h>
 #include <wolfssl/wolfcrypt/error-crypt.h>
 }
 
@@ -55,6 +56,8 @@ class ECCKey {
 std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic_Generic(operation::ECC_PrivateToPublic& op);
 std::optional<bool> OpECC_ValidatePubkey_Generic(operation::ECC_ValidatePubkey& op);
 std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op);
+std::optional<component::ECCSI_Signature> OpECCSI_Sign(operation::ECCSI_Sign& op);
+std::optional<bool> OpECCSI_Verify(operation::ECCSI_Verify& op);
 std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_Sign& op);
 std::optional<component::Ciphertext> OpECIES_Encrypt_Generic(operation::ECIES_Encrypt& op);
 std::optional<component::Cleartext> OpECIES_Decrypt_Generic(operation::ECIES_Decrypt& op);

@@ -492,6 +492,42 @@ nlohmann::json ECC_KeyPair::ToJSON(void) const {
     return std::vector<nlohmann::json>{priv.ToJSON(), pub.ToJSON()};
 }
 
+/* ECCSI_Signature */
+ECCSI_Signature::ECCSI_Signature(Datasource& ds) :
+    signature(ds),
+    pub(ds),
+    pvt(ds)
+{ }
+
+ECCSI_Signature::ECCSI_Signature(BignumPair signature, ECC_PublicKey pub, BignumPair pvt) :
+    signature(signature),
+    pub(pub),
+    pvt(pvt)
+{ }
+
+ECCSI_Signature::ECCSI_Signature(nlohmann::json json) :
+    signature(json["signature"]),
+    pub(json["pub"]),
+    pvt(json["pvt"])
+{ }
+
+bool ECCSI_Signature::operator==(const ECCSI_Signature& rhs) const {
+    return
+        (signature == rhs.signature) &&
+        (pub == rhs.pub) &&
+        (pvt == rhs.pvt);
+}
+
+void ECCSI_Signature::Serialize(Datasource& ds) const {
+    signature.Serialize(ds);
+    pub.Serialize(ds);
+    pvt.Serialize(ds);
+}
+
+nlohmann::json ECCSI_Signature::ToJSON(void) const {
+    return std::vector<nlohmann::json>{signature.ToJSON(), pub.ToJSON()};
+}
+
 /* ECDSA_Signature */
 ECDSA_Signature::ECDSA_Signature(Datasource& ds) :
     signature(ds),

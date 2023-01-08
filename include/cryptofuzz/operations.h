@@ -949,6 +949,53 @@ class ECC_GenerateKeyPair : public Operation {
         }
 };
 
+class ECCSI_Sign : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::ECC_PrivateKey priv;
+        const component::Cleartext cleartext;
+        const component::Cleartext id;
+        const component::DigestType digestType;
+
+        ECCSI_Sign(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            priv(ds),
+            cleartext(ds),
+            id(ds),
+            digestType(ds)
+        { }
+        ECCSI_Sign(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            priv(json["priv"]),
+            cleartext(json["cleartext"]),
+            id(json["id"]),
+            digestType(json["digestType"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const ECCSI_Sign& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (priv == rhs.priv) &&
+                (cleartext == rhs.cleartext) &&
+                (id == rhs.id) &&
+                (digestType == rhs.digestType ) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            priv.Serialize(ds);
+            cleartext.Serialize(ds);
+            id.Serialize(ds);
+            digestType.Serialize(ds);
+        }
+};
+
 class ECDSA_Sign : public Operation {
     public:
         const component::CurveType curveType;
@@ -1190,6 +1237,54 @@ class Schnorr_Sign : public Operation {
         }
         bool UseSpecifiedNonce(void) const {
             return nonceSource == 2;
+        }
+};
+
+class ECCSI_Verify : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::Cleartext cleartext;
+        const component::Cleartext id;
+        const component::ECCSI_Signature signature;
+        const component::DigestType digestType;
+
+        ECCSI_Verify(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            cleartext(ds),
+            id(ds),
+            signature(ds),
+            digestType(ds)
+        { }
+        ECCSI_Verify(const ECCSI_Sign& opECCSI_Sign, const component::ECCSI_Signature signature, component::Modifier modifier);
+        ECCSI_Verify(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            cleartext(json["cleartext"]),
+            id(json["id"]),
+            signature(json["signature"]),
+            digestType(json["digestType"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const ECCSI_Verify& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (cleartext == rhs.cleartext) &&
+                (id == rhs.id) &&
+                (signature == rhs.signature) &&
+                (digestType == rhs.digestType) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            cleartext.Serialize(ds);
+            id.Serialize(ds);
+            signature.Serialize(ds);
+            digestType.Serialize(ds);
         }
 };
 

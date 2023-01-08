@@ -100,6 +100,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::ECCSI_Signature> OpECCSI_Sign(operation::ECCSI_Sign& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::ECDSA_Signature> OpECDSA_Sign(operation::ECDSA_Sign& op) {
             (void)op;
             return std::nullopt;
@@ -113,6 +117,10 @@ class Module {
             return std::nullopt;
         }
         virtual std::optional<component::Schnorr_Signature> OpSchnorr_Sign(operation::Schnorr_Sign& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<bool> OpECCSI_Verify(operation::ECCSI_Verify& op) {
             (void)op;
             return std::nullopt;
         }

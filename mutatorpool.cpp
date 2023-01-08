@@ -21,6 +21,7 @@ T MutatorPool<T, Size>::Get(void) const {
 MutatorPool<CurvePrivkey_Pair, cryptofuzz::config::kMutatorPoolSize> Pool_CurvePrivkey;
 MutatorPool<CurveKeypair_Pair, cryptofuzz::config::kMutatorPoolSize> Pool_CurveKeypair;
 MutatorPool<CurveECDSASignature_Pair, cryptofuzz::config::kMutatorPoolSize> Pool_CurveECDSASignature;
+MutatorPool<CurveECCSISignature_Pair, cryptofuzz::config::kMutatorPoolSize> Pool_CurveECCSISignature;
 MutatorPool<CurveECC_Point_Pair, cryptofuzz::config::kMutatorPoolSize> Pool_CurveECC_Point;
 MutatorPool<CurveBLSSignature_Pair, cryptofuzz::config::kMutatorPoolSize> Pool_CurveBLSSignature;
 MutatorPool<CurveBLSG1_Pair, cryptofuzz::config::kMutatorPoolSize> Pool_CurveBLSG1;
@@ -35,6 +36,7 @@ MutatorPool<std::string, cryptofuzz::config::kMutatorPoolSize> Pool_DH_PublicKey
 template class MutatorPool<CurvePrivkey_Pair, cryptofuzz::config::kMutatorPoolSize>;
 template class MutatorPool<CurveKeypair_Pair, cryptofuzz::config::kMutatorPoolSize>;
 template class MutatorPool<CurveECDSASignature_Pair, cryptofuzz::config::kMutatorPoolSize>;
+template class MutatorPool<CurveECCSISignature_Pair, cryptofuzz::config::kMutatorPoolSize>;
 template class MutatorPool<CurveECC_Point_Pair, cryptofuzz::config::kMutatorPoolSize>;
 template class MutatorPool<CurveBLSSignature_Pair, cryptofuzz::config::kMutatorPoolSize>;
 template class MutatorPool<CurveBLSG1_Pair, cryptofuzz::config::kMutatorPoolSize>;

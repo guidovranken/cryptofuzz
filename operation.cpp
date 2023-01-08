@@ -522,6 +522,33 @@ nlohmann::json ECC_GenerateKeyPair::ToJSON(void) const {
     return j;
 }
 
+std::string ECCSI_Sign::Name(void) const { return "ECCSI_Sign"; }
+std::string ECCSI_Sign::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: ECCSI_Sign" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "private key: " << priv.ToString() << std::endl;
+    ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+    ss << "id: " << util::HexDump(id.Get()) << std::endl;
+
+    ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json ECCSI_Sign::ToJSON(void) const {
+    nlohmann::json j;
+    j["operation"] = "ECCSI_Sign";
+    j["priv"] = priv.ToJSON();
+    j["curveType"] = curveType.ToJSON();
+    j["cleartext"] = cleartext.ToJSON();
+    j["id"] = id.ToJSON();
+    j["digestType"] = digestType.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string ECDSA_Sign::Name(void) const { return "ECDSA_Sign"; }
 std::string ECDSA_Sign::ToString(void) const {
     std::stringstream ss;
@@ -677,6 +704,48 @@ nlohmann::json Schnorr_Sign::ToJSON(void) const {
     j["modifier"] = modifier.ToJSON();
     return j;
 }
+
+std::string ECCSI_Verify::Name(void) const { return "ECCSI_Verify"; }
+std::string ECCSI_Verify::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: ECCSI_Verify" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "public key X: " << signature.pub.first.ToString() << std::endl;
+    ss << "public key Y: " << signature.pub.second.ToString() << std::endl;
+    ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+    ss << "id: " << util::HexDump(id.Get()) << std::endl;
+    ss << "signature R: " << signature.signature.first.ToString() << std::endl;
+    ss << "signature S: " << signature.signature.second.ToString() << std::endl;
+    ss << "digest: " << repository::DigestToString(digestType.Get()) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json ECCSI_Verify::ToJSON(void) const {
+    nlohmann::json j;
+    j["operation"] = "ECCSI_Verify";
+    j["curveType"] = curveType.ToJSON();
+    j["pub_x"] = signature.pub.first.ToJSON();
+    j["pub_y"] = signature.pub.second.ToJSON();
+    j["cleartext"] = cleartext.ToJSON();
+    j["id"] = id.ToJSON();
+    j["sig_r"] = signature.signature.first.ToJSON();
+    j["sig_s"] = signature.signature.second.ToJSON();
+    j["digestType"] = digestType.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+/* Construct ECCSI_Verify from ECCSI_Sign */
+ECCSI_Verify::ECCSI_Verify(const ECCSI_Sign& opECCSI_Sign, const component::ECCSI_Signature signature, component::Modifier modifier) :
+    Operation(std::move(modifier)),
+    curveType(opECCSI_Sign.curveType),
+    cleartext(opECCSI_Sign.cleartext),
+    id(opECCSI_Sign.id),
+    signature(signature),
+    digestType(opECCSI_Sign.digestType)
+{ }
 
 std::string ECDSA_Verify::Name(void) const { return "ECDSA_Verify"; }
 std::string ECDSA_Verify::ToString(void) const {

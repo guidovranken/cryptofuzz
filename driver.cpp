@@ -36,10 +36,12 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorECC_PrivateToPublic executorECC_PrivateToPublic(CF_OPERATION("ECC_PrivateToPublic"), modules, options);
     static ExecutorECC_ValidatePubkey executorECC_ValidatePubkey(CF_OPERATION("ECC_ValidatePubkey"), modules, options);
     static ExecutorECC_GenerateKeyPair executorECC_GenerateKeyPair(CF_OPERATION("ECC_GenerateKeyPair"), modules, options);
+    static ExecutorECCSI_Sign executorECCSI_Sign(CF_OPERATION("ECCSI_Sign"), modules, options);
     static ExecutorECDSA_Sign executorECDSA_Sign(CF_OPERATION("ECDSA_Sign"), modules, options);
     static ExecutorECGDSA_Sign executorECGDSA_Sign(CF_OPERATION("ECGDSA_Sign"), modules, options);
     static ExecutorECRDSA_Sign executorECRDSA_Sign(CF_OPERATION("ECRDSA_Sign"), modules, options);
     static ExecutorSchnorr_Sign executorSchnorr_Sign(CF_OPERATION("Schnorr_Sign"), modules, options);
+    static ExecutorECCSI_Verify executorECCSI_Verify(CF_OPERATION("ECCSI_Verify"), modules, options);
     static ExecutorECDSA_Verify executorECDSA_Verify(CF_OPERATION("ECDSA_Verify"), modules, options);
     static ExecutorECGDSA_Verify executorECGDSA_Verify(CF_OPERATION("ECGDSA_Verify"), modules, options);
     static ExecutorECRDSA_Verify executorECRDSA_Verify(CF_OPERATION("ECRDSA_Verify"), modules, options);
@@ -182,6 +184,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
             case CF_OPERATION("ECC_GenerateKeyPair"):
                 executorECC_GenerateKeyPair.Run(ds, payload.data(), payload.size());
                 break;
+            case CF_OPERATION("ECCSI_Sign"):
+                executorECCSI_Sign.Run(ds, payload.data(), payload.size());
+                break;
             case CF_OPERATION("ECDSA_Sign"):
                 executorECDSA_Sign.Run(ds, payload.data(), payload.size());
                 break;
@@ -193,6 +198,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("Schnorr_Sign"):
                 executorSchnorr_Sign.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("ECCSI_Verify"):
+                executorECCSI_Verify.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("ECDSA_Verify"):
                 executorECDSA_Verify.Run(ds, payload.data(), payload.size());

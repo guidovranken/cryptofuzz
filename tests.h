@@ -26,10 +26,12 @@ void test(const operation::KDF_SP_800_108& op, const std::optional<component::Ke
 void test(const operation::ECC_PrivateToPublic& op, const std::optional<component::ECC_PublicKey>& result);
 void test(const operation::ECC_ValidatePubkey& op, const std::optional<bool>& result);
 void test(const operation::ECC_GenerateKeyPair& op, const std::optional<component::ECC_KeyPair>& result);
+void test(const operation::ECCSI_Sign& op, const std::optional<component::ECCSI_Signature>& result);
 void test(const operation::ECDSA_Sign& op, const std::optional<component::ECDSA_Signature>& result);
 void test(const operation::ECGDSA_Sign& op, const std::optional<component::ECGDSA_Signature>& result);
 void test(const operation::ECRDSA_Sign& op, const std::optional<component::ECRDSA_Signature>& result);
 void test(const operation::Schnorr_Sign& op, const std::optional<component::Schnorr_Signature>& result);
+void test(const operation::ECCSI_Verify& op, const std::optional<bool>& result);
 void test(const operation::ECDSA_Verify& op, const std::optional<bool>& result);
 void test(const operation::ECGDSA_Verify& op, const std::optional<bool>& result);
 void test(const operation::ECRDSA_Verify& op, const std::optional<bool>& result);

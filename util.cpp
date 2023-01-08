@@ -261,6 +261,36 @@ std::string ToString(const component::ECC_KeyPair& val) {
     return ret;
 }
 
+std::string ToString(const component::ECCSI_Signature& val) {
+    std::string ret;
+
+    ret += "X: ";
+    ret += val.pub.first.ToString();
+    ret += "\n";
+
+    ret += "Y: ";
+    ret += val.pub.second.ToString();
+    ret += "\n";
+
+    ret += "PVT X: ";
+    ret += val.pvt.first.ToString();
+    ret += "\n";
+
+    ret += "PVT Y: ";
+    ret += val.pvt.second.ToString();
+    ret += "\n";
+
+    ret += "R: ";
+    ret += val.signature.first.ToString();
+    ret += "\n";
+
+    ret += "S: ";
+    ret += val.signature.second.ToString();
+    ret += "\n";
+
+    return ret;
+}
+
 std::string ToString(const component::ECDSA_Signature& val) {
     std::string ret;
 
@@ -433,6 +463,10 @@ nlohmann::json ToJSON(const component::ECC_PublicKey& val) {
 }
 
 nlohmann::json ToJSON(const component::ECC_KeyPair& val) {
+    return val.ToJSON();
+}
+
+nlohmann::json ToJSON(const component::ECCSI_Signature& val) {
     return val.ToJSON();
 }
 

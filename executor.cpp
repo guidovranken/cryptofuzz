@@ -481,6 +481,67 @@ template<> std::optional<component::ECC_KeyPair> ExecutorBase<component::ECC_Key
     return module->OpECC_GenerateKeyPair(op);
 }
 
+/* Specialization for operation::ECCSI_Sign */
+template<> void ExecutorBase<component::ECCSI_Signature, operation::ECCSI_Sign>::postprocess(std::shared_ptr<Module> module, operation::ECCSI_Sign& op, const ExecutorBase<component::ECCSI_Signature, operation::ECCSI_Sign>::ResultPair& result) const {
+    (void)module;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto cleartext = op.cleartext.ToHex();
+        const auto id = op.id.ToHex();
+        const auto pub_x = result.second->pub.first.ToTrimmedString();
+        const auto pub_y = result.second->pub.second.ToTrimmedString();
+        const auto pvt_x = result.second->pvt.first.ToTrimmedString();
+        const auto pvt_y = result.second->pvt.second.ToTrimmedString();
+        const auto sig_r = result.second->signature.first.ToTrimmedString();
+        const auto sig_s = result.second->signature.second.ToTrimmedString();
+
+        Pool_CurveECCSISignature.Set({
+                curveID,
+                cleartext,
+                id,
+                pub_x, pub_y,
+                pvt_x, pvt_y,
+                sig_r, sig_s});
+        Pool_CurveECC_Point.Set({ curveID, pub_x, pub_y });
+        Pool_CurveECC_Point.Set({ curveID, pvt_x, pvt_y });
+        Pool_CurveECC_Point.Set({ curveID, sig_r, sig_s });
+
+        if ( pub_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_x); }
+        if ( pub_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pub_y); }
+        if ( pvt_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pvt_x); }
+        if ( pvt_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(pvt_y); }
+        if ( sig_r.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(sig_r); }
+        if ( sig_s.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(sig_s); }
+
+        {
+            auto opVerify = operation::ECCSI_Verify(
+                    op,
+                    *(result.second),
+                    op.modifier);
+
+            const auto verifyResult = module->OpECCSI_Verify(opVerify);
+            CF_ASSERT(
+                    verifyResult == std::nullopt ||
+                    *verifyResult == true,
+                    "Cannot verify generated signature");
+        }
+    }
+}
+
+template<> std::optional<component::ECCSI_Signature> ExecutorBase<component::ECCSI_Signature, operation::ECCSI_Sign>::callModule(std::shared_ptr<Module> module, operation::ECCSI_Sign& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
+    RETURN_IF_DISABLED(options.digests, op.digestType.Get());
+
+    const size_t size = op.priv.ToTrimmedString().size();
+
+    if ( size == 0 || size > 4096 ) {
+        return std::nullopt;
+    }
+
+    return module->OpECCSI_Sign(op);
+}
+
 /* Specialization for operation::ECDSA_Sign */
 template<> void ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::postprocess(std::shared_ptr<Module> module, operation::ECDSA_Sign& op, const ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::ResultPair& result) const {
     (void)module;
@@ -636,6 +697,20 @@ template<> std::optional<component::Schnorr_Signature> ExecutorBase<component::S
     }
 
     return module->OpSchnorr_Sign(op);
+}
+
+/* Specialization for operation::ECCSI_Verify */
+template<> void ExecutorBase<bool, operation::ECCSI_Verify>::postprocess(std::shared_ptr<Module> module, operation::ECCSI_Verify& op, const ExecutorBase<bool, operation::ECCSI_Verify>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<bool> ExecutorBase<bool, operation::ECCSI_Verify>::callModule(std::shared_ptr<Module> module, operation::ECCSI_Verify& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
+    RETURN_IF_DISABLED(options.digests, op.digestType.Get());
+
+    return module->OpECCSI_Verify(op);
 }
 
 /* Specialization for operation::ECDSA_Verify */
@@ -2007,6 +2082,11 @@ bool ExecutorBase<component::Bignum, operation::BignumCalc>::dontCompare(const o
 }
 
 template <>
+bool ExecutorBase<component::ECCSI_Signature, operation::ECCSI_Sign>::dontCompare(const operation::ECCSI_Sign& operation) const {
+    return true;
+}
+
+template <>
 bool ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>::dontCompare(const operation::ECDSA_Sign& operation) const {
     if (
             operation.curveType.Get() != CF_ECC_CURVE("ed25519") &&
@@ -2430,10 +2510,12 @@ template class ExecutorBase<component::Key, operation::KDF_SP_800_108>;
 template class ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>;
 template class ExecutorBase<bool, operation::ECC_ValidatePubkey>;
 template class ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>;
+template class ExecutorBase<component::ECCSI_Signature, operation::ECCSI_Sign>;
 template class ExecutorBase<component::ECDSA_Signature, operation::ECDSA_Sign>;
 template class ExecutorBase<component::ECGDSA_Signature, operation::ECGDSA_Sign>;
 template class ExecutorBase<component::ECRDSA_Signature, operation::ECRDSA_Sign>;
 template class ExecutorBase<component::Schnorr_Signature, operation::Schnorr_Sign>;
+template class ExecutorBase<bool, operation::ECCSI_Verify>;
 template class ExecutorBase<bool, operation::ECDSA_Verify>;
 template class ExecutorBase<bool, operation::ECGDSA_Verify>;
 template class ExecutorBase<bool, operation::ECRDSA_Verify>;

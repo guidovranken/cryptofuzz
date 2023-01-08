@@ -44,6 +44,19 @@ extern MutatorPool<CurveECDSASignature_Pair, cryptofuzz::config::kMutatorPoolSiz
 
 typedef struct {
     uint64_t curveID;
+    std::string cleartext;
+    std::string id;
+    std::string pub_x;
+    std::string pub_y;
+    std::string pvt_x;
+    std::string pvt_y;
+    std::string sig_r;
+    std::string sig_s;
+} CurveECCSISignature_Pair;
+extern MutatorPool<CurveECCSISignature_Pair, cryptofuzz::config::kMutatorPoolSize> Pool_CurveECCSISignature;
+
+typedef struct {
+    uint64_t curveID;
     std::string x;
     std::string y;
 } CurveECC_Point_Pair;

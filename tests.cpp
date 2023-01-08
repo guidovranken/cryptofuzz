@@ -371,6 +371,10 @@ static void test_BIP340_Schnorr_Signature(const uint64_t curveID, const std::str
     }
 }
 
+void test(const operation::ECCSI_Sign& op, const std::optional<component::ECCSI_Signature>& result) {
+    (void)op;
+    (void)result;
+}
 void test(const operation::ECDSA_Sign& op, const std::optional<component::ECDSA_Signature>& result) {
     if ( result != std::nullopt ) {
         test_ECC_PrivateKey(op.curveType.Get(), op.priv.ToTrimmedString());
@@ -445,6 +449,11 @@ void test(const operation::Schnorr_Sign& op, const std::optional<component::Schn
                 result->signature.first.ToTrimmedString(),
                 result->signature.second.ToTrimmedString());
     }
+}
+
+void test(const operation::ECCSI_Verify& op, const std::optional<bool>& result) {
+    (void)op;
+    (void)result;
 }
 
 void test(const operation::ECDSA_Verify& op, const std::optional<bool>& result) {

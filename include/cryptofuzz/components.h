@@ -88,6 +88,20 @@ class ECC_KeyPair {
         nlohmann::json ToJSON(void) const;
 };
 
+class ECCSI_Signature {
+    public:
+        BignumPair signature;
+        ECC_PublicKey pub;
+        BignumPair pvt;
+
+        ECCSI_Signature(Datasource& ds);
+        ECCSI_Signature(BignumPair signature, ECC_PublicKey pub, BignumPair pvt);
+        ECCSI_Signature(nlohmann::json json);
+
+        bool operator==(const ECCSI_Signature& rhs) const;
+        void Serialize(Datasource& ds) const;
+        nlohmann::json ToJSON(void) const;
+};
 
 class ECDSA_Signature {
     public:
