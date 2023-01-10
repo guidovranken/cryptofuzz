@@ -45,6 +45,7 @@ std::optional<component::Ciphertext> Monocypher::OpSymmetricEncrypt(operation::S
     uint8_t* out = nullptr;
 
     if ( op.cipher.cipherType.Get() == CF_CIPHER("CHACHA20") ) {
+#if 0
         CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
         CF_CHECK_EQ(op.cipher.iv.GetSize(), 8);
 
@@ -58,6 +59,7 @@ std::optional<component::Ciphertext> Monocypher::OpSymmetricEncrypt(operation::S
                 op.cipher.iv.GetPtr());
 
         ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
+#endif
     } else if ( op.cipher.cipherType.Get() == CF_CIPHER("XCHACHA20_POLY1305") ) {
         CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
         CF_CHECK_EQ(op.cipher.iv.GetSize(), 24);
@@ -93,6 +95,7 @@ std::optional<component::Cleartext> Monocypher::OpSymmetricDecrypt(operation::Sy
     uint8_t* out = nullptr;
 
     if ( op.cipher.cipherType.Get() == CF_CIPHER("CHACHA20") ) {
+#if 0
         CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
         CF_CHECK_EQ(op.cipher.iv.GetSize(), 8);
 
@@ -106,6 +109,7 @@ std::optional<component::Cleartext> Monocypher::OpSymmetricDecrypt(operation::Sy
                 op.cipher.iv.GetPtr());
 
         ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+#endif
     } else if ( op.cipher.cipherType.Get() == CF_CIPHER("XCHACHA20_POLY1305") ) {
         CF_CHECK_EQ(op.cipher.key.GetSize(), 32);
         CF_CHECK_EQ(op.cipher.iv.GetSize(), 24);
