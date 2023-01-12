@@ -14,12 +14,24 @@ nim_bigints::nim_bigints(void) :
     CF_NORET(NimMain());
 }
 
+namespace nim_bigints_detail {
+    std::string ToString(const component::Bignum& bn) {
+        const auto s = bn.ToTrimmedString();
+
+        if ( s == "-" ) {
+            return "-0";
+        } else {
+            return s;
+        }
+    }
+}
+
 std::optional<component::Bignum> nim_bigints::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
 
-    auto a = op.bn0.ToTrimmedString();
-    auto b = op.bn1.ToTrimmedString();
-    auto c = op.bn2.ToTrimmedString();
+    auto a = nim_bigints_detail::ToString(op.bn0);
+    auto b = nim_bigints_detail::ToString(op.bn1);
+    auto c = nim_bigints_detail::ToString(op.bn2);
     std::array<char, 10240> result;
     memset(result.data(), 0, result.size());
 
@@ -68,6 +80,8 @@ std::optional<component::Bignum> nim_bigints::OpBignumCalc(operation::BignumCalc
                     (uint8_t*)result.data()),
         0);
     } else if ( op.calcOp.Is(CF_CALCOP("InvMod(A,B)")) ) {
+        CF_CHECK_LTE(op.bn0.GetSize(), 500);
+        CF_CHECK_LTE(op.bn1.GetSize(), 500);
         CF_CHECK_EQ(
                 cryptofuzz_nim_bigints_invmod(
                     (uint8_t*)a.data(), a.size(),
@@ -79,6 +93,8 @@ std::optional<component::Bignum> nim_bigints::OpBignumCalc(operation::BignumCalc
         CF_CHECK_LTE(op.bn1.GetSize(), 500);
         CF_CHECK_LTE(op.bn2.GetSize(), 500);
         CF_CHECK_FALSE(op.bn2.IsZero());
+        CF_CHECK_FALSE(op.bn1.IsNegative());
+        CF_CHECK_FALSE(op.bn2.IsNegative());
         CF_CHECK_EQ(
                 cryptofuzz_nim_bigints_expmod(
                     (uint8_t*)a.data(), a.size(),
@@ -87,6 +103,8 @@ std::optional<component::Bignum> nim_bigints::OpBignumCalc(operation::BignumCalc
                     (uint8_t*)result.data()),
         0);
     } else if ( op.calcOp.Is(CF_CALCOP("And(A,B)")) ) {
+        CF_CHECK_FALSE(op.bn0.IsNegative());
+        CF_CHECK_FALSE(op.bn1.IsNegative());
         CF_CHECK_EQ(
                 cryptofuzz_nim_bigints_and(
                     (uint8_t*)a.data(), a.size(),
@@ -94,6 +112,8 @@ std::optional<component::Bignum> nim_bigints::OpBignumCalc(operation::BignumCalc
                     (uint8_t*)result.data()),
         0);
     } else if ( op.calcOp.Is(CF_CALCOP("Or(A,B)")) ) {
+        CF_CHECK_FALSE(op.bn0.IsNegative());
+        CF_CHECK_FALSE(op.bn1.IsNegative());
         CF_CHECK_EQ(
                 cryptofuzz_nim_bigints_or(
                     (uint8_t*)a.data(), a.size(),
@@ -101,6 +121,8 @@ std::optional<component::Bignum> nim_bigints::OpBignumCalc(operation::BignumCalc
                     (uint8_t*)result.data()),
         0);
     } else if ( op.calcOp.Is(CF_CALCOP("Xor(A,B)")) ) {
+        CF_CHECK_FALSE(op.bn0.IsNegative());
+        CF_CHECK_FALSE(op.bn1.IsNegative());
         CF_CHECK_EQ(
                 cryptofuzz_nim_bigints_xor(
                     (uint8_t*)a.data(), a.size(),

@@ -273,7 +273,8 @@ size_t Bignum::GetSize(void) const {
 }
 
 bool Bignum::IsZero(void) const {
-    return ToTrimmedString() == "0";
+    const auto t = ToTrimmedString();
+    return t == "0" || t == "-" || t == "-0";
 }
 
 bool Bignum::IsNegative(void) const {
