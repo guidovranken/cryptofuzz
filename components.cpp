@@ -281,6 +281,10 @@ bool Bignum::IsNegative(void) const {
     return data.GetSize() && data.GetConstVectorPtr()[0] == '-';
 }
 
+bool Bignum::IsPositive(void) const {
+    return !IsZero() && !IsNegative();
+}
+
 bool Bignum::IsGreaterThan(const std::string& other) const {
     CF_ASSERT(IsNegative() == false, "IsGreaterThan on negative numbers not supported");
     const auto s = ToTrimmedString();

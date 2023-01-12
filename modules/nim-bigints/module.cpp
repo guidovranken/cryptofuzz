@@ -66,6 +66,8 @@ std::optional<component::Bignum> nim_bigints::OpBignumCalc(operation::BignumCalc
         0);
     } else if ( op.calcOp.Is(CF_CALCOP("Mod(A,B)")) ) {
         CF_CHECK_FALSE(op.bn1.IsZero());
+        CF_CHECK_FALSE(op.bn0.IsNegative());
+        CF_CHECK_FALSE(op.bn1.IsNegative());
         CF_CHECK_EQ(
                 cryptofuzz_nim_bigints_mod(
                     (uint8_t*)a.data(), a.size(),
@@ -80,9 +82,7 @@ std::optional<component::Bignum> nim_bigints::OpBignumCalc(operation::BignumCalc
                     (uint8_t*)result.data()),
         0);
     } else if ( op.calcOp.Is(CF_CALCOP("InvMod(A,B)")) ) {
-        CF_CHECK_LTE(op.bn0.GetSize(), 500);
-        CF_CHECK_LTE(op.bn1.GetSize(), 500);
-        CF_CHECK_FALSE(op.bn1.IsZero());
+        CF_CHECK_TRUE(op.bn1.IsPositive());
         CF_CHECK_EQ(
                 cryptofuzz_nim_bigints_invmod(
                     (uint8_t*)a.data(), a.size(),

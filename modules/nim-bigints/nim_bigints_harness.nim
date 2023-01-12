@@ -46,11 +46,15 @@ proc cryptofuzz_nim_bigints_div(
         res: ptr uint8): cint {.exportc.} =
     var a = initBigint(toString(a_bytes))
     var b = initBigint(toString(b_bytes))
-    var r = a.div(b)
-    var r_str = r.toString()
+    try:
+        var r = a.div(b)
+        var r_str = r.toString()
 
-    copyMem(res, r_str[0].addr, r_str.len)
-    result = 0
+        copyMem(res, r_str[0].addr, r_str.len)
+        result = 0
+    # Remove this except once https://github.com/nim-lang/bigints/issues/123 is fixed
+    except AssertionDefect:
+        result = 1
 
 proc cryptofuzz_nim_bigints_mod(
         a_bytes: openarray[uint8],
@@ -58,11 +62,15 @@ proc cryptofuzz_nim_bigints_mod(
         res: ptr uint8): cint {.exportc.} =
     var a = initBigint(toString(a_bytes))
     var b = initBigint(toString(b_bytes))
-    var r = a.mod(b)
-    var r_str = r.toString()
+    try:
+        var r = a.mod(b)
+        var r_str = r.toString()
 
-    copyMem(res, r_str[0].addr, r_str.len)
-    result = 0
+        copyMem(res, r_str[0].addr, r_str.len)
+        result = 0
+    # Remove this except once https://github.com/nim-lang/bigints/issues/123 is fixed
+    except AssertionDefect:
+        result = 1
 
 proc cryptofuzz_nim_bigints_gcd(
         a_bytes: openarray[uint8],
@@ -89,11 +97,16 @@ proc cryptofuzz_nim_bigints_invmod(
         copyMem(res, r_str[0].addr, r_str.len)
         result = 0
     except ValueError:
-        result = 1
+        var r_str = "0"
+        copyMem(res, r_str[0].addr, r_str.len)
+        result = 0
     except DivByZeroDefect:
         var r_str = "0"
         copyMem(res, r_str[0].addr, r_str.len)
         result = 0
+    # Remove this except once https://github.com/nim-lang/bigints/issues/123 is fixed
+    except AssertionDefect:
+        result = 1
 
 proc cryptofuzz_nim_bigints_expmod(
         a_bytes: openarray[uint8],
@@ -103,11 +116,15 @@ proc cryptofuzz_nim_bigints_expmod(
     var a = initBigint(toString(a_bytes))
     var b = initBigint(toString(b_bytes))
     var c = initBigint(toString(c_bytes))
-    var r = powmod(a, b, c)
-    var r_str = r.toString()
+    try:
+        var r = powmod(a, b, c)
+        var r_str = r.toString()
 
-    copyMem(res, r_str[0].addr, r_str.len)
-    result = 0
+        copyMem(res, r_str[0].addr, r_str.len)
+        result = 0
+    # Remove this except once https://github.com/nim-lang/bigints/issues/123 is fixed
+    except AssertionDefect:
+        result = 1
 
 proc cryptofuzz_nim_bigints_and(
         a_bytes: openarray[uint8],
