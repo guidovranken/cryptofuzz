@@ -9,10 +9,10 @@ module.a: module.o nimobjects/
 nimobjects/ : nim_bigints_harness.nim
 	test $(NIM_PATH)
 	rm -rf nimobjects/
-	nim c -d:release --noMain --noLinking --header:nim_bigints_harness.h nim_bigints_harness.nim
+	$(NIM_PATH)/bin/nim c -d:release --noMain --noLinking --header:nim_bigints_harness.h nim_bigints_harness.nim
 	mkdir nimobjects/
-	cd nimobjects/ && $(CC) $(CFLAGS) -c -I$(HOME)/.cache/nim/nim_bigints_harness_d/ -I$(NIM_PATH)/lib/ $(HOME)/.cache/nim/nim_bigints_harness_d/*.c
+	cd nimobjects/ && $(CC) $(CFLAGS) -c -I$(HOME)/.cache/nim/nim_bigints_harness_r/ -I$(NIM_PATH)/lib/ $(HOME)/.cache/nim/nim_bigints_harness_r/*.c
 module.o: nimobjects/ module.cpp module.h
-	$(CXX) $(CXXFLAGS) -I$(HOME)/.cache/nim/nim_bigints_harness_d/ -I$(NIM_PATH)/lib/ -fPIC -c module.cpp -o module.o
+	$(CXX) $(CXXFLAGS) -I$(HOME)/.cache/nim/nim_bigints_harness_r/ -I$(NIM_PATH)/lib/ -fPIC -c module.cpp -o module.o
 clean:
 	rm -rf *.o module.a nimobjects/

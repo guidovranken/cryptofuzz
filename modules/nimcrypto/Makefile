@@ -9,7 +9,7 @@ module.a: module.o nimobjects/
 nimobjects/ : nimcrypto_harness.nim
 	test $(NIM_PATH)
 	rm -rf nimobjects/
-	nim c --noMain --noLinking --header:nimcrypto_harness.h nimcrypto_harness.nim
+	$(NIM_PATH)/bin/nim c --noMain --noLinking --header:nimcrypto_harness.h nimcrypto_harness.nim
 	mkdir nimobjects/
 	cd nimobjects/ && $(CC) $(CFLAGS) -c -I$(HOME)/.cache/nim/nimcrypto_harness_d/ -I$(NIM_PATH)/lib/ $(HOME)/.cache/nim/nimcrypto_harness_d/*.c
 module.o: nimobjects/ module.cpp module.h
