@@ -97,15 +97,34 @@ end:
 
 void Bignum::binaryConversion(void) const {
     uint8_t* data = nullptr;
-
     CF_CHECK_EQ(mp_isneg(mp), 0);
 
     {
-        const auto size = mp_unsigned_bin_size(mp);
-        CF_ASSERT(size >= 0, "mp_unsigned_bin_size returned negative value");
+        bool randomSize = false;
+
+        try { randomSize = ds.Get<bool>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+        size_t size = 0;
+        int numBits = 0;
+
+        if ( randomSize == false ) {
+            const auto size2 = mp_unsigned_bin_size(mp);
+            CF_ASSERT(size2 >= 0, "mp_unsigned_bin_size returned negative value");
+        } else {
+            try {
+                size = ds.Get<uint16_t>();
+            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+            numBits = mp_count_bits(mp);
+            CF_ASSERT(numBits >= 0, "mp_count_bits result is negative");
+        }
 
         data = util::malloc(size);
         CF_CHECK_EQ(mp_to_unsigned_bin_len(mp, data, size), MP_OKAY);
+
+        CF_ASSERT(
+                size * 8 >= static_cast<size_t>(numBits),
+                "mp_to_unsigned_bin_len succeeded with undersized buffer");
 
         /* Ensure no allocation failure occurs in mp_read_unsigned_bin
          * because this can leave the mp in a corrupted state
@@ -113,10 +132,23 @@ void Bignum::binaryConversion(void) const {
         const auto cached_disableAllocationFailures = wolfCrypt_detail::disableAllocationFailures;
         wolfCrypt_detail::disableAllocationFailures = true;
 
-        CF_ASSERT(mp_read_unsigned_bin(mp, data, size) == MP_OKAY, "Cannot parse output of mp_to_unsigned_bin_len");
+        if ( randomSize == false ) {
+            CF_ASSERT(mp_read_unsigned_bin(mp, data, size) == MP_OKAY, "Cannot parse output of mp_to_unsigned_bin_len");
+        } else {
+            /* mp_read_unsigned_bin can fail if the input buffer is too large.
+             *
+             * Read into a temp variable, and copy to mp if reading succeeds, otherwise
+             * retain old value in mp.
+             */
+            Bignum tmp(ds);
+            if ( mp_read_unsigned_bin(tmp.GetPtrDirect(), data, size) == MP_OKAY ) {
+                /* ignore result */ mp_copy(tmp.GetPtrDirect(), mp);
+            }
+        }
 
         wolfCrypt_detail::disableAllocationFailures = cached_disableAllocationFailures;
     }
+
 
 end:
     util::free(data);
