@@ -391,6 +391,10 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
         case    0:
             CF_CHECK_EQ(mbedtls_mpi_mod_mpi(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
             return true;
+    /* Enable again once this is fixed:
+     * https://github.com/Mbed-TLS/mbedtls/issues/6540
+     */
+#if 0
         case    1:
             {
                 mbedtls_mpi_uint ret;
@@ -403,6 +407,7 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 res.Set( std::to_string(ret) );
             }
             return true;
+#endif
     }
 
 end:
