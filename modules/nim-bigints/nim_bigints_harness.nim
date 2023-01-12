@@ -91,7 +91,9 @@ proc cryptofuzz_nim_bigints_invmod(
     except ValueError:
         result = 1
     except DivByZeroDefect:
-        result = 1
+        var r_str = "0"
+        copyMem(res, r_str[0].addr, r_str.len)
+        result = 0
 
 proc cryptofuzz_nim_bigints_expmod(
         a_bytes: openarray[uint8],

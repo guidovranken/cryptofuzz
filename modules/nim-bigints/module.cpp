@@ -82,6 +82,7 @@ std::optional<component::Bignum> nim_bigints::OpBignumCalc(operation::BignumCalc
     } else if ( op.calcOp.Is(CF_CALCOP("InvMod(A,B)")) ) {
         CF_CHECK_LTE(op.bn0.GetSize(), 500);
         CF_CHECK_LTE(op.bn1.GetSize(), 500);
+        CF_CHECK_FALSE(op.bn1.IsZero());
         CF_CHECK_EQ(
                 cryptofuzz_nim_bigints_invmod(
                     (uint8_t*)a.data(), a.size(),
