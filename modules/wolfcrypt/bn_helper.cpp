@@ -110,6 +110,7 @@ void Bignum::binaryConversion(void) const {
         if ( randomSize == false ) {
             const auto size2 = mp_unsigned_bin_size(mp);
             CF_ASSERT(size2 >= 0, "mp_unsigned_bin_size returned negative value");
+            size = size2;
         } else {
             try {
                 size = ds.Get<uint16_t>();
