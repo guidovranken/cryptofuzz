@@ -9,6 +9,7 @@ module.a: module.o nimobjects/
 nimobjects/ : nim_bigints_harness.nim
 	test $(NIM_PATH)
 	rm -rf nimobjects/
+	$(NIM_PATH)/bin/nimble -n --nim:$(NIM_PATH)/bin/nim install https://github.com/nim-lang/bigints
 	$(NIM_PATH)/bin/nim c -d:release --noMain --noLinking --header:nim_bigints_harness.h nim_bigints_harness.nim
 	mkdir nimobjects/
 	cd nimobjects/ && $(CC) $(CFLAGS) -c -I$(HOME)/.cache/nim/nim_bigints_harness_r/ -I$(NIM_PATH)/lib/ $(HOME)/.cache/nim/nim_bigints_harness_r/*.c
