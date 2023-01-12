@@ -268,7 +268,7 @@ std::optional<component::MAC> mbedTLS::OpHMAC(operation::HMAC& op) {
         CF_CHECK_NE(md_type = mbedTLS_detail::to_mbedtls_md_type_t(op.digestType), MBEDTLS_MD_NONE);
         CF_CHECK_NE(md_info = mbedtls_md_info_from_type(md_type), nullptr);
         CF_CHECK_EQ(mbedtls_md_setup(&md_ctx, md_info, 1), 0 );
-        CF_CHECK_EQ(mbedtls_md_hmac_starts(&md_ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize()), 0);
+        CF_CHECK_EQ(mbedtls_md_hmac_starts(&md_ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize()), 0);
     }
 
     /* Process */
@@ -311,7 +311,7 @@ std::optional<component::MAC> mbedTLS::OpCMAC(operation::CMAC& op) {
     }
 
     {
-        CF_CHECK_EQ(mbedtls_cipher_cmac(cipher_info, op.cipher.key.GetPtr(), op.cipher.key.GetSize() * 8, op.cleartext.GetPtr(), op.cleartext.GetSize(), out), 0);
+        CF_CHECK_EQ(mbedtls_cipher_cmac(cipher_info, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize() * 8, op.cleartext.GetPtr(&ds), op.cleartext.GetSize(), out), 0);
 
         ret = component::MAC(out, mbedtls_cipher_get_block_size(&cipher_ctx));
     }
@@ -351,7 +351,7 @@ namespace mbedTLS_detail {
             mbedtls_cipher_init(&cipher_ctx);
             ctxInited = true;
             CF_CHECK_EQ(mbedtls_cipher_setup(&cipher_ctx, cipher_info), 0);
-            CF_CHECK_EQ(mbedtls_cipher_setkey(&cipher_ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize() * 8, MBEDTLS_ENCRYPT), 0);
+            CF_CHECK_EQ(mbedtls_cipher_setkey(&cipher_ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize() * 8, MBEDTLS_ENCRYPT), 0);
             CF_CHECK_EQ(mbedtls_cipher_reset(&cipher_ctx), 0);
             /* "The buffer for the output data [...] must be able to hold at least ilen Bytes." */
             CF_CHECK_GTE(op.ciphertextSize, op.cleartext.GetSize());
@@ -361,9 +361,9 @@ namespace mbedTLS_detail {
         {
             size_t olen;
             CF_CHECK_EQ(mbedtls_cipher_auth_encrypt_ext(&cipher_ctx,
-                        op.cipher.iv.GetPtr(), op.cipher.iv.GetSize(),
-                        op.aad != std::nullopt ? op.aad->GetPtr() : nullptr, op.aad != std::nullopt ? op.aad->GetSize() : 0,
-                        op.cleartext.GetPtr(), op.cleartext.GetSize(),
+                        op.cipher.iv.GetPtr(&ds), op.cipher.iv.GetSize(),
+                        op.aad != std::nullopt ? op.aad->GetPtr(&ds) : nullptr, op.aad != std::nullopt ? op.aad->GetSize() : 0,
+                        op.cleartext.GetPtr(&ds), op.cleartext.GetSize(),
                         out, op.ciphertextSize,
                         &olen, *op.tagSize), 0);
 
@@ -429,15 +429,15 @@ std::optional<component::Ciphertext> mbedTLS::OpSymmetricEncrypt(operation::Symm
         ctxInited = true;
 
         CF_CHECK_EQ(mbedtls_cipher_setup(&cipher_ctx, cipher_info), 0);
-        CF_CHECK_EQ(mbedtls_cipher_setkey(&cipher_ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize() * 8, MBEDTLS_ENCRYPT), 0);
-        CF_CHECK_EQ(mbedtls_cipher_set_iv(&cipher_ctx, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize()), 0);
+        CF_CHECK_EQ(mbedtls_cipher_setkey(&cipher_ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize() * 8, MBEDTLS_ENCRYPT), 0);
+        CF_CHECK_EQ(mbedtls_cipher_set_iv(&cipher_ctx, op.cipher.iv.GetPtr(&ds), op.cipher.iv.GetSize()), 0);
         CF_CHECK_EQ(mbedtls_cipher_reset(&cipher_ctx), 0);
         CF_CHECK_EQ(mbedtls_cipher_update_ad(&cipher_ctx, nullptr, 0), 0);
 
         if ( repository::IsXTS( op.cipher.cipherType.Get() ) ) {
             /* XTS input may not be chunked */
 
-            parts = { { op.cleartext.GetPtr(), op.cleartext.GetSize()} };
+            parts = { { op.cleartext.GetPtr(&ds), op.cleartext.GetSize()} };
         } else if ( repository::IsGCM( op.cipher.cipherType.Get() ) || repository::IsECB( op.cipher.cipherType.Get() ) ) {
             /* mbed TLS documentation:
              *
@@ -458,14 +458,14 @@ std::optional<component::Ciphertext> mbedTLS::OpSymmetricEncrypt(operation::Symm
 
             size_t i = 0;
             for (i = 0; i < numBlocks; i++) {
-                parts.push_back( {op.cleartext.GetPtr() + (i * blockSize), blockSize} );
+                parts.push_back( {op.cleartext.GetPtr(&ds) + (i * blockSize), blockSize} );
             }
 
             /* Do not add a chunk of size 0 in ECB mode (this will cause decryption to
              * fail).
              */
             if ( !repository::IsECB( op.cipher.cipherType.Get() ) ) {
-                parts.push_back( {op.cleartext.GetPtr() + (i * blockSize), remainder} );
+                parts.push_back( {op.cleartext.GetPtr(&ds) + (i * blockSize), remainder} );
             }
         } else {
             parts = util::ToParts(ds, op.cleartext);
@@ -529,7 +529,7 @@ namespace mbedTLS_detail {
             mbedtls_cipher_init(&cipher_ctx);
             ctxInited = true;
             CF_CHECK_EQ(mbedtls_cipher_setup(&cipher_ctx, cipher_info), 0);
-            CF_CHECK_EQ(mbedtls_cipher_setkey(&cipher_ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize() * 8, MBEDTLS_DECRYPT), 0);
+            CF_CHECK_EQ(mbedtls_cipher_setkey(&cipher_ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize() * 8, MBEDTLS_DECRYPT), 0);
             CF_CHECK_EQ(mbedtls_cipher_reset(&cipher_ctx), 0);
             /* "The buffer for the output data [...] must be able to hold at least ilen Bytes." */
             CF_CHECK_GTE(op.cleartextSize, op.ciphertext.GetSize());
@@ -537,15 +537,15 @@ namespace mbedTLS_detail {
 
         memcpy(in, op.ciphertext.GetPtr(), op.ciphertext.GetSize());
         if ( op.tag != std::nullopt ) {
-            memcpy(in + op.ciphertext.GetSize(), op.tag->GetPtr(), op.tag->GetSize());
+            memcpy(in + op.ciphertext.GetSize(), op.tag->GetPtr(&ds), op.tag->GetSize());
         }
 
         /* Process/finalize */
         {
             size_t olen;
             CF_CHECK_EQ(mbedtls_cipher_auth_decrypt_ext(&cipher_ctx,
-                        op.cipher.iv.GetPtr(), op.cipher.iv.GetSize(),
-                        op.aad != std::nullopt ? op.aad->GetPtr() : nullptr, op.aad != std::nullopt ? op.aad->GetSize() : 0,
+                        op.cipher.iv.GetPtr(&ds), op.cipher.iv.GetSize(),
+                        op.aad != std::nullopt ? op.aad->GetPtr(&ds) : nullptr, op.aad != std::nullopt ? op.aad->GetSize() : 0,
                         in, insize,
                         out, op.cleartextSize,
                         &olen, op.tag != std::nullopt ? op.tag->GetSize() : 0), 0);
@@ -599,15 +599,15 @@ std::optional<component::Cleartext> mbedTLS::OpSymmetricDecrypt(operation::Symme
         ctxInited = true;
 
         CF_CHECK_EQ(mbedtls_cipher_setup(&cipher_ctx, cipher_info), 0);
-        CF_CHECK_EQ(mbedtls_cipher_setkey(&cipher_ctx, op.cipher.key.GetPtr(), op.cipher.key.GetSize() * 8, MBEDTLS_DECRYPT), 0);
-        CF_CHECK_EQ(mbedtls_cipher_set_iv(&cipher_ctx, op.cipher.iv.GetPtr(), op.cipher.iv.GetSize()), 0);
+        CF_CHECK_EQ(mbedtls_cipher_setkey(&cipher_ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize() * 8, MBEDTLS_DECRYPT), 0);
+        CF_CHECK_EQ(mbedtls_cipher_set_iv(&cipher_ctx, op.cipher.iv.GetPtr(&ds), op.cipher.iv.GetSize()), 0);
         CF_CHECK_EQ(mbedtls_cipher_reset(&cipher_ctx), 0);
         CF_CHECK_EQ(mbedtls_cipher_update_ad(&cipher_ctx, nullptr, 0), 0);
 
         if ( repository::IsXTS( op.cipher.cipherType.Get() ) ) {
             /* XTS input may not be chunked */
 
-            parts = { { op.ciphertext.GetPtr(), op.ciphertext.GetSize()} };
+            parts = { { op.ciphertext.GetPtr(&ds), op.ciphertext.GetSize()} };
         } else if ( repository::IsGCM( op.cipher.cipherType.Get() ) || repository::IsECB( op.cipher.cipherType.Get() ) ) {
             /* mbed TLS documentation:
              *
@@ -639,14 +639,14 @@ std::optional<component::Cleartext> mbedTLS::OpSymmetricDecrypt(operation::Symme
 
             size_t i = 0;
             for (i = 0; i < numBlocks; i++) {
-                parts.push_back( {op.ciphertext.GetPtr() + (i * blockSize), blockSize} );
+                parts.push_back( {op.ciphertext.GetPtr(&ds) + (i * blockSize), blockSize} );
             }
 
             /* Do not add a chunk of size 0 in ECB mode (this will cause decryption to
              * fail).
              */
             if ( !repository::IsECB( op.cipher.cipherType.Get() ) ) {
-                parts.push_back( {op.ciphertext.GetPtr() + (i * blockSize), remainder} );
+                parts.push_back( {op.ciphertext.GetPtr(&ds) + (i * blockSize), remainder} );
             }
         } else {
             parts = util::ToParts(ds, op.ciphertext);
@@ -710,11 +710,11 @@ std::optional<component::Key> mbedTLS::OpKDF_HKDF(operation::KDF_HKDF& op) {
     CF_CHECK_EQ(
             mbedtls_hkdf(
                 md_info,
-                op.salt.GetPtr(),
+                op.salt.GetPtr(&ds),
                 op.salt.GetSize(),
-                op.password.GetPtr(),
+                op.password.GetPtr(&ds),
                 op.password.GetSize(),
-                op.info.GetPtr(),
+                op.info.GetPtr(&ds),
                 op.info.GetSize(),
                 out,
                 op.keySize), 0);
@@ -747,9 +747,9 @@ std::optional<component::Key> mbedTLS::OpKDF_PBKDF(operation::KDF_PBKDF& op) {
     CF_CHECK_EQ(mbedtls_pkcs12_derivation(
                 out,
                 op.keySize,
-                op.password.GetPtr(),
+                op.password.GetPtr(&ds),
                 op.password.GetSize(),
-                op.salt.GetPtr(),
+                op.salt.GetPtr(&ds),
                 op.salt.GetSize(),
                 md_type,
                 MBEDTLS_PKCS12_DERIVE_KEY,
@@ -783,9 +783,9 @@ std::optional<component::Key> mbedTLS::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
 
     CF_CHECK_EQ(mbedtls_pkcs5_pbkdf2_hmac(
                 &md_ctx,
-                op.password.GetPtr(),
+                op.password.GetPtr(&ds),
                 op.password.GetSize(),
-                op.salt.GetPtr(),
+                op.salt.GetPtr(&ds),
                 op.salt.GetSize(),
                 op.iterations,
                 op.keySize,
@@ -1091,13 +1091,13 @@ std::optional<component::ECDSA_Signature> mbedTLS::OpECDSA_Sign(operation::ECDSA
 
     {
         const auto CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
-        CF_CHECK_EQ(mbedtls_ecdsa_sign(&keypair.grp, &sig_r, &sig_s, &keypair.d, CT.GetPtr(), CT.GetSize(), mbedTLS_detail::RNG, nullptr), 0);
+        CF_CHECK_EQ(mbedtls_ecdsa_sign(&keypair.grp, &sig_r, &sig_s, &keypair.d, CT.GetPtr(&ds), CT.GetSize(), mbedTLS_detail::RNG, nullptr), 0);
     }
 
     CF_CHECK_EQ(mbedtls_ecp_mul(&keypair.grp, &keypair.Q, &keypair.d, &keypair.grp.G, mbedTLS_detail::RNG, nullptr), 0);
 
     CF_ASSERT(
-            mbedtls_ecdsa_verify(&keypair.grp, op.cleartext.GetPtr(), op.cleartext.GetSize(), &keypair.Q, &sig_r, &sig_s) == 0,
+            mbedtls_ecdsa_verify(&keypair.grp, op.cleartext.GetPtr(&ds), op.cleartext.GetSize(), &keypair.Q, &sig_r, &sig_s) == 0,
             "Cannot verify generated signature");
 
     {
@@ -1169,14 +1169,14 @@ std::optional<bool> mbedTLS::OpECDSA_Verify(operation::ECDSA_Verify& op) {
             case    CF_DIGEST("SHA256"):
                 {
                     uint8_t CT[32];
-                    CF_CHECK_EQ(mbedtls_sha256(op.cleartext.GetPtr(), op.cleartext.GetSize(), CT, 0), 0);
+                    CF_CHECK_EQ(mbedtls_sha256(op.cleartext.GetPtr(&ds), op.cleartext.GetSize(), CT, 0), 0);
                     verifyRes = mbedtls_ecdsa_verify(&ctx.grp, CT, sizeof(CT), &ctx.Q, &sig_r, &sig_s);
                 }
                 break;
             case    CF_DIGEST("NULL"):
                 {
                     const auto CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
-                    verifyRes = mbedtls_ecdsa_verify(&ctx.grp, CT.GetPtr(), CT.GetSize(), &ctx.Q, &sig_r, &sig_s);
+                    verifyRes = mbedtls_ecdsa_verify(&ctx.grp, CT.GetPtr(&ds), CT.GetSize(), &ctx.Q, &sig_r, &sig_s);
                 }
                 break;
             default:
