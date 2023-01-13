@@ -384,7 +384,7 @@ end:
             const ::Botan::SymmetricKey key(op.cipher.key.GetPtr(), op.cipher.key.GetSize());
             const ::Botan::InitializationVector iv(op.cipher.iv.GetPtr(), op.cipher.iv.GetSize());
             ::Botan::secure_vector<uint8_t> in = GetInData(op);
-            std::vector<uint8_t> out;
+            ::Botan::secure_vector<uint8_t> out;
             bool useOneShot = true;
             util::Multipart parts;
 
@@ -425,9 +425,10 @@ end:
                     } else {
                         for (const auto& part : parts) {
                             std::vector<uint8_t> tmp(part.first, part.first + part.second);
-                            crypt->process(tmp.data(), tmp.size());
-                            out.insert(out.end(), tmp.begin(), tmp.end());
+                            const auto num = crypt->process(tmp.data(), tmp.size());
+                            out.insert(out.end(), tmp.begin(), tmp.begin() + num);
                         }
+                        crypt->finish(out, out.size());
                     }
                 }
 
