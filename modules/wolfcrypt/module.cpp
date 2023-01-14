@@ -3115,13 +3115,22 @@ std::optional<component::DH_KeyPair> wolfCrypt::OpDH_GenerateKeyPair(operation::
     wolfCrypt_detail::SetGlobalDs(&ds);
 
     DhKey key;
-    uint8_t priv_bytes[8192];
-    uint8_t pub_bytes[8192];
-    word32 privSz = sizeof(priv_bytes), pubSz = sizeof(pub_bytes);
+    uint8_t* priv_bytes = nullptr;
+    uint8_t* pub_bytes = nullptr;
+    word32 privSz = 8192;
+    word32 pubSz = 8192;
     std::optional<std::vector<uint8_t>> prime;
     std::optional<std::vector<uint8_t>> base;
 
     memset(&key, 0, sizeof(key));
+
+    try {
+        privSz = ds.Get<uint16_t>();
+        pubSz = ds.Get<uint16_t>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+    priv_bytes = util::malloc(privSz);
+    pub_bytes  = util::malloc(pubSz);
 
     /* Prevent timeouts if wolfCrypt is compiled with --disable-fastmath */
 #if !defined(USE_FAST_MATH) && !defined(WOLFSSL_SP_MATH)
@@ -3151,6 +3160,9 @@ std::optional<component::DH_KeyPair> wolfCrypt::OpDH_GenerateKeyPair(operation::
     }
 
 end:
+    util::free(priv_bytes);
+    util::free(pub_bytes);
+
     CF_ASSERT(wc_FreeDhKey(&key) == 0, "Cannot free DH key");
     wolfCrypt_detail::UnsetGlobalDs();
 
