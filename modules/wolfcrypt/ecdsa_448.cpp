@@ -21,7 +21,10 @@ namespace wolfCrypt_detail {
 static bool ed448LoadPrivateKey(ed448_key& key, component::Bignum priv, Datasource& ds) {
     bool ret = false;
 
-    CF_CHECK_EQ(wolfCrypt_bignum::Bignum::ToBin(ds, priv, key.k, sizeof(key.k)), true);
+    uint8_t priv_bytes[ED448_KEY_SIZE];
+
+    CF_CHECK_EQ(wolfCrypt_bignum::Bignum::ToBin(ds, priv, priv_bytes, sizeof(priv_bytes)), true);
+    CF_CHECK_EQ(wc_ed448_import_private_only(priv_bytes, sizeof(priv_bytes), &key), 0);
 
     ret = true;
 end:
@@ -67,11 +70,12 @@ end:
     return ret;
 }
 
-static bool ed448LoadPublicKey(ed448_key& key, component::Bignum pub, Datasource& ds) {
+static bool ed448LoadPublicKey(ed448_key& key, component::Bignum pub, Datasource& ds, const bool mustSucceed = false) {
     bool ret = false;
 
-    CF_CHECK_EQ(wolfCrypt_bignum::Bignum::ToBin(ds, pub, key.p, sizeof(key.p)), true);
-    key.pubKeySet = 1;
+    uint8_t pub_bytes[ED448_PUB_KEY_SIZE];
+    CF_CHECK_EQ(wolfCrypt_bignum::Bignum::ToBin(ds, pub, pub_bytes, sizeof(pub_bytes), mustSucceed), true);
+    CF_CHECK_EQ(wc_ed448_import_public(pub_bytes, sizeof(pub_bytes), &key), 0);
 
     ret = true;
 end:
@@ -253,12 +257,16 @@ std::optional<bool> OpECDSA_Verify_ed448(operation::ECDSA_Verify& op) {
     uint8_t ed448sig[ED448_SIG_SIZE];
     int verify;
     bool oneShot = true;
+    bool haveEmptyPart = false;
+
+    haveAllocFailure = false;
+    ret = false;
 
     WC_CHECK_EQ(wc_ed448_init(&key), 0);
     e448_key_inited = true;
 
-    CF_CHECK_EQ(ed448LoadPublicKey(key, op.signature.pub.first, ds), true);
-    CF_CHECK_EQ(wolfCrypt_bignum::Bignum::ToBin(ds, op.signature.signature, ed448sig, sizeof(ed448sig)), true);
+    CF_CHECK_EQ(ed448LoadPublicKey(key, op.signature.pub.first, ds, true), true);
+    CF_CHECK_EQ(wolfCrypt_bignum::Bignum::ToBin(ds, op.signature.signature, ed448sig, sizeof(ed448sig), true), true);
 
 #if defined(WOLFSSL_ED25519_STREAMING_VERIFY)
     try { oneShot = ds.Get<bool>(); } catch ( ... ) { }
@@ -275,6 +283,9 @@ std::optional<bool> OpECDSA_Verify_ed448(operation::ECDSA_Verify& op) {
         WC_CHECK_EQ(wc_ed448_verify_msg_init(ed448sig, sizeof(ed448sig), &key, (byte)Ed448, nullptr, 0), 0);
 
         for (const auto& part : parts) {
+            if ( part.second == 0 ) {
+                haveEmptyPart = true;
+            }
             WC_CHECK_EQ(wc_ed448_verify_msg_update(part.first, part.second, &key), 0);
         }
 
@@ -290,6 +301,17 @@ end:
     }
 
     wolfCrypt_detail::UnsetGlobalDs();
+
+    if ( ret && *ret == false ) {
+        if ( haveAllocFailure ) {
+            ret = std::nullopt;
+        } else if ( haveEmptyPart ) {
+            ret = std::nullopt;
+        } else if ( op.cleartext.IsZero() ) {
+            ret = std::nullopt;
+        }
+
+    }
     return ret;
 }
 
