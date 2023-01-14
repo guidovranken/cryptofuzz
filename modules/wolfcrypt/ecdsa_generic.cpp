@@ -493,26 +493,11 @@ std::optional<component::ECCSI_Signature> OpECCSI_Sign(operation::ECCSI_Sign& op
 #else
     std::optional<component::ECCSI_Signature> ret = std::nullopt;
 
-    /* Remove this when ZD 15446 is fixed */
-    if ( op.curveType.Is(CF_ECC_CURVE("secp224k1")) ) {
-        return ret;
-    }
-
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     wolfCrypt_detail::SetGlobalDs(&ds);
 
-    bool randomHashSize = false;
-    uint8_t hashSz = 0;
-    try {
-        randomHashSize = ds.Get<bool>();
-        if ( randomHashSize ) {
-            hashSz = ds.Get<uint8_t>();
-        }
-    } catch ( ... ) { }
-    if ( !randomHashSize ) {
-        hashSz = WC_MAX_DIGEST_SIZE;
-        static_assert(WC_MAX_DIGEST_SIZE < 256);
-    }
+    uint8_t hashSz = WC_MAX_DIGEST_SIZE;
+    static_assert(WC_MAX_DIGEST_SIZE < 256);
 
     uint8_t* hash = util::malloc(hashSz);
 
@@ -625,18 +610,8 @@ std::optional<bool> OpECCSI_Verify(operation::ECCSI_Verify& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     wolfCrypt_detail::SetGlobalDs(&ds);
 
-    bool randomHashSize = false;
-    uint8_t hashSz = 0;
-    try {
-        randomHashSize = ds.Get<bool>();
-        if ( randomHashSize ) {
-            hashSz = ds.Get<uint8_t>();
-        }
-    } catch ( ... ) { }
-    if ( !randomHashSize ) {
-        hashSz = WC_MAX_DIGEST_SIZE;
-        static_assert(WC_MAX_DIGEST_SIZE < 256);
-    }
+    uint8_t hashSz = WC_MAX_DIGEST_SIZE;
+    static_assert(WC_MAX_DIGEST_SIZE < 256);
 
     EccsiKey eccsi;
 
@@ -651,10 +626,8 @@ std::optional<bool> OpECCSI_Verify(operation::ECCSI_Verify& op) {
     CF_CHECK_NE(curveId = toCurveID(op.curveType), std::nullopt);
     CF_CHECK_NE(hashType = toHashType(op.digestType), std::nullopt);
 
-    /*
     haveAllocFailure = false;
     ret = false;
-    */
 
     try {
     {
@@ -728,13 +701,11 @@ end:
     }
     util::free(hash);
     wolfCrypt_detail::UnsetGlobalDs();
-    /*
     if ( ret && *ret == false ) {
-        if ( haveAllocFailure || randomHashSize ) {
+        if ( haveAllocFailure ) {
             ret = std::nullopt;
         }
     }
-    */
     return ret;
 #endif
 }
