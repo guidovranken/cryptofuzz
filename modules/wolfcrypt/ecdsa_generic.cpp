@@ -426,13 +426,21 @@ std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op) {
     word32 sigSz = ECC_MAX_SIG_SIZE;
     int verify;
 
+    bool randomSigSz = false;
+
     {
         try {
-            sigSz = ds.Get<uint8_t>();
+            randomSigSz = ds.Get<bool>();
+            if ( randomSigSz ) {
+                sigSz = ds.Get<uint8_t>();
+            }
         } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
         sig = util::malloc(sigSz);
     }
+
+    haveAllocFailure = false;
+    ret = false;
 
     try {
         ECCKey key(ds);
@@ -482,6 +490,16 @@ end:
     util::free(hash);
 
     wolfCrypt_detail::UnsetGlobalDs();
+
+    if ( ret && *ret == false ) {
+        if ( haveAllocFailure ) {
+            ret = std::nullopt;
+        } else if ( randomSigSz ) {
+            ret = std::nullopt;
+        } else if ( op.digestType.Is(CF_DIGEST("NULL")) && op.cleartext.IsZero() ) {
+            ret = std::nullopt;
+        }
+    }
 
     return ret;
 }
