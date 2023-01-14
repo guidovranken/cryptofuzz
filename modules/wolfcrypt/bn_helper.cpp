@@ -413,26 +413,43 @@ end:
     return ret;
 }
 
-bool Bignum::ToBin(Datasource& ds, const component::Bignum b, uint8_t* dest, const size_t size) {
+bool Bignum::ToBin(
+        Datasource& ds,
+        const component::Bignum b,
+        uint8_t* dest,
+        const size_t size,
+        const bool mustSucceed) {
     bool ret = false;
-    Bignum bn(ds);
+    if ( mustSucceed == true ) {
+        std::optional<std::vector<uint8_t>> bytes;
+        CF_CHECK_NE(bytes = util::DecToBin(b.ToTrimmedString(), size), std::nullopt);
+        memcpy(dest, bytes->data(), bytes->size());
+        ret = true;
+    } else {
+        Bignum bn(ds);
 
-    CF_CHECK_EQ(bn.Set(b), true);
-    CF_CHECK_EQ(bn.ToBin(dest, size), true);
+        CF_CHECK_EQ(bn.Set(b), true);
+        CF_CHECK_EQ(bn.ToBin(dest, size), true);
 
-    ret = true;
+        ret = true;
+    }
 end:
     return ret;
 }
 
-bool Bignum::ToBin(Datasource& ds, const component::BignumPair b, uint8_t* dest, const size_t size) {
+bool Bignum::ToBin(
+        Datasource& ds,
+        const component::BignumPair b,
+        uint8_t* dest,
+        const size_t size,
+        const bool mustSucceed) {
     CF_ASSERT((size % 2) == 0, "Input size is not multiple of 2 in Bignum::ToBin");
 
     bool ret = false;
     const auto halfSize = size / 2;
 
-    CF_CHECK_EQ(ToBin(ds, b.first, dest, halfSize), true);
-    CF_CHECK_EQ(ToBin(ds, b.second, dest + halfSize, halfSize), true);
+    CF_CHECK_EQ(ToBin(ds, b.first, dest, halfSize, mustSucceed), true);
+    CF_CHECK_EQ(ToBin(ds, b.second, dest + halfSize, halfSize, mustSucceed), true);
 
     ret = true;
 end:

@@ -91,8 +91,8 @@ end:
         std::optional<component::Bignum> ToComponentBignum(void);
         bool ToBin(uint8_t* dest, const size_t size);
         static std::optional<std::vector<uint8_t>> ToBin(Datasource& ds, const component::Bignum b, std::optional<size_t> size = std::nullopt);
-        static bool ToBin(Datasource& ds, const component::Bignum b, uint8_t* dest, const size_t size);
-        static bool ToBin(Datasource& ds, const component::BignumPair b, uint8_t* dest, const size_t size);
+        static bool ToBin(Datasource& ds, const component::Bignum b, uint8_t* dest, const size_t size, const bool mustSucceed = false);
+        static bool ToBin(Datasource& ds, const component::BignumPair b, uint8_t* dest, const size_t size, const bool mustSucceed = false);
         static std::optional<component::Bignum> BinToBignum(Datasource& ds, const uint8_t* src, const size_t size);
         static std::optional<component::BignumPair> BinToBignumPair(Datasource& ds, const uint8_t* src, const size_t size);
         void Randomize(void);

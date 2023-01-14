@@ -21,20 +21,22 @@ namespace wolfCrypt_detail {
 static bool ed25519LoadPrivateKey(ed25519_key& key, component::Bignum priv, Datasource& ds) {
     bool ret = false;
 
-    static_assert(sizeof(key.k) == 64);
-    memset(key.k + 32, 0, 32);
-    CF_CHECK_EQ(wolfCrypt_bignum::Bignum::ToBin(ds, priv, key.k, 32), true);
+    uint8_t priv_bytes[ED25519_KEY_SIZE];
+
+    CF_CHECK_EQ(wolfCrypt_bignum::Bignum::ToBin(ds, priv, priv_bytes, sizeof(priv_bytes)), true);
+    CF_CHECK_EQ(wc_ed25519_import_private_only(priv_bytes, sizeof(priv_bytes), &key), 0);
 
     ret = true;
 end:
     return ret;
 }
 
-static bool ed25519LoadPublicKey(ed25519_key& key, component::Bignum pub, Datasource& ds) {
+static bool ed25519LoadPublicKey(ed25519_key& key, component::Bignum pub, Datasource& ds, const bool mustSucceed = false) {
     bool ret = false;
 
-    CF_CHECK_EQ(wolfCrypt_bignum::Bignum::ToBin(ds, pub, key.p, sizeof(key.p)), true);
-    key.pubKeySet = 1;
+    uint8_t pub_bytes[ED25519_PUB_KEY_SIZE];
+    CF_CHECK_EQ(wolfCrypt_bignum::Bignum::ToBin(ds, pub, pub_bytes, sizeof(pub_bytes), mustSucceed), true);
+    CF_CHECK_EQ(wc_ed25519_import_public(pub_bytes, sizeof(pub_bytes), &key), 0);
 
     ret = true;
 end:
@@ -242,12 +244,16 @@ std::optional<bool> OpECDSA_Verify_ed25519(operation::ECDSA_Verify& op) {
     uint8_t ed25519sig[ED25519_SIG_SIZE];
     int verify;
     bool oneShot = true;
+    bool haveEmptyPart = false;
+
+    haveAllocFailure = false;
+    ret = false;
 
     WC_CHECK_EQ(wc_ed25519_init(&key), 0);
     e25519_key_inited = true;
 
-    CF_CHECK_EQ(ed25519LoadPublicKey(key, op.signature.pub.first, ds), true);
-    CF_CHECK_EQ(wolfCrypt_bignum::Bignum::ToBin(ds, op.signature.signature, ed25519sig, sizeof(ed25519sig)), true);
+    CF_CHECK_EQ(ed25519LoadPublicKey(key, op.signature.pub.first, ds, true), true);
+    CF_CHECK_EQ(wolfCrypt_bignum::Bignum::ToBin(ds, op.signature.signature, ed25519sig, sizeof(ed25519sig), true), true);
 
 #if defined(WOLFSSL_ED25519_STREAMING_VERIFY)
     try { oneShot = ds.Get<bool>(); } catch ( ... ) { }
@@ -264,6 +270,9 @@ std::optional<bool> OpECDSA_Verify_ed25519(operation::ECDSA_Verify& op) {
         WC_CHECK_EQ(wc_ed25519_verify_msg_init(ed25519sig, sizeof(ed25519sig), &key, (byte)Ed25519, nullptr, 0), 0);
 
         for (const auto& part : parts) {
+            if ( part.second == 0 ) {
+                haveEmptyPart = true;
+            }
             WC_CHECK_EQ(wc_ed25519_verify_msg_update(part.first, part.second, &key), 0);
         }
 
@@ -279,6 +288,17 @@ end:
     }
 
     wolfCrypt_detail::UnsetGlobalDs();
+
+    if ( ret && *ret == false ) {
+        if ( haveAllocFailure ) {
+            ret = std::nullopt;
+        } else if ( haveEmptyPart ) {
+            ret = std::nullopt;
+        } else if ( op.cleartext.IsZero() ) {
+            ret = std::nullopt;
+        }
+
+    }
     return ret;
 }
 
