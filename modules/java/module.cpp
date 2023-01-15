@@ -9,6 +9,7 @@
 #include <fuzzing/datasource/id.hpp>
 #include <jni.h>
 #if defined(JAVA_OSS_FUZZ)
+#include "CryptofuzzJavaHarness.class.h"
 #include <libgen.h>
 #endif
 
@@ -62,7 +63,16 @@ namespace Java_detail {
 
         CF_ASSERT(env != nullptr, "Cannot instantiate JVM");
 
-        jclass = env->FindClass("CryptofuzzJavaHarness");
+        jclass = env->DefineClass(
+                "CryptofuzzJavaHarness",
+                nullptr,
+                (const jbyte*)CryptofuzzJavaHarness_class,
+                CryptofuzzJavaHarness_class_len);
+
+        /* This fails:
+         * https://github.com/google/oss-fuzz/issues/9255
+         */
+        //jclass = env->FindClass("CryptofuzzJavaHarness");
         CF_ASSERT(jclass != nullptr, "Cannot find class");
 
         method_Digest = env->GetStaticMethodID(jclass, "Digest", "(Ljava/lang/String;[B[I)[B");
