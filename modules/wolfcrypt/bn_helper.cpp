@@ -99,6 +99,34 @@ void Bignum::binaryConversion(void) const {
     uint8_t* data = nullptr;
     CF_CHECK_EQ(mp_isneg(mp), 0);
 
+#if LIBWOLFSSL_VERSION_HEX == 0x05005001
+    {
+        /* Old version of the binary conversion logic, which doesn't crash if
+         * mp_to_unsigned_bin_len() succeeds with an undersized buffer.
+         *
+         * This logic is retained specifically to prevent the libecc
+         * OSS-Fuzz fuzzer from crashing, because this uses an older version
+         * of wolfCrypt (specifically 0x05005001), which still has the
+         * mp_to_unsigned_bin_len() bug.
+         */
+
+        const auto size = mp_unsigned_bin_size(mp);
+        CF_ASSERT(size >= 0, "mp_unsigned_bin_size returned negative value");
+
+        data = util::malloc(size);
+        CF_CHECK_EQ(mp_to_unsigned_bin_len(mp, data, size), MP_OKAY);
+
+        /* Ensure no allocation failure occurs in mp_read_unsigned_bin
+         * because this can leave the mp in a corrupted state
+         */
+        const auto cached_disableAllocationFailures = wolfCrypt_detail::disableAllocationFailures;
+        wolfCrypt_detail::disableAllocationFailures = true;
+
+        CF_ASSERT(mp_read_unsigned_bin(mp, data, size) == MP_OKAY, "Cannot parse output of mp_to_unsigned_bin_len");
+
+        wolfCrypt_detail::disableAllocationFailures = cached_disableAllocationFailures;
+    }
+#else
     {
         bool randomSize = false;
 
@@ -149,6 +177,7 @@ void Bignum::binaryConversion(void) const {
 
         wolfCrypt_detail::disableAllocationFailures = cached_disableAllocationFailures;
     }
+#endif
 
 
 end:
