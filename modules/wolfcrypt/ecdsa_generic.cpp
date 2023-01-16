@@ -426,6 +426,7 @@ std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op) {
     word32 sigSz = ECC_MAX_SIG_SIZE;
     int verify;
 
+    bool ctIsEmpty = false;
     bool randomSigSz = false;
 
     {
@@ -467,6 +468,7 @@ std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op) {
 
         if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
             const auto CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
+            ctIsEmpty = CT.GetSize() == 0;
             WC_CHECK_EQ(wc_ecc_verify_hash(sig, sigSz, CT.GetPtr(), CT.GetSize(), &verify, key.GetPtr()), 0);
         } else {
             std::optional<wc_HashType> hashType;
@@ -478,6 +480,7 @@ std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op) {
             WC_CHECK_EQ(wc_Hash(*hashType, op.cleartext.GetPtr(), op.cleartext.GetSize(), hash, hashSize), 0);
 
             const auto CT = Buffer(hash, hashSize).ECDSA_RandomPad(ds, op.curveType);
+            ctIsEmpty = CT.GetSize() == 0;
             WC_CHECK_EQ(wc_ecc_verify_hash(sig, sigSz, CT.GetPtr(), CT.GetSize(), &verify, key.GetPtr()), 0);
         }
 
@@ -495,6 +498,9 @@ end:
         if ( haveAllocFailure ) {
             ret = std::nullopt;
         } else if ( randomSigSz ) {
+            ret = std::nullopt;
+        } else if ( ctIsEmpty ) {
+            /* wolfCrypt ECDSA verification will fail if the input msg is empty */
             ret = std::nullopt;
         } else if ( op.digestType.Is(CF_DIGEST("NULL")) && op.cleartext.IsZero() ) {
             ret = std::nullopt;
