@@ -440,9 +440,6 @@ std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op) {
         sig = util::malloc(sigSz);
     }
 
-    haveAllocFailure = false;
-    ret = false;
-
     try {
         ECCKey key(ds);
         {
@@ -451,6 +448,9 @@ std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op) {
             CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
 
             CF_CHECK_NE(name = wc_ecc_get_name(*curveID), nullptr);
+
+            haveAllocFailure = false;
+            ret = false;
 
             WC_CHECK_EQ(wc_ecc_import_raw(
                         key.GetPtr(),
