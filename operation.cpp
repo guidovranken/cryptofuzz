@@ -1005,6 +1005,7 @@ std::string ECC_Point_Add::ToString(void) const {
 
 nlohmann::json ECC_Point_Add::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "ECC_Point_Add";
     j["curveType"] = curveType.ToJSON();
 
     j["a_x"] = a.first.ToJSON();
@@ -1032,6 +1033,7 @@ std::string ECC_Point_Mul::ToString(void) const {
 
 nlohmann::json ECC_Point_Mul::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "ECC_Point_Mul";
     j["curveType"] = curveType.ToJSON();
 
     j["a_x"] = a.first.ToJSON();
