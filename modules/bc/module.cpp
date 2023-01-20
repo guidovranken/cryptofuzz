@@ -78,6 +78,18 @@ std::optional<component::Bignum> bc::OpBignumCalc(operation::BignumCalc& op) {
             bc_free_num(&res);
             res = bc_copy_num(bn[0]);
             break;
+        case    CF_CALCOP("Cmp(A,B)"):
+            ret = std::to_string(bc_compare(bn[0], bn[1]));
+            goto end;
+            break;
+        case    CF_CALCOP("IsZero(A)"):
+            ret = std::to_string(bc_is_zero(bn[0]));
+            goto end;
+            break;
+        case    CF_CALCOP("IsNeg(A)"):
+            ret = std::to_string(bc_is_neg(bn[0]));
+            goto end;
+            break;
         default:
             goto end;
     }
