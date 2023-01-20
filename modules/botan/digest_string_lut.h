@@ -11,7 +11,7 @@ static const std::map<uint64_t, std::string> LUT = {
     { CF_DIGEST("MD4"), "MD4" },
     { CF_DIGEST("MD5"), "MD5" },
     { CF_DIGEST("RIPEMD160"), "RIPEMD-160" },
-    { CF_DIGEST("SHA1"), "SHA1" },
+    { CF_DIGEST("SHA1"), "SHA-1" },
     { CF_DIGEST("SHA224"), "SHA-224" },
     { CF_DIGEST("SHA256"), "SHA-256" },
     { CF_DIGEST("SHA384"), "SHA-384" },
