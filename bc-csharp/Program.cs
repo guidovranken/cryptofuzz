@@ -1,14 +1,15 @@
 ﻿using System;
 using System.IO;
 using System.Text.Json;
+using System.Linq;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Math.EC;
 using Org.BouncyCastle.Asn1.X9;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.EC;
 using Org.BouncyCastle.Asn1.Sec;
-
-
+using Org.BouncyCastle.Security;
+using Org.BouncyCastle.Crypto.Signers;
 
 namespace Cryptofuzz
 {
@@ -24,6 +25,29 @@ namespace Cryptofuzz
             return new BigInteger(bn, 10);
         }
 
+        static string toCurveName(string curveType) {
+            switch ( curveType ) {
+                case    "18415819059127753777":
+                    return "secp256r1";
+                case    "18393850816800450172":
+                    return "secp256k1";
+                case    "85815263693034390":
+                    return "secp521r1";
+                case    "17304582060475161868":
+                    return "secp224r1";
+                case    "4023315158657214361":
+                    return "secp384r1";
+                case    "16102541598515416313":
+                    return "secp192k1";
+                case    "16126488961773121268":
+                    return "secp192r1";
+                case    "17296010267823331937":
+                    return "secp224k1";
+                default:
+                    return "none";
+            }
+        }
+
         static void assert(bool cond)
         {
             if (!cond) {
@@ -35,7 +59,11 @@ namespace Cryptofuzz
                 BigInteger a_x, BigInteger a_y,
                 BigInteger b_x, BigInteger b_y,
                 BigInteger r_x, BigInteger r_y,
-                string curveName) {
+                string curveType) {
+            var curveName = toCurveName(curveType);
+            if ( curveName == "none" ) {
+                return;
+            }
             var curve = CustomNamedCurves.GetByName(curveName);
             var domain = new ECDomainParameters(curve.Curve, curve.G, curve.N, curve.H, curve.GetSeed());
             var a = curve.Curve.CreatePoint(a_x, a_y);
@@ -67,7 +95,11 @@ namespace Cryptofuzz
                 BigInteger a_x, BigInteger a_y,
                 BigInteger b,
                 BigInteger r_x, BigInteger r_y,
-                string curveName) {
+                string curveType) {
+            var curveName = toCurveName(curveType);
+            if ( curveName == "none" ) {
+                return;
+            }
             var curve = CustomNamedCurves.GetByName(curveName);
             var domain = new ECDomainParameters(curve.Curve, curve.G, curve.N, curve.H, curve.GetSeed());
             var a = curve.Curve.CreatePoint(a_x, a_y);
@@ -90,6 +122,33 @@ namespace Cryptofuzz
                     Console.WriteLine("Y: {0}", r.YCoord.ToBigInteger().ToString());
                     assert(false);
                 }
+            }
+        }
+
+        static void ECDSA_Verify(
+                byte[] msg,
+                BigInteger x, BigInteger y,
+                BigInteger r, BigInteger s,
+                bool expected,
+                string digestType,
+                string curveType) {
+            if ( digestType != "7259431668663979670" ) {
+                return;
+            }
+            var curveName = toCurveName(curveType);
+            if ( curveName == "none" ) {
+                return;
+            }
+            var curve = CustomNamedCurves.GetByName(curveName);
+            try {
+                var pubpoint = curve.Curve.CreatePoint(x, y);
+                var domain = new ECDomainParameters(curve.Curve, curve.G, curve.N, curve.H, curve.GetSeed());
+                var pubkey = new ECPublicKeyParameters(pubpoint, domain);
+                var ecdsa = new ECDsaSigner();
+                ecdsa.Init(false, pubkey);
+                assert(ecdsa.VerifySignature(msg, r, s) == expected);
+            } catch ( System.ArgumentException ) {
+                assert(expected == false);
             }
         }
 
@@ -171,6 +230,7 @@ namespace Cryptofuzz
                         break;
                     case    "ECC_Point_Add":
                         {
+                            var curveType = operation.GetProperty("curveType").GetString();
                             BigInteger a_x = loadBn(operation.GetProperty("a_x").GetString());
                             BigInteger a_y = loadBn(operation.GetProperty("a_y").GetString());
                             BigInteger b_x = loadBn(operation.GetProperty("b_x").GetString());
@@ -178,36 +238,36 @@ namespace Cryptofuzz
                             BigInteger r_x = loadBn(json.GetProperty("result")[0].GetString());
                             BigInteger r_y = loadBn(json.GetProperty("result")[1].GetString());
 
-                            switch ( operation.GetProperty("curveType").GetString() ) {
-                                case    "18415819059127753777":
-                                    ECC_Point_Add(a_x, a_y, b_x, b_y, r_x, r_y, "secp256r1");
-                                    break;
-                                case    "18393850816800450172":
-                                    ECC_Point_Add(a_x, a_y, b_x, b_y, r_x, r_y, "secp256k1");
-                                    break;
-                                default:
-                                    break;
-                            }
+                            ECC_Point_Add(a_x, a_y, b_x, b_y, r_x, r_y, curveType);
                             break;
                         }
                     case    "ECC_Point_Mul":
                         {
+                            var curveType = operation.GetProperty("curveType").GetString();
                             BigInteger a_x = loadBn(operation.GetProperty("a_x").GetString());
                             BigInteger a_y = loadBn(operation.GetProperty("a_y").GetString());
                             BigInteger b = loadBn(operation.GetProperty("b").GetString());
                             BigInteger r_x = loadBn(json.GetProperty("result")[0].GetString());
                             BigInteger r_y = loadBn(json.GetProperty("result")[1].GetString());
 
-                            switch ( operation.GetProperty("curveType").GetString() ) {
-                                case    "18415819059127753777":
-                                    ECC_Point_Mul(a_x, a_y, b, r_x, r_y, "secp256r1");
-                                    break;
-                                case    "18393850816800450172":
-                                    ECC_Point_Mul(a_x, a_y, b, r_x, r_y, "secp256k1");
-                                    break;
-                                default:
-                                    break;
-                            }
+                            ECC_Point_Mul(a_x, a_y, b, r_x, r_y, curveType);
+                            break;
+                        }
+                    case    "ECDSA_Verify":
+                        {
+                            var digestType = operation.GetProperty("digestType").GetString();
+                            var curveType = operation.GetProperty("curveType").GetString();
+                            string cleartext = operation.GetProperty("cleartext").GetString();
+                            byte[] msg = Enumerable.Range(0, cleartext.Length)
+                                .Where(x => x % 2 == 0)
+                                .Select(x => Convert.ToByte(cleartext.Substring(x, 2), 16))
+                                .ToArray();
+                            BigInteger x = loadBn(operation.GetProperty("pub_x").GetString());
+                            BigInteger y = loadBn(operation.GetProperty("pub_y").GetString());
+                            BigInteger r = loadBn(operation.GetProperty("sig_r").GetString());
+                            BigInteger s = loadBn(operation.GetProperty("sig_s").GetString());
+                            bool expected = json.GetProperty("result").GetBoolean();
+                            ECDSA_Verify(msg, x, y, r, s, expected, digestType, curveType);
                             break;
                         }
                     default:
