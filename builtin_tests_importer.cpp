@@ -466,6 +466,23 @@ void Builtin_tests_importer::Run(void) {
     }
 
     {
+        /* http://blog.intothesymmetry.com/2017/08/cve-2017-7781cve-2017-10176-issue-with.html */
+
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["a_x"] = "2661740802050217063228768716723360960729859168756973147706671368418802944996427808491545080627771902352094241225065558662157113545570916814161637315895999846";
+        parameters["a_y"] = "3757180025770020463545507224491183603594455134769762486694567779615544477440556316691234405012945539562144444537289428522585666729196580810124344277578376784";
+        parameters["b"] = "6864797660130609714981900799081393217269435300143305409394463459185543183397655394245057746333217197532963996371363321113864768612440380340372808892707005431";
+        parameters["curveType"] = CF_ECC_CURVE("secp521r1");
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::ECC_Point_Mul op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("ECC_Point_Mul"), dsOut2);
+    }
+
+    {
         ecdsa_verify_tests();
     }
 }
