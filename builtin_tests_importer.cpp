@@ -449,6 +449,23 @@ void Builtin_tests_importer::Run(void) {
     }
 
     {
+        /* https://github.com/wolfSSL/wolfssl/pull/6003 */
+
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["a_x"] = "1461501637330902918203684832716283019655932542975";
+        parameters["a_y"] = "11609380572034919287886309116126653411323965359192156722598435656797507005828";
+        parameters["b"] = "269915374621615810086997776176285181565415955270619529150241";
+        parameters["curveType"] = CF_ECC_CURVE("secp256r1");
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::ECC_Point_Mul op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("ECC_Point_Mul"), dsOut2);
+    }
+
+    {
         ecdsa_verify_tests();
     }
 }
