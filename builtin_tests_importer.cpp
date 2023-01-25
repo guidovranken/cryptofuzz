@@ -68,6 +68,49 @@ void Builtin_tests_importer::ecdsa_verify_tests(void) {
     }
 }
 
+void Builtin_tests_importer::ecc_point_add_tests(void) {
+    /* Create inputs which add (0, Y) to (P, Y) on every curve */
+
+    for (size_t i = 0; i < (sizeof(repository::ECC_CurveLUT) / sizeof(repository::ECC_CurveLUT[0])); i++) {
+        const uint64_t curveType = repository::ECC_CurveLUT[i].id;
+
+        const auto a = cryptofuzz::repository::ECC_CurveToA(curveType);
+        if ( a == std::nullopt ) {
+            continue;
+        }
+
+        const auto b = cryptofuzz::repository::ECC_CurveToB(curveType);
+        if ( b == std::nullopt ) {
+            continue;
+        }
+
+        const auto p = cryptofuzz::repository::ECC_CurveToPrime(curveType);
+        if ( p == std::nullopt ) {
+            continue;
+        }
+
+        const auto y = util::Find_ECC_Y("0", *a, *b, *p, "0", false);
+
+        if ( y == "0" ) {
+            continue;
+        }
+
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["a_x"] = "0";
+        parameters["a_y"] = y;
+        parameters["b_x"] = *p;
+        parameters["b_y"] = y;
+        parameters["curveType"] = curveType;
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::ECC_Point_Add op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("ECC_Point_Add"), dsOut2);
+    }
+}
+
 void Builtin_tests_importer::Run(void) {
     {
         /* https://lists.gnupg.org/pipermail/gcrypt-devel/2022-April/005303.html */
@@ -482,9 +525,8 @@ void Builtin_tests_importer::Run(void) {
         write(CF_OPERATION("ECC_Point_Mul"), dsOut2);
     }
 
-    {
-        ecdsa_verify_tests();
-    }
+    ecdsa_verify_tests();
+    ecc_point_add_tests();
 }
 
 void Builtin_tests_importer::write(const uint64_t operation, fuzzing::datasource::Datasource& dsOut2) {
