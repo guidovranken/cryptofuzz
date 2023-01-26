@@ -525,6 +525,24 @@ void Builtin_tests_importer::Run(void) {
         write(CF_OPERATION("ECC_Point_Mul"), dsOut2);
     }
 
+    {
+        /* Golang CVE-2021-3114 */
+        /* https://github.com/golang/go/issues/43786 */
+
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["a_x"] = "10211801120651255508388282367";
+        parameters["a_y"] = "17794997632729865045905302536719945017659653925093423468305170213703";
+        parameters["b"] = "1";
+        parameters["curveType"] = CF_ECC_CURVE("secp224r1");
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::ECC_Point_Mul op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("ECC_Point_Mul"), dsOut2);
+    }
+
     ecdsa_verify_tests();
     ecc_point_add_tests();
 }
