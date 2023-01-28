@@ -28,7 +28,7 @@ class ECCPoint {
         ECCPoint(Datasource& ds, const int curveID);
         ~ECCPoint();
         ecc_point* GetPtr(void);
-        bool Set(const component::BignumPair& xy, const bool pointCheck = false);
+        bool Set(const component::BignumPair& xy, const uint64_t curveType, const bool pointCheck = false);
         bool ToProjective(wolfCrypt_bignum::Bignum& prime);
         bool CurveCheck(void) const;
         void Lock(void);

@@ -253,14 +253,30 @@ end:
     return point;
 }
 
-bool ECCPoint::Set(const component::BignumPair& xy, const bool pointCheck) {
+bool ECCPoint::Set(const component::BignumPair& xy, const uint64_t curveType, const bool pointCheck) {
     bool ret = false;
+
+    bool projective = false;
+    try {
+        projective = ds.Get<bool>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
     wolfCrypt_bignum::Bignum x(ds), y(ds), z(ds);
 
-    CF_CHECK_TRUE(x.Set(xy.first));
-    CF_CHECK_TRUE(y.Set(xy.second));
-    CF_CHECK_TRUE(z.Set("1"));
+    if ( projective == false ) {
+        CF_CHECK_TRUE(x.Set(xy.first));
+        CF_CHECK_TRUE(y.Set(xy.second));
+        CF_CHECK_TRUE(z.Set("1"));
+    } else {
+        const auto proj = util::ToRandomProjective(
+                ds,
+                xy.first.ToTrimmedString(),
+                xy.second.ToTrimmedString(),
+                curveType);
+        CF_CHECK_TRUE(x.Set(proj[0]));
+        CF_CHECK_TRUE(y.Set(proj[1]));
+        CF_CHECK_TRUE(z.Set(proj[2]));
+    }
 
     WC_CHECK_EQ(mp_copy(x.GetPtr(), point->x), MP_OKAY);
     WC_CHECK_EQ(mp_copy(y.GetPtr(), point->y), MP_OKAY);
@@ -694,7 +710,7 @@ std::optional<bool> OpECCSI_Verify(operation::ECCSI_Verify& op) {
 
     {
         ECCPoint pvt(ds, *curveId);
-        CF_CHECK_TRUE(pvt.Set(op.signature.pvt));
+        CF_CHECK_TRUE(pvt.Set(op.signature.pvt, op.curveType.Get()));
 
         WC_CHECK_EQ(wc_InitEccsiKey_ex(&eccsi, size, *curveId, nullptr, -1), 0);
         eccsi_initialized = true;
@@ -1036,8 +1052,8 @@ std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op
         std::optional<bool> is_neg = std::nullopt;
 
         /* Set points */
-        CF_CHECK_TRUE(a.Set(op.a));
-        CF_CHECK_TRUE(b.Set(op.b));
+        CF_CHECK_TRUE(a.Set(op.a, op.curveType.Get()));
+        CF_CHECK_TRUE(b.Set(op.b, op.curveType.Get()));
 
         valid = a.CurveCheck() && b.CurveCheck();
 
@@ -1135,7 +1151,7 @@ std::optional<component::ECC_Point> OpECC_Point_Mul(operation::ECC_Point_Mul& op
         bool valid = false;
 
         /* Set point */
-        CF_CHECK_TRUE(a.Set(op.a));
+        CF_CHECK_TRUE(a.Set(op.a, op.curveType.Get()));
         valid = a.CurveCheck();
 
         /* Set multiplier */
@@ -1182,7 +1198,7 @@ std::optional<component::ECC_Point> OpECC_Point_Dbl(operation::ECC_Point_Dbl& op
         bool valid = false;
 
         /* Set points */
-        CF_CHECK_TRUE(a.Set(op.a));
+        CF_CHECK_TRUE(a.Set(op.a, op.curveType.Get()));
 
         valid = a.CurveCheck();
 

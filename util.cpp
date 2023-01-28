@@ -975,6 +975,37 @@ std::string Find_ECC_Y(
     return res.str();
 }
 
+std::array<std::string, 3> ToRandomProjective(
+        fuzzing::datasource::Datasource& ds,
+        const std::string& x,
+        const std::string& y,
+        const uint64_t curveType) {
+    using namespace boost::multiprecision;
+    const auto p = cryptofuzz::repository::ECC_CurveToPrime(curveType);
+    if ( p == std::nullopt ) {
+        return {x, y, "1"};
+    }
+    std::vector<uint8_t> data;
+    try {
+        data = ds.GetData(0, 0, 1024 / 8);
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    }
+    if ( data.empty() ) {
+        return {x, y, "1"};
+    }
+    cpp_int Z;
+    boost::multiprecision::import_bits(Z, data.data(), data.data() + data.size());
+    if ( Z == 0 ) {
+        return {x, y, "1"};
+    }
+    cpp_int X(x), Y(y);
+    const cpp_int P(*p);
+    Z %= P;
+    X = (X * (Z * Z)) % P;
+    Y = (Y * (Z * Z * Z)) % P;
+    return {X.str(), Y.str(), Z.str()};
+}
+
 extern "C" {
     __attribute__((weak)) void __msan_unpoison(const volatile void*, size_t) { }
 }
