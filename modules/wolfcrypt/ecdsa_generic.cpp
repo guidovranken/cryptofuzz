@@ -444,6 +444,7 @@ std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op) {
 
     bool ctIsEmpty = false;
     bool randomSigSz = false;
+    bool hashNotFound = false;
 
     {
         try {
@@ -488,7 +489,9 @@ std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op) {
             WC_CHECK_EQ(wc_ecc_verify_hash(sig, sigSz, CT.GetPtr(), CT.GetSize(), &verify, key.GetPtr()), 0);
         } else {
             std::optional<wc_HashType> hashType;
+            hashNotFound = true;
             CF_CHECK_NE(hashType = wolfCrypt_detail::toHashType(op.digestType), std::nullopt);
+            hashNotFound = false;
 
             const auto hashSize = wc_HashGetDigestSize(*hashType);
             hash = util::malloc(hashSize);
@@ -517,6 +520,8 @@ end:
             ret = std::nullopt;
         } else if ( ctIsEmpty ) {
             /* wolfCrypt ECDSA verification will fail if the input msg is empty */
+            ret = std::nullopt;
+        } else if ( hashNotFound ) {
             ret = std::nullopt;
         } else if ( op.digestType.Is(CF_DIGEST("NULL")) && op.cleartext.IsZero() ) {
             ret = std::nullopt;
