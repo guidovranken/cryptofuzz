@@ -311,9 +311,12 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             MP_CHECK_EQ(mp_exptmod_ex(bn[0].GetPtr(), bn[1].GetPtr(), bn[1].GetPtr()->used, bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
 #if defined(WOLFSSL_SP_MATH)
+            /* ZD 15548 */
+#if !defined(__aarch64__)
         case    3:
             MP_CHECK_EQ(sp_ModExp_1024(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
+#endif
         case    4:
             MP_CHECK_EQ(sp_ModExp_1536(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
