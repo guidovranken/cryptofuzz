@@ -836,6 +836,13 @@ template<> std::optional<component::Secret> ExecutorBase<component::Secret, oper
 }
 
 /* Specialization for operation::ECIES_Encrypt */
+template <>
+void ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>::compare(const std::vector< std::pair<std::shared_ptr<Module>, operation::ECIES_Encrypt> >& operations, const ResultSet& results, const uint8_t* data, const size_t size) const {
+    (void)operations;
+    (void)results;
+    (void)data;
+    (void)size;
+}
 template<> void ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>::postprocess(std::shared_ptr<Module> module, operation::ECIES_Encrypt& op, const ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>::ResultPair& result) const {
     (void)module;
     (void)op;
