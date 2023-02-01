@@ -35,7 +35,7 @@ class Bignum {
         void baseConversion(void) const;
         void binaryConversion(void) const;
         static int init_mp_int(mp_int* mp, Datasource& ds) {
-#if LIBWOLFSSL_VERSION_HEX < 0x05005000
+#if defined(USE_FAST_MATH)
             (void)ds;
             return mp_init(mp);
 #else

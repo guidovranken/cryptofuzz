@@ -512,7 +512,7 @@ bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_copy(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
-#if LIBWOLFSSL_VERSION_HEX < 0x05005000
+#if defined(USE_FAST_MATH)
             CF_NORET(mp_rshb(res.GetPtr(), numBits));
 #else
             MP_CHECK_EQ(mp_rshb(res.GetPtr(), numBits), MP_OKAY);
