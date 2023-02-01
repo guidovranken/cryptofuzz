@@ -2211,6 +2211,10 @@ template <class ResultType, class OperationType>
 void ExecutorBase<ResultType, OperationType>::abort(std::vector<std::string> moduleNames, const std::string operation, const std::string algorithm, const std::string reason) const {
     std::sort(moduleNames.begin(), moduleNames.end());
 
+    printf("CPU:\n");
+    system("cat /proc/cpuinfo | grep '^model name' | head -n1");
+    system("cat /proc/cpuinfo | grep '^flags' | head -n1");
+
     printf("Assertion failure: ");
     for (const auto& moduleName : moduleNames) {
         printf("%s-", moduleName.c_str());
