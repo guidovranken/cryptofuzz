@@ -1,5 +1,5 @@
 ```
-git clone https://github.com/ANSSI-FR/libecc.git
+git clone https://github.com/libecc/libecc.git
 cd libecc/
 git checkout cryptofuzz
 export CFLAGS="$CFLAGS -DUSE_CRYPTOFUZZ"
