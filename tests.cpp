@@ -538,6 +538,11 @@ void test(const operation::ECC_Point_Dbl& op, const std::optional<component::ECC
     (void)result;
 }
 
+void test(const operation::ECC_Point_Cmp& op, const std::optional<bool>& result) {
+    (void)op;
+    (void)result;
+}
+
 void test(const operation::DH_GenerateKeyPair& op, const std::optional<component::DH_KeyPair>& result) {
     (void)op;
     (void)result;

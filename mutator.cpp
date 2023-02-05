@@ -1497,6 +1497,42 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     generateECCPoint();
                 }
                 break;
+            case    CF_OPERATION("ECC_Point_Cmp"):
+                {
+                    parameters["modifier"] = "";
+
+                    if ( Pool_CurveECC_Point.Have() == true ) {
+                        const auto P = Pool_CurveECC_Point.Get();
+                        parameters["curveType"] = hint_ecc_mont(P.curveID);
+
+                        parameters["a_x"] = getBool() ? getBignum() : P.x;
+                        parameters["a_y"] = getBool() ? getBignum() : P.y;
+                    } else {
+                        parameters["curveType"] = hint_ecc_mont(getRandomCurve());
+
+                        parameters["a_x"] = getBignum();
+                        parameters["a_y"] = getBignum();
+                    }
+
+                    if ( Pool_CurveECC_Point.Have() == true ) {
+                        const auto P = Pool_CurveECC_Point.Get();
+                        parameters["curveType"] = hint_ecc_mont(P.curveID);
+
+                        parameters["b_x"] = getBool() ? getBignum() : P.x;
+                        parameters["b_y"] = getBool() ? getBignum() : P.y;
+                    } else {
+                        parameters["curveType"] = hint_ecc_mont(getRandomCurve());
+
+                        parameters["b_x"] = getBignum();
+                        parameters["b_y"] = getBignum();
+                    }
+
+                    cryptofuzz::operation::ECC_Point_Cmp op(parameters);
+                    op.Serialize(dsOut2);
+
+                    generateECCPoint();
+                }
+                break;
             case    CF_OPERATION("KDF_SCRYPT"):
                 {
                     size_t numParts = 0;

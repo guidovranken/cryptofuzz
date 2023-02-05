@@ -3472,6 +3472,10 @@ std::optional<component::ECC_Point> wolfCrypt::OpECC_Point_Dbl(operation::ECC_Po
     return wolfCrypt_detail::OpECC_Point_Dbl(op);
 }
 
+std::optional<bool> wolfCrypt::OpECC_Point_Cmp(operation::ECC_Point_Cmp& op) {
+    return wolfCrypt_detail::OpECC_Point_Cmp(op);
+}
+
 std::optional<component::Secret> wolfCrypt::OpECDH_Derive(operation::ECDH_Derive& op) {
     return wolfCrypt_detail::OpECDH_Derive(op);
 }

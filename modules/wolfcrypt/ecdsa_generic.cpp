@@ -1258,6 +1258,55 @@ end:
     return ret;
 }
 
+std::optional<bool> OpECC_Point_Cmp(operation::ECC_Point_Cmp& op) {
+#if 0
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    std::optional<int> curveID;
+    int curveIdx;
+    const ecc_set_type* curve = nullptr;
+
+    CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
+
+    CF_CHECK_NE(curveIdx = wc_ecc_get_curve_idx(*curveID), ECC_CURVE_INVALID);
+    CF_CHECK_NE(curve = wc_ecc_get_curve_params(curveIdx), nullptr);
+
+    /* try/catch because ECCPoint constructor may throw if allocation fails */
+    try {
+        ECCPoint res(ds, *curveID), a(ds, *curveID), b(ds, *curveID);
+        wolfCrypt_bignum::Bignum Af(ds), prime(ds), mu(ds);
+        bool valid = false;
+
+        /* Set points */
+        CF_CHECK_TRUE(a.Set(op.a, op.curveType.Get()));
+        CF_CHECK_TRUE(b.Set(op.b, op.curveType.Get()));
+
+        valid = a.CurveCheck() && b.CurveCheck();
+        (void)valid;
+
+        /* Retrieve curve parameter */
+        CF_CHECK_EQ(Af.Set(util::HexToDec(curve->Af)), true);
+        CF_CHECK_EQ(prime.Set(util::HexToDec(curve->prime)), true);
+
+        CF_CHECK_TRUE(a.ToProjective(prime));
+        CF_CHECK_TRUE(b.ToProjective(prime));
+
+        ret = wc_ecc_cmp_point(a.GetPtr(), b.GetPtr()) == MP_EQ;
+    } catch ( ... ) { }
+
+end:
+    wolfCrypt_detail::UnsetGlobalDs();
+
+    return ret;
+#else
+    /* ZD 15599 */
+    (void)op;
+    return std::nullopt;
+#endif
+}
+
 } /* namespace wolfCrypt_detail */
 } /* namespace module */
 } /* namespace cryptofuzz */

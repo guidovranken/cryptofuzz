@@ -69,7 +69,7 @@ void Builtin_tests_importer::ecdsa_verify_tests(void) {
 }
 
 void Builtin_tests_importer::ecc_point_add_tests(void) {
-    /* Create inputs which add (0, Y) to (P, Y) on every curve */
+    /* Create inputs which add/cmp (0, Y) to (P, Y) on every curve */
 
     for (size_t i = 0; i < (sizeof(repository::ECC_CurveLUT) / sizeof(repository::ECC_CurveLUT[0])); i++) {
         const uint64_t curveType = repository::ECC_CurveLUT[i].id;
@@ -104,10 +104,18 @@ void Builtin_tests_importer::ecc_point_add_tests(void) {
         parameters["b_y"] = y;
         parameters["curveType"] = curveType;
 
-        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
-        cryptofuzz::operation::ECC_Point_Add op(parameters);
-        op.Serialize(dsOut2);
-        write(CF_OPERATION("ECC_Point_Add"), dsOut2);
+        {
+            fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+            cryptofuzz::operation::ECC_Point_Add op(parameters);
+            op.Serialize(dsOut2);
+            write(CF_OPERATION("ECC_Point_Add"), dsOut2);
+        }
+        {
+            fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+            cryptofuzz::operation::ECC_Point_Cmp op(parameters);
+            op.Serialize(dsOut2);
+            write(CF_OPERATION("ECC_Point_Cmp"), dsOut2);
+        }
     }
 }
 

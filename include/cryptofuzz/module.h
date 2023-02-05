@@ -172,6 +172,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<bool> OpECC_Point_Cmp(operation::ECC_Point_Cmp& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::DH_KeyPair> OpDH_GenerateKeyPair(operation::DH_GenerateKeyPair& op) {
             (void)op;
             return std::nullopt;

@@ -65,6 +65,7 @@ std::optional<component::Secret> OpECDH_Derive(operation::ECDH_Derive& op);
 std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op);
 std::optional<component::ECC_Point> OpECC_Point_Mul(operation::ECC_Point_Mul& op);
 std::optional<component::ECC_Point> OpECC_Point_Dbl(operation::ECC_Point_Dbl& op);
+std::optional<bool> OpECC_Point_Cmp(operation::ECC_Point_Cmp& op);
 
 } /* namespace wolfCrypt_detail */
 } /* namespace module */

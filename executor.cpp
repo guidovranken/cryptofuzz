@@ -956,6 +956,18 @@ template<> std::optional<component::ECC_Point> ExecutorBase<component::ECC_Point
     return module->OpECC_Point_Dbl(op);
 }
 
+/* Specialization for operation::ECC_Point_Cmp */
+template<> void ExecutorBase<bool, operation::ECC_Point_Cmp>::postprocess(std::shared_ptr<Module> module, operation::ECC_Point_Cmp& op, const ExecutorBase<bool, operation::ECC_Point_Cmp>::ResultPair& result) const {
+    (void)module;
+    (void)result;
+}
+
+template<> std::optional<bool> ExecutorBase<bool, operation::ECC_Point_Cmp>::callModule(std::shared_ptr<Module> module, operation::ECC_Point_Cmp& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
+
+    return module->OpECC_Point_Cmp(op);
+}
+
 /* Specialization for operation::DH_Derive */
 template<> void ExecutorBase<component::Bignum, operation::DH_Derive>::postprocess(std::shared_ptr<Module> module, operation::DH_Derive& op, const ExecutorBase<component::Bignum, operation::DH_Derive>::ResultPair& result) const {
     (void)module;
@@ -2539,6 +2551,7 @@ template class ExecutorBase<component::ECC_Point, operation::ECC_Point_Add>;
 template class ExecutorBase<component::ECC_Point, operation::ECC_Point_Mul>;
 template class ExecutorBase<component::ECC_Point, operation::ECC_Point_Neg>;
 template class ExecutorBase<component::ECC_Point, operation::ECC_Point_Dbl>;
+template class ExecutorBase<bool, operation::ECC_Point_Cmp>;
 template class ExecutorBase<component::DH_KeyPair, operation::DH_GenerateKeyPair>;
 template class ExecutorBase<component::Bignum, operation::DH_Derive>;
 template class ExecutorBase<component::Bignum, operation::BignumCalc>;

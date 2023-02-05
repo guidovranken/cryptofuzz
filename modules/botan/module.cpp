@@ -1553,6 +1553,62 @@ end:
     return ret;
 }
 
+std::optional<bool> Botan::OpECC_Point_Cmp(operation::ECC_Point_Cmp& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    BOTAN_FUZZER_RNG;
+
+    std::unique_ptr<::Botan::EC_Group> group = nullptr;
+    std::unique_ptr<::Botan::PointGFp> a, b;
+
+    {
+        std::optional<std::string> curveString;
+        CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
+        group = std::make_unique<::Botan::EC_Group>(*curveString);
+    }
+
+    {
+        /* A */
+        {
+            const auto a_x = ::Botan::BigInt(op.a.first.ToString(ds));
+            CF_CHECK_GTE(a_x, 0);
+
+            const auto a_y = ::Botan::BigInt(op.a.second.ToString(ds));
+            CF_CHECK_GTE(a_y, 0);
+
+            try {
+                a = std::make_unique<::Botan::PointGFp>(group->point(a_x, a_y));
+            } catch ( ::Botan::Invalid_Argument ) {
+                goto end;
+            }
+            CF_CHECK_TRUE(a->on_the_curve());
+        }
+
+        /* B */
+        {
+            const auto b_x = ::Botan::BigInt(op.b.first.ToString(ds));
+            CF_CHECK_GTE(b_x, 0);
+
+            const auto b_y = ::Botan::BigInt(op.b.second.ToString(ds));
+            CF_CHECK_GTE(b_y, 0);
+
+            try {
+                b = std::make_unique<::Botan::PointGFp>(group->point(b_x, b_y));
+            } catch ( ::Botan::Invalid_Argument ) {
+                goto end;
+            }
+
+            CF_CHECK_TRUE(b->on_the_curve());
+        }
+
+        ret = *a == *b;
+    }
+
+end:
+    return ret;
+}
+
 std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
 
