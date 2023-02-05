@@ -652,6 +652,443 @@ std::optional<component::Cleartext> wolfCrypt_OpenSSL::OpSymmetricDecrypt(operat
     return wolfCrypt_OpenSSL_detail::OpSymmetricDecrypt_EVP(op, ds);
 }
 
+static std::optional<int> toCurveNID(const component::CurveType& curveType) {
+    static const std::map<uint64_t, int> LUT = {
+        { CF_ECC_CURVE("secp192r1"), NID_X9_62_prime192v1 },
+        { CF_ECC_CURVE("x962_p192v2"), NID_X9_62_prime192v2 },
+        { CF_ECC_CURVE("x962_p192v3"), NID_X9_62_prime192v3 },
+        { CF_ECC_CURVE("x962_p239v1"), NID_X9_62_prime239v1 },
+        { CF_ECC_CURVE("x962_p239v2"), NID_X9_62_prime239v2 },
+        { CF_ECC_CURVE("x962_p239v3"), NID_X9_62_prime239v3 },
+        { CF_ECC_CURVE("secp256r1"), NID_X9_62_prime256v1 },
+        { CF_ECC_CURVE("brainpool160r1"), NID_brainpoolP160r1 },
+        { CF_ECC_CURVE("brainpool192r1"), NID_brainpoolP192r1 },
+        { CF_ECC_CURVE("brainpool224r1"), NID_brainpoolP224r1 },
+        { CF_ECC_CURVE("brainpool256r1"), NID_brainpoolP256r1 },
+        { CF_ECC_CURVE("brainpool320r1"), NID_brainpoolP320r1 },
+        { CF_ECC_CURVE("brainpool384r1"), NID_brainpoolP384r1 },
+        { CF_ECC_CURVE("brainpool512r1"), NID_brainpoolP512r1 },
+        { CF_ECC_CURVE("secp112r1"), NID_secp112r1 },
+        { CF_ECC_CURVE("secp112r2"), NID_secp112r2 },
+        { CF_ECC_CURVE("secp128r1"), NID_secp128r1 },
+        { CF_ECC_CURVE("secp128r2"), NID_secp128r2 },
+        { CF_ECC_CURVE("secp160k1"), NID_secp160k1 },
+        { CF_ECC_CURVE("secp160r1"), NID_secp160r1 },
+        { CF_ECC_CURVE("secp160r2"), NID_secp160r2 },
+        { CF_ECC_CURVE("secp192k1"), NID_secp192k1 },
+        { CF_ECC_CURVE("secp224k1"), NID_secp224k1 },
+        { CF_ECC_CURVE("secp224r1"), NID_secp224r1 },
+        { CF_ECC_CURVE("secp256k1"), NID_secp256k1 },
+        { CF_ECC_CURVE("secp384r1"), NID_secp384r1 },
+        { CF_ECC_CURVE("secp521r1"), NID_secp521r1 },
+    };
+
+    if ( LUT.find(curveType.Get()) == LUT.end() ) {
+        return std::nullopt;
+    }
+
+    return LUT.at(curveType.Get());
+}
+
+std::optional<bool> wolfCrypt_OpenSSL::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    CF_EC_KEY key(ds);
+    std::shared_ptr<CF_EC_GROUP> group = nullptr;
+
+    std::unique_ptr<CF_EC_POINT> pub = nullptr;
+
+    {
+        std::optional<int> curveNID;
+        CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
+        CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
+        group->Lock();
+        CF_CHECK_NE(group->GetPtr(), nullptr);
+    }
+
+    CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group->GetPtr()), 1);
+
+    /* Construct key */
+    CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+    CF_CHECK_TRUE(pub->Set(op.pub.first, op.pub.second));
+
+    /* Reject oversized pubkeys until it is fixed in OpenSSL
+     * https://github.com/openssl/openssl/issues/17590
+     */
+#if 0
+    {
+        const auto order = cryptofuzz::repository::ECC_CurveToOrder(op.curveType.Get());
+        CF_CHECK_NE(order, std::nullopt);
+        CF_CHECK_TRUE(op.pub.first.IsLessThan(*order));
+        CF_CHECK_TRUE(op.pub.second.IsLessThan(*order));
+    }
+#endif
+
+    ret = EC_KEY_set_public_key(key.GetPtr(), pub->GetPtr()) == 1;
+end:
+    return ret;
+}
+
+std::optional<component::ECC_PublicKey> wolfCrypt_OpenSSL::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
+    std::optional<component::ECC_PublicKey> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    char* pub_x_str = nullptr;
+    char* pub_y_str = nullptr;
+
+    try {
+        CF_EC_KEY key(ds);
+        std::shared_ptr<CF_EC_GROUP> group = nullptr;
+        OpenSSL_bignum::Bignum prv(ds);
+        std::unique_ptr<CF_EC_POINT> pub = nullptr;
+        OpenSSL_bignum::Bignum pub_x(ds);
+        OpenSSL_bignum::Bignum pub_y(ds);
+
+        {
+            std::optional<int> curveNID;
+            CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
+            CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
+            group->Lock();
+            CF_CHECK_NE(group->GetPtr(), nullptr);
+        }
+
+        CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group->GetPtr()), 1);
+
+        /* Load private key */
+        CF_CHECK_EQ(prv.Set(op.priv.ToString(ds)), true);
+
+        /* Set private key */
+        CF_CHECK_EQ(EC_KEY_set_private_key(key.GetPtr(), prv.GetPtr()), 1);
+
+        /* Compute public key */
+        CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+        CF_CHECK_EQ(EC_POINT_mul(group->GetPtr(), pub->GetPtr(), prv.GetPtr(), nullptr, nullptr, nullptr), 1);
+
+        CF_CHECK_EQ(pub_x.New(), true);
+        CF_CHECK_EQ(pub_y.New(), true);
+
+        CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), pub->GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
+
+        /* Convert bignum x/y to strings */
+        CF_CHECK_NE(pub_x_str = BN_bn2dec(pub_x.GetPtr()), nullptr);
+        CF_CHECK_NE(pub_y_str = BN_bn2dec(pub_y.GetPtr()), nullptr);
+
+        /* Save bignum x/y */
+        ret = { std::string(pub_x_str), std::string(pub_y_str) };
+    } catch ( ... ) { }
+
+end:
+    OPENSSL_free(pub_x_str);
+    OPENSSL_free(pub_y_str);
+
+    return ret;
+}
+
+std::optional<component::ECC_Point> wolfCrypt_OpenSSL::OpECC_Point_Add(operation::ECC_Point_Add& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    std::shared_ptr<CF_EC_GROUP> group = nullptr;
+    std::unique_ptr<CF_EC_POINT> a = nullptr, b = nullptr, res = nullptr;
+    char* x_str = nullptr;
+    char* y_str = nullptr;
+
+    {
+        std::optional<int> curveNID;
+        CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
+        CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
+        group->Lock();
+        CF_CHECK_NE(group->GetPtr(), nullptr);
+    }
+
+    CF_CHECK_NE(a = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+    CF_CHECK_TRUE(a->Set(op.a.first, op.a.second));
+
+    CF_CHECK_NE(b = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+    CF_CHECK_TRUE(b->Set(op.b.first, op.b.second));
+
+    CF_CHECK_NE(res = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+
+    CF_CHECK_NE(EC_POINT_add(group->GetPtr(), res->GetPtr(), a->GetPtr(), b->GetPtr(), nullptr), 0);
+
+    {
+        OpenSSL_bignum::Bignum x(ds);
+        OpenSSL_bignum::Bignum y(ds);
+
+        CF_CHECK_EQ(x.New(), true);
+        CF_CHECK_EQ(y.New(), true);
+
+        CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), res->GetPtr(), x.GetDestPtr(), y.GetDestPtr(), nullptr), 0);
+
+        /* Convert bignum x/y to strings */
+        CF_CHECK_NE(x_str = BN_bn2dec(x.GetPtr()), nullptr);
+        CF_CHECK_NE(y_str = BN_bn2dec(y.GetPtr()), nullptr);
+
+        ret = { std::string(x_str), std::string(y_str) };
+    }
+
+end:
+    OPENSSL_free(x_str);
+    OPENSSL_free(y_str);
+
+    return ret;
+}
+
+std::optional<component::ECC_Point> wolfCrypt_OpenSSL::OpECC_Point_Mul(operation::ECC_Point_Mul& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    std::shared_ptr<CF_EC_GROUP> group = nullptr;
+    std::unique_ptr<CF_EC_POINT> a = nullptr, res = nullptr;
+    OpenSSL_bignum::Bignum b(ds);
+    char* x_str = nullptr;
+    char* y_str = nullptr;
+
+    {
+        std::optional<int> curveNID;
+        CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
+        CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
+        group->Lock();
+        CF_CHECK_NE(group->GetPtr(), nullptr);
+    }
+
+    CF_CHECK_NE(a = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+    CF_CHECK_TRUE(a->Set(op.a.first, op.a.second));
+
+    CF_CHECK_NE(res = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+
+    CF_CHECK_EQ(b.Set(op.b.ToString(ds)), true);
+
+    CF_CHECK_NE(EC_POINT_mul(group->GetPtr(), res->GetPtr(), nullptr, a->GetPtr(), b.GetPtr(), nullptr), 0);
+
+    if ( op.b.ToTrimmedString() == "0" ) {
+        CF_ASSERT(
+                EC_POINT_is_at_infinity(group->GetPtr(), res->GetPtr()) == 1,
+                "Point multiplication by 0 does not yield point at infinity");
+    }
+
+    {
+        OpenSSL_bignum::BN_CTX ctx(ds);
+
+        if ( !EC_POINT_is_on_curve(group->GetPtr(), a->GetPtr(), ctx.GetPtr()) ) {
+            CF_ASSERT(
+                    EC_POINT_is_on_curve(group->GetPtr(), res->GetPtr(), ctx.GetPtr()) == 0,
+                    "Point multiplication of invalid point yields valid point");
+        }
+    }
+
+    ret = res->Get();
+
+end:
+    OPENSSL_free(x_str);
+    OPENSSL_free(y_str);
+
+    return ret;
+}
+
+std::optional<component::ECC_Point> wolfCrypt_OpenSSL::OpECC_Point_Neg(operation::ECC_Point_Neg& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    std::shared_ptr<CF_EC_GROUP> group = nullptr;
+    std::unique_ptr<CF_EC_POINT> a = nullptr, res = nullptr;
+    char* x_str = nullptr;
+    char* y_str = nullptr;
+
+    {
+        std::optional<int> curveNID;
+        CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
+        CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
+        group->Lock();
+        CF_CHECK_NE(group->GetPtr(), nullptr);
+    }
+
+    CF_CHECK_NE(a = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+    CF_CHECK_TRUE(a->Set(op.a.first, op.a.second));
+
+    CF_CHECK_NE(EC_POINT_invert(group->GetPtr(), a->GetPtr(), nullptr), 0);
+
+    {
+        OpenSSL_bignum::Bignum x(ds);
+        OpenSSL_bignum::Bignum y(ds);
+
+        CF_CHECK_EQ(x.New(), true);
+        CF_CHECK_EQ(y.New(), true);
+
+        CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), a->GetPtr(), x.GetDestPtr(), y.GetDestPtr(), nullptr), 0);
+
+        /* Convert bignum x/y to strings */
+        CF_CHECK_NE(x_str = BN_bn2dec(x.GetPtr()), nullptr);
+        CF_CHECK_NE(y_str = BN_bn2dec(y.GetPtr()), nullptr);
+
+        ret = { std::string(x_str), std::string(y_str) };
+    }
+
+end:
+    OPENSSL_free(x_str);
+    OPENSSL_free(y_str);
+
+    return ret;
+}
+
+std::optional<bool> wolfCrypt_OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    ECDSA_SIG* signature = nullptr;
+
+    try {
+        CF_EC_KEY key(ds);
+        std::shared_ptr<CF_EC_GROUP> group = nullptr;
+
+        std::unique_ptr<CF_EC_POINT> pub = nullptr;
+
+        OpenSSL_bignum::Bignum sig_s(ds);
+        OpenSSL_bignum::Bignum sig_r(ds);
+
+        /* Initialize */
+        {
+            {
+                std::optional<int> curveNID;
+                CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
+                CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
+                group->Lock();
+                CF_CHECK_NE(group->GetPtr(), nullptr);
+            }
+            CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group->GetPtr()), 1);
+
+            /* Construct signature */
+            CF_CHECK_EQ(sig_r.Set(op.signature.signature.first.ToString(ds)), true);
+            CF_CHECK_EQ(sig_s.Set(op.signature.signature.second.ToString(ds)), true);
+            CF_CHECK_NE(signature = ECDSA_SIG_new(), nullptr);
+            CF_CHECK_EQ(ECDSA_SIG_set0(signature, sig_r.GetDestPtr(false), sig_s.GetDestPtr(false)), 1);
+            /* 'signature' now has ownership, and the BIGNUMs will be freed by ECDSA_SIG_free */
+            sig_r.ReleaseOwnership();
+            sig_s.ReleaseOwnership();
+
+            /* Construct key */
+            CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+            CF_CHECK_TRUE(pub->Set(op.signature.pub.first, op.signature.pub.second));
+            CF_CHECK_EQ(EC_KEY_set_public_key(key.GetPtr(), pub->GetPtr()), 1);
+        }
+
+        /* Process */
+        {
+            int res;
+            if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
+                //const auto CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
+                const auto CT = op.cleartext;
+                res = ECDSA_do_verify(CT.GetPtr(), CT.GetSize(), signature, key.GetPtr());
+            } else if ( op.digestType.Get() == CF_DIGEST("SHA256") ) {
+                uint8_t CT[32];
+                SHA256(op.cleartext.GetPtr(), op.cleartext.GetSize(), CT);
+                res = ECDSA_do_verify(CT, sizeof(CT), signature, key.GetPtr());
+            } else {
+                /* TODO other digests */
+                goto end;
+            }
+
+            if ( res == 0 ) {
+                ret = false;
+            } else if ( res == 1 ) {
+                ret = true;
+            } else {
+                /* ECDSA_do_verify failed -- don't set ret */
+            }
+
+        }
+    } catch ( ... ) { }
+
+end:
+    if ( signature != nullptr ) {
+        ECDSA_SIG_free(signature);
+    }
+
+    return ret;
+}
+
+std::optional<component::ECDSA_Signature> wolfCrypt_OpenSSL::OpECDSA_Sign(operation::ECDSA_Sign& op) {
+    std::optional<component::ECDSA_Signature> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    ECDSA_SIG* signature = nullptr;
+    char* pub_x_str = nullptr;
+    char* pub_y_str = nullptr;
+    char* sig_r_str = nullptr;
+    char* sig_s_str = nullptr;
+
+    try {
+        CF_EC_KEY key(ds);
+        std::shared_ptr<CF_EC_GROUP> group = nullptr;
+        OpenSSL_bignum::Bignum prv(ds);
+        std::unique_ptr<CF_EC_POINT> pub = nullptr;
+        OpenSSL_bignum::Bignum pub_x(ds);
+        OpenSSL_bignum::Bignum pub_y(ds);
+        const BIGNUM *R = nullptr, *S = nullptr;
+
+        CF_CHECK_TRUE(op.UseRandomNonce());
+        CF_CHECK_TRUE(op.digestType.Is(CF_DIGEST("NULL")));
+
+        {
+            std::optional<int> curveNID;
+            CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
+            CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
+            group->Lock();
+            CF_CHECK_NE(group->GetPtr(), nullptr);
+        }
+
+        CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group->GetPtr()), 1);
+
+        /* Load private key */
+        CF_CHECK_EQ(prv.Set(op.priv.ToString(ds)), true);
+
+        /* Set private key */
+        CF_CHECK_EQ(EC_KEY_set_private_key(key.GetPtr(), prv.GetPtr()), 1);
+
+        /* Compute public key */
+        CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+        CF_CHECK_EQ(EC_POINT_mul(group->GetPtr(), pub->GetPtr(), prv.GetPtr(), nullptr, nullptr, nullptr), 1);
+
+        CF_CHECK_EQ(pub_x.New(), true);
+        CF_CHECK_EQ(pub_y.New(), true);
+
+        CF_CHECK_NE(EC_POINT_get_affine_coordinates(group->GetPtr(), pub->GetPtr(), pub_x.GetDestPtr(), pub_y.GetDestPtr(), nullptr), 0);
+
+        CF_CHECK_NE(pub_x_str = BN_bn2dec(pub_x.GetPtr()), nullptr);
+        CF_CHECK_NE(pub_y_str = BN_bn2dec(pub_y.GetPtr()), nullptr);
+
+        const auto CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
+
+        CF_CHECK_NE(signature = ECDSA_do_sign(CT.GetPtr(), CT.GetSize(), key.GetPtr()), nullptr);
+
+        /* noret */ ECDSA_SIG_get0(signature, &R, &S);
+        CF_CHECK_NE(R, nullptr);
+        CF_CHECK_NE(S, nullptr);
+
+        /* Convert bignum x/y to strings */
+        CF_CHECK_NE(sig_r_str = BN_bn2dec(R), nullptr);
+        CF_CHECK_NE(sig_s_str = BN_bn2dec(S), nullptr);
+
+
+        component::Bignum S_corrected{std::string(sig_s_str)};
+        CF_NORET(util::AdjustECDSASignature(op.curveType.Get(), S_corrected));
+
+        ret = { {sig_r_str, S_corrected.ToTrimmedString()}, {pub_x_str, pub_y_str} };
+    } catch ( ... ) { }
+
+end:
+    if ( signature != nullptr ) {
+        ECDSA_SIG_free(signature);
+    }
+    OPENSSL_free(pub_x_str);
+    OPENSSL_free(pub_y_str);
+    OPENSSL_free(sig_r_str);
+    OPENSSL_free(sig_s_str);
+
+    return ret;
+}
+
 std::optional<component::Bignum> wolfCrypt_OpenSSL::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
