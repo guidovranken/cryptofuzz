@@ -4024,6 +4024,20 @@ std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Mul(operation::ECC_Poin
 
     CF_CHECK_EQ(b.Set(op.b.ToString(ds)), true);
 
+#if !defined(CRYPTOFUZZ_BORINGSSL)
+    {
+        bool precompute = false;
+        try {
+            precompute = ds.Get<bool>();
+        } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+        }
+
+        if ( precompute == true ) {
+            CF_CHECK_NE(EC_GROUP_precompute_mult(group->GetPtr(), nullptr), 0);
+        }
+    }
+#endif
+
     CF_CHECK_NE(EC_POINT_mul(group->GetPtr(), res->GetPtr(), nullptr, a->GetPtr(), b.GetPtr(), nullptr), 0);
 
     if ( op.b.ToTrimmedString() == "0" ) {
