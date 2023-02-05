@@ -886,6 +886,40 @@ end:
     return ret;
 }
 
+namespace mbedTLS_detail {
+    bool LoadPoint(
+            fuzzing::datasource::Datasource& ds,
+            const component::ECC_Point in,
+            mbedtls_ecp_point& out,
+            const component::CurveType curveType) {
+        bool ret = false;
+
+        bool projective = false;
+        try {
+            projective = ds.Get<bool>();
+        } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+        if ( projective == false ) {
+            CF_CHECK_EQ(mbedtls_mpi_read_string(&out.X, 10, in.first.ToString(ds).c_str()), 0);
+            CF_CHECK_EQ(mbedtls_mpi_read_string(&out.Y, 10, in.second.ToString(ds).c_str()), 0);
+            CF_CHECK_EQ(mbedtls_mpi_lset(&out.Z, 1), 0);
+        } else {
+            const auto proj = util::ToRandomProjective(
+                    ds,
+                    in.first.ToTrimmedString(),
+                    in.second.ToTrimmedString(),
+                    curveType.Get());
+            CF_CHECK_EQ(mbedtls_mpi_read_string(&out.X, 10, proj[0].c_str()), 0);
+            CF_CHECK_EQ(mbedtls_mpi_read_string(&out.Y, 10, proj[1].c_str()), 0);
+            CF_CHECK_EQ(mbedtls_mpi_read_string(&out.Z, 10, proj[2].c_str()), 0);
+        }
+
+        ret = true;
+end:
+        return ret;
+    }
+}
+
 std::optional<bool> mbedTLS::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
     std::optional<bool> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -906,10 +940,7 @@ std::optional<bool> mbedTLS::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey&
 
     CF_CHECK_EQ(mbedtls_ecp_group_load(&grp, curve_info->grp_id), 0);
 
-    /* Load point */
-    CF_CHECK_EQ(mbedtls_mpi_read_string(&pub.X, 10, op.pub.first.ToString(ds).c_str()), 0);
-    CF_CHECK_EQ(mbedtls_mpi_read_string(&pub.Y, 10, op.pub.second.ToString(ds).c_str()), 0);
-    CF_CHECK_EQ(mbedtls_mpi_lset(&pub.Z, 1), 0);
+    CF_CHECK_TRUE(mbedTLS_detail::LoadPoint(ds, op.pub, pub, op.curveType));
 
     ret = mbedtls_ecp_check_pubkey(&grp, &pub) == 0;
 
@@ -947,9 +978,7 @@ std::optional<component::ECC_Point> mbedTLS::OpECC_Point_Mul(operation::ECC_Poin
     CF_CHECK_EQ(mbedtls_ecp_group_load(&grp, curve_info->grp_id), 0);
 
     /* Load point */
-    CF_CHECK_EQ(mbedtls_mpi_read_string(&a.X, 10, op.a.first.ToString(ds).c_str()), 0);
-    CF_CHECK_EQ(mbedtls_mpi_read_string(&a.Y, 10, op.a.second.ToString(ds).c_str()), 0);
-    CF_CHECK_EQ(mbedtls_mpi_lset(&a.Z, 1), 0);
+    CF_CHECK_TRUE(mbedTLS_detail::LoadPoint(ds, op.a, a, op.curveType));
 
     /* Load scalar */
     CF_CHECK_EQ(mbedtls_mpi_read_string(&b, 10, op.b.ToString(ds).c_str()), 0);
@@ -1013,18 +1042,14 @@ std::optional<component::ECC_Point> mbedTLS::OpECC_Point_Add(operation::ECC_Poin
     CF_CHECK_EQ(mbedtls_ecp_group_load(&grp, curve_info->grp_id), 0);
 
     /* Load point a */
-    CF_CHECK_EQ(mbedtls_mpi_read_string(&a.X, 10, op.a.first.ToString(ds).c_str()), 0);
-    CF_CHECK_EQ(mbedtls_mpi_read_string(&a.Y, 10, op.a.second.ToString(ds).c_str()), 0);
-    CF_CHECK_EQ(mbedtls_mpi_lset(&a.Z, 1), 0);
+    CF_CHECK_TRUE(mbedTLS_detail::LoadPoint(ds, op.a, a, op.curveType));
 
     /* https://github.com/ARMmbed/mbedtls/issues/5376 */
     CF_CHECK_LT(mbedtls_mpi_cmp_mpi(&a.X, &grp.N), 0);
     CF_CHECK_LT(mbedtls_mpi_cmp_mpi(&a.Y, &grp.N), 0);
 
     /* Load point b */
-    CF_CHECK_EQ(mbedtls_mpi_read_string(&b.X, 10, op.b.first.ToString(ds).c_str()), 0);
-    CF_CHECK_EQ(mbedtls_mpi_read_string(&b.Y, 10, op.b.second.ToString(ds).c_str()), 0);
-    CF_CHECK_EQ(mbedtls_mpi_lset(&b.Z, 1), 0);
+    CF_CHECK_TRUE(mbedTLS_detail::LoadPoint(ds, op.b, b, op.curveType));
 
     /* https://github.com/ARMmbed/mbedtls/issues/5376 */
     CF_CHECK_LT(mbedtls_mpi_cmp_mpi(&b.X, &grp.N), 0);
