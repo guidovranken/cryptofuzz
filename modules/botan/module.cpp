@@ -258,12 +258,12 @@ end:
 
     template <>
     ::Botan::Cipher_Dir GetCryptType<operation::SymmetricEncrypt>(void) {
-        return ::Botan::ENCRYPTION;
+        return ::Botan::Cipher_Dir::Encryption;
     }
 
     template <>
     ::Botan::Cipher_Dir GetCryptType<operation::SymmetricDecrypt>(void) {
-        return ::Botan::DECRYPTION;
+        return ::Botan::Cipher_Dir::Decryption;
     }
 
     template <class OperationType>
@@ -327,7 +327,7 @@ end:
         const auto inPtr = GetInPtr(op);
         ::Botan::secure_vector<uint8_t> ret(inPtr, inPtr + GetInSize(op));
 
-        if ( GetCryptType<OperationType>() == ::Botan::ENCRYPTION ) {
+        if ( GetCryptType<OperationType>() == ::Botan::Cipher_Dir::Encryption ) {
             return ret;
         }
 
