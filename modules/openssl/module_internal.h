@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bn_ops.h"
+#include <iostream>
 
 namespace cryptofuzz {
 namespace module {
@@ -131,6 +132,7 @@ class EC_POINT_Copier {
         EC_POINT* point = nullptr;
         Datasource& ds;
         const uint64_t curveType;
+        bool projective = false;
 
         EC_POINT* newPoint(void) {
             return EC_POINT_new(group->GetPtr());
@@ -191,14 +193,60 @@ class EC_POINT_Copier {
         bool set(OpenSSL_bignum::Bignum& pub_x, OpenSSL_bignum::Bignum& pub_y) {
             bool ret = false;
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110) && !defined(CRYPTOFUZZ_OPENSSL_098)
-            CF_CHECK_NE(EC_POINT_set_affine_coordinates(group->GetPtr(), GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+            char* x_str = nullptr;
+            char* y_str = nullptr;
+
+#if defined(CRYPTOFUZZ_BORINGSSL)
+            const bool projective = false;
 #else
-            CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group->GetPtr(), GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+            bool projective = false;
+            try {
+                projective = ds.Get<bool>();
+            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+            if ( projective ) {
+                if ( (x_str = BN_bn2dec(pub_x.GetPtr())) == nullptr ) {
+                    projective = false;
+                }
+                if ( projective && (y_str = BN_bn2dec(pub_y.GetPtr())) == nullptr ) {
+                    projective = false;
+                }
+            }
 #endif
+            if ( projective == false ) {
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110) && !defined(CRYPTOFUZZ_OPENSSL_098)
+                CF_CHECK_NE(EC_POINT_set_affine_coordinates(group->GetPtr(), GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+#else
+                CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group->GetPtr(), GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
+#endif
+            } else {
+#if defined(CRYPTOFUZZ_BORINGSSL)
+                CF_UNREACHABLE();
+#else
+                OpenSSL_bignum::Bignum x(ds);
+                CF_CHECK_TRUE(x.New());
+                OpenSSL_bignum::Bignum y(ds);
+                CF_CHECK_TRUE(y.New());
+                OpenSSL_bignum::Bignum z(ds);
+                CF_CHECK_TRUE(z.New());
+
+                const auto proj = util::ToRandomProjective(
+                        ds,
+                        std::string(x_str),
+                        std::string(y_str),
+                        curveType);
+                CF_CHECK_TRUE(x.Set(proj[0]));
+                CF_CHECK_TRUE(y.Set(proj[1]));
+                CF_CHECK_TRUE(z.Set(proj[2]));
+                CF_CHECK_NE(EC_POINT_set_Jprojective_coordinates_GFp(group->GetPtr(), GetPtr(), x.GetPtr(), y.GetPtr(), z.GetPtr(), nullptr), 0);
+                this->projective = true;
+#endif
+            }
 
             ret = true;
 end:
+            OPENSSL_free(x_str);
+            OPENSSL_free(y_str);
             return ret;
         }
 
@@ -371,6 +419,10 @@ end:
             OPENSSL_free(y_str);
 
             return ret;
+        }
+
+        bool IsProjective(void) const {
+            return projective;
         }
 };
 
