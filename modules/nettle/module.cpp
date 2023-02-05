@@ -2112,6 +2112,40 @@ end:
     return ret;
 }
 
+std::optional<bool> Nettle::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
+    std::optional<bool> ret = std::nullopt;
+
+#if !defined(HAVE_LIBHOGWEED)
+    (void)op;
+#else
+    mpz_t pub_x, pub_y;
+    struct ecc_point pub;
+    bool initialized = false;
+
+    const struct ecc_curve* curve = nullptr;
+
+    CF_CHECK_NE(curve = Nettle_detail::to_ecc_curve(op.curveType.Get()), nullptr);
+
+    CF_NORET(ecc_point_init(&pub, curve));
+    CF_NORET(mpz_init(pub_x));
+    CF_NORET(mpz_init(pub_y));
+    initialized = true;
+
+    CF_CHECK_EQ(mpz_init_set_str(pub_x, op.pub.first.ToTrimmedString().c_str(), 0), 0);
+    CF_CHECK_EQ(mpz_init_set_str(pub_y, op.pub.second.ToTrimmedString().c_str(), 0), 0);
+
+    ret = ecc_point_set(&pub, pub_x, pub_y) == 1;
+end:
+    if ( initialized == true ) {
+        CF_NORET(ecc_point_clear(&pub));
+        CF_NORET(mpz_clear(pub_x));
+        CF_NORET(mpz_clear(pub_y));
+    }
+#endif
+
+    return ret;
+}
+
 std::optional<component::ECC_PublicKey> Nettle::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
 
