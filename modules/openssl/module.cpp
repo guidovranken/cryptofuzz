@@ -3552,7 +3552,7 @@ std::optional<bool> OpenSSL::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey&
 
     /* Construct key */
     CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group, op.curveType.Get()), nullptr);
-    CF_CHECK_TRUE(pub->Set(op.pub.first, op.pub.second, false));
+    CF_CHECK_TRUE(pub->Set(op.pub.first, op.pub.second, false, false));
 
     /* Reject oversized pubkeys until it is fixed in OpenSSL
      * https://github.com/openssl/openssl/issues/17590

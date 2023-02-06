@@ -190,7 +190,7 @@ class EC_POINT_Copier {
             return point;
         }
 
-        bool set(OpenSSL_bignum::Bignum& pub_x, OpenSSL_bignum::Bignum& pub_y) {
+        bool set(OpenSSL_bignum::Bignum& pub_x, OpenSSL_bignum::Bignum& pub_y, const bool allowProjective = true) {
             bool ret = false;
 
             char* x_str = nullptr;
@@ -200,9 +200,11 @@ class EC_POINT_Copier {
             const bool projective = false;
 #else
             bool projective = false;
-            try {
-                projective = ds.Get<bool>();
-            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            if ( allowProjective == true ) {
+                try {
+                    projective = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            }
 
             if ( projective ) {
                 if ( (x_str = BN_bn2dec(pub_x.GetPtr())) == nullptr ) {
@@ -348,7 +350,11 @@ end:
             freePoint(point);
         }
 
-        bool Set(OpenSSL_bignum::Bignum& pub_x, OpenSSL_bignum::Bignum& pub_y, const bool allowCompressed = true) {
+        bool Set(
+                OpenSSL_bignum::Bignum& pub_x,
+                OpenSSL_bignum::Bignum& pub_y,
+                const bool allowCompressed = true,
+                const bool allowProjective = true) {
             bool compressed = false;
             try {
                 compressed = ds.Get<bool>();
@@ -363,10 +369,14 @@ end:
 
             return compressed ?
                 set_compressed(pub_x, pub_y) :
-                set(pub_x, pub_y);
+                set(pub_x, pub_y, allowProjective);
         }
 
-        bool Set(const component::Bignum& pub_x, const component::Bignum& pub_y, const bool allowCompressed = true) {
+        bool Set(
+                const component::Bignum& pub_x,
+                const component::Bignum& pub_y,
+                const bool allowCompressed = true,
+                const bool allowProjective = true) {
             bool ret = false;
 
             OpenSSL_bignum::Bignum _pub_x(ds), _pub_y(ds);
@@ -374,7 +384,7 @@ end:
             CF_CHECK_EQ(_pub_x.Set(pub_x.ToString(ds)), true);
             CF_CHECK_EQ(_pub_y.Set(pub_y.ToString(ds)), true);
 
-            CF_CHECK_TRUE(Set(_pub_x, _pub_y, allowCompressed));
+            CF_CHECK_TRUE(Set(_pub_x, _pub_y, allowCompressed, allowProjective));
 
             ret = true;
 end:
