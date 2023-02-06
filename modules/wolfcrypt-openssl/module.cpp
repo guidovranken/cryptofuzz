@@ -652,6 +652,101 @@ std::optional<component::Cleartext> wolfCrypt_OpenSSL::OpSymmetricDecrypt(operat
     return wolfCrypt_OpenSSL_detail::OpSymmetricDecrypt_EVP(op, ds);
 }
 
+std::optional<component::MAC> wolfCrypt_OpenSSL::OpCMAC(operation::CMAC& op) {
+    std::optional<component::MAC> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    util::Multipart parts;
+
+    CF_CMAC_CTX ctx(ds);
+    const EVP_CIPHER* cipher = nullptr;
+
+    /* Initialize */
+    {
+        parts = util::ToParts(ds, op.cleartext);
+
+        CF_CHECK_NE(cipher = wolfCrypt_OpenSSL_detail::toEVPCIPHER(op.cipher.cipherType), nullptr);
+        CF_CHECK_EQ(CMAC_Init(ctx.GetPtr(), op.cipher.key.GetPtr(), op.cipher.key.GetSize(), cipher, nullptr), 1);
+    }
+
+    /* Process */
+    for (const auto& part : parts) {
+        CF_CHECK_EQ(CMAC_Update(ctx.GetPtr(), part.first, part.second), 1);
+    }
+
+    /* Finalize */
+    {
+        size_t len = 0;
+        uint8_t out[EVP_MAX_MD_SIZE];
+        CF_CHECK_EQ(CMAC_Final(ctx.GetPtr(), out, &len), 1);
+        ret = component::MAC(out, len);
+    }
+
+end:
+    return ret;
+}
+
+std::optional<component::Key> wolfCrypt_OpenSSL::OpKDF_HKDF(operation::KDF_HKDF& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    EVP_PKEY_CTX* pctx = nullptr;
+    const EVP_MD* md = nullptr;
+
+    size_t out_size = op.keySize;
+    uint8_t* out = util::malloc(out_size);
+
+    /* Initialize */
+    {
+        CF_CHECK_NE(md = wolfCrypt_OpenSSL_detail::toEVPMD(op.digestType), nullptr);
+        CF_CHECK_NE(pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, nullptr), nullptr);
+        CF_CHECK_EQ(EVP_PKEY_derive_init(pctx), 1);
+        CF_CHECK_EQ(EVP_PKEY_CTX_set_hkdf_md(pctx, md), 1);
+        CF_CHECK_EQ(EVP_PKEY_CTX_set1_hkdf_key(pctx, op.password.GetPtr(), op.password.GetSize()), 1);
+        CF_CHECK_EQ(EVP_PKEY_CTX_set1_hkdf_salt(pctx, op.salt.GetPtr(), op.salt.GetSize()), 1);
+        CF_CHECK_EQ(EVP_PKEY_CTX_add1_hkdf_info(pctx, op.info.GetPtr(), op.info.GetSize()), 1);
+    }
+
+    /* Process/finalize */
+    {
+        CF_CHECK_EQ(EVP_PKEY_derive(pctx, out, &out_size) , 1);
+
+        CF_CHECK_NE(out, nullptr);
+
+        ret = component::Key(out, out_size);
+    }
+
+end:
+    EVP_PKEY_CTX_free(pctx);
+
+    util::free(out);
+
+    return ret;
+}
+
+std::optional<component::Key> wolfCrypt_OpenSSL::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    const EVP_MD* md = nullptr;
+
+    const size_t outSize = op.keySize;
+    uint8_t* out = util::malloc(outSize);
+
+    CF_CHECK_NE(md = wolfCrypt_OpenSSL_detail::toEVPMD(op.digestType), nullptr);
+    CF_CHECK_EQ(PKCS5_PBKDF2_HMAC(
+                (const char*)(op.password.GetPtr()),
+                op.password.GetSize(),
+                op.salt.GetPtr(),
+                op.salt.GetSize(),
+                op.iterations,
+                md,
+                outSize,
+                out), 1);
+
+    ret = component::Key(out, outSize);
+end:
+    util::free(out);
+
+    return ret;
+}
+
 static std::optional<int> toCurveNID(const component::CurveType& curveType) {
     static const std::map<uint64_t, int> LUT = {
         { CF_ECC_CURVE("secp192r1"), NID_X9_62_prime192v1 },

@@ -287,11 +287,13 @@ template<> int CTX_Copier<HMAC_CTX>::copyCTX(HMAC_CTX* dest, HMAC_CTX* src) cons
 template<> void CTX_Copier<HMAC_CTX>::freeCTX(HMAC_CTX* ctx) const { return HMAC_CTX_free(ctx); }
 #endif
 
-#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 template<> CMAC_CTX* CTX_Copier<CMAC_CTX>::newCTX(void) const { return CMAC_CTX_new(); }
-template<> int CTX_Copier<CMAC_CTX>::copyCTX(CMAC_CTX* dest, CMAC_CTX* src) const { return CMAC_CTX_copy(dest, src); }
+template<> int CTX_Copier<CMAC_CTX>::copyCTX(CMAC_CTX* dest, CMAC_CTX* src) const {
+    (void)dest;
+    (void)src;
+    return 0;
+}
 template<> void CTX_Copier<CMAC_CTX>::freeCTX(CMAC_CTX* ctx) const { return CMAC_CTX_free(ctx); }
-#endif
 
 template<> EC_KEY* CTX_Copier<EC_KEY>::newCTX(void) const { return EC_KEY_new(); }
 template<> int CTX_Copier<EC_KEY>::copyCTX(EC_KEY* dest, EC_KEY* src) const {
@@ -308,9 +310,7 @@ template<> void CTX_Copier<EC_KEY>::freeCTX(EC_KEY* ctx) const { return EC_KEY_f
 using CF_EVP_MD_CTX = CTX_Copier<EVP_MD_CTX>;
 using CF_EVP_CIPHER_CTX = CTX_Copier<EVP_CIPHER_CTX>;
 using CF_HMAC_CTX = CTX_Copier<HMAC_CTX>;
-#if !defined(CRYPTOFUZZ_WOLFCRYPT_OPENSSL)
 using CF_CMAC_CTX = CTX_Copier<CMAC_CTX>;
-#endif
 using CF_EC_KEY = CTX_Copier<EC_KEY>;
 using CF_EC_POINT = EC_POINT_Copier;
 using CF_EC_GROUP = EC_GROUP_Copier;
