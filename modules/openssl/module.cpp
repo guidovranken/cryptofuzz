@@ -3552,7 +3552,15 @@ std::optional<bool> OpenSSL::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey&
 
     /* Construct key */
     CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group, op.curveType.Get()), nullptr);
-    CF_CHECK_TRUE(pub->Set(op.pub.first, op.pub.second, false, false));
+    CF_CHECK_TRUE(pub->Set(op.pub.first, op.pub.second, false,
+                /* allowProjective */
+#if defined(CRYPTOFUZZ_LIBRESSL)
+                /* https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=55750 */
+                true
+#else
+                false
+#endif
+    ));
 
     /* Reject oversized pubkeys until it is fixed in OpenSSL
      * https://github.com/openssl/openssl/issues/17590
