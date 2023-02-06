@@ -979,7 +979,8 @@ std::array<std::string, 3> ToRandomProjective(
         fuzzing::datasource::Datasource& ds,
         const std::string& x,
         const std::string& y,
-        const uint64_t curveType) {
+        const uint64_t curveType,
+        const bool jacobian) {
     using namespace boost::multiprecision;
     const auto p = cryptofuzz::repository::ECC_CurveToPrime(curveType);
     if ( p == std::nullopt ) {
@@ -1001,8 +1002,13 @@ std::array<std::string, 3> ToRandomProjective(
     cpp_int X(x), Y(y);
     const cpp_int P(*p);
     Z %= P;
-    X = (X * (Z * Z)) % P;
-    Y = (Y * (Z * Z * Z)) % P;
+    if ( jacobian == true ) {
+        X = (X * (Z * Z)) % P;
+        Y = (Y * (Z * Z * Z)) % P;
+    } else {
+        X = (X * Z) % P;
+        Y = (Y * Z) % P;
+    }
     return {X.str(), Y.str(), Z.str()};
 }
 

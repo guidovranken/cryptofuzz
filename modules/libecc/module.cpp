@@ -1092,7 +1092,8 @@ namespace libecc_detail {
                     ds,
                     in.first.ToTrimmedString(),
                     in.second.ToTrimmedString(),
-                    curveType.Get());
+                    curveType.Get(),
+                    false /* not jacobian */);
 
             const auto x_bin = util::DecToBin(proj[0]);
             const auto y_bin = util::DecToBin(proj[1]);
@@ -1101,7 +1102,6 @@ namespace libecc_detail {
             CF_CHECK_TRUE(!fp_init_from_buf(&x, &(params.ec_fp), x_bin->data(), x_bin->size()));
             CF_CHECK_TRUE(!fp_init_from_buf(&y, &(params.ec_fp), y_bin->data(), y_bin->size()));
             CF_CHECK_TRUE(!fp_init_from_buf(&z, &(params.ec_fp), z_bin->data(), z_bin->size()));
-            CF_ASSERT(!fp_one(&z), "fp_one error " __FILE__ ":" TOSTRING(__LINE__));
             CF_CHECK_TRUE(!prj_pt_init_from_coords(&out, &(params.ec_curve), &x, &y, &z));
         }
 
@@ -1273,6 +1273,38 @@ std::optional<component::ECC_Point> libecc::OpECC_Point_Neg(operation::ECC_Point
 
     prj_pt_uninit(&res);
     prj_pt_uninit(&a);
+
+end:
+    libecc_detail::global_ds = nullptr;
+
+    return ret;
+}
+
+std::optional<bool> libecc::OpECC_Point_Cmp(operation::ECC_Point_Cmp& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    libecc_detail::global_ds = &ds;
+
+    const ec_str_params* curve_params;
+    ec_params params;
+    prj_pt a, b;
+    int cmp;
+
+    /* Load curve */
+    CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
+    CF_ASSERT(!import_params(&params, curve_params), "import_params error " __FILE__ ":" TOSTRING(__LINE__));
+
+    /* Load points */
+    CF_CHECK_TRUE(libecc_detail::LoadPoint(ds, op.a, a, params, op.curveType));
+    CF_CHECK_TRUE(libecc_detail::LoadPoint(ds, op.b, b, params, op.curveType));
+
+
+    CF_CHECK_TRUE(!prj_pt_cmp(&a, &b, &cmp));
+    ret = cmp == 0;
+
+    prj_pt_uninit(&a);
+    prj_pt_uninit(&b);
 
 end:
     libecc_detail::global_ds = nullptr;
