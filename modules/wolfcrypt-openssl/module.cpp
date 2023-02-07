@@ -1027,6 +1027,34 @@ end:
     return ret;
 }
 
+std::optional<bool> wolfCrypt_OpenSSL::OpECC_Point_Cmp(operation::ECC_Point_Cmp& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    std::shared_ptr<CF_EC_GROUP> group = nullptr;
+    std::unique_ptr<CF_EC_POINT> a = nullptr, b = nullptr;
+
+    {
+        std::optional<int> curveNID;
+        CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
+        CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
+        group->Lock();
+        CF_CHECK_NE(group->GetPtr(), nullptr);
+    }
+
+    CF_CHECK_NE(a = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+    CF_CHECK_TRUE(a->Set(op.a.first, op.a.second));
+
+    CF_CHECK_NE(b = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
+    CF_CHECK_TRUE(b->Set(op.b.first, op.b.second));
+
+    ret = EC_POINT_cmp(group->GetPtr(), a->GetPtr(), b->GetPtr(), nullptr) == 0;
+
+end:
+
+    return ret;
+}
+
 std::optional<bool> wolfCrypt_OpenSSL::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
