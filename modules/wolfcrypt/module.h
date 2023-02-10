@@ -38,6 +38,11 @@ class wolfCrypt : public Module {
         std::optional<component::ECC_Point> OpECC_Point_Mul(operation::ECC_Point_Mul& op) override;
         std::optional<component::ECC_Point> OpECC_Point_Dbl(operation::ECC_Point_Dbl& op) override;
         std::optional<bool> OpECC_Point_Cmp(operation::ECC_Point_Cmp& op) override;
+        std::optional<bool> OpDSA_Verify(operation::DSA_Verify& op) override;
+        std::optional<component::DSA_Signature> OpDSA_Sign(operation::DSA_Sign& op) override;
+        std::optional<component::DSA_Parameters> OpDSA_GenerateParameters(operation::DSA_GenerateParameters& op) override;
+        std::optional<component::Bignum> OpDSA_PrivateToPublic(operation::DSA_PrivateToPublic& op) override;
+        std::optional<component::DSA_KeyPair> OpDSA_GenerateKeyPair(operation::DSA_GenerateKeyPair& op) override;
         std::optional<component::Secret> OpECDH_Derive(operation::ECDH_Derive& op) override;
 };
 

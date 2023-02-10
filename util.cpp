@@ -438,6 +438,26 @@ std::string ToString(const component::Fp12& val) {
     return ret;
 }
 
+std::string ToString(const component::DSA_Parameters& val) {
+    std::string ret;
+
+    ret += "P: " + val.p.ToString() + "\n";
+    ret += "Q: " + val.q.ToString() + "\n";
+    ret += "G: " + val.g.ToString() + "\n";
+
+    return ret;
+}
+
+std::string ToString(const component::DSA_Signature& val) {
+    std::string ret;
+
+    ret += "R: " + val.signature.first.ToString() + "\n";
+    ret += "S: " + val.signature.second.ToString() + "\n";
+    ret += "Pub: " + val.pub.ToString() + "\n";
+
+    return ret;
+}
+
 nlohmann::json ToJSON(const Buffer& buffer) {
     return buffer.ToJSON();
 }
@@ -495,6 +515,14 @@ nlohmann::json ToJSON(const component::BLS_KeyPair& val) {
 }
 
 nlohmann::json ToJSON(const component::Fp12& val) {
+    return val.ToJSON();
+}
+
+nlohmann::json ToJSON(const component::DSA_Parameters& val) {
+    return val.ToJSON();
+}
+
+nlohmann::json ToJSON(const component::DSA_Signature& val) {
     return val.ToJSON();
 }
 

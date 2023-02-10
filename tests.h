@@ -37,6 +37,11 @@ void test(const operation::ECGDSA_Verify& op, const std::optional<bool>& result)
 void test(const operation::ECRDSA_Verify& op, const std::optional<bool>& result);
 void test(const operation::Schnorr_Verify& op, const std::optional<bool>& result);
 void test(const operation::ECDSA_Recover& op, const std::optional<component::ECC_PublicKey>& result);
+void test(const operation::DSA_Verify& op, const std::optional<bool>& result);
+void test(const operation::DSA_Sign& op, const std::optional<component::DSA_Signature>& result);
+void test(const operation::DSA_GenerateParameters& op, const std::optional<component::DSA_Parameters>& result);
+void test(const operation::DSA_PrivateToPublic& op, const std::optional<component::Bignum>& result);
+void test(const operation::DSA_GenerateKeyPair& op, const std::optional<component::DSA_KeyPair>& result);
 void test(const operation::ECDH_Derive& op, const std::optional<component::Secret>& result);
 void test(const operation::ECIES_Encrypt& op, const std::optional<component::Ciphertext>& result);
 void test(const operation::ECIES_Decrypt& op, const std::optional<component::Cleartext>& result);

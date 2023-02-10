@@ -822,6 +822,203 @@ template<> std::optional<component::ECC_PublicKey> ExecutorBase<component::ECC_P
     return module->OpECDSA_Recover(op);
 }
 
+/* Specialization for operation::DSA_Verify */
+template<> void ExecutorBase<bool, operation::DSA_Verify>::updateExtraCounters(const uint64_t moduleID, operation::DSA_Verify& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<bool, operation::DSA_Verify>::postprocess(std::shared_ptr<Module> module, operation::DSA_Verify& op, const ExecutorBase<bool, operation::DSA_Verify>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<bool> ExecutorBase<bool, operation::DSA_Verify>::callModule(std::shared_ptr<Module> module, operation::DSA_Verify& op) const {
+    const std::vector<size_t> sizes = {
+        op.parameters.p.ToTrimmedString().size(),
+        op.parameters.q.ToTrimmedString().size(),
+        op.parameters.g.ToTrimmedString().size(),
+        op.pub.ToTrimmedString().size(),
+        op.signature.first.ToTrimmedString().size(),
+        op.signature.second.ToTrimmedString().size(),
+    };
+
+    for (const auto& size : sizes) {
+        if ( size == 0 || size > 4096 ) {
+            return std::nullopt;
+        }
+    }
+
+    return module->OpDSA_Verify(op);
+}
+
+/* Specialization for operation::DSA_Sign */
+/* Do not compare DSA_Sign results, because the result can be produced indeterministically */
+template <>
+void ExecutorBase<component::DSA_Signature, operation::DSA_Sign>::compare(const std::vector< std::pair<std::shared_ptr<Module>, operation::DSA_Sign> >& operations, const ResultSet& results, const uint8_t* data, const size_t size) const {
+    (void)operations;
+    (void)results;
+    (void)data;
+    (void)size;
+}
+template<> void ExecutorBase<component::DSA_Signature, operation::DSA_Sign>::updateExtraCounters(const uint64_t moduleID, operation::DSA_Sign& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::DSA_Signature, operation::DSA_Sign>::postprocess(std::shared_ptr<Module> module, operation::DSA_Sign& op, const ExecutorBase<component::DSA_Signature, operation::DSA_Sign>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    if ( result.second != std::nullopt ) {
+        const auto cleartext = op.cleartext.ToHex();
+        const auto p = op.parameters.p.ToTrimmedString();
+        const auto q = op.parameters.q.ToTrimmedString();
+        const auto g = op.parameters.g.ToTrimmedString();
+        const auto r = result.second->signature.first.ToTrimmedString();
+        const auto s = result.second->signature.second.ToTrimmedString();
+        const auto pub = result.second->pub.ToTrimmedString();
+
+        Pool_DSASignature.Set({
+                cleartext,
+                p,
+                q,
+                g,
+                pub,
+                r,
+                s
+        });
+
+        if ( r.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(r); }
+        if ( s.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(s); }
+    }
+}
+
+template<> std::optional<component::DSA_Signature> ExecutorBase<component::DSA_Signature, operation::DSA_Sign>::callModule(std::shared_ptr<Module> module, operation::DSA_Sign& op) const {
+    const std::vector<size_t> sizes = {
+        op.parameters.p.ToTrimmedString().size(),
+        op.parameters.q.ToTrimmedString().size(),
+        op.parameters.g.ToTrimmedString().size(),
+        op.priv.ToTrimmedString().size(),
+    };
+
+    for (const auto& size : sizes) {
+        if ( size == 0 || size > 4096 ) {
+            return std::nullopt;
+        }
+    }
+
+    return module->OpDSA_Sign(op);
+}
+
+/* Specialization for operation::DSA_PrivateToPublic */
+
+template<> void ExecutorBase<component::Bignum, operation::DSA_PrivateToPublic>::updateExtraCounters(const uint64_t moduleID, operation::DSA_PrivateToPublic& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::Bignum, operation::DSA_PrivateToPublic>::postprocess(std::shared_ptr<Module> module, operation::DSA_PrivateToPublic& op, const ExecutorBase<component::Bignum, operation::DSA_PrivateToPublic>::ResultPair& result) const {
+    (void)result;
+    (void)module;
+    if ( result.second != std::nullopt ) {
+        //Pool_DSA_PubPriv.Set({pub, priv});
+    }
+}
+
+template<> std::optional<component::Bignum> ExecutorBase<component::Bignum, operation::DSA_PrivateToPublic>::callModule(std::shared_ptr<Module> module, operation::DSA_PrivateToPublic& op) const {
+    return module->OpDSA_PrivateToPublic(op);
+}
+
+/* Specialization for operation::DSA_GenerateKeyPair */
+
+/* Do not compare DSA_GenerateKeyPair results, because the result can be produced indeterministically */
+template <>
+void ExecutorBase<component::DSA_KeyPair, operation::DSA_GenerateKeyPair>::compare(const std::vector< std::pair<std::shared_ptr<Module>, operation::DSA_GenerateKeyPair> >& operations, const ResultSet& results, const uint8_t* data, const size_t size) const {
+    (void)operations;
+    (void)results;
+    (void)data;
+    (void)size;
+}
+
+template<> void ExecutorBase<component::DSA_KeyPair, operation::DSA_GenerateKeyPair>::updateExtraCounters(const uint64_t moduleID, operation::DSA_GenerateKeyPair& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::DSA_KeyPair, operation::DSA_GenerateKeyPair>::postprocess(std::shared_ptr<Module> module, operation::DSA_GenerateKeyPair& op, const ExecutorBase<component::DSA_KeyPair, operation::DSA_GenerateKeyPair>::ResultPair& result) const {
+    (void)result;
+    (void)module;
+    if ( result.second != std::nullopt && (PRNG() % 4) == 0 ) {
+        const auto priv = result.second->first.ToTrimmedString();
+        const auto pub = result.second->second.ToTrimmedString();
+
+        Pool_DSA_PubPriv.Set({pub, priv});
+    }
+}
+
+template<> std::optional<component::DSA_KeyPair> ExecutorBase<component::DSA_KeyPair, operation::DSA_GenerateKeyPair>::callModule(std::shared_ptr<Module> module, operation::DSA_GenerateKeyPair& op) const {
+    const std::vector<size_t> sizes = {
+        op.p.ToTrimmedString().size(),
+        op.q.ToTrimmedString().size(),
+        op.g.ToTrimmedString().size(),
+    };
+
+    for (const auto& size : sizes) {
+        if ( size == 0 || size > 4096 ) {
+            return std::nullopt;
+        }
+    }
+
+    return module->OpDSA_GenerateKeyPair(op);
+}
+
+/* Specialization for operation::DSA_GenerateParameters */
+
+/* Do not compare DSA_GenerateParameters results, because the result can be produced indeterministically */
+template <>
+void ExecutorBase<component::DSA_Parameters, operation::DSA_GenerateParameters>::compare(const std::vector< std::pair<std::shared_ptr<Module>, operation::DSA_GenerateParameters> >& operations, const ResultSet& results, const uint8_t* data, const size_t size) const {
+    (void)operations;
+    (void)results;
+    (void)data;
+    (void)size;
+}
+
+template<> void ExecutorBase<component::DSA_Parameters, operation::DSA_GenerateParameters>::updateExtraCounters(const uint64_t moduleID, operation::DSA_GenerateParameters& op) const {
+    (void)moduleID;
+    (void)op;
+
+    /* TODO */
+}
+
+template<> void ExecutorBase<component::DSA_Parameters, operation::DSA_GenerateParameters>::postprocess(std::shared_ptr<Module> module, operation::DSA_GenerateParameters& op, const ExecutorBase<component::DSA_Parameters, operation::DSA_GenerateParameters>::ResultPair& result) const {
+    (void)result;
+    (void)module;
+    if ( result.second != std::nullopt && (PRNG() % 4) == 0 ) {
+        const auto P = result.second->p.ToTrimmedString();
+        const auto Q = result.second->q.ToTrimmedString();
+        const auto G = result.second->g.ToTrimmedString();
+
+        Pool_DSA_PQG.Set({P, Q, G});
+
+        if ( P.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(P); }
+        if ( Q.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(Q); }
+        if ( G.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(G); }
+    }
+}
+
+template<> std::optional<component::DSA_Parameters> ExecutorBase<component::DSA_Parameters, operation::DSA_GenerateParameters>::callModule(std::shared_ptr<Module> module, operation::DSA_GenerateParameters& op) const {
+    return module->OpDSA_GenerateParameters(op);
+}
+
 /* Specialization for operation::ECDH_Derive */
 template<> void ExecutorBase<component::Secret, operation::ECDH_Derive>::postprocess(std::shared_ptr<Module> module, operation::ECDH_Derive& op, const ExecutorBase<component::Secret, operation::ECDH_Derive>::ResultPair& result) const {
     (void)module;
@@ -2544,6 +2741,11 @@ template class ExecutorBase<bool, operation::ECGDSA_Verify>;
 template class ExecutorBase<bool, operation::ECRDSA_Verify>;
 template class ExecutorBase<bool, operation::Schnorr_Verify>;
 template class ExecutorBase<component::ECC_PublicKey, operation::ECDSA_Recover>;
+template class ExecutorBase<bool, operation::DSA_Verify>;
+template class ExecutorBase<component::DSA_Signature, operation::DSA_Sign>;
+template class ExecutorBase<component::DSA_Parameters, operation::DSA_GenerateParameters>;
+template class ExecutorBase<component::Bignum, operation::DSA_PrivateToPublic>;
+template class ExecutorBase<component::DSA_KeyPair, operation::DSA_GenerateKeyPair>;
 template class ExecutorBase<component::Secret, operation::ECDH_Derive>;
 template class ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>;
 template class ExecutorBase<component::Cleartext, operation::ECIES_Decrypt>;

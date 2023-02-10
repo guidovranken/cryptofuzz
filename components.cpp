@@ -658,6 +658,57 @@ void Fp12::Serialize(Datasource& ds) const {
     bn12.Serialize(ds);
 }
 
+nlohmann::json DSA_Parameters::ToJSON(void) const {
+    return std::vector<nlohmann::json>{
+        p.ToJSON(),
+        q.ToJSON(),
+        g.ToJSON(),
+    };
+}
+
+DSA_Parameters::DSA_Parameters(nlohmann::json json) :
+    p(json["p"].get<std::string>()),
+    q(json["q"].get<std::string>()),
+    g(json["g"].get<std::string>())
+{ }
+
+void DSA_Parameters::Serialize(Datasource& ds) const {
+    p.Serialize(ds);
+    q.Serialize(ds);
+    g.Serialize(ds);
+}
+
+/* DSA_Signature */
+DSA_Signature::DSA_Signature(Datasource& ds) :
+    signature(ds),
+    pub(ds)
+{ }
+
+DSA_Signature::DSA_Signature(BignumPair signature, Bignum pub) :
+    signature(signature),
+    pub(pub)
+{ }
+
+DSA_Signature::DSA_Signature(nlohmann::json json) :
+    signature(json["signature"]),
+    pub(json["pub"])
+{ }
+
+bool DSA_Signature::operator==(const DSA_Signature& rhs) const {
+    return
+        (signature == rhs.signature) &&
+        (pub == rhs.pub);
+}
+
+void DSA_Signature::Serialize(Datasource& ds) const {
+    signature.Serialize(ds);
+    pub.Serialize(ds);
+}
+
+nlohmann::json DSA_Signature::ToJSON(void) const {
+    return std::vector<nlohmann::json>{signature.ToJSON(), pub.ToJSON()};
+}
+
 /* BLS_Signature */
 BLS_Signature::BLS_Signature(Datasource& ds) :
     signature(ds),

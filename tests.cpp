@@ -502,6 +502,161 @@ void test(const operation::ECDSA_Recover& op, const std::optional<component::ECC
     }
 }
 
+void test(const operation::DSA_Verify& op, const std::optional<bool>& result) {
+    (void)op;
+
+    if ( result == std::nullopt || *result == false ) {
+        return;
+    }
+
+    if ( !op.signature.first.IsPositive() ) {
+        std::cout << "DSA signature must be rejected if R is smaller than 1" << std::endl;
+        ::abort();
+    }
+    if ( !op.signature.second.IsPositive() ) {
+        std::cout << "DSA signature must be rejected is S is smaller than 1" << std::endl;
+        ::abort();
+    }
+
+    /* Q > R */
+    if ( op.signature.first.ToTrimmedString().size() > op.parameters.q.ToTrimmedString().size() ) {
+        std::cout << "DSA signature must be rejected if R is larger than Q" << std::endl;
+        ::abort();
+    }
+    /* Q > S */
+    if ( op.signature.second.ToTrimmedString().size() > op.parameters.q.ToTrimmedString().size() ) {
+        std::cout << "DSA signature must be rejected if S is larger than Q" << std::endl;
+        ::abort();
+    }
+}
+
+void test(const operation::DSA_Sign& op, const std::optional<component::DSA_Signature>& result) {
+    if ( result == std::nullopt ) {
+        return;
+    }
+
+    if ( !result->signature.first.IsPositive() ) {
+        std::cout << "DSA signature R must be larger than 0" << std::endl;
+        ::abort();
+    }
+    if ( !result->signature.second.IsPositive() ) {
+        std::cout << "DSA signature S must be larger than 0" << std::endl;
+        ::abort();
+    }
+
+    /* Q > R */
+    if ( result->signature.first.ToTrimmedString().size() > op.parameters.q.ToTrimmedString().size() ) {
+        std::cout << "DSA signature R must be smaller than P" << std::endl;
+        ::abort();
+    }
+    /* Q > S */
+    if ( result->signature.second.ToTrimmedString().size() > op.parameters.q.ToTrimmedString().size() ) {
+        std::cout << "DSA signature S must be smaller than Q" << std::endl;
+        ::abort();
+    }
+
+    /* R > 0 */
+    if ( !result->signature.first.IsPositive() ) {
+        std::cout << "DSA signature R must be larger than 0" << std::endl;
+        ::abort();
+    }
+    /* S > 0 */
+    if ( !result->signature.second.IsPositive() ) {
+        std::cout << "DSA signature R must be larger than 0" << std::endl;
+        ::abort();
+    }
+}
+
+static bool isComposite(const std::string &num) {
+    if ( num.size() == 0 ) {
+        return true;
+    }
+
+    size_t sum = 0;
+    for (char c : num) {
+        sum += c - '0';
+    }
+    if (sum % 3 == 0) {
+        return true;
+    }
+
+    return false;
+}
+
+
+void test(const operation::DSA_GenerateParameters& op, const std::optional<component::DSA_Parameters>& result) {
+    (void)op;
+
+    if ( result == std::nullopt ) {
+        return;
+    }
+
+    /* Larger than 0 */
+    if ( !result->p.IsPositive() ) {
+        std::cout << "DSA P parameter must be larger than 0" << std::endl;
+        ::abort();
+    }
+    if ( !result->q.IsPositive() ) {
+        std::cout << "DSA Q parameter must be larger than 0" << std::endl;
+        ::abort();
+    }
+    if ( !result->g.IsPositive() ) {
+        std::cout << "DSA G parameter must be larger than 0" << std::endl;
+        ::abort();
+    }
+
+    /* P > Q */
+    if ( result->q.ToTrimmedString().size() > result->p.ToTrimmedString().size() ) {
+        std::cout << "DSA Q must be smaller than P" << std::endl;
+        ::abort();
+    }
+
+    /* P > G */
+    if ( result->q.ToTrimmedString().size() > result->p.ToTrimmedString().size() ) {
+        std::cout << "DSA G must be smaller than P" << std::endl;
+        ::abort();
+    }
+
+    /* G != 1 */
+    if ( result->p.ToTrimmedString() == "1" ) {
+        std::cout << "DSA G must not be 1" << std::endl;
+        ::abort();
+    }
+
+    /* P, Q must be prime */
+    if ( isComposite(result->p.ToTrimmedString()) ) {
+        std::cout << "DSA P must be prime" << std::endl;
+        ::abort();
+    }
+
+    if ( isComposite(result->q.ToTrimmedString()) ) {
+        std::cout << "DSA Q must be prime" << std::endl;
+        ::abort();
+    }
+}
+
+void test(const operation::DSA_PrivateToPublic& op, const std::optional<component::Bignum>& result) {
+    (void)op;
+    (void)result;
+}
+
+void test(const operation::DSA_GenerateKeyPair& op, const std::optional<component::DSA_KeyPair>& result) {
+    if ( result == std::nullopt ) {
+        return;
+    }
+
+    if ( !result->first.IsPositive() ) {
+        std::cout << "Private key must be larger than 0" << std::endl;
+        ::abort();
+    }
+
+    /* Q > priv */
+    if ( result->first.ToTrimmedString().size() > op.q.ToTrimmedString().size() ) {
+        std::cout << "Q must be larger than private key" << std::endl;
+        ::abort();
+    }
+}
+
 void test(const operation::ECDH_Derive& op, const std::optional<component::Secret>& result) {
     (void)op;
     (void)result;

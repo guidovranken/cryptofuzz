@@ -917,6 +917,118 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     generateECCPoint();
                 }
                 break;
+            case    CF_OPERATION("DSA_GenerateParameters"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+                    cryptofuzz::operation::DSA_GenerateParameters op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("DSA_PrivateToPublic"):
+                {
+                    parameters["modifier"] = "";
+
+                    if ( Pool_DSA_PQG.Have() && getBool() == true ) {
+                        const auto PQG = Pool_DSA_PQG.Get();
+                        parameters["p"] = PQG.p;
+                        parameters["g"] = PQG.g;
+                    } else {
+                        parameters["p"] = getBignum();
+                        parameters["g"] = getBignum();
+                    }
+
+                    parameters["priv"] = getBignum();
+
+                    cryptofuzz::operation::DSA_PrivateToPublic op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("DSA_GenerateKeyPair"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+
+                    if ( Pool_DSA_PQG.Have() && getBool() == true ) {
+                        const auto PQG = Pool_DSA_PQG.Get();
+                        parameters["p"] = PQG.p;
+                        parameters["q"] = PQG.q;
+                        parameters["g"] = PQG.g;
+                    } else {
+                        parameters["p"] = getBignum();
+                        parameters["q"] = getBignum();
+                        parameters["g"] = getBignum();
+                    }
+
+                    cryptofuzz::operation::DSA_GenerateKeyPair op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("DSA_Verify"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+
+                    if ( Pool_DSASignature.Have() && getBool() == true ) {
+                        const auto sig = Pool_DSASignature.Get();
+
+                        nlohmann::json parameters_;
+                        parameters_["p"] = sig.p;
+                        parameters_["q"] = sig.q;
+                        parameters_["g"] = sig.g;
+
+                        parameters["parameters"] = parameters_;
+
+                        parameters["signature"][0] = getBool() ? getBignum() : sig.r;
+                        parameters["signature"][1] = getBool() ? getBignum() : sig.s; 
+                        parameters["pub"] = sig.pub;
+                        parameters["cleartext"] = sig.cleartext;
+                    } else {
+                        nlohmann::json parameters_;
+                        parameters_["p"] = getBignum();
+                        parameters_["q"] = getBignum();
+                        parameters_["g"] = getBignum();
+
+                        parameters["parameters"] = parameters_;
+
+                        parameters["signature"][0] = getBignum();
+                        parameters["signature"][1] = getBignum();
+                        parameters["pub"] = getBignum();
+                        parameters["cleartext"] = getBuffer(PRNG() % 8);
+                    }
+
+
+                    cryptofuzz::operation::DSA_Verify op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("DSA_Sign"):
+                {
+                    parameters["modifier"] = getBuffer(PRNG() % 1000);
+
+                    if ( Pool_DSA_PQG.Have() && getBool() == true ) {
+                        const auto PQG = Pool_DSA_PQG.Get();
+
+                        nlohmann::json parameters_;
+                        parameters_["p"] = PQG.p;
+                        parameters_["q"] = PQG.q;
+                        parameters_["g"] = PQG.g;
+
+                        parameters["parameters"] = parameters_;
+                    } else {
+                        nlohmann::json parameters_;
+                        parameters_["p"] = getBignum();
+                        parameters_["q"] = getBignum();
+                        parameters_["g"] = getBignum();
+
+                        parameters["parameters"] = parameters_;
+                    }
+
+                    parameters["priv"] = getBignum();
+
+                    parameters["cleartext"] = getBuffer(PRNG() % 8);
+
+                    cryptofuzz::operation::DSA_Sign op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
             case    CF_OPERATION("ECDH_Derive"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);

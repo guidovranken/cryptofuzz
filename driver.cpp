@@ -47,6 +47,11 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorECRDSA_Verify executorECRDSA_Verify(CF_OPERATION("ECRDSA_Verify"), modules, options);
     static ExecutorSchnorr_Verify executorSchnorr_Verify(CF_OPERATION("Schnorr_Verify"), modules, options);
     static ExecutorECDSA_Recover executorECDSA_Recover(CF_OPERATION("ECDSA_Recover"), modules, options);
+    static ExecutorDSA_Verify executorDSA_Verify(CF_OPERATION("DSA_Verify"), modules, options);
+    static ExecutorDSA_Sign executorDSA_Sign(CF_OPERATION("DSA_Sign"), modules, options);
+    static ExecutorDSA_GenerateParameters executorDSA_GenerateParameters(CF_OPERATION("DSA_GenerateParameters"), modules, options);
+    static ExecutorDSA_PrivateToPublic executorDSA_PrivateToPublic(CF_OPERATION("DSA_PrivateToPublic"), modules, options);
+    static ExecutorDSA_GenerateKeyPair executorDSA_GenerateKeyPair(CF_OPERATION("DSA_GenerateKeyPair"), modules, options);
     static ExecutorECDH_Derive executorECDH_Derive(CF_OPERATION("ECDH_Derive"), modules, options);
     static ExecutorECIES_Encrypt executorECIES_Encrypt(CF_OPERATION("ECIES_Encrypt"), modules, options);
     static ExecutorECIES_Decrypt executorECIES_Decrypt(CF_OPERATION("ECIES_Decrypt"), modules, options);
@@ -217,6 +222,21 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("ECDSA_Recover"):
                 executorECDSA_Recover.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("DSA_Verify"):
+                executorDSA_Verify.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("DSA_Sign"):
+                executorDSA_Sign.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("DSA_GenerateParameters"):
+                executorDSA_GenerateParameters.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("DSA_PrivateToPublic"):
+                executorDSA_PrivateToPublic.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("DSA_GenerateKeyPair"):
+                executorDSA_GenerateKeyPair.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("ECDH_Derive"):
                 executorECDH_Derive.Run(ds, payload.data(), payload.size());

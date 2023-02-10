@@ -903,6 +903,113 @@ nlohmann::json ECDSA_Recover::ToJSON(void) const {
     return j;
 }
 
+std::string DSA_Verify::Name(void) const { return "DSA_Verify"; }
+std::string DSA_Verify::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: DSA_Verify" << std::endl;
+    ss << "p: " << parameters.p.ToString() << std::endl;
+    ss << "q: " << parameters.q.ToString() << std::endl;
+    ss << "g: " << parameters.g.ToString() << std::endl;
+    ss << "public key: " << pub.ToString() << std::endl;
+    ss << "r: " << signature.first.ToString() << std::endl;
+    ss << "s: " << signature.second.ToString() << std::endl;
+    ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json DSA_Verify::ToJSON(void) const {
+    nlohmann::json j;
+    j["p"] = parameters.p.ToJSON();
+    j["q"] = parameters.q.ToJSON();
+    j["g"] = parameters.g.ToJSON();
+    j["pub"] = pub.ToJSON();
+    j["r"] = signature.first.ToJSON();
+    j["s"] = signature.second.ToJSON();
+    j["cleartext"] = cleartext.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string DSA_Sign::Name(void) const { return "DSA_Sign"; }
+std::string DSA_Sign::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: DSA_Sign" << std::endl;
+    ss << "p: " << parameters.p.ToString() << std::endl;
+    ss << "q: " << parameters.q.ToString() << std::endl;
+    ss << "g: " << parameters.g.ToString() << std::endl;
+    ss << "private key: " << priv.ToString() << std::endl;
+    ss << "cleartext: " << util::HexDump(cleartext.Get()) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json DSA_Sign::ToJSON(void) const {
+    nlohmann::json j;
+    j["p"] = parameters.p.ToJSON();
+    j["q"] = parameters.q.ToJSON();
+    j["g"] = parameters.g.ToJSON();
+    j["priv"] = priv.ToJSON();
+    j["cleartext"] = cleartext.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string DSA_PrivateToPublic::Name(void) const { return "DSA_PrivateToPublic"; }
+std::string DSA_PrivateToPublic::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: DSA_PrivateToPublic" << std::endl;
+    ss << "priv: " << priv.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json DSA_PrivateToPublic::ToJSON(void) const {
+    nlohmann::json j;
+    j["priv"] = priv.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string DSA_GenerateKeyPair::Name(void) const { return "DSA_GenerateKeyPair"; }
+std::string DSA_GenerateKeyPair::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: DSA_GenerateKeyPair" << std::endl;
+    ss << "p: " << p.ToString() << std::endl;
+    ss << "q: " << q.ToString() << std::endl;
+    ss << "g: " << g.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json DSA_GenerateKeyPair::ToJSON(void) const {
+    nlohmann::json j;
+    j["p"] = p.ToJSON();
+    j["q"] = q.ToJSON();
+    j["g"] = g.ToJSON();
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string DSA_GenerateParameters::Name(void) const { return "DSA_GenerateParameters"; }
+std::string DSA_GenerateParameters::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: DSA_GenerateParameters" << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json DSA_GenerateParameters::ToJSON(void) const {
+    nlohmann::json j;
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string ECDH_Derive::Name(void) const { return "ECDH_Derive"; }
 std::string ECDH_Derive::ToString(void) const {
     std::stringstream ss;

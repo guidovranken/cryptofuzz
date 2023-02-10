@@ -144,6 +144,26 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<bool> OpDSA_Verify(operation::DSA_Verify& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::DSA_Signature> OpDSA_Sign(operation::DSA_Sign& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::DSA_Parameters> OpDSA_GenerateParameters(operation::DSA_GenerateParameters& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::Bignum> OpDSA_PrivateToPublic(operation::DSA_PrivateToPublic& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::DSA_KeyPair> OpDSA_GenerateKeyPair(operation::DSA_GenerateKeyPair& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::Secret> OpECDH_Derive(operation::ECDH_Derive& op) {
             (void)op;
             return std::nullopt;

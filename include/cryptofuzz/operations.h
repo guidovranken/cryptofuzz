@@ -1462,6 +1462,224 @@ class ECDSA_Recover : public Operation {
         }
 };
 
+class DSA_GenerateParameters : public Operation {
+    public:
+        DSA_GenerateParameters(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier))
+        { (void)ds; }
+        DSA_GenerateParameters(nlohmann::json json) :
+            Operation(json["modifier"])
+        { }
+        DSA_GenerateParameters(component::Modifier modifier) :
+            Operation(std::move(modifier))
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const DSA_GenerateParameters& rhs) const {
+            return
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            (void)ds;
+        }
+};
+
+class DSA_PrivateToPublic : public Operation {
+    public:
+        const component::Bignum g;
+        const component::Bignum p;
+        const component::Bignum priv;
+
+        DSA_PrivateToPublic(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            g(ds),
+            p(ds),
+            priv(ds)
+        { }
+        DSA_PrivateToPublic(nlohmann::json json) :
+            Operation(json["modifier"]),
+            g(json["g"]),
+            p(json["p"]),
+            priv(json["priv"])
+        { }
+        DSA_PrivateToPublic(
+                component::Modifier modifier,
+                component::Bignum g,
+                component::Bignum p,
+                component::Bignum priv) :
+            Operation(std::move(modifier)),
+            g(g),
+            p(p),
+            priv(priv)
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const DSA_PrivateToPublic& rhs) const {
+            return
+                (g == rhs.g) &&
+                (p == rhs.p) &&
+                (priv == rhs.priv) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            priv.Serialize(ds);
+        }
+};
+
+class DSA_GenerateKeyPair : public Operation {
+    public:
+        const component::Bignum p;
+        const component::Bignum q;
+        const component::Bignum g;
+
+        DSA_GenerateKeyPair(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            p(ds),
+            q(ds),
+            g(ds)
+        { }
+        DSA_GenerateKeyPair(nlohmann::json json) :
+            Operation(json["modifier"]),
+            p(json["p"]),
+            q(json["q"]),
+            g(json["g"])
+        { }
+        DSA_GenerateKeyPair(
+                component::Modifier modifier,
+                component::Bignum p,
+                component::Bignum q,
+                component::Bignum g) :
+            Operation(std::move(modifier)),
+            p(p),
+            q(q),
+            g(g)
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const DSA_GenerateKeyPair& rhs) const {
+            return
+                (p == rhs.p) &&
+                (q == rhs.q) &&
+                (g == rhs.g) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            p.Serialize(ds);
+            q.Serialize(ds);
+            g.Serialize(ds);
+        }
+};
+
+class DSA_Sign : public Operation {
+    public:
+        const component::DSA_Parameters parameters;
+        const component::Bignum priv;
+        const component::Cleartext cleartext;
+
+        DSA_Sign(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            parameters(ds),
+            priv(ds),
+            cleartext(ds)
+        { }
+        DSA_Sign(nlohmann::json json) :
+            Operation(json["modifier"]),
+            parameters(json["parameters"]),
+            priv(json["priv"]),
+            cleartext(json["cleartext"])
+        { }
+        DSA_Sign(
+                component::Modifier modifier,
+                component::DSA_Parameters parameters,
+                component::Bignum priv,
+                component::Cleartext cleartext) :
+            Operation(std::move(modifier)),
+            parameters(parameters),
+            priv(priv),
+            cleartext(cleartext)
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const DSA_Sign& rhs) const {
+            return
+                (parameters == rhs.parameters) &&
+                (priv == rhs.priv) &&
+                (cleartext == rhs.cleartext) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            parameters.Serialize(ds);
+            priv.Serialize(ds);
+            cleartext.Serialize(ds);
+        }
+};
+
+class DSA_Verify : public Operation {
+    public:
+        const component::DSA_Parameters parameters;
+        const component::Bignum pub;
+        const component::BignumPair signature;
+        const component::Cleartext cleartext;
+
+        DSA_Verify(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            parameters(ds),
+            pub(ds),
+            signature(ds),
+            cleartext(ds)
+        { }
+        DSA_Verify(nlohmann::json json) :
+            Operation(json["modifier"]),
+            parameters(json["parameters"]),
+            pub(json["pub"]),
+            signature(json["signature"]),
+            cleartext(json["cleartext"])
+        { }
+        DSA_Verify(
+                component::Modifier modifier,
+                component::DSA_Parameters parameters,
+                component::Bignum pub,
+                component::BignumPair signature,
+                component::Cleartext cleartext) :
+            Operation(std::move(modifier)),
+            parameters(parameters),
+            pub(pub),
+            signature(signature),
+            cleartext(cleartext)
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const DSA_Verify& rhs) const {
+            return
+                (parameters == rhs.parameters) &&
+                (pub == rhs.pub) &&
+                (signature == rhs.signature) &&
+                (cleartext == rhs.cleartext) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            parameters.Serialize(ds);
+            pub.Serialize(ds);
+            signature.Serialize(ds);
+            cleartext.Serialize(ds);
+        }
+};
+
 class Schnorr_Verify : public Operation {
     public:
         const component::CurveType curveType;

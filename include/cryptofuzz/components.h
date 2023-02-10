@@ -136,6 +136,52 @@ class MACType {
 using DH_Key = BignumPair;
 using DH_KeyPair = BignumPair;
 
+class DSA_Parameters {
+    public:
+        Bignum p, q, g;
+
+        DSA_Parameters(Datasource& ds) :
+            p(ds),
+            q(ds),
+            g(ds)
+        { }
+
+        DSA_Parameters(
+        std::string p,
+        std::string q,
+        std::string g) :
+            p(p),
+            q(q),
+            g(g)
+        { }
+        DSA_Parameters(nlohmann::json json);
+
+        inline bool operator==(const DSA_Parameters& rhs) const {
+            return
+                (p == rhs.p) &&
+                (q == rhs.q) &&
+                (g == rhs.g);
+        }
+        void Serialize(Datasource& ds) const;
+        nlohmann::json ToJSON(void) const;
+};
+
+class DSA_Signature {
+    public:
+        BignumPair signature;
+        Bignum pub;
+
+        DSA_Signature(Datasource& ds);
+        DSA_Signature(BignumPair signature, Bignum pub);
+        DSA_Signature(nlohmann::json json);
+
+        bool operator==(const DSA_Signature& rhs) const;
+        void Serialize(Datasource& ds) const;
+        nlohmann::json ToJSON(void) const;
+};
+
+using DSA_KeyPair = BignumPair;
+
 class G2 {
     public:
         BignumPair first, second;

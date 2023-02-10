@@ -89,6 +89,7 @@ namespace wolfCrypt_detail {
             try {
                 if ( info->rng.sz ) {
                     const auto data = ds->GetData(0, info->rng.sz, info->rng.sz);
+
                     memcpy(info->rng.out, data.data(), info->rng.sz);
                 }
             } catch ( ... ) {
@@ -3280,6 +3281,241 @@ std::optional<bool> wolfCrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     } else {
         return wolfCrypt_detail::OpECDSA_Verify_Generic(op);
     }
+}
+
+std::optional<bool> wolfCrypt::OpDSA_Verify(operation::DSA_Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    DsaKey key;
+    memset(&key, 0, sizeof(key));
+
+    CF_CHECK_EQ(wc_InitDsaKey(&key), 0);
+
+    {
+        wolfCrypt_bignum::Bignum p(&key.p, ds);
+        CF_CHECK_EQ(p.Set(op.parameters.p.ToString(ds)), true);
+
+        wolfCrypt_bignum::Bignum q(&key.q, ds);
+        CF_CHECK_EQ(q.Set(op.parameters.q.ToString(ds)), true);
+
+        wolfCrypt_bignum::Bignum g(&key.g, ds);
+        CF_CHECK_EQ(g.Set(op.parameters.g.ToString(ds)), true);
+
+        wolfCrypt_bignum::Bignum pub(&key.y, ds);
+        CF_CHECK_EQ(pub.Set(op.pub.ToString(ds)), true);
+    }
+
+    {
+        auto halfSz = mp_unsigned_bin_size(&key.q);
+
+        std::optional<std::vector<uint8_t>> r, s;
+        std::vector<uint8_t> rs;
+
+        /* XXX move these checks to ToBin() */
+        CF_CHECK_FALSE(op.signature.first.IsNegative());
+        CF_CHECK_FALSE(op.signature.second.IsNegative());
+
+        CF_CHECK_NE(r = wolfCrypt_bignum::Bignum::ToBin(ds, op.signature.first, halfSz), std::nullopt);
+        CF_CHECK_NE(s = wolfCrypt_bignum::Bignum::ToBin(ds, op.signature.second, halfSz), std::nullopt);
+
+        rs.insert(rs.end(), r->begin(), r->end());
+        rs.insert(rs.end(), s->begin(), s->end());
+
+        auto digest = op.cleartext.Get();
+        digest.resize(WC_SHA_DIGEST_SIZE);
+        int verified;
+        CF_CHECK_EQ(wc_DsaVerify(digest.data(), rs.data(), &key, &verified), 0);
+
+        ret = verified;
+    }
+
+end:
+    wc_FreeDsaKey(&key);
+    wolfCrypt_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
+std::optional<component::DSA_Signature> wolfCrypt::OpDSA_Sign(operation::DSA_Sign& op) {
+    std::optional<component::DSA_Signature> ret = std::nullopt;
+    if ( op.priv.IsZero() ) {
+        return std::nullopt;
+    }
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    DsaKey key1, key2;
+    bool key1_inited = false, key2_inited = false;
+
+    uint8_t ber_encoded_key[8192];
+    int ber_encoded_size;
+    uint8_t* signature = nullptr;
+
+    wolfCrypt_bignum::Bignum p(&key1.p, ds);
+    wolfCrypt_bignum::Bignum q(&key1.q, ds);
+    wolfCrypt_bignum::Bignum g(&key1.g, ds);
+    wolfCrypt_bignum::Bignum priv(&key1.x, ds);
+    {
+        CF_CHECK_EQ(wc_InitDsaKey(&key1), 0);
+        key1_inited = true;
+
+        CF_CHECK_EQ(p.Set(op.parameters.p.ToString(ds)), true);
+
+        CF_CHECK_NE(op.parameters.q.ToTrimmedString(), "0");
+        CF_CHECK_NE(op.parameters.q.ToTrimmedString(), "1");
+        CF_CHECK_EQ(q.Set(op.parameters.q.ToString(ds)), true);
+
+        CF_CHECK_EQ(g.Set(op.parameters.g.ToString(ds)), true);
+
+        CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
+
+        CF_CHECK_EQ(mp_exptmod_ex(&key1.g, &key1.x, key1.q.used, &key1.p, &key1.y), MP_OKAY);
+
+        key1.type = DSA_PRIVATE;
+
+        CF_CHECK_GT(ber_encoded_size = wc_DsaKeyToDer(&key1, ber_encoded_key, sizeof(ber_encoded_key)), 0);
+    }
+
+    {
+        WC_CHECK_EQ(wc_InitDsaKey(&key2), 0);
+        key2_inited = true;
+
+        word32 idx = 0;
+        WC_CHECK_EQ(wc_DsaPrivateKeyDecode(ber_encoded_key, &idx, &key2, ber_encoded_size), 0);
+
+        auto digest = op.cleartext.Get();
+        digest.resize(WC_SHA_DIGEST_SIZE);
+
+        signature = util::malloc(DSA_MAX_SIG_SIZE);
+
+        CF_CHECK_EQ(wc_DsaSign(digest.data(), signature, &key2, &wolfCrypt_detail::rng), 0);
+
+        {
+            auto halfSz = mp_unsigned_bin_size(&key2.q);
+
+            if ( DSA_MAX_HALF_SIZE < halfSz ) {
+                halfSz = DSA_MAX_HALF_SIZE;
+            }
+
+            std::optional<std::string> r_str, s_str, pub_str;
+            wolfCrypt_bignum::Bignum r(ds), s(ds);
+
+            CF_CHECK_EQ(mp_read_unsigned_bin(r.GetPtr(), signature, halfSz), MP_OKAY);
+            CF_CHECK_EQ(mp_read_unsigned_bin(s.GetPtr(), signature + halfSz, halfSz), MP_OKAY);
+
+            CF_CHECK_NE(r_str = r.ToDecString(), std::nullopt);
+            CF_CHECK_NE(s_str = s.ToDecString(), std::nullopt);
+
+            wolfCrypt_bignum::Bignum pub(&key1.y, ds);
+            CF_CHECK_NE(pub_str = pub.ToDecString(), std::nullopt);
+
+            ret = component::DSA_Signature({*r_str, *s_str}, *pub_str);
+        }
+    }
+end:
+    if ( key1_inited == true ) {
+        wc_FreeDsaKey(&key1);
+    }
+    if ( key2_inited == true ) {
+        wc_FreeDsaKey(&key2);
+    }
+    util::free(signature);
+    wolfCrypt_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
+std::optional<component::DSA_Parameters> wolfCrypt::OpDSA_GenerateParameters(operation::DSA_GenerateParameters& op) {
+    (void)op;
+    std::optional<component::DSA_Parameters> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    DsaKey key;
+    std::optional<std::string> p_str, q_str, g_str;
+
+    CF_CHECK_EQ(wc_InitDsaKey(&key), 0);
+    CF_CHECK_EQ(wc_MakeDsaParameters(wolfCrypt_detail::GetRNG(), 1024, &key), 0);
+
+    {
+        wolfCrypt_bignum::Bignum p(&key.p, ds);
+        wolfCrypt_bignum::Bignum q(&key.q, ds);
+        wolfCrypt_bignum::Bignum g(&key.g, ds);
+
+        CF_CHECK_NE(p_str = p.ToDecString(), std::nullopt);
+        CF_CHECK_NE(q_str = q.ToDecString(), std::nullopt);
+        CF_CHECK_NE(g_str = g.ToDecString(), std::nullopt);
+
+        ret = { *p_str, *q_str, *g_str };
+    }
+end:
+    wc_FreeDsaKey(&key);
+    wolfCrypt_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
+std::optional<component::Bignum> wolfCrypt::OpDSA_PrivateToPublic(operation::DSA_PrivateToPublic& op) {
+    std::optional<component::Bignum> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    wolfCrypt_bignum::Bignum g(ds);
+    wolfCrypt_bignum::Bignum p(ds);
+    wolfCrypt_bignum::Bignum priv(ds);
+    wolfCrypt_bignum::Bignum pub(ds);
+    CF_CHECK_TRUE(priv.Set(op.g.ToString(ds)));
+    CF_CHECK_TRUE(priv.Set(op.p.ToString(ds)));
+    CF_CHECK_TRUE(priv.Set(op.priv.ToString(ds)));
+    CF_CHECK_EQ(mp_exptmod(g.GetPtr(), priv.GetPtr(), p.GetPtr(), pub.GetPtr()), MP_OKAY);
+
+end:
+    wolfCrypt_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
+std::optional<component::DSA_KeyPair> wolfCrypt::OpDSA_GenerateKeyPair(operation::DSA_GenerateKeyPair& op) {
+    std::optional<component::DSA_KeyPair> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    wolfCrypt_detail::SetGlobalDs(&ds);
+
+    DsaKey key;
+    std::optional<std::string> pub_str, priv_str;;
+
+    memset(&key, 0, sizeof(key));
+
+    CF_CHECK_EQ(wc_InitDsaKey(&key), 0);
+
+    {
+        const auto p = util::DecToHex(op.p.ToTrimmedString());
+        const auto q = util::DecToHex(op.q.ToTrimmedString());
+        const auto g = util::DecToHex(op.g.ToTrimmedString());
+        CF_CHECK_EQ(wc_DsaImportParamsRaw(&key, p.c_str(), q.c_str(), g.c_str()), 0);
+    }
+
+    CF_CHECK_EQ(wc_MakeDsaKey(wolfCrypt_detail::GetRNG(), &key), 0);
+
+    {
+        wolfCrypt_bignum::Bignum pub(&key.y, ds);
+        wolfCrypt_bignum::Bignum priv(&key.x, ds);
+
+        CF_CHECK_NE(pub_str = pub.ToDecString(), std::nullopt);
+        CF_CHECK_NE(priv_str = priv.ToDecString(), std::nullopt);
+    }
+
+    /* Finalize */
+    {
+        ret = { std::string(*priv_str), std::string(*pub_str) };
+    }
+
+end:
+    wc_FreeDsaKey(&key);
+    wolfCrypt_detail::UnsetGlobalDs();
+
+    return ret;
 }
 
 std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& op) {

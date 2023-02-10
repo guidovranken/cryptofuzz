@@ -43,6 +43,17 @@ typedef struct {
 extern MutatorPool<CurveECDSASignature_Pair, cryptofuzz::config::kMutatorPoolSize> Pool_CurveECDSASignature;
 
 typedef struct {
+    std::string cleartext;
+    std::string p;
+    std::string q;
+    std::string g;
+    std::string pub;
+    std::string r;
+    std::string s;
+} DSASignature;
+extern MutatorPool<DSASignature, cryptofuzz::config::kMutatorPoolSize> Pool_DSASignature;
+
+typedef struct {
     uint64_t curveID;
     std::string cleartext;
     std::string id;
@@ -137,3 +148,17 @@ extern MutatorPool<BLS_BatchSignature_, cryptofuzz::config::kMutatorPoolSize> Po
 
 extern MutatorPool<std::string, cryptofuzz::config::kMutatorPoolSize> Pool_DH_PrivateKey;
 extern MutatorPool<std::string, cryptofuzz::config::kMutatorPoolSize> Pool_DH_PublicKey;
+
+typedef struct {
+    std::string p;
+    std::string q;
+    std::string g;
+} DSA_PQG;
+extern MutatorPool<DSA_PQG, 8> Pool_DSA_PQG;
+
+typedef struct {
+    std::string first;
+    std::string second;
+} type_DoubleString;
+
+extern MutatorPool<type_DoubleString, 64> Pool_DSA_PubPriv;
