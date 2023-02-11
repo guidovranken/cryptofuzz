@@ -197,6 +197,7 @@ class EC_POINT_Copier {
             char* y_str = nullptr;
 
 #if defined(CRYPTOFUZZ_BORINGSSL)
+            (void)allowProjective;
             const bool projective = false;
 #else
             bool projective = false;
