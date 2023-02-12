@@ -3283,6 +3283,7 @@ std::optional<bool> wolfCrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     }
 }
 
+#if !defined(NO_DSA)
 std::optional<bool> wolfCrypt::OpDSA_Verify(operation::DSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -3517,6 +3518,7 @@ end:
 
     return ret;
 }
+#endif
 
 std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
