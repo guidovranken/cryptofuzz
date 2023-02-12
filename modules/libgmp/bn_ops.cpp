@@ -156,6 +156,10 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             return false;
     }
 
+    /* Negative not supported */
+    CF_CHECK_GTE(mpz_sgn(bn[0].GetPtr()), 0);
+    CF_CHECK_GTE(mpz_sgn(bn[1].GetPtr()), 0);
+
     ret = true;
 
 end:
@@ -385,6 +389,10 @@ bool LCM::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             return false;
     }
 
+    /* Negative not supported */
+    CF_CHECK_GTE(mpz_sgn(bn[0].GetPtr()), 0);
+    CF_CHECK_GTE(mpz_sgn(bn[1].GetPtr()), 0);
+
     ret = true;
 
 end:
@@ -524,6 +532,9 @@ bool AddMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     /* noret */ mpz_add(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
     /* noret */ mpz_mod(res.GetPtr(), res.GetPtr(), bn[2].GetPtr());
 
+    /* Negative modulus currently not supported */
+    CF_CHECK_GTE(mpz_sgn(bn[2].GetPtr()), 0);
+
     ret = true;
 
 end:
@@ -538,6 +549,9 @@ bool SubMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     /* noret */ mpz_sub(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
     /* noret */ mpz_mod(res.GetPtr(), res.GetPtr(), bn[2].GetPtr());
+
+    /* Negative modulus currently not supported */
+    CF_CHECK_GTE(mpz_sgn(bn[2].GetPtr()), 0);
 
     ret = true;
 
@@ -554,6 +568,9 @@ bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     /* noret */ mpz_mul(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
     /* noret */ mpz_mod(res.GetPtr(), res.GetPtr(), bn[2].GetPtr());
 
+    /* Negative modulus currently not supported */
+    CF_CHECK_GTE(mpz_sgn(bn[2].GetPtr()), 0);
+
     ret = true;
 
 end:
@@ -568,6 +585,9 @@ bool SqrMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     /* noret */ mpz_pow_ui(res.GetPtr(), bn[0].GetPtr(), 2);
     /* noret */ mpz_mod(res.GetPtr(), res.GetPtr(), bn[1].GetPtr());
+
+    /* Negative modulus currently not supported */
+    CF_CHECK_GTE(mpz_sgn(bn[1].GetPtr()), 0);
 
     ret = true;
 
@@ -671,6 +691,9 @@ bool Bit::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     const auto position_sl = bn[1].GetSignedLong();
     CF_CHECK_NE(position_sl, std::nullopt);
+
+    /* Negative not supported */
+    CF_CHECK_GTE(mpz_sgn(bn[0].GetPtr()), 0);
 
     res.Set( std::to_string(mpz_tstbit(bn[0].GetPtr(), *position_sl)) );
 
@@ -1131,6 +1154,10 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
         default:
             return false;
     }
+
+    /* Negative not supported */
+    CF_CHECK_GTE(mpz_sgn(bn[0].GetPtr()), 0);
+    CF_CHECK_GTE(mpz_sgn(bn[1].GetPtr()), 0);
 
     ret = true;
 
