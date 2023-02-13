@@ -3283,8 +3283,11 @@ std::optional<bool> wolfCrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {
     }
 }
 
-#if !defined(NO_DSA)
 std::optional<bool> wolfCrypt::OpDSA_Verify(operation::DSA_Verify& op) {
+#if defined(NO_DSA)
+    (void)op;
+    return std::nullopt;
+#else
     std::optional<bool> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     wolfCrypt_detail::SetGlobalDs(&ds);
@@ -3337,9 +3340,14 @@ end:
     wolfCrypt_detail::UnsetGlobalDs();
 
     return ret;
+#endif
 }
 
 std::optional<component::DSA_Signature> wolfCrypt::OpDSA_Sign(operation::DSA_Sign& op) {
+#if defined(NO_DSA)
+    (void)op;
+    return std::nullopt;
+#else
     std::optional<component::DSA_Signature> ret = std::nullopt;
     if ( op.priv.IsZero() ) {
         return std::nullopt;
@@ -3426,9 +3434,14 @@ end:
     wolfCrypt_detail::UnsetGlobalDs();
 
     return ret;
+#endif
 }
 
 std::optional<component::DSA_Parameters> wolfCrypt::OpDSA_GenerateParameters(operation::DSA_GenerateParameters& op) {
+#if defined(NO_DSA)
+    (void)op;
+    return std::nullopt;
+#else
     (void)op;
     std::optional<component::DSA_Parameters> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -3456,9 +3469,14 @@ end:
     wolfCrypt_detail::UnsetGlobalDs();
 
     return ret;
+#endif
 }
 
 std::optional<component::Bignum> wolfCrypt::OpDSA_PrivateToPublic(operation::DSA_PrivateToPublic& op) {
+#if defined(NO_DSA)
+    (void)op;
+    return std::nullopt;
+#else
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     wolfCrypt_detail::SetGlobalDs(&ds);
@@ -3476,9 +3494,14 @@ end:
     wolfCrypt_detail::UnsetGlobalDs();
 
     return ret;
+#endif
 }
 
 std::optional<component::DSA_KeyPair> wolfCrypt::OpDSA_GenerateKeyPair(operation::DSA_GenerateKeyPair& op) {
+#if defined(NO_DSA)
+    (void)op;
+    return std::nullopt;
+#else
     std::optional<component::DSA_KeyPair> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     wolfCrypt_detail::SetGlobalDs(&ds);
@@ -3517,8 +3540,8 @@ end:
     wolfCrypt_detail::UnsetGlobalDs();
 
     return ret;
-}
 #endif
+}
 
 std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
