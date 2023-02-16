@@ -977,7 +977,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                         parameters["parameters"] = parameters_;
 
                         parameters["signature"][0] = getBool() ? getBignum() : sig.r;
-                        parameters["signature"][1] = getBool() ? getBignum() : sig.s; 
+                        parameters["signature"][1] = getBool() ? getBignum() : sig.s;
                         parameters["pub"] = sig.pub;
                         parameters["cleartext"] = sig.cleartext;
                     } else {
@@ -1083,10 +1083,29 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);
 
-                    const auto P1 = Pool_CurvePrivkey.Get();
+		            // Was broken: empty string is not valid priv key (copy-paste from getPublicKey)
+                    if ( Pool_CurvePrivkey.Have() && getBool() == true ) {
+                        const auto P1 = Pool_CurvePrivkey.Get();
 
-                    parameters["curveType"] = hint_ecc_mont(P1.curveID);
-                    parameters["priv"] = P1.priv;
+                        parameters["curveType"] = hint_ecc_mont(P1.curveID);
+                        parameters["priv"] = P1.priv;
+                    } else {
+                        const auto curveID = getRandomCurve();
+                        parameters["curveType"] = hint_ecc_mont(curveID);
+
+                        if ( getBool() ) {
+                            const auto order = cryptofuzz::repository::ECC_CurveToOrder(curveID);
+                            if ( order != std::nullopt ) {
+                                const auto o = boost::multiprecision::cpp_int(*order);
+                                parameters["priv"] = boost::lexical_cast<std::string>(o-1);
+                            } else {
+                                parameters["priv"] = getBignum();
+                            }
+                        } else {
+                            parameters["priv"] = getBignum();
+                        }
+
+                    }
                     parameters["nonce"] = getBignum();
 
                     if ( getBool() ) {
@@ -1094,6 +1113,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     } else {
                         parameters["cleartext"] = getBuffer(PRNG() % 32);
                     }
+
                     parameters["nonceSource"] = PRNG() % 3;
                     parameters["digestType"] = getRandomDigest();
 

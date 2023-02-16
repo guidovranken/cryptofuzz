@@ -210,6 +210,11 @@
   #include <modules/noble-secp256k1/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_NOBLE_CURVES)
+  #include <modules/noble-curves/module.h>
+#endif
+
+
 #if defined(CRYPTOFUZZ_BLST)
   #include <modules/blst/module.h>
 #endif
@@ -672,6 +677,11 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 #if defined(CRYPTOFUZZ_NOBLE_SECP256K1)
     driver->LoadModule( std::make_shared<cryptofuzz::module::noble_secp256k1>() );
 #endif
+
+#if defined(CRYPTOFUZZ_NOBLE_CURVES)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::noble_curves>() );
+#endif
+
 
 #if defined(CRYPTOFUZZ_BLST)
     driver->LoadModule( std::make_shared<cryptofuzz::module::blst>() );
