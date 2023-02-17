@@ -551,6 +551,25 @@ void Builtin_tests_importer::Run(void) {
         write(CF_OPERATION("ECC_Point_Mul"), dsOut2);
     }
 
+    {
+        /* OSS-Fuzz #56024 / wolfSSL ZD 15677 */
+        /* Nonce which causes signature R to be 0 */
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["curveType"] = CF_ECC_CURVE("secp521r1");
+        parameters["priv"] = "1";
+        parameters["nonce"] = "6864797660130609714981900799081393217269435300143305409394463459185543183397655394245057746333217197532963996371363321113864768612440380340372808892707005431";
+        parameters["cleartext"] = "FF";
+        parameters["nonceSource"] = 2;
+        parameters["digestType"] = CF_DIGEST("NULL");
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::ECDSA_Sign op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("ECDSA_Sign"), dsOut2);
+    }
+
     ecdsa_verify_tests();
     ecc_point_add_tests();
 }
