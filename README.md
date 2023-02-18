@@ -176,3 +176,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Nim bigints: [Division causes assert failure](https://github.com/nim-lang/bigints/issues/123)
 - D: [std.bigint powmod incorrect result on Ubuntu 20.04](https://bugs.launchpad.net/ubuntu/+source/ldc/+bug/2003613)
 - Golang: TBA
+- OpenSSL, LibreSSL, BoringSSL: [DSA signing hangs with invalid parameters](https://github.com/openssl/openssl/issues/20268)
