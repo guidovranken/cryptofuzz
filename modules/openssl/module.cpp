@@ -3947,6 +3947,213 @@ end:
 }
 #endif /* CRYPTOFUZZ_OPENSSL_102, CRYPTOFUZZ_OPENSSL_098 */
 
+std::optional<component::Bignum> OpenSSL::OpDSA_PrivateToPublic(operation::DSA_PrivateToPublic& op) {
+    std::optional<component::Bignum> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    global_ds = &ds;
+    OpenSSL_bignum::Bignum priv(ds);
+    DSA* dsa = nullptr;
+    char* str;
+    const BIGNUM* pub = nullptr;
+    std::string pub_str;
+
+    CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
+
+    CF_CHECK_NE(dsa = DSA_new(), nullptr);
+    CF_CHECK_NE(DSA_set0_key(dsa, nullptr, priv.GetDestPtr()), 0);
+
+    CF_CHECK_NE(DSA_generate_key(dsa), 0);
+    CF_NORET(DSA_get0_key(dsa, &pub, nullptr));
+    CF_CHECK_NE(str = BN_bn2dec(pub), nullptr);
+    pub_str = str;
+    OPENSSL_free(str);
+
+    ret = pub_str;
+
+end:
+
+    CF_NORET(DSA_free(dsa));
+
+    global_ds = nullptr;
+
+    return ret;
+}
+
+std::optional<component::DSA_Parameters> OpenSSL::OpDSA_GenerateParameters(operation::DSA_GenerateParameters& op) {
+    (void)op;
+    std::optional<component::DSA_Parameters> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    global_ds = &ds;
+
+    DSA* dsa = nullptr;
+
+    CF_CHECK_NE(dsa = DSA_new(), nullptr);
+    CF_CHECK_NE(DSA_generate_parameters_ex(dsa, 1024, NULL, 0, NULL, NULL, NULL), 0);
+
+    {
+        std::string p_str, q_str, g_str;
+
+        char* str;
+
+        CF_CHECK_NE(str = BN_bn2dec(DSA_get0_p(dsa)), nullptr);
+        p_str = str;
+        OPENSSL_free(str);
+
+        CF_CHECK_NE(str = BN_bn2dec(DSA_get0_q(dsa)), nullptr);
+        q_str = str;
+        OPENSSL_free(str);
+
+        CF_CHECK_NE(str = BN_bn2dec(DSA_get0_g(dsa)), nullptr);
+        g_str = str;
+        OPENSSL_free(str);
+
+        ret = { p_str, q_str, g_str };
+    }
+
+end:
+    CF_NORET(DSA_free(dsa));
+
+    global_ds = nullptr;
+
+    return ret;
+}
+
+std::optional<component::DSA_Signature> OpenSSL::OpDSA_Sign(operation::DSA_Sign& op) {
+    std::optional<component::DSA_Signature> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    global_ds = &ds;
+
+    DSA* dsa = nullptr;
+    DSA_SIG* dsa_sig = nullptr;
+    uint8_t* signature = nullptr;
+    unsigned int signature_len;
+    OpenSSL_bignum::Bignum p(ds), q(ds), g(ds), pub(ds), priv(ds);
+    std::string r_str, s_str, pub_str;
+
+    CF_CHECK_EQ(p.Set(op.parameters.p.ToString(ds)), true);
+    CF_CHECK_EQ(q.Set(op.parameters.q.ToString(ds)), true);
+    CF_CHECK_EQ(g.Set(op.parameters.g.ToString(ds)), true);
+    CF_CHECK_TRUE(pub.New());
+    CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
+
+    CF_CHECK_NE(dsa = DSA_new(), nullptr);
+
+    CF_CHECK_NE(DSA_set0_pqg(dsa, p.GetDestPtr(), q.GetDestPtr(), g.GetDestPtr()), 0);
+
+    p.ReleaseOwnership();
+    q.ReleaseOwnership();
+    g.ReleaseOwnership();
+
+    CF_CHECK_NE(DSA_set0_key(dsa, pub.GetDestPtr(), priv.GetDestPtr()), 0);
+    pub.ReleaseOwnership();
+    priv.ReleaseOwnership();
+
+    signature = util::malloc(DSA_size(dsa));
+    CF_CHECK_NE(DSA_sign(
+                0,
+                op.cleartext.GetPtr(), op.cleartext.GetSize(),
+                signature, &signature_len,
+                dsa), 0);
+
+    {
+        const uint8_t* p = signature;
+        CF_CHECK_NE(dsa_sig = d2i_DSA_SIG(nullptr, &p, signature_len), nullptr);
+        const BIGNUM *r, *s;
+        CF_NORET(DSA_SIG_get0(dsa_sig, &r, &s));
+
+        char* str;
+        CF_CHECK_NE(str = BN_bn2dec(r), nullptr);
+        r_str = str;
+        OPENSSL_free(str);
+
+        CF_CHECK_NE(str = BN_bn2dec(s), nullptr);
+        s_str = str;
+        OPENSSL_free(str);
+
+        CF_CHECK_NE(DSA_generate_key(dsa), 0);
+        const BIGNUM* pub = nullptr;
+        CF_NORET(DSA_get0_key(dsa, &pub, nullptr));
+        CF_CHECK_NE(str = BN_bn2dec(pub), nullptr);
+        pub_str = str;
+        OPENSSL_free(str);
+
+        ret = component::DSA_Signature({r_str, s_str}, pub_str);
+    }
+
+end:
+    CF_NORET(DSA_free(dsa));
+    CF_NORET(DSA_SIG_free(dsa_sig));
+    util::free(signature);
+
+    global_ds = nullptr;
+
+    return ret;
+}
+
+std::optional<bool> OpenSSL::OpDSA_Verify(operation::DSA_Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    global_ds = &ds;
+
+    DSA* dsa = nullptr;
+    DSA_SIG* dsa_sig = nullptr;
+    uint8_t* signature = nullptr;
+    OpenSSL_bignum::Bignum p(ds), q(ds), g(ds), r(ds), s(ds), pub(ds);
+    std::string r_str, s_str, pub_str;
+
+    CF_CHECK_EQ(p.Set(op.parameters.p.ToString(ds)), true);
+    CF_CHECK_EQ(q.Set(op.parameters.q.ToString(ds)), true);
+    CF_CHECK_EQ(g.Set(op.parameters.g.ToString(ds)), true);
+    CF_CHECK_EQ(r.Set(op.signature.first.ToString(ds)), true);
+    CF_CHECK_EQ(s.Set(op.signature.second.ToString(ds)), true);
+    CF_CHECK_EQ(pub.Set(op.pub.ToString(ds)), true);
+
+    CF_CHECK_NE(dsa = DSA_new(), nullptr);
+
+    CF_CHECK_NE(DSA_set0_pqg(dsa, p.GetDestPtr(), q.GetDestPtr(), g.GetDestPtr()), 0);
+
+    p.ReleaseOwnership();
+    q.ReleaseOwnership();
+    g.ReleaseOwnership();
+
+    CF_CHECK_NE(DSA_set0_key(dsa, pub.GetDestPtr(), nullptr), 0);
+    pub.ReleaseOwnership();
+
+    {
+        CF_CHECK_NE(dsa_sig = DSA_SIG_new(), nullptr);
+
+        CF_CHECK_NE(DSA_SIG_set0(dsa_sig, r.GetDestPtr(), s.GetDestPtr()), 0);
+        r.ReleaseOwnership();
+        s.ReleaseOwnership();
+
+        const auto siglen = i2d_DSA_SIG(dsa_sig, &signature);
+        CF_CHECK_GT(siglen, 0);
+
+        const auto r = DSA_verify(
+                0,
+                op.cleartext.GetPtr(), op.cleartext.GetSize(),
+                signature, siglen,
+                dsa);
+
+        CF_CHECK_NE(r, -1);
+
+        ret = r;
+    }
+
+end:
+    CF_NORET(DSA_free(dsa));
+    CF_NORET(DSA_SIG_free(dsa_sig));
+    OPENSSL_free(signature);
+
+    global_ds = nullptr;
+
+    return ret;
+}
+
 std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Add(operation::ECC_Point_Add& op) {
     std::optional<component::ECC_Point> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());

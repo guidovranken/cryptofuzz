@@ -112,6 +112,10 @@ class OpenSSL : public Module {
 #if !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
         std::optional<component::Bignum> OpDH_Derive(operation::DH_Derive& op) override;
 #endif
+        std::optional<component::DSA_Parameters> OpDSA_GenerateParameters(operation::DSA_GenerateParameters& op) override;
+        std::optional<component::Bignum> OpDSA_PrivateToPublic(operation::DSA_PrivateToPublic& op) override;
+        std::optional<component::DSA_Signature> OpDSA_Sign(operation::DSA_Sign& op) override;
+        std::optional<bool> OpDSA_Verify(operation::DSA_Verify& op) override;
         std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op) override;
         std::optional<component::ECC_Point> OpECC_Point_Mul(operation::ECC_Point_Mul& op) override;
         std::optional<component::ECC_Point> OpECC_Point_Neg(operation::ECC_Point_Neg& op) override;
