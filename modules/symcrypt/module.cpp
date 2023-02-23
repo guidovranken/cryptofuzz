@@ -55,6 +55,20 @@ extern "C" {
     SymCryptCpuFeaturesNeverPresent(void) {
         return 0;
     }
+    SYMCRYPT_ERROR SymCryptSaveXmm(void* pSaveData) {
+        (void)pSaveData;
+        return SYMCRYPT_NO_ERROR;
+    }
+    VOID SymCryptRestoreXmm(void* pSaveData ) {
+        (void)pSaveData;
+    }
+    SYMCRYPT_ERROR SymCryptSaveYmm(void* pSaveData) {
+        (void)pSaveData;
+        return SYMCRYPT_NO_ERROR;
+    }
+    VOID SymCryptRestoreYmm(void* pSaveData ) {
+        (void)pSaveData;
+    }
 }
 
 namespace cryptofuzz {
@@ -79,6 +93,16 @@ namespace SymCrypt_detail {
                 return SymCryptSha256Algorithm;
             case CF_DIGEST("SHA512"):
                 return SymCryptSha512Algorithm;
+            case CF_DIGEST("SHA3-256"):
+                return SymCryptSha3_256Algorithm;
+            case CF_DIGEST("SHA3-384"):
+                return SymCryptSha3_384Algorithm;
+            case CF_DIGEST("SHA3-512"):
+                return SymCryptSha3_512Algorithm;
+            case CF_DIGEST("SHAKE128"):
+                return SymCryptShake128HashAlgorithm;
+            case CF_DIGEST("SHAKE256"):
+                return SymCryptShake256HashAlgorithm;
         }
 
         return nullptr;
@@ -214,6 +238,9 @@ end:
 }
 
 std::optional<component::MAC> SymCrypt::OpCMAC(operation::CMAC& op) {
+    /* Disabled because of crashes */
+    return std::nullopt;
+
     std::optional<component::MAC> ret = std::nullopt;
 
     switch ( op.cipher.cipherType.Get() ) {
@@ -902,6 +929,9 @@ end:
 }
 
 std::optional<component::Ciphertext> SymCrypt::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
+    /* Disabled because of crashes */
+    return std::nullopt;
+
     std::optional<component::Ciphertext> ret = std::nullopt;
     switch ( op.cipher.cipherType.Get() ) {
         case CF_CIPHER("AES_128_CCM"):
@@ -936,6 +966,9 @@ std::optional<component::Ciphertext> SymCrypt::OpSymmetricEncrypt(operation::Sym
 }
 
 std::optional<component::Cleartext> SymCrypt::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
+    /* Disabled because of crashes */
+    return std::nullopt;
+
     std::optional<component::Cleartext> ret = std::nullopt;
     switch ( op.cipher.cipherType.Get() ) {
         case CF_CIPHER("AES_128_CCM"):
@@ -1138,6 +1171,9 @@ namespace SymCrypt_detail {
 }
 
 std::optional<component::ECC_PublicKey> SymCrypt::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
+    /* Disabled because of crashes */
+    return std::nullopt;
+
 #if INTPTR_MAX == INT32_MAX
     /* Pending resolution of https://github.com/microsoft/SymCrypt/issues/9 */
     (void)op;
@@ -1205,6 +1241,9 @@ end:
 }
 
 std::optional<component::ECDSA_Signature> SymCrypt::OpECDSA_Sign(operation::ECDSA_Sign& op) {
+    /* Disabled because of crashes */
+    return std::nullopt;
+
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
@@ -1315,6 +1354,9 @@ end:
 }
 
 std::optional<bool> SymCrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    /* Disabled because of crashes */
+    return std::nullopt;
+
     std::optional<bool> ret = std::nullopt;
 
     SYMCRYPT_ECURVE* curve = nullptr;
