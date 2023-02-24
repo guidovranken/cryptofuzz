@@ -1129,20 +1129,6 @@ std::optional<component::ECDSA_Signature> Botan::OpECDSA_Sign(operation::ECDSA_S
         );
 
         return ret;
-    } else if (
-                op.curveType.Is(CF_ECC_CURVE("secp160k1")) ||
-                op.curveType.Is(CF_ECC_CURVE("secp160r1")) ||
-                op.curveType.Is(CF_ECC_CURVE("secp160r2")) ||
-                op.curveType.Is(CF_ECC_CURVE("secp224k1")) ||
-                op.curveType.Is(CF_ECC_CURVE("x962_p239v1")) ||
-                op.curveType.Is(CF_ECC_CURVE("x962_p239v2")) ||
-                op.curveType.Is(CF_ECC_CURVE("x962_p239v3"))
-    ) {
-        /* Workaround for ECDSA signing bug
-         *
-         * https://github.com/randombit/botan/issues/2841
-         */
-        return std::nullopt;
     }
 
     return Botan_detail::ECxDSA_Sign<::Botan::ECDSA_PrivateKey, operation::ECDSA_Sign>(op);
