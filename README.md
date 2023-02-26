@@ -175,5 +175,5 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Zig: [HMAC + SHA3 incorrect output](https://github.com/ziglang/zig/issues/14128)
 - Nim bigints: [Division causes assert failure](https://github.com/nim-lang/bigints/issues/123)
 - D: [std.bigint powmod incorrect result on Ubuntu 20.04](https://bugs.launchpad.net/ubuntu/+source/ldc/+bug/2003613)
-- Golang: TBA
+- Golang: [specific unreduced P-256 scalars produce incorrect results](https://github.com/golang/go/issues/58647)
 - OpenSSL, LibreSSL, BoringSSL: [DSA signing hangs with invalid parameters](https://github.com/openssl/openssl/issues/20268)
