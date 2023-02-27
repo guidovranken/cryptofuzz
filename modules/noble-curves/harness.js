@@ -1,26 +1,18 @@
 import { bytesToHex, hexToBytes } from '@noble/curves/abstract/utils';
 
-import { secp192r1 } from '@noble/curves/p192';
-import { secp224r1 } from '@noble/curves/p224';
 import { secp256r1 } from '@noble/curves/p256';
 import { secp384r1 } from '@noble/curves/p384';
 import { secp521r1 } from '@noble/curves/p521';
 import { secp256k1 } from '@noble/curves/secp256k1';
 import { ed25519, x25519 } from '@noble/curves/ed25519';
 import { ed448, x448 } from '@noble/curves/ed448';
-//import { starkCurve } from '@noble/curves/stark';
-//import { pallas, vesta } from '@noble/curves/pasta';
-//import { bn254 } from '@noble/curves/bn';
-//import { jubjub } from '@noble/curves/jubjub';
 import { bls12_381 } from '@noble/curves/bls12-381';
 
 import * as ids from './ids.js';
 
 var toCurve = function (curveType) {
   curveType = BigInt(curveType);
-  if (ids.Issecp192r1(curveType)) return secp192r1;
-  else if (ids.Issecp224r1(curveType)) return secp224r1;
-  else if (ids.Issecp256r1(curveType)) return secp256r1;
+  if (ids.Issecp256r1(curveType)) return secp256r1;
   else if (ids.Issecp384r1(curveType)) return secp384r1;
   else if (ids.Issecp521r1(curveType)) return secp521r1;
   else if (ids.Issecp256k1(curveType)) return secp256k1;
@@ -39,8 +31,6 @@ function toCurveECDSA(curveType, digestType) {
     if (!curve) return;
     return { curve, prehash: false };
   }
-  if (ids.IsSHA224(digestType) && ids.Issecp224r1(curveType))
-    return { curve: secp224r1, prehash: true };
   if (ids.IsSHA256(digestType) && ids.Issecp256r1(curveType))
     return { curve: secp256r1, prehash: true };
   if (ids.IsSHA384(digestType) && ids.Issecp384r1(curveType))
@@ -52,11 +42,11 @@ function toCurveECDSA(curveType, digestType) {
 }
 
 function curveInfo(c) {
-  // ugly, but works. Detect if curve weierstrass (Ws) / Twisted Edwards (Ed) or X25519/X448 (X)
+  // Pretty ugly, but works. Detect if curve weierstrasse (Ws) / Twisted Edwards (Ed) or X25519/X448 (X)
   return {
-    ws: c.CURVE ? c.CURVE.a !== undefined && c.CURVE.b !== undefined : false,
-    ed: c.CURVE ? c.CURVE.d !== undefined : false,
-    x: !c.CURVE,
+    isWs: c.CURVE ? c.CURVE.a !== undefined && c.CURVE.b !== undefined : false,
+    isEd: c.CURVE ? c.CURVE.d !== undefined : false,
+    isX: !c.CURVE,
   };
 }
 
@@ -92,15 +82,15 @@ const OpECC_PrivateToPublic = function (FuzzerInput) {
   const curve = toCurve(FuzzerInput['curveType']);
   if (!curve) return;
   const info = curveInfo(curve);
-  var pub;
-  if (info.ed) {
+  let pub;
+  if (info.isEd) {
     try {
       pub = curve.getPublicKey(toNHex(curve, priv));
     } catch (e) {
       return;
     }
     return JSON.stringify([bytesToInt(pub), '0']);
-  } else if (info.ws) {
+  } else if (info.isWs) {
     try {
       pub = curve.getPublicKey(priv);
     } catch (e) {
@@ -115,7 +105,7 @@ var OpECC_Point_Add = function (FuzzerInput) {
   const curve = toCurve(FuzzerInput['curveType']);
   if (!curve) return;
   const info = curveInfo(curve);
-  if (info.x) return;
+  if (info.isX) return;
   const a = getPoint(curve, FuzzerInput['a_x'], FuzzerInput['a_y']);
   const b = getPoint(curve, FuzzerInput['b_x'], FuzzerInput['b_y']);
   if (!a || !b) return;
@@ -126,7 +116,7 @@ var OpECC_Point_Dbl = function (FuzzerInput) {
   const curve = toCurve(FuzzerInput['curveType']);
   if (!curve) return;
   const info = curveInfo(curve);
-  if (info.x) return;
+  if (info.isX) return;
   const a = getPoint(curve, FuzzerInput['a_x'], FuzzerInput['a_y']);
   if (!a) return;
   return retPoint(a.double());
@@ -136,7 +126,7 @@ var OpECC_Point_Neg = function (FuzzerInput) {
   const curve = toCurve(FuzzerInput['curveType']);
   if (!curve) return;
   const info = curveInfo(curve);
-  if (info.x) return;
+  if (info.isX) return;
   const a = getPoint(curve, FuzzerInput['a_x'], FuzzerInput['a_y']);
   if (!a) return;
   return retPoint(a.negate());
@@ -146,7 +136,7 @@ var OpECC_Point_Mul = function (FuzzerInput) {
   const curve = toCurve(FuzzerInput['curveType']);
   if (!curve) return;
   const info = curveInfo(curve);
-  if (info.x) return;
+  if (info.isX) return;
   const a = getPoint(curve, FuzzerInput['a_x'], FuzzerInput['a_y']);
   if (!a) return;
   const b = BigInt(FuzzerInput['b']);
@@ -159,15 +149,15 @@ var OpECC_Point_Mul = function (FuzzerInput) {
 // ECDSA
 var OpECDSA_Sign = function (FuzzerInput) {
   var msg = FuzzerInput['cleartext'];
-  var priv = BigInt(FuzzerInput['priv']);
+  let priv = BigInt(FuzzerInput['priv']);
   const c = toCurveECDSA(FuzzerInput['curveType'], FuzzerInput['digestType']);
   if (!c) return;
   const { curve, prehash } = c;
   const info = curveInfo(curve);
 
-  if (info.ed) {
+  if (info.isEd) {
     priv = toNHex(curve, priv);
-    var pub;
+    let pub;
     try {
       pub = curve.getPublicKey(priv);
     } catch (e) {
@@ -183,8 +173,8 @@ var OpECDSA_Sign = function (FuzzerInput) {
       signature: [r, s].map(bytesToInt),
       pub: [bytesToInt(pub), '0'],
     });
-  } else if (info.ws) {
-    var pub;
+  } else if (info.isWs) {
+    let pub;
     try {
       pub = curve.getPublicKey(priv);
     } catch (e) {
@@ -201,25 +191,25 @@ var OpECDSA_Sign = function (FuzzerInput) {
 };
 
 var OpECDSA_Verify = function (FuzzerInput) {
-  var msg = FuzzerInput['cleartext'];
-  var x = BigInt(FuzzerInput['pub_x']);
-  var y = BigInt(FuzzerInput['pub_y']);
-  var r = BigInt(FuzzerInput['sig_r']);
-  var s = BigInt(FuzzerInput['sig_s']);
+  let msg = FuzzerInput['cleartext'];
+  let x = BigInt(FuzzerInput['pub_x']);
+  let y = BigInt(FuzzerInput['pub_y']);
+  let r = BigInt(FuzzerInput['sig_r']);
+  let s = BigInt(FuzzerInput['sig_s']);
 
   const c = toCurveECDSA(FuzzerInput['curveType'], FuzzerInput['digestType']);
   if (!c) return;
   const { curve, prehash } = c;
   const info = curveInfo(curve);
-  var verified = false;
-  if (info.ed) {
+  let verified = false;
+  if (info.isEd) {
     x = toNHex(curve, x);
     r = toNHex(curve, r);
     s = toNHex(curve, s);
     try {
       verified = curve.verify(r + s, msg, x);
     } catch (e) {}
-  } else if (info.ws) {
+  } else if (info.isWs) {
     try {
       const pub = curve.ProjectivePoint.fromAffine({ x, y }).toHex();
       const signature = new curve.Signature(r, s);
@@ -292,7 +282,7 @@ var OpBLS_HashToG1 = function (FuzzerInput) {
   if (!DST) return;
   try {
     var msg = FuzzerInput['aug'] + FuzzerInput['cleartext'];
-    var res = bls12_381.G1.hashToCurve(msg, { DST });
+    var res = bls12_381.hashToCurve.G1.hashToCurve(msg, { DST });
     return JSON.stringify(From_G1(res));
   } catch (e) {
     console.log(e);
@@ -304,7 +294,7 @@ var OpBLS_HashToG2 = function (FuzzerInput) {
   if (!DST) return;
   try {
     var msg = FuzzerInput['aug'] + FuzzerInput['cleartext'];
-    var res = bls12_381.G2.hashToCurve(msg, { DST });
+    var res = bls12_381.hashToCurve.G2.hashToCurve(msg, { DST });
     return JSON.stringify(From_G2(res));
   } catch (e) {
     console.log(e);
