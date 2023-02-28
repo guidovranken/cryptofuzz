@@ -880,6 +880,10 @@ digests = DigestTable()
 
 # lint sort start
 digests.Add( Digest("ADLER32", 4) )
+digests.Add( Digest("BASH224", 28) )
+digests.Add( Digest("BASH256", 32) )
+digests.Add( Digest("BASH384", 48) )
+digests.Add( Digest("BASH512", 64) )
 digests.Add( Digest("BLAKE2B128", 16) )
 digests.Add( Digest("BLAKE2B160", 20) )
 digests.Add( Digest("BLAKE2B256", 32) )

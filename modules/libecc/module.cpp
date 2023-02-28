@@ -151,7 +151,18 @@ end:
             case    CF_DIGEST("RIPEMD160"):
                 CF_ASSERT(!get_hash_by_type(RIPEMD160, &hm) && (hm != nullptr), "get_hash_by_type error " __FILE__ ":" TOSTRING(__LINE__));
                 return hm;
-
+            case    CF_DIGEST("BASH224"):
+                CF_ASSERT(!get_hash_by_type(BASH224, &hm) && (hm != nullptr), "get_hash_by_type error " __FILE__ ":" TOSTRING(__LINE__));
+                return hm;
+            case    CF_DIGEST("BASH256"):
+                CF_ASSERT(!get_hash_by_type(BASH256, &hm) && (hm != nullptr), "get_hash_by_type error " __FILE__ ":" TOSTRING(__LINE__));
+                return hm;
+            case    CF_DIGEST("BASH384"):
+                CF_ASSERT(!get_hash_by_type(BASH384, &hm) && (hm != nullptr), "get_hash_by_type error " __FILE__ ":" TOSTRING(__LINE__));
+                return hm;
+            case    CF_DIGEST("BASH512"):
+                CF_ASSERT(!get_hash_by_type(BASH512, &hm) && (hm != nullptr), "get_hash_by_type error " __FILE__ ":" TOSTRING(__LINE__));
+                return hm;
             default:
                 return nullptr;
         }
@@ -189,6 +200,14 @@ end:
                 return STREEBOG512;
             case    CF_DIGEST("RIPEMD160"):
                 return RIPEMD160;
+            case    CF_DIGEST("BASH224"):
+                return BASH224;
+            case    CF_DIGEST("BASH256"):
+                return BASH256;
+            case    CF_DIGEST("BASH384"):
+                return BASH384;
+            case    CF_DIGEST("BASH512"):
+                return BASH512;
             default:
                 return std::nullopt;
         }
