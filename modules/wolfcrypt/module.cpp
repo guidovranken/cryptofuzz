@@ -3323,7 +3323,6 @@ std::optional<bool> wolfCrypt::OpDSA_Verify(operation::DSA_Verify& op) {
 
         CF_CHECK_NE(r = wolfCrypt_bignum::Bignum::ToBin(ds, op.signature.first, halfSz), std::nullopt);
         CF_CHECK_NE(s = wolfCrypt_bignum::Bignum::ToBin(ds, op.signature.second, halfSz), std::nullopt);
-
         rs.insert(rs.end(), r->begin(), r->end());
         rs.insert(rs.end(), s->begin(), s->end());
 

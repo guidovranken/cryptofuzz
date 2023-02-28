@@ -34,11 +34,15 @@ class Bignum {
         static read_radix_error_t read_radix(mp_int* dest, const char* str, const size_t base);
         void baseConversion(void) const;
         void binaryConversion(void) const;
-        static int init_mp_int(mp_int* mp, Datasource& ds) {
+        static int init_mp_int(mp_int* mp, Datasource& ds, const bool mp_init_size_ok = true) {
 #if defined(USE_FAST_MATH)
             (void)ds;
             return mp_init(mp);
 #else
+            if ( mp_init_size_ok == false ) {
+                return mp_init(mp);
+            }
+
             uint8_t size = 127;
             try {
                 size = ds.Get<uint8_t>();
@@ -57,7 +61,7 @@ class Bignum {
 
     public:
 
-        Bignum(Datasource& ds);
+        Bignum(Datasource& ds, const bool mp_init_size_ok = true);
         Bignum(mp_int* mp, Datasource& ds);
         Bignum(const Bignum& other);
         Bignum(const Bignum&& other);

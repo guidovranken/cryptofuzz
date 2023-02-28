@@ -770,7 +770,14 @@ std::optional<component::ECDSA_Signature> OpECDSA_Sign_Generic(operation::ECDSA_
     uint8_t* hash = nullptr;
     size_t hashSize = 0;
     uint8_t* nonce_bytes = nullptr;
-    wolfCrypt_bignum::Bignum nonce(ds), r(ds), s(ds);
+    wolfCrypt_bignum::Bignum nonce(ds);
+
+    /* Initialize r, s using mp_init(), not mp_init_size(),
+     * as the latter is not compatible with DecodeECC_DSA_Sig().
+     *
+     * See ZD 15728.
+     */
+    wolfCrypt_bignum::Bignum r(ds, false), s(ds, false);
 
     CF_CHECK_NE(op.priv.ToTrimmedString(), "0");
 

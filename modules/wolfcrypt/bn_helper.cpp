@@ -192,11 +192,11 @@ void Bignum::invariants(void) const {
 #endif
 }
 
-Bignum::Bignum(Datasource& ds) :
+Bignum::Bignum(Datasource& ds, const bool mp_init_size_ok) :
     ds(ds) {
     mp = (mp_int*)util::malloc(sizeof(mp_int));
 
-    if ( init_mp_int(mp, ds) != MP_OKAY ) {
+    if ( init_mp_int(mp, ds, mp_init_size_ok) != MP_OKAY ) {
         util::free(mp);
         throw std::exception();
     }
