@@ -3458,6 +3458,9 @@ std::vector<std::string> numbers = {
 /* X coordinate of point that triggers Golang CVE-2021-3114 */
 /* https://github.com/golang/go/issues/43786 */
 "10211801120651255508388282367",
+
+/* https://github.com/golang/go/issues/58647 */
+"115792089210356248762697446949407573529996955224135760342422259061068512044399",
 };
 
 }
