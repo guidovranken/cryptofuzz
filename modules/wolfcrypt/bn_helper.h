@@ -37,6 +37,7 @@ class Bignum {
         static int init_mp_int(mp_int* mp, Datasource& ds, const bool mp_init_size_ok = true) {
 #if defined(USE_FAST_MATH)
             (void)ds;
+            (void)mp_init_size_ok;
             return mp_init(mp);
 #else
             if ( mp_init_size_ok == false ) {
