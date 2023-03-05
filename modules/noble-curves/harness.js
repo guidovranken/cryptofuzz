@@ -282,7 +282,7 @@ var OpBLS_HashToG1 = function (FuzzerInput) {
   if (!DST) return;
   try {
     var msg = FuzzerInput['aug'] + FuzzerInput['cleartext'];
-    var res = bls12_381.hashToCurve.G1.hashToCurve(msg, { DST });
+    var res = bls12_381.G1.hashToCurve(msg, { DST });
     return JSON.stringify(From_G1(res));
   } catch (e) {
     console.log(e);
@@ -294,7 +294,7 @@ var OpBLS_HashToG2 = function (FuzzerInput) {
   if (!DST) return;
   try {
     var msg = FuzzerInput['aug'] + FuzzerInput['cleartext'];
-    var res = bls12_381.hashToCurve.G2.hashToCurve(msg, { DST });
+    var res = bls12_381.G2.hashToCurve(msg, { DST });
     return JSON.stringify(From_G2(res));
   } catch (e) {
     console.log(e);
