@@ -1220,16 +1220,18 @@ bool IsPrime::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     CF_CHECK_LTE(mpz_sizeinbase(bn[0].GetPtr(), 2), 2000);
 #endif
 
-    const bool isprime = mpz_probab_prime_p(bn[0].GetPtr(), 15) != 0;
+    {
+        const bool isprime = mpz_probab_prime_p(bn[0].GetPtr(), 15) != 0;
 
-    if ( mpz_sgn(bn[0].GetPtr()) < 0 ) {
-        return false;
-    }
+        if ( mpz_sgn(bn[0].GetPtr()) < 0 ) {
+            return false;
+        }
 
-    if ( isprime ) {
-        res.Set("1");
-    } else {
-        res.Set("0");
+        if ( isprime ) {
+            res.Set("1");
+        } else {
+            res.Set("0");
+        }
     }
 
     ret = true;
