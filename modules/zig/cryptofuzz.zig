@@ -152,14 +152,14 @@ export fn cryptofuzz_zig_digest(
         h.final(res_data[0..64]);
         return 64;
     } else if (digest == 19) {
-        var h = hash.sha3.Keccak_256.init(.{});
+        var h = hash.sha3.Keccak256.init(.{});
         while (i < parts_size): (i+=1) {
             h.update(cleartext_data[parts_start[i]..parts_end[i]]);
         }
         h.final(res_data[0..32]);
         return 32;
     } else if (digest == 20) {
-        var h = hash.sha3.Keccak_512.init(.{});
+        var h = hash.sha3.Keccak512.init(.{});
         while (i < parts_size): (i+=1) {
             h.update(cleartext_data[parts_start[i]..parts_end[i]]);
         }
@@ -314,14 +314,14 @@ export fn cryptofuzz_zig_hmac(
         h.final(res_data[0..64]);
         return 64;
     } else if (digest == 19) {
-        var h = hmac.Hmac(hash.sha3.Keccak_256).init(key_data[0..key_size]);
+        var h = hmac.Hmac(hash.sha3.Keccak256).init(key_data[0..key_size]);
         while (i < parts_size): (i+=1) {
             h.update(cleartext_data[parts_start[i]..parts_end[i]]);
         }
         h.final(res_data[0..32]);
         return 32;
     } else if (digest == 20) {
-        var h = hmac.Hmac(hash.sha3.Keccak_512).init(key_data[0..key_size]);
+        var h = hmac.Hmac(hash.sha3.Keccak512).init(key_data[0..key_size]);
         while (i < parts_size): (i+=1) {
             h.update(cleartext_data[parts_start[i]..parts_end[i]]);
         }
@@ -474,59 +474,65 @@ export fn cryptofuzz_zig_hkdf(
                 prk);
         return 0;
     } else if ( digest == 15 ) {
-        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_224)).extract(
-                salt_data[0..salt_size],
-                password_data[0..password_size]);
-        hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_224)).expand(
-                res_data[0..res_size],
-                info_data[0..info_size],
-                prk);
-        return 0;
+        return -1;
+//        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_224)).extract(
+//                salt_data[0..salt_size],
+//                password_data[0..password_size]);
+//        hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_224)).expand(
+//                res_data[0..res_size],
+//                info_data[0..info_size],
+//                prk);
+//        return 0;
     } else if ( digest == 16 ) {
-        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_256)).extract(
-                salt_data[0..salt_size],
-                password_data[0..password_size]);
-        hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_256)).expand(
-                res_data[0..res_size],
-                info_data[0..info_size],
-                prk);
-        return 0;
+        return -1;
+//        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_256)).extract(
+//                salt_data[0..salt_size],
+//                password_data[0..password_size]);
+//        hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_256)).expand(
+//                res_data[0..res_size],
+//                info_data[0..info_size],
+//                prk);
+//        return 0;
     } else if ( digest == 17 ) {
-        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_384)).extract(
-                salt_data[0..salt_size],
-                password_data[0..password_size]);
-        hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_384)).expand(
-                res_data[0..res_size],
-                info_data[0..info_size],
-                prk);
-        return 0;
+        return -1;
+//        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_384)).extract(
+//                salt_data[0..salt_size],
+//                password_data[0..password_size]);
+//        hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_384)).expand(
+//                res_data[0..res_size],
+//                info_data[0..info_size],
+//                prk);
+//        return 0;
     } else if ( digest == 18 ) {
-        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_512)).extract(
-                salt_data[0..salt_size],
-                password_data[0..password_size]);
-        hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_512)).expand(
-                res_data[0..res_size],
-                info_data[0..info_size],
-                prk);
-        return 0;
+        return -1;
+//        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_512)).extract(
+//                salt_data[0..salt_size],
+//                password_data[0..password_size]);
+//        hkdf.Hkdf(hmac.Hmac(hash.sha3.Sha3_512)).expand(
+//                res_data[0..res_size],
+//                info_data[0..info_size],
+//                prk);
+//        return 0;
     } else if ( digest == 19 ) {
-        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha3.Keccak_256)).extract(
-                salt_data[0..salt_size],
-                password_data[0..password_size]);
-        hkdf.Hkdf(hmac.Hmac(hash.sha3.Keccak_256)).expand(
-                res_data[0..res_size],
-                info_data[0..info_size],
-                prk);
-        return 0;
+        return -1;
+//        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha3.Keccak256)).extract(
+//                salt_data[0..salt_size],
+//                password_data[0..password_size]);
+//        hkdf.Hkdf(hmac.Hmac(hash.sha3.Keccak256)).expand(
+//                res_data[0..res_size],
+//                info_data[0..info_size],
+//                prk);
+//        return 0;
     } else if ( digest == 20 ) {
-        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha3.Keccak_512)).extract(
-                salt_data[0..salt_size],
-                password_data[0..password_size]);
-        hkdf.Hkdf(hmac.Hmac(hash.sha3.Keccak_512)).expand(
-                res_data[0..res_size],
-                info_data[0..info_size],
-                prk);
-        return 0;
+        return -1;
+//        const prk = hkdf.Hkdf(hmac.Hmac(hash.sha3.Keccak512)).extract(
+//                salt_data[0..salt_size],
+//                password_data[0..password_size]);
+//        hkdf.Hkdf(hmac.Hmac(hash.sha3.Keccak512)).expand(
+//                res_data[0..res_size],
+//                info_data[0..info_size],
+//                prk);
+//        return 0;
     }
     return -1;
 }
@@ -733,7 +739,7 @@ export fn cryptofuzz_zig_pbkdf2(
                 password_data[0..password_size],
                 salt_data[0..salt_size],
                 iterations,
-                hmac.Hmac(hash.sha3.Keccak_256)) catch {
+                hmac.Hmac(hash.sha3.Keccak256)) catch {
             return -1;
         };
         return 0;
@@ -743,7 +749,7 @@ export fn cryptofuzz_zig_pbkdf2(
                 password_data[0..password_size],
                 salt_data[0..salt_size],
                 iterations,
-                hmac.Hmac(hash.sha3.Keccak_512)) catch {
+                hmac.Hmac(hash.sha3.Keccak512)) catch {
             return -1;
         };
         return 0;
