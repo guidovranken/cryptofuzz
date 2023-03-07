@@ -7,6 +7,7 @@
 #include <botan/cipher_mode.h>
 #include <botan/curve25519.h>
 #include <botan/dh.h>
+#include <botan/dl_group.h>
 #include <botan/ecdsa.h>
 #include <botan/ecgdsa.h>
 #include <botan/ed25519.h>
@@ -1312,7 +1313,7 @@ std::optional<component::Bignum> Botan::OpDH_Derive(operation::DH_Derive& op) {
         CF_CHECK_LT(p.bytes(), 80);
         CF_CHECK_LT(_priv.bytes(), 80);
 
-        std::unique_ptr<::Botan::Private_Key> priv(new ::Botan::DH_PrivateKey(rng, grp, _priv));
+        std::unique_ptr<::Botan::Private_Key> priv(new ::Botan::DH_PrivateKey(grp, _priv));
 
         const ::Botan::BigInt _pub(op.pub.ToString(ds));
         ::Botan::DH_PublicKey pub(grp, _pub);
