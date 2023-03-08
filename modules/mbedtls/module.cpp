@@ -891,13 +891,17 @@ namespace mbedTLS_detail {
             fuzzing::datasource::Datasource& ds,
             const component::ECC_Point in,
             mbedtls_ecp_point& out,
-            const component::CurveType curveType) {
+            const component::CurveType curveType,
+            const bool onlyAffine = false) {
         bool ret = false;
 
         bool projective = false;
-        try {
-            projective = ds.Get<bool>();
-        } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+        if ( onlyAffine == false ) {
+            try {
+                projective = ds.Get<bool>();
+            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+        }
 
         if ( projective == false ) {
             CF_CHECK_EQ(mbedtls_mpi_read_string(&out.X, 10, in.first.ToString(ds).c_str()), 0);
@@ -940,7 +944,7 @@ std::optional<bool> mbedTLS::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey&
 
     CF_CHECK_EQ(mbedtls_ecp_group_load(&grp, curve_info->grp_id), 0);
 
-    CF_CHECK_TRUE(mbedTLS_detail::LoadPoint(ds, op.pub, pub, op.curveType));
+    CF_CHECK_TRUE(mbedTLS_detail::LoadPoint(ds, op.pub, pub, op.curveType, true));
 
     ret = mbedtls_ecp_check_pubkey(&grp, &pub) == 0;
 
