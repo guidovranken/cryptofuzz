@@ -177,3 +177,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - D: [std.bigint powmod incorrect result on Ubuntu 20.04](https://bugs.launchpad.net/ubuntu/+source/ldc/+bug/2003613)
 - Golang: [CVE-2023-24532: Specific unreduced P-256 scalars produce incorrect results](https://github.com/golang/go/issues/58647)
 - OpenSSL, LibreSSL, BoringSSL: [DSA signing hangs with invalid parameters](https://github.com/openssl/openssl/issues/20268)
+- Zig: [Streaming SHA3 incorrect output](https://github.com/ziglang/zig/issues/14851)
