@@ -4183,6 +4183,20 @@ std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Add(operation::ECC_Poin
 
     CF_CHECK_NE(EC_POINT_add(group->GetPtr(), res->GetPtr(), a->GetPtr(), b->GetPtr(), nullptr), 0);
 
+    if ( a->IsProjective() ) {
+        OpenSSL_bignum::BN_CTX ctx(ds);
+        if ( !EC_POINT_is_on_curve(group->GetPtr(), a->GetPtr(), ctx.GetPtr()) ) {
+            goto end;
+        }
+    }
+
+    if ( b->IsProjective() ) {
+        OpenSSL_bignum::BN_CTX ctx(ds);
+        if ( !EC_POINT_is_on_curve(group->GetPtr(), b->GetPtr(), ctx.GetPtr()) ) {
+            goto end;
+        }
+    }
+
     {
         OpenSSL_bignum::Bignum x(ds);
         OpenSSL_bignum::Bignum y(ds);
@@ -4277,6 +4291,13 @@ std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Mul(operation::ECC_Poin
         }
     }
 #endif
+
+    if ( a->IsProjective() ) {
+        OpenSSL_bignum::BN_CTX ctx(ds);
+        if ( !EC_POINT_is_on_curve(group->GetPtr(), a->GetPtr(), ctx.GetPtr()) ) {
+            goto end;
+        }
+    }
 
     ret = res->Get();
 
