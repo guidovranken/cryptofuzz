@@ -14,12 +14,10 @@ polygon_zkevm_prover::polygon_zkevm_prover(void) :
 namespace polygon_zkevm_prover_detail {
     static AltBn128::Engine e;
 
-    static std::optional<AltBn128::G1PointAffine> LoadG1(const component::G1 g1) {
-        std::optional<AltBn128::G1PointAffine> ret = std::nullopt;
-        AltBn128::G1PointAffine _ret;
-        AltBn128::F1.fromString(_ret.x, g1.first.ToTrimmedString().c_str());
-        AltBn128::F1.fromString(_ret.y, g1.second.ToTrimmedString().c_str());
-        ret = _ret;
+    static AltBn128::G1PointAffine LoadG1(const component::G1 g1) {
+        AltBn128::G1PointAffine ret;
+        AltBn128::F1.fromString(ret.x, g1.first.ToTrimmedString().c_str());
+        AltBn128::F1.fromString(ret.y, g1.second.ToTrimmedString().c_str());
         return ret;
     }
 
@@ -35,6 +33,29 @@ namespace polygon_zkevm_prover_detail {
         e.g1.copy(g1_affine, g1);
         return SaveG1(g1_affine);
     }
+
+    static AltBn128::G2PointAffine LoadG2(const component::G2 g2) {
+        AltBn128::G2PointAffine ret;
+        AltBn128::F1.fromString(ret.x.a, g2.first.first.ToTrimmedString().c_str());
+        AltBn128::F1.fromString(ret.x.b, g2.second.first.ToTrimmedString().c_str());
+        AltBn128::F1.fromString(ret.y.a, g2.first.second.ToTrimmedString().c_str());
+        AltBn128::F1.fromString(ret.y.b, g2.second.second.ToTrimmedString().c_str());
+        return ret;
+    }
+
+    static component::G2 SaveG2(AltBn128::G2PointAffine& g2) {
+        const auto x = AltBn128::F1.toString(g2.x.a);
+        const auto y = AltBn128::F1.toString(g2.x.b);
+        const auto v = AltBn128::F1.toString(g2.y.a);
+        const auto w = AltBn128::F1.toString(g2.y.b);
+        return component::G2{x, v, y, w};
+    }
+
+    static component::G2 SaveG2(AltBn128::G2Point& g2) {
+        AltBn128::G2PointAffine g2_affine;
+        e.g2.copy(g2_affine, g2);
+        return SaveG2(g2_affine);
+    }
 }
 
 std::optional<component::G1> polygon_zkevm_prover::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
@@ -44,14 +65,10 @@ std::optional<component::G1> polygon_zkevm_prover::OpBLS_G1_Add(operation::BLS_G
     auto a = polygon_zkevm_prover_detail::LoadG1(op.a);
     auto b = polygon_zkevm_prover_detail::LoadG1(op.b);
 
-    CF_CHECK_NE(a, std::nullopt);
-    CF_CHECK_NE(b, std::nullopt);
-
-    polygon_zkevm_prover_detail::e.g1.add(res, *a, *b);
+    polygon_zkevm_prover_detail::e.g1.add(res, a, b);
 
     ret = polygon_zkevm_prover_detail::SaveG1(res);
 
-end:
     return ret;
 }
 
@@ -64,13 +81,11 @@ std::optional<component::G1> polygon_zkevm_prover::OpBLS_G1_Mul(operation::BLS_G
     auto a_affine = polygon_zkevm_prover_detail::LoadG1(op.a);
     b = util::DecToBin(op.b.ToTrimmedString());
 
-    CF_CHECK_NE(a_affine, std::nullopt);
-
     CF_CHECK_NE(b, std::nullopt);
     brev = *b;
     std::reverse(brev.begin(), brev.end());
 
-    polygon_zkevm_prover_detail::e.g1.mulByScalar(res, *a_affine, brev.data(), brev.size());
+    polygon_zkevm_prover_detail::e.g1.mulByScalar(res, a_affine, brev.data(), brev.size());
 
     ret = polygon_zkevm_prover_detail::SaveG1(res);
 
@@ -84,13 +99,10 @@ std::optional<component::G1> polygon_zkevm_prover::OpBLS_G1_Neg(operation::BLS_G
     AltBn128::G1PointAffine res;
     auto a = polygon_zkevm_prover_detail::LoadG1(op.a);
 
-    CF_CHECK_NE(a, std::nullopt);
-
-    polygon_zkevm_prover_detail::e.g1.neg(res, *a);
+    polygon_zkevm_prover_detail::e.g1.neg(res, a);
 
     ret = polygon_zkevm_prover_detail::SaveG1(res);
 
-end:
     return ret;
 }
 
@@ -100,12 +112,67 @@ std::optional<bool> polygon_zkevm_prover::OpBLS_G1_IsEq(operation::BLS_G1_IsEq& 
     auto a = polygon_zkevm_prover_detail::LoadG1(op.a);
     auto b = polygon_zkevm_prover_detail::LoadG1(op.b);
 
-    CF_CHECK_NE(a, std::nullopt);
-    CF_CHECK_NE(b, std::nullopt);
+    ret = polygon_zkevm_prover_detail::e.g1.eq(a, b);
 
-    ret = polygon_zkevm_prover_detail::e.g1.eq(*a, *b);
+    return ret;
+}
+
+std::optional<component::G2> polygon_zkevm_prover::OpBLS_G2_Add(operation::BLS_G2_Add& op) {
+    std::optional<component::G2> ret = std::nullopt;
+
+    AltBn128::G2PointAffine res;
+
+    auto a = polygon_zkevm_prover_detail::LoadG2(op.a);
+    auto b = polygon_zkevm_prover_detail::LoadG2(op.b);
+    polygon_zkevm_prover_detail::e.g2.add(res, a, b);
+
+    ret = polygon_zkevm_prover_detail::SaveG2(res);
+
+    return ret;
+}
+
+std::optional<component::G2> polygon_zkevm_prover::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
+    std::optional<component::G2> ret = std::nullopt;
+
+    AltBn128::G2Point res;
+    std::optional<std::vector<uint8_t>> b;
+    std::vector<uint8_t> brev;
+    auto a_affine = polygon_zkevm_prover_detail::LoadG2(op.a);
+    b = util::DecToBin(op.b.ToTrimmedString());
+
+    CF_CHECK_NE(b, std::nullopt);
+    brev = *b;
+    std::reverse(brev.begin(), brev.end());
+
+    polygon_zkevm_prover_detail::e.g2.mulByScalar(res, a_affine, brev.data(), brev.size());
+
+    ret = polygon_zkevm_prover_detail::SaveG2(res);
 
 end:
+    return ret;
+}
+
+std::optional<component::G2> polygon_zkevm_prover::OpBLS_G2_Neg(operation::BLS_G2_Neg& op) {
+    std::optional<component::G2> ret = std::nullopt;
+
+    AltBn128::G2PointAffine res;
+    auto a = polygon_zkevm_prover_detail::LoadG2(op.a);
+
+    polygon_zkevm_prover_detail::e.g2.neg(res, a);
+
+    ret = polygon_zkevm_prover_detail::SaveG2(res);
+
+    return ret;
+}
+
+std::optional<bool> polygon_zkevm_prover::OpBLS_G2_IsEq(operation::BLS_G2_IsEq& op) {
+    std::optional<bool> ret = std::nullopt;
+
+    auto a = polygon_zkevm_prover_detail::LoadG2(op.a);
+    auto b = polygon_zkevm_prover_detail::LoadG2(op.b);
+
+    ret = polygon_zkevm_prover_detail::e.g2.eq(a, b);
+
     return ret;
 }
 
