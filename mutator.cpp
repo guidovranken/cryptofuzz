@@ -157,6 +157,8 @@ std::optional<std::string> get_op_mod(const uint64_t& operation) {
             return "57896044618658097711785492504343953926634992332820282019728792003956564819949";
         case CF_OPERATION("BignumCalc_Mod_Edwards_P"):
             return "6210044120409721004947206240885978274523751269793792001";
+        case CF_OPERATION("BignumCalc_Mod_Goldilocks"):
+            return "18446744069414584321";
         case CF_OPERATION("BignumCalc_Mod_Edwards_R"):
             return "1552511030102430251236801561344621993261920897571225601";
         case CF_OPERATION("BignumCalc_Mod_SECP256K1"):
@@ -637,6 +639,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             case    CF_OPERATION("BignumCalc_Mod_ED25519"):
             case    CF_OPERATION("BignumCalc_Mod_Edwards_R"):
             case    CF_OPERATION("BignumCalc_Mod_Edwards_P"):
+            case    CF_OPERATION("BignumCalc_Mod_Goldilocks"):
             case    CF_OPERATION("BignumCalc_Mod_MNT4_R"):
             case    CF_OPERATION("BignumCalc_Mod_MNT4_P"):
             case    CF_OPERATION("BignumCalc_Mod_MNT6_R"):

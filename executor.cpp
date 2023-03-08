@@ -2170,6 +2170,11 @@ ExecutorBignumCalc_Mod_Edwards_P::ExecutorBignumCalc_Mod_Edwards_P(const uint64_
     CF_NORET(SetModulo("6210044120409721004947206240885978274523751269793792001"));
 }
 
+ExecutorBignumCalc_Mod_Goldilocks::ExecutorBignumCalc_Mod_Goldilocks(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
+    ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
+    CF_NORET(SetModulo("18446744069414584321"));
+}
+
 ExecutorBignumCalc_Mod_MNT4_R::ExecutorBignumCalc_Mod_MNT4_R(const uint64_t operationID, const std::map<uint64_t, std::shared_ptr<Module> >& modules, const Options& options) :
     ExecutorBignumCalc::ExecutorBignumCalc(operationID, modules, options) {
     CF_NORET(SetModulo("475922286169261325753349249653048451545124878552823515553267735739164647307408490559963137"));
@@ -2489,6 +2494,12 @@ operation::BignumCalc ExecutorBignumCalc_Mod_Edwards_R::getOpPostprocess(Datasou
 }
 
 operation::BignumCalc ExecutorBignumCalc_Mod_Edwards_P::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
+    (void)parentDs;
+    op.modulo = modulo;
+    return op;
+}
+
+operation::BignumCalc ExecutorBignumCalc_Mod_Goldilocks::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {
     (void)parentDs;
     op.modulo = modulo;
     return op;

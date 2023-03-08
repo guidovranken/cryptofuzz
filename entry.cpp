@@ -402,6 +402,10 @@
   #include <modules/polygon-zkevm-prover/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_GOLDILOCKS)
+  #include <modules/goldilocks/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -867,6 +871,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_POLYGON_ZKEVM_PROVER)
     driver->LoadModule( std::make_shared<cryptofuzz::module::polygon_zkevm_prover>() );
+#endif
+
+#if defined(CRYPTOFUZZ_GOLDILOCKS)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::Goldilocks>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
