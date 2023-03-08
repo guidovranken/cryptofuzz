@@ -24,6 +24,7 @@ If you want to compile without assembly language optimizations, run these comman
 scripts/config.pl unset MBEDTLS_HAVE_ASM
 scripts/config.pl unset MBEDTLS_PADLOCK_C
 scripts/config.pl unset MBEDTLS_AESNI_C
+scripts/config.pl unset MBEDTLS_AESCE_C
 ```
 
 ## Module compilation
