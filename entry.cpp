@@ -406,6 +406,10 @@
   #include <modules/goldilocks/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_D)
+  #include <modules/d/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -875,6 +879,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_GOLDILOCKS)
     driver->LoadModule( std::make_shared<cryptofuzz::module::Goldilocks>() );
+#endif
+
+#if defined(CRYPTOFUZZ_D)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::D>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
