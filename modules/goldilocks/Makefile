@@ -6,6 +6,6 @@ module.a: module.o
 	ar rcs module.a module.o
 	ranlib module.a
 module.o: module.cpp module.h
-	$(CXX) $(CXXFLAGS) -I $(GOLDILOCKS_PATH) -c module.cpp -o module.o
+	$(CXX) $(CXXFLAGS) -mavx2 -I $(GOLDILOCKS_PATH) -c module.cpp -o module.o
 clean:
 	rm -rf *.o module.a
