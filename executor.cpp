@@ -1752,6 +1752,7 @@ template<> void ExecutorBase<bool, operation::BLS_IsG1OnCurve>::postprocess(std:
 }
 
 template<> std::optional<bool> ExecutorBase<bool, operation::BLS_IsG1OnCurve>::callModule(std::shared_ptr<Module> module, operation::BLS_IsG1OnCurve& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
     if ( op.g1.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
     if ( op.g1.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
 
