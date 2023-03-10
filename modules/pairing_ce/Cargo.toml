@@ -1,0 +1,12 @@
+[package]
+name = "pairing_ce-harness"
+version = "0.1.0"
+authors = ["Guido Vranken <guidovranken@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+pairing_ce = { git = "https://github.com/matter-labs/pairing" }
+libc = "0.2.0"
