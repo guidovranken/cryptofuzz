@@ -3962,6 +3962,7 @@ std::optional<component::Bignum> OpenSSL::OpDSA_PrivateToPublic(operation::DSA_P
 
     CF_CHECK_NE(dsa = DSA_new(), nullptr);
     CF_CHECK_NE(DSA_set0_key(dsa, nullptr, priv.GetDestPtr()), 0);
+    priv.ReleaseOwnership();
 
     CF_CHECK_NE(DSA_generate_key(dsa), 0);
     CF_NORET(DSA_get0_key(dsa, &pub, nullptr));
