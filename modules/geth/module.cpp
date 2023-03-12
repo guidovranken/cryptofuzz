@@ -73,7 +73,9 @@ namespace Geth_detail {
         boost::algorithm::unhex(s, std::back_inserter(data));
         return component::Bignum{util::BinToDec(data)};
     }
-    std::optional<component::G1> parseG1(const bool mustSucceed = false) {
+    std::optional<component::G1> parseG1(
+            const size_t element_size,
+            const bool mustSucceed = false) {
         const auto res = getJsonResult();
         if ( res == std::nullopt ) {
             if ( mustSucceed == true ) {
@@ -82,13 +84,23 @@ namespace Geth_detail {
             return std::nullopt;
         }
         const auto s = res->get<std::string>();
+        if ( s.size() == 0 ) {
+            if ( mustSucceed == true ) {
+                abort();
+            }
+            return std::nullopt;
+        }
         std::vector<uint8_t> data;
         boost::algorithm::unhex(s, std::back_inserter(data));
-        CF_ASSERT(data.size() == 64, "BN precompile return data size is not 64");
+        CF_ASSERT(data.size() == (element_size * 2), "Unexpected return data size");
 
         return component::G1{
-            util::BinToDec(std::vector<uint8_t>(data.data(), data.data() + 32)),
-            util::BinToDec(std::vector<uint8_t>(data.data() + 32, data.data() + 64)),
+            util::BinToDec(std::vector<uint8_t>(
+                        data.data(),
+                        data.data() + element_size)),
+            util::BinToDec(std::vector<uint8_t>(
+                        data.data() + element_size,
+                        data.data() + (element_size * 2))),
         };
     }
 
@@ -147,17 +159,38 @@ std::optional<component::Digest> Geth::OpDigest(operation::Digest& op) {
 std::optional<component::G1> Geth::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
     std::optional<component::G1> ret = std::nullopt;
 
+    size_t element_size = 0;
+    uint8_t precompile = 0;
+
+    if ( op.curveType.Get() == CF_ECC_CURVE("alt_bn128") ) {
+        element_size = 32;
+        precompile = 0x06;
+    } else if ( op.curveType.Get() == CF_ECC_CURVE("BLS12_381") ) {
+        /* https://eips.ethereum.org/EIPS/eip-2537
+         *
+         * Base field element (Fp) is encoded as 64 bytes by performing BigEndian encoding
+         * of the corresponding (unsigned) integer (top 16 bytes are always zeroes).
+         */
+        element_size = 64;
+        precompile = 0x0A;
+    } else {
+        return ret;
+    }
+
     std::vector<uint8_t> input;
     std::optional<std::vector<uint8_t>> a_x, a_y, b_x, b_y;
 
-    CF_CHECK_FALSE(op.a.first.ToTrimmedString() == "1" &&
+    if ( op.curveType.Get() == CF_ECC_CURVE("alt_bn128") ) {
+        CF_CHECK_FALSE(op.a.first.ToTrimmedString() == "1" &&
                 op.a.second.ToTrimmedString() == "2");
-    CF_CHECK_FALSE(op.b.first.ToTrimmedString() == "1" &&
+        CF_CHECK_FALSE(op.b.first.ToTrimmedString() == "1" &&
                 op.b.second.ToTrimmedString() == "2");
-    CF_CHECK_NE(a_x = op.a.first.ToBin(32), std::nullopt);
-    CF_CHECK_NE(a_y = op.a.second.ToBin(32), std::nullopt);
-    CF_CHECK_NE(b_x = op.b.first.ToBin(32), std::nullopt);
-    CF_CHECK_NE(b_y = op.b.second.ToBin(32), std::nullopt);
+    }
+
+    CF_CHECK_NE(a_x = op.a.first.ToBin(element_size), std::nullopt);
+    CF_CHECK_NE(a_y = op.a.second.ToBin(element_size), std::nullopt);
+    CF_CHECK_NE(b_x = op.b.first.ToBin(element_size), std::nullopt);
+    CF_CHECK_NE(b_y = op.b.second.ToBin(element_size), std::nullopt);
 
     input.insert(input.end(), a_x->begin(), a_x->end());
     input.insert(input.end(), a_y->begin(), a_y->end());
@@ -165,10 +198,10 @@ std::optional<component::G1> Geth::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
     input.insert(input.end(), b_y->begin(), b_y->end());
 
     CF_NORET(
-            Geth_Call(0x06, Geth_detail::toGoSlice(input), 0)
+            Geth_Call(precompile, Geth_detail::toGoSlice(input), 0)
     );
 
-    ret = Geth_detail::parseG1(false);
+    ret = Geth_detail::parseG1(element_size, false);
 
 end:
     return ret;
@@ -177,13 +210,29 @@ end:
 std::optional<component::G1> Geth::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
     std::optional<component::G1> ret = std::nullopt;
 
+    size_t element_size = 0;
+    uint8_t precompile = 0;
+
+    if ( op.curveType.Get() == CF_ECC_CURVE("alt_bn128") ) {
+        element_size = 32;
+        precompile = 0x07;
+    } else if ( op.curveType.Get() == CF_ECC_CURVE("BLS12_381") ) {
+        element_size = 64;
+        precompile = 0x0B;
+    } else {
+        return ret;
+    }
+
     std::vector<uint8_t> input;
     std::optional<std::vector<uint8_t>> a_x, a_y, b;
 
-    CF_CHECK_FALSE(op.a.first.ToTrimmedString() == "1" &&
+    if ( op.curveType.Get() == CF_ECC_CURVE("alt_bn128") ) {
+        CF_CHECK_FALSE(op.a.first.ToTrimmedString() == "1" &&
                 op.a.second.ToTrimmedString() == "2");
-    CF_CHECK_NE(a_x = op.a.first.ToBin(32), std::nullopt);
-    CF_CHECK_NE(a_y = op.a.second.ToBin(32), std::nullopt);
+    }
+
+    CF_CHECK_NE(a_x = op.a.first.ToBin(element_size), std::nullopt);
+    CF_CHECK_NE(a_y = op.a.second.ToBin(element_size), std::nullopt);
     CF_CHECK_NE(b = op.b.ToBin(32), std::nullopt);
 
     input.insert(input.end(), a_x->begin(), a_x->end());
@@ -191,10 +240,10 @@ std::optional<component::G1> Geth::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
     input.insert(input.end(), b->begin(), b->end());
 
     CF_NORET(
-            Geth_Call(0x07, Geth_detail::toGoSlice(input), 0)
+            Geth_Call(precompile, Geth_detail::toGoSlice(input), 0)
     );
 
-    ret = Geth_detail::parseG1(false);
+    ret = Geth_detail::parseG1(element_size, false);
 
 end:
     return ret;

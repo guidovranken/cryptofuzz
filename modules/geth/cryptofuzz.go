@@ -47,6 +47,8 @@ func setResult(r ByteSlice) {
 func Geth_Call(address byte, input []byte, gas uint64) {
     resetResult()
 
+    /* TODO enable BLS12-381 precompiles */
+
     statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
 	ret, _, err := runtime.Call(common.BytesToAddress([]byte{address}), input, &runtime.Config{
         EVMConfig: vm.Config{
