@@ -8,11 +8,9 @@ use ark_ff::biginteger::BigInteger384;
 use ark_ff::BigInteger;
 use ark_ff::PrimeField;
 use ark_ff::Field;
-//use ark_ff::SquareRootField;
-//use ark_ec::AffineCurve;
-//use ark_ec::ProjectiveCurve;
-use ark_ec::AffineRepr;
-use ark_ec::CurveGroup;
+use ark_ff::SquareRootField;
+use ark_ec::AffineCurve;
+use ark_ec::ProjectiveCurve;
 
 use std::ops::{Add, Sub, Mul, Neg};
 
@@ -83,10 +81,16 @@ pub extern "C" fn arkworks_algebra_bignumcalc_bn254_fq(
     let mut arr: [u64; 4] = [0; 4];
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(bn0_bytes, 4)});
-    let bn0 = ark_bn254::Fq::from(BigInteger256::new(arr));
+    let bn0 = match ark_bn254::Fq::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(bn1_bytes, 4)});
-    let bn1 = ark_bn254::Fq::from(BigInteger256::new(arr));
+    let bn1 = match ark_bn254::Fq::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     let mut res = ark_bn254::Fq::new(BigInteger256::new([0u64; 4]));
 
@@ -124,10 +128,16 @@ pub extern "C" fn arkworks_algebra_bignumcalc_bn254_fr(
     let mut arr: [u64; 4] = [0; 4];
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(bn0_bytes, 4)});
-    let bn0 = ark_bn254::Fr::from(BigInteger256::new(arr));
+    let bn0 = match ark_bn254::Fr::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(bn1_bytes, 4)});
-    let bn1 = ark_bn254::Fr::from(BigInteger256::new(arr));
+    let bn1 = match ark_bn254::Fr::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     let mut res = ark_bn254::Fr::new(BigInteger256::new([0u64; 4]));
 
@@ -165,10 +175,16 @@ pub extern "C" fn arkworks_algebra_bignumcalc_bls12_381_fr(
     let mut arr: [u64; 4] = [0; 4];
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(bn0_bytes, 4)});
-    let bn0 = ark_bls12_381::Fr::from(BigInteger256::new(arr));
+    let bn0 = match ark_bls12_381::Fr::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(bn1_bytes, 4)});
-    let bn1 = ark_bls12_381::Fr::from(BigInteger256::new(arr));
+    let bn1 = match ark_bls12_381::Fr::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     let mut res = ark_bls12_381::Fr::new(BigInteger256::new([0u64; 4]));
 
@@ -214,10 +230,16 @@ pub extern "C" fn arkworks_algebra_bignumcalc_bls12_381_fq(
     let mut arr: [u64; 6] = [0; 6];
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(bn0_bytes, 6)});
-    let bn0 = ark_bls12_381::Fq::from(BigInteger384::new(arr));
+    let bn0 = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(bn1_bytes, 6)});
-    let bn1 = ark_bls12_381::Fq::from(BigInteger384::new(arr));
+    let bn1 = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     let mut res = ark_bls12_381::Fq::new(BigInteger384::new([0u64; 6]));
 
@@ -262,12 +284,18 @@ pub extern "C" fn arkworks_algebra_g1_isoncurve_bn254(
     let mut arr: [u64; 4] = [0; 4];
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ax_bytes, 4)});
-    let ax = ark_bn254::Fq::from(BigInteger256::new(arr));
+    let ax = match ark_bn254::Fq::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ay_bytes, 4)});
-    let ay = ark_bn254::Fq::from(BigInteger256::new(arr));
+    let ay = match ark_bn254::Fq::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
-    let a = ark_bn254::G1Affine::new(ax, ay);
+    let a = ark_bn254::G1Affine::new(ax, ay, false);
 
     if a.is_on_curve() && a.is_in_correct_subgroup_assuming_on_curve() {
         return 1;
@@ -283,10 +311,13 @@ pub extern "C" fn arkworks_algebra_g1_privatetopublic_bn254(
             result_y: *mut u64) -> i32 {
     let mut arr: [u64; 4] = [0; 4];
 
-    let g1 = ark_bn254::G1Affine::generator();
+    let g1 = ark_bn254::G1Affine::prime_subgroup_generator();
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(priv_bytes, 4)});
-    let privv = ark_bn254::Fr::from(BigInteger256::new(arr));
+    let privv = match ark_bn254::Fr::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     let res = g1.mul(privv).into_affine();
 
@@ -312,20 +343,32 @@ pub extern "C" fn arkworks_algebra_g1_add_bn254(
     let mut arr: [u64; 4] = [0; 4];
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ax_bytes, 4)});
-    let ax = ark_bn254::Fq::from(BigInteger256::new(arr));
+    let ax = match ark_bn254::Fq::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ay_bytes, 4)});
-    let ay = ark_bn254::Fq::from(BigInteger256::new(arr));
+    let ay = match ark_bn254::Fq::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
-    let a = ark_bn254::G1Affine::new(ax, ay);
+    let a = ark_bn254::G1Affine::new(ax, ay, false);
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(bx_bytes, 4)});
-    let bx = ark_bn254::Fq::from(BigInteger256::new(arr));
+    let bx = match ark_bn254::Fq::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(by_bytes, 4)});
-    let by = ark_bn254::Fq::from(BigInteger256::new(arr));
+    let by = match ark_bn254::Fq::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
-    let b = ark_bn254::G1Affine::new(bx, by);
+    let b = ark_bn254::G1Affine::new(bx, by, false);
 
 
     let res = a.add(b);
@@ -359,15 +402,24 @@ pub extern "C" fn arkworks_algebra_g1_mul_bn254(
     let mut arr: [u64; 4] = [0; 4];
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ax_bytes, 4)});
-    let ax = ark_bn254::Fq::from(BigInteger256::new(arr));
+    let ax = match ark_bn254::Fq::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ay_bytes, 4)});
-    let ay = ark_bn254::Fq::from(BigInteger256::new(arr));
+    let ay = match ark_bn254::Fq::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
-    let g1 = ark_bn254::G1Affine::new(ax, ay);
+    let g1 = ark_bn254::G1Affine::new(ax, ay, false);
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(b_bytes, 4)});
-    let b = ark_bn254::Fr::from(BigInteger256::new(arr));
+    let b = match ark_bn254::Fr::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     let res = g1.mul(b).into_affine();
 
@@ -395,12 +447,18 @@ pub extern "C" fn arkworks_algebra_g1_neg_bn254(
     let mut arr: [u64; 4] = [0; 4];
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ax_bytes, 4)});
-    let ax = ark_bn254::Fq::from(BigInteger256::new(arr));
+    let ax = match ark_bn254::Fq::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ay_bytes, 4)});
-    let ay = ark_bn254::Fq::from(BigInteger256::new(arr));
+    let ay = match ark_bn254::Fq::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
-    let g1 = ark_bn254::G1Affine::new(ax, ay);
+    let g1 = ark_bn254::G1Affine::new(ax, ay, false);
 
     let res = g1.neg();
 
@@ -428,12 +486,18 @@ pub extern "C" fn arkworks_algebra_g1_isoncurve_bls12_381(
     let mut arr: [u64; 6] = [0; 6];
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ax_bytes, 6)});
-    let ax = ark_bls12_381::Fq::from(BigInteger384::new(arr));
+    let ax = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ay_bytes, 6)});
-    let ay = ark_bls12_381::Fq::from(BigInteger384::new(arr));
+    let ay = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
-    let a = ark_bls12_381::G1Affine::new(ax, ay);
+    let a = ark_bls12_381::G1Affine::new(ax, ay, false);
 
     if a.is_on_curve() && a.is_in_correct_subgroup_assuming_on_curve() {
         return 1;
@@ -449,10 +513,13 @@ pub extern "C" fn arkworks_algebra_g1_privatetopublic_bls12_381(
             result_y: *mut u64) -> i32 {
     let mut arr: [u64; 4] = [0; 4];
 
-    let g1 = ark_bls12_381::G1Affine::generator();
+    let g1 = ark_bls12_381::G1Affine::prime_subgroup_generator();
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(priv_bytes, 4)});
-    let privv = ark_bls12_381::Fr::from(BigInteger256::new(arr));
+    let privv = match ark_bls12_381::Fr::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     let res = g1.mul(privv).into_affine();
 
@@ -480,24 +547,36 @@ pub extern "C" fn arkworks_algebra_g1_add_bls12_381(
     let mut arr: [u64; 6] = [0; 6];
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ax_bytes, 6)});
-    let ax = ark_bls12_381::Fq::from(BigInteger384::new(arr));
+    let ax = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ay_bytes, 6)});
-    let ay = ark_bls12_381::Fq::from(BigInteger384::new(arr));
+    let ay = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
-    let a = ark_bls12_381::G1Affine::new(ax, ay);
+    let a = ark_bls12_381::G1Affine::new(ax, ay, false);
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(bx_bytes, 6)});
-    let bx = ark_bls12_381::Fq::from(BigInteger384::new(arr));
+    let bx = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(by_bytes, 6)});
-    let by = ark_bls12_381::Fq::from(BigInteger384::new(arr));
+    let by = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
-    let b = ark_bls12_381::G1Affine::new(bx, by);
+    let b = ark_bls12_381::G1Affine::new(bx, by, false);
 
     let res = match affine {
         1 => a.add(b),
-        0 => a.into_group().add(b.into_group()),
+        0 => a.into_projective().add(b.into_projective()).into_affine(),
         _ => { panic!("Invalid"); }
     };
 
@@ -532,21 +611,30 @@ pub extern "C" fn arkworks_algebra_g1_mul_bls12_381(
     let mut arr4: [u64; 4] = [0; 4];
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(ax_bytes, 6)});
-    let ax = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let ax = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(ay_bytes, 6)});
-    let ay = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let ay = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
-    let g1 = ark_bls12_381::G1Affine::new(ax, ay);
+    let g1 = ark_bls12_381::G1Affine::new(ax, ay, false);
 
     arr4.clone_from_slice(unsafe{slice::from_raw_parts(b_bytes, 4)});
-    let b = ark_bls12_381::Fr::from(BigInteger256::new(arr4));
+    let b = match ark_bls12_381::Fr::from_repr(BigInteger256::new(arr4)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     //let res = g1.mul(b).into_affine();
     let res = match affine {
         1 => g1.mul(b).into_affine(),
         0 => g1.mul(b).into_affine(),
-        //0 => g1.into_group().mul(b.0).into_affine(),
+        //0 => g1.into_projective().mul(b.0).into_affine(),
         _ => { panic!("Invalid"); }
     };
 
@@ -575,16 +663,22 @@ pub extern "C" fn arkworks_algebra_g1_neg_bls12_381(
     let mut arr: [u64; 6] = [0; 6];
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ax_bytes, 6)});
-    let ax = ark_bls12_381::Fq::from(BigInteger384::new(arr));
+    let ax = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ay_bytes, 6)});
-    let ay = ark_bls12_381::Fq::from(BigInteger384::new(arr));
+    let ay = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
-    let g1 = ark_bls12_381::G1Affine::new(ax, ay);
+    let g1 = ark_bls12_381::G1Affine::new(ax, ay, false);
 
     let res = match affine {
         1 => g1.neg(),
-        0 => g1.into_group().neg().into_affine(),
+        0 => g1.into_projective().neg().into_affine(),
         _ => { panic!("Invalid"); }
     };
 
@@ -612,20 +706,33 @@ pub extern "C" fn arkworks_algebra_g2_isoncurve_bls12_381(
     let mut arr6: [u64; 6] = [0; 6];
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(av_bytes, 6)});
-    let av = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let av = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(aw_bytes, 6)});
-    let aw = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let aw = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(ax_bytes, 6)});
-    let ax = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let ax = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(ay_bytes, 6)});
-    let ay = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let ay = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     let a = ark_bls12_381::G2Affine::new(
         ark_bls12_381::Fq2::new(av, ax),
-        ark_bls12_381::Fq2::new(aw, ay));
+        ark_bls12_381::Fq2::new(aw, ay),
+        false);
 
     if a.is_on_curve() && a.is_in_correct_subgroup_assuming_on_curve() {
         return 1;
@@ -652,41 +759,66 @@ pub extern "C" fn arkworks_algebra_g2_add_bls12_381(
     let mut arr6: [u64; 6] = [0; 6];
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(av_bytes, 6)});
-    let av = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let av = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(aw_bytes, 6)});
-    let aw = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let aw = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(ax_bytes, 6)});
-    let ax = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let ax = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(ay_bytes, 6)});
-    let ay = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let ay = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     let a = ark_bls12_381::G2Affine::new(
         ark_bls12_381::Fq2::new(av, ax),
-        ark_bls12_381::Fq2::new(aw, ay));
+        ark_bls12_381::Fq2::new(aw, ay),
+        false);
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(bv_bytes, 6)});
-    let bv = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let bv = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(bw_bytes, 6)});
-    let bw = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let bw = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(bx_bytes, 6)});
-    let bx = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let bx = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(by_bytes, 6)});
-    let by = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let by = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     let b = ark_bls12_381::G2Affine::new(
         ark_bls12_381::Fq2::new(bv, bx),
-        ark_bls12_381::Fq2::new(bw, by));
+        ark_bls12_381::Fq2::new(bw, by),
+        false);
 
     let res = match affine {
         1 => a.add(b),
-        //0 => a.into_group().add(b.into_group()).into_affine(),
-        0 => a.into_group().add(b.into_group()),
+        0 => a.into_projective().add(b.into_projective()).into_affine(),
         _ => { panic!("Invalid"); }
     };
 
@@ -729,28 +861,44 @@ pub extern "C" fn arkworks_algebra_g2_mul_bls12_381(
     let mut arr4: [u64; 4] = [0; 4];
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(av_bytes, 6)});
-    let av = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let av = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(aw_bytes, 6)});
-    let aw = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let aw = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(ax_bytes, 6)});
-    let ax = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let ax = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(ay_bytes, 6)});
-    let ay = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let ay = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     let g2 = ark_bls12_381::G2Affine::new(
         ark_bls12_381::Fq2::new(av, ax),
-        ark_bls12_381::Fq2::new(aw, ay));
+        ark_bls12_381::Fq2::new(aw, ay),
+        false);
 
     arr4.clone_from_slice(unsafe{slice::from_raw_parts(b_bytes, 4)});
-    let b = ark_bls12_381::Fr::from(BigInteger256::new(arr4));
+    let b = match ark_bls12_381::Fr::from_repr(BigInteger256::new(arr4)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     let res = match affine {
         1 => g2.mul(b).into_affine(),
         0 => g2.mul(b).into_affine(),
-        //0 => g2.into_group().mul(b.0).into_affine(),
+        //0 => g2.into_projective().mul(b.0).into_affine(),
         _ => { panic!("Invalid"); }
     };
 
@@ -783,24 +931,37 @@ pub extern "C" fn arkworks_algebra_g2_neg_bls12_381(
     let mut arr6: [u64; 6] = [0; 6];
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(av_bytes, 6)});
-    let av = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let av = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(aw_bytes, 6)});
-    let aw = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let aw = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(ax_bytes, 6)});
-    let ax = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let ax = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(ay_bytes, 6)});
-    let ay = ark_bls12_381::Fq::from(BigInteger384::new(arr6));
+    let ay = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     let g2 = ark_bls12_381::G2Affine::new(
         ark_bls12_381::Fq2::new(av, ax),
-        ark_bls12_381::Fq2::new(aw, ay));
+        ark_bls12_381::Fq2::new(aw, ay),
+        false);
 
     let res = match affine {
         1 => g2.neg(),
-        0 => g2.into_group().neg().into_affine(),
+        0 => g2.into_projective().neg().into_affine(),
         _ => { panic!("Invalid"); }
     };
 
@@ -835,10 +996,16 @@ pub extern "C" fn arkworks_algebra_bignumcalc_bls12_377_fq(
     let mut arr: [u64; 6] = [0; 6];
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(bn0_bytes, 6)});
-    let bn0 = ark_bls12_377::Fq::from(BigInteger384::new(arr));
+    let bn0 = match ark_bls12_377::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(bn1_bytes, 6)});
-    let bn1 = ark_bls12_377::Fq::from(BigInteger384::new(arr));
+    let bn1 = match ark_bls12_377::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     let mut res = ark_bls12_377::Fq::new(BigInteger384::new([0u64; 6]));
 
@@ -884,10 +1051,16 @@ pub extern "C" fn arkworks_algebra_bignumcalc_bls12_377_fr(
     let mut arr: [u64; 4] = [0; 4];
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(bn0_bytes, 4)});
-    let bn0 = ark_bls12_377::Fr::from(BigInteger256::new(arr));
+    let bn0 = match ark_bls12_377::Fr::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(bn1_bytes, 4)});
-    let bn1 = ark_bls12_377::Fr::from(BigInteger256::new(arr));
+    let bn1 = match ark_bls12_377::Fr::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     let mut res = ark_bls12_377::Fr::new(BigInteger256::new([0u64; 4]));
 
@@ -930,12 +1103,18 @@ pub extern "C" fn arkworks_algebra_g1_isoncurve_bls12_377(
     let mut arr: [u64; 6] = [0; 6];
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ax_bytes, 6)});
-    let ax = ark_bls12_377::Fq::from(BigInteger384::new(arr));
+    let ax = match ark_bls12_377::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ay_bytes, 6)});
-    let ay = ark_bls12_377::Fq::from(BigInteger384::new(arr));
+    let ay = match ark_bls12_377::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
-    let a = ark_bls12_377::G1Affine::new(ax, ay);
+    let a = ark_bls12_377::G1Affine::new(ax, ay, false);
 
     if a.is_on_curve() && a.is_in_correct_subgroup_assuming_on_curve() {
         return 1;
@@ -951,10 +1130,13 @@ pub extern "C" fn arkworks_algebra_g1_privatetopublic_bls12_377(
             result_y: *mut u64) -> i32 {
     let mut arr: [u64; 4] = [0; 4];
 
-    let g1 = ark_bls12_377::G1Affine::generator();
+    let g1 = ark_bls12_377::G1Affine::prime_subgroup_generator();
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(priv_bytes, 4)});
-    let privv = ark_bls12_377::Fr::from(BigInteger256::new(arr));
+    let privv = match ark_bls12_377::Fr::from_repr(BigInteger256::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     let res = g1.mul(privv).into_affine();
 
@@ -980,20 +1162,32 @@ pub extern "C" fn arkworks_algebra_g1_add_bls12_377(
     let mut arr: [u64; 6] = [0; 6];
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ax_bytes, 6)});
-    let ax = ark_bls12_377::Fq::from(BigInteger384::new(arr));
+    let ax = match ark_bls12_377::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ay_bytes, 6)});
-    let ay = ark_bls12_377::Fq::from(BigInteger384::new(arr));
+    let ay = match ark_bls12_377::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
-    let a = ark_bls12_377::G1Affine::new(ax, ay);
+    let a = ark_bls12_377::G1Affine::new(ax, ay, false);
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(bx_bytes, 6)});
-    let bx = ark_bls12_377::Fq::from(BigInteger384::new(arr));
+    let bx = match ark_bls12_377::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(by_bytes, 6)});
-    let by = ark_bls12_377::Fq::from(BigInteger384::new(arr));
+    let by = match ark_bls12_377::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
-    let b = ark_bls12_377::G1Affine::new(bx, by);
+    let b = ark_bls12_377::G1Affine::new(bx, by, false);
 
 
     let res = a.add(b);
@@ -1027,15 +1221,24 @@ pub extern "C" fn arkworks_algebra_g1_mul_bls12_377(
     let mut arr4: [u64; 4] = [0; 4];
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(ax_bytes, 6)});
-    let ax = ark_bls12_377::Fq::from(BigInteger384::new(arr6));
+    let ax = match ark_bls12_377::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr6.clone_from_slice(unsafe{slice::from_raw_parts(ay_bytes, 6)});
-    let ay = ark_bls12_377::Fq::from(BigInteger384::new(arr6));
+    let ay = match ark_bls12_377::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
-    let g1 = ark_bls12_377::G1Affine::new(ax, ay);
+    let g1 = ark_bls12_377::G1Affine::new(ax, ay, false);
 
     arr4.clone_from_slice(unsafe{slice::from_raw_parts(b_bytes, 4)});
-    let b = ark_bls12_377::Fr::from(BigInteger256::new(arr4));
+    let b = match ark_bls12_377::Fr::from_repr(BigInteger256::new(arr4)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     let res = g1.mul(b).into_affine();
 
@@ -1063,12 +1266,18 @@ pub extern "C" fn arkworks_algebra_g1_neg_bls12_377(
     let mut arr: [u64; 6] = [0; 6];
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ax_bytes, 6)});
-    let ax = ark_bls12_377::Fq::from(BigInteger384::new(arr));
+    let ax = match ark_bls12_377::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
     arr.clone_from_slice(unsafe{slice::from_raw_parts(ay_bytes, 6)});
-    let ay = ark_bls12_377::Fq::from(BigInteger384::new(arr));
+    let ay = match ark_bls12_377::Fq::from_repr(BigInteger384::new(arr)) {
+        Some(v) => v,
+        None => return -1,
+    };
 
-    let g1 = ark_bls12_377::G1Affine::new(ax, ay);
+    let g1 = ark_bls12_377::G1Affine::new(ax, ay, false);
 
     let res = g1.neg();
 
