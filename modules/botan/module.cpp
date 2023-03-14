@@ -1019,15 +1019,17 @@ namespace Botan_detail {
 
                     std::optional<std::string> curveString, algoString;
 
-                    /* Botan appears to generate a new key if the input key is 0, so don't do this */
-                    CF_CHECK_NE(op.priv.ToTrimmedString(), "0");
-
                     CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
                     ::Botan::EC_Group group(*curveString);
 
                     /* Private key */
                     {
                         const ::Botan::BigInt priv_bn(op.priv.ToString(ds));
+
+                        /* Botan appears to generate a new key if the input key is 0,
+                         * so don't do this */
+                        CF_CHECK_NE(priv_bn, 0);
+
                         priv = std::make_unique<PrivkeyType>(PrivkeyType(rng, group, priv_bn));
                     }
 
