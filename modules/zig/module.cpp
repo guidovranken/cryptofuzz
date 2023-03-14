@@ -37,6 +37,14 @@ int cryptofuzz_zig_scrypt(
         const uint32_t n,
         const uint32_t r,
         const uint32_t p);
+int cryptofuzz_zig_argon2(
+        uint8_t* res_data, const size_t res_size,
+        const uint8_t* password_data, const size_t password_size,
+        const uint8_t* salt_data, const size_t salt_size,
+        const uint32_t iterations,
+        const uint32_t memory,
+        const uint8_t threads,
+        const uint8_t mode);
 size_t cryptofuzz_zig_bignumcalc(
         char* res_data, const size_t res_size,
         const char* a_data, const size_t a_size,
@@ -252,6 +260,26 @@ std::optional<component::Key> Zig::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
             op.password.GetPtr(), op.password.GetSize(),
             op.salt.GetPtr(), op.salt.GetSize(),
             N, op.r, op.p), 0);
+
+    ret = component::Key(out, op.keySize);
+
+end:
+    util::free(out);
+
+    return ret;
+}
+
+std::optional<component::Key> Zig::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
+    std::optional<component::Key> ret = std::nullopt;
+
+    uint8_t* out = util::malloc(op.keySize);
+
+    CF_CHECK_EQ(op.threads, 1);
+    CF_CHECK_EQ(cryptofuzz_zig_argon2(
+            out, op.keySize,
+            op.password.GetPtr(), op.password.GetSize(),
+            op.salt.GetPtr(), op.salt.GetSize(),
+            op.iterations, op.memory, op.threads, op.type), 0);
 
     ret = component::Key(out, op.keySize);
 

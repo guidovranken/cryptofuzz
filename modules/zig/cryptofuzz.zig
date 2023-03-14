@@ -8,6 +8,7 @@ const HmacSha1 = std.crypto.auth.hmac.HmacSha1;
 const scrypt = std.crypto.pwhash.scrypt;
 const hash = std.crypto.hash;
 const hmac = std.crypto.auth.hmac;
+const argon2 = std.crypto.pwhash.argon2;
 
 export fn cryptofuzz_zig_digest(
         res_data: [*:0]u8,
@@ -778,6 +779,42 @@ export fn cryptofuzz_zig_scrypt(
         return -1;
     };
 
+    return 0;
+}
+
+export fn cryptofuzz_zig_argon2(
+        res_data: [*:0]u8, res_size: u32,
+        password_data: [*:0]const u8, password_size: u32,
+        salt_data: [*:0]const u8, salt_size: u32,
+        iterations: u32,
+        memory: u32,
+        threads: u8,
+        mode: u8) callconv(.C) i32 {
+    var m = argon2.Mode.argon2id;
+    if ( mode == 0 ) {
+        m = argon2.Mode.argon2d;
+    } else if ( mode == 1 ) {
+        m = argon2.Mode.argon2i;
+    } else if ( mode == 2 ) {
+        m = argon2.Mode.argon2id;
+    } else {
+        return -1;
+    }
+    const params = argon2.Params{
+        .t = iterations,
+        .m = memory,
+        .p = threads
+    };
+    const allocator = std.heap.page_allocator;
+    argon2.kdf(
+            allocator,
+            res_data[0..res_size],
+            password_data[0..password_size],
+            salt_data[0..salt_size],
+            params,
+            m) catch {
+        return -1;
+    };
     return 0;
 }
 

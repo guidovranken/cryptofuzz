@@ -178,3 +178,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Golang: [CVE-2023-24532: Specific unreduced P-256 scalars produce incorrect results](https://github.com/golang/go/issues/58647)
 - OpenSSL, LibreSSL, BoringSSL: [DSA signing hangs with invalid parameters](https://github.com/openssl/openssl/issues/20268)
 - Zig: [Streaming SHA3 incorrect output](https://github.com/ziglang/zig/issues/14851)
+- Zig: [Argon2 outputs uninitialized memory with keysize > 64](https://github.com/ziglang/zig/issues/14912)
