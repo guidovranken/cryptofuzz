@@ -19,6 +19,7 @@ extern "C" {
     size_t cryptofuzz_asm_shr(size_t, uint8_t);
     size_t cryptofuzz_asm_rol(size_t, uint8_t);
     size_t cryptofuzz_asm_ror(size_t, uint8_t);
+    size_t cryptofuzz_asm_crc32(const uint8_t*, size_t);
 }
 
 namespace cryptofuzz {
@@ -40,6 +41,28 @@ namespace CPU_detail {
         memcpy(&ret, d.data(), d.size());
         return ret;
     }
+}
+
+std::optional<component::Digest> CPU::OpDigest(operation::Digest& op) {
+    std::optional<component::Digest> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    if ( op.digestType.Is(CF_DIGEST("CRC32-CPU")) ) {
+        CF_CHECK_EQ(op.cleartext.GetSize() % 4, 0);
+
+        static const std::array<uint8_t, 4> zeroes = {0};
+        std::array<uint8_t, 8> resb;
+        const auto res = cryptofuzz_asm_crc32(
+                op.cleartext.GetPtr(&ds),
+                op.cleartext.GetSize());
+        memcpy(resb.data(), &res, resb.size());
+        CF_ASSERT(
+                !memcmp(zeroes.data(), resb.data() + 4, 4), "CRC32 output not zeroes");
+        ret = component::Digest(resb.data(), 4);
+    }
+
+end:
+    return ret;
 }
 
 std::optional<component::Bignum> CPU::OpBignumCalc(operation::BignumCalc& op) {

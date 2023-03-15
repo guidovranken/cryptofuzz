@@ -912,6 +912,7 @@ digests.Add( Digest("CITYHASHCRC128SEED16") )
 digests.Add( Digest("CITYHASHCRC256") )
 digests.Add( Digest("CRC24-RFC2440", 3) )
 digests.Add( Digest("CRC32", 4) )
+digests.Add( Digest("CRC32-CPU", 4) ) # poly 0x11EDC6F41
 digests.Add( Digest("CRC32-RFC1510") )
 digests.Add( Digest("CRC32-RFC2440") )
 digests.Add( Digest("CRC64", 8) )

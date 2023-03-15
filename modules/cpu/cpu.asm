@@ -1,6 +1,5 @@
 ; https://en.wikipedia.org/wiki/X86_instruction_listings
 ; TODO
-; CRC32
 ; JRCXZ
 ; XADD
 
@@ -91,3 +90,18 @@ cryptofuzz_asm_ror:
     mov rcx, rsi
     ror rax, cl
     ret
+global cryptofuzz_asm_crc32
+cryptofuzz_asm_crc32:
+    mov rdx, rdi
+    mov ecx, esi
+    xor eax, eax
+    cmp ecx, 0
+    je done
+    crc32_loop:
+        crc32 eax, dword [rdx]
+        add rdx, 4
+        sub ecx, 4
+        jg crc32_loop
+    not eax
+    done:
+        ret
