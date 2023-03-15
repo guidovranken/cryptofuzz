@@ -90,6 +90,20 @@ cryptofuzz_asm_ror:
     mov rcx, rsi
     ror rax, cl
     ret
+global cryptofuzz_asm_bsr
+cryptofuzz_asm_bsr:
+    bsr eax, edi
+    ret
+global cryptofuzz_asm_rdrand
+cryptofuzz_asm_rdrand:
+    rdrand eax
+    jnc rdrand_fail
+    ret
+rdrand_fail:
+; segfault
+; mov dword [0], 0
+    ret
+
 global cryptofuzz_asm_crc32
 cryptofuzz_asm_crc32:
     mov rdx, rdi

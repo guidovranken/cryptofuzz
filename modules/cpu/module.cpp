@@ -19,6 +19,8 @@ extern "C" {
     size_t cryptofuzz_asm_shr(size_t, uint8_t);
     size_t cryptofuzz_asm_rol(size_t, uint8_t);
     size_t cryptofuzz_asm_ror(size_t, uint8_t);
+    size_t cryptofuzz_asm_bsr(size_t);
+    size_t cryptofuzz_asm_rdrand(void);
     size_t cryptofuzz_asm_crc32(const uint8_t*, size_t);
 }
 
@@ -179,6 +181,15 @@ std::optional<component::Bignum> CPU::OpBignumCalc(operation::BignumCalc& op) {
                 res = cryptofuzz_asm_shr(*A, *B);
             }
             break;
+        case    CF_CALCOP("MSB(A)"):
+            {
+                auto A = CPU_detail::Load<size_t>(op.bn0);
+                CF_CHECK_NE(A, std::nullopt);
+                res = cryptofuzz_asm_bsr(*A);
+            }
+            break;
+        case    CF_CALCOP("Rand()"):
+            res = cryptofuzz_asm_rdrand();
         default:
             goto end;
     }
