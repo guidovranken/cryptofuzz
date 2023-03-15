@@ -203,7 +203,7 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 CF_CHECK_GTE(mpz_sgn(bn[1].GetPtr()), 0);
 
                 /* "It is required that exp > 0 and that mod is odd." */
-                CF_CHECK_NE(mpz_cmp_ui(bn[1].GetPtr(), 0), 1);
+                CF_CHECK_GT(mpz_cmp_ui(bn[1].GetPtr(), 0), 0);
 
                 const auto ptr = bn[2].GetPtr();
                 CF_CHECK_EQ(mpz_odd_p(ptr), 1);
