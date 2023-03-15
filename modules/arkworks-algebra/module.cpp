@@ -58,6 +58,9 @@ extern "C" {
             uint64_t* ay_bytes,
             uint64_t* result_x,
             uint64_t* result_y);
+    int arkworks_algebra_batchverify_bn254(
+            uint64_t* in_data,
+            uint64_t num_elements);
     int arkworks_algebra_g1_isoncurve_bls12_381(
             uint64_t* ax_bytes,
             uint64_t* ay_bytes);
@@ -778,6 +781,38 @@ std::optional<component::G2> arkworks_algebra::OpBLS_G2_Neg(operation::BLS_G2_Ne
         ret = arkworks_algebra_detail::ToG2(result_v, result_w, result_x, result_y);
         }
     }
+end:
+    return ret;
+}
+
+std::optional<bool> arkworks_algebra::OpBLS_BatchVerify(operation::BLS_BatchVerify& op) {
+    std::optional<bool> ret = std::nullopt;
+
+    std::vector<uint64_t> data;
+
+    for (const auto& cur : op.bf.c) {
+        std::optional<std::array<uint64_t, 4>> el;
+
+        CF_CHECK_NE(el = arkworks_algebra_detail::To4U64(cur.g1.first), std::nullopt);
+        data.insert(data.end(), el->begin(), el->end());
+
+        CF_CHECK_NE(el = arkworks_algebra_detail::To4U64(cur.g1.second), std::nullopt);
+        data.insert(data.end(), el->begin(), el->end());
+
+        CF_CHECK_NE(el = arkworks_algebra_detail::To4U64(cur.g2.first.first), std::nullopt);
+        data.insert(data.end(), el->begin(), el->end());
+
+        CF_CHECK_NE(el = arkworks_algebra_detail::To4U64(cur.g2.first.second), std::nullopt);
+        data.insert(data.end(), el->begin(), el->end());
+
+        CF_CHECK_NE(el = arkworks_algebra_detail::To4U64(cur.g2.second.first), std::nullopt);
+        data.insert(data.end(), el->begin(), el->end());
+
+        CF_CHECK_NE(el = arkworks_algebra_detail::To4U64(cur.g2.second.second), std::nullopt);
+        data.insert(data.end(), el->begin(), el->end());
+    }
+
+    arkworks_algebra_batchverify_bn254(data.data(), op.bf.c.size());
 end:
     return ret;
 }

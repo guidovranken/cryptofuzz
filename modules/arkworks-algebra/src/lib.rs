@@ -9,6 +9,7 @@ use ark_ff::BigInteger;
 use ark_ff::PrimeField;
 use ark_ff::Field;
 use ark_ff::SquareRootField;
+use ark_ff::One;
 use ark_ec::AffineCurve;
 use ark_ec::ProjectiveCurve;
 
@@ -472,6 +473,74 @@ pub extern "C" fn arkworks_algebra_g1_neg_bn254(
     unsafe {
         ptr::copy_nonoverlapping(res_bn_x.as_ref().as_ptr(), result_x, 4);
         ptr::copy_nonoverlapping(res_bn_y.as_ref().as_ptr(), result_y, 4);
+    }
+
+    return 0;
+}
+
+#[no_mangle]
+pub extern "C" fn arkworks_algebra_batchverify_bn254(
+            in_bytes: *mut u64,
+            num_elements: u64) -> i32 {
+    let mut arr: [u64; 4] = [0; 4];
+
+    let mut i: isize  = 0;
+
+    let mut f = ark_bn254::Fq12::one();
+
+    while i < (num_elements * 24).try_into().unwrap() {
+        arr.clone_from_slice(unsafe{slice::from_raw_parts(in_bytes.offset(0 + i), 4)});
+        let ax = match ark_bn254::Fq::from_repr(BigInteger256::new(arr)) {
+            Some(v) => v,
+            None => return -1,
+        };
+
+        arr.clone_from_slice(unsafe{slice::from_raw_parts(in_bytes.offset(4 + i), 4)});
+        let ay = match ark_bn254::Fq::from_repr(BigInteger256::new(arr)) {
+            Some(v) => v,
+            None => return -1,
+        };
+
+        let g1 = ark_bn254::G1Affine::new(ax, ay, false);
+
+        if !g1.is_on_curve() || !g1.is_in_correct_subgroup_assuming_on_curve() {
+            return -1;
+        }
+
+        arr.clone_from_slice(unsafe{slice::from_raw_parts(in_bytes.offset(8 + i), 4)});
+        let bv = match ark_bn254::Fq::from_repr(BigInteger256::new(arr)) {
+            Some(v) => v,
+            None => return -1,
+        };
+
+        arr.clone_from_slice(unsafe{slice::from_raw_parts(in_bytes.offset(12 + i), 4)});
+        let bw = match ark_bn254::Fq::from_repr(BigInteger256::new(arr)) {
+            Some(v) => v,
+            None => return -1,
+        };
+
+        arr.clone_from_slice(unsafe{slice::from_raw_parts(in_bytes.offset(16 + i), 4)});
+        let bx = match ark_bn254::Fq::from_repr(BigInteger256::new(arr)) {
+            Some(v) => v,
+            None => return -1,
+        };
+
+        arr.clone_from_slice(unsafe{slice::from_raw_parts(in_bytes.offset(20 + i), 4)});
+        let by = match ark_bn254::Fq::from_repr(BigInteger256::new(arr)) {
+            Some(v) => v,
+            None => return -1,
+        };
+
+        let g2 = ark_bn254::G2Affine::new(
+            ark_bn254::Fq2::new(bv, bx),
+            ark_bn254::Fq2::new(bw, by),
+            false);
+
+        if !g2.is_on_curve() || !g2.is_in_correct_subgroup_assuming_on_curve() {
+            return -1;
+        }
+
+        i += 24;
     }
 
     return 0;
