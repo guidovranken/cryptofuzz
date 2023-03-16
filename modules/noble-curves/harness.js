@@ -267,6 +267,7 @@ var From_G2 = function (g2) {
 };
 
 var OpBLS_PrivateToPublic = function (FuzzerInput) {
+  if (!ids.IsBLS12_381(BigInt(FuzzerInput['curveType']))) return;
   var priv = BigInt(FuzzerInput['priv']);
 
   try {
@@ -281,7 +282,7 @@ var OpBLS_HashToG1 = function (FuzzerInput) {
   const DST = GetDST(FuzzerInput['dest']);
   if (!DST) return;
   try {
-    var msg = FuzzerInput['aug'] + FuzzerInput['cleartext'];
+    var msg = hexToBytes(FuzzerInput['aug'] + FuzzerInput['cleartext']);
     var res = bls12_381.G1.hashToCurve(msg, { DST });
     return JSON.stringify(From_G1(res));
   } catch (e) {
@@ -293,7 +294,7 @@ var OpBLS_HashToG2 = function (FuzzerInput) {
   const DST = GetDST(FuzzerInput['dest']);
   if (!DST) return;
   try {
-    var msg = FuzzerInput['aug'] + FuzzerInput['cleartext'];
+    var msg = hexToBytes(FuzzerInput['aug'] + FuzzerInput['cleartext']);
     var res = bls12_381.G2.hashToCurve(msg, { DST });
     return JSON.stringify(From_G2(res));
   } catch (e) {
@@ -302,6 +303,7 @@ var OpBLS_HashToG2 = function (FuzzerInput) {
 };
 
 var OpBLS_Sign = function (FuzzerInput) {
+  if (!ids.IsBLS12_381(BigInt(FuzzerInput['curveType']))) return;
   const DST = GetDST(FuzzerInput['dest']);
   if (!DST) return;
 
@@ -344,6 +346,7 @@ var OpBLS_Sign = function (FuzzerInput) {
 };
 
 var OpBLS_Verify = function (FuzzerInput) {
+  if (!ids.IsBLS12_381(BigInt(FuzzerInput['curveType']))) return;
   const DST = GetDST(FuzzerInput['dest']);
   if (!DST) return;
   try {
@@ -363,6 +366,7 @@ var OpBLS_Verify = function (FuzzerInput) {
 };
 
 var OpBLS_Compress_G1 = function (FuzzerInput) {
+  if (!ids.IsBLS12_381(BigInt(FuzzerInput['curveType']))) return;
   try {
     var g1 = To_G1(FuzzerInput['g1_x'], FuzzerInput['g1_y']);
     g1.assertValidity();
@@ -377,6 +381,7 @@ var OpBLS_Compress_G1 = function (FuzzerInput) {
 };
 
 var OpBLS_Decompress_G1 = function (FuzzerInput) {
+  if (!ids.IsBLS12_381(BigInt(FuzzerInput['curveType']))) return;
   var compressed = BigInt(FuzzerInput['compressed']).toString(16);
   if (compressed.length > 96) {
     return;
@@ -400,6 +405,7 @@ var OpBLS_Compress_G2 = function (FuzzerInput) {
 };
 
 var OpBLS_Decompress_G2 = function (FuzzerInput) {
+  if (!ids.IsBLS12_381(BigInt(FuzzerInput['curveType']))) return;
   var x = BigInt(FuzzerInput['g1_x']).toString(16);
   if (x.length > 96) {
     return;
@@ -425,6 +431,7 @@ var OpBLS_Decompress_G2 = function (FuzzerInput) {
 };
 
 var OpBLS_IsG1OnCurve = function (FuzzerInput) {
+  if (!ids.IsBLS12_381(BigInt(FuzzerInput['curveType']))) return;
   var res = true;
 
   try {
@@ -439,6 +446,7 @@ var OpBLS_IsG1OnCurve = function (FuzzerInput) {
 };
 
 var OpBLS_IsG2OnCurve = function (FuzzerInput) {
+  if (!ids.IsBLS12_381(BigInt(FuzzerInput['curveType']))) return;
   var res = true;
 
   try {
@@ -458,6 +466,7 @@ var OpBLS_IsG2OnCurve = function (FuzzerInput) {
 };
 
 var OpBLS_G1_Add = function (FuzzerInput) {
+  if (!ids.IsBLS12_381(BigInt(FuzzerInput['curveType']))) return;
   try {
     var a = To_G1(FuzzerInput['a_x'], FuzzerInput['a_y']);
     a.assertValidity();
@@ -489,6 +498,7 @@ var OpBLS_G1_Mul = function (FuzzerInput) {
 };
 
 var OpBLS_G1_Neg = function (FuzzerInput) {
+  if (!ids.IsBLS12_381(BigInt(FuzzerInput['curveType']))) return;
   try {
     var a = To_G1(FuzzerInput['a_x'], FuzzerInput['a_y']);
     a.assertValidity();
@@ -502,6 +512,7 @@ var OpBLS_G1_Neg = function (FuzzerInput) {
 };
 
 var OpBLS_G1_IsEq = function (FuzzerInput) {
+  if (!ids.IsBLS12_381(BigInt(FuzzerInput['curveType']))) return;
   try {
     var a = To_G1(FuzzerInput['a_x'], FuzzerInput['a_y']);
     var b = To_G1(FuzzerInput['b_x'], FuzzerInput['b_y']);
@@ -515,6 +526,7 @@ var OpBLS_G1_IsEq = function (FuzzerInput) {
 };
 
 var OpBLS_G2_Add = function (FuzzerInput) {
+  if (!ids.IsBLS12_381(BigInt(FuzzerInput['curveType']))) return;
   try {
     var a = To_G2(FuzzerInput['a_w'], FuzzerInput['a_y'], FuzzerInput['a_v'], FuzzerInput['a_x']);
     a.assertValidity();
@@ -546,6 +558,7 @@ var OpBLS_G2_Mul = function (FuzzerInput) {
 };
 
 var OpBLS_G2_Neg = function (FuzzerInput) {
+  if (!ids.IsBLS12_381(BigInt(FuzzerInput['curveType']))) return;
   try {
     var a = To_G2(FuzzerInput['a_w'], FuzzerInput['a_y'], FuzzerInput['a_v'], FuzzerInput['a_x']);
     a.assertValidity();
@@ -559,6 +572,7 @@ var OpBLS_G2_Neg = function (FuzzerInput) {
 };
 
 var OpBLS_G2_IsEq = function (FuzzerInput) {
+  if (!ids.IsBLS12_381(BigInt(FuzzerInput['curveType']))) return;
   try {
     var a = To_G2(FuzzerInput['a_w'], FuzzerInput['a_y'], FuzzerInput['a_v'], FuzzerInput['a_x']);
     var b = To_G2(FuzzerInput['b_w'], FuzzerInput['b_y'], FuzzerInput['b_v'], FuzzerInput['b_x']);
@@ -572,6 +586,7 @@ var OpBLS_G2_IsEq = function (FuzzerInput) {
 };
 
 var OpBLS_Aggregate_G1 = function (FuzzerInput) {
+  if (!ids.IsBLS12_381(BigInt(FuzzerInput['curveType']))) return;
   try {
     var points = [];
     for (var i = 0; i < FuzzerInput['points'].length; i++) {
@@ -588,6 +603,7 @@ var OpBLS_Aggregate_G1 = function (FuzzerInput) {
 };
 
 var OpBLS_Aggregate_G2 = function (FuzzerInput) {
+  if (!ids.IsBLS12_381(BigInt(FuzzerInput['curveType']))) return;
   try {
     var points = [];
     for (var i = 0; i < FuzzerInput['points'].length; i++) {
