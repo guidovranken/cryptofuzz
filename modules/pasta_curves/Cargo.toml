@@ -1,0 +1,10 @@
+[package]
+name = "cryptofuzz-pasta_curves-harness"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+pasta_curves = {git = "https://github.com/zcash/pasta_curves"}
