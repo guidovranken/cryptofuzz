@@ -131,10 +131,19 @@ std::optional<component::G1> Aleo::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
     std::reverse(result_x.begin(), result_x.end());
     std::reverse(result_y.begin(), result_y.end());
 
-    ret = component::G1{
-        util::BinToDec(result_x.data(), result_x.size()),
-        util::BinToDec(result_y.data(), result_y.size()),
-    };
+    {
+        const auto rx = util::BinToDec(result_x.data(), result_x.size());
+        auto ry = util::BinToDec(result_y.data(), result_y.size());
+
+        /* Aleo encodes infinity as (0, 1) */
+        /* Correct for compatibility with other libraries */
+
+        if ( rx == "0" && ry == "1") {
+            ry = "0";
+        }
+
+        ret = component::G1{rx, ry};
+    }
 
 end:
     return ret;
