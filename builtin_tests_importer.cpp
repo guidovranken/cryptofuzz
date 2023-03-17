@@ -616,6 +616,57 @@ void Builtin_tests_importer::Run(void) {
         write(CF_OPERATION("ECC_Point_Mul"), dsOut2);
     }
 
+    {
+        /* Scalar such that k1_neg is true and k2_neg is false */
+        /* https://github.com/AleoHQ/snarkVM/blob/9ade8409432ff4d8cbc3ba5ac6dde97655beac6b/fields/src/fp_256.rs#L496-L504 */
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["a_x"] = "89363714989903307245735717098563574705733591463163614225748337416674727625843187853442697973404985688481508350822";
+        parameters["a_y"] = "3702177272937190650578065972808860481433820514072818216637796320125658674906330993856598323293086021583822603349";
+        parameters["b"] = "4453541893742930593214268654180304148230257050803212829091857752531601981440";
+        parameters["curveType"] = CF_ECC_CURVE("BLS12_377");
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::BLS_G1_Mul op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("BLS_G1_Mul"), dsOut2);
+    }
+
+    {
+        /* Scalar such that k1_neg is false and k2_neg is true */
+        /* https://github.com/AleoHQ/snarkVM/blob/9ade8409432ff4d8cbc3ba5ac6dde97655beac6b/fields/src/fp_256.rs#L496-L504 */
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["a_x"] = "89363714989903307245735717098563574705733591463163614225748337416674727625843187853442697973404985688481508350822";
+        parameters["a_y"] = "3702177272937190650578065972808860481433820514072818216637796320125658674906330993856598323293086021583822603349";
+        parameters["b"] = "16888923498856740848497649877563093062843692422813008913571990191461650923522";
+        parameters["curveType"] = CF_ECC_CURVE("BLS12_377");
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::BLS_G1_Mul op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("BLS_G1_Mul"), dsOut2);
+    }
+
+    {
+        /* Scalar such that k1_neg is true and k2_neg is true */
+        /* https://github.com/AleoHQ/snarkVM/blob/9ade8409432ff4d8cbc3ba5ac6dde97655beac6b/fields/src/fp_256.rs#L496-L504 */
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["a_x"] = "89363714989903307245735717098563574705733591463163614225748337416674727625843187853442697973404985688481508350822";
+        parameters["a_y"] = "3702177272937190650578065972808860481433820514072818216637796320125658674906330993856598323293086021583822603349";
+        parameters["b"] = "4453541893742930593214268654180304148185019842427544528882691061914575669721";
+        parameters["curveType"] = CF_ECC_CURVE("BLS12_377");
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::BLS_G1_Mul op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("BLS_G1_Mul"), dsOut2);
+    }
+
     ecdsa_verify_tests();
     ecc_point_add_tests();
 }
