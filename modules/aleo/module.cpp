@@ -43,6 +43,20 @@ namespace module {
 Aleo::Aleo(void) :
     Module("Aleo") { }
 
+namespace aleo_detail {
+    component::G1 CorrectInfinity(const std::string& x, const std::string& y) {
+        /* Aleo encodes infinity as (0, 1) */
+        /* Correct for compatibility with other libraries */
+
+        if ( x == "0" && y == "1") {
+            return {"0", "0"};
+        } else {
+            return {x, y};
+        }
+
+    }
+}
+
 std::optional<component::BLS_PublicKey> Aleo::OpBLS_PrivateToPublic(operation::BLS_PrivateToPublic& op) {
     std::optional<component::BLS_PublicKey> ret = std::nullopt;
 
@@ -63,10 +77,9 @@ std::optional<component::BLS_PublicKey> Aleo::OpBLS_PrivateToPublic(operation::B
     std::reverse(result_x.begin(), result_x.end());
     std::reverse(result_y.begin(), result_y.end());
 
-    ret = component::BLS_PublicKey{
-        util::BinToDec(result_x.data(), result_x.size()),
-        util::BinToDec(result_y.data(), result_y.size()),
-    };
+    ret = aleo_detail::CorrectInfinity(
+            util::BinToDec(result_x.data(), result_x.size()),
+            util::BinToDec(result_y.data(), result_y.size()));
 
 end:
     return ret;
@@ -131,19 +144,9 @@ std::optional<component::G1> Aleo::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
     std::reverse(result_x.begin(), result_x.end());
     std::reverse(result_y.begin(), result_y.end());
 
-    {
-        const auto rx = util::BinToDec(result_x.data(), result_x.size());
-        auto ry = util::BinToDec(result_y.data(), result_y.size());
-
-        /* Aleo encodes infinity as (0, 1) */
-        /* Correct for compatibility with other libraries */
-
-        if ( rx == "0" && ry == "1") {
-            ry = "0";
-        }
-
-        ret = component::G1{rx, ry};
-    }
+    ret = aleo_detail::CorrectInfinity(
+            util::BinToDec(result_x.data(), result_x.size()),
+            util::BinToDec(result_y.data(), result_y.size()));
 
 end:
     return ret;
