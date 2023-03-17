@@ -155,6 +155,8 @@ std::optional<component::G2> Gnark_bn254::OpBLS_G2_Mul(operation::BLS_G2_Mul& op
     auto jsonStr = json.dump();
     if ( op.curveType.Is(CF_ECC_CURVE("BLS12_381")) ) {
         Gnark_bls12_381_BLS_G2_Mul(toGoSlice(jsonStr));
+    } else if ( op.curveType.Is(CF_ECC_CURVE("BLS12_377")) ) {
+        Gnark_bls12_377_BLS_G2_Mul(toGoSlice(jsonStr));
     } else if ( op.curveType.Is(CF_ECC_CURVE("alt_bn128")) ) {
         Gnark_bn254_BLS_G2_Mul(toGoSlice(jsonStr));
     } else {

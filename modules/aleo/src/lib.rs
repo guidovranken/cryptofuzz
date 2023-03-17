@@ -1,4 +1,4 @@
-use snarkvm_curves::bls12_377::{Fq, Fr, G1Affine};
+use snarkvm_curves::bls12_377::{Fq, Fr, Fq2, G1Affine, G2Affine};
 use snarkvm_utilities::ToBytes;
 use std::ops::{Add, Sub, Mul, Neg};
 use snarkvm_fields::Field;
@@ -170,6 +170,68 @@ pub extern "C" fn cryptofuzz_aleo_g1_neg(
 
     assert!(res_y.len() == 48);
     unsafe {
+        ptr::copy_nonoverlapping(res_y.as_ptr(), result_y, res_y.len());
+    }
+
+    return 0;
+}
+
+#[no_mangle]
+pub extern "C" fn cryptofuzz_aleo_g2_mul(
+            a_v_bytes: *mut u8,
+            a_w_bytes: *mut u8,
+            a_x_bytes: *mut u8,
+            a_y_bytes: *mut u8,
+            b_bytes: *mut u8,
+            result_v: *mut u8,
+            result_w: *mut u8,
+            result_x: *mut u8,
+            result_y: *mut u8) -> i32 {
+    let a_v = unsafe { slice::from_raw_parts(a_v_bytes, 48) };
+    let a_v = Fq::from_bytes_be_mod_order(a_v);
+
+    let a_w = unsafe { slice::from_raw_parts(a_w_bytes, 48) };
+    let a_w = Fq::from_bytes_be_mod_order(a_w);
+
+    let a_x = unsafe { slice::from_raw_parts(a_x_bytes, 48) };
+    let a_x = Fq::from_bytes_be_mod_order(a_x);
+
+    let a_y = unsafe { slice::from_raw_parts(a_y_bytes, 48) };
+    let a_y = Fq::from_bytes_be_mod_order(a_y);
+
+    let b = unsafe { slice::from_raw_parts(b_bytes, 32) };
+    let b = Fr::from_bytes_be_mod_order(b);
+
+    let a = G2Affine::new(
+        Fq2::new(a_v, a_x),
+        Fq2::new(a_w, a_y),
+        false);
+
+    let res = a.mul(b).to_affine();
+
+    let res_v = match res.x.c0.to_bytes_le() {
+        Ok(v) => v,
+        Err(_) => return -1,
+    };
+
+    let res_w = match res.x.c1.to_bytes_le() {
+        Ok(v) => v,
+        Err(_) => return -1,
+    };
+
+    let res_x = match res.y.c0.to_bytes_le() {
+        Ok(v) => v,
+        Err(_) => return -1,
+    };
+
+    let res_y = match res.y.c1.to_bytes_le() {
+        Ok(v) => v,
+        Err(_) => return -1,
+    };
+    unsafe {
+        ptr::copy_nonoverlapping(res_v.as_ptr(), result_v, res_v.len());
+        ptr::copy_nonoverlapping(res_w.as_ptr(), result_x, res_w.len());
+        ptr::copy_nonoverlapping(res_x.as_ptr(), result_w, res_x.len());
         ptr::copy_nonoverlapping(res_y.as_ptr(), result_y, res_y.len());
     }
 

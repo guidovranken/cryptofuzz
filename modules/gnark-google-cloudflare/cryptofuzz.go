@@ -266,6 +266,25 @@ func saveG2_bls12381(v* gnark_bls12381.G2Affine) {
     result = r2
 }
 
+func saveG2_bls12377(v* gnark_bls12377.G2Affine) {
+    res := make([][]string, 2)
+    res[0] = make([]string, 2)
+    res[1] = make([]string, 2)
+
+    res[0][0] = fp12377ToString(&v.X.A0)
+    res[0][1] = fp12377ToString(&v.Y.A0)
+    res[1][0] = fp12377ToString(&v.X.A1)
+    res[1][1] = fp12377ToString(&v.Y.A1)
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
 func Gnark_bn256_IsG1OnCurve(v* bn254.G1Affine) bool {
     if v.X.IsZero() && v.Y.IsZero() {
         return false
@@ -715,6 +734,35 @@ func Gnark_bls12_381_BLS_G2_Mul(in []byte) {
     }
 
     saveG2_bls12381(r_affine)
+}
+
+//export Gnark_bls12_377_BLS_G2_Mul
+func Gnark_bls12_377_BLS_G2_Mul(in []byte) {
+    resetResult()
+
+    var op OpBLS_G2_Mul
+    unmarshal(in, &op)
+
+    g2 := new(gnark_bls12377.G2Affine)
+
+    g2.X.A1.SetBigInt(decodeBignum(op.A_x))
+    g2.X.A0.SetBigInt(decodeBignum(op.A_v))
+    g2.Y.A1.SetBigInt(decodeBignum(op.A_y))
+    g2.Y.A0.SetBigInt(decodeBignum(op.A_w))
+
+    g2_jac := new(gnark_bls12377.G2Jac).FromAffine(g2)
+
+    b := decodeBignum(op.B)
+
+    r := new(gnark_bls12377.G2Jac)
+    r.ScalarMultiplication(g2_jac, b)
+    r_affine := new(gnark_bls12377.G2Affine).FromJacobian(r)
+
+    if !g2.IsOnCurve() || !g2.IsInSubGroup() {
+        return
+    }
+
+    saveG2_bls12377(r_affine)
 }
 
 //export Gnark_bn254_BLS_G2_Neg

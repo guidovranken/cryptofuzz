@@ -26,6 +26,16 @@ extern "C" {
             uint8_t* a_y_bytes,
             uint8_t* result_x,
             uint8_t* result_y);
+    int cryptofuzz_aleo_g2_mul(
+            uint8_t* a_v_bytes,
+            uint8_t* a_w_bytes,
+            uint8_t* a_x_bytes,
+            uint8_t* a_y_bytes,
+            uint8_t* b_bytes,
+            uint8_t* result_v,
+            uint8_t* result_w,
+            uint8_t* result_x,
+            uint8_t* result_y);
     int cryptofuzz_aleo_bignumcalc_fq(
             uint8_t op,
             uint8_t* bn0_bytes,
@@ -44,7 +54,7 @@ Aleo::Aleo(void) :
     Module("Aleo") { }
 
 namespace aleo_detail {
-    component::G1 CorrectInfinity(const std::string& x, const std::string& y) {
+    static component::G1 CorrectInfinityG1(const std::string& x, const std::string& y) {
         /* Aleo encodes infinity as (0, 1) */
         /* Correct for compatibility with other libraries */
 
@@ -53,7 +63,21 @@ namespace aleo_detail {
         } else {
             return {x, y};
         }
+    }
 
+    static component::G2 CorrectInfinityG2(
+            const std::string& v,
+            const std::string& w,
+            const std::string& x,
+            const std::string& y) {
+        /* Aleo encodes infinity as (1, 1, 0, 0) */
+        /* Correct for compatibility with other libraries */
+
+        if ( v == "0" && w == "1" && x == "0" && y == "0") {
+            return {"0", "0", "0", "0"};
+        } else {
+            return {v, w, x, y};
+        }
     }
 }
 
@@ -77,7 +101,7 @@ std::optional<component::BLS_PublicKey> Aleo::OpBLS_PrivateToPublic(operation::B
     std::reverse(result_x.begin(), result_x.end());
     std::reverse(result_y.begin(), result_y.end());
 
-    ret = aleo_detail::CorrectInfinity(
+    ret = aleo_detail::CorrectInfinityG1(
             util::BinToDec(result_x.data(), result_x.size()),
             util::BinToDec(result_y.data(), result_y.size()));
 
@@ -144,7 +168,7 @@ std::optional<component::G1> Aleo::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
     std::reverse(result_x.begin(), result_x.end());
     std::reverse(result_y.begin(), result_y.end());
 
-    ret = aleo_detail::CorrectInfinity(
+    ret = aleo_detail::CorrectInfinityG1(
             util::BinToDec(result_x.data(), result_x.size()),
             util::BinToDec(result_y.data(), result_y.size()));
 
@@ -179,6 +203,47 @@ std::optional<component::G1> Aleo::OpBLS_G1_Neg(operation::BLS_G1_Neg& op) {
         util::BinToDec(result_y.data(), result_y.size()),
     };
 
+end:
+    return ret;
+}
+
+std::optional<component::G2> Aleo::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
+    std::optional<component::G2> ret = std::nullopt;
+
+    if ( !op.curveType.Is(CF_ECC_CURVE("BLS12_377")) ) {
+        return ret;
+    }
+
+    std::optional<std::vector<uint8_t>> a_v_bytes, a_w_bytes, a_x_bytes, a_y_bytes, b_bytes;
+    std::array<uint8_t, 48> result_v, result_w, result_x, result_y;
+
+    CF_CHECK_NE(a_v_bytes = util::DecToBin(op.a.first.first.ToTrimmedString(), 48), std::nullopt);
+    CF_CHECK_NE(a_w_bytes = util::DecToBin(op.a.first.second.ToTrimmedString(), 48), std::nullopt);
+    CF_CHECK_NE(a_x_bytes = util::DecToBin(op.a.second.first.ToTrimmedString(), 48), std::nullopt);
+    CF_CHECK_NE(a_y_bytes = util::DecToBin(op.a.second.second.ToTrimmedString(), 48), std::nullopt);
+    CF_CHECK_NE(b_bytes = util::DecToBin(op.b.ToTrimmedString(), 32), std::nullopt);
+
+    CF_CHECK_EQ(cryptofuzz_aleo_g2_mul(
+                    a_v_bytes->data(),
+                    a_w_bytes->data(),
+                    a_x_bytes->data(),
+                    a_y_bytes->data(),
+                    b_bytes->data(),
+                    result_v.data(),
+                    result_w.data(),
+                    result_x.data(),
+                    result_y.data()), 0);
+
+    std::reverse(result_v.begin(), result_v.end());
+    std::reverse(result_w.begin(), result_w.end());
+    std::reverse(result_x.begin(), result_x.end());
+    std::reverse(result_y.begin(), result_y.end());
+
+    ret = aleo_detail::CorrectInfinityG2(
+            util::BinToDec(result_v.data(), result_v.size()),
+            util::BinToDec(result_w.data(), result_w.size()),
+            util::BinToDec(result_x.data(), result_x.size()),
+            util::BinToDec(result_y.data(), result_y.size()));
 end:
     return ret;
 }

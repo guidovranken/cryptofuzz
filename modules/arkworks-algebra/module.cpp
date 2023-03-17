@@ -154,6 +154,17 @@ extern "C" {
             uint64_t* ay_bytes,
             uint64_t* result_x,
             uint64_t* result_y);
+    int arkworks_algebra_g2_mul_bls12_377(
+            uint64_t* av_bytes,
+            uint64_t* aw_bytes,
+            uint64_t* ax_bytes,
+            uint64_t* ay_bytes,
+            uint64_t* b_bytes,
+            int affine,
+            uint64_t* result_v,
+            uint64_t* result_w,
+            uint64_t* result_x,
+            uint64_t* result_y);
     int arkworks_algebra_bignumcalc_bls12_377_fq(
             uint64_t op,
             uint64_t* bn0_bytes,
@@ -699,7 +710,9 @@ end:
 }
 
 std::optional<component::G2> arkworks_algebra::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
-    if ( op.curveType.Get() != CF_ECC_CURVE("BLS12_381") ) {
+    if (
+        op.curveType.Get() != CF_ECC_CURVE("BLS12_381") &&
+        op.curveType.Get() != CF_ECC_CURVE("BLS12_377") ) {
         return std::nullopt;
     }
 
@@ -736,7 +749,27 @@ std::optional<component::G2> arkworks_algebra::OpBLS_G2_Mul(operation::BLS_G2_Mu
                         result_x.data(),
                         result_y.data()
                         ), -1);
-        ret = arkworks_algebra_detail::ToG2(result_v, result_w, result_x, result_y);
+            ret = arkworks_algebra_detail::ToG2(result_v, result_w, result_x, result_y);
+        } else if ( op.curveType.Get() == CF_ECC_CURVE("BLS12_377") ) {
+            bool affine = true;
+            try {
+                affine = ds.Get<bool>();
+            } catch ( fuzzing::datasource::Base::OutOfData ) {
+            }
+
+            CF_CHECK_NE(arkworks_algebra_g2_mul_bls12_377(
+                        av->data(),
+                        aw->data(),
+                        ax->data(),
+                        ay->data(),
+                        b->data(),
+                        affine,
+                        result_v.data(),
+                        result_w.data(),
+                        result_x.data(),
+                        result_y.data()
+                        ), -1);
+            ret = arkworks_algebra_detail::ToG2(result_v, result_w, result_x, result_y);
         }
     }
 end:

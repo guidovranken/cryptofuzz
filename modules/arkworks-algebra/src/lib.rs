@@ -1364,3 +1364,79 @@ pub extern "C" fn arkworks_algebra_g1_neg_bls12_377(
 
     return 0;
 }
+
+#[no_mangle]
+pub extern "C" fn arkworks_algebra_g2_mul_bls12_377(
+            av_bytes: *mut u64,
+            aw_bytes: *mut u64,
+            ax_bytes: *mut u64,
+            ay_bytes: *mut u64,
+            b_bytes: *mut u64,
+            affine: i32,
+            result_v: *mut u64,
+            result_w: *mut u64,
+            result_x: *mut u64,
+            result_y: *mut u64) -> i32 {
+    let mut arr6: [u64; 6] = [0; 6];
+    let mut arr4: [u64; 4] = [0; 4];
+
+    arr6.clone_from_slice(unsafe{slice::from_raw_parts(av_bytes, 6)});
+    let av = match ark_bls12_377::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
+
+    arr6.clone_from_slice(unsafe{slice::from_raw_parts(aw_bytes, 6)});
+    let aw = match ark_bls12_377::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
+
+    arr6.clone_from_slice(unsafe{slice::from_raw_parts(ax_bytes, 6)});
+    let ax = match ark_bls12_377::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
+
+    arr6.clone_from_slice(unsafe{slice::from_raw_parts(ay_bytes, 6)});
+    let ay = match ark_bls12_377::Fq::from_repr(BigInteger384::new(arr6)) {
+        Some(v) => v,
+        None => return -1,
+    };
+
+    let g2 = ark_bls12_377::G2Affine::new(
+        ark_bls12_377::Fq2::new(av, ax),
+        ark_bls12_377::Fq2::new(aw, ay),
+        false);
+
+    if !g2.is_on_curve() || !g2.is_in_correct_subgroup_assuming_on_curve() {
+        return -1;
+    }
+
+    arr4.clone_from_slice(unsafe{slice::from_raw_parts(b_bytes, 4)});
+    let b = match ark_bls12_377::Fr::from_repr(BigInteger256::new(arr4)) {
+        Some(v) => v,
+        None => return -1,
+    };
+
+    let res = match affine {
+        1 => g2.mul(b).into_affine(),
+        0 => g2.mul(b).into_affine(),
+        //0 => g2.into_projective().mul(b.0).into_affine(),
+        _ => { panic!("Invalid"); }
+    };
+
+    let res_bn_v : BigInteger384 = res.x.c0.into();
+    let res_bn_w : BigInteger384 = res.x.c1.into();
+    let res_bn_x : BigInteger384 = res.y.c0.into();
+    let res_bn_y : BigInteger384 = res.y.c1.into();
+
+    unsafe {
+        ptr::copy_nonoverlapping(res_bn_v.as_ref().as_ptr(), result_v, 6);
+        ptr::copy_nonoverlapping(res_bn_w.as_ref().as_ptr(), result_x, 6);
+        ptr::copy_nonoverlapping(res_bn_x.as_ref().as_ptr(), result_w, 6);
+        ptr::copy_nonoverlapping(res_bn_y.as_ref().as_ptr(), result_y, 6);
+    }
+
+    return 0;
+}
