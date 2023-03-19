@@ -253,7 +253,11 @@ end:
     return point;
 }
 
-bool ECCPoint::Set(const component::BignumPair& xy, const uint64_t curveType, const bool pointCheck) {
+bool ECCPoint::Set(
+        const component::BignumPair& xy,
+        const uint64_t curveType,
+        const bool pointCheck,
+        const bool mp_init_size_ok) {
     bool ret = false;
 
     bool projective = false;
@@ -261,7 +265,9 @@ bool ECCPoint::Set(const component::BignumPair& xy, const uint64_t curveType, co
         projective = ds.Get<bool>();
     } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
-    wolfCrypt_bignum::Bignum x(ds), y(ds), z(ds);
+    wolfCrypt_bignum::Bignum x(ds, mp_init_size_ok);
+    wolfCrypt_bignum::Bignum y(ds, mp_init_size_ok);
+    wolfCrypt_bignum::Bignum z(ds, mp_init_size_ok);
 
     if ( projective == false ) {
         CF_CHECK_TRUE(x.Set(xy.first));
@@ -715,7 +721,11 @@ std::optional<bool> OpECCSI_Verify(operation::ECCSI_Verify& op) {
 
     {
         ECCPoint pvt(ds, *curveId);
-        CF_CHECK_TRUE(pvt.Set(op.signature.pvt, op.curveType.Get()));
+        CF_CHECK_TRUE(pvt.Set(
+                    op.signature.pvt,
+                    op.curveType.Get(),
+                    false,
+                    false));
 
         WC_CHECK_EQ(wc_InitEccsiKey_ex(&eccsi, size, *curveId, nullptr, -1), 0);
         eccsi_initialized = true;
