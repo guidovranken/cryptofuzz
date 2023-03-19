@@ -325,6 +325,8 @@ void Wycheproof::ECDH(const nlohmann::json& groups) {
                         curveID = CF_ECC_CURVE("brainpool512r1");
                     } else if ( curve == "brainpoolP512t1" ) {
                         curveID = CF_ECC_CURVE("brainpool512t1");
+                    } else if ( curve == "FRP256v1" ) {
+                        curveID = CF_ECC_CURVE("frp256v1");
                     } else {
                         CF_ASSERT(0, "Curve not recognized");
                     }
