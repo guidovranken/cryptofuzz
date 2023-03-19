@@ -103,9 +103,7 @@ class OpenSSL : public Module {
         std::optional<component::ECDSA_Signature> OpECDSA_Sign(operation::ECDSA_Sign& op) override;
 #endif
         std::optional<bool> OpECDSA_Verify(operation::ECDSA_Verify& op) override;
-#if 0
         std::optional<component::Secret> OpECDH_Derive(operation::ECDH_Derive& op) override;
-#endif
 #if !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
         std::optional<component::DH_KeyPair> OpDH_GenerateKeyPair(operation::DH_GenerateKeyPair& op) override;
 #endif

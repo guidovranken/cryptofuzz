@@ -3773,78 +3773,67 @@ end:
     return ret;
 }
 
-/* ECDH_Derive is temporarily disabled */
-#if 0
 std::optional<component::Secret> OpenSSL::OpECDH_Derive(operation::ECDH_Derive& op) {
     std::optional<component::Secret> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    CF_EC_KEY key1(ds);
-    CF_EC_KEY key2(ds);
-    std::unique_ptr<CF_EC_POINT> pub = nullptr;
-    std::shared_ptr<CF_EC_GROUP> group = nullptr;
 
-    /* Initialize */
+    CF_EC_KEY key(ds);
+    OpenSSL_bignum::Bignum prv(ds);
+    std::shared_ptr<CF_EC_GROUP> group = nullptr;
+    std::unique_ptr<CF_EC_POINT> pub = nullptr;
+    uint8_t* secret = nullptr;
+    int secret_len;
+
     {
         std::optional<int> curveNID;
         CF_CHECK_NE(curveNID = toCurveNID(op.curveType), std::nullopt);
         CF_CHECK_NE(group = std::make_shared<CF_EC_GROUP>(ds, *curveNID), nullptr);
         group->Lock();
         CF_CHECK_NE(group->GetPtr(), nullptr);
-        CF_CHECK_EQ(EC_KEY_set_group(key1.GetPtr(), group->GetPtr()), 1);
-        CF_CHECK_EQ(EC_KEY_set_group(key2.GetPtr(), group->GetPtr()), 1);
     }
 
-    /* Construct public keys */
-    for (size_t i = 0; i < 2; i++) {
-        OpenSSL_bignum::Bignum pub_x(ds);
-        OpenSSL_bignum::Bignum pub_y(ds);
-
-        CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group), nullptr);
-        if ( i == 0 ) {
-            CF_CHECK_EQ(pub_x.Set(op.pub1.first.ToString(ds)), true);
-            CF_CHECK_EQ(pub_y.Set(op.pub1.second.ToString(ds)), true);
-        } else {
-            CF_CHECK_EQ(pub_x.Set(op.pub2.first.ToString(ds)), true);
-            CF_CHECK_EQ(pub_y.Set(op.pub2.second.ToString(ds)), true);
-        }
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_110)
-        CF_CHECK_NE(EC_POINT_set_affine_coordinates(group->GetPtr(), pub->GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
-#else
-        CF_CHECK_NE(EC_POINT_set_affine_coordinates_GFp(group->GetPtr(), pub->GetPtr(), pub_x.GetPtr(), pub_y.GetPtr(), nullptr), 0);
-#endif
-        if ( i == 0 ) {
-            CF_CHECK_EQ(EC_KEY_set_public_key(key1.GetPtr(), pub->GetPtr()), 1);
-        } else {
-            CF_CHECK_EQ(EC_KEY_set_public_key(key2.GetPtr(), pub->GetPtr()), 1);
-        }
-    }
-
-    /* Create key */
+    /* Load private key */
     {
-        /* Calculate the size of the buffer for the shared secret */
-        const int fieldSize = EC_GROUP_get_degree(EC_KEY_get0_group(key1.GetPtr()));
-        int outSize = (fieldSize + 7) /8;
+        CF_CHECK_EQ(EC_KEY_set_group(key.GetPtr(), group->GetPtr()), 1);
 
-        uint8_t* out = util::malloc(outSize);
+        /* Load private key */
+        CF_CHECK_EQ(prv.Set(op.priv.ToString(ds)), true);
 
-        /* Derive the shared secret */
-        outSize = ECDH_compute_key(out, outSize, EC_KEY_get0_public_key(key2.GetPtr()), key1.GetPtr(), nullptr);
-
-        if ( outSize == -1 ) {
-            util::free(out);
-        }
-        CF_CHECK_NE(outSize, -1);
-
-        ret = component::Secret(out, outSize);
-        util::free(out);
+        /* Set private key */
+        CF_CHECK_EQ(EC_KEY_set_private_key(key.GetPtr(), prv.GetPtr()), 1);
     }
+
+    /* Load public key */
+    {
+        CF_CHECK_NE(pub = std::make_unique<CF_EC_POINT>(ds, group, op.curveType.Get()), nullptr);
+        CF_CHECK_TRUE(pub->Set(op.pub.first, op.pub.second, false, false));
+    }
+
+#if 0
+    secret_len = ECDH_compute_key(
+            nullptr, 0, pub->GetPtr(), key.GetPtr(), nullptr);
+    CF_CHECK_GT(secret_len, 0);
+    abort();
+#endif
+
+    secret_len = 1024;
+    secret = util::malloc(secret_len);
+
+    secret_len = ECDH_compute_key(
+             secret,
+             1024,
+             pub->GetPtr(),
+             key.GetPtr(), nullptr);
+    CF_CHECK_GT(secret_len, 0);
+
+    ret = component::Secret(Buffer(secret, secret_len));
 
 end:
+    util::free(secret);
 
     return ret;
 }
-#endif
 
 /* TODO OpenSSL 1.0.2, 0.9.8 */
 #if !defined(CRYPTOFUZZ_OPENSSL_102) && !defined(CRYPTOFUZZ_OPENSSL_098)
