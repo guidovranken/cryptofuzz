@@ -667,6 +667,57 @@ void Builtin_tests_importer::Run(void) {
         write(CF_OPERATION("BLS_G1_Mul"), dsOut2);
     }
 
+    {
+        /* Scalar such that k1neg is true and k2neg is false */
+        /* https://github.com/paulmillr/noble-curves/blob/1c6aa07ff702815b52080d6d9772cb2d1ab84bcc/src/secp256k1.ts#L79-L80 */
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["a_x"] = "55066263022277343669578718895168534326250603453777594175500187360389116729240";
+        parameters["a_y"] = "32670510020758816978083085130507043184471273380659243275938904335757337482424";
+        parameters["b"] = "2704427838213584814824020837927043695889";
+        parameters["curveType"] = CF_ECC_CURVE("secp256k1");
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::ECC_Point_Mul op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("ECC_Point_Mul"), dsOut2);
+    }
+
+    {
+        /* Scalar such that k1neg is false and k2neg is true */
+        /* https://github.com/paulmillr/noble-curves/blob/1c6aa07ff702815b52080d6d9772cb2d1ab84bcc/src/secp256k1.ts#L79-L80 */
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["a_x"] = "55066263022277343669578718895168534326250603453777594175500187360389116729240";
+        parameters["a_y"] = "32670510020758816978083085130507043184471273380659243275938904335757337482424";
+        parameters["b"] = "367917413016453100223835821029139468248";
+        parameters["curveType"] = CF_ECC_CURVE("secp256k1");
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::ECC_Point_Mul op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("ECC_Point_Mul"), dsOut2);
+    }
+
+    {
+        /* Scalar such that k1neg is true and k2neg is true */
+        /* https://github.com/paulmillr/noble-curves/blob/1c6aa07ff702815b52080d6d9772cb2d1ab84bcc/src/secp256k1.ts#L79-L80 */
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["a_x"] = "55066263022277343669578718895168534326250603453777594175500187360389116729240";
+        parameters["a_y"] = "32670510020758816978083085130507043184471273380659243275938904335757337482424";
+        parameters["b"] = "3808180077262944115495528301014462100633";
+        parameters["curveType"] = CF_ECC_CURVE("secp256k1");
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::ECC_Point_Mul op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("ECC_Point_Mul"), dsOut2);
+    }
+
     ecdsa_verify_tests();
     ecc_point_add_tests();
 }
