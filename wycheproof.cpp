@@ -23,6 +23,8 @@ void Wycheproof::Run(void) {
         EDDSA_Verify(groups);
     } else if ( j["schema"].get<std::string>() == "ecdh_test_schema.json" ) {
         ECDH(groups);
+    } else if ( j["schema"].get<std::string>() == "dsa_verify_schema.json" ) {
+        DSA(groups);
     }
 }
 
@@ -355,6 +357,57 @@ void Wycheproof::ECDH(const nlohmann::json& groups) {
 end:
             (void)1;
         }
+    }
+}
+
+void Wycheproof::DSA(const nlohmann::json& groups) {
+    for (const auto &group : groups) {
+        if ( group["sha"] != "SHA-256" ) {
+            /* XXX */
+            return;
+        }
+
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+
+        nlohmann::json parameters_;
+        parameters_["p"] = util::HexToDec(group["key"]["p"]);
+        parameters_["q"] = util::HexToDec(group["key"]["q"]);
+        parameters_["g"] = util::HexToDec(group["key"]["g"]);
+        parameters["parameters"] = parameters_;
+
+        parameters["pub"] = util::HexToDec(group["key"]["y"]);
+
+        for (const auto &test : group["tests"]) {
+            {
+                /* Hex-decode cleartext */
+                std::vector<uint8_t> ct_sha256;
+                boost::algorithm::unhex(
+                        test["msg"].get<std::string>(),
+                        std::back_inserter(ct_sha256));
+                const auto ct = crypto::sha256(ct_sha256);
+
+                std::string ct_hex;
+                boost::algorithm::hex(ct, std::back_inserter(ct_hex));
+                parameters["cleartext"] = ct_hex;
+            }
+
+            const auto sig = util::SignatureFromDER(test["sig"].get<std::string>());
+            CF_CHECK_NE(sig, std::nullopt);
+            parameters["signature"][0] = sig->first;
+            parameters["signature"][1] = sig->second;
+
+            {
+                fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+                cryptofuzz::operation::DSA_Verify op(parameters);
+                op.Serialize(dsOut2);
+
+                write(CF_OPERATION("DSA_Verify"), dsOut2);
+            }
+        }
+end:
+        (void)1;
     }
 }
 
