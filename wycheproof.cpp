@@ -25,6 +25,8 @@ void Wycheproof::Run(void) {
         ECDH(groups);
     } else if ( j["schema"].get<std::string>() == "dsa_verify_schema.json" ) {
         DSA(groups);
+    } else if ( j["schema"].get<std::string>() == "primality_test_schema.json" ) {
+        PrimalityTest(groups);
     }
 }
 
@@ -408,6 +410,26 @@ void Wycheproof::DSA(const nlohmann::json& groups) {
         }
 end:
         (void)1;
+    }
+}
+
+void Wycheproof::PrimalityTest(const nlohmann::json& groups) {
+    for (const auto &group : groups) {
+        for (const auto &test : group["tests"]) {
+            nlohmann::json parameters;
+
+            parameters["modifier"] = "";
+            parameters["calcOp"] = CF_CALCOP("IsPrime(A)");
+            parameters["bn1"] = util::HexToDec(test["value"]);
+            parameters["bn2"] = "";
+            parameters["bn3"] = "";
+            parameters["bn4"] = "";
+
+            fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+            cryptofuzz::operation::BignumCalc op(parameters);
+            op.Serialize(dsOut2);
+            write(CF_OPERATION("BignumCalc"), dsOut2);
+        }
     }
 }
 
