@@ -8,6 +8,7 @@
 #include <botan/curve25519.h>
 #include <botan/dh.h>
 #include <botan/dl_group.h>
+#include <botan/dsa.h>
 #include <botan/ecdsa.h>
 #include <botan/ecgdsa.h>
 #include <botan/ed25519.h>
@@ -1595,6 +1596,33 @@ std::optional<bool> Botan::OpECC_Point_Cmp(operation::ECC_Point_Cmp& op) {
     }
 
 end:
+    return ret;
+}
+
+std::optional<bool> Botan::OpDSA_Verify(operation::DSA_Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    try {
+        const auto p = ::Botan::BigInt(op.parameters.p.ToString(ds));
+        const auto q = ::Botan::BigInt(op.parameters.q.ToString(ds));
+        const auto g = ::Botan::BigInt(op.parameters.g.ToString(ds));
+        const ::Botan::DL_Group group(p, q, g);
+
+        const auto y = ::Botan::BigInt(op.pub.ToString(ds));
+        const auto pub = std::make_unique<::Botan::DSA_PublicKey>(group, y);
+
+        const auto r = ::Botan::BigInt(op.signature.first.ToString(ds));
+        const auto s = ::Botan::BigInt(op.signature.second.ToString(ds));
+
+        const auto sig = ::Botan::BigInt::encode_fixed_length_int_pair(
+                r, s, std::max(r.bytes(), s.bytes()));
+        auto verifier = ::Botan::PK_Verifier(*pub, "Raw");
+        verifier.update(op.cleartext.Get());
+        ret = verifier.check_signature(sig);
+    } catch ( ... ) {
+    }
+
     return ret;
 }
 

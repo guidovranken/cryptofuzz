@@ -37,6 +37,7 @@ class Botan : public Module {
         std::optional<component::ECC_Point> OpECC_Point_Neg(operation::ECC_Point_Neg& op) override;
         std::optional<component::ECC_Point> OpECC_Point_Dbl(operation::ECC_Point_Dbl& op) override;
         std::optional<bool> OpECC_Point_Cmp(operation::ECC_Point_Cmp& op) override;
+        std::optional<bool> OpDSA_Verify(operation::DSA_Verify& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
         bool SupportsModularBignumCalc(void) const override;
 };
