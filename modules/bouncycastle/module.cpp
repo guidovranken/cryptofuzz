@@ -15,7 +15,6 @@ namespace BouncyCastle_detail {
     jmethodID method_ECC_Point_Mul;
 
     static JNIEnv* create_vm(JavaVM ** jvm) {
-        //std::string option_string = "-Djava.class.path=/mnt/2tb/cf-bouncycastle/cryptofuzz/modules/bouncycastle:/mnt/2tb/cf-bouncycastle/cryptofuzz/modules/bouncycastle/bcprov-ext-jdk18on-172.jar";
         std::string option_string = std::string("-Djava.class.path=") + std::string(CLASS_PATH);
 
         JNIEnv* env;
