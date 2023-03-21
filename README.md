@@ -179,3 +179,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - OpenSSL, LibreSSL, BoringSSL: [DSA signing hangs with invalid parameters](https://github.com/openssl/openssl/issues/20268)
 - Zig: [Streaming SHA3 incorrect output](https://github.com/ziglang/zig/issues/14851)
 - Zig: [Argon2 outputs uninitialized memory with keysize > 64](https://github.com/ziglang/zig/issues/14912)
+- Boost multiprecision: [Loading cpp_int by std::string branches on uninitialized memory](https://github.com/boostorg/multiprecision/issues/526)
