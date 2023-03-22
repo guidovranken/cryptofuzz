@@ -9,6 +9,9 @@ const scrypt = std.crypto.pwhash.scrypt;
 const hash = std.crypto.hash;
 const hmac = std.crypto.auth.hmac;
 const argon2 = std.crypto.pwhash.argon2;
+const P256 = std.crypto.ecc.P256;
+const Secp256k1 = std.crypto.ecc.Secp256k1;
+const P384 = std.crypto.ecc.P384;
 
 export fn cryptofuzz_zig_digest(
         res_data: [*:0]u8,
@@ -818,6 +821,43 @@ export fn cryptofuzz_zig_argon2(
     return 0;
 }
 
+
+export fn cryptofuzz_zig_ecc_point_mul(
+        curve: u32,
+        r: [*:0]u8,
+        ax_data: [*:0]const u8,
+        ay_data: [*:0]const u8,
+        b_data: [*:0]const u8,
+        ) callconv(.C) i32 {
+    if ( curve == 0 ) {
+        var a = P256.fromSerializedAffineCoordinates(
+                ax_data[0..32].*,
+                ay_data[0..32].*,
+                .Big) catch return -1;
+        var res = a.mulPublic(b_data[0..32].*, .Big) catch return -1;
+        var resbytes = res.toUncompressedSec1();
+        mem.copy(u8, r[0..65], &resbytes);
+    } else if ( curve == 1 ) {
+        var a = Secp256k1.fromSerializedAffineCoordinates(
+                ax_data[0..32].*,
+                ay_data[0..32].*,
+                .Big) catch return -1;
+        var res = a.mulPublic(b_data[0..32].*, .Big) catch return -1;
+        var resbytes = res.toUncompressedSec1();
+        mem.copy(u8, r[0..65], &resbytes);
+    } else if ( curve == 2 ) {
+        var a = P384.fromSerializedAffineCoordinates(
+                ax_data[0..48].*,
+                ay_data[0..48].*,
+                .Big) catch return -1;
+        var res = a.mulPublic(b_data[0..48].*, .Big) catch return -1;
+        var resbytes = res.toUncompressedSec1();
+        mem.copy(u8, r[0..97], &resbytes);
+    } else {
+        return -1;
+    }
+    return 0;
+}
 export fn cryptofuzz_zig_bignumcalc(
         res_data: [*:0]u8, res_size: u32,
         a_data: [*:0]const u8, a_size: u32,
