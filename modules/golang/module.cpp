@@ -180,5 +180,12 @@ std::optional<component::ECC_Point> Golang::OpECC_Point_Dbl(operation::ECC_Point
     return getResultAs<component::ECC_Point>();
 }
 
+std::optional<bool> Golang::OpDSA_Verify(operation::DSA_Verify& op) {
+    auto json = op.ToJSON();
+    auto jsonStr = json.dump();
+    Golang_Cryptofuzz_OpDSA_Verify(toGoSlice(jsonStr));
+
+    return getResultAs<bool>();
+}
 } /* namespace module */
 } /* namespace cryptofuzz */

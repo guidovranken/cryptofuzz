@@ -4,6 +4,7 @@ import (
     "bytes"
     "crypto/aes"
     "crypto/cipher"
+    "crypto/dsa"
     "crypto/ecdsa"
     "crypto/elliptic"
     "crypto/hmac"
@@ -213,6 +214,17 @@ type OpECC_Point_Dbl struct {
     CurveType Type
     A_x string
     A_y string
+}
+
+type OpDSA_Verify struct {
+    Modifier ByteSlice
+    P string
+    Q string
+    G string
+    Pub string
+    Cleartext ByteSlice
+    Sig_R string
+    Sig_S string
 }
 
 var result []byte
@@ -1585,6 +1597,46 @@ func Golang_Cryptofuzz_OpECC_Point_Dbl(in []byte) {
     }
 
     result = r2
+}
+
+//export Golang_Cryptofuzz_OpDSA_Verify
+func Golang_Cryptofuzz_OpDSA_Verify(in []byte) {
+    resetResult()
+
+    var op OpDSA_Verify
+    unmarshal(in, &op)
+
+    P := decodeBignum(op.P)
+    Q := decodeBignum(op.Q)
+    G := decodeBignum(op.G)
+    Y := decodeBignum(op.Pub)
+    parameters := dsa.Parameters{
+            P: P,
+            Q: Q,
+            G: G,
+    }
+    pubKey := dsa.PublicKey{
+        Parameters : parameters,
+        Y: Y,
+    }
+    sigR := decodeBignum(op.Sig_R)
+    sigS := decodeBignum(op.Sig_S)
+
+    dsa.Verify(&pubKey, op.Cleartext, sigR, sigS)
+
+    /* XXX */
+
+    /*
+    var res bool
+    res = dsa.Verify(&pubKey, op.Cleartext, sigR, sigS)
+
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+    */
 }
 
 /*
