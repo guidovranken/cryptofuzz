@@ -23,8 +23,8 @@ extern "C" {
     int BN_gcd_ct(BIGNUM *r, const BIGNUM *in_a, const BIGNUM *in_b, BN_CTX *ctx);
     int bn_isqrt(BIGNUM *out_sqrt, int *out_perfect, const BIGNUM *n, BN_CTX *in_ctx);
     int bn_is_perfect_square(int *out_perfect, const BIGNUM *n, BN_CTX *ctx);
-
-
+    int BN_div_ct(BIGNUM *quotient, BIGNUM *remainder, const BIGNUM *numerator, const BIGNUM *divisor, BN_CTX *ctx);
+    int BN_mod_ct(BIGNUM *r, const BIGNUM *a, const BIGNUM *m, BN_CTX *ctx);
 }
 #endif
 
@@ -155,7 +155,7 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     (void)ctx;
     bool ret = false;
 
-    GET_WHICH(6);
+    GET_WHICH(7);
     switch ( which ) {
         case    0:
             CF_ASSERT_EQ_COND(
@@ -234,6 +234,14 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
             CF_NORET(util::HintBignumPow2());
             CF_CHECK_EQ(BN_is_pow2(bn[1].GetPtr()), 1);
             CF_CHECK_EQ(BN_nnmod_pow2(res.GetDestPtr(), bn[0].GetPtr(), BN_num_bits(bn[1].GetPtr()) - 1), 1);
+            break;
+#endif
+#if defined(CRYPTOFUZZ_LIBRESSL)
+        case    7:
+            CF_ASSERT_EQ_COND(
+                    BN_mod_ct(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()),
+                    1,
+                    BN_is_zero(bn[1].GetPtr()));
             break;
 #endif
         default:
@@ -785,7 +793,7 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     (void)ctx;
     bool ret = false;
 
-    GET_WHICH(2);
+    GET_WHICH(3);
     switch ( which ) {
         case    0:
             CF_ASSERT_EQ_COND(
@@ -823,6 +831,19 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
                 CF_CHECK_EQ(res.Set(bn[0]), true);
             }
             break;
+#if defined(CRYPTOFUZZ_LIBRESSL)
+        case    3:
+            CF_ASSERT_EQ_COND(
+                    BN_div_ct(
+                        res.GetDestPtr(),
+                        nullptr,
+                        bn[0].GetPtr(),
+                        bn[1].GetPtr(),
+                        ctx.GetPtr()),
+                    1,
+                    BN_is_zero(bn[1].GetPtr()));
+            break;
+#endif
         default:
             goto end;
             break;
