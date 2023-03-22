@@ -22,7 +22,13 @@ extern "C" {
     }
 
     PVOID SymCryptCallbackAlloc( SIZE_T nBytes ) {
-        return malloc(nBytes);
+        PVOID ptr = NULL;
+        if(posix_memalign( &ptr, 32, nBytes ) != 0)
+        {
+            return NULL;
+        }
+
+        return ptr;
     }
 
     VOID SymCryptCallbackFree( VOID * pMem ) {
@@ -1171,9 +1177,6 @@ namespace SymCrypt_detail {
 }
 
 std::optional<component::ECC_PublicKey> SymCrypt::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
-    /* Disabled because of crashes */
-    return std::nullopt;
-
 #if INTPTR_MAX == INT32_MAX
     /* Pending resolution of https://github.com/microsoft/SymCrypt/issues/9 */
     (void)op;
@@ -1181,6 +1184,7 @@ std::optional<component::ECC_PublicKey> SymCrypt::OpECC_PrivateToPublic(operatio
     return std::nullopt;
 #else
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     SYMCRYPT_ECURVE* curve = nullptr;
     SYMCRYPT_ECKEY* key = nullptr;
@@ -1199,11 +1203,12 @@ std::optional<component::ECC_PublicKey> SymCrypt::OpECC_PrivateToPublic(operatio
                     priv_bytes.data(),
                     priv_size), true);
 
+        ::SymCrypt_detail::ds = &ds;
         CF_CHECK_EQ(SymCryptEckeySetValue(
                 priv_bytes.data(), priv_size,
                 NULL, 0,
                 SYMCRYPT_NUMBER_FORMAT_MSB_FIRST, SYMCRYPT_ECPOINT_FORMAT_XY,
-                0, key), SYMCRYPT_NO_ERROR);
+                SYMCRYPT_FLAG_ECKEY_ECDSA, key), SYMCRYPT_NO_ERROR);
     }
 
     {
@@ -1236,14 +1241,14 @@ end:
     if ( curve ) {
         /* noret */ SymCryptEcurveFree(curve);
     }
+
+    ::SymCrypt_detail::ds = nullptr;
+
     return ret;
 #endif
 }
 
 std::optional<component::ECDSA_Signature> SymCrypt::OpECDSA_Sign(operation::ECDSA_Sign& op) {
-    /* Disabled because of crashes */
-    return std::nullopt;
-
     std::optional<component::ECDSA_Signature> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
@@ -1291,11 +1296,12 @@ std::optional<component::ECDSA_Signature> SymCrypt::OpECDSA_Sign(operation::ECDS
                     priv_bytes.data(),
                     priv_size), true);
 
+        ::SymCrypt_detail::ds = &ds;
         CF_CHECK_EQ(SymCryptEckeySetValue(
                 priv_bytes.data(), priv_size,
                 NULL, 0,
                 SYMCRYPT_NUMBER_FORMAT_MSB_FIRST, SYMCRYPT_ECPOINT_FORMAT_XY,
-                0, key), SYMCRYPT_NO_ERROR);
+                SYMCRYPT_FLAG_ECKEY_ECDSA, key), SYMCRYPT_NO_ERROR);
     }
 
     {
@@ -1303,7 +1309,6 @@ std::optional<component::ECDSA_Signature> SymCrypt::OpECDSA_Sign(operation::ECDS
         const auto sigSize = sigHalfSize * 2;
         std::vector<uint8_t> sig_bytes(sigSize);
 
-        ::SymCrypt_detail::ds = &ds;
         CF_CHECK_EQ(SymCryptEcDsaSignEx(
                     key,
                     hash.data(),
@@ -1338,8 +1343,6 @@ std::optional<component::ECDSA_Signature> SymCrypt::OpECDSA_Sign(operation::ECDS
     }
 
 end:
-    ::SymCrypt_detail::ds = nullptr;
-
     if ( key ) {
         /* noret */ SymCryptEckeyFree(key);
     }
@@ -1350,14 +1353,14 @@ end:
         /* noret */ SymCryptIntFree(nonce);
     }
 
+    ::SymCrypt_detail::ds = nullptr;
+
     return ret;
 }
 
 std::optional<bool> SymCrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {
-    /* Disabled because of crashes */
-    return std::nullopt;
-
     std::optional<bool> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     SYMCRYPT_ECURVE* curve = nullptr;
     SYMCRYPT_ECKEY* key = nullptr;
@@ -1367,10 +1370,6 @@ std::optional<bool> SymCrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {
 
     if ( op.digestType.Is(CF_DIGEST("NULL")) ) {
         hash = op.cleartext.Get();
-        /* Workaround for OOB read bug */
-        if ( hash.empty() || !hash[0] ) {
-            return ret;
-        }
     } else {
         const SYMCRYPT_HASH* hasher = nullptr;
         CF_CHECK_NE(hasher = SymCrypt_detail::to_SYMCRYPT_HASH(op.digestType), nullptr);
@@ -1386,6 +1385,7 @@ std::optional<bool> SymCrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         util::free(state);
     }
 
+    ::SymCrypt_detail::ds = &ds;
     CF_CHECK_NE(curveParams = SymCrypt_detail::toCurveParams(op.curveType.Get()), nullptr);
     CF_CHECK_NE(curve = SymCryptEcurveAllocate(curveParams, 0), nullptr);
     CF_CHECK_NE(key = SymCryptEckeyAllocate(curve), nullptr);
@@ -1407,7 +1407,7 @@ std::optional<bool> SymCrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {
                     NULL, 0,
                     pub.data(), pub.size(),
                     SYMCRYPT_NUMBER_FORMAT_MSB_FIRST, SYMCRYPT_ECPOINT_FORMAT_XY,
-                    0, key), SYMCRYPT_NO_ERROR);
+                    SYMCRYPT_FLAG_ECKEY_ECDSA, key), SYMCRYPT_NO_ERROR);
     }
 
     {
@@ -1431,9 +1431,6 @@ std::optional<bool> SymCrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {
                     SYMCRYPT_NUMBER_FORMAT_MSB_FIRST,
                     0 );
 
-        (void)r;
-        /* Currently disabled due to discrepancy */
-#if 0
         if ( r == SYMCRYPT_NO_ERROR ) {
             ret = true;
         } else if ( r == SYMCRYPT_SIGNATURE_VERIFICATION_FAILURE ) {
@@ -1441,7 +1438,6 @@ std::optional<bool> SymCrypt::OpECDSA_Verify(operation::ECDSA_Verify& op) {
         } else {
             /* Do not set ret if SymCryptEcDsaVerify returns any other result */
         }
-#endif
     }
 
 end:
@@ -1451,6 +1447,7 @@ end:
     if ( curve ) {
         /* noret */ SymCryptEcurveFree(curve);
     }
+    ::SymCrypt_detail::ds = nullptr;
     return ret;
 }
 
