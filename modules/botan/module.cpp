@@ -15,7 +15,7 @@
 #include <botan/hash.h>
 #include <botan/kdf.h>
 #include <botan/mac.h>
-#include <botan/pbkdf.h>
+#include <botan/pwdhash.h>
 #include <botan/pubkey.h>
 #include <botan/pwdhash.h>
 #include <botan/system_rng.h>
@@ -62,17 +62,18 @@ namespace Botan_detail {
 
             void clear() override {}
 
-            virtual void randomize(uint8_t output[], size_t length) override {
-                if ( length == 0 ) {
+            virtual void fill_bytes_with_input(
+                    std::span<uint8_t> output,
+                    std::span<const uint8_t> input) override {
+                (void)input;
+
+                if ( output.empty() ) {
                     return;
                 }
 
-                const auto data = ds.GetData(0, length, length);
+                const auto data = ds.GetData(0, output.size(), output.size());
 
-                memcpy(output, data.data(), length);
-            }
-
-            void add_entropy(const uint8_t[], size_t) override {
+                std::copy(data.begin(), data.end(), output.begin());
             }
 
             std::string name() const override { return "Fuzzer_RNG"; }
@@ -314,7 +315,7 @@ end:
     template <>
     void SetAAD<>(std::shared_ptr<::Botan::AEAD_Mode> crypt, const std::optional<component::AAD>& aad) {
         if ( aad != std::nullopt ) {
-            crypt->set_ad(aad->Get());
+            crypt->set_associated_data(aad->Get());
         }
     }
 
@@ -615,6 +616,10 @@ end:
     return ret;
 }
 
+/* ::Botan::PBKDF does not exist anymore.
+ * TODO enable this again.
+ */
+#if 0
 std::optional<component::Key> Botan::OpKDF_PBKDF1(operation::KDF_PBKDF1& op) {
     std::optional<component::Key> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -658,6 +663,7 @@ end:
 
     return ret;
 }
+#endif
 
 std::optional<component::Key> Botan::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
     std::optional<component::Key> ret = std::nullopt;
