@@ -15,7 +15,6 @@
 #include <botan/hash.h>
 #include <botan/kdf.h>
 #include <botan/mac.h>
-#include <botan/pwdhash.h>
 #include <botan/pubkey.h>
 #include <botan/pwdhash.h>
 #include <botan/system_rng.h>
@@ -615,55 +614,6 @@ end:
 
     return ret;
 }
-
-/* ::Botan::PBKDF does not exist anymore.
- * TODO enable this again.
- */
-#if 0
-std::optional<component::Key> Botan::OpKDF_PBKDF1(operation::KDF_PBKDF1& op) {
-    std::optional<component::Key> ret = std::nullopt;
-    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
-    std::unique_ptr<::Botan::PBKDF> pbkdf1 = nullptr;
-    uint8_t* out = util::malloc(op.keySize);
-
-    try {
-        /* Initialize */
-        {
-            BOTAN_SET_GLOBAL_DS
-
-            std::optional<std::string> algoString;
-            CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get(), true), std::nullopt);
-
-            const std::string pbkdf1String = Botan_detail::parenthesize("PBKDF1", *algoString);
-            CF_CHECK_NE(pbkdf1 = ::Botan::PBKDF::create(pbkdf1String), nullptr);
-        }
-
-        /* Process */
-        {
-            const std::string passphrase(op.password.GetPtr(), op.password.GetPtr() + op.password.GetSize());
-            pbkdf1->pbkdf_iterations(
-                    out,
-                    op.keySize,
-                    passphrase,
-                    op.salt.GetPtr(),
-                    op.salt.GetSize(),
-                    op.iterations);
-        }
-
-        /* Finalize */
-        {
-            ret = component::Key(out, op.keySize);
-        }
-    } catch ( ... ) { }
-
-end:
-    util::free(out);
-
-    BOTAN_UNSET_GLOBAL_DS
-
-    return ret;
-}
-#endif
 
 std::optional<component::Key> Botan::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
     std::optional<component::Key> ret = std::nullopt;
