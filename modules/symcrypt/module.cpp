@@ -105,10 +105,13 @@ namespace SymCrypt_detail {
                 return SymCryptSha3_384Algorithm;
             case CF_DIGEST("SHA3-512"):
                 return SymCryptSha3_512Algorithm;
+    /* Wrong result */
+#if 0
             case CF_DIGEST("SHAKE128"):
                 return SymCryptShake128HashAlgorithm;
             case CF_DIGEST("SHAKE256"):
                 return SymCryptShake256HashAlgorithm;
+#endif
         }
 
         return nullptr;
