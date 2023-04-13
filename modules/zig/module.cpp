@@ -298,12 +298,16 @@ end:
 std::optional<component::ECC_Point> Zig::OpECC_Point_Mul(operation::ECC_Point_Mul& op) {
     std::optional<component::ECC_Point> ret = std::nullopt;
     size_t size = 0;
+    uint32_t curve = 0;
     if ( op.curveType.Is(CF_ECC_CURVE("secp256r1")) ) {
         size = 32;
+        curve = 0;
     } else if ( op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
         size = 32;
+        curve = 1;
     } else if ( op.curveType.Is(CF_ECC_CURVE("secp384r1")) ) {
         size = 48;
+        curve = 2;
     } else {
         return std::nullopt;
     }
@@ -318,7 +322,7 @@ std::optional<component::ECC_Point> Zig::OpECC_Point_Mul(operation::ECC_Point_Mu
     r = util::malloc(size * 2 + 1);
 
     CF_CHECK_EQ(cryptofuzz_zig_ecc_point_mul(
-                0,
+                curve,
                 r,
                 ax->data(),
                 ay->data(),
