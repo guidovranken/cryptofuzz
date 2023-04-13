@@ -1,0 +1,17 @@
+{
+    "name": "noble-curves-fuzzer",
+    "dependencies": {
+        "@noble/curves": "^0.8.0",
+        "build": "^0.1.4",
+        "run": "^1.4.0"
+    },
+    "scripts": {
+        "build": "rollup -c rollup.config.js"
+    },
+    "devDependencies": {
+        "@rollup/plugin-commonjs": "22.0.0",
+        "@rollup/plugin-inject": "^5.0.3",
+        "@rollup/plugin-node-resolve": "13.3.0",
+        "@zxing/text-encoding": "^0.9.0"
+    }
+}
