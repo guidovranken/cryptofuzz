@@ -181,3 +181,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Zig: [Argon2 outputs uninitialized memory with keysize > 64](https://github.com/ziglang/zig/issues/14912)
 - Boost multiprecision: [Loading cpp_int by std::string branches on uninitialized memory](https://github.com/boostorg/multiprecision/issues/526)
 - mbed TLS: [AES key wrap ciphertext cannot be decrypted](https://github.com/Mbed-TLS/mbedtls/issues/7322)
+- Zig: [secp256k1 scalar multiplication panics](https://github.com/ziglang/zig/issues/15267)
