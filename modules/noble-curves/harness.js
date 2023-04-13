@@ -728,8 +728,10 @@ if (ids.IsECC_PrivateToPublic(operation)) {
   FuzzerOutput = OpBLS_Aggregate_G1(FuzzerInput);
 } else if (ids.IsBLS_Aggregate_G2(operation)) {
   FuzzerOutput = OpBLS_Aggregate_G2(FuzzerInput);
+/*
 } else if (IsBignumCalc_Mod_BLS12_381_P(operation)) {
   FuzzerOutput = OpBignumCalc(FuzzerInput, bls12_381.Fp);
 } else if (IsBignumCalc_Mod_BLS12_381_R(operation)) {
   FuzzerOutput = OpBignumCalc(FuzzerInput, bls12_381.Fr);
+*/
 }
