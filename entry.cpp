@@ -427,6 +427,10 @@
   #include <modules/bouncycastle/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_FAHEEL_BIGINT)
+  #include <modules/faheel-bigint/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -917,6 +921,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_BOUNCYCASTLE)
     driver->LoadModule( std::make_shared<cryptofuzz::module::BouncyCastle>() );
+#endif
+
+#if defined(CRYPTOFUZZ_FAHEEL_BIGINT)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::faheel_BigInt>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
