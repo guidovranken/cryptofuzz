@@ -214,7 +214,6 @@
   #include <modules/noble-curves/module.h>
 #endif
 
-
 #if defined(CRYPTOFUZZ_BLST)
   #include <modules/blst/module.h>
 #endif

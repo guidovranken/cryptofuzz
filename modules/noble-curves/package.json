@@ -1,7 +1,7 @@
 {
     "name": "noble-curves-fuzzer",
     "dependencies": {
-        "@noble/curves": "^0.8.0",
+        "@noble/curves": "^1.0.0",
         "build": "^0.1.4",
         "run": "^1.4.0"
     },

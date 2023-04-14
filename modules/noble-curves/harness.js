@@ -236,8 +236,8 @@ var GetDST = function (dst) {
 };
 
 var To_G1 = function (x, y) {
-  var x = bls12_381.Fp.create(BigInt(x));
-  var y = bls12_381.Fp.create(BigInt(y));
+  var x = bls12_381.fields.Fp.create(BigInt(x));
+  var y = bls12_381.fields.Fp.create(BigInt(y));
   return bls12_381.G1.ProjectivePoint.fromAffine({ x, y });
 };
 
@@ -247,8 +247,8 @@ var From_G1 = function (g1) {
 };
 
 var To_G2 = function (yc0, yc1, xc0, xc1) {
-  const x = bls12_381.Fp2.create({ c0: BigInt(xc0), c1: BigInt(xc1) });
-  const y = bls12_381.Fp2.create({ c0: BigInt(yc0), c1: BigInt(yc1) });
+  const x = bls12_381.fields.Fp2.create({ c0: BigInt(xc0), c1: BigInt(xc1) });
+  const y = bls12_381.fields.Fp2.create({ c0: BigInt(yc0), c1: BigInt(yc1) });
   return bls12_381.G2.ProjectivePoint.fromAffine({ x, y });
 };
 
