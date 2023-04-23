@@ -1,7 +1,7 @@
 use std::slice;
 use std::ptr;
 
-use substrate_bn::{pairing_batch, AffineG1, AffineG2, Fq, Fq2, Fr, Group, Gt, G1, G2};
+use substrate_bn::{AffineG1, Fq, Fr, G1};
 
 #[no_mangle]
 pub extern "C" fn cryptofuzz_substrate_bn_g1_on_curve(
@@ -121,7 +121,8 @@ pub extern "C" fn cryptofuzz_substrate_bn_g1_mul(
     let b = unsafe { slice::from_raw_parts(b_bytes, 32) };
     let b = match Fr::from_slice(b) {
         Ok(v) => v,
-        Err(_e) => return -1,
+        Err(_e) =>
+            panic!("Cannot load Fr"),
     };
 
     let res = match AffineG1::from_jacobian(a * b) {
