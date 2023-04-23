@@ -69,7 +69,14 @@ pub extern "C" fn cryptofuzz_substrate_bn_g1_add(
 
     let res = match AffineG1::from_jacobian(a + b) {
         Some(v) => G1::from(v),
-        None => return -1, /* XXX panic? */
+        None => {
+            let r: [u8; 32] = [0; 32];
+            unsafe {
+                ptr::copy_nonoverlapping(r.as_ptr(), result_x, r.len());
+                ptr::copy_nonoverlapping(r.as_ptr(), result_y, r.len());
+            }
+            return 0;
+        },
     };
 
     let mut res_x: [u8; 32] = [0; 32];
@@ -119,7 +126,15 @@ pub extern "C" fn cryptofuzz_substrate_bn_g1_mul(
 
     let res = match AffineG1::from_jacobian(a * b) {
         Some(v) => G1::from(v),
-        None => return -1, /* XXX panic? */
+        None => {
+            assert!(b == Fr::zero());
+            let r: [u8; 32] = [0; 32];
+            unsafe {
+                ptr::copy_nonoverlapping(r.as_ptr(), result_x, r.len());
+                ptr::copy_nonoverlapping(r.as_ptr(), result_y, r.len());
+            }
+            return 0;
+        },
     };
 
     let mut res_x: [u8; 32] = [0; 32];
@@ -162,7 +177,7 @@ pub extern "C" fn cryptofuzz_substrate_bn_g1_neg(
 
     let res = match AffineG1::from_jacobian(-a) {
         Some(v) => G1::from(v),
-        None => return -1, /* XXX panic? */
+        None => panic!("Point negation failed"),
     };
 
     let mut res_x: [u8; 32] = [0; 32];
