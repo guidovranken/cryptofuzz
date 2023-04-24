@@ -911,13 +911,12 @@ std::optional<component::ECC_PublicKey> Botan::OpECC_PrivateToPublic(operation::
     try {
         std::optional<std::string> curveString;
 
-        /* Botan appears to generate a new key if the input key is 0, so don't do this */
-        CF_CHECK_NE(op.priv.ToTrimmedString(), "0");
-
         if ( op.curveType.Get() == CF_ECC_CURVE("x25519") ) {
             uint8_t priv_bytes[32];
 
-            ::Botan::BigInt priv_bigint(op.priv.ToString(ds));
+            const ::Botan::BigInt priv_bigint(op.priv.ToString(ds));
+            CF_CHECK_GT(priv_bigint, 0);
+
             priv_bigint.binary_encode(priv_bytes, sizeof(priv_bytes));
             priv_bytes[0] &= 248;
             priv_bytes[31] &= 127;
@@ -935,6 +934,8 @@ std::optional<component::ECC_PublicKey> Botan::OpECC_PrivateToPublic(operation::
             ::Botan::EC_Group group(*curveString);
 
             const ::Botan::BigInt priv_bn(op.priv.ToString(ds));
+            CF_CHECK_GT(priv_bn, 0);
+
             auto priv = std::make_unique<::Botan::ECDSA_PrivateKey>(::Botan::ECDSA_PrivateKey(rng, group, priv_bn));
 
             const auto pub_x = priv->public_point().get_affine_x();
