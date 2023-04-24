@@ -1369,7 +1369,6 @@ const EVP_AEAD* OpenSSL::toEVPAEAD(const component::SymmetricCipherType cipherTy
         { CF_CIPHER("AES_256_CBC_SHA1_TLS_IMPLICIT_IV"), EVP_aead_aes_256_cbc_sha1_tls_implicit_iv() },
         { CF_CIPHER("DES_EDE3_CBC_SHA1_TLS"), EVP_aead_des_ede3_cbc_sha1_tls() },
         { CF_CIPHER("DES_EDE3_CBC_SHA1_TLS_IMPLICIT_IV"), EVP_aead_des_ede3_cbc_sha1_tls_implicit_iv() },
-        { CF_CIPHER("NULL_SHA1_TLS"), EVP_aead_null_sha1_tls() },
         { CF_CIPHER("AES_128_GCM_TLS12"), EVP_aead_aes_128_gcm_tls12() },
         { CF_CIPHER("AES_256_GCM_TLS12"), EVP_aead_aes_256_gcm_tls12() },
         { CF_CIPHER("AES_128_GCM_TLS13"), EVP_aead_aes_128_gcm_tls13() },
