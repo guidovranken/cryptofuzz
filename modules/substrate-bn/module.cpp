@@ -23,6 +23,9 @@ extern "C" {
             uint8_t* a_y_bytes,
             uint8_t* result_x,
             uint8_t* result_y);
+    int cryptofuzz_substrate_bn_batchverify(
+            uint8_t* in_data,
+            uint64_t num_elements);
 }
 
 namespace cryptofuzz {
@@ -141,6 +144,48 @@ std::optional<component::G1> substrate_bn::OpBLS_G1_Neg(operation::BLS_G1_Neg& o
         util::BinToDec(result_y.data(), result_y.size()),
     };
 
+end:
+    return ret;
+}
+
+std::optional<bool> substrate_bn::OpBLS_BatchVerify(operation::BLS_BatchVerify& op) {
+    std::optional<bool> ret = std::nullopt;
+
+#if 0
+    if ( !op.curveType.Is(CF_ECC_CURVE("alt_bn128")) ) {
+        return ret;
+    }
+#endif
+
+    std::vector<uint8_t> data;
+
+    for (const auto& cur : op.bf.c) {
+        std::optional<std::vector<uint8_t>> el;
+
+        CF_CHECK_NE(el = util::DecToBin(cur.g1.first.ToTrimmedString(), 32), std::nullopt);
+        data.insert(data.end(), el->begin(), el->end());
+
+        CF_CHECK_NE(el = util::DecToBin(cur.g1.second.ToTrimmedString(), 32), std::nullopt);
+        data.insert(data.end(), el->begin(), el->end());
+
+        CF_CHECK_NE(el = util::DecToBin(cur.g2.first.first.ToTrimmedString(), 32), std::nullopt);
+        data.insert(data.end(), el->begin(), el->end());
+
+        CF_CHECK_NE(el = util::DecToBin(cur.g2.first.second.ToTrimmedString(), 32), std::nullopt);
+        data.insert(data.end(), el->begin(), el->end());
+
+        CF_CHECK_NE(el = util::DecToBin(cur.g2.second.first.ToTrimmedString(), 32), std::nullopt);
+        data.insert(data.end(), el->begin(), el->end());
+
+        CF_CHECK_NE(el = util::DecToBin(cur.g2.second.second.ToTrimmedString(), 32), std::nullopt);
+        data.insert(data.end(), el->begin(), el->end());
+    }
+
+    {
+        const auto res = cryptofuzz_substrate_bn_batchverify(data.data(), op.bf.c.size());
+        CF_CHECK_NE(res, -1);
+        ret = res == 1 ? true : false;
+    }
 end:
     return ret;
 }

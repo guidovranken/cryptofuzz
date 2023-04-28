@@ -1,7 +1,8 @@
 use std::slice;
 use std::ptr;
 
-use substrate_bn::{AffineG1, Fq, Fr, G1};
+use substrate_bn::{AffineG1, AffineG2, Fq, Fq2, Fr, G1, G2, Gt, pairing_batch};
+use std::convert::TryInto;
 
 #[no_mangle]
 pub extern "C" fn cryptofuzz_substrate_bn_g1_on_curve(
@@ -194,4 +195,75 @@ pub extern "C" fn cryptofuzz_substrate_bn_g1_neg(
     }
 
     return 0;
+}
+
+#[no_mangle]
+pub extern "C" fn cryptofuzz_substrate_bn_batchverify(
+            in_bytes: *mut u8,
+            num_elements: u64) -> i32 {
+    let mut i: isize  = 0;
+    let mut groups = Vec::new();
+
+    while i < (num_elements * 192).try_into().unwrap() {
+        let g1_x = unsafe { slice::from_raw_parts(in_bytes.offset(0 + i), 32) };
+        let g1_x = match Fq::from_slice(g1_x) {
+            Ok(v) => v,
+            Err(_e) => return -1,
+        };
+
+        let g1_y = unsafe { slice::from_raw_parts(in_bytes.offset(32 + i), 32) };
+        let g1_y = match Fq::from_slice(g1_y) {
+            Ok(v) => v,
+            Err(_e) => return -1,
+        };
+
+        let g1 = match AffineG1::new(g1_x, g1_y) {
+            Ok(v) => G1::from(v),
+            Err(_e) => return -1,
+        };
+
+        let g2_v = unsafe { slice::from_raw_parts(in_bytes.offset(64 + i), 32) };
+        let g2_v = match Fq::from_slice(g2_v) {
+            Ok(v) => v,
+            Err(_e) => return -1,
+        };
+
+        let g2_w = unsafe { slice::from_raw_parts(in_bytes.offset(96 + i), 32) };
+        let g2_w = match Fq::from_slice(g2_w) {
+            Ok(v) => v,
+            Err(_e) => return -1,
+        };
+
+        let g2_vw = Fq2::new(g2_v, g2_w);
+
+        let g2_x = unsafe { slice::from_raw_parts(in_bytes.offset(128 + i), 32) };
+        let g2_x = match Fq::from_slice(g2_x) {
+            Ok(v) => v,
+            Err(_e) => return -1,
+        };
+
+        let g2_y = unsafe { slice::from_raw_parts(in_bytes.offset(160 + i), 32) };
+        let g2_y = match Fq::from_slice(g2_y) {
+            Ok(v) => v,
+            Err(_e) => return -1,
+        };
+
+        let g2_xy = Fq2::new(g2_x, g2_y);
+
+        let g2 = match AffineG2::new(g2_vw, g2_xy) {
+            Ok(v) => G2::from(v),
+            Err(_e) => return -1,
+        };
+
+        groups.push((g1, g2));
+        i += 192;
+    }
+
+    let res = pairing_batch(&groups);
+
+    if res == Gt::one() {
+        return 1;
+    } else {
+        return 0;
+    }
 }
