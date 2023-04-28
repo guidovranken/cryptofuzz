@@ -52,7 +52,6 @@ func Geth_Call(address byte, input []byte, gas uint64) {
     statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
 	ret, _, err := runtime.Call(common.BytesToAddress([]byte{address}), input, &runtime.Config{
         EVMConfig: vm.Config{
-            Debug:  false,
         },
 		State:       statedb,
 		GasLimit: gas,
