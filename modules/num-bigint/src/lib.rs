@@ -59,9 +59,15 @@ pub extern "C" fn rust_num_bigint_bignumcalc(
             return -1;
         }
     } else if op == 5 {
-        /* Slow */
-        return -1;
-
+        if bn0.bits() > 1000 {
+            return -1;
+        }
+        if bn1.bits() > 1000 {
+            return -1;
+        }
+        if bn2.bits() > 1000 {
+            return -1;
+        }
         if bn2 == Zero::zero() {
             return -1;
         }
