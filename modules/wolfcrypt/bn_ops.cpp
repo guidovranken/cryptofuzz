@@ -403,14 +403,36 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     bool ret = false;
 
-    GET_WHICH(0);
+    GET_WHICH(1);
+
     switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_invmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
+#if !defined(USE_INTEGER_HEAP_MATH)
+        case    1:
+            {
+                mp_digit mp;
+                wolfCrypt_bignum::Bignum tmp1(ds);
+                wolfCrypt_bignum::Bignum tmp2(ds);
+                int is_prime;
+
+                /* Modulus must be > 2 and prime */
+                CF_CHECK_EQ(mp_cmp_d(bn[1].GetPtr(), 2), MP_GT);
+                MP_CHECK_EQ(mp_prime_is_prime_ex(bn[1].GetPtr(), 30, &is_prime, wolfCrypt_detail::GetRNG()), MP_OKAY);
+                CF_CHECK_EQ(is_prime, 1);
+
+                MP_CHECK_EQ(mp_montgomery_setup(bn[1].GetPtr(), &mp), MP_OKAY);
+                MP_CHECK_EQ(mp_montgomery_calc_normalization(tmp1.GetPtr(), bn[1].GetPtr()), MP_OKAY);
+                MP_CHECK_EQ(mp_mulmod(bn[0].GetPtr(), tmp1.GetPtr(), bn[1].GetPtr(), tmp2.GetPtr()), MP_OKAY);
+                MP_CHECK_EQ(mp_invmod_mont_ct(tmp2.GetPtr(), bn[1].GetPtr(), res.GetPtr(), mp), MP_OKAY);
+                MP_CHECK_EQ(mp_montgomery_reduce(res.GetPtr(), bn[1].GetPtr(), mp), MP_OKAY);
+            }
+            break;
+#endif
 #if !defined(USE_FAST_MATH) && !defined(WOLFSSL_SP_MATH)
 #if 0
-        case    1:
+        case    2:
             MP_CHECK_EQ(mp_invmod_slow(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
 #endif
