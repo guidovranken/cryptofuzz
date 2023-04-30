@@ -576,7 +576,7 @@ class Jacobi : public Operation {
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;
 };
 
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_OPENSSL_098)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_OPENSSL_098) && !defined(CRYPTOFUZZ_LIBRESSL)
 class Mod_NIST_192 : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const override;

@@ -1007,7 +1007,7 @@ end:
 }
 
 /* OpenSSL 0.9.8 has memory bugs in these functions */
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_OPENSSL_098)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_OPENSSL_098) && !defined(CRYPTOFUZZ_LIBRESSL)
 bool Mod_NIST_192::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     (void)ds;
     bool ret = false;

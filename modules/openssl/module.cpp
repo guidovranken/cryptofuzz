@@ -4558,7 +4558,7 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
             case    CF_CALCOP("Jacobi(A,B)"):
                 opRunner = std::make_unique<OpenSSL_bignum::Jacobi>();
                 break;
-#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_OPENSSL_098)
+#if !defined(CRYPTOFUZZ_BORINGSSL) && !defined(CRYPTOFUZZ_OPENSSL_098) && !defined(CRYPTOFUZZ_LIBRESSL)
             case    CF_CALCOP("Mod_NIST_192(A)"):
                 opRunner = std::make_unique<OpenSSL_bignum::Mod_NIST_192>();
                 break;

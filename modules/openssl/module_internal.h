@@ -270,6 +270,13 @@ end:
             }
 #endif
 
+#if defined(CRYPTOFUZZ_LIBRESSL)
+            if ( !is_prime_curve ) {
+                /* LibreSSL doesn't have BN_GF2m_mod_div */
+                return set(pub_x, pub_y);
+            }
+#endif
+
             OpenSSL_bignum::Bignum field(ds);
             CF_CHECK_TRUE(field.New());
             int y_bit;
@@ -303,7 +310,7 @@ end:
                 y_bit = BN_is_bit_set(pub_y.GetPtr(), 0);
             } else {
                 /* Binary curve */
-#if defined(CRYPTOFUZZ_BORINGSSL)
+#if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
                 CF_UNREACHABLE();
 #else
                 if ( BN_is_zero(pub_x.GetPtr()) ) {
