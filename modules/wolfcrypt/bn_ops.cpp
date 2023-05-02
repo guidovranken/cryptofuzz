@@ -984,6 +984,9 @@ bool Set::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             break;
         case    1:
             {
+                /* See ZD 16084 */
+                CF_CHECK_LTE(mp_count_bits(bn[0].GetPtr()), DIGIT_BIT);
+
                 const auto op = bn[0].AsUnsigned<mp_digit>();
                 CF_CHECK_NE(op, std::nullopt);
                 MP_CHECK_EQ(mp_set(res.GetPtr(), *op), MP_OKAY);
