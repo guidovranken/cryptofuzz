@@ -1269,6 +1269,21 @@ bool Rand::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 #endif
 }
 
+bool NumBits::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    (void)ds;
+
+    /* libgmp returns bit size of 1 of the value 0,
+     * whereas other libraries return 0
+     */
+    if ( mpz_sgn(bn[0].GetPtr()) == 0 ) {
+        return false;
+    }
+
+    res.Set( std::to_string( mpz_sizeinbase(bn[0].GetPtr(), 2) ) );
+
+    return true;
+}
+
 } /* namespace libgmp_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

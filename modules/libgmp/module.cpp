@@ -226,6 +226,9 @@ std::optional<component::Bignum> libgmp::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("Rand()"):
             opRunner = std::make_unique<libgmp_bignum::Rand>();
             break;
+        case    CF_CALCOP("NumBits(A)"):
+            opRunner = std::make_unique<libgmp_bignum::NumBits>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
