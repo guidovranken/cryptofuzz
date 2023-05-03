@@ -409,7 +409,17 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
         case    0:
             MP_CHECK_EQ(mp_invmod(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
-#if !defined(USE_INTEGER_HEAP_MATH)
+#define HAVE_MP_INVMOD_MONT_CT 1
+
+#if defined(USE_INTEGER_HEAP_MATH)
+ /* Heapmath does not have mp_invmod_mont_ct */
+ #undef HAVE_MP_INVMOD_MONT_CT
+#elif defined(WOLFSSL_SP_MATH) && !defined(WOLFSSL_SP_INVMOD_MONT_CT)
+ /* SP math has mp_invmod_mont_ct only if WOLFSSL_SP_INVMOD_MONT_CT is defined */
+ #undef HAVE_MP_INVMOD_MONT_CT
+#endif
+
+#if defined(HAVE_MP_INVMOD_MONT_CT)
         case    1:
             {
                 mp_digit mp;
@@ -429,7 +439,9 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 MP_CHECK_EQ(mp_montgomery_reduce(res.GetPtr(), bn[1].GetPtr(), mp), MP_OKAY);
             }
             break;
+#undef HAVE_MP_INVMOD_MONT_CT
 #endif
+
 #if !defined(USE_FAST_MATH) && !defined(WOLFSSL_SP_MATH)
 #if 0
         case    2:
