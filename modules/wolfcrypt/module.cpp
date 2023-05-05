@@ -342,8 +342,11 @@ namespace wolfCrypt_detail {
     class Operation {
         protected:
             CTXType ctx;
+            const bool haveOneShot;
         public:
-            Operation(void) { }
+            Operation(const bool haveOneShot) :
+                haveOneShot(haveOneShot)
+            { }
             ~Operation() { }
 
             virtual bool runInit(OperationType& op) = 0;
@@ -357,9 +360,11 @@ namespace wolfCrypt_detail {
                 util::Multipart parts;
 
                 bool doOneShot = false;
-                try {
-                    doOneShot = ds.Get<bool>();
-                } catch ( ... ) { }
+                if ( haveOneShot ) {
+                    try {
+                        doOneShot = ds.Get<bool>();
+                    } catch ( ... ) { }
+                }
 
                 if ( doOneShot == true ) {
                     ret = runOneShot(op.cleartext, ds);
@@ -614,7 +619,7 @@ end:
                 int (*copy)(CTXType*, CTXType*) = nullptr,
                 int (*oneShot)(const byte*, word32, byte*) = nullptr
             ) :
-                Operation<operation::Digest, component::Digest, CTXType>(),
+                Operation<operation::Digest, component::Digest, CTXType>(oneShot != nullptr),
                 init(initFn),
                 update(updateFn),
                 finalize(finalizeFn),
@@ -790,12 +795,29 @@ end:
         hashSize = wc_HashGetDigestSize(*hashType);
         out = util::malloc(hashSize);
 
-        WC_CHECK_EQ(wc_Hash(
+        {
+            wolfCrypt_detail::haveAllocFailure = false;
+            const auto res = wc_Hash(
                     *hashType,
                     op.cleartext.GetPtr(&ds),
                     op.cleartext.GetSize(),
                     out,
-                    hashSize), 0);
+                    hashSize);
+            if ( haveAllocFailure == false ) {
+                switch ( op.digestType.Get() ) {
+                    /* ZD 16119 */
+                    case CF_DIGEST("MD2"):
+                    case CF_DIGEST("MD4"):
+                    case CF_DIGEST("BLAKE2S256"):
+                    case CF_DIGEST("BLAKE2B512"):
+                        break;
+                    default:
+                        CF_ASSERT(res == 0, "wc_Hash failed unexpectedly");
+                }
+            }
+
+            CF_CHECK_EQ(res, 0);
+        }
 
         ret = component::Digest(out, hashSize);
 end:
@@ -818,6 +840,8 @@ std::optional<component::Digest> wolfCrypt::OpDigest(operation::Digest& op) {
     if ( useOneShot == true ) {
         ret = wolfCrypt_detail::DigestOneShot(op, ds);
     } else {
+        wolfCrypt_detail::haveAllocFailure = false;
+
         switch ( op.digestType.Get() ) {
             case CF_DIGEST("MD2"):
                 ret = wolfCrypt_detail::md2.Run(op, ds);
@@ -872,9 +896,16 @@ std::optional<component::Digest> wolfCrypt::OpDigest(operation::Digest& op) {
             case CF_DIGEST("SHAKE256"):
                 ret = wolfCrypt_detail::shake512.Run(op, ds);
                 break;
+            default:
+                goto end;
+        }
+
+        if ( wolfCrypt_detail::haveAllocFailure == false ) {
+            CF_ASSERT(ret != std::nullopt, "Hashing failed unexpectedly");
         }
     }
 
+end:
     wolfCrypt_detail::UnsetGlobalDs();
 
     return ret;
