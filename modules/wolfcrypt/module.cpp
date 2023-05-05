@@ -3096,7 +3096,7 @@ std::optional<component::ECC_KeyPair> wolfCrypt::OpECC_GenerateKeyPair(operation
             }
 
             {
-                wolfCrypt_bignum::Bignum priv(&key->k, ds);
+                wolfCrypt_bignum::Bignum priv(key->k, ds);
                 wolfCrypt_bignum::Bignum pub_x(key->pubkey.x, ds);
                 wolfCrypt_bignum::Bignum pub_y(key->pubkey.y, ds);
 

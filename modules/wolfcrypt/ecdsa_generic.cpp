@@ -573,7 +573,7 @@ std::optional<component::ECCSI_Signature> OpECCSI_Sign(operation::ECCSI_Sign& op
             /* Encode private and public */
             encoded = util::malloc(size * 3);
 
-            WC_CHECK_EQ(mp_to_unsigned_bin_len(&(key.GetPtr()->k), encoded, size), 0);
+            WC_CHECK_EQ(mp_to_unsigned_bin_len(key.GetPtr()->k, encoded, size), 0);
             WC_CHECK_EQ(mp_to_unsigned_bin_len(pub->GetPtr()->x, encoded + size, size), 0);
             WC_CHECK_EQ(mp_to_unsigned_bin_len(pub->GetPtr()->y, encoded + (size * 2), size), 0);
         }
