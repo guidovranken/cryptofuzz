@@ -202,21 +202,18 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
     bool ret = false;
 
-#if defined(WOLFSSL_SP_MATH)
-    (void)res;
-    (void)bn;
-#else
-
     GET_WHICH(3);
     switch ( which ) {
         case    0:
             MP_CHECK_EQ(mp_div(bn[0].GetPtr(), bn[1].GetPtr(), res.GetPtr(), GET_OPTIONAL_BN()), MP_OKAY);
             break;
         case    1:
+#if !defined(WOLFSSL_SP_MATH)
             util::HintBignum("2");
             CF_CHECK_EQ(mp_cmp_d(bn[1].GetPtr(), 2), MP_EQ);
             MP_CHECK_EQ(mp_div_2(bn[0].GetPtr(), res.GetPtr()), MP_OKAY);
             break;
+#endif
 #if !defined(USE_FAST_MATH)
         case    2:
             {
@@ -248,7 +245,6 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     ret = true;
 
 end:
-#endif
     return ret;
 }
 
