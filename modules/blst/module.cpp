@@ -256,15 +256,45 @@ namespace blst_detail {
 
         return num - 1;
     }
-    static bool IsZero(const blst_p1_affine* g1) {
-        blst_p1_affine zero;
-        memset(&zero, 0, sizeof(zero));
-        return memcmp(g1, &zero, sizeof(zero)) == 0;
-    }
     static bool IsZero(const blst_p2_affine* g2) {
         blst_p2_affine zero;
         memset(&zero, 0, sizeof(zero));
         return memcmp(g2, &zero, sizeof(zero)) == 0;
+    }
+
+    static std::optional<blst_p1_affine> Load_G1_Affine(const component::G1& g1) {
+        std::optional<blst_p1_affine> ret = std::nullopt;
+
+        blst_p1_affine aff_a;
+
+        CF_CHECK_TRUE(blst_detail::To_blst_fp(g1.first, aff_a.x));
+        CF_CHECK_TRUE(blst_detail::To_blst_fp(g1.second, aff_a.y));
+
+        ret = aff_a;
+end:
+        return ret;
+    }
+
+    static std::optional<blst_p1> Load_G1_Projective(
+            fuzzing::datasource::Datasource& ds,
+            const component::G1& g1) {
+        std::optional<blst_p1> ret = std::nullopt;
+
+        blst_p1 a;
+
+        const auto proj = util::ToRandomProjective(
+                ds,
+                g1.first.ToTrimmedString(),
+                g1.second.ToTrimmedString(),
+                CF_ECC_CURVE("BLS12_381"));
+
+        CF_CHECK_TRUE(blst_detail::To_blst_fp(proj[0], a.x));
+        CF_CHECK_TRUE(blst_detail::To_blst_fp(proj[1], a.y));
+        CF_CHECK_TRUE(blst_detail::To_blst_fp(proj[2], a.z));
+
+        ret = a;
+end:
+        return ret;
     }
 }
 
@@ -647,21 +677,21 @@ std::optional<bool> blst::OpBLS_IsG1OnCurve(operation::BLS_IsG1OnCurve& op) {
         useAffine = ds.Get<bool>();
     } catch ( fuzzing::datasource::Base::OutOfData ) { }
 
-    blst_p1 g1;
-    blst_p1_affine g1_affine;
-
-    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g1.first, g1_affine.x));
-    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.g1.second, g1_affine.y));
-
-    CF_CHECK_FALSE(blst_detail::IsZero(&g1_affine));
-
     if ( useAffine ) {
-        return blst_p1_affine_on_curve(&g1_affine) && blst_p1_affine_in_g1(&g1_affine);
+        std::optional<blst_p1_affine> aff_g1;
+        CF_CHECK_NE(aff_g1 = blst_detail::Load_G1_Affine(op.g1), std::nullopt);
+        return
+            !blst_p1_affine_is_inf(&*aff_g1) &&
+            blst_p1_affine_on_curve(&*aff_g1) &&
+            blst_p1_affine_in_g1(&*aff_g1);
     } else {
-        CF_NORET(blst_p1_from_affine(&g1, &g1_affine));
-        return blst_p1_on_curve(&g1) && blst_p1_in_g1(&g1);
+        std::optional<blst_p1> g1;
+        CF_CHECK_NE(g1 = blst_detail::Load_G1_Projective(ds, op.g1), std::nullopt);
+        return
+            !blst_p1_is_inf(&*g1) &&
+            blst_p1_on_curve(&*g1) &&
+            blst_p1_in_g1(&*g1);
     }
-
 end:
     return false;
 }
@@ -933,38 +963,45 @@ namespace blst_detail {
                 ret = blst_detail::To_component_bignum(RESULT());
                 break;
             case    CF_CALCOP("Mul(A,B)"):
-                CF_CHECK_TRUE(blst_detail::To_blst_fr(op.bn0, A));
+                {
+                    CF_CHECK_TRUE(blst_detail::To_blst_fr(op.bn0, A));
 
-                try {
-                    switch ( ds.Get<uint8_t>() % 3 ) {
-                    case    0:
-                        CF_CHECK_TRUE(blst_detail::To_blst_fr(op.bn1, B));
-                        PREPARE_RESULT();
-                        CF_NORET(blst_fr_mul(RESULT_PTR(), &A, PARAM_B()));
-                        break;
-                    case    1:
+                    size_t shiftCount;
+                    uint8_t which = 0;
+                    try {
+                        which = ds.Get<uint8_t>() % 3;
+                    } catch ( fuzzing::datasource::Base::OutOfData ) {
+                    }
+                    if ( which == 1 ) {
                         if ( op.bn1.ToTrimmedString() != "3" ) {
-                            goto end;
+                            which = 0;
                         }
-                        PREPARE_RESULT();
-                        CF_NORET(blst_fr_mul_by_3(RESULT_PTR(), &A));
-                        break;
-                    case    2:
-                        {
-                            size_t shiftCount;
-                            CF_CHECK_NE(shiftCount = blst_detail::isMultipleOf2(op.bn1.ToTrimmedString()), 0);
+                    } else if ( which == 2 ) {
+                        shiftCount = blst_detail::isMultipleOf2(op.bn1.ToTrimmedString());
+                        if ( shiftCount == 0 ) {
+                            which = 0;
+                        }
+                    }
 
+                    switch ( which ) {
+                        case    0:
+                            CF_CHECK_TRUE(blst_detail::To_blst_fr(op.bn1, B));
+                            PREPARE_RESULT();
+                            CF_NORET(blst_fr_mul(RESULT_PTR(), &A, PARAM_B()));
+                            break;
+                        case    1:
+                            PREPARE_RESULT();
+                            CF_NORET(blst_fr_mul_by_3(RESULT_PTR(), &A));
+                            break;
+                        case    2:
                             PREPARE_RESULT();
                             blst_fr_lshift(RESULT_PTR(), &A, shiftCount);
                             ret = blst_detail::To_component_bignum(RESULT());
-                        }
-                        break;
+                            break;
                     }
-                } catch ( fuzzing::datasource::Base::OutOfData ) {
-                    goto end;
-                }
 
-                ret = blst_detail::To_component_bignum(RESULT());
+                    ret = blst_detail::To_component_bignum(RESULT());
+                }
                 break;
             case    CF_CALCOP("Sqr(A)"):
                 CF_CHECK_TRUE(blst_detail::To_blst_fr(op.bn0, A));
@@ -973,21 +1010,25 @@ namespace blst_detail {
                 ret = blst_detail::To_component_bignum(RESULT());
                 break;
             case    CF_CALCOP("InvMod(A,B)"):
-                CF_CHECK_TRUE(blst_detail::To_blst_fr(op.bn0, A));
+                {
+                    CF_CHECK_TRUE(blst_detail::To_blst_fr(op.bn0, A));
 
-                try {
-                    if ( ds.Get<bool>() ) {
+                    bool which = false;
+                    try {
+                        which = ds.Get<bool>();
+                    } catch ( fuzzing::datasource::Base::OutOfData ) {
+                    }
+
+                    if ( which ) {
                         PREPARE_RESULT();
                         CF_NORET(blst_fr_eucl_inverse(RESULT_PTR(), &A));
                     } else {
                         PREPARE_RESULT();
                         CF_NORET(blst_fr_inverse(RESULT_PTR(), &A));
                     }
-                } catch ( fuzzing::datasource::Base::OutOfData ) {
-                    goto end;
-                }
 
-                ret = blst_detail::To_component_bignum(RESULT());
+                    ret = blst_detail::To_component_bignum(RESULT());
+                }
                 break;
             case    CF_CALCOP("LShift1(A)"):
                 CF_CHECK_TRUE(blst_detail::To_blst_fr(op.bn0, A));
@@ -1064,47 +1105,57 @@ end:
                 ret = blst_detail::To_component_bignum(RESULT());
                 break;
             case    CF_CALCOP("Mul(A,B)"):
-                CF_CHECK_TRUE(blst_detail::To_blst_fp(op.bn0, A));
+                {
+                    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.bn0, A));
 
-                try {
-                    switch ( ds.Get<uint8_t>() % 4 ) {
+                    size_t shiftCount;
+                    uint8_t which = 0;
+                    try {
+                        which = ds.Get<uint8_t>() % 4;
+                    } catch ( fuzzing::datasource::Base::OutOfData ) {
+                    }
+
+                    if ( which == 1 ) {
+                        if ( op.bn1.ToTrimmedString() != "3" ) {
+                            which = 0;
+                        }
+                    } else if ( which == 2 ) {
+                        if ( op.bn1.ToTrimmedString() != "8" ) {
+                            which = 0;
+                        }
+                    } else if ( which == 3 ) {
+                        shiftCount = blst_detail::isMultipleOf2(op.bn1.ToTrimmedString());
+                        if ( shiftCount == 0 ) {
+                            which = 0;
+                        }
+                    }
+
+                    switch ( which ) {
                         case    0:
                             CF_CHECK_TRUE(blst_detail::To_blst_fp(op.bn1, B));
                             PREPARE_RESULT();
                             CF_NORET(blst_fp_mul(RESULT_PTR(), &A, PARAM_B()));
                             break;
                         case    1:
-                            if ( op.bn1.ToTrimmedString() != "3" ) {
-                                goto end;
-                            }
-
                             PREPARE_RESULT();
                             CF_NORET(blst_fp_mul_by_3(RESULT_PTR(), &A));
                             break;
                         case    2:
-                            if ( op.bn1.ToTrimmedString() != "8" ) {
-                                goto end;
-                            }
-
                             PREPARE_RESULT();
                             CF_NORET(blst_fp_mul_by_8(RESULT_PTR(), &A));
                             break;
                         case    3:
-                            {
-                                size_t shiftCount;
-                                CF_CHECK_NE(shiftCount = blst_detail::isMultipleOf2(op.bn1.ToTrimmedString()), 0);
+                            size_t shiftCount;
+                            CF_CHECK_NE(shiftCount = blst_detail::isMultipleOf2(op.bn1.ToTrimmedString()), 0);
 
-                                PREPARE_RESULT();
-                                blst_fp_lshift(RESULT_PTR(), &A, shiftCount);
-                                ret = blst_detail::To_component_bignum(RESULT());
-                            }
+                            PREPARE_RESULT();
+                            blst_fp_lshift(RESULT_PTR(), &A, shiftCount);
+                            ret = blst_detail::To_component_bignum(RESULT());
                             break;
                     }
-                } catch ( fuzzing::datasource::Base::OutOfData ) {
-                    goto end;
-                }
 
-                ret = blst_detail::To_component_bignum(RESULT());
+                    ret = blst_detail::To_component_bignum(RESULT());
+                }
                 break;
             case    CF_CALCOP("LShift1(A)"):
                 CF_CHECK_TRUE(blst_detail::To_blst_fp(op.bn0, A));
@@ -1119,21 +1170,25 @@ end:
                 ret = blst_detail::To_component_bignum(RESULT());
                 break;
             case    CF_CALCOP("InvMod(A,B)"):
-                CF_CHECK_TRUE(blst_detail::To_blst_fp(op.bn0, A));
+                {
+                    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.bn0, A));
 
-                try {
-                    if ( ds.Get<bool>() ) {
+                    bool which = false;
+                    try {
+                        which = ds.Get<bool>();
+                    } catch ( fuzzing::datasource::Base::OutOfData ) {
+                    }
+
+                    if ( which ) {
                         PREPARE_RESULT();
                         CF_NORET(blst_fp_eucl_inverse(RESULT_PTR(), &A));
                     } else {
                         PREPARE_RESULT();
                         CF_NORET(blst_fp_inverse(RESULT_PTR(), &A));
                     }
-                } catch ( fuzzing::datasource::Base::OutOfData ) {
-                    goto end;
-                }
 
-                ret = blst_detail::To_component_bignum(RESULT());
+                    ret = blst_detail::To_component_bignum(RESULT());
+                }
                 break;
             case    CF_CALCOP("Sqrt(A)"):
                 {
@@ -1265,21 +1320,25 @@ namespace blst_detail {
                 ret = blst_detail::To_component_Fp2(RESULT());
                 break;
             case    CF_CALCOP("InvMod(A,B)"):
-                CF_CHECK_TRUE(blst_detail::To_blst_fp2(op.bn0, A));
+                {
+                    CF_CHECK_TRUE(blst_detail::To_blst_fp2(op.bn0, A));
 
-                try {
-                    if ( ds.Get<bool>() ) {
+                    bool which = false;
+                    try {
+                        which = ds.Get<bool>();
+                    } catch ( fuzzing::datasource::Base::OutOfData ) {
+                    }
+
+                    if ( which ) {
                         PREPARE_RESULT();
                         CF_NORET(blst_fp2_eucl_inverse(RESULT_PTR(), &A));
                     } else {
                         PREPARE_RESULT();
                         CF_NORET(blst_fp2_inverse(RESULT_PTR(), &A));
                     }
-                } catch ( fuzzing::datasource::Base::OutOfData ) {
-                    goto end;
-                }
 
-                ret = blst_detail::To_component_Fp2(RESULT());
+                    ret = blst_detail::To_component_Fp2(RESULT());
+                }
                 break;
             case    CF_CALCOP("Sqrt(A)"):
                 {
@@ -1482,36 +1541,99 @@ std::optional<component::G1> blst::OpBLS_G1_Add(operation::BLS_G1_Add& op) {
     std::optional<component::G1> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    blst_p1_affine a, b, result_;
-    blst_p1 a_, b_, result;
-    bool doDouble = false;
+    std::optional<blst_p1_affine> aff_tmp;
+    blst_p1_affine aff_a, aff_b, aff_result;
 
-    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first, a.x));
-    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second, a.y));
+    std::optional<blst_p1> tmp;
+    blst_p1 a, b, result;
 
-    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.b.first, b.x));
-    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.b.second, b.y));
+    bool eq;
+    uint8_t mode = 0;
+    bool doAffine = true;
 
-    CF_NORET(blst_p1_from_affine(&a_, &a));
-    CF_NORET(blst_p1_from_affine(&b_, &b));
+    CF_CHECK_NE(aff_tmp = blst_detail::Load_G1_Affine(op.a), std::nullopt);
+    aff_a = *aff_tmp;
 
-    if ( blst_p1_is_equal(&a_, &b_) ) {
-        try {
-            doDouble = ds.Get<bool>();
-        } catch ( fuzzing::datasource::Base::OutOfData ) {
-        }
+    CF_CHECK_NE(aff_tmp = blst_detail::Load_G1_Affine(op.b), std::nullopt);
+    aff_b = *aff_tmp;
+
+    CF_CHECK_NE(tmp = blst_detail::Load_G1_Projective(ds, op.a), std::nullopt);
+    a = *tmp;
+
+    CF_CHECK_NE(tmp = blst_detail::Load_G1_Projective(ds, op.b), std::nullopt);
+    b = *tmp;
+
+    eq = blst_p1_is_equal(&a, &b);
+
+    try {
+        mode = ds.Get<uint8_t>() % 3;
+    } catch ( fuzzing::datasource::Base::OutOfData ) {
     }
 
-    if ( doDouble == false ) {
-        CF_NORET(blst_p1_add_or_double_affine(&result, &a_, &b));
-    } else {
-        CF_NORET(blst_p1_double(&result, &a_));
+    /* Modes:
+     *
+     * 0 = pure add
+     * 1 = pure double
+     * 2 = mixed add and double
+     */
+
+    if ( mode == 0 && eq ) {
+        mode = 1;
+    } else if ( mode == 1 && !eq ) {
+        mode = 0;
     }
 
-    CF_NORET(blst_p1_to_affine(&result_, &result));
+    try {
+        doAffine = ds.Get<bool>();
+    } catch ( fuzzing::datasource::Base::OutOfData ) {
+    }
+
+    switch ( mode ) {
+        case    0:
+            if ( doAffine == true ) {
+                bool doMulti = false;
+                try {
+                    doMulti = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Base::OutOfData ) {
+                }
+
+                if ( doMulti == false ) {
+                    CF_NORET(blst_p1_add_affine(&result, &a, &aff_b));
+                } else {
+                    const blst_p1_affine *const points[2] = {&aff_a, &aff_b};
+                    CF_NORET(blst_p1s_add(&result, points, 2));
+                }
+            } else {
+                CF_NORET(blst_p1_add(&result, &a, &b));
+            }
+            break;
+        case    1:
+            CF_NORET(blst_p1_double(&result, &a));
+            break;
+        case    2:
+            if ( doAffine == true ) {
+                CF_NORET(blst_p1_add_or_double_affine(&result, &a, &aff_b));
+            } else {
+                CF_NORET(blst_p1_add_or_double(&result, &a, &b));
+            }
+            break;
+        default:
+            CF_UNREACHABLE();
+    }
+
+    CF_CHECK_TRUE(
+            !blst_p1_affine_is_inf(&aff_a) &&
+            blst_p1_affine_on_curve(&aff_a) &&
+            blst_p1_affine_in_g1(&aff_a));
+    CF_CHECK_TRUE(
+            !blst_p1_affine_is_inf(&aff_b) &&
+            blst_p1_affine_on_curve(&aff_b) &&
+            blst_p1_affine_in_g1(&aff_b));
+
+    CF_NORET(blst_p1_to_affine(&aff_result, &result));
 
     {
-        blst_detail::G1 g1(result_, ds);
+        blst_detail::G1 g1(aff_result, ds);
         ret = g1.To_Component_G1();
     }
 
@@ -1523,43 +1645,34 @@ std::optional<component::G1> blst::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
     std::optional<component::G1> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    blst_p1_affine a, result_;
-    blst_p1 a_, result;
+    blst_p1_affine aff_result;
+    std::optional<blst_p1> tmp;
+    blst_p1 a, result;
     std::optional<std::vector<uint8_t>> b;
-    bool doDouble = false;
 
-    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first, a.x));
-    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second, a.y));
+    CF_CHECK_NE(tmp = blst_detail::Load_G1_Projective(ds, op.a), std::nullopt);
+    a = *tmp;
+
     CF_CHECK_NE(b = util::DecToBin(op.b.ToTrimmedString()), std::nullopt);
 
-    if ( !(blst_p1_affine_on_curve(&a) && blst_p1_affine_in_g1(&a)) ) {
-        return ret;
-    }
-
-    CF_NORET(blst_p1_from_affine(&a_, &a));
-
-    if ( op.b.ToTrimmedString() == "2" ) {
-        try {
-            doDouble = ds.Get<bool>();
-        } catch ( fuzzing::datasource::Base::OutOfData ) {
-        }
-    }
-
-    if ( doDouble == false ) {
+    {
         std::vector<uint8_t> b_reversed = util::AddLeadingZeroes(ds, *b);
         CF_NORET(std::reverse(b_reversed.begin(), b_reversed.end()));
 
         Buffer B(b_reversed);
 
-        CF_NORET(blst_p1_mult(&result, &a_, B.GetPtr(&ds), B.GetSize() * 8));
-    } else {
-        CF_NORET(blst_p1_double(&result, &a_));
+        CF_NORET(blst_p1_mult(&result, &a, B.GetPtr(&ds), B.GetSize() * 8));
     }
 
-    CF_NORET(blst_p1_to_affine(&result_, &result));
+    CF_NORET(blst_p1_to_affine(&aff_result, &result));
+
+    CF_CHECK_TRUE(
+            !blst_p1_is_inf(&a) &&
+            blst_p1_on_curve(&a) &&
+            blst_p1_in_g1(&a));
 
     {
-        blst_detail::G1 g1(result_, ds);
+        blst_detail::G1 g1(aff_result, ds);
         ret = g1.To_Component_G1();
     }
 
@@ -1571,19 +1684,36 @@ std::optional<bool> blst::OpBLS_G1_IsEq(operation::BLS_G1_IsEq& op) {
     std::optional<bool> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    blst_p1_affine a, b;
-    blst_p1 a_, b_;
+    std::optional<blst_p1_affine> aff_tmp;
+    blst_p1_affine aff_a, aff_b;
 
-    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first, a.x));
-    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second, a.y));
+    std::optional<blst_p1> tmp;
+    blst_p1 a, b;
 
-    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.b.first, b.x));
-    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.b.second, b.y));
+    bool doAffine = false;
 
-    CF_NORET(blst_p1_from_affine(&a_, &a));
-    CF_NORET(blst_p1_from_affine(&b_, &b));
+    CF_CHECK_NE(aff_tmp = blst_detail::Load_G1_Affine(op.a), std::nullopt);
+    aff_a = *aff_tmp;
 
-    ret = blst_p1_is_equal(&a_, &b_);
+    CF_CHECK_NE(aff_tmp = blst_detail::Load_G1_Affine(op.b), std::nullopt);
+    aff_b = *aff_tmp;
+
+    CF_CHECK_NE(tmp = blst_detail::Load_G1_Projective(ds, op.a), std::nullopt);
+    a = *tmp;
+
+    CF_CHECK_NE(tmp = blst_detail::Load_G1_Projective(ds, op.b), std::nullopt);
+    b = *tmp;
+
+    try {
+        doAffine = ds.Get<bool>();
+    } catch ( fuzzing::datasource::Base::OutOfData ) {
+    }
+
+    if ( doAffine == true ) {
+        ret = blst_p1_affine_is_equal(&aff_a, &aff_b);
+    } else {
+        ret = blst_p1_is_equal(&a, &b);
+    }
 
 end:
     return ret;
@@ -1593,20 +1723,19 @@ std::optional<component::G1> blst::OpBLS_G1_Neg(operation::BLS_G1_Neg& op) {
     std::optional<component::G1> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-    blst_p1_affine a;
-    blst_p1 a_;
+    blst_p1_affine aff_result;
+    std::optional<blst_p1> tmp;
+    blst_p1 a;
 
-    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.first, a.x));
-    CF_CHECK_TRUE(blst_detail::To_blst_fp(op.a.second, a.y));
+    CF_CHECK_NE(tmp = blst_detail::Load_G1_Projective(ds, op.a), std::nullopt);
+    a = *tmp;
 
-    CF_NORET(blst_p1_from_affine(&a_, &a));
+    CF_NORET(blst_p1_cneg(&a, true));
 
-    CF_NORET(blst_p1_cneg(&a_, true));
-
-    CF_NORET(blst_p1_to_affine(&a, &a_));
+    CF_NORET(blst_p1_to_affine(&aff_result, &a));
 
     {
-        blst_detail::G1 g1(a, ds);
+        blst_detail::G1 g1(aff_result, ds);
         ret = g1.To_Component_G1();
     }
 
