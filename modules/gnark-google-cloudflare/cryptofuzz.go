@@ -121,6 +121,17 @@ type OpBLS_G2_Neg struct {
     A_w string
 }
 
+type OpBLS_Pairing struct {
+    Modifier ByteSlice
+    CurveType uint64
+    G1_x string
+    G1_y string
+    G2_x string
+    G2_y string
+    G2_v string
+    G2_w string
+}
+
 type OpBignumCalc struct {
     Modifier ByteSlice
     CalcOp Type
@@ -266,6 +277,30 @@ func saveG2_bls12381(v* gnark_bls12381.G2Affine) {
     result = r2
 }
 
+func saveGT_bls12381(v gnark_bls12381.GT) {
+    res := make([]string, 12)
+    res[0] = fp12381ToString(&v.C0.B0.A0)
+    res[1] = fp12381ToString(&v.C0.B0.A1)
+    res[2] = fp12381ToString(&v.C0.B1.A0)
+    res[3] = fp12381ToString(&v.C0.B1.A1)
+    res[4] = fp12381ToString(&v.C0.B2.A0)
+    res[5] = fp12381ToString(&v.C0.B2.A1)
+    res[6] = fp12381ToString(&v.C1.B0.A0)
+    res[7] = fp12381ToString(&v.C1.B0.A1)
+    res[8] = fp12381ToString(&v.C1.B1.A0)
+    res[9] = fp12381ToString(&v.C1.B1.A1)
+    res[10] = fp12381ToString(&v.C1.B2.A0)
+    res[11] = fp12381ToString(&v.C1.B2.A1)
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
 func saveG2_bls12377(v* gnark_bls12377.G2Affine) {
     res := make([][]string, 2)
     res[0] = make([]string, 2)
@@ -318,6 +353,14 @@ func Gnark_bn254_BLS_IsG1OnCurve(in []byte) {
 
 func Gnark_bls12_381_IsG1OnCurve(v* gnark_bls12381.G1Affine) bool {
     if v.X.IsZero() && v.Y.IsZero() {
+        return false
+    } else {
+        return v.IsOnCurve() && v.IsInSubGroup()
+    }
+}
+
+func Gnark_bls12_381_IsG2OnCurve(v* gnark_bls12381.G2Affine) bool {
+    if v.X.A0.IsZero() && v.X.A1.IsZero() && v.Y.A0.IsZero() && v.Y.A1.IsZero() {
         return false
     } else {
         return v.IsOnCurve() && v.IsInSubGroup()
@@ -801,6 +844,39 @@ func Gnark_bls12_381_BLS_G2_Neg(in []byte) {
     r := new(gnark_bls12381.G2Affine).Neg(a)
 
     saveG2_bls12381(r)
+}
+
+//export Gnark_bls12_381_BLS_Pairing
+func Gnark_bls12_381_BLS_Pairing(in []byte) {
+    resetResult()
+
+    var op OpBLS_Pairing
+    unmarshal(in, &op)
+
+    g1 := new(gnark_bls12381.G1Affine)
+
+    g1.X.SetBigInt(decodeBignum(op.G1_x))
+    g1.Y.SetBigInt(decodeBignum(op.G1_y))
+
+    g2 := new(gnark_bls12381.G2Affine)
+
+    g2.X.A1.SetBigInt(decodeBignum(op.G2_x))
+    g2.X.A0.SetBigInt(decodeBignum(op.G2_v))
+    g2.Y.A1.SetBigInt(decodeBignum(op.G2_y))
+    g2.Y.A0.SetBigInt(decodeBignum(op.G2_w))
+
+    r, _ := gnark_bls12381.Pair(
+        []gnark_bls12381.G1Affine{*g1},
+        []gnark_bls12381.G2Affine{*g2})
+
+    if !Gnark_bls12_381_IsG1OnCurve(g1) {
+        return
+    }
+    if !Gnark_bls12_381_IsG2OnCurve(g2) {
+        return
+    }
+
+    saveGT_bls12381(r)
 }
 
 //export Gnark_bn254_BignumCalc_bn254_Fp
