@@ -194,6 +194,20 @@ std::optional<component::Fp12> Gnark_bn254::OpBLS_Pairing(operation::BLS_Pairing
     return getResultAs<component::Fp12>();
 }
 
+std::optional<component::Fp2> Gnark_bn254::OpBignumCalc_Fp2(operation::BignumCalc_Fp2& op) {
+    auto json = op.ToJSON();
+    auto jsonStr = json.dump();
+    Gnark_bn254_BignumCalc_bls2381_Fp2(toGoSlice(jsonStr));
+    return getResultAs<component::Fp2>();
+}
+
+std::optional<component::Fp12> Gnark_bn254::OpBignumCalc_Fp12(operation::BignumCalc_Fp12& op) {
+    auto json = op.ToJSON();
+    auto jsonStr = json.dump();
+    Gnark_bn254_BignumCalc_bls12381_Fp12(toGoSlice(jsonStr));
+    return getResultAs<component::Fp12>();
+}
+
 std::optional<component::Bignum> Gnark_bn254::OpBignumCalc(operation::BignumCalc& op) {
     if ( op.modulo == std::nullopt ) {
         return std::nullopt;

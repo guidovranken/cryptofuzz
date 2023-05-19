@@ -25,6 +25,8 @@ class Gnark_bn254 : public Module {
         std::optional<component::G2> OpBLS_G2_Mul(operation::BLS_G2_Mul& op) override;
         std::optional<component::G2> OpBLS_G2_Neg(operation::BLS_G2_Neg& op) override;
         std::optional<component::Fp12> OpBLS_Pairing(operation::BLS_Pairing& op) override;
+        std::optional<component::Fp2> OpBignumCalc_Fp2(operation::BignumCalc_Fp2& op) override;
+        std::optional<component::Fp12> OpBignumCalc_Fp12(operation::BignumCalc_Fp12& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
         bool SupportsModularBignumCalc(void) const override;
 };

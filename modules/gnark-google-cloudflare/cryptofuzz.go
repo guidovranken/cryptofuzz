@@ -141,6 +141,24 @@ type OpBignumCalc struct {
     BN3 string
 }
 
+type OpBignumCalc_Fp2 struct {
+    Modifier ByteSlice
+    CalcOp Type
+    BN0 [2]string
+    BN1 [2]string
+    BN2 [2]string
+    BN3 [2]string
+}
+
+type OpBignumCalc_Fp12 struct {
+    Modifier ByteSlice
+    CalcOp Type
+    BN0 [12]string
+    BN1 [12]string
+    BN2 [12]string
+    BN3 [12]string
+}
+
 var result []byte
 
 func resetResult() {
@@ -267,6 +285,20 @@ func saveG2_bls12381(v* gnark_bls12381.G2Affine) {
     res[0][1] = fp12381ToString(&v.Y.A0)
     res[1][0] = fp12381ToString(&v.X.A1)
     res[1][1] = fp12381ToString(&v.Y.A1)
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+func saveFp2_bls12381(v gnark_bls12381.E2) {
+    res := make([]string, 2)
+    res[0] = fp12381ToString(&v.A0)
+    res[1] = fp12381ToString(&v.A1)
 
     r2, err := json.Marshal(&res)
 
@@ -1273,6 +1305,106 @@ func Gnark_bn254_BignumCalc_bls12381_Fr(in []byte) {
     }
 
     result = r2
+}
+
+//export Gnark_bn254_BignumCalc_bls2381_Fp2
+func Gnark_bn254_BignumCalc_bls2381_Fp2(in []byte) {
+    resetResult()
+
+    var op OpBignumCalc_Fp2
+    unmarshal(in, &op)
+
+    bn0 := gnark_bls12381.E2{}
+    bn0.A0.SetBigInt(decodeBignum(op.BN0[0]))
+    bn0.A1.SetBigInt(decodeBignum(op.BN0[1]))
+
+    bn1 := gnark_bls12381.E2{}
+    bn1.A0.SetBigInt(decodeBignum(op.BN1[0]))
+    bn1.A1.SetBigInt(decodeBignum(op.BN1[1]))
+
+
+    if false {
+    } else if isAdd(op.CalcOp) {
+        bn0.Add(&bn0, &bn1)
+    } else if isSub(op.CalcOp) {
+        bn0.Sub(&bn0, &bn1)
+    } else if isMul(op.CalcOp) {
+        bn0.Mul(&bn0, &bn1)
+    } else if isSqr(op.CalcOp) {
+        bn0.Square(&bn0)
+    } else if isInvMod(op.CalcOp) {
+        bn0.Inverse(&bn0)
+    } else if isConjugate(op.CalcOp) {
+        bn0.Conjugate(&bn0)
+    } else if isSqrt(op.CalcOp) {
+        if bn0.Legendre() == 1 {
+            bn0.Sqrt(&bn0)
+            bn0.Square(&bn0)
+        } else {
+            bn0.SetZero()
+        }
+    } else {
+        return
+    }
+
+    saveFp2_bls12381(bn0)
+}
+
+//export Gnark_bn254_BignumCalc_bls12381_Fp12
+func Gnark_bn254_BignumCalc_bls12381_Fp12(in []byte) {
+    resetResult()
+
+    var op OpBignumCalc_Fp12
+    unmarshal(in, &op)
+
+    bn0 := gnark_bls12381.E12{}
+    bn0.C0.B0.A0.SetBigInt(decodeBignum(op.BN0[0]))
+    bn0.C0.B0.A1.SetBigInt(decodeBignum(op.BN0[1]))
+    bn0.C0.B1.A0.SetBigInt(decodeBignum(op.BN0[2]))
+    bn0.C0.B1.A1.SetBigInt(decodeBignum(op.BN0[3]))
+    bn0.C0.B2.A0.SetBigInt(decodeBignum(op.BN0[4]))
+    bn0.C0.B2.A1.SetBigInt(decodeBignum(op.BN0[5]))
+    bn0.C1.B0.A0.SetBigInt(decodeBignum(op.BN0[6]))
+    bn0.C1.B0.A1.SetBigInt(decodeBignum(op.BN0[7]))
+    bn0.C1.B1.A0.SetBigInt(decodeBignum(op.BN0[8]))
+    bn0.C1.B1.A1.SetBigInt(decodeBignum(op.BN0[9]))
+    bn0.C1.B2.A0.SetBigInt(decodeBignum(op.BN0[10]))
+    bn0.C1.B2.A1.SetBigInt(decodeBignum(op.BN0[11]))
+
+    bn1 := gnark_bls12381.E12{}
+    bn1.C0.B0.A0.SetBigInt(decodeBignum(op.BN1[0]))
+    bn1.C0.B0.A1.SetBigInt(decodeBignum(op.BN1[1]))
+    bn1.C0.B1.A0.SetBigInt(decodeBignum(op.BN1[2]))
+    bn1.C0.B1.A1.SetBigInt(decodeBignum(op.BN1[3]))
+    bn1.C0.B2.A0.SetBigInt(decodeBignum(op.BN1[4]))
+    bn1.C0.B2.A1.SetBigInt(decodeBignum(op.BN1[5]))
+    bn1.C1.B0.A0.SetBigInt(decodeBignum(op.BN1[6]))
+    bn1.C1.B0.A1.SetBigInt(decodeBignum(op.BN1[7]))
+    bn1.C1.B1.A0.SetBigInt(decodeBignum(op.BN1[8]))
+    bn1.C1.B1.A1.SetBigInt(decodeBignum(op.BN1[9]))
+    bn1.C1.B2.A0.SetBigInt(decodeBignum(op.BN1[10]))
+    bn1.C1.B2.A1.SetBigInt(decodeBignum(op.BN1[11]))
+
+    if false {
+    } else if isAdd(op.CalcOp) {
+        bn0.Add(&bn0, &bn1)
+    } else if isSub(op.CalcOp) {
+        bn0.Sub(&bn0, &bn1)
+    } else if isMul(op.CalcOp) {
+        bn0.Mul(&bn0, &bn1)
+    } else if isSqr(op.CalcOp) {
+        bn0.Square(&bn0)
+    } else if isInvMod(op.CalcOp) {
+        bn0.Inverse(&bn0)
+    } else if isConjugate(op.CalcOp) {
+        bn0.Conjugate(&bn0)
+    } else if isCyclotomicSqr(op.CalcOp) {
+        bn0.CyclotomicSquare(&bn1)
+    } else {
+        return
+    }
+
+    saveGT_bls12381(bn0)
 }
 
 //export Cloudflare_bn256_Cryptofuzz_GetResult
