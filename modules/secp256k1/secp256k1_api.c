@@ -87,8 +87,8 @@ size_t cryptofuzz_secp256k1_fe_size(void) {
     return sizeof(secp256k1_fe);
 }
 
-int cryptofuzz_secp256k1_fe_set_b32(secp256k1_fe *r, const unsigned char *b32) {
-    return secp256k1_fe_set_b32(r, b32);
+int cryptofuzz_secp256k1_fe_set_b32_limit(secp256k1_fe *r, const unsigned char *b32) {
+    return secp256k1_fe_set_b32_limit(r, b32);
 }
 
 void cryptofuzz_secp256k1_fe_set_int(void *r, const int i) {

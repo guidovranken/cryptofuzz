@@ -981,7 +981,7 @@ end:
         std::optional<std::vector<uint8_t>> bin;
 
         CF_CHECK_NE(bin = util::DecToBin(bn.ToTrimmedString(), 32), std::nullopt);
-        CF_CHECK_EQ(cryptofuzz_secp256k1_fe_set_b32(fe, bin->data()), 1);
+        CF_CHECK_EQ(cryptofuzz_secp256k1_fe_set_b32_limit(fe, bin->data()), 1);
 
         ret = true;
 end:
