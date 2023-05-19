@@ -1422,9 +1422,9 @@ namespace blst_detail {
                 break;
             case    CF_CALCOP("CyclotomicSqr(A)"):
                 CF_CHECK_TRUE(blst_detail::To_blst_fp12(op.bn0, A));
-                PREPARE_RESULT();
-                CF_NORET(blst_fp12_cyclotomic_sqr(RESULT_PTR(), &A));
-                ret = blst_detail::To_component_Fp12(RESULT());
+                CF_CHECK_TRUE(blst_detail::To_blst_fp12(op.bn1, B));
+                CF_NORET(blst_fp12_cyclotomic_sqr(&A, &B));
+                ret = blst_detail::To_component_Fp12(A);
                 break;
             case    CF_CALCOP("InvMod(A,B)"):
                 CF_CHECK_TRUE(blst_detail::To_blst_fp12(op.bn0, A));
