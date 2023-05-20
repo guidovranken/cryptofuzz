@@ -434,6 +434,10 @@
   #include <modules/substrate-bn/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_AURORA_ENGINE_MODEXP)
+  #include <modules/aurora-engine-modexp/module.h>
+#endif
+
 std::shared_ptr<cryptofuzz::Driver> driver = nullptr;
 
 const cryptofuzz::Options* cryptofuzz_options = nullptr;
@@ -932,6 +936,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_SUBSTRATE_BN)
     driver->LoadModule( std::make_shared<cryptofuzz::module::substrate_bn>() );
+#endif
+
+#if defined(CRYPTOFUZZ_AURORA_ENGINE_MODEXP)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::aurora_engine_modexp>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is

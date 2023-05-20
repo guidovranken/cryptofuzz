@@ -1,0 +1,13 @@
+[package]
+name = "cryptofuzz-aurora-engine-modexp-harness"
+version = "0.1.0"
+authors = ["Guido Vranken <guidovranken@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+#aurora-engine-modexp = {git = "https://github.com/aurora-is-near/aurora-engine"}
+aurora-engine-modexp = {path = "/home/jhg/near-modexp-test/cryptofuzz/modules/aurora-engine-modexp/aurora-engine/engine-modexp"}
+libc = "0.2.0"
