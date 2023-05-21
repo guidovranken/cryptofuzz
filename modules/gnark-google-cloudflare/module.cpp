@@ -351,6 +351,19 @@ std::optional<component::G2> Cloudflare_bn256::OpBLS_G2_Neg(operation::BLS_G2_Ne
     return getResultAs<component::G2>();
 }
 
+std::optional<component::Fp12> Cloudflare_bn256::OpBLS_FinalExp(operation::BLS_FinalExp& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    if ( op.curveType.Is(CF_ECC_CURVE("alt_bn128")) ) {
+        Cloudflare_bn256_BLS_FinalExp(toGoSlice(jsonStr));
+    } else {
+        return std::nullopt;
+    }
+
+    return getResultAs<component::Fp12>();
+}
+
 Google_bn256::Google_bn256(void) :
     Module("google-bn256") {
 }

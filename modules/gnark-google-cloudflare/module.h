@@ -46,6 +46,7 @@ class Cloudflare_bn256 : public Module {
         std::optional<component::G2> OpBLS_G2_Add(operation::BLS_G2_Add& op) override;
         std::optional<component::G2> OpBLS_G2_Mul(operation::BLS_G2_Mul& op) override;
         std::optional<component::G2> OpBLS_G2_Neg(operation::BLS_G2_Neg& op) override;
+        std::optional<component::Fp12> OpBLS_FinalExp(operation::BLS_FinalExp& op) override;
 };
 
 class Google_bn256 : public Module {

@@ -16,6 +16,7 @@ import (
     google "github.com/ethereum/go-ethereum/crypto/bn256/google"
     cloudflare "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
     "strconv"
+    "errors"
 )
 
 import "C"
@@ -201,6 +202,19 @@ func decodeBignum(s string) *big.Int {
         panic("Cannot decode bignum")
     }
     return bn
+}
+
+func to32Bytes(s string) ([]byte, error) {
+    bn := decodeBignum(s)
+
+    if bn.BitLen() > 256 {
+        return nil, errors.New("Too large")
+    }
+
+    ret := make([]byte, 32)
+    bn.FillBytes(ret)
+
+    return ret, nil
 }
 
 func fpToString(v* fp.Element) string {
@@ -1692,6 +1706,55 @@ func Cloudflare_bn256_BLS_G2_Neg(in []byte) {
     }
 
     saveG2(r)
+}
+
+func saveGT(v *cloudflare.GT) {
+    bytes := v.Marshal()
+
+    res := make([]string, 12)
+    for i := 0; i < 12; i++ {
+        bn := new(big.Int)
+        bn.SetBytes(bytes[i * 32:i * 32 + 32])
+        res[11-i] = bn.String()
+    }
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export Cloudflare_bn256_BLS_FinalExp
+func Cloudflare_bn256_BLS_FinalExp(in []byte) {
+    resetResult()
+
+    var op OpBLS_FinalExp
+    unmarshal(in, &op)
+
+    fp12 := cloudflare.GT{}
+    serialized := make([]byte, 0, len(op.FP12) * 32)
+    for i := 0; i < 12; i++ {
+        bytes, err := to32Bytes(op.FP12[11-i])
+        if err != nil {
+            return
+        }
+        serialized = append(serialized, bytes...)
+    }
+
+    _, err := fp12.Unmarshal(serialized)
+    if err != nil {
+        return
+    }
+
+    r := fp12.Finalize()
+    /* Adjust to match other libraries */
+    /* 2*u*(6*u^2 + 3*u + 1) */
+	u, _ := new(big.Int).SetString("0x3bec47df15e307c81ea96b02d9d9e38d2e5d4e223ddedaf4", 0)
+    r = r.ScalarMult(r, u)
+    saveGT(r)
 }
 
 //export Google_bn256_Cryptofuzz_GetResult
