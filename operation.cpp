@@ -1591,7 +1591,18 @@ std::string BLS_FinalExp::ToString(void) const {
 
     ss << "operation name: BLS_FinalExp" << std::endl;
     ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
-    /* TODO */
+    ss << "Fp12 c0.b0.a0: " << fp12.bn1.ToString() << std::endl;
+    ss << "Fp12 c0.b0.a1: " << fp12.bn2.ToString() << std::endl;
+    ss << "Fp12 c0.b1.a0: " << fp12.bn3.ToString() << std::endl;
+    ss << "Fp12 c0.b1.a1: " << fp12.bn4.ToString() << std::endl;
+    ss << "Fp12 c0.b2.a0: " << fp12.bn5.ToString() << std::endl;
+    ss << "Fp12 c0.b2.a1: " << fp12.bn6.ToString() << std::endl;
+    ss << "Fp12 c1.b0.a0: " << fp12.bn7.ToString() << std::endl;
+    ss << "Fp12 c1.b0.a1: " << fp12.bn8.ToString() << std::endl;
+    ss << "Fp12 c1.b1.a0: " << fp12.bn9.ToString() << std::endl;
+    ss << "Fp12 c1.b1.a1: " << fp12.bn10.ToString() << std::endl;
+    ss << "Fp12 c1.b2.a0: " << fp12.bn11.ToString() << std::endl;
+    ss << "Fp12 c1.b2.a1: " << fp12.bn12.ToString() << std::endl;
 
     return ss.str();
 }
@@ -1600,10 +1611,9 @@ nlohmann::json BLS_FinalExp::ToJSON(void) const {
     nlohmann::json j;
     j["curveType"] = curveType.ToJSON();
     j["modifier"] = modifier.ToJSON();
-    /* TODO q,p */
+    j["fp12"] = fp12.ToJSON();
     return j;
 }
-
 std::string BLS_Aggregate_G1::Name(void) const { return "BLS_Aggregate_G1"; }
 std::string BLS_Aggregate_G1::ToString(void) const {
     std::stringstream ss;

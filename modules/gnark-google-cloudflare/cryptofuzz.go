@@ -132,6 +132,12 @@ type OpBLS_Pairing struct {
     G2_w string
 }
 
+type OpBLS_FinalExp struct {
+    Modifier ByteSlice
+    CurveType uint64
+    FP12 [12]string
+}
+
 type OpBignumCalc struct {
     Modifier ByteSlice
     CalcOp Type
@@ -323,6 +329,30 @@ func saveGT_bls12381(v gnark_bls12381.GT) {
     res[9] = fp12381ToString(&v.C1.B1.A1)
     res[10] = fp12381ToString(&v.C1.B2.A0)
     res[11] = fp12381ToString(&v.C1.B2.A1)
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+func saveGT_bn254(v bn254.GT) {
+    res := make([]string, 12)
+    res[0] = fpToString(&v.C0.B0.A0)
+    res[1] = fpToString(&v.C0.B0.A1)
+    res[2] = fpToString(&v.C0.B1.A0)
+    res[3] = fpToString(&v.C0.B1.A1)
+    res[4] = fpToString(&v.C0.B2.A0)
+    res[5] = fpToString(&v.C0.B2.A1)
+    res[6] = fpToString(&v.C1.B0.A0)
+    res[7] = fpToString(&v.C1.B0.A1)
+    res[8] = fpToString(&v.C1.B1.A0)
+    res[9] = fpToString(&v.C1.B1.A1)
+    res[10] = fpToString(&v.C1.B2.A0)
+    res[11] = fpToString(&v.C1.B2.A1)
 
     r2, err := json.Marshal(&res)
 
@@ -909,6 +939,58 @@ func Gnark_bls12_381_BLS_Pairing(in []byte) {
     }
 
     saveGT_bls12381(r)
+}
+
+//export Gnark_bls12_381_BLS_FinalExp
+func Gnark_bls12_381_BLS_FinalExp(in []byte) {
+    resetResult()
+
+    var op OpBLS_FinalExp
+    unmarshal(in, &op)
+
+    fp12 := gnark_bls12381.E12{}
+    fp12.C0.B0.A0.SetBigInt(decodeBignum(op.FP12[0]))
+    fp12.C0.B0.A1.SetBigInt(decodeBignum(op.FP12[1]))
+    fp12.C0.B1.A0.SetBigInt(decodeBignum(op.FP12[2]))
+    fp12.C0.B1.A1.SetBigInt(decodeBignum(op.FP12[3]))
+    fp12.C0.B2.A0.SetBigInt(decodeBignum(op.FP12[4]))
+    fp12.C0.B2.A1.SetBigInt(decodeBignum(op.FP12[5]))
+    fp12.C1.B0.A0.SetBigInt(decodeBignum(op.FP12[6]))
+    fp12.C1.B0.A1.SetBigInt(decodeBignum(op.FP12[7]))
+    fp12.C1.B1.A0.SetBigInt(decodeBignum(op.FP12[8]))
+    fp12.C1.B1.A1.SetBigInt(decodeBignum(op.FP12[9]))
+    fp12.C1.B2.A0.SetBigInt(decodeBignum(op.FP12[10]))
+    fp12.C1.B2.A1.SetBigInt(decodeBignum(op.FP12[11]))
+
+    r := gnark_bls12381.FinalExponentiation(&fp12)
+
+    saveGT_bls12381(r)
+}
+
+//export Gnark_bn254_BLS_FinalExp
+func Gnark_bn254_BLS_FinalExp(in []byte) {
+    resetResult()
+
+    var op OpBLS_FinalExp
+    unmarshal(in, &op)
+
+    fp12 := bn254.E12{}
+    fp12.C0.B0.A0.SetBigInt(decodeBignum(op.FP12[0]))
+    fp12.C0.B0.A1.SetBigInt(decodeBignum(op.FP12[1]))
+    fp12.C0.B1.A0.SetBigInt(decodeBignum(op.FP12[2]))
+    fp12.C0.B1.A1.SetBigInt(decodeBignum(op.FP12[3]))
+    fp12.C0.B2.A0.SetBigInt(decodeBignum(op.FP12[4]))
+    fp12.C0.B2.A1.SetBigInt(decodeBignum(op.FP12[5]))
+    fp12.C1.B0.A0.SetBigInt(decodeBignum(op.FP12[6]))
+    fp12.C1.B0.A1.SetBigInt(decodeBignum(op.FP12[7]))
+    fp12.C1.B1.A0.SetBigInt(decodeBignum(op.FP12[8]))
+    fp12.C1.B1.A1.SetBigInt(decodeBignum(op.FP12[9]))
+    fp12.C1.B2.A0.SetBigInt(decodeBignum(op.FP12[10]))
+    fp12.C1.B2.A1.SetBigInt(decodeBignum(op.FP12[11]))
+
+    r := bn254.FinalExponentiation(&fp12)
+
+    saveGT_bn254(r)
 }
 
 //export Gnark_bn254_BignumCalc_bn254_Fp

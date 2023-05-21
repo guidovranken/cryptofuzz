@@ -194,6 +194,21 @@ std::optional<component::Fp12> Gnark_bn254::OpBLS_Pairing(operation::BLS_Pairing
     return getResultAs<component::Fp12>();
 }
 
+std::optional<component::Fp12> Gnark_bn254::OpBLS_FinalExp(operation::BLS_FinalExp& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    if ( op.curveType.Is(CF_ECC_CURVE("BLS12_381")) ) {
+        Gnark_bls12_381_BLS_FinalExp(toGoSlice(jsonStr));
+    } else if ( op.curveType.Is(CF_ECC_CURVE("alt_bn128")) ) {
+        Gnark_bn254_BLS_FinalExp(toGoSlice(jsonStr));
+    } else {
+        return std::nullopt;
+    }
+
+    return getResultAs<component::Fp12>();
+}
+
 std::optional<component::Fp2> Gnark_bn254::OpBignumCalc_Fp2(operation::BignumCalc_Fp2& op) {
     auto json = op.ToJSON();
     auto jsonStr = json.dump();
