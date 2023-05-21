@@ -120,12 +120,14 @@ func loadG1(x, y string) (*kilic.PointG1, error) {
         return nil, errors.New("")
     }
 
-    xBytes := xbn.Bytes()
-    yBytes := ybn.Bytes()
-
     result := make([]byte, 96)
 
+    xBytes := make([]byte, 48)
+    xbn.FillBytes(xBytes)
     copy(result[:48], xBytes)
+
+    yBytes := make([]byte, 48)
+    ybn.FillBytes(yBytes)
     copy(result[48:], yBytes)
 
     g := kilic.NewG1()
@@ -224,7 +226,7 @@ func kilic_bls12_381_Cryptofuzz_OpBLS_IsG1OnCurve(in []byte) {
     if err != nil {
         res = false
     } else {
-        if g.IsZero(g1) {
+        if g.IsZero(g1) || !g.InCorrectSubgroup(g1) {
             res = false
         } else {
             res = true
