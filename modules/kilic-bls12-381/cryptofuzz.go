@@ -416,7 +416,15 @@ func kilic_bls12_381_Cryptofuzz_OpBLS_G1_Mul(in []byte) {
 
     b := decodeBignum(op.B)
 
-    g.MulScalarBig(a, a, b)
+    if b.BitLen() <= 384 && len(op.Modifier) > 0 && op.Modifier[0] & 1 == 0 {
+        var bfr kilic.Fr
+        b_bytes := make([]byte, 48)
+        b.FillBytes(b_bytes)
+        bfr.FromBytes(b_bytes)
+        g.MulScalar(a, a, &bfr)
+    } else {
+        g.MulScalarBig(a, a, b)
+    }
 
     r := g.ToBytes(a)
 
@@ -564,7 +572,15 @@ func kilic_bls12_381_Cryptofuzz_OpBLS_G2_Mul(in []byte) {
 
     b := decodeBignum(op.B)
 
-    g.MulScalarBig(a, a, b)
+    if b.BitLen() <= 384 && len(op.Modifier) > 0 && op.Modifier[0] & 1 == 0 {
+        var bfr kilic.Fr
+        b_bytes := make([]byte, 48)
+        b.FillBytes(b_bytes)
+        bfr.FromBytes(b_bytes)
+        g.MulScalar(a, a, &bfr)
+    } else {
+        g.MulScalarBig(a, a, b)
+    }
 
     r := g.ToBytes(a)
 
