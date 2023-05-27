@@ -103,5 +103,32 @@ std::optional<component::G1> kilic_bls12_381::OpBLS_G1_Neg(operation::BLS_G1_Neg
     return getResultAs<component::G1>();
 }
 
+std::optional<component::Bignum> kilic_bls12_381::OpBignumCalc(operation::BignumCalc& op) {
+    if ( op.modulo == std::nullopt ) {
+        return std::nullopt;
+    }
+
+    if ( op.modulo->ToTrimmedString() == "4002409555221667393417789825735904156556882819939007885332058136124031650490837864442687629129015664037894272559787" ) {
+#if 0
+        auto json = op.ToJSON();
+        auto jsonStr = json.dump();
+        kilic_bls12_381_Cryptofuzz_OpBignumCalc_Fp(toGoSlice(jsonStr));
+        return getResultAs<component::Bignum>();
+#endif
+        return std::nullopt;
+    } else if ( op.modulo->ToTrimmedString() == "52435875175126190479447740508185965837690552500527637822603658699938581184513" ) {
+        auto json = op.ToJSON();
+        auto jsonStr = json.dump();
+        kilic_bls12_381_Cryptofuzz_OpBignumCalc_Fr(toGoSlice(jsonStr));
+        return getResultAs<component::Bignum>();
+    }
+
+    return std::nullopt;
+}
+
+bool kilic_bls12_381::SupportsModularBignumCalc(void) const {
+    return true;
+}
+
 } /* namespace module */
 } /* namespace cryptofuzz */

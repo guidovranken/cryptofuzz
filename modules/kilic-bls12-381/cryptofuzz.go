@@ -7,15 +7,23 @@ import (
     "math/big"
     "errors"
     kilic "github.com/kilic/bls12-381"
+    "strconv"
 )
 
 import "C"
 
 type ByteSlice []byte
+type Type uint64
 
 type SliceOpt struct {
     slice ByteSlice
     opt byte
+}
+
+func (t *Type) UnmarshalJSON(in []byte) error {
+    res, err := strconv.ParseUint(string(in[1:len(in)-1]), 10, 64)
+    *t = Type(res)
+    return err
 }
 
 func (b *ByteSlice) MarshalJSON() ([]byte, error) {
@@ -84,6 +92,15 @@ type OpBLS_G1_Neg struct {
     A_x string
     A_y string
     B string
+}
+
+type OpBignumCalc struct {
+    Modifier ByteSlice
+    CalcOp Type
+    BN0 string
+    BN1 string
+    BN2 string
+    BN3 string
 }
 
 var result []byte
@@ -346,6 +363,64 @@ func kilic_bls12_381_Cryptofuzz_OpBLS_G1_Neg(in []byte) {
     res := make([]string, 2)
     res[0] = x.String()
     res[1] = y.String()
+
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+func loadFr(bn string) (*kilic.Fr, error) {
+    v := decodeBignum(bn)
+    var fr kilic.Fr
+    return fr.FromBytes(v.Bytes()), nil
+}
+
+//export kilic_bls12_381_Cryptofuzz_OpBignumCalc_Fr
+func kilic_bls12_381_Cryptofuzz_OpBignumCalc_Fr(in []byte) {
+    resetResult()
+
+    var op OpBignumCalc
+    unmarshal(in, &op)
+
+    bn0, err := loadFr(op.BN0)
+    if err != nil {
+        return
+    }
+
+    bn1, err := loadFr(op.BN1)
+    if err != nil {
+        return
+    }
+
+    var r kilic.Fr
+
+    if false {
+    } else if isAdd(op.CalcOp) {
+        r.Add(bn0, bn1)
+    } else if isSub(op.CalcOp) {
+        r.Sub(bn0, bn1)
+    } else if isMul(op.CalcOp) {
+        r.Mul(bn0, bn1)
+    } else if isInvMod(op.CalcOp) {
+        r.Inverse(bn0)
+    } else if isSqr(op.CalcOp) {
+        r.Square(bn0)
+    } else if isNot(op.CalcOp) {
+        r.Neg(bn0)
+    } else if isIsEq(op.CalcOp) {
+        if bn0.Equal(bn1) {
+            r.One()
+        } else {
+            r.Zero()
+        }
+    }
+
+    rr := new(big.Int)
+    rr.SetBytes(r.ToBytes())
+    res := rr.String()
 
     r2, err := json.Marshal(&res)
     if err != nil {
