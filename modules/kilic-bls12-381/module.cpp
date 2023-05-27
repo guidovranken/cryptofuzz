@@ -103,6 +103,51 @@ std::optional<component::G1> kilic_bls12_381::OpBLS_G1_Neg(operation::BLS_G1_Neg
     return getResultAs<component::G1>();
 }
 
+std::optional<bool> kilic_bls12_381::OpBLS_IsG2OnCurve(operation::BLS_IsG2OnCurve& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    kilic_bls12_381_Cryptofuzz_OpBLS_IsG2OnCurve(toGoSlice(jsonStr));
+
+    return getResultAs<bool>();
+}
+
+std::optional<component::G2> kilic_bls12_381::OpBLS_G2_Add(operation::BLS_G2_Add& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    kilic_bls12_381_Cryptofuzz_OpBLS_G2_Add(toGoSlice(jsonStr));
+
+    return getResultAs<component::G2>();
+}
+
+std::optional<component::G2> kilic_bls12_381::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    kilic_bls12_381_Cryptofuzz_OpBLS_G2_Mul(toGoSlice(jsonStr));
+
+    return getResultAs<component::G2>();
+}
+
+std::optional<component::G2> kilic_bls12_381::OpBLS_G2_Neg(operation::BLS_G2_Neg& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    kilic_bls12_381_Cryptofuzz_OpBLS_G2_Neg(toGoSlice(jsonStr));
+
+    return getResultAs<component::G2>();
+}
+
+std::optional<component::Fp12> kilic_bls12_381::OpBLS_Pairing(operation::BLS_Pairing& op) {
+    auto json = op.ToJSON();
+    json["curveType"] = boost::lexical_cast<uint64_t>(json["curveType"].get<std::string>());
+    auto jsonStr = json.dump();
+    kilic_bls12_381_Cryptofuzz_OpBLS_Pairing(toGoSlice(jsonStr));
+
+    return getResultAs<component::Fp12>();
+}
+
 std::optional<component::Bignum> kilic_bls12_381::OpBignumCalc(operation::BignumCalc& op) {
     if ( op.modulo == std::nullopt ) {
         return std::nullopt;

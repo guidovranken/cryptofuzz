@@ -94,6 +94,58 @@ type OpBLS_G1_Neg struct {
     B string
 }
 
+type OpBLS_IsG2OnCurve struct {
+    Modifier ByteSlice
+    CurveType uint64
+    G2_x string
+    G2_y string
+    G2_v string
+    G2_w string
+}
+
+type OpBLS_G2_Add struct {
+    Modifier ByteSlice
+    CurveType uint64
+    A_x string
+    A_y string
+    A_v string
+    A_w string
+    B_x string
+    B_y string
+    B_v string
+    B_w string
+}
+
+type OpBLS_G2_Mul struct {
+    Modifier ByteSlice
+    CurveType uint64
+    A_x string
+    A_y string
+    A_v string
+    A_w string
+    B string
+}
+
+type OpBLS_G2_Neg struct {
+    Modifier ByteSlice
+    CurveType uint64
+    A_x string
+    A_y string
+    A_v string
+    A_w string
+}
+
+type OpBLS_Pairing struct {
+    Modifier ByteSlice
+    CurveType uint64
+    G1_x string
+    G1_y string
+    G2_x string
+    G2_y string
+    G2_v string
+    G2_w string
+}
+
 type OpBignumCalc struct {
     Modifier ByteSlice
     CalcOp Type
@@ -151,6 +203,55 @@ func loadG1(x, y string) (*kilic.PointG1, error) {
     p, err := g.FromBytes(result)
     return p, err
 }
+
+func loadG2(v, w, x, y string) (*kilic.PointG2, error) {
+    vbn := decodeBignum(v)
+    wbn := decodeBignum(w)
+    xbn := decodeBignum(x)
+    ybn := decodeBignum(y)
+
+    if vbn.BitLen() > 384 || wbn.BitLen() > 384 {
+        return nil, errors.New("")
+    }
+    if xbn.BitLen() > 384 || ybn.BitLen() > 384 {
+        return nil, errors.New("")
+    }
+
+    result := make([]byte, 192)
+
+    vBytes := make([]byte, 48)
+    vbn.FillBytes(vBytes)
+
+    wBytes := make([]byte, 48)
+    wbn.FillBytes(wBytes)
+
+    xBytes := make([]byte, 48)
+    xbn.FillBytes(xBytes)
+
+    yBytes := make([]byte, 48)
+    ybn.FillBytes(yBytes)
+
+    copy(result[0:48], xBytes)
+    copy(result[48:96], vBytes)
+    copy(result[96:144], yBytes)
+    copy(result[144:192], wBytes)
+
+    g := kilic.NewG2()
+    p, err := g.FromBytes(result)
+    if err == nil {
+        if g.IsZero(p) || !g.InCorrectSubgroup(p) {
+            return nil, errors.New("")
+        }
+    }
+    return p, err
+}
+
+func loadFr(bn string) (*kilic.Fr, error) {
+    v := decodeBignum(bn)
+    var fr kilic.Fr
+    return fr.FromBytes(v.Bytes()), nil
+}
+
 
 //export kilic_bls12_381_Cryptofuzz_OpBLS_PrivateToPublic
 func kilic_bls12_381_Cryptofuzz_OpBLS_PrivateToPublic(in []byte) {
@@ -372,10 +473,210 @@ func kilic_bls12_381_Cryptofuzz_OpBLS_G1_Neg(in []byte) {
     result = r2
 }
 
-func loadFr(bn string) (*kilic.Fr, error) {
-    v := decodeBignum(bn)
-    var fr kilic.Fr
-    return fr.FromBytes(v.Bytes()), nil
+//export kilic_bls12_381_Cryptofuzz_OpBLS_IsG2OnCurve
+func kilic_bls12_381_Cryptofuzz_OpBLS_IsG2OnCurve(in []byte) {
+    resetResult()
+
+    var op OpBLS_IsG2OnCurve
+    unmarshal(in, &op)
+
+    _, err := loadG2(op.G2_v, op.G2_w, op.G2_x, op.G2_y)
+
+    var res bool
+
+    if err == nil {
+        res = true
+    } else {
+        res = false
+    }
+
+    r2, err := json.Marshal(&res)
+
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export kilic_bls12_381_Cryptofuzz_OpBLS_G2_Add
+func kilic_bls12_381_Cryptofuzz_OpBLS_G2_Add(in []byte) {
+    resetResult()
+
+    var op OpBLS_G2_Add
+    unmarshal(in, &op)
+
+    g := kilic.NewG2()
+
+    a, err := loadG2(op.A_v, op.A_w, op.A_x, op.A_y)
+    if err != nil {
+        return
+    }
+
+    b, err := loadG2(op.B_v, op.B_w, op.B_x, op.B_y)
+    if err != nil {
+        return
+    }
+
+    g.Add(a, a, b)
+
+    r := g.ToBytes(a)
+
+    v := new(big.Int)
+    w := new(big.Int)
+    x := new(big.Int)
+    y := new(big.Int)
+
+    v.SetBytes(r[0:48])
+    w.SetBytes(r[48:96])
+    x.SetBytes(r[96:144])
+    y.SetBytes(r[144:192])
+
+    res := make([][]string, 2)
+    res[0] = make([]string, 2)
+    res[1] = make([]string, 2)
+
+    res[0][0] = w.String()
+    res[0][1] = y.String()
+    res[1][0] = v.String()
+    res[1][1] = x.String()
+
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export kilic_bls12_381_Cryptofuzz_OpBLS_G2_Mul
+func kilic_bls12_381_Cryptofuzz_OpBLS_G2_Mul(in []byte) {
+    resetResult()
+
+    var op OpBLS_G2_Mul
+    unmarshal(in, &op)
+
+    g := kilic.NewG2()
+    a, err := loadG2(op.A_v, op.A_w, op.A_x, op.A_y)
+    if err != nil {
+        return
+    }
+
+    b := decodeBignum(op.B)
+
+    g.MulScalarBig(a, a, b)
+
+    r := g.ToBytes(a)
+
+    v := new(big.Int)
+    w := new(big.Int)
+    x := new(big.Int)
+    y := new(big.Int)
+
+    v.SetBytes(r[0:48])
+    w.SetBytes(r[48:96])
+    x.SetBytes(r[96:144])
+    y.SetBytes(r[144:192])
+
+    res := make([][]string, 2)
+    res[0] = make([]string, 2)
+    res[1] = make([]string, 2)
+
+    res[0][0] = w.String()
+    res[0][1] = y.String()
+    res[1][0] = v.String()
+    res[1][1] = x.String()
+
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export kilic_bls12_381_Cryptofuzz_OpBLS_G2_Neg
+func kilic_bls12_381_Cryptofuzz_OpBLS_G2_Neg(in []byte) {
+    resetResult()
+
+    var op OpBLS_G2_Neg
+    unmarshal(in, &op)
+
+    g := kilic.NewG2()
+    a, err := loadG2(op.A_v, op.A_w, op.A_x, op.A_y)
+    if err != nil {
+        return
+    }
+
+    g.Neg(a, a)
+
+    r := g.ToBytes(a)
+
+    v := new(big.Int)
+    w := new(big.Int)
+    x := new(big.Int)
+    y := new(big.Int)
+
+    v.SetBytes(r[0:48])
+    w.SetBytes(r[48:96])
+    x.SetBytes(r[96:144])
+    y.SetBytes(r[144:192])
+
+    res := make([][]string, 2)
+    res[0] = make([]string, 2)
+    res[1] = make([]string, 2)
+
+    res[0][0] = w.String()
+    res[0][1] = y.String()
+    res[1][0] = v.String()
+    res[1][1] = x.String()
+
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
+}
+
+//export kilic_bls12_381_Cryptofuzz_OpBLS_Pairing
+func kilic_bls12_381_Cryptofuzz_OpBLS_Pairing(in []byte) {
+    resetResult()
+
+    var op OpBLS_Pairing
+    unmarshal(in, &op)
+
+    g1, err := loadG1(op.G1_x, op.G1_y)
+    if err != nil {
+        return
+    }
+
+    g2, err := loadG2(op.G2_v, op.G2_w, op.G2_x, op.G2_y)
+    if err != nil {
+        return
+    }
+
+	bls := kilic.NewEngine()
+    bls.AddPair(g1, g2)
+    e := bls.Result()
+    GT := bls.GT()
+
+    r := GT.ToBytes(e)
+
+    res := make([]string, 12)
+
+    for i := 0; i < 12; i++ {
+        bn := new(big.Int)
+        bn.SetBytes(r[i*48:i*48+48])
+        res[11-i] = bn.String()
+    }
+
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
 }
 
 //export kilic_bls12_381_Cryptofuzz_OpBignumCalc_Fr
