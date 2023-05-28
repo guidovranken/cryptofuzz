@@ -69,51 +69,43 @@ const uint8_t* ToInPlace(fuzzing::datasource::Datasource& ds, uint8_t* out, cons
     return inPlace ? out : in;
 }
 
-Multipart ToParts(fuzzing::datasource::Datasource& ds, const std::vector<uint8_t>& buffer) {
-    return ToParts(ds, buffer.data(), buffer.size());
-}
-
-Multipart ToParts(fuzzing::datasource::Datasource& ds, const Buffer& buffer) {
-    return ToParts(ds, buffer.GetPtr(), buffer.GetSize());
-}
-
-Multipart ToParts(fuzzing::datasource::Datasource& ds, const uint8_t* data, const size_t size) {
-    Multipart ret;
-
-    /* Position in buffer */
-    size_t curPos = 0;
+static std::vector<size_t> Split(fuzzing::datasource::Datasource& ds, size_t N) {
+    std::vector<size_t> ret;
 
     try {
-        while ( ds.Get<bool>() == true ) {
-            const size_t left = size - curPos;
-
-            /* Determine part length */
-            const size_t len = left == 0 ? 0 : ds.Get<uint64_t>() % left;
-
-            /* Append part */
-            if ( len == 0 ) {
-                /* Intentionally invalid pointer to detect dereference
-                 * of buffer of size 0 */
-                ret.push_back( {GetNullPtr(), 0} );
-            } else {
-                ret.push_back( {data + curPos, len} );
-            }
-
-            /* Advance */
-            curPos += len;
+        while ( N ) {
+            ret.push_back( ds.Get<uint64_t>() % N );
+            N -= ret.back();
         }
     } catch ( fuzzing::datasource::Datasource::OutOfData ) {
     }
 
-    /* Append the remainder of the buffer */
-    if ( size - curPos == 0 ) {
-        /* Intentionally invalid pointer to detect dereference
-         * of buffer of size 0 */
-        ret.push_back( {GetNullPtr(), 0} );
-    } else {
-        ret.push_back( {data + curPos, size - curPos} );
-    }
+    ret.push_back(N);
 
+    return ret;
+}
+
+Multipart ToParts(fuzzing::datasource::Datasource& ds, const std::vector<uint8_t>& buffer, const size_t blocksize) {
+    return ToParts(ds, buffer.data(), buffer.size(), blocksize);
+}
+
+Multipart ToParts(fuzzing::datasource::Datasource& ds, const Buffer& buffer, const size_t blocksize) {
+    return ToParts(ds, buffer.GetPtr(), buffer.GetSize(), blocksize);
+}
+
+Multipart ToParts(fuzzing::datasource::Datasource& ds, const uint8_t* data, const size_t size, const size_t blocksize) {
+    const bool blocks = blocksize != 0;
+    const auto parts = Split(ds, !blocks ? size : size / blocksize);
+    Multipart ret;
+    size_t curPos = 0;
+    for (const auto& p : parts) {
+        const size_t n = !blocks ? p : blocksize * p;
+        ret.push_back({data + curPos, n});
+        curPos += n;
+    }
+    if ( curPos < size ) {
+        ret.push_back({data + curPos, size - curPos});
+    }
     return ret;
 }
 

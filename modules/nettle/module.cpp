@@ -26,6 +26,7 @@
 #include <nettle/md4.h>
 #include <nettle/md5.h>
 #include <nettle/nist-keywrap.h>
+#include <nettle/ocb.h>
 #include <nettle/pbkdf2.h>
 #include <nettle/ripemd160.h>
 #include <nettle/salsa20.h>
@@ -1117,7 +1118,62 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
                     (nettle_set_key_func*)sm4_set_encrypt_key);
         }
         break;
-#if 0
+        case CF_CIPHER("AES_128_OCB"):
+        {
+            struct ocb_aes128_encrypt_key key;
+            struct ocb_ctx ctx;
+
+            CF_CHECK_EQ(op.cipher.key.GetSize(), AES128_KEY_SIZE);
+            CF_CHECK_LTE(op.cipher.iv.GetSize(), 15);
+
+            CF_CHECK_NE(op.tagSize, std::nullopt);
+            CF_CHECK_GT(*op.tagSize, 0);
+            CF_CHECK_LTE(*op.tagSize, 16);
+
+            CF_NORET(ocb_aes128_set_encrypt_key(&key, op.cipher.key.GetPtr()));
+            CF_NORET(ocb_aes128_set_nonce(
+                        &ctx,
+                        &key,
+                        *op.tagSize,
+                        op.cipher.iv.GetSize(),
+                        op.cipher.iv.GetPtr()));
+
+            if ( op.aad != std::nullopt ) {
+                const auto parts = util::ToParts(ds, *op.aad, 16);
+                for (const auto& p : parts) {
+                    CF_NORET(ocb_aes128_update(
+                                &ctx,
+                                &key,
+                                p.second,
+                                p.first));
+                }
+            }
+
+            out = util::malloc(op.cleartext.GetSize());
+
+            const auto parts = util::ToParts(ds, op.cleartext, 16);
+            size_t i = 0;
+            for (const auto& p : parts) {
+                CF_NORET(ocb_aes128_encrypt(
+                            &ctx,
+                            &key,
+                            p.second,
+                            out + i,
+                            p.first));
+                i += p.second;
+            }
+
+            outTag = util::malloc(*op.tagSize);
+            CF_NORET(ocb_aes128_digest(
+                        &ctx,
+                        &key,
+                        *op.tagSize,
+                        outTag));
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
+        }
+        break;
+#if 1
         case CF_CIPHER("AES_128_GCM_SIV"):
         {
             struct aes128_ctx ctx;
@@ -1798,7 +1854,66 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
                     (nettle_set_key_func*)sm4_set_encrypt_key);
         }
         break;
-#if 0
+        case CF_CIPHER("AES_128_OCB"):
+        {
+            struct ocb_aes128_encrypt_key key;
+            struct aes128_ctx decrypt;
+            struct ocb_ctx ctx;
+
+            CF_CHECK_EQ(op.cipher.key.GetSize(), AES128_KEY_SIZE);
+            CF_CHECK_LTE(op.cipher.iv.GetSize(), 15);
+
+            CF_CHECK_NE(op.tag, std::nullopt);
+            CF_CHECK_GT(op.tag->GetSize(), 0);
+            CF_CHECK_LTE(op.tag->GetSize(), 16);
+
+            CF_NORET(ocb_aes128_set_decrypt_key(&key, &decrypt, op.cipher.key.GetPtr()));
+            CF_NORET(ocb_aes128_set_nonce(
+                        &ctx,
+                        &key,
+                        op.tag->GetSize(),
+                        op.cipher.iv.GetSize(),
+                        op.cipher.iv.GetPtr()));
+
+            if ( op.aad != std::nullopt ) {
+                const auto parts = util::ToParts(ds, *op.aad, 16);
+                for (const auto& p : parts) {
+                    CF_NORET(ocb_aes128_update(
+                                &ctx,
+                                &key,
+                                p.second,
+                                p.first));
+                }
+            }
+
+            out = util::malloc(op.ciphertext.GetSize());
+
+            const auto parts = util::ToParts(ds, op.ciphertext, 16);
+            size_t i = 0;
+            for (const auto& p : parts) {
+                CF_NORET(ocb_aes128_decrypt(
+                            &ctx,
+                            &key,
+                            &decrypt,
+                            p.second,
+                            out + i,
+                            p.first));
+                i += p.second;
+            }
+
+            outTag = util::malloc(op.tag->GetSize());
+            CF_NORET(ocb_aes128_digest(
+                        &ctx,
+                        &key,
+                        op.tag->GetSize(),
+                        outTag));
+
+            CF_CHECK_EQ(memcmp(outTag, op.tag->GetPtr(), op.tag->GetSize()), 0);
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+#if 1
         case CF_CIPHER("AES_128_GCM_SIV"):
         {
             struct aes128_ctx ctx;
