@@ -1173,7 +1173,6 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
         }
         break;
-#if 1
         case CF_CIPHER("AES_128_GCM_SIV"):
         {
             struct aes128_ctx ctx;
@@ -1220,7 +1219,6 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
                     Buffer(out + op.cleartext.GetSize(), SIV_GCM_DIGEST_SIZE));
         }
         break;
-#endif
     }
 
 end:
@@ -1913,7 +1911,6 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
         }
         break;
-#if 1
         case CF_CIPHER("AES_128_GCM_SIV"):
         {
             struct aes128_ctx ctx;
@@ -1966,7 +1963,6 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
         }
         break;
-#endif
     }
 
 end:
