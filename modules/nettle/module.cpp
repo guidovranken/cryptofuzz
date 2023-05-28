@@ -530,7 +530,65 @@ end:
         return ret;
     }
 
+    template <size_t BlockSize = 16, class CTXType>
+    void SetAAD(
+            fuzzing::datasource::Datasource& ds,
+            CTXType* ctx,
+            const std::optional<component::AAD> aad,
+            void (*set_aad)(CTXType*, size_t, const uint8_t*)) {
+        static_assert(BlockSize != 0);
+
+        if ( aad == std::nullopt ) {
+            return;
+        }
+
+        const auto parts = util::ToParts(ds, *aad, BlockSize);
+        for (const auto& p : parts) {
+            CF_NORET(set_aad(ctx, p.second, p.first));
+        }
+    }
+
+    template <size_t BlockSize = 16, class CTXType>
+    void Encrypt(
+            fuzzing::datasource::Datasource& ds,
+            CTXType* ctx,
+            Buffer msg,
+            uint8_t* out,
+            void (*encrypt)(CTXType*, size_t, uint8_t* out, const uint8_t*)) {
+        const auto parts = util::ToParts(ds, msg, BlockSize);
+        size_t i = 0;
+        for (const auto& p : parts) {
+            CF_NORET(encrypt(ctx, p.second, out + i, p.first));
+            i += p.second;
+        }
+    }
 }
+
+#define SET_AAD(set_aad) \
+    CF_NORET(Nettle_detail::SetAAD<>(ds, &ctx, op.aad, set_aad));
+
+#define SET_AAD_BS(blocksize, set_aad) \
+    CF_NORET(Nettle_detail::SetAAD<blocksize>(ds, &ctx, op.aad, set_aad));
+
+#define ENCRYPT(encrypt) \
+    CF_NORET(Nettle_detail::Encrypt<>(ds, &ctx, op.cleartext, out, encrypt));
+
+#define ENCRYPT_BS(blocksize, encrypt) \
+    CF_NORET(Nettle_detail::Encrypt<blocksize>(ds, &ctx, op.cleartext, out, encrypt));
+
+#define SET_AAD_ENCRYPT(set_aad, encrypt) SET_AAD(set_aad); ENCRYPT(encrypt);
+#define SET_AAD_ENCRYPT_BS(blocksize, set_aad, encrypt) \
+    SET_AAD_BS(blocksize, set_aad); ENCRYPT_BS(blocksize, encrypt);
+
+#define DECRYPT(encrypt) \
+    CF_NORET(Nettle_detail::Encrypt<>(ds, &ctx, op.ciphertext, out, encrypt));
+
+#define DECRYPT_BS(blocksize, encrypt) \
+    CF_NORET(Nettle_detail::Encrypt<blocksize>(ds, &ctx, op.ciphertext, out, encrypt));
+
+#define SET_AAD_DECRYPT(set_aad, encrypt) SET_AAD(set_aad); DECRYPT(encrypt);
+#define SET_AAD_DECRYPT_BS(blocksize, set_aad, encrypt) \
+    SET_AAD_BS(blocksize, set_aad); DECRYPT_BS(blocksize, encrypt);
 
 std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
     std::optional<component::Ciphertext> ret = std::nullopt;
@@ -554,10 +612,7 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
 
             CF_NORET(gcm_aes128_set_key(&ctx, op.cipher.key.GetPtr()));
             CF_NORET(gcm_aes128_set_iv(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr()));
-            if ( op.aad != std::nullopt ) {
-                CF_NORET(gcm_aes128_update(&ctx, op.aad->GetSize(), op.aad->GetPtr()));
-            }
-            CF_NORET(gcm_aes128_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr()));
+            SET_AAD_ENCRYPT(gcm_aes128_update, gcm_aes128_encrypt);
             CF_NORET(gcm_aes128_digest(&ctx, *op.tagSize, outTag));
 
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
@@ -578,10 +633,7 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
 
             CF_NORET(gcm_aes192_set_key(&ctx, op.cipher.key.GetPtr()));
             CF_NORET(gcm_aes192_set_iv(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr()));
-            if ( op.aad != std::nullopt ) {
-                CF_NORET(gcm_aes192_update(&ctx, op.aad->GetSize(), op.aad->GetPtr()));
-            }
-            CF_NORET(gcm_aes192_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr()));
+            SET_AAD_ENCRYPT(gcm_aes192_update, gcm_aes192_encrypt);
             CF_NORET(gcm_aes192_digest(&ctx, *op.tagSize, outTag));
 
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
@@ -602,10 +654,7 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
 
             CF_NORET(gcm_aes256_set_key(&ctx, op.cipher.key.GetPtr()));
             CF_NORET(gcm_aes256_set_iv(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr()));
-            if ( op.aad != std::nullopt ) {
-                CF_NORET(gcm_aes256_update(&ctx, op.aad->GetSize(), op.aad->GetPtr()));
-            }
-            CF_NORET(gcm_aes256_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr()));
+            SET_AAD_ENCRYPT(gcm_aes256_update, gcm_aes256_encrypt);
             CF_NORET(gcm_aes256_digest(&ctx, *op.tagSize, outTag));
 
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
@@ -627,10 +676,7 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
 
             CF_NORET(eax_aes128_set_key(&ctx, op.cipher.key.GetPtr()));
             CF_NORET(eax_aes128_set_nonce(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr()));
-            if ( op.aad != std::nullopt ) {
-                CF_NORET(eax_aes128_update(&ctx, op.aad->GetSize(), op.aad->GetPtr()));
-            }
-            CF_NORET(eax_aes128_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr()));
+            SET_AAD_ENCRYPT(eax_aes128_update, eax_aes128_encrypt);
             CF_NORET(eax_aes128_digest(&ctx, *op.tagSize, outTag));
 
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
@@ -657,10 +703,7 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
 
             CF_NORET(ccm_aes128_set_key(&ctx, op.cipher.key.GetPtr()));
             CF_NORET(ccm_aes128_set_nonce(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr(), op.aad == std::nullopt ? 0 : op.aad->GetSize(), op.cleartext.GetSize(), *op.tagSize));
-            if ( op.aad != std::nullopt ) {
-                CF_NORET(ccm_aes128_update(&ctx, op.aad->GetSize(), op.aad->GetPtr()));
-            }
-            CF_NORET(ccm_aes128_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr()));
+            SET_AAD_ENCRYPT(ccm_aes128_update, ccm_aes128_encrypt);
             CF_NORET(ccm_aes128_digest(&ctx, *op.tagSize, outTag));
 
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
@@ -687,10 +730,7 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
 
             CF_NORET(ccm_aes192_set_key(&ctx, op.cipher.key.GetPtr()));
             CF_NORET(ccm_aes192_set_nonce(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr(), op.aad == std::nullopt ? 0 : op.aad->GetSize(), op.cleartext.GetSize(), *op.tagSize));
-            if ( op.aad != std::nullopt ) {
-                CF_NORET(ccm_aes192_update(&ctx, op.aad->GetSize(), op.aad->GetPtr()));
-            }
-            CF_NORET(ccm_aes192_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr()));
+            SET_AAD_ENCRYPT(ccm_aes192_update, ccm_aes192_encrypt);
             CF_NORET(ccm_aes192_digest(&ctx, *op.tagSize, outTag));
 
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
@@ -717,10 +757,7 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
 
             CF_NORET(ccm_aes256_set_key(&ctx, op.cipher.key.GetPtr()));
             CF_NORET(ccm_aes256_set_nonce(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr(), op.aad == std::nullopt ? 0 : op.aad->GetSize(), op.cleartext.GetSize(), *op.tagSize));
-            if ( op.aad != std::nullopt ) {
-                CF_NORET(ccm_aes256_update(&ctx, op.aad->GetSize(), op.aad->GetPtr()));
-            }
-            CF_NORET(ccm_aes256_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr()));
+            SET_AAD_ENCRYPT(ccm_aes256_update, ccm_aes256_encrypt);
             CF_NORET(ccm_aes256_digest(&ctx, *op.tagSize, outTag));
 
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
@@ -757,10 +794,7 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
 
             CF_NORET(chacha_poly1305_set_key(&ctx, op.cipher.key.GetPtr()));
             CF_NORET(chacha_poly1305_set_nonce(&ctx, op.cipher.iv.GetPtr()));
-            if ( op.aad != std::nullopt ) {
-                CF_NORET(chacha_poly1305_update(&ctx, op.aad->GetSize(), op.aad->GetPtr()));
-            }
-            CF_NORET(chacha_poly1305_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr()));
+            SET_AAD_ENCRYPT_BS(64, chacha_poly1305_update, chacha_poly1305_encrypt);
             CF_NORET(chacha_poly1305_digest(&ctx, *op.tagSize, outTag));
 
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
@@ -831,10 +865,7 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
 
             CF_NORET(gcm_camellia128_set_key(&ctx, op.cipher.key.GetPtr()));
             CF_NORET(gcm_camellia128_set_iv(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr()));
-            if ( op.aad != std::nullopt ) {
-                CF_NORET(gcm_camellia128_update(&ctx, op.aad->GetSize(), op.aad->GetPtr()));
-            }
-            CF_NORET(gcm_camellia128_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr()));
+            SET_AAD_ENCRYPT(gcm_camellia128_update, gcm_camellia128_encrypt);
             CF_NORET(gcm_camellia128_digest(&ctx, *op.tagSize, outTag));
 
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
@@ -855,10 +886,7 @@ std::optional<component::Ciphertext> Nettle::OpSymmetricEncrypt(operation::Symme
 
             CF_NORET(gcm_camellia256_set_key(&ctx, op.cipher.key.GetPtr()));
             CF_NORET(gcm_camellia256_set_iv(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr()));
-            if ( op.aad != std::nullopt ) {
-                CF_NORET(gcm_camellia256_update(&ctx, op.aad->GetSize(), op.aad->GetPtr()));
-            }
-            CF_NORET(gcm_camellia256_encrypt(&ctx, op.cleartext.GetSize(), out, op.cleartext.GetPtr()));
+            SET_AAD_ENCRYPT(gcm_camellia256_update, gcm_camellia256_encrypt);
             CF_NORET(gcm_camellia256_digest(&ctx, *op.tagSize, outTag));
 
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
@@ -1267,10 +1295,7 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
 
             CF_NORET(gcm_aes128_set_key(&ctx, op.cipher.key.GetPtr()));
             CF_NORET(gcm_aes128_set_iv(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr()));
-            if ( op.aad != std::nullopt ) {
-                CF_NORET(gcm_aes128_update(&ctx, op.aad->GetSize(), op.aad->GetPtr()));
-            }
-            CF_NORET(gcm_aes128_decrypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr()));
+            SET_AAD_DECRYPT(gcm_aes128_update, gcm_aes128_decrypt);
             CF_NORET(gcm_aes128_digest(&ctx, op.tag->GetSize(), outTag));
 
             CF_CHECK_EQ(memcmp(op.tag->GetPtr(), outTag, op.tag->GetSize()), 0);
@@ -1293,10 +1318,7 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
 
             CF_NORET(gcm_aes192_set_key(&ctx, op.cipher.key.GetPtr()));
             CF_NORET(gcm_aes192_set_iv(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr()));
-            if ( op.aad != std::nullopt ) {
-                CF_NORET(gcm_aes192_update(&ctx, op.aad->GetSize(), op.aad->GetPtr()));
-            }
-            CF_NORET(gcm_aes192_decrypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr()));
+            SET_AAD_DECRYPT(gcm_aes192_update, gcm_aes192_decrypt);
             CF_NORET(gcm_aes192_digest(&ctx, op.tag->GetSize(), outTag));
 
             CF_CHECK_EQ(memcmp(op.tag->GetPtr(), outTag, op.tag->GetSize()), 0);
@@ -1319,10 +1341,7 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
 
             CF_NORET(gcm_aes256_set_key(&ctx, op.cipher.key.GetPtr()));
             CF_NORET(gcm_aes256_set_iv(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr()));
-            if ( op.aad != std::nullopt ) {
-                CF_NORET(gcm_aes256_update(&ctx, op.aad->GetSize(), op.aad->GetPtr()));
-            }
-            CF_NORET(gcm_aes256_decrypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr()));
+            SET_AAD_DECRYPT(gcm_aes256_update, gcm_aes256_decrypt);
             CF_NORET(gcm_aes256_digest(&ctx, op.tag->GetSize(), outTag));
 
             CF_CHECK_EQ(memcmp(op.tag->GetPtr(), outTag, op.tag->GetSize()), 0);
@@ -1346,10 +1365,7 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
 
             CF_NORET(eax_aes128_set_key(&ctx, op.cipher.key.GetPtr()));
             CF_NORET(eax_aes128_set_nonce(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr()));
-            if ( op.aad != std::nullopt ) {
-                CF_NORET(eax_aes128_update(&ctx, op.aad->GetSize(), op.aad->GetPtr()));
-            }
-            CF_NORET(eax_aes128_decrypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr()));
+            SET_AAD_DECRYPT(eax_aes128_update, eax_aes128_decrypt);
             CF_NORET(eax_aes128_digest(&ctx, op.tag->GetSize(), outTag));
 
             CF_CHECK_EQ(memcmp(op.tag->GetPtr(), outTag, op.tag->GetSize()), 0);
@@ -1483,10 +1499,7 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
 
             CF_NORET(chacha_poly1305_set_key(&ctx, op.cipher.key.GetPtr()));
             CF_NORET(chacha_poly1305_set_nonce(&ctx, op.cipher.iv.GetPtr()));
-            if ( op.aad != std::nullopt ) {
-                CF_NORET(chacha_poly1305_update(&ctx, op.aad->GetSize(), op.aad->GetPtr()));
-            }
-            CF_NORET(chacha_poly1305_decrypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr()));
+            SET_AAD_DECRYPT_BS(64, chacha_poly1305_update, chacha_poly1305_decrypt);
             CF_NORET(chacha_poly1305_digest(&ctx, op.tag->GetSize(), outTag));
 
             CF_CHECK_EQ(memcmp(op.tag->GetPtr(), outTag, op.tag->GetSize()), 0);
@@ -1559,10 +1572,7 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
 
             CF_NORET(gcm_camellia128_set_key(&ctx, op.cipher.key.GetPtr()));
             CF_NORET(gcm_camellia128_set_iv(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr()));
-            if ( op.aad != std::nullopt ) {
-                CF_NORET(gcm_camellia128_update(&ctx, op.aad->GetSize(), op.aad->GetPtr()));
-            }
-            CF_NORET(gcm_camellia128_decrypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr()));
+            SET_AAD_DECRYPT(gcm_camellia128_update, gcm_camellia128_decrypt);
             CF_NORET(gcm_camellia128_digest(&ctx, op.tag->GetSize(), outTag));
 
             CF_CHECK_EQ(memcmp(op.tag->GetPtr(), outTag, op.tag->GetSize()), 0);
@@ -1585,10 +1595,7 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
 
             CF_NORET(gcm_camellia256_set_key(&ctx, op.cipher.key.GetPtr()));
             CF_NORET(gcm_camellia256_set_iv(&ctx, op.cipher.iv.GetSize(), op.cipher.iv.GetPtr()));
-            if ( op.aad != std::nullopt ) {
-                CF_NORET(gcm_camellia256_update(&ctx, op.aad->GetSize(), op.aad->GetPtr()));
-            }
-            CF_NORET(gcm_camellia256_decrypt(&ctx, op.ciphertext.GetSize(), out, op.ciphertext.GetPtr()));
+            SET_AAD_DECRYPT(gcm_camellia256_update, gcm_camellia256_decrypt);
             CF_NORET(gcm_camellia256_digest(&ctx, op.tag->GetSize(), outTag));
 
             CF_CHECK_EQ(memcmp(op.tag->GetPtr(), outTag, op.tag->GetSize()), 0);
