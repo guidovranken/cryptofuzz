@@ -1235,6 +1235,7 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
 
     uint8_t* out = nullptr;
     uint8_t* outTag = nullptr;
+    uint8_t* in = nullptr;
 
     switch ( op.cipher.cipherType.Get() ) {
         case CF_CIPHER("AES_128_GCM"):
@@ -1921,12 +1922,12 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
             CF_CHECK_NE(op.tag, std::nullopt);
             CF_CHECK_EQ(op.tag->GetSize(), SIV_GCM_DIGEST_SIZE);
 
-            uint8_t* in = util::malloc(op.ciphertext.GetSize() + SIV_GCM_DIGEST_SIZE);
+            in = util::malloc(op.ciphertext.GetSize() + SIV_GCM_DIGEST_SIZE);
             memcpy(in, op.ciphertext.GetPtr(), op.ciphertext.GetSize());
             memcpy(in + op.ciphertext.GetSize(), op.tag->GetPtr(), SIV_GCM_DIGEST_SIZE);
             out = util::malloc(op.ciphertext.GetSize());
 
-            CF_NORET(aes128_set_decrypt_key(&ctx, op.cipher.key.GetPtr()));
+            CF_NORET(aes128_set_encrypt_key(&ctx, op.cipher.key.GetPtr()));
             CF_CHECK_EQ(siv_gcm_aes128_decrypt_message(
                         &ctx,
                         op.cipher.iv.GetSize(), op.cipher.iv.GetPtr(),
@@ -1947,12 +1948,12 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
             CF_CHECK_NE(op.tag, std::nullopt);
             CF_CHECK_EQ(op.tag->GetSize(), SIV_GCM_DIGEST_SIZE);
 
-            uint8_t* in = util::malloc(op.ciphertext.GetSize() + SIV_GCM_DIGEST_SIZE);
+            in = util::malloc(op.ciphertext.GetSize() + SIV_GCM_DIGEST_SIZE);
             memcpy(in, op.ciphertext.GetPtr(), op.ciphertext.GetSize());
             memcpy(in + op.ciphertext.GetSize(), op.tag->GetPtr(), SIV_GCM_DIGEST_SIZE);
             out = util::malloc(op.ciphertext.GetSize());
 
-            CF_NORET(aes256_set_decrypt_key(&ctx, op.cipher.key.GetPtr()));
+            CF_NORET(aes256_set_encrypt_key(&ctx, op.cipher.key.GetPtr()));
             CF_CHECK_EQ(siv_gcm_aes256_decrypt_message(
                         &ctx,
                         op.cipher.iv.GetSize(), op.cipher.iv.GetPtr(),
@@ -1968,6 +1969,7 @@ std::optional<component::Cleartext> Nettle::OpSymmetricDecrypt(operation::Symmet
 end:
     util::free(out);
     util::free(outTag);
+    util::free(in);
 
     return ret;
 }
