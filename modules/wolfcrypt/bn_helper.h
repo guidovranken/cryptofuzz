@@ -108,6 +108,7 @@ class BignumCluster {
     private:
         Datasource& ds;
         std::array<Bignum, 4> bn;
+        std::optional<size_t> res_index = std::nullopt;
 
         struct {
             bool invalid = false;
@@ -120,7 +121,8 @@ class BignumCluster {
 
         bool Set(const size_t index, const std::string s);
         mp_int* GetDestPtr(const size_t index);
-
+        mp_int* GetResPtr(void);
+        bool CopyResult(Bignum& res) const;
         void Save(void);
         void InvalidateCache(void);
         bool EqualsCache(void) const;

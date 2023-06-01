@@ -592,6 +592,54 @@ mp_int* BignumCluster::GetDestPtr(const size_t index) {
     return bn[index].GetPtr();
 }
 
+mp_int* BignumCluster::GetResPtr(void) {
+    CF_ASSERT(res_index == std::nullopt, "Reusing result pointer");
+
+    res_index = 0;
+
+    try { res_index = ds.Get<uint8_t>() % 4; }
+    catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+    InvalidateCache();
+
+    return bn[*res_index].GetPtr();
+}
+
+bool BignumCluster::CopyResult(Bignum& res) const {
+    bool ret = false;
+
+    CF_ASSERT(res_index != std::nullopt, "Result index is undefined");
+    wolfCrypt_detail::disableAllocationFailures = true;
+
+    const auto src = bn[*res_index].GetPtrDirect();
+    auto dest = res.GetPtr();
+
+    if ( mp_copy(src, dest) != MP_OKAY ) {
+#if defined(USE_FAST_MATH)
+        goto end;
+#elif defined(USE_INTEGER_HEAP_MATH)
+        CF_NORET(mp_clear(dest));
+        CF_ASSERT(mp_init_size(dest, src->alloc) == 0, "Cannot initialze result");
+        CF_ASSERT(
+                mp_copy(src, dest) == MP_OKAY,
+                "mp_copy failed unexpectedly");
+#else
+        CF_NORET(mp_clear(dest));
+        CF_ASSERT(mp_init_size(dest, src->size) == 0, "Cannot initialze result");
+        CF_ASSERT(
+                mp_copy(src, dest) == MP_OKAY,
+                "mp_copy failed unexpectedly");
+#endif
+    }
+
+    ret = true;
+#if defined(USE_FAST_MATH)
+end:
+#endif
+    wolfCrypt_detail::disableAllocationFailures = false;
+    return ret;
+}
+
 void BignumCluster::Save(void) {
     for (size_t i = 0; i < 4; i++) {
         mp_int* cached_mp = (mp_int*)util::malloc(sizeof(mp_int));

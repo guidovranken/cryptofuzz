@@ -185,11 +185,6 @@ class NumLSZeroBits : public Operation {
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;
 };
 
-class MulAdd : public Operation {
-    public:
-        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;
-};
-
 class CondSet : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;
