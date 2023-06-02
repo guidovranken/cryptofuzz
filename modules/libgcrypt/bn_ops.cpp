@@ -25,13 +25,15 @@ bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     GET_WHICH(1);
     switch ( which ) {
         case    0:
-            /* noret */ gcry_mpi_add(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            /* noret */ gcry_mpi_add(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            CF_NORET(bn.CopyResult(res));
             return true;
         case    1:
             {
                 unsigned int ui;
                 CF_CHECK_EQ(gcry_mpi_get_ui(&ui, bn[1].GetPtr()), 0);
-                /* noret */ gcry_mpi_add_ui(res.GetPtr(), bn[0].GetPtr(), ui);
+                /* noret */ gcry_mpi_add_ui(bn.GetResPtr(), bn[0].GetPtr(), ui);
+                CF_NORET(bn.CopyResult(res));
                 return true;
             }
             break;
@@ -45,13 +47,15 @@ bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     GET_WHICH(1);
     switch ( which ) {
         case    0:
-            /* noret */ gcry_mpi_sub(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            /* noret */ gcry_mpi_sub(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            CF_NORET(bn.CopyResult(res));
             return true;
         case    1:
             {
                 unsigned int ui;
                 CF_CHECK_EQ(gcry_mpi_get_ui(&ui, bn[1].GetPtr()), 0);
-                /* noret */ gcry_mpi_sub_ui(res.GetPtr(), bn[0].GetPtr(), ui);
+                /* noret */ gcry_mpi_sub_ui(bn.GetResPtr(), bn[0].GetPtr(), ui);
+                CF_NORET(bn.CopyResult(res));
                 return true;
             }
             break;
@@ -65,13 +69,15 @@ bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     GET_WHICH(2);
     switch ( which ) {
         case    0:
-            /* noret */ gcry_mpi_mul(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            /* noret */ gcry_mpi_mul(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            CF_NORET(bn.CopyResult(res));
             return true;
         case    1:
             {
                 unsigned int ui;
                 CF_CHECK_EQ(gcry_mpi_get_ui(&ui, bn[1].GetPtr()), 0);
-                /* noret */ gcry_mpi_mul_ui(res.GetPtr(), bn[0].GetPtr(), ui);
+                /* noret */ gcry_mpi_mul_ui(bn.GetResPtr(), bn[0].GetPtr(), ui);
+                CF_NORET(bn.CopyResult(res));
                 return true;
             }
             break;
@@ -93,7 +99,8 @@ bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                     }
                 }
 
-                gcry_mpi_mul_2exp(res.GetPtr(), bn[0].GetPtr(), pos);
+                gcry_mpi_mul_2exp(bn.GetResPtr(), bn[0].GetPtr(), pos);
+                CF_NORET(bn.CopyResult(res));
 
                 return true;
             }
@@ -111,7 +118,8 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     /* Avoid division by zero */
     CF_CHECK_NE(gcry_mpi_cmp_ui(bn[1].GetPtr(), 0), 0);
-    /* noret */ gcry_mpi_div(res.GetPtr(), nullptr, bn[0].GetPtr(), bn[1].GetPtr(), 0);
+    /* noret */ gcry_mpi_div(bn.GetResPtr(), nullptr, bn[0].GetPtr(), bn[1].GetPtr(), 0);
+    CF_NORET(bn.CopyResult(res));
 
     ret = true;
 
@@ -127,7 +135,8 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     switch ( which ) {
         case    0:
-            /* noret */ gcry_mpi_powm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+            /* noret */ gcry_mpi_powm(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+            CF_NORET(bn.CopyResult(res));
             return true;
         case    1:
             {
@@ -151,7 +160,8 @@ bool GCD::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     CF_CHECK_NE(gcry_mpi_cmp_ui(bn[0].GetPtr(), 0), 0);
     CF_CHECK_NE(gcry_mpi_cmp_ui(bn[1].GetPtr(), 0), 0);
-    /* return value not important */ gcry_mpi_gcd(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+    /* return value not important */ gcry_mpi_gcd(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+    CF_NORET(bn.CopyResult(res));
 
     ret = true;
 
@@ -164,9 +174,11 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     bool ret = false;
 
     CF_CHECK_NE(gcry_mpi_cmp_ui(bn[1].GetPtr(), 0), 0);
-    if ( gcry_mpi_invm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr()) == 0 ) {
+    if ( gcry_mpi_invm(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()) == 0 ) {
         /* Modular inverse does not exist */
         res.Set("0");
+    } else {
+        CF_NORET(bn.CopyResult(res));
     }
 
     ret = true;
@@ -222,7 +234,8 @@ bool Abs::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 bool Neg::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
-    /* noret */ gcry_mpi_neg(res.GetPtr(), bn[0].GetPtr());
+    /* noret */ gcry_mpi_neg(bn.GetResPtr(), bn[0].GetPtr());
+    CF_NORET(bn.CopyResult(res));
 
     return true;
 }
@@ -234,7 +247,8 @@ bool RShift::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     unsigned int pos;
     CF_CHECK_EQ(gcry_mpi_get_ui(&pos, bn[1].GetPtr()), 0);
-    /* noret */ gcry_mpi_rshift(res.GetPtr(), bn[0].GetPtr(), pos);
+    /* noret */ gcry_mpi_rshift(bn.GetResPtr(), bn[0].GetPtr(), pos);
+    CF_NORET(bn.CopyResult(res));
 
 end:
     return ret;
@@ -243,7 +257,8 @@ end:
 bool LShift1::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
-    /* noret */ gcry_mpi_lshift(res.GetPtr(), bn[0].GetPtr(), 1);
+    /* noret */ gcry_mpi_lshift(bn.GetResPtr(), bn[0].GetPtr(), 1);
+    CF_NORET(bn.CopyResult(res));
 
     return true;
 }
@@ -290,14 +305,16 @@ bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
         case    0:
             /* Avoid division by zero */
             CF_CHECK_NE(gcry_mpi_cmp_ui(bn[2].GetPtr(), 0), 0);
-            /* noret */ gcry_mpi_mulm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+            /* noret */ gcry_mpi_mulm(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+            CF_NORET(bn.CopyResult(res));
             return true;
         case    1:
             {
                 CF_CHECK_NE(gcry_mpi_cmp_ui(bn[2].GetPtr(), 0), 0);
 
                 auto ctx = _gcry_mpi_barrett_init(bn[2].GetPtr(), 1);
-                CF_NORET(_gcry_mpi_mul_barrett(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx));
+                CF_NORET(_gcry_mpi_mul_barrett(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx));
+                CF_NORET(bn.CopyResult(res));
                 CF_NORET(_gcry_mpi_barrett_free(ctx));
                 return true;
             }
@@ -315,7 +332,8 @@ bool AddMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     /* Avoid division by zero */
     CF_CHECK_NE(gcry_mpi_cmp_ui(bn[2].GetPtr(), 0), 0);
-    /* noret */ gcry_mpi_addm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+    /* noret */ gcry_mpi_addm(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+    CF_NORET(bn.CopyResult(res));
 
     ret = true;
 
@@ -330,7 +348,8 @@ bool SubMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     /* Avoid division by zero */
     CF_CHECK_NE(gcry_mpi_cmp_ui(bn[2].GetPtr(), 0), 0);
-    /* noret */ gcry_mpi_subm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+    /* noret */ gcry_mpi_subm(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+    CF_NORET(bn.CopyResult(res));
 
     ret = true;
 
@@ -395,14 +414,16 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     switch ( which ) {
         case    0:
             CF_CHECK_NE(gcry_mpi_cmp_ui(bn[1].GetPtr(), 0), 0);
-            /* noret */ gcry_mpi_mod(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            /* noret */ gcry_mpi_mod(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            CF_NORET(bn.CopyResult(res));
             return true;
         case    1:
             {
                 CF_CHECK_NE(gcry_mpi_cmp_ui(bn[1].GetPtr(), 0), 0);
 
                 auto ctx = _gcry_mpi_barrett_init(bn[1].GetPtr(), 1);
-                CF_NORET(_gcry_mpi_mod_barrett(res.GetPtr(), bn[0].GetPtr(), ctx));
+                CF_NORET(_gcry_mpi_mod_barrett(bn.GetResPtr(), bn[0].GetPtr(), ctx));
+                CF_NORET(bn.CopyResult(res));
                 CF_NORET(_gcry_mpi_barrett_free(ctx));
                 return true;
             }
@@ -417,7 +438,8 @@ end:
 bool Sqr::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
-    /* noret */ gcry_mpi_mul(res.GetPtr(), bn[0].GetPtr(), bn[0].GetPtr());
+    /* noret */ gcry_mpi_mul(bn.GetResPtr(), bn[0].GetPtr(), bn[0].GetPtr());
+    CF_NORET(bn.CopyResult(res));
 
     return true;
 }
@@ -441,7 +463,8 @@ bool Exp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     CF_CHECK_EQ(gcry_mpi_get_ui(&exponent, bn[1].GetPtr()), 0);
     CF_CHECK_EQ(one.Set("1"), true);
 
-    /* noret */ gcry_mpi_mul_2exp(res.GetPtr(), one.GetPtr(), exponent);
+    /* noret */ gcry_mpi_mul_2exp(bn.GetResPtr(), one.GetPtr(), exponent);
+    CF_NORET(bn.CopyResult(res));
 
     ret = true;
 

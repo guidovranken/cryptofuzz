@@ -94,6 +94,7 @@ class BignumCluster {
     private:
         Datasource& ds;
         std::array<Bignum, 4> bn;
+        std::optional<size_t> res_index = std::nullopt;
     public:
         BignumCluster(Datasource& ds, Bignum bn0, Bignum bn1, Bignum bn2, Bignum bn3) :
             ds(ds),
@@ -138,6 +139,26 @@ class BignumCluster {
             }
 
             return bn[index].Set(s);
+        }
+
+        gcry_mpi_t GetResPtr(void) {
+            CF_ASSERT(res_index == std::nullopt, "Reusing result pointer");
+
+            res_index = 0;
+
+            try { res_index = ds.Get<uint8_t>() % 4; }
+            catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+            return bn[*res_index].GetPtr();
+        }
+
+        void CopyResult(Bignum& res) const {
+            CF_ASSERT(res_index != std::nullopt, "Result index is undefined");
+
+            const auto src = bn[*res_index].GetPtr();
+            auto dest = res.GetPtr();
+
+            gcry_mpi_set(dest, src);
         }
 };
 
