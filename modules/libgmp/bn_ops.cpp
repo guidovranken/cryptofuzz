@@ -21,14 +21,16 @@ bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     GET_WHICH(1);
     switch ( which ) {
         case    0:
-            /* noret */ mpz_add(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            /* noret */ mpz_add(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            CF_NORET(bn.CopyResult(res));
             break;
         case    1:
             {
                 const auto bn1 = bn[1].GetUnsignedLong();
                 CF_CHECK_NE(bn1, std::nullopt);
 
-                /* noret */ mpz_add_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+                /* noret */ mpz_add_ui(bn.GetResPtr(), bn[0].GetPtr(), *bn1);
+                CF_NORET(bn.CopyResult(res));
             }
             break;
         default:
@@ -47,14 +49,16 @@ bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     GET_WHICH(2);
     switch ( which ) {
         case    0:
-            /* noret */ mpz_sub(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            /* noret */ mpz_sub(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            CF_NORET(bn.CopyResult(res));
             break;
         case    1:
             {
                 const auto bn1 = bn[1].GetUnsignedLong();
                 CF_CHECK_NE(bn1, std::nullopt);
 
-                /* noret */ mpz_sub_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+                /* noret */ mpz_sub_ui(bn.GetResPtr(), bn[0].GetPtr(), *bn1);
+                CF_NORET(bn.CopyResult(res));
             }
             break;
         case    2:
@@ -62,7 +66,8 @@ bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 const auto bn0 = bn[0].GetUnsignedLong();
                 CF_CHECK_NE(bn0, std::nullopt);
 
-                /* noret */ mpz_ui_sub(res.GetPtr(), *bn0, bn[1].GetPtr());
+                /* noret */ mpz_ui_sub(bn.GetResPtr(), *bn0, bn[1].GetPtr());
+                CF_NORET(bn.CopyResult(res));
             }
             break;
         default:
@@ -81,14 +86,16 @@ bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     GET_WHICH(2);
     switch ( which ) {
         case    0:
-            /* noret */ mpz_mul(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            /* noret */ mpz_mul(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            CF_NORET(bn.CopyResult(res));
             break;
         case    1:
             {
                 const auto bn1 = bn[1].GetUnsignedLong();
                 CF_CHECK_NE(bn1, std::nullopt);
 
-                /* noret */ mpz_mul_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+                /* noret */ mpz_mul_ui(bn.GetResPtr(), bn[0].GetPtr(), *bn1);
+                CF_NORET(bn.CopyResult(res));
             }
             break;
         case    2:
@@ -96,7 +103,8 @@ bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 const auto bn1 = bn[1].GetSignedLong();
                 CF_CHECK_NE(bn1, std::nullopt);
 
-                /* noret */ mpz_mul_si(res.GetPtr(), bn[0].GetPtr(), *bn1);
+                /* noret */ mpz_mul_si(bn.GetResPtr(), bn[0].GetPtr(), *bn1);
+                CF_NORET(bn.CopyResult(res));
             }
             break;
         default:
@@ -118,7 +126,8 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
         case    0:
             CF_CHECK_NE(mpz_cmp_ui(bn[1].GetPtr(), 0), 0);
 
-            /* noret */ mpz_div(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            /* noret */ mpz_div(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            CF_NORET(bn.CopyResult(res));
             break;
         case    1:
             {
@@ -127,7 +136,8 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 const auto bn1 = bn[1].GetUnsignedLong();
                 CF_CHECK_NE(bn1, std::nullopt);
 
-                /* noret */ mpz_div_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+                /* noret */ mpz_div_ui(bn.GetResPtr(), bn[0].GetPtr(), *bn1);
+                CF_NORET(bn.CopyResult(res));
             }
             break;
 #endif
@@ -137,7 +147,8 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
                 CF_CHECK_NE(mpz_divisible_p(bn[0].GetPtr(), bn[1].GetPtr()), 0);
 
-                /* noret */ mpz_divexact(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+                /* noret */ mpz_divexact(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+                CF_NORET(bn.CopyResult(res));
             }
             break;
         case    3:
@@ -149,7 +160,8 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
                 CF_CHECK_NE(mpz_divisible_ui_p(bn[0].GetPtr(), *bn1), 0);
 
-                /* noret */ mpz_divexact_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+                /* noret */ mpz_divexact_ui(bn.GetResPtr(), bn[0].GetPtr(), *bn1);
+                CF_NORET(bn.CopyResult(res));
             }
             break;
         default:
@@ -187,14 +199,16 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
              */
             CF_CHECK_GTE(mpz_sgn(bn[1].GetPtr()), 0);
 
-            /* noret */ mpz_powm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+            /* noret */ mpz_powm(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+            CF_NORET(bn.CopyResult(res));
             break;
         case    1:
             {
                 const auto bn1 = bn[1].GetUnsignedLong();
                 CF_CHECK_NE(bn1, std::nullopt);
 
-                /* noret */ mpz_powm_ui(res.GetPtr(), bn[0].GetPtr(), *bn1, bn[2].GetPtr());
+                /* noret */ mpz_powm_ui(bn.GetResPtr(), bn[0].GetPtr(), *bn1, bn[2].GetPtr());
+                CF_NORET(bn.CopyResult(res));
             }
             break;
 #if !defined(HAVE_MINI_GMP)
@@ -208,7 +222,8 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 const auto ptr = bn[2].GetPtr();
                 CF_CHECK_EQ(mpz_odd_p(ptr), 1);
 
-                /* noret */ mpz_powm_sec(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+                /* noret */ mpz_powm_sec(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr());
+                CF_NORET(bn.CopyResult(res));
             }
             break;
 #endif
@@ -247,7 +262,8 @@ static bool GCD_ExtGCD(Datasource& ds, Bignum& res, BignumCluster& bn, const GCD
     switch ( which ) {
         case    0:
             CF_CHECK_EQ(type, GCDType::GCD);
-            /* noret */ mpz_gcd(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            /* noret */ mpz_gcd(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            CF_NORET(bn.CopyResult(res));
             break;
         case    1:
             {
@@ -256,7 +272,8 @@ static bool GCD_ExtGCD(Datasource& ds, Bignum& res, BignumCluster& bn, const GCD
                 const auto bn1 = bn[1].GetUnsignedLong();
                 CF_CHECK_NE(bn1, std::nullopt);
 
-                /* ignore ret */ mpz_gcd_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+                /* ignore ret */ mpz_gcd_ui(bn.GetResPtr(), bn[0].GetPtr(), *bn1);
+                CF_NORET(bn.CopyResult(res));
             }
             break;
         case    2:
@@ -375,14 +392,16 @@ bool LCM::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     GET_WHICH(1);
     switch ( which ) {
         case    0:
-            /* noret */ mpz_lcm(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            /* noret */ mpz_lcm(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            CF_NORET(bn.CopyResult(res));
             break;
         case    1:
             {
                 const auto bn1 = bn[1].GetUnsignedLong();
                 CF_CHECK_NE(bn1, std::nullopt);
 
-                /* noret */ mpz_lcm_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+                /* noret */ mpz_lcm_ui(bn.GetResPtr(), bn[0].GetPtr(), *bn1);
+                CF_NORET(bn.CopyResult(res));
             }
             break;
         default:
@@ -402,7 +421,8 @@ end:
 bool Xor::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
-    /* noret */ mpz_xor(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+    /* noret */ mpz_xor(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+    CF_NORET(bn.CopyResult(res));
 
     return true;
 }
@@ -410,7 +430,8 @@ bool Xor::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 bool And::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
-    /* noret */ mpz_and(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+    /* noret */ mpz_and(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+    CF_NORET(bn.CopyResult(res));
 
     return true;
 }
@@ -418,7 +439,8 @@ bool And::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 bool Abs::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
-    /* noret */ mpz_abs(res.GetPtr(), bn[0].GetPtr());
+    /* noret */ mpz_abs(bn.GetResPtr(), bn[0].GetPtr());
+    CF_NORET(bn.CopyResult(res));
 
     return true;
 }
@@ -426,7 +448,8 @@ bool Abs::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 bool Neg::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
-    /* noret */ mpz_neg(res.GetPtr(), bn[0].GetPtr());
+    /* noret */ mpz_neg(bn.GetResPtr(), bn[0].GetPtr());
+    CF_NORET(bn.CopyResult(res));
 
     return true;
 }
@@ -437,7 +460,8 @@ bool Sqrt::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     CF_CHECK_GTE(mpz_sgn(bn[0].GetPtr()), 0);
 
-    /* noret */ mpz_sqrt(res.GetPtr(), bn[0].GetPtr());
+    /* noret */ mpz_sqrt(bn.GetResPtr(), bn[0].GetPtr());
+    CF_NORET(bn.CopyResult(res));
     ret = true;
 
 end:
@@ -466,7 +490,8 @@ end:
 bool Sqr::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
-    /* noret */ mpz_pow_ui(res.GetPtr(), bn[0].GetPtr(), 2);
+    /* noret */ mpz_pow_ui(bn.GetResPtr(), bn[0].GetPtr(), 2);
+    CF_NORET(bn.CopyResult(res));
 
     return true;
 }
@@ -710,9 +735,11 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     /* "The behaviour of this function is undefined when op2 is zero." */
     CF_CHECK_NE(mpz_sgn(bn[1].GetPtr()), 0);
 
-    if ( mpz_invert(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr()) == 0 ) {
+    if ( mpz_invert(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()) == 0 ) {
         /* Modular inverse does not exist */
         res.Set("0");
+    } else {
+        CF_NORET(bn.CopyResult(res));
     }
 
     ret = true;
@@ -784,7 +811,8 @@ end:
 bool Cbrt::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
-    /* ignore ret */ mpz_root(res.GetPtr(), bn[0].GetPtr(), 3);
+    /* ignore ret */ mpz_root(bn.GetResPtr(), bn[0].GetPtr(), 3);
+    CF_NORET(bn.CopyResult(res));
 
     return true;
 }
@@ -888,7 +916,8 @@ bool Exp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 const auto bn1 = bn[1].GetUnsignedLong();
                 CF_CHECK_NE(bn1, std::nullopt);
 
-                /* noret */ mpz_pow_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+                /* noret */ mpz_pow_ui(bn.GetResPtr(), bn[0].GetPtr(), *bn1);
+                CF_NORET(bn.CopyResult(res));
             }
             break;
         case    1:
@@ -899,7 +928,8 @@ bool Exp::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 const auto bn1 = bn[1].GetUnsignedLong();
                 CF_CHECK_NE(bn1, std::nullopt);
 
-                /* noret */ mpz_ui_pow_ui(res.GetPtr(), *bn0, *bn1);
+                /* noret */ mpz_ui_pow_ui(bn.GetResPtr(), *bn0, *bn1);
+                CF_NORET(bn.CopyResult(res));
             }
             break;
         default:
@@ -1139,7 +1169,8 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
         case    0:
             CF_CHECK_NE(mpz_cmp_ui(bn[1].GetPtr(), 0), 0);
 
-            /* noret */ mpz_mod(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            /* noret */ mpz_mod(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+            CF_NORET(bn.CopyResult(res));
             break;
         case    1:
             {
@@ -1148,7 +1179,8 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 const auto bn1 = bn[1].GetUnsignedLong();
                 CF_CHECK_NE(bn1, std::nullopt);
 
-                /* ignore ret */ mpz_mod_ui(res.GetPtr(), bn[0].GetPtr(), *bn1);
+                /* ignore ret */ mpz_mod_ui(bn.GetResPtr(), bn[0].GetPtr(), *bn1);
+                CF_NORET(bn.CopyResult(res));
             }
             break;
         default:
