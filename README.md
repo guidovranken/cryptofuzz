@@ -183,3 +183,5 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - mbed TLS: [AES key wrap ciphertext cannot be decrypted](https://github.com/Mbed-TLS/mbedtls/issues/7322)
 - Zig: [secp256k1 scalar multiplication panics](https://github.com/ziglang/zig/issues/15267)
 - kilic-bls12-381: [Fr FromBytes does not reduce value if value is modulus](https://github.com/kilic/bls12-381/issues/40)
+- OpenSSL, LibreSSL, BoringSSL: [BN_mod_inverse incorrect result when parameters are aliased](https://github.com/openssl/openssl/issues/21110)
+- libgcrypt: [Modular add/sub/mul incorrect result if result and modulus pointer are equal](https://lists.gnupg.org/pipermail/gcrypt-devel/2023-June/005507.html)
