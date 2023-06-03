@@ -920,10 +920,12 @@ func op_ExtGCD_Y(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct 
 }
 
 func op_MOD_ADD(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    r := new(big.Int)
     if BN2.Cmp(big.NewInt(0)) != 0 {
         if direct {
-            res.Add(BN0, BN1)
-            res.Mod(res, BN2)
+            r.Add(BN0, BN1)
+            r.Mod(r, BN2)
+            res.Set(r)
         } else {
             tmp := big.NewInt(0)
             tmp.Add(BN0, BN1)
@@ -1013,10 +1015,12 @@ func op_IS_PRIME(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct 
 }
 
 func op_MOD_SUB(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    r := new(big.Int)
     if BN2.Cmp(big.NewInt(0)) != 0 {
         if direct {
-            res.Sub(BN0, BN1)
-            res.Mod(res, BN2)
+            r.Sub(BN0, BN1)
+            r.Mod(r, BN2)
+            res.Set(r)
         } else {
             tmp := big.NewInt(0)
             tmp.Sub(BN0, BN1)
@@ -1037,10 +1041,12 @@ func op_SWAP(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool
 }
 
 func op_MOD_MUL(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
+    r := new(big.Int)
     if BN2.Cmp(big.NewInt(0)) != 0 {
         if direct {
-            res.Mul(BN0, BN1)
-            res.Mod(res, BN2)
+            r.Mul(BN0, BN1)
+            r.Mod(r, BN2)
+            res.Set(r)
         } else {
             tmp := big.NewInt(0)
             tmp.Mul(BN0, BN1)
@@ -1355,8 +1361,10 @@ func Golang_Cryptofuzz_OpBignumCalc(in []byte) {
 
     success := false
     direct := false
+    var alias_BN0 uint8 = 0
     var alias_BN1 uint8 = 0
     var alias_BN2 uint8 = 0
+    var alias_res uint8 = 0
 
     if len(op.Modifier) >= 1 {
         if op.Modifier[0] & 1 == 1 {
@@ -1364,31 +1372,42 @@ func Golang_Cryptofuzz_OpBignumCalc(in []byte) {
         }
     }
     if len(op.Modifier) >= 2 {
-        alias_BN1 = op.Modifier[1]
+        alias_BN0 = op.Modifier[1]
     }
     if len(op.Modifier) >= 3 {
-        alias_BN2 = op.Modifier[2]
+        alias_BN1 = op.Modifier[2]
+    }
+    if len(op.Modifier) >= 4 {
+        alias_BN2 = op.Modifier[3]
+    }
+    if len(op.Modifier) >= 5 {
+        alias_res = op.Modifier[4]
     }
 
-    var BN0 *big.Int = bn[0]
-    var BN1 *big.Int
-    if alias_BN1 == 0 {
-        BN1 = bn[1]
+    var BN0 *big.Int
+    if bn[0].Cmp(bn[alias_BN0 % 4]) == 0 {
+        BN0 = bn[alias_BN0 % 4]
     } else {
-        if bn[1].Cmp(bn[alias_BN1 % 1]) == 0 {
-            BN1 = bn[alias_BN1 % 1]
-        } else {
-            BN1 = bn[1]
-        }
+        BN0 = bn[0]
     }
-    var BN2 *big.Int
-    if alias_BN2 == 0 {
-        BN2 = bn[2]
+
+    var BN1 *big.Int
+    if bn[1].Cmp(bn[alias_BN1 % 4]) == 0 {
+        BN1 = bn[alias_BN1 % 4]
     } else {
-        if bn[2].Cmp(bn[alias_BN2 % 2]) == 0 {
-            BN2 = bn[alias_BN2 % 2]
-        } else {
-            BN2 = bn[2]
+        BN1 = bn[1]
+    }
+
+    var BN2 *big.Int
+    if bn[2].Cmp(bn[alias_BN2 % 4]) == 0 {
+        BN2 = bn[alias_BN2 % 4]
+    } else {
+        BN2 = bn[2]
+    }
+
+    if !isSqrtMod(op.CalcOp) {
+        if alias_res != 0 {
+            res = bn[alias_res % 4]
         }
     }
 
