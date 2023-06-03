@@ -1422,10 +1422,7 @@ namespace libecc_detail {
         private:
             nn v;
         public:
-            Bignum(const bool initialize = true) {
-                if ( initialize == false ) {
-                    return;
-                }
+            Bignum(void) {
                 CF_ASSERT(
                         !nn_init(&v, 0),
                         "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
@@ -1500,6 +1497,14 @@ namespace libecc_detail {
                         !nn_isodd(&v, &check),
                         "nn_isodd error " __FILE__ ":" TOSTRING(__LINE__));
                 return check == 1;
+            }
+
+            bitcnt_t NumBits(void) {
+                bitcnt_t numbits;
+                CF_ASSERT(
+                        !nn_bitlen(&v, &numbits),
+                        "nn_bitlen error " __FILE__ ":" TOSTRING(__LINE__));
+                return numbits;
             }
     };
 
@@ -1584,7 +1589,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
 
     libecc_detail::global_ds = &ds;
 
-    libecc_detail::Bignum result(true);
+    libecc_detail::Bignum result;
     libecc_detail::BignumCluster bn{ds,
         libecc_detail::Bignum(),
         libecc_detail::Bignum(),
@@ -1605,14 +1610,39 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
 
     switch ( op.calcOp.Get() ) {
         case    CF_CALCOP("Add(A,B)"):
-            CF_CHECK_EQ(nn_add(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
-            CF_NORET(bn.CopyResult(result));
+            {
+                bool inc = false;
+
+                if ( op.bn1.ToTrimmedString() == "1") {
+                    try {
+                        inc = ds.Get<bool>();
+                    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+                }
+                if ( inc == false ) {
+                    CF_CHECK_EQ(nn_add(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
+                } else {
+                    CF_CHECK_EQ(nn_inc(bn.GetResPtr(), bn[0].GetPtr()), 0);
+                }
+                CF_NORET(bn.CopyResult(result));
+            }
             break;
         case    CF_CALCOP("Sub(A,B)"):
             {
                 CF_CHECK_TRUE(bn[0] > bn[1]);
 
-                CF_CHECK_EQ(nn_sub(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
+                bool dec = false;
+
+                if ( op.bn1.ToTrimmedString() == "1") {
+                    try {
+                        dec = ds.Get<bool>();
+                    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+                }
+
+                if ( dec == false ) {
+                    CF_CHECK_EQ(nn_sub(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
+                } else {
+                    CF_CHECK_EQ(nn_dec(bn.GetResPtr(), bn[0].GetPtr()), 0);
+                }
                 CF_NORET(bn.CopyResult(result));
             }
             break;
@@ -1621,9 +1651,7 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
                 CF_CHECK_EQ(nn_lshift(bn.GetResPtr(), bn[0].GetPtr(), 1), 0);
                 CF_NORET(bn.CopyResult(result));
 
-                bitcnt_t blen;
-                CF_CHECK_EQ(nn_bitlen(result.GetPtr(), &blen), 0);
-                CF_CHECK_LT(blen, NN_MAX_BIT_LEN);
+                CF_CHECK_LT(result.NumBits(), NN_MAX_BIT_LEN);
             }
             break;
         case    CF_CALCOP("RShift(A,B)"):
@@ -1638,6 +1666,21 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("Mul(A,B)"):
             CF_CHECK_EQ(nn_mul(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
             CF_NORET(bn.CopyResult(result));
+            break;
+        case    CF_CALCOP("Div(A,B)"):
+            {
+                libecc_detail::Bignum _remainder;
+                nn_t remainder = bn[2].GetPtr();
+                nn_t res = bn.GetResPtr();
+                nn_t bn0 = bn[0].GetPtr();
+                nn_t bn1 = bn[1].GetPtr();
+                /* Ensure that result pointers do not overlap */
+                if ( res == remainder ) {
+                    remainder = _remainder.GetPtr();
+                }
+                CF_CHECK_EQ(nn_divrem(res, remainder, bn0, bn1), 0);
+                CF_NORET(bn.CopyResult(result));
+            }
             break;
         case    CF_CALCOP("GCD(A,B)"):
             {
@@ -1668,10 +1711,60 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             CF_NORET(bn.CopyResult(result));
             break;
         case    CF_CALCOP("InvMod(A,B)"):
-            if ( nn_modinv(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()) == 0 ) {
-                CF_NORET(bn.CopyResult(result));
-            } else {
-                CF_NORET(result.SetZero());
+            {
+                bool use_nn_modinv_2exp = false;
+                bitcnt_t exponent = 0;
+
+                try {
+                    use_nn_modinv_2exp = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                if ( use_nn_modinv_2exp == true ) {
+                    /* Determine if 2^exponent == modulus */
+                    const auto numbits = bn[1].NumBits();
+                    if ( numbits == 0 ) {
+                        use_nn_modinv_2exp = false;
+                    } else {
+                        size_t num_1_bits = 0;
+                        for (bitcnt_t i = 0; i < numbits; i++) {
+                            u8 bitval;
+                            CF_ASSERT(
+                                    nn_getbit(bn[1].GetPtr(), i, &bitval) == 0,
+                                    "nn_getbit error " __FILE__ ":" TOSTRING(__LINE__));
+                            if ( bitval ) {
+                                num_1_bits++;
+                                if ( num_1_bits > 1 ) {
+                                    use_nn_modinv_2exp = false;
+                                    break;
+                                }
+                            } else {
+                                exponent++;
+                            }
+                        }
+                    }
+                }
+
+                if ( use_nn_modinv_2exp == true && exponent == 0 ) {
+                    /* XXX bug */
+                    use_nn_modinv_2exp = false;
+                }
+
+                if ( use_nn_modinv_2exp == true ) {
+                    int x_isodd;
+                    CF_CHECK_EQ(
+                            nn_modinv_2exp(
+                                bn.GetResPtr(),
+                                bn[0].GetPtr(),
+                                exponent,
+                                &x_isodd), 0);
+                    CF_NORET(bn.CopyResult(result));
+                } else {
+                    if ( nn_modinv(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()) == 0 ) {
+                        CF_NORET(bn.CopyResult(result));
+                    } else {
+                        CF_NORET(result.SetZero());
+                    }
+                }
             }
             break;
         case    CF_CALCOP("ExpMod(A,B,C)"):
@@ -1714,11 +1807,26 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             }
             break;
         case    CF_CALCOP("SubMod(A,B,C)"):
-            CF_CHECK_TRUE(bn[2] > bn[0]);
-            CF_CHECK_TRUE(bn[2] > bn[1]);
+            {
+                CF_CHECK_TRUE(bn[2] > bn[0]);
+                CF_CHECK_TRUE(bn[2] > bn[1]);
 
-            CF_CHECK_EQ(nn_mod_sub(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr()), 0);
-            CF_NORET(bn.CopyResult(result));
+                bool mod_dec = false;
+
+                if ( op.bn1.ToTrimmedString() == "1") {
+                    try {
+                        mod_dec = ds.Get<bool>();
+                    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+                }
+
+                if ( mod_dec == false ) {
+                    CF_CHECK_EQ(nn_mod_sub(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr()), 0);
+                } else {
+                    CF_CHECK_EQ(nn_mod_dec(bn.GetResPtr(), bn[0].GetPtr(), bn[2].GetPtr()), 0);
+                }
+
+                CF_NORET(bn.CopyResult(result));
+            }
             break;
         case    CF_CALCOP("LRot(A,B,C)"):
             {
@@ -1787,11 +1895,10 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             break;
         case    CF_CALCOP("NumBits(A)"):
             {
-                bitcnt_t blen;
-                CF_CHECK_EQ(nn_bitlen(bn[0].GetPtr(), &blen), 0);
+                const auto numbits = bn[0].NumBits();
 
-                static_assert(sizeof(blen) <= sizeof(word_t));
-                CF_NORET(result.SetWord(blen));
+                static_assert(sizeof(numbits) <= sizeof(word_t));
+                CF_NORET(result.SetWord(numbits));
             }
             break;
         case    CF_CALCOP("Bit(A,B)"):
@@ -1805,6 +1912,20 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
                 CF_NORET(result.SetWord(bitval));
             } catch ( const boost::bad_lexical_cast &e ) {
             }
+            break;
+        case    CF_CALCOP("Cmp(A,B)"):
+            return component::Bignum{ std::to_string(bn[0].Cmp(bn[1])) };
+        case    CF_CALCOP("NegMod(A,B)"):
+            CF_CHECK_FALSE(bn[1].IsZero());
+
+            CF_CHECK_EQ(nn_mod_neg(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
+            CF_NORET(bn.CopyResult(result));
+            break;
+        case    CF_CALCOP("Zero()"):
+            CF_NORET(result.SetZero());
+            break;
+        case    CF_CALCOP("One()"):
+            CF_NORET(result.SetOne());
             break;
         default:
             goto end;
