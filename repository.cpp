@@ -223,7 +223,7 @@ size_t CalcOpToNumParams(const uint64_t id) {
     try {
         return CalcOpLUTMap.at(id).num_params;
     } catch ( std::out_of_range ) {
-        ::abort();
+        return 0;
     }
 }
 
