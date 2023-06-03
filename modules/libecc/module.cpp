@@ -1417,237 +1417,279 @@ end:
     return ret;
 }
 
+namespace libecc_detail {
+    class Bignum {
+        private:
+            nn v;
+        public:
+            Bignum(const bool initialize = true) {
+                if ( initialize == false ) {
+                    return;
+                }
+                CF_ASSERT(
+                        !nn_init(&v, 0),
+                        "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
+            }
+
+            ~Bignum() { }
+
+            bool Set(const component::Bignum& bn) {
+                return To_nn_t(bn, &v);
+            }
+
+            nn_t GetPtr(void) {
+                return &v;
+            }
+
+            std::optional<component::Bignum> ToComponentBignum(void) {
+                return To_Component_Bignum(&v);
+            }
+
+            inline int Cmp(const Bignum& rhs) {
+                int check;
+                CF_ASSERT(
+                        !nn_cmp(&v, &rhs.v, &check),
+                        "nn_cmp error " __FILE__ ":" TOSTRING(__LINE__));
+                return check;
+            }
+            inline bool operator==(const Bignum& rhs) {
+                return Cmp(rhs) == 0;
+            }
+
+            inline bool operator>(const Bignum& rhs) {
+                return Cmp(rhs) > 0;
+            }
+
+            void SetZero(void) {
+                CF_ASSERT(
+                        !nn_zero(&v),
+                        "nn_zero error " __FILE__ ":" TOSTRING(__LINE__));
+            }
+
+            void SetOne(void) {
+                CF_ASSERT(
+                        !nn_one(&v),
+                        "nn_one error " __FILE__ ":" TOSTRING(__LINE__));
+            }
+
+            void SetWord(const word_t w) {
+                CF_ASSERT(
+                        !nn_set_word_value(&v, w),
+                        "nn_set_word error " __FILE__ ":" TOSTRING(__LINE__));
+            }
+
+            bool IsZero(void) {
+                int check;
+                CF_ASSERT(
+                        !nn_iszero(&v, &check),
+                        "nn_iszero error " __FILE__ ":" TOSTRING(__LINE__));
+                return check == 1;
+            }
+
+            bool IsOne(void) {
+                int check;
+                CF_ASSERT(
+                        !nn_isone(&v, &check),
+                        "nn_isone error " __FILE__ ":" TOSTRING(__LINE__));
+                return check == 1;
+            }
+
+            bool IsOdd(void) {
+                int check;
+                CF_ASSERT(
+                        !nn_isodd(&v, &check),
+                        "nn_isodd error " __FILE__ ":" TOSTRING(__LINE__));
+                return check == 1;
+            }
+    };
+
+    class BignumCluster {
+        private:
+            Datasource& ds;
+            std::array<Bignum, 4> bn;
+            std::optional<size_t> res_index = std::nullopt;
+        public:
+            BignumCluster(Datasource& ds, Bignum bn0, Bignum bn1, Bignum bn2, Bignum bn3) :
+                ds(ds),
+                bn({bn0, bn1, bn2, bn3})
+                { }
+
+            Bignum& operator[](const size_t index) {
+                if ( index >= bn.size() ) {
+                    abort();
+                }
+
+                try {
+                    /* Rewire? */
+                    if ( ds.Get<bool>() == true ) {
+                        /* Pick a random bignum */
+                        const size_t newIndex = ds.Get<uint8_t>() % 4;
+
+                        /* Same value? */
+                        if ( bn[newIndex] == bn[index] ) {
+                            /* Then return reference to other bignum */
+                            return bn[newIndex];
+                        }
+
+                        /* Fall through */
+                    }
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                return bn[index];
+            }
+
+            Bignum& Get(const size_t index) {
+                if ( index >= bn.size() ) {
+                    abort();
+                }
+
+                return bn[index];
+            }
+
+            bool Set(const size_t index, const component::Bignum& v) {
+                if ( index >= bn.size() ) {
+                    abort();
+                }
+
+                return bn[index].Set(v);
+            }
+
+            nn_t GetResPtr(void) {
+                CF_ASSERT(res_index == std::nullopt, "Reusing result pointer");
+
+                res_index = 0;
+
+                try { res_index = ds.Get<uint8_t>() % 4; }
+                catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                return bn[*res_index].GetPtr();
+            }
+
+            void CopyResult(Bignum& res) {
+                CF_ASSERT(res_index != std::nullopt, "Result index is undefined");
+
+                const auto src = bn[*res_index].GetPtr();
+                auto dest = res.GetPtr();
+
+                CF_ASSERT(
+                        !nn_copy(dest, src),
+                        "nn_copy error " __FILE__ ":" TOSTRING(__LINE__));
+            }
+    };
+}
+
 std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op) {
     std::optional<component::Bignum> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     libecc_detail::global_ds = &ds;
 
-    nn result, a, b, c, tmp1, tmp2;
-    int check;
-    bitcnt_t blen;
+    libecc_detail::Bignum result(true);
+    libecc_detail::BignumCluster bn{ds,
+        libecc_detail::Bignum(),
+        libecc_detail::Bignum(),
+        libecc_detail::Bignum(),
+        libecc_detail::Bignum()
+    };
+    bool negative = false;
+
+    if ( repository::CalcOpToNumParams(op.calcOp.Get()) > 0 ) {
+        CF_CHECK_TRUE(bn.Set(0, op.bn0));
+    }
+    if ( repository::CalcOpToNumParams(op.calcOp.Get()) > 1 ) {
+        CF_CHECK_TRUE(bn.Set(1, op.bn1));
+    }
+    if ( repository::CalcOpToNumParams(op.calcOp.Get()) > 2 ) {
+        CF_CHECK_TRUE(bn.Set(2, op.bn2));
+    }
 
     switch ( op.calcOp.Get() ) {
         case    CF_CALCOP("Add(A,B)"):
-            CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
-
-            CF_CHECK_EQ(nn_add(&result, &a, &b), 0);
-
-            ret = libecc_detail::To_Component_Bignum(&result);
+            CF_CHECK_EQ(nn_add(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
+            CF_NORET(bn.CopyResult(result));
             break;
         case    CF_CALCOP("Sub(A,B)"):
-            CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
+            {
+                CF_CHECK_TRUE(bn[0] > bn[1]);
 
-            CF_ASSERT(!nn_cmp(&a, &b, &check), "nn_cmp error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_CHECK_GT(check, 0);
-
-            CF_CHECK_EQ(nn_sub(&result, &a, &b), 0);
-
-            ret = libecc_detail::To_Component_Bignum(&result);
-            break;
-        case    CF_CALCOP("Mul(A,B)"):
-            CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
-
-            CF_CHECK_EQ(nn_mul(&result, &a, &b), 0);
-
-            ret = libecc_detail::To_Component_Bignum(&result);
-            break;
-        case    CF_CALCOP("Mod(A,B)"):
-            CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
-
-            CF_ASSERT(!nn_iszero(&b, &check), "nn_iszero error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_CHECK_EQ(check, 0);
-
-            CF_CHECK_EQ(nn_mod(&result, &a, &b), 0);
-
-            ret = libecc_detail::To_Component_Bignum(&result);
-            break;
-        case    CF_CALCOP("InvMod(A,B)"):
-            CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
-
-            /* nn_invmod returns non-zero if inverse does not exist */
-            if ( nn_modinv(&result, &a, &b) == 0 ) {
-                ret = libecc_detail::To_Component_Bignum(&result);
-            } else {
-                ret = component::Bignum(std::string("0"));
+                CF_CHECK_EQ(nn_sub(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
+                CF_NORET(bn.CopyResult(result));
             }
             break;
         case    CF_CALCOP("LShift1(A)"):
-            CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
+            {
+                CF_CHECK_EQ(nn_lshift(bn.GetResPtr(), bn[0].GetPtr(), 1), 0);
+                CF_NORET(bn.CopyResult(result));
 
-            CF_CHECK_EQ(nn_lshift(&result, &a, 1), 0);
-
-            CF_CHECK_EQ(nn_bitlen(&a, &blen), 0);
-            CF_CHECK_LT(blen, NN_MAX_BIT_LEN);
-
-            ret = libecc_detail::To_Component_Bignum(&result);
+                bitcnt_t blen;
+                CF_CHECK_EQ(nn_bitlen(result.GetPtr(), &blen), 0);
+                CF_CHECK_LT(blen, NN_MAX_BIT_LEN);
+            }
             break;
         case    CF_CALCOP("RShift(A,B)"):
             {
                 std::optional<uint16_t> count;
-                CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
-                CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
                 CF_CHECK_NE(count = libecc_detail::To_uint16_t(op.bn1), std::nullopt);
 
-                CF_CHECK_EQ(nn_rshift(&result, &a, *count), 0);
-
-                ret = libecc_detail::To_Component_Bignum(&result);
+                CF_CHECK_EQ(nn_rshift(bn.GetResPtr(), bn[0].GetPtr(), *count), 0);
+                CF_NORET(bn.CopyResult(result));
             }
+            break;
+        case    CF_CALCOP("Mul(A,B)"):
+            CF_CHECK_EQ(nn_mul(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
+            CF_NORET(bn.CopyResult(result));
             break;
         case    CF_CALCOP("GCD(A,B)"):
-            CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
-
             {
                 int sign;
-                CF_CHECK_EQ(nn_gcd(&result, &a, &b, &sign), 0);
-            }
-
-            ret = libecc_detail::To_Component_Bignum(&result);
-            break;
-        case    CF_CALCOP("ExtGCD_X(A,B)"):
-            CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_ASSERT(!nn_init(&tmp1, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_ASSERT(!nn_init(&tmp2, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
-
-            /* NOTE: internally, libecc should support a = 0 or b = 0. Is this test necessary?
-             */
-            CF_ASSERT(!nn_iszero(&a, &check), "nn_iszero error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_CHECK_EQ(check, 0);
-            CF_ASSERT(!nn_iszero(&b, &check), "nn_iszero error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_CHECK_EQ(check, 0);
-            {
-		int sign;
-                CF_CHECK_EQ(nn_xgcd(&tmp1, &result, &tmp2, &a, &b, &sign), 0);
-
-                ret = libecc_detail::To_Component_Bignum(&result, sign == -1);
+                CF_CHECK_EQ(nn_gcd(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr(), &sign), 0);
+                CF_NORET(bn.CopyResult(result));
             }
             break;
-        case    CF_CALCOP("ExtGCD_Y(A,B)"):
-            CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_ASSERT(!nn_init(&tmp1, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_ASSERT(!nn_init(&tmp2, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
-
-            /* NOTE: internally, libecc should support a = 0 or b = 0. Is this test necessary?
-             */
-            CF_ASSERT(!nn_iszero(&a, &check), "nn_iszero error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_CHECK_EQ(check, 0);
-            CF_ASSERT(!nn_iszero(&b, &check), "nn_iszero error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_CHECK_EQ(check, 0);
-            {
-		int sign;
-                CF_CHECK_EQ(nn_xgcd(&tmp1, &tmp2, &result, &a, &b, &sign), 0);
-
-                ret = libecc_detail::To_Component_Bignum(&result, sign == 1);
-            }
+        case    CF_CALCOP("Mod(A,B)"):
+            CF_CHECK_FALSE(bn[1].IsZero());
+            CF_CHECK_EQ(nn_mod(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
+            CF_NORET(bn.CopyResult(result));
             break;
         case    CF_CALCOP("Sqr(A)"):
-            CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-
-            CF_CHECK_EQ(nn_sqr(&result, &a), 0);
-
-            ret = libecc_detail::To_Component_Bignum(&result);
-            break;
-        case    CF_CALCOP("IsZero(A)"):
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-
-            CF_CHECK_EQ(nn_iszero(&a, &check), 0);
-
-            ret = std::to_string( check );
-            break;
-        case    CF_CALCOP("IsOne(A)"):
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-
-            CF_CHECK_EQ(nn_isone(&a, &check), 0);
-
-            ret = std::to_string( check );
-            break;
-        case    CF_CALCOP("IsOdd(A)"):
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-
-            CF_CHECK_EQ(nn_isodd(&a, &check), 0);
-
-            ret = std::to_string( check );
+            CF_CHECK_EQ(nn_sqr(bn.GetResPtr(), bn[0].GetPtr()), 0);
+            CF_NORET(bn.CopyResult(result));
             break;
         case    CF_CALCOP("And(A,B)"):
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
-
-            CF_CHECK_EQ(nn_and(&result, &a, &b), 0);
-
-            ret = libecc_detail::To_Component_Bignum(&result);
+            CF_CHECK_EQ(nn_and(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
+            CF_NORET(bn.CopyResult(result));
             break;
         case    CF_CALCOP("Or(A,B)"):
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
-
-            CF_CHECK_EQ(nn_or(&result, &a, &b), 0);
-
-            ret = libecc_detail::To_Component_Bignum(&result);
+            CF_CHECK_EQ(nn_or(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
+            CF_NORET(bn.CopyResult(result));
             break;
         case    CF_CALCOP("Xor(A,B)"):
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
-
-            CF_CHECK_EQ(nn_xor(&result, &a, &b), 0);
-
-            ret = libecc_detail::To_Component_Bignum(&result);
+            CF_CHECK_EQ(nn_xor(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
+            CF_NORET(bn.CopyResult(result));
             break;
-        case    CF_CALCOP("NumBits(A)"):
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-
-            CF_CHECK_EQ(nn_bitlen(&a, &blen), 0);
-
-            ret = std::to_string( blen );
+        case    CF_CALCOP("InvMod(A,B)"):
+            if ( nn_modinv(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()) == 0 ) {
+                CF_NORET(bn.CopyResult(result));
+            } else {
+                CF_NORET(result.SetZero());
+            }
+            break;
+        case    CF_CALCOP("ExpMod(A,B,C)"):
+            CF_CHECK_EQ(nn_mod_pow(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr()), 0);
+            CF_NORET(bn.CopyResult(result));
             break;
         case    CF_CALCOP("MulMod(A,B,C)"):
-            CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
+            CF_CHECK_TRUE(bn[2].IsOdd());
+            CF_CHECK_TRUE(bn[2] > bn[0]);
+            CF_CHECK_TRUE(bn[2] > bn[1]);
 
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn2, &c));
-
-            CF_CHECK_EQ(nn_isodd(&c, &check), 0);
-            CF_CHECK_TRUE(check);
-
-            CF_CHECK_EQ(nn_cmp(&c, &a, &check), 0);
-            CF_CHECK_GT(check, 0);
-            CF_CHECK_EQ(nn_cmp(&c, &b, &check), 0);
-            CF_CHECK_GT(check, 0);
-
-            CF_CHECK_EQ(nn_mod_mul(&result, &a, &b, &c), 0);
-
-            ret = libecc_detail::To_Component_Bignum(&result);
+            CF_CHECK_EQ(nn_mod_mul(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr()), 0);
+            CF_NORET(bn.CopyResult(result));
             break;
         case    CF_CALCOP("AddMod(A,B,C)"):
             {
-                CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
-
-                CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-                CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
-                CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn2, &c));
-
-                CF_CHECK_EQ(nn_cmp(&c, &a, &check), 0);
-                CF_CHECK_GT(check, 0);
-                CF_CHECK_EQ(nn_cmp(&c, &b, &check), 0);
-                CF_CHECK_GT(check, 0);
+                CF_CHECK_TRUE(bn[2] > bn[0]);
+                CF_CHECK_TRUE(bn[2] > bn[1]);
 
                 bool mod_inc = false;
 
@@ -1658,85 +1700,117 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
                 }
 
                 if ( mod_inc == false ) {
-                    CF_CHECK_EQ(nn_mod_add(&result, &a, &b, &c), 0);
+                    /* Aliasing bug */
+                    //CF_CHECK_EQ(nn_mod_add(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr()), 0);
+                    //CF_NORET(bn.CopyResult(result));
+                    CF_CHECK_EQ(nn_mod_add(result.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr()), 0);
                 } else {
-                    CF_CHECK_EQ(nn_mod_inc(&result, &a, &c), 0);
-                }
+                    /* Aliasing bug */
+                    //CF_CHECK_EQ(nn_mod_inc(bn.GetResPtr(), bn[0].GetPtr(), bn[2].GetPtr()), 0);
+                    //CF_NORET(bn.CopyResult(result));
 
-                ret = libecc_detail::To_Component_Bignum(&result);
+                    CF_CHECK_EQ(nn_mod_inc(result.GetPtr(), bn[0].GetPtr(), bn[2].GetPtr()), 0);
+                }
             }
             break;
         case    CF_CALCOP("SubMod(A,B,C)"):
-            CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
+            CF_CHECK_TRUE(bn[2] > bn[0]);
+            CF_CHECK_TRUE(bn[2] > bn[1]);
 
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn2, &c));
-
-            CF_CHECK_EQ(nn_cmp(&c, &a, &check), 0);
-            CF_CHECK_GT(check, 0);
-            CF_CHECK_EQ(nn_cmp(&c, &b, &check), 0);
-            CF_CHECK_GT(check, 0);
-
-            CF_CHECK_EQ(nn_mod_sub(&result, &a, &b, &c), 0);
-
-            ret = libecc_detail::To_Component_Bignum(&result);
-            break;
-        case    CF_CALCOP("ExpMod(A,B,C)"):{
-            CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
-
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn1, &b));
-            CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn2, &c));
-
-            CF_CHECK_EQ(nn_mod_pow(&result, &a, &b, &c), 0);
-
-            ret = libecc_detail::To_Component_Bignum(&result);
-            break;
-        }
-        case    CF_CALCOP("Bit(A,B)"):
-            try {
-                CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-                const auto count = boost::lexical_cast<bitcnt_t>(op.bn1.ToTrimmedString());
-
-                u8 bitval;
-                CF_CHECK_EQ(nn_getbit(&a, count, &bitval), 0);
-
-                ret = std::to_string( bitval );
-            } catch ( const boost::bad_lexical_cast &e ) {
-            }
+            CF_CHECK_EQ(nn_mod_sub(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr()), 0);
+            CF_NORET(bn.CopyResult(result));
             break;
         case    CF_CALCOP("LRot(A,B,C)"):
             {
-                CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
-                CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-
                 std::optional<uint16_t> count, bitlen;
 
                 CF_CHECK_NE(count = libecc_detail::To_uint16_t(op.bn1), std::nullopt);
                 CF_CHECK_NE(bitlen = libecc_detail::To_uint16_t(op.bn2), std::nullopt);
 
-                CF_CHECK_EQ(nn_lrot(&result, &a, *count, *bitlen), 0);
-
-                ret = libecc_detail::To_Component_Bignum(&result);
+                CF_CHECK_EQ(nn_lrot(bn.GetResPtr(), bn[0].GetPtr(), *count, *bitlen), 0);
+                CF_NORET(bn.CopyResult(result));
             }
             break;
         case    CF_CALCOP("RRot(A,B,C)"):
             {
-                CF_ASSERT(!nn_init(&result, 0), "nn_init error " __FILE__ ":" TOSTRING(__LINE__));
-                CF_CHECK_TRUE(libecc_detail::To_nn_t(op.bn0, &a));
-
                 std::optional<uint16_t> count, bitlen;
 
                 CF_CHECK_NE(count = libecc_detail::To_uint16_t(op.bn1), std::nullopt);
                 CF_CHECK_NE(bitlen = libecc_detail::To_uint16_t(op.bn2), std::nullopt);
 
-                CF_CHECK_EQ(nn_rrot(&result, &a, *count, *bitlen), 0);
-
-                ret = libecc_detail::To_Component_Bignum(&result);
+                CF_CHECK_EQ(nn_rrot(bn.GetResPtr(), bn[0].GetPtr(), *count, *bitlen), 0);
+                CF_NORET(bn.CopyResult(result));
             }
             break;
+        case    CF_CALCOP("ExtGCD_X(A,B)"):
+        case    CF_CALCOP("ExtGCD_Y(A,B)"):
+            {
+                /* NOTE: internally, libecc should support a = 0 or b = 0. Is this test necessary?
+                */
+                CF_CHECK_FALSE(bn[0].IsZero());
+                CF_CHECK_FALSE(bn[1].IsZero());
+
+                int sign;
+
+                libecc_detail::Bignum _tmp1, _tmp2;
+                nn_t tmp1 = bn[2].GetPtr();
+                nn_t tmp2 = bn[3].GetPtr();
+                nn_t res = bn.GetResPtr();
+                nn_t bn0 = bn[0].GetPtr();
+                nn_t bn1 = bn[1].GetPtr();
+
+                /* Ensure that result pointers do not overlap */
+                if ( tmp1 == tmp2 || res == tmp1 || res == tmp2 ) {
+                    tmp1 = _tmp1.GetPtr();
+                    tmp2 = _tmp2.GetPtr();
+                }
+
+                if ( op.calcOp.Get() == CF_CALCOP("ExtGCD_X(A,B)") ) {
+                    CF_CHECK_EQ(nn_xgcd(tmp1, res, tmp2, bn0, bn1, &sign), 0);
+                    negative = sign == -1;
+                } else {
+                    CF_CHECK_EQ(nn_xgcd(tmp1, tmp2, res, bn0, bn1, &sign), 0);
+                    negative = sign == 1;
+                }
+
+                CF_NORET(bn.CopyResult(result));
+            }
+            break;
+        case    CF_CALCOP("IsZero(A)"):
+            bn[0].IsZero() ? result.SetOne() : result.SetZero();
+            break;
+        case    CF_CALCOP("IsOne(A)"):
+            bn[0].IsOne() ? result.SetOne() : result.SetZero();
+            break;
+        case    CF_CALCOP("IsOdd(A)"):
+            bn[0].IsOdd() ? result.SetOne() : result.SetZero();
+            break;
+        case    CF_CALCOP("NumBits(A)"):
+            {
+                bitcnt_t blen;
+                CF_CHECK_EQ(nn_bitlen(bn[0].GetPtr(), &blen), 0);
+
+                static_assert(sizeof(blen) <= sizeof(word_t));
+                CF_NORET(result.SetWord(blen));
+            }
+            break;
+        case    CF_CALCOP("Bit(A,B)"):
+            try {
+                const auto count = boost::lexical_cast<bitcnt_t>(op.bn1.ToTrimmedString());
+
+                u8 bitval;
+                CF_CHECK_EQ(nn_getbit(bn[0].GetPtr(), count, &bitval), 0);
+
+                static_assert(sizeof(bitval) <= sizeof(word_t));
+                CF_NORET(result.SetWord(bitval));
+            } catch ( const boost::bad_lexical_cast &e ) {
+            }
+            break;
+        default:
+            goto end;
     }
+
+    ret = libecc_detail::To_Component_Bignum(result.GetPtr(), negative);
 
 end:
     libecc_detail::global_ds = nullptr;
