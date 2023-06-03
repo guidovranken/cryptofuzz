@@ -1914,7 +1914,8 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             }
             break;
         case    CF_CALCOP("Cmp(A,B)"):
-            return component::Bignum{ std::to_string(bn[0].Cmp(bn[1])) };
+            ret = component::Bignum{ std::to_string(bn[0].Cmp(bn[1])) };
+            goto end;
         case    CF_CALCOP("NegMod(A,B)"):
             CF_CHECK_FALSE(bn[1].IsZero());
 
