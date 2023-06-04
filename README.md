@@ -186,3 +186,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - OpenSSL, LibreSSL, BoringSSL: [BN_mod_inverse incorrect result when parameters are aliased](https://github.com/openssl/openssl/issues/21110)
 - libgcrypt: [Modular add/sub/mul incorrect result if result and modulus pointer are equal](https://lists.gnupg.org/pipermail/gcrypt-devel/2023-June/005507.html)
 - libecc: [nn_modinv_2exp incorrect result if exponent is 0](https://github.com/libecc/libecc/commit/049eb1970374b48c5f93c5afc5f6f56503942cc8)
+- libecc: [Modular addition incorrect result if result and modulus pointer are equal](https://github.com/libecc/libecc/commit/2479434f054a6020314a448ba932e659f57a3ae2)
