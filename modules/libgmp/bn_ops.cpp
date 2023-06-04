@@ -1316,6 +1316,30 @@ bool NumBits::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     return true;
 }
 
+bool CondAdd::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    (void)ds;
+
+    if ( !mpz_sgn(bn[2].GetPtr()) ) {
+        /* noret */ mpz_set(res.GetPtr(), bn[0].GetPtr());
+    } else {
+        /* noret */ mpz_add(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+    }
+
+    return true;
+}
+
+bool CondSub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    (void)ds;
+
+    if ( !mpz_sgn(bn[2].GetPtr()) ) {
+        /* noret */ mpz_set(res.GetPtr(), bn[0].GetPtr());
+    } else {
+        /* noret */ mpz_sub(res.GetPtr(), bn[0].GetPtr(), bn[1].GetPtr());
+    }
+
+    return true;
+}
+
 } /* namespace libgmp_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

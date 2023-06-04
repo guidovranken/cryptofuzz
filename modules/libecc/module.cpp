@@ -1928,6 +1928,23 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("One()"):
             CF_NORET(result.SetOne());
             break;
+        case    CF_CALCOP("CondAdd(A,B,C)"):
+            CF_CHECK_EQ(nn_cnd_add(
+                        !bn[2].IsZero(),
+                        bn.GetResPtr(),
+                        bn[0].GetPtr(),
+                        bn[1].GetPtr()), 0);
+            CF_NORET(bn.CopyResult(result));
+            break;
+        case    CF_CALCOP("CondSub(A,B,C)"):
+            CF_CHECK_TRUE(bn[0] > bn[1]);
+            CF_CHECK_EQ(nn_cnd_sub(
+                        !bn[2].IsZero(),
+                        bn.GetResPtr(),
+                        bn[0].GetPtr(),
+                        bn[1].GetPtr()), 0);
+            CF_NORET(bn.CopyResult(result));
+            break;
         default:
             goto end;
     }

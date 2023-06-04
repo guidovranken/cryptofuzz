@@ -229,6 +229,12 @@ std::optional<component::Bignum> libgmp::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("NumBits(A)"):
             opRunner = std::make_unique<libgmp_bignum::NumBits>();
             break;
+        case    CF_CALCOP("CondAdd(A,B,C)"):
+            opRunner = std::make_unique<libgmp_bignum::CondAdd>();
+            break;
+        case    CF_CALCOP("CondSub(A,B,C)"):
+            opRunner = std::make_unique<libgmp_bignum::CondSub>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
