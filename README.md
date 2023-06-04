@@ -185,3 +185,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - kilic-bls12-381: [Fr FromBytes does not reduce value if value is modulus](https://github.com/kilic/bls12-381/issues/40)
 - OpenSSL, LibreSSL, BoringSSL: [BN_mod_inverse incorrect result when parameters are aliased](https://github.com/openssl/openssl/issues/21110)
 - libgcrypt: [Modular add/sub/mul incorrect result if result and modulus pointer are equal](https://lists.gnupg.org/pipermail/gcrypt-devel/2023-June/005507.html)
+- libecc: [nn_modinv_2exp incorrect result if exponent is 0](https://github.com/libecc/libecc/commit/049eb1970374b48c5f93c5afc5f6f56503942cc8)
