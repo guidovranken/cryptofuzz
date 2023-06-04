@@ -1945,6 +1945,12 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
                         bn[1].GetPtr()), 0);
             CF_NORET(bn.CopyResult(result));
             break;
+        case    CF_CALCOP("RandMod(A)"):
+            CF_CHECK_EQ(nn_get_random_mod(
+                        bn.GetResPtr(),
+                        bn[0].GetPtr()), 0);
+            CF_NORET(bn.CopyResult(result));
+            break;
         default:
             goto end;
     }

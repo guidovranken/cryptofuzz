@@ -2308,6 +2308,7 @@ bool ExecutorBase<ResultType, OperationType>::dontCompare(const OperationType& o
 template <>
 bool ExecutorBase<component::Bignum, operation::BignumCalc>::dontCompare(const operation::BignumCalc& operation) const {
     if ( operation.calcOp.Get() == CF_CALCOP("Rand()") ) { return true; }
+    if ( operation.calcOp.Get() == CF_CALCOP("RandMod(A)") ) { return true; }
     if ( operation.calcOp.Get() == CF_CALCOP("Prime()") ) { return true; }
 
     return false;

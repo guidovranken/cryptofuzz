@@ -1153,6 +1153,9 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
         case    CF_CALCOP("Exp(A,B)"):
             AssertNotSmallerThan(*result, op.bn0, op.bn1, repository::CalcOpToString(calcOp));
             break;
+        case    CF_CALCOP("RandMod(A)"):
+            BignumCalc::AssertModResult(*result, op.bn0, "RandMod");
+            break;
     }
 }
 
