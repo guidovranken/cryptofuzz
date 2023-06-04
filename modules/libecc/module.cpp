@@ -1418,6 +1418,14 @@ end:
 }
 
 namespace libecc_detail {
+    static std::optional<word_t> ToWord(const component::Bignum& bn) {
+        try {
+            return boost::lexical_cast<word_t>(bn.ToTrimmedString());
+        } catch ( const boost::bad_lexical_cast &e ) {
+            return std::nullopt;
+        }
+    }
+
     class Bignum {
         private:
             nn v;
@@ -1664,8 +1672,29 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             }
             break;
         case    CF_CALCOP("Mul(A,B)"):
-            CF_CHECK_EQ(nn_mul(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
-            CF_NORET(bn.CopyResult(result));
+            {
+                bool mul_word = false;
+                std::optional<word_t> w;
+
+                try {
+                    mul_word = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                if ( mul_word == true ) {
+                    w = libecc_detail::ToWord(op.bn1);
+                    if ( w == std::nullopt ) {
+                        mul_word = false;
+                    }
+                }
+
+                if ( mul_word == false ) {
+                    CF_CHECK_EQ(nn_mul(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 0);
+                } else {
+                    CF_CHECK_EQ(nn_mul_word(bn.GetResPtr(), bn[0].GetPtr(), *w), 0);
+                }
+
+                CF_NORET(bn.CopyResult(result));
+            }
             break;
         case    CF_CALCOP("Div(A,B)"):
             {
@@ -1914,8 +1943,32 @@ std::optional<component::Bignum> libecc::OpBignumCalc(operation::BignumCalc& op)
             }
             break;
         case    CF_CALCOP("Cmp(A,B)"):
-            ret = component::Bignum{ std::to_string(bn[0].Cmp(bn[1])) };
-            goto end;
+            {
+                bool cmp_word = false;
+                std::optional<word_t> w;
+
+                try {
+                    cmp_word = ds.Get<bool>();
+                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+                if ( cmp_word == true ) {
+                    w = libecc_detail::ToWord(op.bn1);
+                    if ( w == std::nullopt ) {
+                        cmp_word = false;
+                    }
+                }
+
+                if ( cmp_word == false ) {
+                    ret = component::Bignum{ std::to_string(bn[0].Cmp(bn[1])) };
+                    goto end;
+                } else {
+                    int cmp;
+                    CF_CHECK_EQ(nn_cmp_word(bn[0].GetPtr(), *w, &cmp), 0);
+                    ret = component::Bignum{ std::to_string(cmp) };
+                    goto end;
+                }
+            }
+            break;
         case    CF_CALCOP("NegMod(A,B)"):
             CF_CHECK_FALSE(bn[1].IsZero());
 
