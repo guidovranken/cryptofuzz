@@ -41,7 +41,8 @@ bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     GET_WHICH(2);
     switch ( which ) {
         case    0:
-            CF_ASSERT_EQ(BN_add(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
+            CF_ASSERT_EQ(BN_add(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
+            CF_NORET(bn.CopyResult(res));
             break;
         case    1:
             CF_CHECK_EQ(BN_is_negative(bn[0].GetPtr()), 0);
@@ -76,7 +77,8 @@ bool Sub::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     GET_WHICH(3);
     switch ( which ) {
         case    0:
-            CF_ASSERT_EQ(BN_sub(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
+            CF_ASSERT_EQ(BN_sub(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr()), 1);
+            CF_NORET(bn.CopyResult(res));
             break;
 
     /* OpenSSL and LibreSSL return a positive value for BN_usub(A,B)
@@ -126,9 +128,8 @@ bool Mul::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     GET_WHICH(1);
     switch ( which ) {
         case    0:
-            {
-                CF_ASSERT_EQ(BN_mul(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
-            }
+            CF_ASSERT_EQ(BN_mul(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            CF_NORET(bn.CopyResult(res));
             break;
         case    1:
             {
@@ -462,7 +463,8 @@ bool Sqr::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     (void)ds;
     bool ret = false;
 
-    CF_ASSERT_EQ(BN_sqr(res.GetDestPtr(), bn[0].GetPtr(), ctx.GetPtr()), 1);
+    CF_ASSERT_EQ(BN_sqr(bn.GetResPtr(), bn[0].GetPtr(), ctx.GetPtr()), 1);
+    CF_NORET(bn.CopyResult(res));
 
     ret = true;
 
@@ -476,7 +478,8 @@ bool GCD::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     GET_WHICH(1);
     switch ( which ) {
         case    0:
-            CF_ASSERT_EQ(BN_gcd(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            CF_ASSERT_EQ(BN_gcd(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), 1);
+            CF_NORET(bn.CopyResult(res));
             break;
 #if defined(CRYPTOFUZZ_LIBRESSL)
         case    1:
@@ -605,13 +608,14 @@ bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
         case    0:
             CF_ASSERT_EQ_COND(
                     BN_mod_mul(
-                        res.GetDestPtr(),
+                        bn.GetResPtr(),
                         bn[0].GetPtr(),
                         bn[1].GetPtr(),
                         bn[2].GetPtr(),
                         ctx.GetPtr()),
                 1,
                 BN_is_zero(bn[2].GetPtr()));
+            CF_NORET(bn.CopyResult(res));
             break;
 #if !defined(CRYPTOFUZZ_OPENSSL_098)
         /* Bug */
@@ -696,7 +700,8 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
     switch ( which ) {
         case    0:
             fail = true;
-            CF_CHECK_NE(BN_mod_inverse(res.GetDestPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), nullptr);
+            CF_CHECK_NE(BN_mod_inverse(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), nullptr);
+            CF_NORET(bn.CopyResult(res));
             fail = false;
             break;
 #if defined(CRYPTOFUZZ_BORINGSSL)
