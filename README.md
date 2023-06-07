@@ -187,3 +187,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - libgcrypt: [Modular add/sub/mul incorrect result if result and modulus pointer are equal](https://lists.gnupg.org/pipermail/gcrypt-devel/2023-June/005507.html)
 - libecc: [nn_modinv_2exp incorrect result if exponent is 0](https://github.com/libecc/libecc/commit/049eb1970374b48c5f93c5afc5f6f56503942cc8)
 - libecc: [Modular addition incorrect result if result and modulus pointer are equal](https://github.com/libecc/libecc/commit/2479434f054a6020314a448ba932e659f57a3ae2)
+- NEAR modexp precompile: [Panic if exponent is 0](https://github.com/aurora-is-near/aurora-engine/pull/771)
