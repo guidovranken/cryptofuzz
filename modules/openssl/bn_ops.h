@@ -183,6 +183,16 @@ end:
             }
         }
 
+        bool SetWord(const BN_ULONG v) {
+            bool ret = false;
+
+            CF_CHECK_EQ(BN_set_word(bn, v), 1);
+            ret = true;
+
+end:
+            return ret;
+        }
+
         BIGNUM* GetDestPtr(const bool allowDup = true) {
             if ( locked == false ) {
                 try {

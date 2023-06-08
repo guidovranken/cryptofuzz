@@ -217,17 +217,18 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
 #endif
         case    5:
             {
+                /* BN_mod_word handles negative inputs in a different way
+                 * than other modulo functions
+                 */
+                CF_CHECK_EQ(BN_is_negative(bn[0].GetPtr()), 0);
+
                 const auto val = bn[1].AsBN_ULONG();
                 CF_CHECK_NE(val, std::nullopt);
                 CF_CHECK_NE(*val, 0);
 
                 const auto ret = BN_mod_word(bn[0].GetPtr(), *val);
 
-                /* Try to convert the BN_ULONG to uint32_t */
-                uint32_t ret32;
-                CF_CHECK_EQ(ret32 = ret, ret);
-
-                res.SetUint32(ret32);
+                CF_CHECK_TRUE(res.SetWord(ret));
             }
             break;
 #if defined(CRYPTOFUZZ_BORINGSSL)
