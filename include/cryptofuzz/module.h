@@ -339,6 +339,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::G1> OpBLS_G1_MultiExp(operation::BLS_G1_MultiExp& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<Buffer> OpMisc(operation::Misc& op) {
             (void)op;
             return std::nullopt;

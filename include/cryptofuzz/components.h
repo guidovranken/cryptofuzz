@@ -385,6 +385,18 @@ class BLS_G2_Vector {
         nlohmann::json ToJSON(void) const;
 };
 
+class BLS_G1_Scalar_Vector {
+    public:
+        std::vector< std::pair<component::G1, component::Bignum> > points_scalars;
+
+        BLS_G1_Scalar_Vector(Datasource& ds);
+        BLS_G1_Scalar_Vector(nlohmann::json json);
+
+        bool operator==(const BLS_G1_Scalar_Vector& rhs) const;
+        void Serialize(Datasource& ds) const;
+        nlohmann::json ToJSON(void) const;
+};
+
 class SR25519_Signature {
     public:
         BignumPair signature;

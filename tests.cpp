@@ -858,6 +858,11 @@ void test(const operation::BLS_G2_Neg& op, const std::optional<component::G2>& r
     (void)result;
 }
 
+void test(const operation::BLS_G1_MultiExp& op, const std::optional<component::G1>& result) {
+    (void)op;
+    (void)result;
+}
+
 void test(const operation::Misc& op, const std::optional<Buffer>& result) {
     (void)op;
     (void)result;

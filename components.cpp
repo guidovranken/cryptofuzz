@@ -880,6 +880,35 @@ void BLS_G1_Vector::Serialize(Datasource& ds) const {
     }
 }
 
+/* BLS_G1_Scalar_Vector */
+
+BLS_G1_Scalar_Vector::BLS_G1_Scalar_Vector(Datasource& ds) {
+    const auto num = ds.Get<uint32_t>(0);
+    for (size_t i = 0; i < num; i++) {
+        points_scalars.push_back({
+                component::G1(ds),
+                component::Bignum(ds),
+        });
+    }
+}
+
+BLS_G1_Scalar_Vector::BLS_G1_Scalar_Vector(nlohmann::json json) {
+    for (const auto& j : json) {
+        points_scalars.push_back({
+                component::G1{j["x"], j["y"]},
+                component::Bignum{j["scalar"]},
+        });
+    }
+}
+
+void BLS_G1_Scalar_Vector::Serialize(Datasource& ds) const {
+    ds.Put<uint32_t>(points_scalars.size());
+    for (const auto& point_scalar : points_scalars) {
+        point_scalar.first.Serialize(ds);
+        point_scalar.second.Serialize(ds);
+    }
+}
+
 /* BLS_G2_Vector */
 
 BLS_G2_Vector::BLS_G2_Vector(Datasource& ds) {

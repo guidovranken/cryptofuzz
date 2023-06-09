@@ -2176,6 +2176,44 @@ nlohmann::json BLS_G2_Neg::ToJSON(void) const {
     return j;
 }
 
+std::string BLS_G1_MultiExp::Name(void) const { return "BLS_G1_MultiExp"; }
+std::string BLS_G1_MultiExp::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: BLS_G1_MultiExp" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+
+    for (const auto& point_scalar : points_scalars.points_scalars) {
+        ss << "    X: " << point_scalar.first.first.ToString() << std::endl;
+        ss << "    Y: " << point_scalar.first.second.ToString() << std::endl;
+        ss << "    scalar: " << point_scalar.second.ToString() << std::endl;
+        ss << std::endl;
+    }
+
+    return ss.str();
+}
+
+nlohmann::json BLS_G1_MultiExp::ToJSON(void) const {
+    nlohmann::json j;
+    j["curveType"] = curveType.ToJSON();
+
+    nlohmann::json points_scalars_json = nlohmann::json::array();
+
+    for (const auto& point_scalar : points_scalars.points_scalars) {
+        nlohmann::json ps;
+        ps["x"] = point_scalar.first.first.ToJSON();
+        ps["y"] = point_scalar.first.second.ToJSON();
+        ps["scalar"] = point_scalar.second.ToJSON();
+
+        points_scalars_json.push_back(ps);
+    }
+
+    j["points_scalars"] = points_scalars_json;
+
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string Misc::Name(void) const { return "Misc"; }
 std::string Misc::ToString(void) const {
     std::stringstream ss;

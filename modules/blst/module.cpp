@@ -1882,6 +1882,64 @@ end:
     return ret;
 }
 
+std::optional<component::G1> blst::OpBLS_G1_MultiExp(operation::BLS_G1_MultiExp& op) {
+    std::optional<component::G1> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    const size_t num = op.points_scalars.points_scalars.size();
+    /* blst_p1s_mult_pippenger crashes with num == 0
+     * blst_p1s_mult_pippenger OOB read with num == 1
+     */
+    if ( num < 2 ) return std::nullopt;
+
+    blst_p1_affine* points = (blst_p1_affine*)util::malloc(num * sizeof(blst_p1_affine));
+    const blst_p1_affine* points_ptrs[2] = {points, nullptr};
+    blst_scalar* scalars = (blst_scalar*)util::malloc(num * sizeof(blst_scalar));
+    const uint8_t* scalars_ptrs[2] = {(uint8_t*)scalars, nullptr};
+
+    uint8_t* scratch = util::malloc(blst_p1s_mult_pippenger_scratch_sizeof(num));
+
+    bool points_are_valid = true;
+
+    for (size_t i = 0; i < num; i++) {
+        const auto& cur = op.points_scalars.points_scalars[i];
+
+        std::optional<blst_p1_affine> point;
+        CF_CHECK_NE(point = blst_detail::Load_G1_Affine(cur.first), std::nullopt);
+        points[i] = *point;
+
+        points_are_valid &=
+            !blst_p1_affine_is_inf(&*point) &&
+            blst_p1_affine_on_curve(&*point) &&
+            blst_p1_affine_in_g1(&*point);
+
+        CF_CHECK_TRUE(blst_detail::To_blst_scalar(cur.second, scalars[i]));
+    }
+
+    {
+        blst_p1 res;
+        CF_NORET(blst_p1s_mult_pippenger(
+                    &res,
+                    points_ptrs, num,
+                    scalars_ptrs, sizeof(blst_scalar) * 8,
+                    (limb_t*)scratch));
+
+        CF_CHECK_TRUE(points_are_valid);
+
+        blst_p1_affine res_affine;
+        CF_NORET(blst_p1_to_affine(&res_affine, &res));
+        blst_detail::G1 g1(res_affine, ds);
+        ret = g1.To_Component_G1();
+    }
+
+end:
+    util::free(points);
+    util::free(scalars);
+    util::free(scratch);
+
+    return ret;
+}
+
 std::optional<Buffer> blst::OpMisc(operation::Misc& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 

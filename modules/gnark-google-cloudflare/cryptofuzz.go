@@ -9,6 +9,7 @@ import (
     "github.com/consensys/gnark-crypto/ecc/bn254/fp"
     "github.com/consensys/gnark-crypto/ecc/bn254/fr"
     gnark_bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
+    bls12381_ecc "github.com/consensys/gnark-crypto/ecc"
     bls12381_fp "github.com/consensys/gnark-crypto/ecc/bls12-381/fp"
     bls12381_fr "github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
     gnark_bls12377 "github.com/consensys/gnark-crypto/ecc/bls12-377"
@@ -137,6 +138,18 @@ type OpBLS_FinalExp struct {
     Modifier ByteSlice
     CurveType uint64
     FP12 [12]string
+}
+
+type PointsScalars struct {
+    X string
+    Y string
+    Scalar string
+}
+
+type OpBLS_G1_MultiExp struct {
+    Modifier ByteSlice
+    CurveType uint64
+    Points_Scalars []PointsScalars
 }
 
 type OpBignumCalc struct {
@@ -979,6 +992,36 @@ func Gnark_bls12_381_BLS_FinalExp(in []byte) {
     r := gnark_bls12381.FinalExponentiation(&fp12)
 
     saveGT_bls12381(r)
+}
+
+//export Gnark_bls12_381_BLS_G1_MultiExp
+func Gnark_bls12_381_BLS_G1_MultiExp(in []byte) {
+    resetResult()
+
+    var op OpBLS_G1_MultiExp
+    unmarshal(in, &op)
+
+    N := len(op.Points_Scalars)
+    points := make([]gnark_bls12381.G1Affine, N)
+    scalars := make([]bls12381_fr.Element, N)
+    for i := 0; i < N; i++ {
+        points[i].X.SetBigInt(decodeBignum(op.Points_Scalars[i].X))
+        points[i].Y.SetBigInt(decodeBignum(op.Points_Scalars[i].Y))
+        scalars[i].SetBigInt(decodeBignum(op.Points_Scalars[i].Scalar))
+    }
+
+    var x gnark_bls12381.G1Affine
+    nbtasks := 1
+    if len(op.Modifier) > 0 {
+        nbtasks = int(op.Modifier[0])
+    }
+    r, err := x.MultiExp(points[:], scalars[:], bls12381_ecc.MultiExpConfig{NbTasks: nbtasks})
+
+    if err != nil {
+        return
+    }
+
+    saveG1_bls12381(r)
 }
 
 //export Gnark_bn254_BLS_FinalExp

@@ -2084,6 +2084,34 @@ template<> std::optional<component::G2> ExecutorBase<component::G2, operation::B
     return module->OpBLS_G2_Neg(op);
 }
 
+/* Specialization for operation::BLS_G1_MultiExp */
+template<> void ExecutorBase<component::G1, operation::BLS_G1_MultiExp>::postprocess(std::shared_ptr<Module> module, operation::BLS_G1_MultiExp& op, const ExecutorBase<component::G1, operation::BLS_G1_MultiExp>::ResultPair& result) const {
+    (void)module;
+
+    if ( result.second != std::nullopt  ) {
+        const auto curveID = op.curveType.Get();
+        const auto g1_x = result.second->first.ToTrimmedString();
+        const auto g1_y = result.second->second.ToTrimmedString();
+
+        G1AddToPool(curveID, g1_x, g1_y);
+
+        if ( g1_x.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_x); }
+        if ( g1_y.size() <= config::kMaxBignumSize ) { Pool_Bignum.Set(g1_y); }
+    }
+}
+
+template<> std::optional<component::G1> ExecutorBase<component::G1, operation::BLS_G1_MultiExp>::callModule(std::shared_ptr<Module> module, operation::BLS_G1_MultiExp& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
+
+    for (const auto& point_scalar : op.points_scalars.points_scalars) {
+        if ( point_scalar.first.first.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+        if ( point_scalar.first.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+        if ( point_scalar.second.GetSize() > config::kMaxBignumSize ) return std::nullopt;
+    }
+
+    return module->OpBLS_G1_MultiExp(op);
+}
+
 /* Specialization for operation::Misc */
 template<> void ExecutorBase<Buffer, operation::Misc>::postprocess(std::shared_ptr<Module> module, operation::Misc& op, const ExecutorBase<Buffer, operation::Misc>::ResultPair& result) const {
     (void)module;
@@ -2824,6 +2852,7 @@ template class ExecutorBase<component::G2, operation::BLS_G2_Add>;
 template class ExecutorBase<component::G2, operation::BLS_G2_Mul>;
 template class ExecutorBase<bool, operation::BLS_G2_IsEq>;
 template class ExecutorBase<component::G2, operation::BLS_G2_Neg>;
+template class ExecutorBase<component::G1, operation::BLS_G1_MultiExp>;
 template class ExecutorBase<Buffer, operation::Misc>;
 template class ExecutorBase<bool, operation::SR25519_Verify>;
 

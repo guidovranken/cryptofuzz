@@ -3453,6 +3453,38 @@ class BLS_G2_Neg : public Operation {
         }
 };
 
+class BLS_G1_MultiExp : public Operation {
+    public:
+        const component::CurveType curveType;
+        component::BLS_G1_Scalar_Vector points_scalars;
+
+        BLS_G1_MultiExp(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            points_scalars(ds)
+        { }
+        BLS_G1_MultiExp(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            points_scalars(json["points_scalars"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const BLS_G1_MultiExp& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (points_scalars == rhs.points_scalars) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            points_scalars.Serialize(ds);
+        }
+};
+
 class Misc : public Operation {
     public:
         const Type operation;

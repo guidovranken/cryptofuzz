@@ -2623,6 +2623,33 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     op.Serialize(dsOut2);
                 }
                 break;
+            case    CF_OPERATION("BLS_G1_MultiExp"):
+                {
+                    parameters["modifier"] = "";
+                    parameters["curveType"] = hint_ecc_mont(getRandomCurve());
+
+                    const size_t num = (PRNG() % 256) + 2;
+                    parameters["points_scalars"] = nlohmann::json::array();
+
+                    for (size_t i = 0; i < num; i++) {
+                        nlohmann::json ps;
+
+                        if ( Pool_CurveBLSG1.Have() == true ) {
+                            const auto P = Pool_CurveBLSG1.Get();
+                            ps["x"] = P.g1_x;
+                            ps["y"] = P.g1_y;
+                        } else {
+                            ps["x"] = getBignum();
+                            ps["y"] = getBignum();
+                        }
+                        ps["scalar"] = getBignum();
+                        parameters["points_scalars"].push_back(ps);
+                    }
+
+                    cryptofuzz::operation::BLS_G1_MultiExp op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
             case    CF_OPERATION("SR25519_Verify"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1024);
