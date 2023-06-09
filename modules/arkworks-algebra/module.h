@@ -20,6 +20,7 @@ class arkworks_algebra : public Module {
         std::optional<component::G2> OpBLS_G2_Mul(operation::BLS_G2_Mul& op) override;
         std::optional<component::G2> OpBLS_G2_Neg(operation::BLS_G2_Neg& op) override;
         std::optional<bool> OpBLS_BatchVerify(operation::BLS_BatchVerify& op) override;
+        std::optional<component::G1> OpBLS_G1_MultiExp(operation::BLS_G1_MultiExp& op) override;
         std::optional<component::Bignum> OpBignumCalc(operation::BignumCalc& op) override;
         bool SupportsModularBignumCalc(void) const override;
 };

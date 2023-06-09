@@ -12,6 +12,7 @@ use ark_ff::SquareRootField;
 use ark_ff::One;
 use ark_ec::AffineCurve;
 use ark_ec::ProjectiveCurve;
+use ark_ec::msm::VariableBaseMSM;
 
 use std::ops::{Add, Sub, Mul, Neg};
 
@@ -1047,6 +1048,70 @@ pub extern "C" fn arkworks_algebra_g2_neg_bls12_381(
         ptr::copy_nonoverlapping(res_bn_v.as_ref().as_ptr(), result_v, 6);
         ptr::copy_nonoverlapping(res_bn_w.as_ref().as_ptr(), result_x, 6);
         ptr::copy_nonoverlapping(res_bn_x.as_ref().as_ptr(), result_w, 6);
+        ptr::copy_nonoverlapping(res_bn_y.as_ref().as_ptr(), result_y, 6);
+    }
+
+    return 0;
+}
+
+#[no_mangle]
+pub extern "C" fn arkworks_algebra_g1_multiexp_bls12_381(
+            x_bytes: *mut u64,
+            y_bytes: *mut u64,
+            scalar_bytes: *mut u64,
+            num: u64,
+            result_x: *mut u64,
+            result_y: *mut u64) -> i32 {
+    if num == 0 {
+        /* Returns (1, 1) instead of (0, 0) */
+        return -1;
+    }
+
+    let mut arr6: [u64; 6] = [0; 6];
+    let mut arr4: [u64; 4] = [0; 4];
+
+    let mut points: Vec<ark_bls12_381::G1Affine> = Vec::new();
+    let mut scalars: Vec<BigInteger256> = Vec::new();
+
+    let mut valid: bool = true;
+
+    for i in 0..num {
+        arr6.clone_from_slice(unsafe{slice::from_raw_parts(x_bytes.offset((i as isize) * 6), 6)});
+        let ax = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+            Some(v) => v,
+            None => return -1,
+        };
+
+        arr6.clone_from_slice(unsafe{slice::from_raw_parts(y_bytes.offset((i as isize) * 6), 6)});
+        let ay = match ark_bls12_381::Fq::from_repr(BigInteger384::new(arr6)) {
+            Some(v) => v,
+            None => return -1,
+        };
+
+        let point = ark_bls12_381::G1Affine::new(ax, ay, false);
+        points.push(point);
+
+        if valid {
+            valid = point.is_on_curve() &&
+                point.is_in_correct_subgroup_assuming_on_curve()
+        }
+
+        arr4.clone_from_slice(unsafe{slice::from_raw_parts(scalar_bytes.offset((i as isize) * 4), 4)});
+        let scalar = BigInteger256::new(arr4);
+        scalars.push(scalar);
+    }
+
+    let res = VariableBaseMSM::multi_scalar_mul(&points, &scalars).into_affine();
+
+    if !valid {
+        return -1;
+    }
+
+    let res_bn_x : BigInteger384 = res.x.into();
+    let res_bn_y : BigInteger384 = res.y.into();
+
+    unsafe {
+        ptr::copy_nonoverlapping(res_bn_x.as_ref().as_ptr(), result_x, 6);
         ptr::copy_nonoverlapping(res_bn_y.as_ref().as_ptr(), result_y, 6);
     }
 

@@ -129,6 +129,13 @@ extern "C" {
             uint64_t* result_w,
             uint64_t* result_x,
             uint64_t* result_y);
+    int arkworks_algebra_g1_multiexp_bls12_381(
+            uint64_t* x,
+            uint64_t* y,
+            uint64_t* scalars,
+            uint64_t num,
+            uint64_t* result_x,
+            uint64_t* result_y);
     int arkworks_algebra_g1_isoncurve_bls12_377(
             uint64_t* ax_bytes,
             uint64_t* ay_bytes);
@@ -846,6 +853,56 @@ std::optional<bool> arkworks_algebra::OpBLS_BatchVerify(operation::BLS_BatchVeri
     }
 
     arkworks_algebra_batchverify_bn254(data.data(), op.bf.c.size());
+end:
+    return ret;
+}
+
+std::optional<component::G1> arkworks_algebra::OpBLS_G1_MultiExp(operation::BLS_G1_MultiExp& op) {
+    if ( op.curveType.Get() != CF_ECC_CURVE("BLS12_381") ) {
+        return std::nullopt;
+    }
+
+    std::optional<component::G1> ret = std::nullopt;
+
+    const size_t num = op.points_scalars.points_scalars.size();
+
+    std::vector<uint64_t> x, y, scalars;
+
+    for (size_t i = 0; i < num; i++) {
+        std::optional<std::array<uint64_t, 6>> ax, ay;
+        std::optional<std::array<uint64_t, 4>> b;
+
+        const auto& cur = op.points_scalars.points_scalars[i];
+        CF_CHECK_NE(ax = arkworks_algebra_detail::To6U64(cur.first.first), std::nullopt);
+        CF_CHECK_NE(ay = arkworks_algebra_detail::To6U64(cur.first.second), std::nullopt);
+
+        /* Workaround for https://github.com/arkworks-rs/algebra/issues/656 */
+        CF_CHECK_TRUE(cur.second.IsLessThan("52435875175126190479447740508185965837690552500527637822603658699938581184513"));
+
+        CF_CHECK_NE(b = arkworks_algebra_detail::To4U64(cur.second), std::nullopt);
+
+        for (const auto v : *ax) {
+            x.push_back(v);
+        }
+        for (const auto v : *ay) {
+            y.push_back(v);
+        }
+        for (const auto v : *b) {
+            scalars.push_back(v);
+        }
+    }
+
+    std::array<uint64_t, 6> result_x, result_y;
+    CF_CHECK_EQ(arkworks_algebra_g1_multiexp_bls12_381(
+                x.data(),
+                y.data(),
+                scalars.data(),
+                num,
+                result_x.data(),
+                result_y.data()), 0);
+
+    ret = arkworks_algebra_detail::ToG1(result_x, result_y);
+
 end:
     return ret;
 }
