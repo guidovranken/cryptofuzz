@@ -718,6 +718,21 @@ void Builtin_tests_importer::Run(void) {
         write(CF_OPERATION("ECC_Point_Mul"), dsOut2);
     }
 
+    {
+        /* https://github.com/golang/go/issues/60717 */
+
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["curveType"] = CF_ECC_CURVE("secp256r1");
+        parameters["priv"] = "115792089210356248762697446949407573529996955224135760342422259061068512044335";
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::ECC_PrivateToPublic op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("ECC_PrivateToPublic"), dsOut2);
+    }
+
     ecdsa_verify_tests();
     ecc_point_add_tests();
 }
