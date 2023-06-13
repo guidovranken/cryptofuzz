@@ -57,7 +57,8 @@ size_t cryptofuzz_zig_ecc_point_mul(
         uint8_t* r,
         const uint8_t* ax_bytes,
         const uint8_t* ay_bytes,
-        const uint8_t* b_bytes);
+        const uint8_t* b_bytes,
+        const int32_t alt);
 size_t cryptofuzz_zig_ecc_point_neg(
         const uint32_t curve,
         uint8_t* r,
@@ -359,8 +360,10 @@ end:
 
 std::optional<component::ECC_Point> Zig::OpECC_Point_Mul(operation::ECC_Point_Mul& op) {
     std::optional<component::ECC_Point> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     size_t size = 0;
     uint32_t curve = 0;
+    int32_t alt = 0;
     if ( op.curveType.Is(CF_ECC_CURVE("secp256r1")) ) {
         size = 32;
         curve = 0;
@@ -383,12 +386,18 @@ std::optional<component::ECC_Point> Zig::OpECC_Point_Mul(operation::ECC_Point_Mu
 
     r = util::malloc(size * 2 + 1);
 
+    try {
+        alt = ds.Get<bool>() ? 1 : 0;
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    }
+
     CF_CHECK_EQ(cryptofuzz_zig_ecc_point_mul(
                 curve,
                 r,
                 ax->data(),
                 ay->data(),
-                b->data()), 0);
+                b->data(),
+                alt), 0);
 
     ret = component::ECC_Point{
         util::BinToDec(std::vector<uint8_t>(r + 1, r + 1 + size)),

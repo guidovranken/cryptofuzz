@@ -877,31 +877,50 @@ export fn cryptofuzz_zig_ecc_point_mul(
         ax_data: [*:0]const u8,
         ay_data: [*:0]const u8,
         b_data: [*:0]const u8,
+        alt: i32,
         ) callconv(.C) i32 {
     if ( curve == 0 ) {
         var a = P256.fromSerializedAffineCoordinates(
                 ax_data[0..32].*,
                 ay_data[0..32].*,
                 .Big) catch return -1;
-        var res = a.mulPublic(b_data[0..32].*, .Big) catch return -1;
-        var resbytes = res.toUncompressedSec1();
-        mem.copy(u8, r[0..65], &resbytes);
+        if ( alt == 0 ) {
+            var res = a.mulPublic(b_data[0..32].*, .Big) catch return -1;
+            var resbytes = res.toUncompressedSec1();
+            mem.copy(u8, r[0..65], &resbytes);
+        } else {
+            var res = a.mul(b_data[0..32].*, .Big) catch return -1;
+            var resbytes = res.toUncompressedSec1();
+            mem.copy(u8, r[0..65], &resbytes);
+        }
     } else if ( curve == 1 ) {
         var a = Secp256k1.fromSerializedAffineCoordinates(
                 ax_data[0..32].*,
                 ay_data[0..32].*,
                 .Big) catch return -1;
-        var res = a.mulPublic(b_data[0..32].*, .Big) catch return -1;
-        var resbytes = res.toUncompressedSec1();
-        mem.copy(u8, r[0..65], &resbytes);
+        if ( alt == 0 ) {
+            var res = a.mulPublic(b_data[0..32].*, .Big) catch return -1;
+            var resbytes = res.toUncompressedSec1();
+            mem.copy(u8, r[0..65], &resbytes);
+        } else {
+            var res = a.mul(b_data[0..32].*, .Big) catch return -1;
+            var resbytes = res.toUncompressedSec1();
+            mem.copy(u8, r[0..65], &resbytes);
+        }
     } else if ( curve == 2 ) {
         var a = P384.fromSerializedAffineCoordinates(
                 ax_data[0..48].*,
                 ay_data[0..48].*,
                 .Big) catch return -1;
-        var res = a.mulPublic(b_data[0..48].*, .Big) catch return -1;
-        var resbytes = res.toUncompressedSec1();
-        mem.copy(u8, r[0..97], &resbytes);
+        if ( alt == 0 ) {
+            var res = a.mulPublic(b_data[0..48].*, .Big) catch return -1;
+            var resbytes = res.toUncompressedSec1();
+            mem.copy(u8, r[0..97], &resbytes);
+        } else {
+            var res = a.mul(b_data[0..48].*, .Big) catch return -1;
+            var resbytes = res.toUncompressedSec1();
+            mem.copy(u8, r[0..97], &resbytes);
+        }
     } else {
         return -1;
     }
