@@ -733,6 +733,38 @@ void Builtin_tests_importer::Run(void) {
         write(CF_OPERATION("ECC_PrivateToPublic"), dsOut2);
     }
 
+    {
+        /* https://github.com/ziglang/zig/issues/16015 */
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["a_x"] = "0";
+        parameters["a_y"] = "69528327468847610065686496900697922508397251637412376320436699849860351814667";
+        parameters["b_x"] = "87812602023915091554008014672837927937550987992501844572273008327590008072628";
+        parameters["b_y"] = "30362411217190829796407765600294096177413203619928371208700569416610654782886";
+        parameters["curveType"] = CF_ECC_CURVE("secp256r1");
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::ECC_Point_Add op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("ECC_Point_Add"), dsOut2);
+    }
+
+    {
+        /* https://github.com/ziglang/zig/issues/16015 */
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["a_x"] = "0";
+        parameters["a_y"] = "69528327468847610065686496900697922508397251637412376320436699849860351814667";
+        parameters["curveType"] = CF_ECC_CURVE("secp256r1");
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::ECC_Point_Neg op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("ECC_Point_Neg"), dsOut2);
+    }
+
     ecdsa_verify_tests();
     ecc_point_add_tests();
 }
