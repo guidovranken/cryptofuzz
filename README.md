@@ -191,3 +191,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - arkworks-algebra: [multi_scalar_mul incorrect result if scalar exceeds curve order](https://github.com/arkworks-rs/algebra/issues/656)
 - Golang: [crypto/ecdsa: P521 ecdsa.Verify panics with malformed message](https://github.com/golang/go/issues/60741)
 - Golang: [crypto/elliptic: P256 ScalarBaseMult with order-34 yields point at infinity](https://github.com/golang/go/issues/60717)
+- Zig: [Elliptic curve point addition incorrect result](https://github.com/ziglang/zig/issues/16015)
