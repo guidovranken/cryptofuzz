@@ -45,12 +45,29 @@ int cryptofuzz_zig_argon2(
         const uint32_t memory,
         const uint8_t threads,
         const uint8_t mode);
+size_t cryptofuzz_zig_ecc_point_add(
+        const uint32_t curve,
+        uint8_t* r,
+        const uint8_t* ax_bytes,
+        const uint8_t* ay_bytes,
+        const uint8_t* bx_bytes,
+        const uint8_t* by_bytes);
 size_t cryptofuzz_zig_ecc_point_mul(
         const uint32_t curve,
         uint8_t* r,
         const uint8_t* ax_bytes,
         const uint8_t* ay_bytes,
         const uint8_t* b_bytes);
+size_t cryptofuzz_zig_ecc_point_neg(
+        const uint32_t curve,
+        uint8_t* r,
+        const uint8_t* ax_bytes,
+        const uint8_t* ay_bytes);
+size_t cryptofuzz_zig_ecc_point_dbl(
+        const uint32_t curve,
+        uint8_t* r,
+        const uint8_t* ax_bytes,
+        const uint8_t* ay_bytes);
 size_t cryptofuzz_zig_bignumcalc(
         char* res_data, const size_t res_size,
         const char* a_data, const size_t a_size,
@@ -295,6 +312,51 @@ end:
     return ret;
 }
 
+std::optional<component::ECC_Point> Zig::OpECC_Point_Add(operation::ECC_Point_Add& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    size_t size = 0;
+    uint32_t curve = 0;
+    if ( op.curveType.Is(CF_ECC_CURVE("secp256r1")) ) {
+        size = 32;
+        curve = 0;
+    } else if ( op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        size = 32;
+        curve = 1;
+    } else if ( op.curveType.Is(CF_ECC_CURVE("secp384r1")) ) {
+        size = 48;
+        curve = 2;
+    } else {
+        return std::nullopt;
+    }
+
+    uint8_t* r = nullptr;
+    std::optional<std::vector<uint8_t>> ax, ay, bx, by;
+
+    CF_CHECK_NE(ax = util::DecToBin(op.a.first.ToTrimmedString(), size), std::nullopt);
+    CF_CHECK_NE(ay = util::DecToBin(op.a.second.ToTrimmedString(), size), std::nullopt);
+    CF_CHECK_NE(bx = util::DecToBin(op.b.first.ToTrimmedString(), size), std::nullopt);
+    CF_CHECK_NE(by = util::DecToBin(op.b.second.ToTrimmedString(), size), std::nullopt);
+
+    r = util::malloc(size * 2 + 1);
+
+    CF_CHECK_EQ(cryptofuzz_zig_ecc_point_add(
+                curve,
+                r,
+                ax->data(),
+                ay->data(),
+                bx->data(),
+                by->data()), 0);
+
+    ret = component::ECC_Point{
+        util::BinToDec(std::vector<uint8_t>(r + 1, r + 1 + size)),
+        util::BinToDec(std::vector<uint8_t>(r + 1 + size, r + 1 + size + size))
+    };
+
+end:
+    util::free(r);
+    return ret;
+}
+
 std::optional<component::ECC_Point> Zig::OpECC_Point_Mul(operation::ECC_Point_Mul& op) {
     std::optional<component::ECC_Point> ret = std::nullopt;
     size_t size = 0;
@@ -327,6 +389,88 @@ std::optional<component::ECC_Point> Zig::OpECC_Point_Mul(operation::ECC_Point_Mu
                 ax->data(),
                 ay->data(),
                 b->data()), 0);
+
+    ret = component::ECC_Point{
+        util::BinToDec(std::vector<uint8_t>(r + 1, r + 1 + size)),
+        util::BinToDec(std::vector<uint8_t>(r + 1 + size, r + 1 + size + size))
+    };
+
+end:
+    util::free(r);
+    return ret;
+}
+
+std::optional<component::ECC_Point> Zig::OpECC_Point_Neg(operation::ECC_Point_Neg& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    size_t size = 0;
+    uint32_t curve = 0;
+    if ( op.curveType.Is(CF_ECC_CURVE("secp256r1")) ) {
+        size = 32;
+        curve = 0;
+    } else if ( op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        size = 32;
+        curve = 1;
+    } else if ( op.curveType.Is(CF_ECC_CURVE("secp384r1")) ) {
+        size = 48;
+        curve = 2;
+    } else {
+        return std::nullopt;
+    }
+
+    uint8_t* r = nullptr;
+    std::optional<std::vector<uint8_t>> ax, ay;
+
+    CF_CHECK_NE(ax = util::DecToBin(op.a.first.ToTrimmedString(), size), std::nullopt);
+    CF_CHECK_NE(ay = util::DecToBin(op.a.second.ToTrimmedString(), size), std::nullopt);
+
+    r = util::malloc(size * 2 + 1);
+
+    CF_CHECK_EQ(cryptofuzz_zig_ecc_point_neg(
+                curve,
+                r,
+                ax->data(),
+                ay->data()), 0);
+
+    ret = component::ECC_Point{
+        util::BinToDec(std::vector<uint8_t>(r + 1, r + 1 + size)),
+        util::BinToDec(std::vector<uint8_t>(r + 1 + size, r + 1 + size + size))
+    };
+
+end:
+    util::free(r);
+    return ret;
+}
+
+std::optional<component::ECC_Point> Zig::OpECC_Point_Dbl(operation::ECC_Point_Dbl& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    size_t size = 0;
+    uint32_t curve = 0;
+    if ( op.curveType.Is(CF_ECC_CURVE("secp256r1")) ) {
+        size = 32;
+        curve = 0;
+    } else if ( op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        size = 32;
+        curve = 1;
+    } else if ( op.curveType.Is(CF_ECC_CURVE("secp384r1")) ) {
+        size = 48;
+        curve = 2;
+    } else {
+        return std::nullopt;
+    }
+
+    uint8_t* r = nullptr;
+    std::optional<std::vector<uint8_t>> ax, ay;
+
+    CF_CHECK_NE(ax = util::DecToBin(op.a.first.ToTrimmedString(), size), std::nullopt);
+    CF_CHECK_NE(ay = util::DecToBin(op.a.second.ToTrimmedString(), size), std::nullopt);
+
+    r = util::malloc(size * 2 + 1);
+
+    CF_CHECK_EQ(cryptofuzz_zig_ecc_point_dbl(
+                curve,
+                r,
+                ax->data(),
+                ay->data()), 0);
 
     ret = component::ECC_Point{
         util::BinToDec(std::vector<uint8_t>(r + 1, r + 1 + size)),

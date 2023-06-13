@@ -821,6 +821,55 @@ export fn cryptofuzz_zig_argon2(
     return 0;
 }
 
+export fn cryptofuzz_zig_ecc_point_add(
+        curve: u32,
+        r: [*:0]u8,
+        ax_data: [*:0]const u8,
+        ay_data: [*:0]const u8,
+        bx_data: [*:0]const u8,
+        by_data: [*:0]const u8,
+        ) callconv(.C) i32 {
+    if ( curve == 0 ) {
+        var a = P256.fromSerializedAffineCoordinates(
+                ax_data[0..32].*,
+                ay_data[0..32].*,
+                .Big) catch return -1;
+        var b = P256.fromSerializedAffineCoordinates(
+                bx_data[0..32].*,
+                by_data[0..32].*,
+                .Big) catch return -1;
+        var res = a.add(b);
+        var resbytes = res.toUncompressedSec1();
+        mem.copy(u8, r[0..65], &resbytes);
+    } else if ( curve == 1 ) {
+        var a = Secp256k1.fromSerializedAffineCoordinates(
+                ax_data[0..32].*,
+                ay_data[0..32].*,
+                .Big) catch return -1;
+        var b = Secp256k1.fromSerializedAffineCoordinates(
+                bx_data[0..32].*,
+                by_data[0..32].*,
+                .Big) catch return -1;
+        var res = a.add(b);
+        var resbytes = res.toUncompressedSec1();
+        mem.copy(u8, r[0..65], &resbytes);
+    } else if ( curve == 2 ) {
+        var a = P384.fromSerializedAffineCoordinates(
+                ax_data[0..48].*,
+                ay_data[0..48].*,
+                .Big) catch return -1;
+        var b = P384.fromSerializedAffineCoordinates(
+                bx_data[0..48].*,
+                by_data[0..48].*,
+                .Big) catch return -1;
+        var res = a.add(b);
+        var resbytes = res.toUncompressedSec1();
+        mem.copy(u8, r[0..97], &resbytes);
+    } else {
+        return -1;
+    }
+    return 0;
+}
 
 export fn cryptofuzz_zig_ecc_point_mul(
         curve: u32,
@@ -858,6 +907,79 @@ export fn cryptofuzz_zig_ecc_point_mul(
     }
     return 0;
 }
+
+export fn cryptofuzz_zig_ecc_point_neg(
+        curve: u32,
+        r: [*:0]u8,
+        ax_data: [*:0]const u8,
+        ay_data: [*:0]const u8,
+        ) callconv(.C) i32 {
+    if ( curve == 0 ) {
+        var a = P256.fromSerializedAffineCoordinates(
+                ax_data[0..32].*,
+                ay_data[0..32].*,
+                .Big) catch return -1;
+        var res = a.neg();
+        var resbytes = res.toUncompressedSec1();
+        mem.copy(u8, r[0..65], &resbytes);
+    } else if ( curve == 1 ) {
+        var a = Secp256k1.fromSerializedAffineCoordinates(
+                ax_data[0..32].*,
+                ay_data[0..32].*,
+                .Big) catch return -1;
+        var res = a.neg();
+        var resbytes = res.toUncompressedSec1();
+        mem.copy(u8, r[0..65], &resbytes);
+    } else if ( curve == 2 ) {
+        var a = P384.fromSerializedAffineCoordinates(
+                ax_data[0..48].*,
+                ay_data[0..48].*,
+                .Big) catch return -1;
+        var res = a.neg();
+        var resbytes = res.toUncompressedSec1();
+        mem.copy(u8, r[0..97], &resbytes);
+    } else {
+        return -1;
+    }
+    return 0;
+}
+
+export fn cryptofuzz_zig_ecc_point_dbl(
+        curve: u32,
+        r: [*:0]u8,
+        ax_data: [*:0]const u8,
+        ay_data: [*:0]const u8,
+        ) callconv(.C) i32 {
+    if ( curve == 0 ) {
+        var a = P256.fromSerializedAffineCoordinates(
+                ax_data[0..32].*,
+                ay_data[0..32].*,
+                .Big) catch return -1;
+        var res = a.dbl();
+        var resbytes = res.toUncompressedSec1();
+        mem.copy(u8, r[0..65], &resbytes);
+    } else if ( curve == 1 ) {
+        var a = Secp256k1.fromSerializedAffineCoordinates(
+                ax_data[0..32].*,
+                ay_data[0..32].*,
+                .Big) catch return -1;
+        var res = a.dbl();
+        var resbytes = res.toUncompressedSec1();
+        mem.copy(u8, r[0..65], &resbytes);
+    } else if ( curve == 2 ) {
+        var a = P384.fromSerializedAffineCoordinates(
+                ax_data[0..48].*,
+                ay_data[0..48].*,
+                .Big) catch return -1;
+        var res = a.dbl();
+        var resbytes = res.toUncompressedSec1();
+        mem.copy(u8, r[0..97], &resbytes);
+    } else {
+        return -1;
+    }
+    return 0;
+}
+
 export fn cryptofuzz_zig_bignumcalc(
         res_data: [*:0]u8, res_size: u32,
         a_data: [*:0]const u8, a_size: u32,
