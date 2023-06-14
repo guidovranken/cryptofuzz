@@ -131,6 +131,18 @@ namespace Zig_detail {
                 return std::nullopt;
         }
     }
+
+    static component::ECC_Point To_Component_ECC_Point(const uint8_t* r, const size_t size) {
+        const auto x = util::BinToDec(std::vector<uint8_t>(r + 1, r + 1 + size));
+        auto y = util::BinToDec(std::vector<uint8_t>(r + 1 + size, r + 1 + size + size));
+
+        if ( x == "0" && y == "1" ) {
+            /* Zig encodes point at infinity as (0, 1); reencode as (0, 0) */
+            y = "0";
+        }
+
+        return component::ECC_Point{x, y};
+    }
 }
 
 std::optional<component::Digest> Zig::OpDigest(operation::Digest& op) {
@@ -348,10 +360,7 @@ std::optional<component::ECC_Point> Zig::OpECC_Point_Add(operation::ECC_Point_Ad
                 bx->data(),
                 by->data()), 0);
 
-    ret = component::ECC_Point{
-        util::BinToDec(std::vector<uint8_t>(r + 1, r + 1 + size)),
-        util::BinToDec(std::vector<uint8_t>(r + 1 + size, r + 1 + size + size))
-    };
+    ret = Zig_detail::To_Component_ECC_Point(r, size);
 
 end:
     util::free(r);
@@ -399,10 +408,7 @@ std::optional<component::ECC_Point> Zig::OpECC_Point_Mul(operation::ECC_Point_Mu
                 b->data(),
                 alt), 0);
 
-    ret = component::ECC_Point{
-        util::BinToDec(std::vector<uint8_t>(r + 1, r + 1 + size)),
-        util::BinToDec(std::vector<uint8_t>(r + 1 + size, r + 1 + size + size))
-    };
+    ret = Zig_detail::To_Component_ECC_Point(r, size);
 
 end:
     util::free(r);
@@ -440,10 +446,7 @@ std::optional<component::ECC_Point> Zig::OpECC_Point_Neg(operation::ECC_Point_Ne
                 ax->data(),
                 ay->data()), 0);
 
-    ret = component::ECC_Point{
-        util::BinToDec(std::vector<uint8_t>(r + 1, r + 1 + size)),
-        util::BinToDec(std::vector<uint8_t>(r + 1 + size, r + 1 + size + size))
-    };
+    ret = Zig_detail::To_Component_ECC_Point(r, size);
 
 end:
     util::free(r);
@@ -481,10 +484,7 @@ std::optional<component::ECC_Point> Zig::OpECC_Point_Dbl(operation::ECC_Point_Db
                 ax->data(),
                 ay->data()), 0);
 
-    ret = component::ECC_Point{
-        util::BinToDec(std::vector<uint8_t>(r + 1, r + 1 + size)),
-        util::BinToDec(std::vector<uint8_t>(r + 1 + size, r + 1 + size + size))
-    };
+    ret = Zig_detail::To_Component_ECC_Point(r, size);
 
 end:
     util::free(r);
