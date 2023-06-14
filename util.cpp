@@ -1016,12 +1016,12 @@ std::array<std::string, 3> ToRandomProjective(
     }
     cpp_int Z;
     boost::multiprecision::import_bits(Z, data.data(), data.data() + data.size());
+    const cpp_int P(*p);
+    Z %= P;
     if ( Z == 0 ) {
         return {x, y, "1"};
     }
     cpp_int X(x), Y(y);
-    const cpp_int P(*p);
-    Z %= P;
     if ( jacobian == true ) {
         X = (X * (Z * Z)) % P;
         Y = (Y * (Z * Z * Z)) % P;
