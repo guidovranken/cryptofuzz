@@ -12,6 +12,7 @@ const argon2 = std.crypto.pwhash.argon2;
 const P256 = std.crypto.ecc.P256;
 const Secp256k1 = std.crypto.ecc.Secp256k1;
 const P384 = std.crypto.ecc.P384;
+const ecdsa = std.crypto.sign.ecdsa;
 
 export fn cryptofuzz_zig_digest(
         res_data: [*:0]u8,
@@ -1040,6 +1041,38 @@ export fn cryptofuzz_zig_ecc_point_dbl(
         return -1;
     }
     return 0;
+}
+
+export fn cryptofuzz_zig_ecdsa_verify(
+        curve: u32,
+        pub_data: [*:0]const u8,
+        pub_size: u32,
+        msg_data: [*:0]const u8,
+        msg_size: u32,
+        sig_data: [*:0]const u8,
+        sig_size: u32,
+        ) callconv(.C) i32 {
+    if ( curve == 0 ) {
+        const Scheme = ecdsa.EcdsaP256Sha256;
+        const pk = Scheme.PublicKey.fromSec1(pub_data[0..pub_size]) catch return -1;
+        const sig = Scheme.Signature.fromDer(sig_data[0..sig_size]) catch return -1;
+        sig.verify(msg_data[0..msg_size], pk) catch return -1;
+        return 0;
+    } else if ( curve == 1 ) {
+        const Scheme = ecdsa.EcdsaSecp256k1Sha256;
+        const pk = Scheme.PublicKey.fromSec1(pub_data[0..pub_size]) catch return -1;
+        const sig = Scheme.Signature.fromDer(sig_data[0..sig_size]) catch return -1;
+        sig.verify(msg_data[0..msg_size], pk) catch return -1;
+        return 0;
+    } else if ( curve == 2 ) {
+        const Scheme = ecdsa.EcdsaP384Sha384;
+        const pk = Scheme.PublicKey.fromSec1(pub_data[0..pub_size]) catch return -1;
+        const sig = Scheme.Signature.fromDer(sig_data[0..sig_size]) catch return -1;
+        sig.verify(msg_data[0..msg_size], pk) catch return -1;
+        return 0;
+    }
+
+    return -1;
 }
 
 export fn cryptofuzz_zig_bignumcalc(

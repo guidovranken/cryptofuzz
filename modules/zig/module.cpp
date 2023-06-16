@@ -45,6 +45,14 @@ int cryptofuzz_zig_argon2(
         const uint32_t memory,
         const uint8_t threads,
         const uint8_t mode);
+size_t cryptofuzz_zig_ecdsa_verify(
+        const uint32_t curve,
+        const uint8_t* pub_bytes,
+        const uint32_t pub_size,
+        const uint8_t* msg_bytes,
+        const uint32_t msg_size,
+        const uint8_t* sig_bytes,
+        const uint32_t sig_size);
 size_t cryptofuzz_zig_ecc_validatepubkey(
         const uint32_t curve,
         const uint8_t* ax_bytes,
@@ -326,6 +334,59 @@ std::optional<component::Key> Zig::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
 end:
     util::free(out);
 
+    return ret;
+}
+
+std::optional<bool> Zig::OpECDSA_Verify(operation::ECDSA_Verify& op) {
+    std::optional<bool> ret = std::nullopt;
+    size_t size = 0;
+    uint32_t curve = 0;
+    if ( op.curveType.Is(CF_ECC_CURVE("secp256r1")) ) {
+        if ( !op.digestType.Is(CF_DIGEST("SHA256")) ) {
+            return std::nullopt;
+        }
+        size = 32;
+        curve = 0;
+    } else if ( op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        if ( !op.digestType.Is(CF_DIGEST("SHA256")) ) {
+            return std::nullopt;
+        }
+        size = 32;
+        curve = 1;
+    } else if ( op.curveType.Is(CF_ECC_CURVE("secp384r1")) ) {
+        if ( !op.digestType.Is(CF_DIGEST("SHA384")) ) {
+            return std::nullopt;
+        }
+        size = 48;
+        curve = 2;
+    } else {
+        return std::nullopt;
+    }
+
+    std::vector<uint8_t> pub;
+    std::optional<std::vector<uint8_t>> sig;
+
+    {
+        std::optional<std::vector<uint8_t>> pub_x, pub_y;
+
+        CF_CHECK_NE(pub_x = util::DecToBin(op.signature.pub.first.ToTrimmedString(), size), std::nullopt);
+        CF_CHECK_NE(pub_y = util::DecToBin(op.signature.pub.second.ToTrimmedString(), size), std::nullopt);
+        pub.push_back(0x04);
+        pub.insert(std::end(pub), std::begin(*pub_x), std::end(*pub_x));
+        pub.insert(std::end(pub), std::begin(*pub_y), std::end(*pub_y));
+    }
+
+    CF_CHECK_NE(sig = util::ToDER(
+                op.signature.signature.first.ToTrimmedString(),
+                op.signature.signature.second.ToTrimmedString()), std::nullopt);
+
+    ret = cryptofuzz_zig_ecdsa_verify(
+                curve,
+                pub.data(), pub.size(),
+                op.cleartext.GetPtr(), op.cleartext.GetSize(),
+                sig->data(), sig->size()) == 0;
+
+end:
     return ret;
 }
 
