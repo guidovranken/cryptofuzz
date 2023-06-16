@@ -333,7 +333,7 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
             MP_CHECK_EQ(mp_exptmod(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), bn.GetResPtr()), MP_OKAY);
             CF_CHECK_TRUE(bn.CopyResult(res));
             break;
-#if defined(WOLFSSL_SP_MATH_ALL)
+#if defined(WOLFSSL_SP_MATH_ALL) || defined(USE_FAST_MATH)
         case    1:
             MP_CHECK_EQ(mp_exptmod_nct(bn[0].GetPtr(), bn[1].GetPtr(), bn[2].GetPtr(), bn.GetResPtr()), MP_OKAY);
             CF_CHECK_TRUE(bn.CopyResult(res));
