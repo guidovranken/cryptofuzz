@@ -45,6 +45,10 @@ int cryptofuzz_zig_argon2(
         const uint32_t memory,
         const uint8_t threads,
         const uint8_t mode);
+size_t cryptofuzz_zig_ecc_validatepubkey(
+        const uint32_t curve,
+        const uint8_t* ax_bytes,
+        const uint8_t* ay_bytes);
 size_t cryptofuzz_zig_ecc_point_add(
         const uint32_t curve,
         uint8_t* r,
@@ -322,6 +326,37 @@ std::optional<component::Key> Zig::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
 end:
     util::free(out);
 
+    return ret;
+}
+
+std::optional<bool> Zig::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
+    std::optional<bool> ret = std::nullopt;
+    size_t size = 0;
+    uint32_t curve = 0;
+    if ( op.curveType.Is(CF_ECC_CURVE("secp256r1")) ) {
+        size = 32;
+        curve = 0;
+    } else if ( op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        size = 32;
+        curve = 1;
+    } else if ( op.curveType.Is(CF_ECC_CURVE("secp384r1")) ) {
+        size = 48;
+        curve = 2;
+    } else {
+        return std::nullopt;
+    }
+
+    std::optional<std::vector<uint8_t>> ax, ay;
+
+    CF_CHECK_NE(ax = util::DecToBin(op.pub.first.ToTrimmedString(), size), std::nullopt);
+    CF_CHECK_NE(ay = util::DecToBin(op.pub.second.ToTrimmedString(), size), std::nullopt);
+
+    ret = cryptofuzz_zig_ecc_validatepubkey(
+                curve,
+                ax->data(),
+                ay->data()) == 0;
+
+end:
     return ret;
 }
 

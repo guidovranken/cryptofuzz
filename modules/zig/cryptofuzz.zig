@@ -821,6 +821,37 @@ export fn cryptofuzz_zig_argon2(
     return 0;
 }
 
+export fn cryptofuzz_zig_ecc_validatepubkey(
+        curve: u32,
+        ax_data: [*:0]const u8,
+        ay_data: [*:0]const u8,
+        ) callconv(.C) i32 {
+    if ( curve == 0 ) {
+        var a = P256.fromSerializedAffineCoordinates(
+                ax_data[0..32].*,
+                ay_data[0..32].*,
+                .Big) catch return -1;
+        if ( a.rejectIdentity() == error.IdentityElement ) return -1;
+        return 0;
+    } else if ( curve == 1 ) {
+        var a = Secp256k1.fromSerializedAffineCoordinates(
+                ax_data[0..32].*,
+                ay_data[0..32].*,
+                .Big) catch return -1;
+        if ( a.rejectIdentity() == error.IdentityElement ) return -1;
+        return 0;
+    } else if ( curve == 2 ) {
+        var a = P384.fromSerializedAffineCoordinates(
+                ax_data[0..48].*,
+                ay_data[0..48].*,
+                .Big) catch return -1;
+        if ( a.rejectIdentity() == error.IdentityElement ) return -1;
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
 export fn cryptofuzz_zig_ecc_point_add(
         curve: u32,
         r: [*:0]u8,
@@ -839,6 +870,8 @@ export fn cryptofuzz_zig_ecc_point_add(
                 by_data[0..32].*,
                 .Big) catch return -1;
         var res = a.add(b);
+        if ( a.rejectIdentity() == error.IdentityElement ) return -1;
+        if ( b.rejectIdentity() == error.IdentityElement ) return -1;
         var resbytes = res.toUncompressedSec1();
         mem.copy(u8, r[0..65], &resbytes);
     } else if ( curve == 1 ) {
@@ -851,6 +884,8 @@ export fn cryptofuzz_zig_ecc_point_add(
                 by_data[0..32].*,
                 .Big) catch return -1;
         var res = a.add(b);
+        if ( a.rejectIdentity() == error.IdentityElement ) return -1;
+        if ( b.rejectIdentity() == error.IdentityElement ) return -1;
         var resbytes = res.toUncompressedSec1();
         mem.copy(u8, r[0..65], &resbytes);
     } else if ( curve == 2 ) {
@@ -863,6 +898,8 @@ export fn cryptofuzz_zig_ecc_point_add(
                 by_data[0..48].*,
                 .Big) catch return -1;
         var res = a.add(b);
+        if ( a.rejectIdentity() == error.IdentityElement ) return -1;
+        if ( b.rejectIdentity() == error.IdentityElement ) return -1;
         var resbytes = res.toUncompressedSec1();
         mem.copy(u8, r[0..97], &resbytes);
     } else {
@@ -939,6 +976,7 @@ export fn cryptofuzz_zig_ecc_point_neg(
                 ay_data[0..32].*,
                 .Big) catch return -1;
         var res = a.neg();
+        if ( a.rejectIdentity() == error.IdentityElement ) return -1;
         var resbytes = res.toUncompressedSec1();
         mem.copy(u8, r[0..65], &resbytes);
     } else if ( curve == 1 ) {
@@ -947,6 +985,7 @@ export fn cryptofuzz_zig_ecc_point_neg(
                 ay_data[0..32].*,
                 .Big) catch return -1;
         var res = a.neg();
+        if ( a.rejectIdentity() == error.IdentityElement ) return -1;
         var resbytes = res.toUncompressedSec1();
         mem.copy(u8, r[0..65], &resbytes);
     } else if ( curve == 2 ) {
@@ -955,6 +994,7 @@ export fn cryptofuzz_zig_ecc_point_neg(
                 ay_data[0..48].*,
                 .Big) catch return -1;
         var res = a.neg();
+        if ( a.rejectIdentity() == error.IdentityElement ) return -1;
         var resbytes = res.toUncompressedSec1();
         mem.copy(u8, r[0..97], &resbytes);
     } else {
@@ -975,6 +1015,7 @@ export fn cryptofuzz_zig_ecc_point_dbl(
                 ay_data[0..32].*,
                 .Big) catch return -1;
         var res = a.dbl();
+        if ( a.rejectIdentity() == error.IdentityElement ) return -1;
         var resbytes = res.toUncompressedSec1();
         mem.copy(u8, r[0..65], &resbytes);
     } else if ( curve == 1 ) {
@@ -983,6 +1024,7 @@ export fn cryptofuzz_zig_ecc_point_dbl(
                 ay_data[0..32].*,
                 .Big) catch return -1;
         var res = a.dbl();
+        if ( a.rejectIdentity() == error.IdentityElement ) return -1;
         var resbytes = res.toUncompressedSec1();
         mem.copy(u8, r[0..65], &resbytes);
     } else if ( curve == 2 ) {
@@ -991,6 +1033,7 @@ export fn cryptofuzz_zig_ecc_point_dbl(
                 ay_data[0..48].*,
                 .Big) catch return -1;
         var res = a.dbl();
+        if ( a.rejectIdentity() == error.IdentityElement ) return -1;
         var resbytes = res.toUncompressedSec1();
         mem.copy(u8, r[0..97], &resbytes);
     } else {
