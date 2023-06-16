@@ -853,6 +853,28 @@ export fn cryptofuzz_zig_ecc_validatepubkey(
     }
 }
 
+export fn cryptofuzz_zig_ecc_privatetopublic(
+        curve: u32,
+        r: [*:0]u8,
+        priv_bytes: [*:0]const u8,
+        ) callconv(.C) i32 {
+    if ( curve == 0 ) {
+        var res = P256.basePoint.mul(priv_bytes[0..32].*, .Big) catch return -1;
+        var resbytes = res.toUncompressedSec1();
+        mem.copy(u8, r[0..65], &resbytes);
+    } else if ( curve == 1 ) {
+        var res = Secp256k1.basePoint.mul(priv_bytes[0..32].*, .Big) catch return -1;
+        var resbytes = res.toUncompressedSec1();
+        mem.copy(u8, r[0..65], &resbytes);
+    } else if ( curve == 2 ) {
+        var res = P384.basePoint.mul(priv_bytes[0..48].*, .Big) catch return -1;
+        var resbytes = res.toUncompressedSec1();
+        mem.copy(u8, r[0..97], &resbytes);
+    }
+    return 0;
+}
+
+
 export fn cryptofuzz_zig_ecc_point_add(
         curve: u32,
         r: [*:0]u8,

@@ -57,6 +57,10 @@ size_t cryptofuzz_zig_ecc_validatepubkey(
         const uint32_t curve,
         const uint8_t* ax_bytes,
         const uint8_t* ay_bytes);
+size_t cryptofuzz_zig_ecc_privatetopublic(
+        const uint32_t curve,
+        uint8_t* r,
+        const uint8_t* priv_bytes);
 size_t cryptofuzz_zig_ecc_point_add(
         const uint32_t curve,
         uint8_t* r,
@@ -421,6 +425,41 @@ end:
     return ret;
 }
 
+std::optional<component::ECC_PublicKey> Zig::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
+    std::optional<component::ECC_Point> ret = std::nullopt;
+    size_t size = 0;
+    uint32_t curve = 0;
+    if ( op.curveType.Is(CF_ECC_CURVE("secp256r1")) ) {
+        size = 32;
+        curve = 0;
+    } else if ( op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        size = 32;
+        curve = 1;
+    } else if ( op.curveType.Is(CF_ECC_CURVE("secp384r1")) ) {
+        size = 48;
+        curve = 2;
+    } else {
+        return std::nullopt;
+    }
+
+    uint8_t* r = nullptr;
+    std::optional<std::vector<uint8_t>> priv;
+
+    CF_CHECK_NE(priv = util::DecToBin(op.priv.ToTrimmedString(), size), std::nullopt);
+
+    r = util::malloc(size * 2 + 1);
+
+    CF_CHECK_EQ(cryptofuzz_zig_ecc_privatetopublic(
+                curve,
+                r,
+                priv->data()), 0);
+
+    ret = Zig_detail::To_Component_ECC_Point(r, size);
+
+end:
+    util::free(r);
+    return ret;
+}
 std::optional<component::ECC_Point> Zig::OpECC_Point_Add(operation::ECC_Point_Add& op) {
     std::optional<component::ECC_Point> ret = std::nullopt;
     size_t size = 0;
