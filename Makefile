@@ -48,13 +48,15 @@ openssl_importer.o : openssl_importer.cpp
 	$(CXX) $(CXXFLAGS) openssl_importer.cpp -c -o openssl_importer.o
 builtin_tests_importer.o : builtin_tests_importer.cpp
 	$(CXX) $(CXXFLAGS) builtin_tests_importer.cpp -c -o builtin_tests_importer.o
+bignum_fuzzer_importer.o : bignum_fuzzer_importer.cpp
+	$(CXX) $(CXXFLAGS) bignum_fuzzer_importer.cpp -c -o bignum_fuzzer_importer.o
 
 third_party/cpu_features/build/libcpu_features.a :
 	cd third_party/cpu_features && rm -rf build && mkdir build && cd build && cmake .. && make
 
-cryptofuzz : driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o options.o components.o wycheproof.o crypto.o expmod.o mutator.o z3.o numbers.o mutatorpool.o ecc_diff_fuzzer_importer.o ecc_diff_fuzzer_exporter.o botan_importer.o openssl_importer.o builtin_tests_importer.o third_party/cpu_features/build/libcpu_features.a
+cryptofuzz : driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o options.o components.o wycheproof.o crypto.o expmod.o mutator.o z3.o numbers.o mutatorpool.o ecc_diff_fuzzer_importer.o ecc_diff_fuzzer_exporter.o botan_importer.o openssl_importer.o builtin_tests_importer.o bignum_fuzzer_importer.o third_party/cpu_features/build/libcpu_features.a
 	test $(LIBFUZZER_LINK)
-	$(CXX) $(CXXFLAGS) driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o options.o components.o wycheproof.o crypto.o expmod.o mutator.o z3.o numbers.o mutatorpool.o ecc_diff_fuzzer_importer.o ecc_diff_fuzzer_exporter.o botan_importer.o openssl_importer.o builtin_tests_importer.o $(shell find modules -type f -name module.a) $(LIBFUZZER_LINK) third_party/cpu_features/build/libcpu_features.a $(LINK_FLAGS) -o cryptofuzz
+	$(CXX) $(CXXFLAGS) driver.o executor.o util.o entry.o tests.o operation.o datasource.o repository.o options.o components.o wycheproof.o crypto.o expmod.o mutator.o z3.o numbers.o mutatorpool.o ecc_diff_fuzzer_importer.o ecc_diff_fuzzer_exporter.o botan_importer.o openssl_importer.o builtin_tests_importer.o bignum_fuzzer_importer.o $(shell find modules -type f -name module.a) $(LIBFUZZER_LINK) third_party/cpu_features/build/libcpu_features.a $(LINK_FLAGS) -o cryptofuzz
 
 generate_dict: generate_dict.cpp
 	$(CXX) $(CXXFLAGS) generate_dict.cpp -o generate_dict
