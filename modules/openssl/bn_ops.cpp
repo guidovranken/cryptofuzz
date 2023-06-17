@@ -1467,6 +1467,22 @@ end:
     return ret;
 }
 
+bool Neg::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
+    (void)ds;
+    (void)bn;
+    (void)ctx;
+
+    bool ret = false;
+
+    CF_CHECK_NE(BN_copy(res.GetDestPtr(), bn[0].GetPtr()), nullptr);
+    CF_NORET(BN_set_negative(res.GetDestPtr(), 1));
+
+    ret = true;
+
+end:
+    return ret;
+}
+
 } /* namespace OpenSSL_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

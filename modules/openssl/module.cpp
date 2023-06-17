@@ -4622,6 +4622,9 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
             case    CF_CALCOP("IsSquare(A)"):
                 opRunner = std::make_unique<OpenSSL_bignum::IsSquare>();
                 break;
+            case    CF_CALCOP("Neg(A)"):
+                opRunner = std::make_unique<OpenSSL_bignum::Neg>();
+                break;
         }
 
         CF_CHECK_NE(opRunner, nullptr);
