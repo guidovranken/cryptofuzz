@@ -822,8 +822,11 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     (void)ds;
     (void)ctx;
     bool ret = false;
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_BORINGSSL)
+    BN_RECP_CTX* recp = nullptr;
+#endif
 
-    GET_WHICH(3);
+    GET_WHICH(4);
     switch ( which ) {
         case    0:
             CF_ASSERT_EQ_COND(
@@ -874,6 +877,22 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
                     BN_is_zero(bn[1].GetPtr()));
             break;
 #endif
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_BORINGSSL)
+        case    4:
+            {
+                const bool is_neg = BN_is_negative(bn[0].GetPtr());
+                CF_CHECK_NE(recp = BN_RECP_CTX_new(), nullptr);
+                CF_CHECK_EQ(BN_RECP_CTX_set(recp, bn[1].GetPtr(), ctx.GetPtr()), 1);
+                CF_CHECK_EQ(BN_div_recp(
+                            res.GetDestPtr(),
+                            nullptr,
+                            bn[0].GetPtr(),
+                            recp,
+                            ctx.GetPtr()), 1);
+                CF_CHECK_FALSE(is_neg);
+            }
+            break;
+#endif
         default:
             goto end;
             break;
@@ -882,6 +901,10 @@ bool Div::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     ret = true;
 
 end:
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_BORINGSSL)
+    CF_NORET(BN_RECP_CTX_free(recp));
+#endif
+
     return ret;
 }
 
