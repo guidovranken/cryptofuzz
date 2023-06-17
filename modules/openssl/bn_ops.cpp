@@ -603,8 +603,11 @@ end:
 
 bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
     bool ret = false;
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_BORINGSSL)
+    BN_RECP_CTX* recp = nullptr;
+#endif
 
-    GET_WHICH(1);
+    GET_WHICH(2);
     switch ( which ) {
         case    0:
             CF_ASSERT_EQ_COND(
@@ -654,6 +657,24 @@ bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
             }
             break;
 #endif
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_BORINGSSL)
+        case    2:
+            {
+                const bool is_neg = BN_is_negative(bn[0].GetPtr()) ||
+                    BN_is_negative(bn[1].GetPtr());
+                CF_CHECK_NE(recp = BN_RECP_CTX_new(), nullptr);
+                CF_CHECK_EQ(BN_RECP_CTX_set(recp, bn[2].GetPtr(), ctx.GetPtr()), 1);
+                CF_CHECK_EQ(BN_mod_mul_reciprocal(
+                            bn.GetResPtr(),
+                            bn[0].GetPtr(),
+                            bn[1].GetPtr(),
+                            recp,
+                            ctx.GetPtr()), 1);
+                CF_CHECK_FALSE(is_neg);
+                CF_NORET(bn.CopyResult(res));
+            }
+            break;
+#endif
         default:
             goto end;
             break;
@@ -662,6 +683,9 @@ bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
     ret = true;
 
 end:
+#if !defined(CRYPTOFUZZ_LIBRESSL) && !defined(CRYPTOFUZZ_BORINGSSL)
+    CF_NORET(BN_RECP_CTX_free(recp));
+#endif
 
     return ret;
 }
