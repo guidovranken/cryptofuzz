@@ -322,6 +322,10 @@
   #include <modules/v8/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_V8_EMBEDDED)
+  #include <modules/v8-embedded/module.h>
+#endif
+
 #if defined(CRYPTOFUZZ_CIRCL)
   #include <modules/circl/module.h>
 #endif
@@ -940,6 +944,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_AURORA_ENGINE_MODEXP)
     driver->LoadModule( std::make_shared<cryptofuzz::module::aurora_engine_modexp>() );
+#endif
+
+#if defined(CRYPTOFUZZ_V8_EMBEDDED)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::V8_embedded>() );
 #endif
 
     /* TODO check if options.forceModule (if set) refers to a module that is
