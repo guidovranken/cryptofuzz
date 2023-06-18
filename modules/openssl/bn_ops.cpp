@@ -1522,7 +1522,7 @@ bool Neg::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
     bool ret = false;
 
     CF_CHECK_NE(BN_copy(res.GetDestPtr(), bn[0].GetPtr()), nullptr);
-    CF_NORET(BN_set_negative(res.GetDestPtr(), 1));
+    CF_NORET(BN_set_negative(res.GetDestPtr(), !BN_is_negative(bn[0].GetPtr())));
 
     ret = true;
 
