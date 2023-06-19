@@ -948,6 +948,27 @@ namespace BignumCalc {
             Abort("Result is larger than the input", opStr);
         }
     }
+    static void AssertPositive(
+            const component::Bignum& result,
+            const std::string& opStr) {
+        if ( !result.IsPositive() ) {
+            Abort("Result is not positive", opStr);
+        }
+    }
+    static void AssertOdd(
+            const component::Bignum& result,
+            const std::string& opStr) {
+        if ( !result.IsOdd() ) {
+            Abort("Result is not odd", opStr);
+        }
+    }
+    static void AssertZero(
+            const component::Bignum& result,
+            const std::string& opStr) {
+        if ( !result.IsZero() ) {
+            Abort("Result is not zero", opStr);
+        }
+    }
 }
 
 void test(const operation::BignumCalc& op, const std::optional<component::Bignum>& result) {
@@ -959,11 +980,15 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
 
     const auto calcOp = op.calcOp.Get();
 
-    /* Negative numbers are not supported yet */
-    if (    op.bn0.IsNegative() ||
-            op.bn1.IsNegative() ||
-            op.bn2.IsNegative() ) {
-        return;
+    if (
+            calcOp != CF_CALCOP("IsPrime(A)") &&
+            calcOp != CF_CALCOP("Prime()") ) {
+        /* Negative numbers are not supported yet */
+        if (    op.bn0.IsNegative() ||
+                op.bn1.IsNegative() ||
+                op.bn2.IsNegative() ) {
+            return;
+        }
     }
 
     /* Modular calculations are not supported yet */
@@ -1053,6 +1078,14 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
             break;
         case    CF_CALCOP("IsPrime(A)"):
             BignumCalc::AssertBinary(*result, "IsPrime");
+            if ( !op.bn0.IsPositive() ) {
+                BignumCalc::AssertZero(*result, "IsPrime");
+            }
+            if ( result->IsOne() ) {
+                if ( op.bn0.ToTrimmedString() != "2" ) {
+                    BignumCalc::AssertOdd(op.bn0, "IsPrime");
+                }
+            }
             break;
         case    CF_CALCOP("IsZero(A)"):
             BignumCalc::AssertBinary(*result, "IsZero");
@@ -1160,6 +1193,12 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
             break;
         case    CF_CALCOP("RandMod(A)"):
             BignumCalc::AssertModResult(*result, op.bn0, "RandMod");
+            break;
+        case    CF_CALCOP("Prime()"):
+            BignumCalc::AssertPositive(*result, repository::CalcOpToString(calcOp));
+            if ( result->ToTrimmedString() != "2" ) {
+                BignumCalc::AssertOdd(*result, repository::CalcOpToString(calcOp));
+            }
             break;
     }
 }

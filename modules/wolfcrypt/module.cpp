@@ -3719,6 +3719,12 @@ std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& 
         case    CF_CALCOP("Zero()"):
             opRunner = std::make_unique<wolfCrypt_bignum::Zero>();
             break;
+        case    CF_CALCOP("Prime()"):
+            opRunner = std::make_unique<wolfCrypt_bignum::Prime>();
+            break;
+        case    CF_CALCOP("IsPrime(A)"):
+            opRunner = std::make_unique<wolfCrypt_bignum::IsPrime>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

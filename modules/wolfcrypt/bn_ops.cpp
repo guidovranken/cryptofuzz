@@ -13,6 +13,7 @@ namespace module {
 
 namespace wolfCrypt_detail {
     WC_RNG* GetRNG(void);
+    WC_RNG* GetSystemRNG(void);
 }
 
 namespace wolfCrypt_bignum {
@@ -1226,6 +1227,48 @@ bool Zero::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     return true;
 }
+
+bool Prime::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    (void)bn;
+
+    bool ret = false;
+
+    uint16_t len = 2;
+    try {
+        /* Cap at 100; much larger will timeout */
+        len = ds.Get<uint16_t>() % 100;
+    } catch ( ... ) { }
+
+    MP_CHECK_EQ(mp_rand_prime(res.GetPtr(), len, wolfCrypt_detail::GetRNG(), nullptr), MP_OKAY);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
+bool IsPrime::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+    int r;
+
+    /* Prevent timeouts */
+    CF_CHECK_LTE(mp_count_bits(bn[0].GetPtr()), 1000);
+
+    /* Must be system RNG; otherwise the fuzzer will PRNG seeds that will
+     * incorrectly regard a prime as composite.
+     */
+    CF_CHECK_EQ(mp_prime_is_prime_ex(bn[0].GetPtr(), 256, &r, wolfCrypt_detail::GetSystemRNG()), MP_OKAY);
+    CF_CHECK_EQ( res.Set( std::to_string(r) ), true);
+
+    ret = true;
+
+end:
+    return ret;
+}
+
 
 } /* namespace wolfCrypt_bignum */
 } /* namespace module */

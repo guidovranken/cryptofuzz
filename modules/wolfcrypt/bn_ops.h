@@ -200,6 +200,16 @@ class Zero : public Operation {
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;
 };
 
+class Prime : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;
+};
+
+class IsPrime : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;
+};
+
 } /* namespace wolfCrypt_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

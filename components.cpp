@@ -277,6 +277,11 @@ bool Bignum::IsZero(void) const {
     return t == "0" || t == "-" || t == "-0";
 }
 
+bool Bignum::IsOne(void) const {
+    const auto t = ToTrimmedString();
+    return t == "1";
+}
+
 bool Bignum::IsNegative(void) const {
     return data.GetSize() && data.GetConstVectorPtr()[0] == '-';
 }
@@ -312,6 +317,11 @@ bool Bignum::IsLessThan(const std::string& other) const {
     boost::multiprecision::cpp_int A(ToTrimmedString());
     boost::multiprecision::cpp_int B(other);
     return A < B;
+}
+
+bool Bignum::IsOdd(void) const {
+    const auto s = ToTrimmedString();
+    return ((s.back() - '0') % 2) == 1;
 }
 
 void Bignum::ToPositive(void) {
