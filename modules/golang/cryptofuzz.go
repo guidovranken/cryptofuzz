@@ -990,28 +990,19 @@ func op_ABS(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool)
 }
 
 func op_IS_PRIME(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
-    /* "ProbablyPrime is 100% accurate for inputs less than 2⁶⁴."
-     * https://golang.org/pkg/math/big/#Int.ProbablyPrime
-    */
-    max64 := big.NewInt(0).Lsh( big.NewInt(1), 64 )
-    max64.Sub(max64, big.NewInt(1))
-    if BN0.Cmp(big.NewInt(0)) > 0 && BN0.Cmp(max64) < 0 {
-        is_prime := false
-        if direct {
-            is_prime = BN0.ProbablyPrime(1)
-        } else {
-            tmp := big.NewInt(0).Set(BN0)
-            is_prime = tmp.ProbablyPrime(1)
-        }
-        if is_prime {
-            res = big.NewInt(1)
-        } else {
-            res = big.NewInt(0)
-        }
-        return true
+    is_prime := false
+    if direct {
+        is_prime = BN0.ProbablyPrime(1)
     } else {
-        return false
+        tmp := big.NewInt(0).Set(BN0)
+        is_prime = tmp.ProbablyPrime(1)
     }
+    if is_prime {
+        res.SetUint64(1)
+    } else {
+        res.SetUint64(0)
+    }
+    return true
 }
 
 func op_MOD_SUB(res *big.Int, BN0 *big.Int, BN1 *big.Int, BN2 *big.Int, direct bool) bool {
@@ -1484,6 +1475,8 @@ func Golang_Cryptofuzz_OpBignumCalc(in []byte) {
             base = op.Modifier[2]
         }
         success = op_SET(res, BN0, BN1, BN2, direct, modifier, base)
+    } else if isIsPrime(op.CalcOp) {
+        success = op_IS_PRIME(res, BN0, BN1, BN2, direct)
     }
 
     if success == false {
