@@ -245,6 +245,7 @@ using ExecutorECDH_Derive = ExecutorBase<component::Secret, operation::ECDH_Deri
 using ExecutorECIES_Encrypt = ExecutorBase<component::Ciphertext, operation::ECIES_Encrypt>;
 using ExecutorECIES_Decrypt = ExecutorBase<component::Cleartext, operation::ECIES_Decrypt>;
 using ExecutorECC_Point_Add = ExecutorBase<component::ECC_Point, operation::ECC_Point_Add>;
+using ExecutorECC_Point_Sub = ExecutorBase<component::ECC_Point, operation::ECC_Point_Sub>;
 using ExecutorECC_Point_Mul = ExecutorBase<component::ECC_Point, operation::ECC_Point_Mul>;
 using ExecutorECC_Point_Neg = ExecutorBase<component::ECC_Point, operation::ECC_Point_Neg>;
 using ExecutorECC_Point_Dbl = ExecutorBase<component::ECC_Point, operation::ECC_Point_Dbl>;

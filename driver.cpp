@@ -56,6 +56,7 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorECIES_Encrypt executorECIES_Encrypt(CF_OPERATION("ECIES_Encrypt"), modules, options);
     static ExecutorECIES_Decrypt executorECIES_Decrypt(CF_OPERATION("ECIES_Decrypt"), modules, options);
     static ExecutorECC_Point_Add executorECC_Point_Add(CF_OPERATION("ECC_Point_Add"), modules, options);
+    static ExecutorECC_Point_Sub executorECC_Point_Sub(CF_OPERATION("ECC_Point_Sub"), modules, options);
     static ExecutorECC_Point_Mul executorECC_Point_Mul(CF_OPERATION("ECC_Point_Mul"), modules, options);
     static ExecutorECC_Point_Neg executorECC_Point_Neg(CF_OPERATION("ECC_Point_Neg"), modules, options);
     static ExecutorECC_Point_Dbl executorECC_Point_Dbl(CF_OPERATION("ECC_Point_Dbl"), modules, options);
@@ -253,6 +254,9 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("ECC_Point_Add"):
                 executorECC_Point_Add.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("ECC_Point_Sub"):
+                executorECC_Point_Sub.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("ECC_Point_Mul"):
                 executorECC_Point_Mul.Run(ds, payload.data(), payload.size());

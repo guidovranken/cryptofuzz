@@ -678,6 +678,25 @@ void test(const operation::ECC_Point_Add& op, const std::optional<component::ECC
     (void)result;
 }
 
+void test(const operation::ECC_Point_Sub& op, const std::optional<component::ECC_Point>& result) {
+    if ( result == std::nullopt ) {
+        return;
+    }
+
+    if ( !(op.a.first == op.b.first) ) {
+        return;
+    }
+
+    if ( !(op.a.second == op.b.second) ) {
+        return;
+    }
+
+    if ( !result->first.IsZero() || !result->second.IsZero() ) {
+        std::cout << "Subtracting equal points should result in point at infinity" << std::endl;
+        ::abort();
+    }
+}
+
 void test(const operation::ECC_Point_Mul& op, const std::optional<component::ECC_Point>& result) {
     (void)op;
     (void)result;

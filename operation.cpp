@@ -1125,6 +1125,35 @@ nlohmann::json ECC_Point_Add::ToJSON(void) const {
     return j;
 }
 
+std::string ECC_Point_Sub::Name(void) const { return "ECC_Point_Sub"; }
+std::string ECC_Point_Sub::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: ECC_Point_Sub" << std::endl;
+    ss << "ecc curve: " << repository::ECC_CurveToString(curveType.Get()) << std::endl;
+    ss << "A X: " << a.first.ToString() << std::endl;
+    ss << "A Y: " << a.second.ToString() << std::endl;
+    ss << "B X: " << b.first.ToString() << std::endl;
+    ss << "B Y: " << b.second.ToString() << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json ECC_Point_Sub::ToJSON(void) const {
+    nlohmann::json j;
+    j["operation"] = "ECC_Point_Sub";
+    j["curveType"] = curveType.ToJSON();
+
+    j["a_x"] = a.first.ToJSON();
+    j["a_y"] = a.second.ToJSON();
+
+    j["b_x"] = b.first.ToJSON();
+    j["b_y"] = b.second.ToJSON();
+
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string ECC_Point_Mul::Name(void) const { return "ECC_Point_Mul"; }
 std::string ECC_Point_Mul::ToString(void) const {
     std::stringstream ss;

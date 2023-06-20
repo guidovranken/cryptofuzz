@@ -46,6 +46,7 @@ void test(const operation::ECDH_Derive& op, const std::optional<component::Secre
 void test(const operation::ECIES_Encrypt& op, const std::optional<component::Ciphertext>& result);
 void test(const operation::ECIES_Decrypt& op, const std::optional<component::Cleartext>& result);
 void test(const operation::ECC_Point_Add& op, const std::optional<component::ECC_Point>& result);
+void test(const operation::ECC_Point_Sub& op, const std::optional<component::ECC_Point>& result);
 void test(const operation::ECC_Point_Mul& op, const std::optional<component::ECC_Point>& result);
 void test(const operation::ECC_Point_Neg& op, const std::optional<component::ECC_Point>& result);
 void test(const operation::ECC_Point_Dbl& op, const std::optional<component::ECC_Point>& result);

@@ -1932,6 +1932,42 @@ class ECC_Point_Add : public Operation {
         }
 };
 
+class ECC_Point_Sub : public Operation {
+    public:
+        const component::CurveType curveType;
+        const component::ECC_Point a, b;
+
+        ECC_Point_Sub(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            curveType(ds),
+            a(ds),
+            b(ds)
+        { }
+        ECC_Point_Sub(nlohmann::json json) :
+            Operation(json["modifier"]),
+            curveType(json["curveType"]),
+            a(json["a_x"], json["a_y"]),
+            b(json["b_x"], json["b_y"])
+        { }
+
+        static size_t MaxOperations(void) { return 5; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const ECC_Point_Sub& rhs) const {
+            return
+                (curveType == rhs.curveType) &&
+                (a == rhs.a) &&
+                (b == rhs.b) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            curveType.Serialize(ds);
+            a.Serialize(ds);
+            b.Serialize(ds);
+        }
+};
+
 class ECC_Point_Mul : public Operation {
     public:
         const component::CurveType curveType;

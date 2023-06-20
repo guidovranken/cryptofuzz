@@ -180,6 +180,10 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::ECC_Point> OpECC_Point_Sub(operation::ECC_Point_Sub& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::ECC_Point> OpECC_Point_Mul(operation::ECC_Point_Mul& op) {
             (void)op;
             return std::nullopt;
