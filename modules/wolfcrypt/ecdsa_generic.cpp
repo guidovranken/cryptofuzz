@@ -1059,6 +1059,9 @@ std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op
     std::optional<int> curveID;
     int curveIdx;
     const ecc_set_type* curve = nullptr;
+    bool failed = false;
+    bool valid = false;
+    std::optional<bool> is_neg = std::nullopt;
 
     CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
 
@@ -1070,8 +1073,6 @@ std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op
         ECCPoint res(ds, *curveID), a(ds, *curveID), b(ds, *curveID);
         wolfCrypt_bignum::Bignum Af(ds), prime(ds), mu(ds);
         mp_digit mp;
-        bool valid = false;
-        std::optional<bool> is_neg = std::nullopt;
 
         /* Set points */
         CF_CHECK_TRUE(a.Set(op.a, op.curveType.Get()));
@@ -1112,16 +1113,28 @@ std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op
                 int infinity;
 
                 if ( dbl == true ) {
+                    failed = true;
+                    haveAllocFailure = false;
                     WC_CHECK_EQ(ecc_projective_dbl_point_safe(a.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp), 0);
+                    failed = false;
                 } else {
+                    failed = true;
+                    haveAllocFailure = false;
                     WC_CHECK_EQ(ecc_projective_add_point_safe(a.GetPtr(), b.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp, &infinity), 0);
+                    failed = false;
                 }
 #endif
             } else {
                 if ( dbl == true ) {
+                    failed = true;
+                    haveAllocFailure = false;
                     WC_CHECK_EQ(ecc_projective_dbl_point(a.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp), 0);
+                    failed = false;
                 } else {
+                    failed = true;
+                    haveAllocFailure = false;
                     WC_CHECK_EQ(ecc_projective_add_point(a.GetPtr(), b.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp), 0);
+                    failed = false;
 
                     /* Do not return result if inputs are negations of the same point */
                     CF_CHECK_NE(is_neg, std::nullopt);
@@ -1148,6 +1161,14 @@ std::optional<component::ECC_Point> OpECC_Point_Add(operation::ECC_Point_Add& op
 
 end:
     wolfCrypt_detail::UnsetGlobalDs();
+
+    if ( valid ) {
+        if ( !haveAllocFailure ) {
+            if ( !*is_neg ) {
+                CF_ASSERT(!failed, "Point adding failed");
+            }
+        }
+    }
 
     return ret;
 }
@@ -1206,6 +1227,8 @@ std::optional<component::ECC_Point> OpECC_Point_Dbl(operation::ECC_Point_Dbl& op
     std::optional<int> curveID;
     int curveIdx;
     const ecc_set_type* curve = nullptr;
+    bool failed = false;
+    bool valid = false;
 
     CF_CHECK_NE(curveID = wolfCrypt_detail::toCurveID(op.curveType), std::nullopt);
 
@@ -1217,7 +1240,6 @@ std::optional<component::ECC_Point> OpECC_Point_Dbl(operation::ECC_Point_Dbl& op
         ECCPoint res(ds, *curveID), a(ds, *curveID);
         wolfCrypt_bignum::Bignum Af(ds), prime(ds), mu(ds);
         mp_digit mp;
-        bool valid = false;
 
         /* Set points */
         CF_CHECK_TRUE(a.Set(op.a, op.curveType.Get()));
@@ -1246,10 +1268,16 @@ std::optional<component::ECC_Point> OpECC_Point_Dbl(operation::ECC_Point_Dbl& op
 #if defined(WOLFSSL_SP_MATH) && defined(WOLFSSL_PUBLIC_ECC_ADD_DBL)
                 CF_UNREACHABLE();
 #else
+                failed = true;
+                haveAllocFailure = false;
                 WC_CHECK_EQ(ecc_projective_dbl_point_safe(a.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp), 0);
+                failed = false;
 #endif
             } else {
+                failed = true;
+                haveAllocFailure = false;
                 WC_CHECK_EQ(ecc_projective_dbl_point(a.GetPtr(), res.GetPtr(), Af.GetPtr(), prime.GetPtr(), mp), 0);
+                failed = false;
             }
 
             /* Lock to prevent exporting the projective point */
@@ -1270,6 +1298,12 @@ std::optional<component::ECC_Point> OpECC_Point_Dbl(operation::ECC_Point_Dbl& op
     } catch ( ... ) { }
 
 end:
+    if ( valid ) {
+        if ( !haveAllocFailure ) {
+            CF_ASSERT(!failed, "Point doubling failed");
+        }
+    }
+
     wolfCrypt_detail::UnsetGlobalDs();
 
     return ret;
