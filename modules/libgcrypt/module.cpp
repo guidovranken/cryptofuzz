@@ -997,6 +997,77 @@ namespace libgcrypt_detail {
         return LUT.at(curveType.Get());
     }
 
+    static gcry_mpi_point_t SetPoint(
+            Datasource& ds,
+            gcry_ctx_t ctx,
+            const component::ECC_Point& point,
+            const component::CurveType& curveType,
+            const bool curveCheck = true) {
+        gcry_mpi_point_t P;
+        CF_ASSERT( (P = gcry_mpi_point_new(0)) != nullptr, "Cannot create point");
+
+        libgcrypt_bignum::Bignum x, y, z;
+
+        bool projective = false;
+        try {
+            projective = ds.Get<bool>();
+        } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
+        projective = true;
+
+        if ( projective == true ) {
+            const auto proj = util::ToRandomProjective(
+                    ds,
+                    point.first.ToTrimmedString(),
+                    point.second.ToTrimmedString(),
+                    curveType.Get());
+            CF_CHECK_EQ(x.Set(proj[0]), true);
+            CF_CHECK_EQ(y.Set(proj[1]), true);
+            CF_CHECK_EQ(z.Set(proj[2]), true);
+        } else {
+            CF_CHECK_EQ(x.Set(point.first.ToString(ds)), true);
+            CF_CHECK_EQ(y.Set(point.second.ToString(ds)), true);
+            CF_CHECK_EQ(z.Set("1"), true);
+        }
+
+        gcry_mpi_point_set(P, x.GetPtr(), y.GetPtr(), z.GetPtr());
+
+        if ( curveCheck == true ) {
+            CF_CHECK_EQ(gcry_mpi_ec_curve_point(P, ctx), 1);
+        }
+
+        return P;
+end:
+        gcry_mpi_point_release(P);
+        return nullptr;
+    }
+
+    static void FreePoint(gcry_mpi_point_t P) {
+        gcry_mpi_point_release(P);
+    }
+
+    static std::optional<component::ECC_Point> GetPoint(
+            gcry_ctx_t ctx,
+            gcry_mpi_point_t P) {
+        std::optional<component::ECC_PublicKey> ret = std::nullopt;
+
+        libgcrypt_bignum::Bignum x, y;
+        std::optional<std::string> x_str, y_str;
+
+        CF_CHECK_EQ(x.Set("0"), true);
+        CF_CHECK_EQ(y.Set("0"), true);
+
+        CF_CHECK_EQ(gcry_mpi_ec_get_affine(x.GetPtr(), y.GetPtr(), P, ctx), 0);
+
+        CF_CHECK_NE(x_str = x.ToString(), std::nullopt);
+        CF_CHECK_NE(y_str = y.ToString(), std::nullopt);
+
+        ret = { *x_str, *y_str };
+end:
+        return ret;
+    }
+
+
     std::optional<component::ECC_PublicKey> ECC_PrivateToPublic(
             Datasource& ds,
             const component::CurveType curveType,
@@ -1228,13 +1299,6 @@ std::optional<bool> libgcrypt::OpECC_ValidatePubkey(operation::ECC_ValidatePubke
     gcry_ctx_t ctx = nullptr;
     gcry_mpi_point_t A = nullptr;
 
-    libgcrypt_bignum::Bignum a_x;
-    libgcrypt_bignum::Bignum a_y;
-    libgcrypt_bignum::Bignum a_z;
-    CF_CHECK_EQ(a_x.Set(op.pub.first.ToString(ds)), true);
-    CF_CHECK_EQ(a_y.Set(op.pub.second.ToString(ds)), true);
-    CF_CHECK_EQ(a_z.Set("1"), true);
-
     /* Initialize */
     {
         CF_CHECK_NE(curveStr = libgcrypt_detail::toCurveString(op.curveType), std::nullopt);
@@ -1243,8 +1307,7 @@ std::optional<bool> libgcrypt::OpECC_ValidatePubkey(operation::ECC_ValidatePubke
 
     /* Process */
     {
-        CF_CHECK_NE(A = gcry_mpi_point_new(0), nullptr);
-        gcry_mpi_point_set(A, a_x.GetPtr(), a_y.GetPtr(), a_z.GetPtr());
+        CF_CHECK_NE(A = libgcrypt_detail::SetPoint(ds, ctx, op.pub, op.curveType, false), nullptr);
     }
 
     /* Finalize */
@@ -1266,21 +1329,10 @@ std::optional<component::ECC_Point> libgcrypt::OpECC_Point_Mul(operation::ECC_Po
     std::optional<std::string> curveStr = std::nullopt;
 
     gcry_ctx_t ctx = nullptr;
-    gcry_mpi_point_t res = nullptr;
-    gcry_mpi_point_t A = nullptr;
+    gcry_mpi_point_t res = nullptr, A = nullptr;
 
-    libgcrypt_bignum::Bignum a_x;
-    libgcrypt_bignum::Bignum a_y;
-    libgcrypt_bignum::Bignum a_z;
     libgcrypt_bignum::Bignum b;
-    libgcrypt_bignum::Bignum x;
-    libgcrypt_bignum::Bignum y;
-    CF_CHECK_EQ(a_x.Set(op.a.first.ToString(ds)), true);
-    CF_CHECK_EQ(a_y.Set(op.a.second.ToString(ds)), true);
-    CF_CHECK_EQ(a_z.Set("1"), true);
     CF_CHECK_EQ(b.Set(op.b.ToString(ds)), true);
-    CF_CHECK_EQ(x.Set("0"), true);
-    CF_CHECK_EQ(y.Set("0"), true);
 
     /* Initialize */
     {
@@ -1290,9 +1342,7 @@ std::optional<component::ECC_Point> libgcrypt::OpECC_Point_Mul(operation::ECC_Po
 
     /* Process */
     {
-        CF_CHECK_NE(A = gcry_mpi_point_new(0), nullptr);
-        gcry_mpi_point_set(A, a_x.GetPtr(), a_y.GetPtr(), a_z.GetPtr());
-        CF_CHECK_EQ(gcry_mpi_ec_curve_point(A, ctx), 1);
+        CF_CHECK_NE(A = libgcrypt_detail::SetPoint(ds, ctx, op.a, op.curveType), nullptr);
 
         CF_CHECK_NE(res = gcry_mpi_point_new(0), nullptr);
         /* noret */ gcry_mpi_ec_mul(res, b.GetPtr(), A, ctx);
@@ -1300,21 +1350,13 @@ std::optional<component::ECC_Point> libgcrypt::OpECC_Point_Mul(operation::ECC_Po
 
     /* Finalize */
     {
-        CF_CHECK_EQ(gcry_mpi_ec_get_affine(x.GetPtr(), y.GetPtr(), res, ctx), 0);
-
-        std::optional<std::string> x_str;
-        std::optional<std::string> y_str;
-
-        CF_CHECK_NE(x_str = x.ToString(), std::nullopt);
-        CF_CHECK_NE(y_str = y.ToString(), std::nullopt);
-
-        ret = { *x_str, *y_str };
+        ret = libgcrypt_detail::GetPoint(ctx, res);
     }
 
 end:
     gcry_ctx_release(ctx);
-    gcry_mpi_point_release(res);
-    gcry_mpi_point_release(A);
+    libgcrypt_detail::FreePoint(res);
+    libgcrypt_detail::FreePoint(A);
 
     return ret;
 }
@@ -1326,26 +1368,7 @@ std::optional<component::ECC_Point> libgcrypt::OpECC_Point_Add(operation::ECC_Po
     std::optional<std::string> curveStr = std::nullopt;
 
     gcry_ctx_t ctx = nullptr;
-    gcry_mpi_point_t res = nullptr;
-    gcry_mpi_point_t A = nullptr;
-    gcry_mpi_point_t B = nullptr;
-
-    libgcrypt_bignum::Bignum a_x;
-    libgcrypt_bignum::Bignum a_y;
-    libgcrypt_bignum::Bignum a_z;
-    libgcrypt_bignum::Bignum b_x;
-    libgcrypt_bignum::Bignum b_y;
-    libgcrypt_bignum::Bignum b_z;
-    libgcrypt_bignum::Bignum x;
-    libgcrypt_bignum::Bignum y;
-    CF_CHECK_EQ(a_x.Set(op.a.first.ToString(ds)), true);
-    CF_CHECK_EQ(a_y.Set(op.a.second.ToString(ds)), true);
-    CF_CHECK_EQ(a_z.Set("1"), true);
-    CF_CHECK_EQ(b_x.Set(op.b.first.ToString(ds)), true);
-    CF_CHECK_EQ(b_y.Set(op.b.second.ToString(ds)), true);
-    CF_CHECK_EQ(b_z.Set("1"), true);
-    CF_CHECK_EQ(x.Set("0"), true);
-    CF_CHECK_EQ(y.Set("0"), true);
+    gcry_mpi_point_t res = nullptr, A = nullptr, B = nullptr;
 
     /* Initialize */
     {
@@ -1355,36 +1378,24 @@ std::optional<component::ECC_Point> libgcrypt::OpECC_Point_Add(operation::ECC_Po
 
     /* Process */
     {
-        CF_CHECK_NE(A = gcry_mpi_point_new(0), nullptr);
-        gcry_mpi_point_set(A, a_x.GetPtr(), a_y.GetPtr(), a_z.GetPtr());
-        CF_CHECK_EQ(gcry_mpi_ec_curve_point(A, ctx), 1);
-
-        CF_CHECK_NE(B = gcry_mpi_point_new(0), nullptr);
-        gcry_mpi_point_set(B, b_x.GetPtr(), b_y.GetPtr(), b_z.GetPtr());
-        CF_CHECK_EQ(gcry_mpi_ec_curve_point(B, ctx), 1);
+        CF_CHECK_NE(A = libgcrypt_detail::SetPoint(ds, ctx, op.a, op.curveType), nullptr);
+        CF_CHECK_NE(B = libgcrypt_detail::SetPoint(ds, ctx, op.b, op.curveType), nullptr);
 
         CF_CHECK_NE(res = gcry_mpi_point_new(0), nullptr);
+
         /* noret */ gcry_mpi_ec_add(res, A, B, ctx);
     }
 
     /* Finalize */
     {
-        CF_CHECK_EQ(gcry_mpi_ec_get_affine(x.GetPtr(), y.GetPtr(), res, ctx), 0);
-
-        std::optional<std::string> x_str;
-        std::optional<std::string> y_str;
-
-        CF_CHECK_NE(x_str = x.ToString(), std::nullopt);
-        CF_CHECK_NE(y_str = y.ToString(), std::nullopt);
-
-        ret = { *x_str, *y_str };
+        ret = libgcrypt_detail::GetPoint(ctx, res);
     }
 
 end:
     gcry_ctx_release(ctx);
-    gcry_mpi_point_release(res);
-    gcry_mpi_point_release(A);
-    gcry_mpi_point_release(B);
+    libgcrypt_detail::FreePoint(res);
+    libgcrypt_detail::FreePoint(A);
+    libgcrypt_detail::FreePoint(B);
 
     return ret;
 }
