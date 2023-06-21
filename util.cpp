@@ -1000,12 +1000,14 @@ std::array<std::string, 3> ToRandomProjective(
         const std::string& x,
         const std::string& y,
         const uint64_t curveType,
-        const bool jacobian) {
+        const bool jacobian,
+        const bool inRange) {
     using namespace boost::multiprecision;
     const auto p = cryptofuzz::repository::ECC_CurveToPrime(curveType);
     if ( p == std::nullopt ) {
         return {x, y, "1"};
     }
+
     std::vector<uint8_t> data;
     try {
         data = ds.GetData(0, 0, 1024 / 8);
@@ -1014,14 +1016,34 @@ std::array<std::string, 3> ToRandomProjective(
     if ( data.empty() ) {
         return {x, y, "1"};
     }
+
+    cpp_int X(x), Y(y);
+    const cpp_int P(*p);
+
+    if ( inRange == true ) {
+        /* Ensure coordinates are within bounds.
+         *
+         * This is to prevent that an affine ECC_Point with oversized coordinates
+         * will be regarded as invalid by a library, but then the projective
+         * coordinates (which are always within bounds, because they are reduced
+         * MOD P below), are regarded as valid.
+         *
+         * This can create discrepancies in operations such as ECC_ValidatePubKey.
+         */
+        if ( X < 0 || X >= P ) {
+            return {x, y, "1"};
+        }
+        if ( Y < 0 || Y >= P ) {
+            return {x, y, "1"};
+        }
+    }
+
     cpp_int Z;
     boost::multiprecision::import_bits(Z, data.data(), data.data() + data.size());
-    const cpp_int P(*p);
     Z %= P;
     if ( Z == 0 ) {
         return {x, y, "1"};
     }
-    cpp_int X(x), Y(y);
     if ( jacobian == true ) {
         X = (X * (Z * Z)) % P;
         Y = (Y * (Z * Z * Z)) % P;

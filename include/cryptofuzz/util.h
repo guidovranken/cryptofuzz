@@ -116,7 +116,7 @@ std::vector<uint8_t> RemoveLeadingZeroes(std::vector<uint8_t> v);
 std::vector<uint8_t> AddLeadingZeroes(fuzzing::datasource::Datasource& ds, const std::vector<uint8_t>& v);
 void AdjustECDSASignature(const uint64_t curveType, component::Bignum& s);
 std::string Find_ECC_Y(const std::string& x, const std::string& a, const std::string& b, const std::string& p, const std::string& o, const bool addOrder);
-std::array<std::string, 3> ToRandomProjective(fuzzing::datasource::Datasource& ds, const std::string& x, const std::string& y, const uint64_t curveType, const bool jacobian = true);
+std::array<std::string, 3> ToRandomProjective(fuzzing::datasource::Datasource& ds, const std::string& x, const std::string& y, const uint64_t curveType, const bool jacobian = true, const bool inRange = false);
 void MemorySanitizerUnpoison(const void* data, const size_t size);
 
 } /* namespace util */
