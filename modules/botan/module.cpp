@@ -1871,6 +1871,9 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
         case    CF_CALCOP("Prime()"):
             opRunner = std::make_unique<Botan_bignum::Prime>();
             break;
+        case    CF_CALCOP("RandRange(A,B)"):
+            opRunner = std::make_unique<Botan_bignum::RandRange>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

@@ -483,6 +483,11 @@ class CondSub : public Operation {
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;
 };
 
+class RandRange : public Operation {
+    public:
+        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;
+};
+
 } /* namespace libgmp_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

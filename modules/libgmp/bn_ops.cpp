@@ -1340,6 +1340,22 @@ bool CondSub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     return true;
 }
 
+bool RandRange::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+    (void)ds;
+
+    bool ret = false;
+
+    CF_CHECK_EQ(mpz_sgn(bn[0].GetPtr()), 0);
+    CF_CHECK_NE(mpz_sgn(bn[1].GetPtr()), 0);
+
+    /* noret */ mpz_urandomm(res.GetPtr(), libgmp_detail::rng_state, bn[1].GetPtr());
+
+    ret = true;
+
+end:
+    return ret;
+}
+
 } /* namespace libgmp_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

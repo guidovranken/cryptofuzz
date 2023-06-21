@@ -4625,6 +4625,9 @@ std::optional<component::Bignum> OpenSSL::OpBignumCalc(operation::BignumCalc& op
             case    CF_CALCOP("Neg(A)"):
                 opRunner = std::make_unique<OpenSSL_bignum::Neg>();
                 break;
+            case    CF_CALCOP("RandRange(A,B)"):
+                opRunner = std::make_unique<OpenSSL_bignum::RandRange>();
+                break;
         }
 
         CF_CHECK_NE(opRunner, nullptr);

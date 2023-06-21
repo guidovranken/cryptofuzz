@@ -1116,6 +1116,23 @@ bool Prime::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std:
     return true;
 }
 
+bool RandRange::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    /* Pending fix for https://github.com/randombit/botan/issues/3590 */
+    return false;
+
+    (void)ds;
+    (void)modulo;
+
+    try {
+        ::Botan::System_RNG rng;
+        res = ::Botan::BigInt::random_integer(rng, bn[0].Ref(), bn[1].Ref());
+    } catch ( ::Botan::Invalid_Argument ) {
+        return false;
+    }
+
+    return true;
+}
+
 } /* namespace Botan_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

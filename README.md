@@ -192,3 +192,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Golang: [crypto/ecdsa: P521 ecdsa.Verify panics with malformed message](https://github.com/golang/go/issues/60741)
 - Golang: [crypto/elliptic: P256 ScalarBaseMult with order-34 yields point at infinity](https://github.com/golang/go/issues/60717)
 - Zig: [Elliptic curve point addition incorrect result](https://github.com/ziglang/zig/issues/16015)
+- Botan: [BigInt::random_integer hangs](https://github.com/randombit/botan/issues/3590)

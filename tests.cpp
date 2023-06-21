@@ -1219,6 +1219,9 @@ void test(const operation::BignumCalc& op, const std::optional<component::Bignum
                 BignumCalc::AssertOdd(*result, repository::CalcOpToString(calcOp));
             }
             break;
+        case    CF_CALCOP("RandRange(A,B)"):
+            AssertNotLargerThan(*result, op.bn1, repository::CalcOpToString(calcOp));
+            break;
     }
 }
 

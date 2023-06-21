@@ -235,6 +235,9 @@ std::optional<component::Bignum> libgmp::OpBignumCalc(operation::BignumCalc& op)
         case    CF_CALCOP("CondSub(A,B,C)"):
             opRunner = std::make_unique<libgmp_bignum::CondSub>();
             break;
+        case    CF_CALCOP("RandRange(A,B)"):
+            opRunner = std::make_unique<libgmp_bignum::RandRange>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);

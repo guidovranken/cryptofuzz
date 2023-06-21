@@ -1530,6 +1530,21 @@ end:
     return ret;
 }
 
+bool RandRange::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const {
+    (void)ds;
+    (void)ctx;
+
+    bool ret = false;
+
+    CF_CHECK_EQ(BN_is_zero(bn[0].GetPtr()), 1);
+    CF_CHECK_EQ(BN_rand_range(bn.GetResPtr(), bn[1].GetPtr()), 1);
+    CF_NORET(bn.CopyResult(res));
+
+    ret = true;
+end:
+    return ret;
+}
+
 } /* namespace OpenSSL_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

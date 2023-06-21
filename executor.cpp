@@ -2360,6 +2360,7 @@ bool ExecutorBase<component::Bignum, operation::BignumCalc>::dontCompare(const o
     if ( operation.calcOp.Get() == CF_CALCOP("Rand()") ) { return true; }
     if ( operation.calcOp.Get() == CF_CALCOP("RandMod(A)") ) { return true; }
     if ( operation.calcOp.Get() == CF_CALCOP("Prime()") ) { return true; }
+    if ( operation.calcOp.Get() == CF_CALCOP("RandRange(A,B)") ) { return true; }
 
     return false;
 }
