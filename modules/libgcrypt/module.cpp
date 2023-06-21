@@ -1013,14 +1013,14 @@ namespace libgcrypt_detail {
             projective = ds.Get<bool>();
         } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
 
-        projective = true;
-
         if ( projective == true ) {
             const auto proj = util::ToRandomProjective(
                     ds,
                     point.first.ToTrimmedString(),
                     point.second.ToTrimmedString(),
-                    curveType.Get());
+                    curveType.Get(),
+                    true,
+                    true);
             CF_CHECK_EQ(x.Set(proj[0]), true);
             CF_CHECK_EQ(y.Set(proj[1]), true);
             CF_CHECK_EQ(z.Set(proj[2]), true);
