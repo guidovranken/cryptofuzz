@@ -1341,6 +1341,7 @@ bool CondSub::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 }
 
 bool RandRange::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
+#if !defined(HAVE_MINI_GMP)
     (void)ds;
 
     bool ret = false;
@@ -1354,6 +1355,13 @@ bool RandRange::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
 end:
     return ret;
+#else
+    (void)ds;
+    (void)res;
+    (void)bn;
+
+    return false;
+#endif
 }
 
 } /* namespace libgmp_bignum */
