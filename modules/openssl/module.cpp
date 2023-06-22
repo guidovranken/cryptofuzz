@@ -189,6 +189,12 @@ const EVP_MD* OpenSSL::toEVPMD(const component::DigestType& digestType) const {
         { CF_DIGEST("GOST-28147-89"), EVP_gost2814789imit() },
         { CF_DIGEST("STREEBOG-256"), EVP_streebog256() },
         { CF_DIGEST("STREEBOG-512"), EVP_streebog512() },
+        { CF_DIGEST("SHA3-224"), EVP_sha3_224() },
+        { CF_DIGEST("SHA3-256"), EVP_sha3_256() },
+        { CF_DIGEST("SHA3-384"), EVP_sha3_384() },
+        { CF_DIGEST("SHA3-512"), EVP_sha3_512() },
+        { CF_DIGEST("SHA512-224"), EVP_sha512_224() },
+        { CF_DIGEST("SHA512-256"), EVP_sha512_256() },
 #elif defined(CRYPTOFUZZ_OPENSSL_102)
         { CF_DIGEST("SHA1"), EVP_sha1() },
         { CF_DIGEST("SHA224"), EVP_sha224() },
