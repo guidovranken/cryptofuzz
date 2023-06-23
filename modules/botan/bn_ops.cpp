@@ -1117,9 +1117,6 @@ bool Prime::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std:
 }
 
 bool RandRange::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
-    /* Pending fix for https://github.com/randombit/botan/issues/3590 */
-    return false;
-
     (void)ds;
     (void)modulo;
 
