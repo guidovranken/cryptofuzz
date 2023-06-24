@@ -1647,7 +1647,7 @@ std::optional<bool> Botan::OpDSA_Verify(operation::DSA_Verify& op) {
         const auto s = ::Botan::BigInt(op.signature.second.ToString(ds));
 
         const auto sig = ::Botan::BigInt::encode_fixed_length_int_pair(
-                r, s, std::max(r.bytes(), s.bytes()));
+                r, s, q.bytes());
         auto verifier = ::Botan::PK_Verifier(*pub, "Raw");
         verifier.update(op.cleartext.Get());
         ret = verifier.check_signature(sig);
