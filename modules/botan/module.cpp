@@ -1638,6 +1638,12 @@ std::optional<bool> Botan::OpDSA_Verify(operation::DSA_Verify& op) {
         const auto p = ::Botan::BigInt(op.parameters.p.ToString(ds));
         const auto q = ::Botan::BigInt(op.parameters.q.ToString(ds));
         const auto g = ::Botan::BigInt(op.parameters.g.ToString(ds));
+
+        /* Botan can verify signatures with g = 0.
+         * Avoid discrepancies with OpenSSL
+         */
+        CF_CHECK_NE(g, 0);
+
         const ::Botan::DL_Group group(p, q, g);
 
         const auto y = ::Botan::BigInt(op.pub.ToString(ds));
@@ -1654,6 +1660,7 @@ std::optional<bool> Botan::OpDSA_Verify(operation::DSA_Verify& op) {
     } catch ( ... ) {
     }
 
+end:
     return ret;
 }
 
