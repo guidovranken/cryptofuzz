@@ -776,9 +776,9 @@ export fn cryptofuzz_zig_scrypt(
             password_data[0..password_size],
             salt_data[0..salt_size],
             scrypt.Params{
-                .ln = @intCast(u6, n),
-                .r = @intCast(u30, r),
-                .p = @intCast(u30, p)},
+                .ln = @intCast(n),
+                .r = @intCast(r),
+                .p = @intCast(p)},
     ) catch {
         return -1;
     };
