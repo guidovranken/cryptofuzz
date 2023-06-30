@@ -1,0 +1,9 @@
+all : cryptofuzz
+
+CXXFLAGS += -Wall -Wextra -std=c++17 -I include/ -I . -I fuzzing-headers/include -DFUZZING_HEADERS_NO_IMPL
+
+libfuzzer_emulator.o : libfuzzer_emulator.cpp
+	$(CXX) $(CXXFLAGS) -c libfuzzer_emulator.cpp -o libfuzzer_emulator.o
+cryptofuzz : libfuzzer_emulator.o Makefile
+	rm -f cryptofuzz
+	LIBFUZZER_LINK="libfuzzer_emulator.o" make -f Makefile

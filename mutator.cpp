@@ -440,7 +440,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
             /* ignore result */ ds.Get<uint64_t>();
             /* ignore result */ ds.GetData(0, 1);
             modifier = ds.GetData(0);
-        } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+        } catch ( fuzzing::datasource::Datasource::OutOfData& ) { }
     }
 
     {
@@ -1479,6 +1479,7 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     cryptofuzz::operation::ECDSA_Recover op(parameters);
                     op.Serialize(dsOut2);
                 }
+                break;
             case    CF_OPERATION("ECC_GenerateKeyPair"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 128);

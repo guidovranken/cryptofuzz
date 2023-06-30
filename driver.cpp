@@ -451,7 +451,7 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 executorSR25519_Verify.Run(ds, payload.data(), payload.size());
                 break;
         }
-    } catch ( Datasource::OutOfData ) {
+    } catch ( Datasource::OutOfData& ) {
     }
 };
 

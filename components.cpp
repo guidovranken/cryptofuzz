@@ -189,7 +189,7 @@ Buffer Buffer::ECDSA_RandomPad(Datasource& ds, const Type& curveType) const {
     uint16_t numInserts = 0;
     try {
         numInserts = ds.Get<uint16_t>();
-    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+    } catch ( fuzzing::datasource::Datasource::OutOfData& ) { }
 
     std::vector<uint8_t> ret;
 
@@ -211,7 +211,7 @@ Buffer Buffer::ECDSA_RandomPad(Datasource& ds, const Type& curveType) const {
         std::vector<uint8_t> toInsert;
         try {
             toInsert = ds.GetData(0, numInserts, numInserts);
-        } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+        } catch ( fuzzing::datasource::Datasource::OutOfData& ) {
             toInsert = std::vector<uint8_t>(numInserts, 0);
         }
         ret.insert(std::end(ret), std::begin(toInsert), std::end(toInsert));
@@ -364,7 +364,7 @@ std::string Bignum::ToString(Datasource& ds) const {
         while ( ds.Get<bool>() == true ) {
             zeros += "0";
         }
-    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+    } catch ( fuzzing::datasource::Datasource::OutOfData& ) { }
 
     auto s = ToTrimmedString();
     const bool isNegative = IsNegative();

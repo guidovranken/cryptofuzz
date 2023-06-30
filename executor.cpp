@@ -927,6 +927,7 @@ template<> void ExecutorBase<component::Bignum, operation::DSA_PrivateToPublic>:
 template<> void ExecutorBase<component::Bignum, operation::DSA_PrivateToPublic>::postprocess(std::shared_ptr<Module> module, operation::DSA_PrivateToPublic& op, const ExecutorBase<component::Bignum, operation::DSA_PrivateToPublic>::ResultPair& result) const {
     (void)result;
     (void)module;
+    (void)op;
     if ( result.second != std::nullopt ) {
         //Pool_DSA_PubPriv.Set({pub, priv});
     }
@@ -957,6 +958,7 @@ template<> void ExecutorBase<component::DSA_KeyPair, operation::DSA_GenerateKeyP
 template<> void ExecutorBase<component::DSA_KeyPair, operation::DSA_GenerateKeyPair>::postprocess(std::shared_ptr<Module> module, operation::DSA_GenerateKeyPair& op, const ExecutorBase<component::DSA_KeyPair, operation::DSA_GenerateKeyPair>::ResultPair& result) const {
     (void)result;
     (void)module;
+    (void)op;
     if ( result.second != std::nullopt && (PRNG() % 4) == 0 ) {
         const auto priv = result.second->first.ToTrimmedString();
         const auto pub = result.second->second.ToTrimmedString();
@@ -1002,6 +1004,7 @@ template<> void ExecutorBase<component::DSA_Parameters, operation::DSA_GenerateP
 template<> void ExecutorBase<component::DSA_Parameters, operation::DSA_GenerateParameters>::postprocess(std::shared_ptr<Module> module, operation::DSA_GenerateParameters& op, const ExecutorBase<component::DSA_Parameters, operation::DSA_GenerateParameters>::ResultPair& result) const {
     (void)result;
     (void)module;
+    (void)op;
     if ( result.second != std::nullopt && (PRNG() % 4) == 0 ) {
         const auto P = result.second->p.ToTrimmedString();
         const auto Q = result.second->q.ToTrimmedString();
@@ -1179,6 +1182,7 @@ template<> std::optional<component::ECC_Point> ExecutorBase<component::ECC_Point
 template<> void ExecutorBase<bool, operation::ECC_Point_Cmp>::postprocess(std::shared_ptr<Module> module, operation::ECC_Point_Cmp& op, const ExecutorBase<bool, operation::ECC_Point_Cmp>::ResultPair& result) const {
     (void)module;
     (void)result;
+    (void)op;
 }
 
 template<> std::optional<bool> ExecutorBase<bool, operation::ECC_Point_Cmp>::callModule(std::shared_ptr<Module> module, operation::ECC_Point_Cmp& op) const {
@@ -1842,6 +1846,7 @@ template<> std::optional<component::G1> ExecutorBase<component::G1, operation::B
 /* Specialization for operation::BLS_Compress_G1 */
 template<> void ExecutorBase<component::Bignum, operation::BLS_Compress_G1>::postprocess(std::shared_ptr<Module> module, operation::BLS_Compress_G1& op, const ExecutorBase<component::Bignum, operation::BLS_Compress_G1>::ResultPair& result) const {
     (void)module;
+    (void)op;
 
     if ( result.second != std::nullopt  ) {
         const auto compressed = result.second->ToTrimmedString();
@@ -2367,6 +2372,7 @@ bool ExecutorBase<component::Bignum, operation::BignumCalc>::dontCompare(const o
 
 template <>
 bool ExecutorBase<component::ECCSI_Signature, operation::ECCSI_Sign>::dontCompare(const operation::ECCSI_Sign& operation) const {
+    (void)operation;
     return true;
 }
 
@@ -2505,7 +2511,7 @@ void ExecutorBase<ResultType, OperationType>::abort(std::vector<std::string> mod
 template <class ResultType, class OperationType>
 OperationType ExecutorBase<ResultType, OperationType>::getOpPostprocess(Datasource* parentDs, OperationType op) const {
     (void)parentDs;
-    return std::move(op);
+    return op;
 }
 
 operation::BignumCalc ExecutorBignumCalc_Mod_BLS12_381_R::getOpPostprocess(Datasource* parentDs, operation::BignumCalc op) const {

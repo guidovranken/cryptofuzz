@@ -2,16 +2,33 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <climits>
 
 namespace cryptofuzz {
 namespace crypto {
 namespace impl {
 
+#if defined(__clang__)
+#define rotate_right_32 __builtin_rotateright32
+#define rotate_left_32 __builtin_rotateleft32
+#else
+static uint32_t rotate_right_32(uint32_t value, unsigned int count) {
+    const unsigned int mask = (CHAR_BIT * sizeof(value)) - 1;
+    count &= mask;
+    return (value >> count) | (value << ((-count) & mask));
+}
+static uint32_t rotate_left_32(uint32_t value, unsigned int count) {
+    const unsigned int mask = (CHAR_BIT * sizeof(value)) - 1;
+    count &= mask;
+    return (value << count) | (value >> ((-count) & mask));
+}
+#endif
+
 /* LibTomCrypt, modular cryptographic library -- Tom St Denis */
 /* SPDX-License-Identifier: Unlicense */
 
-#define ROR(x,n) __builtin_rotateright32(x,n)
-#define ROL(x,n) __builtin_rotateleft32(x,n)
+#define ROR(x,n) rotate_right_32(x,n)
+#define ROL(x,n) rotate_left_32(x,n)
 #define ROLc(x,n) ROL(x,n)
 #define RORc(x,n) ROR(x,n)
 

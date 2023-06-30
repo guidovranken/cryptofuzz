@@ -277,7 +277,7 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
                 try {
                     const auto data = ds.GetData(0, 128, 128);
                     CF_NORET(util::HintBignum(util::BinToDec(data)));
-                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+                } catch ( fuzzing::datasource::Datasource::OutOfData& ) { }
             }
 
             {
@@ -286,7 +286,7 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
                 try {
                     const auto data = ds.GetData(0, 64, 64);
                     CF_NORET(util::HintBignum(util::BinToDec(data)));
-                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+                } catch ( fuzzing::datasource::Datasource::OutOfData& ) { }
             }
 
             {
@@ -359,7 +359,7 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
 
                     try {
                         which = ds.Get<uint8_t>() % 4;
-                    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+                    } catch ( fuzzing::datasource::Datasource::OutOfData& ) { }
 
                     int factor_size = 0;
 

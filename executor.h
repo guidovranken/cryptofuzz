@@ -33,7 +33,11 @@ class ExecutorBase {
         /* To be implemented by specializations of ExecutorBase */
         void updateExtraCounters(const uint64_t moduleID, OperationType& op) const;
         void postprocess(std::shared_ptr<Module> module, OperationType& op, const ResultPair& result) const;
-        virtual std::optional<ResultType> callModule(std::shared_ptr<Module> module, OperationType& op) const { ::abort(); }
+        virtual std::optional<ResultType> callModule(std::shared_ptr<Module> module, OperationType& op) const {
+            (void)module;
+            (void)op;
+            ::abort();
+        }
 
         void abort(std::vector<std::string> moduleNames, const std::string operation, const std::string algorithm, const std::string reason) const;
     public:

@@ -58,7 +58,7 @@ static int cryptofuzz_openssl_rand_bytes(unsigned char *buf, int num)
         if ( global_ds->Get<bool>() == false ) {
             return cryptofuzz_openssl_default_rand_bytes(buf, num);
         }
-    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    } catch ( fuzzing::datasource::Datasource::OutOfData& ) {
         return cryptofuzz_openssl_default_rand_bytes(buf, num);
     }
 
@@ -66,7 +66,7 @@ static int cryptofuzz_openssl_rand_bytes(unsigned char *buf, int num)
         const auto data = global_ds->GetData(0, num, num);
         memcpy(buf, data.data(), num);
         return 1;
-    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    } catch ( fuzzing::datasource::Datasource::OutOfData& ) {
         return 0;
     }
 }
@@ -1588,7 +1588,7 @@ std::optional<component::MAC> OpenSSL::OpHMAC(operation::HMAC& op) {
     bool useEVP = true;
     try {
         useEVP = ds.Get<bool>();
-    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    } catch ( fuzzing::datasource::Datasource::OutOfData& ) {
     }
 
     if ( useEVP == true ) {
@@ -2014,7 +2014,7 @@ std::optional<component::Ciphertext> OpenSSL::AES_Encrypt(operation::SymmetricEn
                 cleartextIndex = ds.Get<uint64_t>() % op.cleartext.GetSize();
                 useOverlap = true;
             }
-        } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+        } catch ( fuzzing::datasource::Datasource::OutOfData& ) {
         }
 
         if ( useOverlap == true ) {
@@ -2079,7 +2079,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt(operation::Symm
     bool useEVP = true;
     try {
         useEVP = ds.Get<bool>();
-    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    } catch ( fuzzing::datasource::Datasource::OutOfData& ) {
     }
 
 #if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
@@ -2091,7 +2091,7 @@ std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt(operation::Symm
 
             /* Fall through to OpSymmetricEncrypt_EVP/OpSymmetricEncrypt_BIO */
 
-        } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+        } catch ( fuzzing::datasource::Datasource::OutOfData& ) { }
     }
 #endif
 
@@ -2430,7 +2430,7 @@ std::optional<component::Cleartext> OpenSSL::AES_Decrypt(operation::SymmetricDec
                 ciphertextIndex = ds.Get<uint64_t>() % op.ciphertext.GetSize();
                 useOverlap = true;
             }
-        } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+        } catch ( fuzzing::datasource::Datasource::OutOfData& ) {
         }
 
         if ( useOverlap == true ) {
@@ -2489,7 +2489,7 @@ std::optional<component::Cleartext> OpenSSL::OpSymmetricDecrypt(operation::Symme
     bool useEVP = true;
     try {
         useEVP = ds.Get<bool>();
-    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    } catch ( fuzzing::datasource::Datasource::OutOfData& ) {
     }
 
 #if defined(CRYPTOFUZZ_BORINGSSL) || defined(CRYPTOFUZZ_LIBRESSL)
@@ -2619,7 +2619,7 @@ std::optional<component::Key> OpenSSL::OpKDF_SCRYPT(operation::KDF_SCRYPT& op) {
     size_t maxMem = 0;
     try {
         maxMem = ds.Get<uint64_t>() % (64*1024*1024);
-    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    } catch ( fuzzing::datasource::Datasource::OutOfData& ) {
     }
 
     CF_CHECK_EQ(EVP_PBE_scrypt(
@@ -2646,7 +2646,7 @@ end:
     bool useEVP_PKEY = true;
     try {
         useEVP_PKEY = ds.Get<bool>();
-    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    } catch ( fuzzing::datasource::Datasource::OutOfData& ) {
     }
 
     if ( useEVP_PKEY == true ) {
@@ -4253,7 +4253,7 @@ std::optional<component::ECC_Point> OpenSSL::OpECC_Point_Mul(operation::ECC_Poin
         bool precompute = false;
         try {
             precompute = ds.Get<bool>();
-        } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+        } catch ( fuzzing::datasource::Datasource::OutOfData& ) {
         }
 
         if ( precompute == true ) {

@@ -320,7 +320,7 @@ end:
             char* str = nullptr;
 
             bool hex = true;
-            try { hex = ds.Get<bool>(); } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            try { hex = ds.Get<bool>(); } catch ( fuzzing::datasource::Datasource::OutOfData& ) { }
 
             if ( hex == true ) {
                 CF_CHECK_NE(str = BN_bn2hex(GetPtr()), nullptr);
@@ -352,7 +352,7 @@ end:
             std::vector<uint8_t> data;
             try {
                 data = ds.GetData(0, 1, 1024);
-            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            } catch ( fuzzing::datasource::Datasource::OutOfData& ) { }
 
             if ( !data.empty() ) {
                 /* ignore return value */ BN_bin2bn(data.data(), data.size(), bn);
@@ -397,7 +397,7 @@ class BignumCluster {
 
                     /* Fall through */
                 }
-            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            } catch ( fuzzing::datasource::Datasource::OutOfData& ) { }
 
             return bn[index];
         }
@@ -430,7 +430,7 @@ class BignumCluster {
             res_index = 0;
 
             try { res_index = ds.Get<uint8_t>() % 4; }
-            catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            catch ( fuzzing::datasource::Datasource::OutOfData& ) { }
 
             bn[*res_index].Lock();
             return bn[*res_index].GetDestPtr(false);

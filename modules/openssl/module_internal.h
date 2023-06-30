@@ -20,7 +20,7 @@ class CTX_Copier {
             bool doCopyCTX = true;
             try {
                 doCopyCTX = ds.Get<bool>();
-            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            } catch ( fuzzing::datasource::Datasource::OutOfData& ) { }
 
             if ( doCopyCTX == true ) {
                 T* tmpCtx = newCTX();
@@ -81,7 +81,7 @@ class EC_GROUP_Copier {
             bool doCopyGroup = true;
             try {
                 doCopyGroup = ds.Get<bool>();
-            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            } catch ( fuzzing::datasource::Datasource::OutOfData& ) { }
 
             if ( doCopyGroup == true ) {
 #if !defined(CRYPTOFUZZ_BORINGSSL)
@@ -150,7 +150,7 @@ class EC_POINT_Copier {
             uint8_t form = 0;
             try {
                 form = ds.Get<uint8_t>() % 3;
-            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            } catch ( fuzzing::datasource::Datasource::OutOfData& ) { }
 
             if ( form == 0 ) {
                 return POINT_CONVERSION_COMPRESSED;
@@ -169,7 +169,7 @@ class EC_POINT_Copier {
                 bool doCopyPoint = true;
                 try {
                     doCopyPoint = ds.Get<bool>();
-                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+                } catch ( fuzzing::datasource::Datasource::OutOfData& ) { }
 
                 if ( doCopyPoint == true ) {
                     EC_POINT* tmpPoint = newPoint();
@@ -204,7 +204,7 @@ class EC_POINT_Copier {
             if ( allowProjective == true ) {
                 try {
                     projective = ds.Get<bool>();
-                } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+                } catch ( fuzzing::datasource::Datasource::OutOfData& ) { }
             }
 
             if ( projective ) {
@@ -366,7 +366,7 @@ end:
             bool compressed = false;
             try {
                 compressed = ds.Get<bool>();
-            } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+            } catch ( fuzzing::datasource::Datasource::OutOfData& ) { }
 
             if ( allowCompressed == false ) {
                 compressed = false;

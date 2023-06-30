@@ -58,7 +58,7 @@ const uint8_t* ToInPlace(fuzzing::datasource::Datasource& ds, uint8_t* out, cons
     if ( outSize >= inSize ) {
         try {
             inPlace = ds.Get<bool>();
-        } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+        } catch ( fuzzing::datasource::Datasource::OutOfData& ) {
         }
     }
 
@@ -77,7 +77,7 @@ static std::vector<size_t> Split(fuzzing::datasource::Datasource& ds, size_t N) 
             ret.push_back( ds.Get<uint64_t>() % N );
             N -= ret.back();
         }
-    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    } catch ( fuzzing::datasource::Datasource::OutOfData& ) {
     }
 
     ret.push_back(N);
@@ -560,7 +560,7 @@ uint8_t* GetNullPtr(fuzzing::datasource::Datasource* ds) {
     if ( ds != nullptr ) {
         try {
             return ds->Get<uint8_t*>();
-        } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+        } catch ( fuzzing::datasource::Datasource::OutOfData& ) {
             return (uint8_t*)0x12;
         }
     }
@@ -929,7 +929,7 @@ std::vector<uint8_t> AddLeadingZeroes(fuzzing::datasource::Datasource& ds, const
     try {
         numZeroes = ds.Get<uint8_t>();
         numZeroes %= 64;
-    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    } catch ( fuzzing::datasource::Datasource::OutOfData& ) {
     }
     const std::vector<uint8_t> zeroes(numZeroes, 0);
 
@@ -1011,7 +1011,7 @@ std::array<std::string, 3> ToRandomProjective(
     std::vector<uint8_t> data;
     try {
         data = ds.GetData(0, 0, 1024 / 8);
-    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    } catch ( fuzzing::datasource::Datasource::OutOfData& ) {
     }
     if ( data.empty() ) {
         return {x, y, "1"};
