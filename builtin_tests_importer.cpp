@@ -765,6 +765,36 @@ void Builtin_tests_importer::Run(void) {
         write(CF_OPERATION("ECC_Point_Neg"), dsOut2);
     }
 
+    {
+        /* Constantine reduction bug
+         * See: https://github.com/mratsim/constantine/pull/246
+         *
+         * The value 99991354... is not correctly reduced.
+         * It should be reduced to:
+         *
+         * 12438382621792666829867546060348789607499334696836705804942116422219107371996
+         *
+         * but instead it's reduced to:
+         *
+         * 15799706753741153944312733465658775401912183027931573190983152910194379930064
+         *
+         * (12438382..., 19477683...) is a point on the curve, hence the BLS_IsG1OnCurve
+         * operation should return true, but Constantine returns false if the reduction
+         * goes wrong.
+         */
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["g1_x"] = "99991354109149767718853169041377889962284579326028000455698268000800012206328";
+        parameters["g1_y"] = "19477683966075399121106742794884590508635870985837037700497071177979691234489";
+        parameters["curveType"] = CF_ECC_CURVE("alt_bn128");
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::BLS_IsG1OnCurve op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("BLS_IsG1OnCurve"), dsOut2);
+    }
+
     ecdsa_verify_tests();
     ecc_point_add_tests();
 }
