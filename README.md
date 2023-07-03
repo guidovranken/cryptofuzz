@@ -193,3 +193,7 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Golang: [crypto/elliptic: P256 ScalarBaseMult with order-34 yields point at infinity](https://github.com/golang/go/issues/60717)
 - Zig: [Elliptic curve point addition incorrect result](https://github.com/ziglang/zig/issues/16015)
 - Botan: [BigInt::random_integer hangs](https://github.com/randombit/botan/issues/3590)
+- Constantine: [Incorrect reduction of BigInt](https://github.com/mratsim/constantine/pull/246)
+- Constantine: [Modular exponentiation incorrect result with power-of-2 modulus](https://github.com/mratsim/constantine/pull/247)
+- Constantine: [Slow repeated modular exponentiation](https://github.com/mratsim/constantine/pull/249)
+- Constantine: [BLS12-381 HashToCurve G1 incorrect result](https://github.com/mratsim/constantine/pull/250)
