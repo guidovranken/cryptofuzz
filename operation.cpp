@@ -898,6 +898,7 @@ nlohmann::json ECDSA_Recover::ToJSON(void) const {
     j["cleartext"] = cleartext.ToJSON();
     j["sig_r"] = signature.first.ToJSON();
     j["sig_s"] = signature.second.ToJSON();
+    j["id"] = id;
     j["digestType"] = digestType.ToJSON();
     j["modifier"] = modifier.ToJSON();
     return j;

@@ -139,7 +139,25 @@ with open(infile, 'rb') as fp:
             continue
 
         try:
-            if op['operation'] == "BLS_G1_Add":
+            if op['operation'] == "ECDSA_Recover":
+                if op['curveType'] != '18393850816800450172':
+                    continue
+                if op['digestType'] != '7259431668663979670':
+                    continue
+                cleartext = op['cleartext']
+                if len(cleartext) > 64:
+                    continue
+                cleartext = ('0' * (64 - len(cleartext))) + cleartext
+                sig_r = ToInt(op['sig_r'])
+                sig_s = ToInt(op['sig_s'])
+                idd = (ToInt(op['id']) + 27) % 256
+                ecrecover_input = bytes()
+                ecrecover_input += bytes.fromhex(cleartext)
+                ecrecover_input += ToBytes(idd)
+                ecrecover_input += ToBytes(sig_r)
+                ecrecover_input += ToBytes(sig_s)
+                Precompile(1, ecrecover_input, 0)
+            elif op['operation'] == "BLS_G1_Add":
                 #if op['curveType'] != '9285907260089714809':
                 #    continue
                 params = [
