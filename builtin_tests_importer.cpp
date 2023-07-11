@@ -795,6 +795,25 @@ void Builtin_tests_importer::Run(void) {
         write(CF_OPERATION("BLS_IsG1OnCurve"), dsOut2);
     }
 
+    {
+        /* Constantine modular exponentiation crash */
+        /* https://github.com/mratsim/constantine/pull/251 */
+
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["calcOp"] = CF_CALCOP("ExpMod(A,B,C)");
+        parameters["bn1"] = "174050332293622031404857552280219410364023488927386650641";
+        parameters["bn2"] = "6612720053854191978412609357563545875491153188501906352980899759345275170452624446196";
+        parameters["bn3"] = "75943471580235788919365009217869974981188866964726753486351395808039716718239878128412997724308541139386707755089002519127084628967424";
+        parameters["bn4"] = "";
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::BignumCalc op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("BignumCalc"), dsOut2);
+    }
+
     ecdsa_verify_tests();
     ecc_point_add_tests();
 }
