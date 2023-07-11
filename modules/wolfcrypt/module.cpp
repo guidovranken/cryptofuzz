@@ -26,6 +26,7 @@ extern "C" {
 #include <wolfssl/wolfcrypt/sha3.h>
 #include <wolfssl/wolfcrypt/blake2.h>
 #include <wolfssl/wolfcrypt/siphash.h>
+#include <wolfssl/wolfcrypt/sm3.h>
 
 #include <wolfssl/wolfcrypt/aes.h>
 #include <wolfssl/wolfcrypt/arc4.h>
@@ -33,6 +34,7 @@ extern "C" {
 #include <wolfssl/wolfcrypt/chacha.h>
 #include <wolfssl/wolfcrypt/chacha20_poly1305.h>
 #include <wolfssl/wolfcrypt/des3.h>
+#include <wolfssl/wolfcrypt/sm4.h>
 
 #include <wolfssl/wolfcrypt/hmac.h>
 
@@ -726,6 +728,11 @@ end:
     Digest<wc_Shake, 32, Init_IntParams<wc_Shake>, DigestUpdate_Int<wc_Shake>, DigestFinalize_IntFixedParam<wc_Shake, 32>>
         shake512(wc_InitShake256, wc_Shake256_Update, wc_Shake256_Final, wc_Shake256_Free, wc_Shake256_Copy);
 
+#if defined(WOLFSSL_SM3)
+    Digest<wc_Sm3, WC_SM3_DIGEST_SIZE, Init_IntParams<wc_Sm3>, DigestUpdate_Int<wc_Sm3>, DigestFinalize_Int<wc_Sm3>>
+        sm3(wc_InitSm3, wc_Sm3Update, wc_Sm3Final, wc_Sm3Free, (int (*)(wc_Sm3 *, wc_Sm3 *))wc_Sm3Copy, wc_Sm3Hash);
+#endif
+
     std::optional<wc_HashType> toHashType(const component::DigestType& digestType) {
         using fuzzing::datasource::ID;
 
@@ -745,6 +752,9 @@ end:
             { CF_DIGEST("SHA3-384"), WC_HASH_TYPE_SHA3_384 },
             { CF_DIGEST("SHA3-512"), WC_HASH_TYPE_SHA3_512 },
             { CF_DIGEST("MD5_SHA1"), WC_HASH_TYPE_MD5_SHA },
+#if defined(WOLFSSL_SM3)
+            { CF_DIGEST("SM3"), WC_HASH_TYPE_SM3 },
+#endif
         };
 
         if ( LUT.find(digestType.Get()) == LUT.end() ) {
@@ -774,6 +784,9 @@ end:
             { CF_DIGEST("SHA3-256"), WC_SHA3_256_DIGEST_SIZE },
             { CF_DIGEST("SHA3-384"), WC_SHA3_384_DIGEST_SIZE },
             { CF_DIGEST("SHA3-512"), WC_SHA3_512_DIGEST_SIZE },
+#if defined(WOLFSSL_SM3)
+            { CF_DIGEST("SM3"), WC_SM3_DIGEST_SIZE },
+#endif
         };
 
         if ( LUT.find(digestType.Get()) == LUT.end() ) {
@@ -896,6 +909,11 @@ std::optional<component::Digest> wolfCrypt::OpDigest(operation::Digest& op) {
             case CF_DIGEST("SHAKE256"):
                 ret = wolfCrypt_detail::shake512.Run(op, ds);
                 break;
+#if defined(WOLFSSL_SM3)
+            case CF_DIGEST("SM3"):
+                ret = wolfCrypt_detail::sm3.Run(op, ds);
+                break;
+#endif
             default:
                 goto end;
         }
@@ -1874,6 +1892,92 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
                     Buffer(outTag, AES_BLOCK_SIZE));
         }
         break;
+#if defined(WOLFSSL_SM4)
+        case CF_CIPHER("SM4_CBC"):
+        {
+            wc_Sm4 ctx;
+
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), SM4_BLOCK_SIZE);
+
+            const auto cleartext = util::Pkcs7Pad(op.cleartext.Get(), SM4_BLOCK_SIZE);
+            out = util::malloc(cleartext.size());
+
+            WC_CHECK_EQ(wc_Sm4SetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize()), 0);
+            WC_CHECK_EQ(wc_Sm4SetIV(&ctx, op.cipher.iv.GetPtr(&ds)), 0);
+            WC_CHECK_EQ(wc_Sm4CbcEncrypt(&ctx, out, cleartext.data(), cleartext.size()), 0);
+
+            ret = component::Ciphertext(Buffer(out, cleartext.size()));
+        }
+        break;
+        case CF_CIPHER("SM4_ECB"):
+        {
+            wc_Sm4 ctx;
+
+            CF_CHECK_EQ(op.cleartext.GetSize() % SM4_BLOCK_SIZE, 0);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), SM4_BLOCK_SIZE);
+
+            out = util::malloc(op.cleartext.GetSize());
+
+            WC_CHECK_EQ(wc_Sm4SetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize()), 0);
+            WC_CHECK_EQ(wc_Sm4SetIV(&ctx, op.cipher.iv.GetPtr(&ds)), 0);
+            WC_CHECK_EQ(wc_Sm4EcbEncrypt(&ctx, out, op.cleartext.GetPtr(&ds), op.cleartext.GetSize()), 0);
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()));
+        }
+        break;
+        case CF_CIPHER("SM4_CCM"):
+        {
+            wc_Sm4 ctx;
+
+            CF_CHECK_NE(op.tagSize, std::nullopt);
+            CF_CHECK_NE(op.aad, std::nullopt);
+
+            out = util::malloc(op.cleartext.GetSize());
+            outTag = util::malloc(*op.tagSize);
+
+            WC_CHECK_EQ(wc_Sm4SetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize()), 0);
+            WC_CHECK_EQ(wc_Sm4CcmEncrypt(
+                        &ctx,
+                        out,
+                        op.cleartext.GetPtr(&ds),
+                        op.cleartext.GetSize(),
+                        op.cipher.iv.GetPtr(&ds),
+                        op.cipher.iv.GetSize(),
+                        outTag,
+                        *op.tagSize,
+                        op.aad->GetPtr(&ds),
+                        op.aad->GetSize()), 0);
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
+        }
+        break;
+        case CF_CIPHER("SM4_GCM"):
+        {
+            wc_Sm4 ctx;
+
+            CF_CHECK_NE(op.tagSize, std::nullopt);
+            CF_CHECK_NE(op.aad, std::nullopt);
+
+            out = util::malloc(op.cleartext.GetSize());
+            outTag = util::malloc(*op.tagSize);
+
+            WC_CHECK_EQ(wc_Sm4GcmSetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize()), 0);
+            WC_CHECK_EQ(wc_Sm4GcmEncrypt(
+                        &ctx,
+                        out,
+                        op.cleartext.GetPtr(&ds),
+                        op.cleartext.GetSize(),
+                        op.cipher.iv.GetPtr(&ds),
+                        op.cipher.iv.GetSize(),
+                        outTag,
+                        *op.tagSize,
+                        op.aad->GetPtr(&ds),
+                        op.aad->GetSize()), 0);
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
+        }
+        break;
+#endif
     }
 
 end:
@@ -2518,6 +2622,91 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
         }
         break;
+#if defined(WOLFSSL_SM4)
+        case CF_CIPHER("SM4_CBC"):
+        {
+            wc_Sm4 ctx;
+
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), SM4_BLOCK_SIZE);
+
+            out = util::malloc(op.ciphertext.GetSize());
+
+            WC_CHECK_EQ(wc_Sm4SetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize()), 0);
+            WC_CHECK_EQ(wc_Sm4SetIV(&ctx, op.cipher.iv.GetPtr(&ds)), 0);
+            WC_CHECK_EQ(wc_Sm4CbcDecrypt(&ctx, out, op.ciphertext.GetPtr(&ds), op.ciphertext.GetSize()), 0);
+
+            const auto unpaddedCleartext = util::Pkcs7Unpad( std::vector<uint8_t>(out, out + op.ciphertext.GetSize()), SM4_BLOCK_SIZE );
+            CF_CHECK_NE(unpaddedCleartext, std::nullopt);
+            ret = component::Cleartext(Buffer(*unpaddedCleartext));
+        }
+        break;
+        case CF_CIPHER("SM4_ECB"):
+        {
+            wc_Sm4 ctx;
+
+            CF_CHECK_EQ(op.ciphertext.GetSize() % SM4_BLOCK_SIZE, 0);
+            CF_CHECK_EQ(op.cipher.iv.GetSize(), SM4_BLOCK_SIZE);
+
+            out = util::malloc(op.ciphertext.GetSize());
+
+            WC_CHECK_EQ(wc_Sm4SetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize()), 0);
+            WC_CHECK_EQ(wc_Sm4SetIV(&ctx, op.cipher.iv.GetPtr(&ds)), 0);
+            WC_CHECK_EQ(wc_Sm4EcbDecrypt(&ctx, out, op.ciphertext.GetPtr(&ds), op.ciphertext.GetSize()), 0);
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+        case CF_CIPHER("SM4_CCM"):
+        {
+            wc_Sm4 ctx;
+
+            CF_CHECK_NE(op.aad, std::nullopt);
+            CF_CHECK_NE(op.tag, std::nullopt);
+
+            out = util::malloc(op.ciphertext.GetSize());
+
+            WC_CHECK_EQ(wc_Sm4SetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize()), 0);
+            WC_CHECK_EQ(wc_Sm4CcmDecrypt(
+                        &ctx,
+                        out,
+                        op.ciphertext.GetPtr(&ds),
+                        op.ciphertext.GetSize(),
+                        op.cipher.iv.GetPtr(&ds),
+                        op.cipher.iv.GetSize(),
+                        op.tag->GetPtr(&ds),
+                        op.tag->GetSize(),
+                        op.aad->GetPtr(&ds),
+                        op.aad->GetSize()), 0);
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+        case CF_CIPHER("SM4_GCM"):
+        {
+            wc_Sm4 ctx;
+
+            CF_CHECK_NE(op.aad, std::nullopt);
+            CF_CHECK_NE(op.tag, std::nullopt);
+
+            out = util::malloc(op.ciphertext.GetSize());
+
+            WC_CHECK_EQ(wc_Sm4GcmSetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize()), 0);
+            WC_CHECK_EQ(wc_Sm4GcmDecrypt(
+                        &ctx,
+                        out,
+                        op.ciphertext.GetPtr(&ds),
+                        op.ciphertext.GetSize(),
+                        op.cipher.iv.GetPtr(&ds),
+                        op.cipher.iv.GetSize(),
+                        op.tag->GetPtr(&ds),
+                        op.tag->GetSize(),
+                        op.aad->GetPtr(&ds),
+                        op.aad->GetSize()), 0);
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+#endif
     }
 
 end:
@@ -2867,6 +3056,8 @@ namespace wolfCrypt_detail {
             { CF_ECC_CURVE("x962_p239v1"), ECC_PRIME239V1 },
             { CF_ECC_CURVE("x962_p239v2"), ECC_PRIME239V2 },
             { CF_ECC_CURVE("x962_p239v3"), ECC_PRIME239V3 },
+
+            { CF_ECC_CURVE("sm2p256v1"), ECC_SM2P256V1 },
         };
 
         if ( LUT.find(curveType.Get()) == LUT.end() ) {
