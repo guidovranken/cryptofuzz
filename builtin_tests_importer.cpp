@@ -814,6 +814,44 @@ void Builtin_tests_importer::Run(void) {
         write(CF_OPERATION("BignumCalc"), dsOut2);
     }
 
+    {
+        /* libtommath mp_exptmod incorrect result (64 bit) */
+        /* https://github.com/libtom/libtommath/issues/563 */
+
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["calcOp"] = CF_CALCOP("ExpMod(A,B,C)");
+        parameters["bn1"] = "24";
+        parameters["bn2"] = "9223372036854775808";
+        parameters["bn3"] = "75556710804409716572160";
+        parameters["bn4"] = "";
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::BignumCalc op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("BignumCalc"), dsOut2);
+    }
+
+    {
+        /* libtommath mp_exptmod incorrect result (32 bit) */
+        /* https://github.com/libtom/libtommath/issues/563 */
+
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["calcOp"] = CF_CALCOP("ExpMod(A,B,C)");
+        parameters["bn1"] = "67927325822352824469517479013";
+        parameters["bn2"] = "2147483648";
+        parameters["bn3"] = "1879048192";
+        parameters["bn4"] = "";
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::BignumCalc op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("BignumCalc"), dsOut2);
+    }
+
     ecdsa_verify_tests();
     ecc_point_add_tests();
 }
