@@ -393,6 +393,8 @@ bool ExpMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
 
     CF_CHECK_TRUE(return_result);
 
+    ret = true;
+
 end:
     return ret;
 }
