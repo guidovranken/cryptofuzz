@@ -19,6 +19,9 @@ Constantine::Constantine(void) :
 }
 
 namespace Constantine_detail {
+    static std::vector<uint8_t> Pad(Datasource& ds, const std::vector<uint8_t> v) {
+        return v;
+    }
     template <size_t N = 32>
     static std::optional<std::array<uint8_t, N>> LoadField(const component::Bignum& bn) {
         (void)bn;
@@ -341,6 +344,7 @@ std::optional<component::G1> Constantine::OpBLS_G1_MultiExp(operation::BLS_G1_Mu
         ret = Constantine_detail::SaveG1<48>(result);
     }
 
+    if ( which == 1 ) return std::nullopt;
 end:
     return ret;
 }
