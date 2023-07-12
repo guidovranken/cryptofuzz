@@ -34,8 +34,8 @@ func loadFp(
   var big {.noInit.}: BigInt[381]
   big.unmarshal(src, bigEndian)
 
-  if not bool(big < Fp[BLS12_381].fieldMod()):
-     return false
+#  if not bool(big < Fp[BLS12_381].fieldMod()):
+#     return false
 
   dst.fromBig(big)
   return true
@@ -289,17 +289,24 @@ func saveFp12[Fp12Type](
     r.toOpenArray((size*11), (size*12)-1).marshal(R.c2.c1.c1, bigEndian)
     copyMem(r_bytes, addr r, size * 12)
 
+func validate[FpType, GType](
+        P: var ECP_ShortW_Prj[FpType, GType]): bool =
+    return bool(isOnCurve(P.x, P.y, GType)) and bool(P.isInSubgroup())
+
+func validateAff[FpType, GType](
+        P: var ECP_ShortW_Aff[FpType, GType]): bool =
+    return bool(isOnCurve(P.x, P.y, GType)) and bool(P.isInSubgroup())
+
 func cryptofuzz_constantine_bls_isg1oncurve_impl[FpType](
         a_bytes: openarray[uint8]) : cint =
     var P{.noInit.}: ECP_ShortW_Prj[FpType, G1]
     if loadG1(P, a_bytes) == false:
         return -1
-    if not bool(isOnCurve(P.x, P.y, G1)):
-        return 0
-    elif not bool(P.isInSubgroup()):
-        return 0
-    else:
+
+    if validate[FpType, G1](P) == true:
         return 1
+    else:
+        return 0
 
 proc cryptofuzz_constantine_bls_isg1oncurve(
         curve: uint8,
@@ -386,9 +393,7 @@ proc cryptofuzz_constantine_bls_g1_multiexp_impl[FpType](
         if loadG1(A, a_bytes.toOpenArray(i * 2 * size, i * 2 * size + (size * 2) - 1)) == false:
             return -1
 
-        if not bool(isOnCurve(A.x, A.y, G1)):
-            fail = true
-        elif not bool(A.isInSubgroup()):
+        if validate[FpType, G1](A) == false:
             fail = true
 
         scalars[i].unmarshal(b_bytes.toOpenArray(i * bnbytes, (i+1) * bnbytes - 1), bigEndian)
@@ -513,12 +518,11 @@ proc cryptofuzz_constantine_bls_isg2oncurve_impl[Fp2Type](
     var P{.noInit.}: ECP_ShortW_Prj[Fp2Type, G2]
     if loadG2(P, a_bytes) == false:
         return -1
-    if not bool(isOnCurve(P.x, P.y, G2)):
-        return 0
-    elif not bool(P.isInSubgroup()):
-        return 0
-    else:
+
+    if validate[Fp2Type, G2](P) == true:
         return 1
+    else:
+        return 0
 
 func cryptofuzz_constantine_bls_isg2oncurve(
         curve: uint8,
@@ -535,12 +539,26 @@ proc cryptofuzz_constantine_bls_g2_add_impl[Fp2Type](
         a_bytes: openarray[uint8],
         b_bytes: openarray[uint8],
         r_bytes: ptr uint8) : cint =
+    var fail = false
+
     var A{.noInit.}, B{.noInit}, R{.noInit}: ECP_ShortW_Prj[Fp2Type, G2]
     if loadG2(A, a_bytes) == false:
         return -1
+
+    if validate[Fp2Type, G2](A) == false:
+        fail = true
+
     if loadG2(B, b_bytes) == false:
         return -1
+
+    if validate[Fp2Type, G2](B) == false:
+        fail = true
+
     R.sum(A, B)
+
+    if fail == true:
+        return -1
+
     saveG2(R, r_bytes)
     return 0
 
@@ -658,12 +676,21 @@ proc cryptofuzz_constantine_bls_pairing_impl[FpType, Fp2Type, Fp12Type](
         g1_bytes: openarray[uint8],
         g2_bytes: openarray[uint8],
         r_bytes: ptr uint8): cint =
+    var fail = false
+
     var A{.noInit.}: ECP_ShortW_Aff[FpType, G1]
     if loadG1(A, g1_bytes) == false:
         return -1
+
+    if validateAff[FpType, G1](A) == false:
+        fail = true
+
     var B{.noInit.}: ECP_ShortW_Aff[Fp2Type, G2]
     if loadG2(B, g2_bytes) == false:
         return -1
+
+    if validateAff[Fp2Type, G2](B) == false:
+        fail = true
 
     var acc {.noInit.}: MillerAccumulator[FpType, Fp2Type, Fp12Type]
     acc.init()
@@ -674,6 +701,9 @@ proc cryptofuzz_constantine_bls_pairing_impl[FpType, Fp2Type, Fp12Type](
     var gt {.noinit.}: Fp12Type
     acc.finish(gt)
     gt.finalExp()
+
+    if fail == true:
+        return -1
 
     saveFp12(gt, r_bytes)
     return 0
