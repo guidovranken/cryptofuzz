@@ -15,6 +15,7 @@ import constantine/ethereum_bls_signatures
 import constantine/math/elliptic/ec_multi_scalar_mul
 import constantine/threadpool/threadpool
 import constantine/math/elliptic/ec_multi_scalar_mul_parallel
+import constantine/math/elliptic/ec_scalar_mul_vartime
 
 func loadFp(
        dst: var Fp[BN254_Snarks],
@@ -345,13 +346,38 @@ func cryptofuzz_constantine_bls_g1_add(
 proc cryptofuzz_constantine_bls_g1_mul_impl[FpType, BNType](
         a_bytes: openarray[uint8],
         b_bytes: openarray[uint8],
+        which: uint8,
         r_bytes: ptr uint8) : cint =
+    var fail = false
+
     var A{.noInit.}: ECP_ShortW_Prj[FpType, G1]
     if loadG1(A, a_bytes) == false:
         return -1
+
+    if validate[FpType, G1](A) == false:
+        fail = true
+
     var B{.noInit.}: BNType
     B.unmarshal(b_bytes, bigEndian)
-    A.scalarMul(B)
+
+    if which == 0:
+        A.scalarMul(B)
+    elif which == 1:
+        A.scalarMulGeneric(B)
+    elif which == 2:
+        A.scalarMul_doubleAdd_vartime(B)
+    elif which == 3:
+        A.scalarMul_minHammingWeight_vartime(B)
+    elif which == 4:
+        A.scalarMul_minHammingWeight_windowed_vartime(B, window = 3)
+    elif which == 5:
+        A.scalarMul_minHammingWeight_windowed_vartime(B, window = 16)
+    else:
+        assert(false)
+
+    if fail == true:
+        return -1
+
     saveG1(A, r_bytes)
     return 0
 
@@ -359,12 +385,13 @@ func cryptofuzz_constantine_bls_g1_mul(
         curve: uint8,
         a_bytes: openarray[uint8],
         b_bytes: openarray[uint8],
+        which: uint8,
         r_bytes: ptr uint8) : cint {.exportc.} =
 
     if curve == 0:
-        return cryptofuzz_constantine_bls_g1_mul_impl[Fp[BN254_Snarks], BigInt[256]](a_bytes, b_bytes, r_bytes)
+        return cryptofuzz_constantine_bls_g1_mul_impl[Fp[BN254_Snarks], BigInt[256]](a_bytes, b_bytes, which, r_bytes)
     elif curve == 1:
-        return cryptofuzz_constantine_bls_g1_mul_impl[Fp[BLS12_381], BigInt[384]](a_bytes, b_bytes, r_bytes)
+        return cryptofuzz_constantine_bls_g1_mul_impl[Fp[BLS12_381], BigInt[384]](a_bytes, b_bytes, which, r_bytes)
     assert(false)
 
 proc cryptofuzz_constantine_bls_g1_multiexp_impl[FpType](
@@ -578,13 +605,37 @@ func cryptofuzz_constantine_bls_g2_add(
 proc cryptofuzz_constantine_bls_g2_mul_impl[Fp2Type](
         a_bytes: openarray[uint8],
         b_bytes: openarray[uint8],
+        which: uint8,
         r_bytes: ptr uint8) : cint =
+    var fail = false
+
     var A{.noInit.}: ECP_ShortW_Prj[Fp2Type, G2]
     if loadG2(A, a_bytes) == false:
         return -1
+
+    if validate[Fp2Type, G2](A) == false:
+        fail = true
+
     var B{.noInit.}: BigInt[256]
     B.unmarshal(b_bytes, bigEndian)
-    A.scalarMul(B)
+    if which == 0:
+        A.scalarMul(B)
+    elif which == 1:
+        A.scalarMulGeneric(B)
+    elif which == 2:
+        A.scalarMul_doubleAdd_vartime(B)
+    elif which == 3:
+        A.scalarMul_minHammingWeight_vartime(B)
+    elif which == 4:
+        A.scalarMul_minHammingWeight_windowed_vartime(B, window = 3)
+    elif which == 5:
+        A.scalarMul_minHammingWeight_windowed_vartime(B, window = 16)
+    else:
+        assert(false)
+
+    if fail == true:
+        return -1
+
     saveG2(A, r_bytes)
     return 0
 
@@ -592,12 +643,13 @@ func cryptofuzz_constantine_bls_g2_mul(
         curve: uint8,
         a_bytes: openarray[uint8],
         b_bytes: openarray[uint8],
+        which: uint8,
         r_bytes: ptr uint8) : cint {.exportc.} =
 
     if curve == 0:
-        return cryptofuzz_constantine_bls_g2_mul_impl[Fp2[BN254_Snarks]](a_bytes, b_bytes, r_bytes)
+        return cryptofuzz_constantine_bls_g2_mul_impl[Fp2[BN254_Snarks]](a_bytes, b_bytes, which, r_bytes)
     elif curve == 1:
-        return cryptofuzz_constantine_bls_g2_mul_impl[Fp2[BLS12_381]](a_bytes, b_bytes, r_bytes)
+        return cryptofuzz_constantine_bls_g2_mul_impl[Fp2[BLS12_381]](a_bytes, b_bytes, which, r_bytes)
     else:
         assert(false)
 

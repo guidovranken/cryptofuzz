@@ -233,7 +233,15 @@ end:
 }
 
 std::optional<component::G1> Constantine::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     std::optional<component::G1> ret = std::nullopt;
+
+    uint8_t which = 0;
+
+    try {
+        which = ds.Get<uint8_t>() % 6;
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    }
 
     if ( op.curveType.Is(CF_ECC_CURVE("alt_bn128")) ) {
         std::optional<std::array<uint8_t, 64>> a_bytes;
@@ -248,6 +256,7 @@ std::optional<component::G1> Constantine::OpBLS_G1_Mul(operation::BLS_G1_Mul& op
                     0,
                     a_bytes->data(), a_bytes->size(),
                     b_bytes->data(), b_bytes->size(),
+                    which,
                     result.data()), 0);
 
         ret = Constantine_detail::SaveG1(result);
@@ -264,6 +273,7 @@ std::optional<component::G1> Constantine::OpBLS_G1_Mul(operation::BLS_G1_Mul& op
                     1,
                     a_bytes->data(), a_bytes->size(),
                     b_bytes->data(), b_bytes->size(),
+                    which,
                     result.data()), 0);
 
         ret = Constantine_detail::SaveG1<48>(result);
@@ -492,7 +502,15 @@ end:
 }
 
 std::optional<component::G2> Constantine::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     std::optional<component::G2> ret = std::nullopt;
+
+    uint8_t which = 0;
+
+    try {
+        which = ds.Get<uint8_t>() % 6;
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+    }
 
     if ( op.curveType.Is(CF_ECC_CURVE("alt_bn128")) ) {
         std::optional<std::array<uint8_t, 128>> a_bytes;
@@ -507,6 +525,7 @@ std::optional<component::G2> Constantine::OpBLS_G2_Mul(operation::BLS_G2_Mul& op
                     0,
                     a_bytes->data(), 128,
                     b_bytes->data(), 32,
+                    which,
                     result.data()), 0);
 
         ret = Constantine_detail::SaveG2(result);
@@ -523,6 +542,7 @@ std::optional<component::G2> Constantine::OpBLS_G2_Mul(operation::BLS_G2_Mul& op
                     1,
                     a_bytes->data(), 48 * 4,
                     b_bytes->data(), 32,
+                    which,
                     result.data()), 0);
 
         ret = Constantine_detail::SaveG2<48>(result);
