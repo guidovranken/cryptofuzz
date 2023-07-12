@@ -1186,7 +1186,7 @@ export fn cryptofuzz_zig_bignumcalc(
         if ( !b.isPositive()) {
             return 1;
         }
-        if ( b.eqZero() ) {
+        if ( b.eqlZero() ) {
             return 1;
         }
 
@@ -1201,10 +1201,10 @@ export fn cryptofuzz_zig_bignumcalc(
         if ( !b.isPositive() ) {
             return 1;
         }
-        if ( a.eqZero() ) {
+        if ( a.eqlZero() ) {
             return 1;
         }
-        if ( b.eqZero() ) {
+        if ( b.eqlZero() ) {
             return 1;
         }
         //res.gcd(a, b) catch unreachable;
@@ -1220,7 +1220,7 @@ export fn cryptofuzz_zig_bignumcalc(
         if ( !b.isPositive() ) {
             return 1;
         }
-        if ( b.eqZero() ) {
+        if ( b.eqlZero() ) {
             return 1;
         }
 
