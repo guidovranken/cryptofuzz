@@ -1703,6 +1703,7 @@ template<> void ExecutorBase<component::Fp12, operation::BLS_FinalExp>::postproc
 }
 
 template<> std::optional<component::Fp12> ExecutorBase<component::Fp12, operation::BLS_FinalExp>::callModule(std::shared_ptr<Module> module, operation::BLS_FinalExp& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
     return module->OpBLS_FinalExp(op);
 }
 
@@ -1723,6 +1724,7 @@ template<> void ExecutorBase<component::G1, operation::BLS_HashToG1>::postproces
 }
 
 template<> std::optional<component::G1> ExecutorBase<component::G1, operation::BLS_HashToG1>::callModule(std::shared_ptr<Module> module, operation::BLS_HashToG1& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
     return module->OpBLS_HashToG1(op);
 }
 
@@ -2171,6 +2173,7 @@ template<> void ExecutorBase<component::G2, operation::BLS_HashToG2>::postproces
 }
 
 template<> std::optional<component::G2> ExecutorBase<component::G2, operation::BLS_HashToG2>::callModule(std::shared_ptr<Module> module, operation::BLS_HashToG2& op) const {
+    RETURN_IF_DISABLED(options.curves, op.curveType.Get());
     return module->OpBLS_HashToG2(op);
 }
 

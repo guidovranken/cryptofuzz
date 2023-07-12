@@ -310,6 +310,30 @@ std::optional<component::G1> _libff::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
     return libff_detail::OpBLS_Gx_Mul<G1Type, component::G1>(op);
 }
 
+std::optional<component::G1> _libff::OpBLS_G1_MultiExp(operation::BLS_G1_MultiExp& op) {
+    std::optional<component::G1> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    auto res = G1Type::zero();
+
+    for (const auto& point_scalar : op.points_scalars.points_scalars) {
+        auto a = libff_detail::Load(point_scalar.first, ds);
+        CF_CHECK_NE(a, std::nullopt);
+
+        FrType b;
+
+        CF_CHECK_LTE(point_scalar.second.GetSize(), FrMaxSize);
+        b = FrType(point_scalar.second.ToString(ds).c_str());
+
+        res = res + (b * *a);
+    }
+
+    ret = libff_detail::Save(res);
+
+end:
+    return ret;
+}
+
 std::optional<bool> _libff::OpBLS_G1_IsEq(operation::BLS_G1_IsEq& op) {
     return libff_detail::OpBLS_Gx_IsEq<G1Type>(op);
 }
