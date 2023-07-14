@@ -1231,7 +1231,9 @@ proc cryptofuzz_constantine_bignumcalc(
         else:
             discard a.csub(b, SecretBool true)
     elif calcop == 2:
-        a.mul(b)
+        # Slow compilation
+        return -1
+        #a.mul(b)
     elif calcop == 3:
         if bool b.isEven():
             return 0
@@ -1242,8 +1244,10 @@ proc cryptofuzz_constantine_bignumcalc(
         else:
             a.invmod(a, b)
     elif calcop == 4:
+        # Slow compilation
+        return -1
         # XXX if b.bits >= a.bits * 2:
-        a.square(a)
+        #a.square(a)
     elif calcop == 5:
         if bool a == b:
             a.setOne()
