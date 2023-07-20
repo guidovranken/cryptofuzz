@@ -364,6 +364,7 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
             return EVP_rc4_40();
         case CF_CIPHER("RC4_HMAC_MD5"):
             return EVP_rc4_hmac_md5();
+#if 0
         case CF_CIPHER("IDEA_ECB"):
             return EVP_idea_ecb();
         case CF_CIPHER("IDEA_CFB"):
@@ -372,6 +373,7 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
             return EVP_idea_ofb();
         case CF_CIPHER("IDEA_CBC"):
             return EVP_idea_cbc();
+#endif
         case CF_CIPHER("SM4_ECB"):
             return EVP_sm4_ecb();
         case CF_CIPHER("SM4_CBC"):
