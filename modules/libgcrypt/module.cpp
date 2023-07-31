@@ -889,7 +889,16 @@ end:
 
 std::optional<component::Key> libgcrypt::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
     std::optional<component::Key> ret = std::nullopt;
+
+    if ( op.digestType.Is(CF_DIGEST("SHAKE128")) ) {
+        return ret;
+    }
+    if ( op.digestType.Is(CF_DIGEST("SHAKE256")) ) {
+        return ret;
+    }
+
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
 
     const size_t outSize = op.keySize;
     uint8_t* out = util::malloc(outSize);
