@@ -209,12 +209,13 @@ pub extern "C" fn rust_num_bigint_bignumcalc(
     } else if op == 29 {
         let extgcd = bn0.extended_gcd(&bn1);
         if !extgcd.gcd.is_one() {
-            return -1;
-        }
-        if extgcd.x.is_negative() {
-            res = extgcd.x + bn1;
+            res = Zero::zero();
         } else {
-            res = extgcd.x;
+            if extgcd.x.is_negative() {
+                res = extgcd.x + bn1;
+            } else {
+                res = extgcd.x;
+            }
         }
     } else if op == 30 {
         if bn0.is_zero() == true {
