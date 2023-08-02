@@ -117,6 +117,13 @@ std::vector<uint8_t> AddLeadingZeroes(fuzzing::datasource::Datasource& ds, const
 void AdjustECDSASignature(const uint64_t curveType, component::Bignum& s);
 std::string Find_ECC_Y(const std::string& x, const std::string& a, const std::string& b, const std::string& p, const std::string& o, const bool addOrder);
 std::array<std::string, 3> ToRandomProjective(fuzzing::datasource::Datasource& ds, const std::string& x, const std::string& y, const uint64_t curveType, const bool jacobian = true, const bool inRange = false);
+namespace Ethereum_ModExp {
+    uint64_t Gas(std::vector<uint8_t> input, const bool eip2565);
+    std::vector<uint8_t> ToInput(
+            const component::Bignum& base,
+            const component::Bignum& exp,
+            const component::Bignum& mod);
+}
 void MemorySanitizerUnpoison(const void* data, const size_t size);
 
 } /* namespace util */

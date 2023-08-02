@@ -1054,6 +1054,167 @@ std::array<std::string, 3> ToRandomProjective(
     return {X.str(), Y.str(), Z.str()};
 }
 
+namespace Ethereum_ModExp {
+    using namespace boost::multiprecision;
+
+    static cpp_int modexpMultComplexity(const cpp_int& x) {
+            if ( x <= 64 ) {
+            return x * x;
+        } else if ( x <= 1024 ) {
+            return ((x * x) / 4) + ((96 * x) - 3072);
+        } else {
+            return ((x * x) / 16) + ((480 * x) - 199680);
+        }
+    }
+
+    static cpp_int Max(const cpp_int& a, const cpp_int& b) {
+        return a > b ? a : b;
+    }
+
+    static size_t BitSize(cpp_int v) {
+        size_t ret = 0;
+
+        while ( v ) {
+            v >>= 1;
+            ret++;
+        }
+
+        return ret;
+    }
+
+    static std::vector<uint8_t> getData(
+            const std::vector<uint8_t> input,
+            const uint64_t start,
+            const uint64_t size) {
+        std::vector<uint8_t> ret;
+        if ( size == 0 ) {
+            return ret;
+        }
+
+        if ( start < input.size() ) {
+            size_t end = start + size;
+            if ( end >= input.size() ) {
+                end = input.size();
+            }
+            ret.insert(std::end(ret),
+                    std::begin(input) + start,
+                    std::begin(input) + end);
+        }
+
+        if ( ret.size() < size ) {
+            const std::vector<uint8_t> zeroes(size - ret.size(), 0);
+            ret.insert(std::end(ret), std::begin(zeroes), std::end(zeroes));
+        }
+
+        return ret;
+    }
+
+    static cpp_int Load(const std::vector<uint8_t>& input) {
+        if ( input.empty() ) {
+            return 0;
+        }
+
+        boost::multiprecision::cpp_int ret;
+        boost::multiprecision::import_bits(ret, input.data(), input.data() + input.size());
+
+        return ret;
+    }
+
+    uint64_t Gas(
+            std::vector<uint8_t> input,
+            const bool eip2565) {
+        constexpr uint64_t uint64_t_max = std::numeric_limits<uint64_t>::max();
+
+        const auto baseLen = Load(getData(input, 0, 32));
+        const auto expLen = Load(getData(input, 32, 32));
+        const auto modLen = Load(getData(input, 64, 32));
+
+        if ( input.size() > 96 ) {
+            input = getData(input, 96, input.size() - 96);
+        } else {
+            input = {};
+        }
+
+        cpp_int expHead;
+        if ( input.size() <= baseLen ) {
+            expHead = 0;
+        } else {
+            if ( expLen > 32 ) {
+                expHead = Load(getData(input, baseLen.convert_to<uint64_t>(), 32));
+            } else {
+                expHead = Load(getData(input,
+                            baseLen.convert_to<uint64_t>(),
+                            expLen.convert_to<uint64_t>()));
+            }
+        }
+
+        const auto bitsize = BitSize(expHead);
+        uint64_t msb = 0;
+        if ( bitsize > 0 ) {
+            msb = bitsize - 1;
+        }
+
+        cpp_int adjExpLen = 0;
+        if ( expLen > 32 ) {
+            adjExpLen = expLen - 32;
+            adjExpLen *= 8;
+        }
+        adjExpLen += msb;
+
+        auto gas = Max(modLen, baseLen);
+
+        if ( eip2565 == true ) {
+            gas += 7;
+            gas /= 8;
+            gas *= gas;
+            gas *= Max(adjExpLen, 1);
+            gas /= 3;
+
+            if ( gas > uint64_t_max ) {
+                return uint64_t_max;
+            }
+
+            if ( gas < 200 ) {
+                return 200;
+            }
+
+            return gas.convert_to<uint64_t>();
+        }
+        gas = modexpMultComplexity(gas);
+        gas *= Max(adjExpLen, 1);
+        gas /= 20;
+
+        if ( gas > uint64_t_max ) {
+            return uint64_t_max;
+        }
+
+        return gas.convert_to<uint64_t>();
+    }
+
+    std::vector<uint8_t> ToInput(
+            const component::Bignum& base,
+            const component::Bignum& exp,
+            const component::Bignum& mod) {
+        std::vector<uint8_t> input;
+
+        const auto b = *base.ToBin();
+        const auto bl = DecToBin(std::to_string(b.size()), 32);
+        const auto e = *exp.ToBin();
+        const auto el = DecToBin(std::to_string(e.size()), 32);
+        const auto m = *mod.ToBin();
+        const auto ml = DecToBin(std::to_string(m.size()), 32);
+
+        input.insert(input.end(), bl->begin(), bl->end());
+        input.insert(input.end(), el->begin(), el->end());
+        input.insert(input.end(), ml->begin(), ml->end());
+        input.insert(input.end(), b.begin(), b.end());
+        input.insert(input.end(), e.begin(), e.end());
+        input.insert(input.end(), m.begin(), m.end());
+
+        return input;
+    }
+}
+
 extern "C" {
     __attribute__((weak)) void __msan_unpoison(const volatile void*, size_t) { }
 }
