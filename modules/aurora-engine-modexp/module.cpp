@@ -6,6 +6,7 @@ extern "C" {
             const uint8_t* base_bytes, const uint64_t base_size,
             const uint8_t* exp_bytes, const uint64_t exp_size,
             const uint8_t* mod_bytes, const uint64_t mod_size,
+            uint32_t loops,
             uint8_t* result);
 }
 
@@ -24,6 +25,7 @@ std::optional<component::Bignum> aurora_engine_modexp::OpBignumCalc(operation::B
     }
 
     std::optional<component::Bignum> ret = std::nullopt;
+    uint32_t loops = 1;
     std::array<uint8_t, 4000> result;
     memset(result.data(), 0, result.size());
 
@@ -31,10 +33,18 @@ std::optional<component::Bignum> aurora_engine_modexp::OpBignumCalc(operation::B
     std::vector<uint8_t> exp = *util::DecToBin(op.bn1.ToTrimmedString());
     std::vector<uint8_t> mod = *util::DecToBin(op.bn2.ToTrimmedString());
 
+#if 0
+    loops = 30000000 / util::Ethereum_ModExp::Gas(
+        util::Ethereum_ModExp::ToInput(op.bn0, op.bn1, op.bn2),
+        true
+    );
+#endif
+
     cryptofuzz_aurora_engine_modexp(
             base.data(), base.size(),
             exp.data(), exp.size(),
             mod.data(), mod.size(),
+            loops,
             result.data());
 
     std::reverse(result.begin(), result.end());

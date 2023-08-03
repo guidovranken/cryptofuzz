@@ -8,6 +8,5 @@ edition = "2018"
 crate-type = ["staticlib"]
 
 [dependencies]
-#aurora-engine-modexp = {git = "https://github.com/aurora-is-near/aurora-engine"}
-aurora-engine-modexp = {path = "/home/jhg/near-modexp-test/cryptofuzz/modules/aurora-engine-modexp/aurora-engine/engine-modexp"}
+aurora-engine-modexp = {git = "https://github.com/aurora-is-near/aurora-engine"}
 libc = "0.2.0"
