@@ -16,22 +16,44 @@ namespace module {
 aurora_engine_modexp::aurora_engine_modexp(void) :
     Module("aurora-engine-modexp") { }
 
+namespace aurora_engine_modexp_detail {
+    std::vector<uint8_t> Pad(Datasource& ds, std::vector<uint8_t> v) {
+        if ( v == std::vector<uint8_t>(v.size(), 0) ) {
+            v = {};
+        }
+
+        uint16_t num = 0;
+
+        try {
+            num = ds.Get<uint32_t>();
+        } catch ( fuzzing::datasource::Datasource::OutOfData ) {
+        }
+
+        num &= 0xFFFFFF;
+
+        std::vector<uint8_t> ret(num, 0);
+        ret.insert(ret.end(), v.begin(), v.end());
+        return ret;
+    }
+}
+
 std::optional<component::Bignum> aurora_engine_modexp::OpBignumCalc(operation::BignumCalc& op) {
     if ( !op.calcOp.Is(CF_CALCOP("ExpMod(A,B,C)")) ) {
         return std::nullopt;
     }
-    if ( op.bn2.ToTrimmedString() == "0" ) {
-        return std::nullopt;
-    }
 
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     std::optional<component::Bignum> ret = std::nullopt;
     uint32_t loops = 1;
     std::array<uint8_t, 4000> result;
     memset(result.data(), 0, result.size());
 
-    std::vector<uint8_t> base = *util::DecToBin(op.bn0.ToTrimmedString());
-    std::vector<uint8_t> exp = *util::DecToBin(op.bn1.ToTrimmedString());
-    std::vector<uint8_t> mod = *util::DecToBin(op.bn2.ToTrimmedString());
+    const auto base = aurora_engine_modexp_detail::Pad(
+            ds, *util::DecToBin(op.bn0.ToTrimmedString()));
+    const auto exp = aurora_engine_modexp_detail::Pad(
+            ds, *util::DecToBin(op.bn1.ToTrimmedString()));
+    const auto mod = aurora_engine_modexp_detail::Pad(
+            ds, *util::DecToBin(op.bn2.ToTrimmedString()));
 
 #if 0
     loops = 30000000 / util::Ethereum_ModExp::Gas(
@@ -49,7 +71,14 @@ std::optional<component::Bignum> aurora_engine_modexp::OpBignumCalc(operation::B
 
     std::reverse(result.begin(), result.end());
 
-    ret = util::BinToDec(result.data(), result.size());
+    {
+        const auto res = util::BinToDec(result.data(), result.size());
+        if ( op.bn2.IsZero() ) {
+            CF_ASSERT(res == "0", "ModExp with modulus is not 0");
+        } else {
+            ret = util::BinToDec(result.data(), result.size());
+        }
+    }
 
     return ret;
 }
