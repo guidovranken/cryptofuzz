@@ -243,6 +243,16 @@ class EC_POINT_Copier {
                 CF_CHECK_TRUE(z.Set(proj[2]));
                 CF_CHECK_NE(EC_POINT_set_Jprojective_coordinates_GFp(group->GetPtr(), GetPtr(), x.GetPtr(), y.GetPtr(), z.GetPtr(), nullptr), 0);
                 this->projective = true;
+
+#if !defined(CRYPTOFUZZ_LIBRESSL)
+                /* OpenSSL does not and will not check if a point set using
+                 * EC_POINT_set_Jprojective_coordinates_GFp is on the curve.
+                 *
+                 * https://github.com/openssl/openssl/issues/21228#issuecomment-1604229793
+                 */
+                CF_CHECK_EQ(EC_POINT_is_on_curve(group->GetPtr(), GetPtr(), nullptr), 1);
+#endif
+
 #endif
             }
 
