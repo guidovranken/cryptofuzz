@@ -850,13 +850,12 @@ func cryptofuzz_constantine_bls_generatekeypair(
         return -1
 
     var r: array[32, byte]
-    if serialize_seckey(r, s) != cttBLS_Success:
+    if serialize_seckey(r, s) != cttCodecScalar_Success:
         return -1
     copyMem(r_priv_bytes, addr r, r.len)
 
     var p {.noInit.}: PublicKey
-    if derive_pubkey(p, s) != cttBLS_Success:
-        return -1
+    derive_pubkey(p, s)
 
     saveG1(cast[ECP_ShortW_Aff[Fp[BLS12_381], G1]](p), r_pub_bytes)
 
@@ -869,7 +868,7 @@ func cryptofuzz_constantine_bls_decompress_g1(
     var c: array[48, byte]
     for i in countup(0, 47):
         c[i] = compressed[i]
-    if deserialize_pubkey_compressed(p, c) != cttBLS_Success:
+    if deserialize_pubkey_compressed(p, c) != cttCodecEcc_Success:
         return -1
 
     saveG1(cast[ECP_ShortW_Aff[Fp[BLS12_381], G1]](p), r_bytes)
@@ -884,7 +883,7 @@ func cryptofuzz_constantine_bls_compress_g1(
         return -1
 
     var r: array[48, byte]
-    if serialize_pubkey_compressed(r, cast[PublicKey](A)) != cttBLS_Success:
+    if serialize_pubkey_compressed(r, cast[PublicKey](A)) != cttCodecEcc_Success:
         return -1
     copyMem(r_bytes, addr r, r.len)
 
@@ -895,7 +894,7 @@ func cryptofuzz_constantine_bls_decompress_g2(
     var c: array[96, byte]
     for i in countup(0, 95):
         c[i] = compressed[i]
-    if deserialize_signature_compressed(p, c) != cttBLS_Success:
+    if deserialize_signature_compressed(p, c) != cttCodecEcc_Success:
         return -1
 
     saveG2(cast[ECP_ShortW_Aff[Fp2[BLS12_381], G2]](p), r_bytes)
@@ -910,7 +909,7 @@ func cryptofuzz_constantine_bls_compress_g2(
         return -1
 
     var r: array[96, byte]
-    if serialize_signature_compressed(r, cast[Signature](A)) != cttBLS_Success:
+    if serialize_signature_compressed(r, cast[Signature](A)) != cttCodecEcc_Success:
         return -1
     copyMem(r_bytes, addr r, r.len)
 
