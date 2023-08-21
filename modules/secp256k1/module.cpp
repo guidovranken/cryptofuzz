@@ -1531,13 +1531,7 @@ end:
                 break;
             case    CF_CALCOP("IsEq(A,B)"):
                 {
-                    bool var = false;
-                    try { var = ds.Get<bool>(); } catch ( ... ) { }
-
-                    const int r =
-                        var == false ?
-                            cryptofuzz_secp256k1_fe_equal(a, b) :
-                            cryptofuzz_secp256k1_fe_equal_var(a, b);
+                    const int r = cryptofuzz_secp256k1_fe_equal(a, b);
 
                     CF_NORET(cryptofuzz_secp256k1_fe_set_int(res, r));
                 }

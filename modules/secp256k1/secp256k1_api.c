@@ -145,10 +145,6 @@ int cryptofuzz_secp256k1_fe_equal(const void *a, const void *b) {
     return secp256k1_fe_equal(a, b);
 }
 
-int cryptofuzz_secp256k1_fe_equal_var(const void *a, const void *b) {
-    return secp256k1_fe_equal_var(a, b);
-}
-
 int cryptofuzz_secp256k1_fe_cmp_var(const void *a, const void *b) {
     return secp256k1_fe_cmp_var(a, b);
 }
