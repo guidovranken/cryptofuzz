@@ -40,7 +40,6 @@ int cryptofuzz_secp256k1_fe_is_odd(const void *a);
 int cryptofuzz_secp256k1_fe_is_zero(const void *a);
 void cryptofuzz_secp256k1_fe_clear(void *r);
 int cryptofuzz_secp256k1_fe_equal(const void *a, const void *b);
-int cryptofuzz_secp256k1_fe_equal_var(const void *a, const void *b);
 int cryptofuzz_secp256k1_fe_cmp_var(const void *a, const void *b);
 void cryptofuzz_secp256k1_fe_cmov(void *r, const void *a, const int flag);
 size_t cryptofuzz_secp256k1_fe_storage_size(void);
