@@ -170,11 +170,6 @@ class Set : public Operation {
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;
 };
 
-class Jacobi : public Operation {
-    public:
-        bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;
-};
-
 class Exp2 : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, BignumCluster& bn) const override;

@@ -3892,9 +3892,6 @@ std::optional<component::Bignum> wolfCrypt::OpBignumCalc(operation::BignumCalc& 
         case    CF_CALCOP("Set(A)"):
             opRunner = std::make_unique<wolfCrypt_bignum::Set>();
             break;
-        case    CF_CALCOP("Jacobi(A,B)"):
-            opRunner = std::make_unique<wolfCrypt_bignum::Jacobi>();
-            break;
         case    CF_CALCOP("Exp2(A)"):
             opRunner = std::make_unique<wolfCrypt_bignum::Exp2>();
             break;

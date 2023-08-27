@@ -1082,52 +1082,6 @@ end:
     return ret;
 }
 
-#if defined(HAVE_COMP_KEY) && !defined(WOLFSSL_SP_MATH)
-  #define HAVE_MP_JACOBI 1
-#endif
-
-#if defined(HAVE_MP_JACOBI)
-extern "C" {
-int mp_jacobi(mp_int* a, mp_int* n, int* c);
-}
-#endif
-
-bool Jacobi::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
-    bool ret = false;
-
-    (void)ds;
-
-#if !defined(HAVE_MP_JACOBI)
-    (void)res;
-    (void)bn;
-#else
-    if ( mp_isodd(bn[1].GetPtr()) ) {
-        int jacobi;
-        MP_CHECK_EQ(mp_jacobi(bn[0].GetPtr(), bn[1].GetPtr(), &jacobi), MP_OKAY);
-
-        switch ( jacobi ) {
-            case    1:
-                CF_CHECK_EQ( res.Set("1"), true);
-                break;
-            case    -1:
-                CF_CHECK_EQ( res.Set("-1"), true);
-                break;
-            case    0:
-                CF_CHECK_EQ( res.Set("0"), true);
-                break;
-            default:
-                CF_ASSERT(0, "mp_jacobi result is not one of (-1, 0, 1)");
-        }
-
-        ret = true;
-    }
-
-end:
-#endif
-
-    return ret;
-}
-
 bool Exp2::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
     (void)ds;
 
