@@ -12,6 +12,6 @@ module.a: module.o
 	ranlib module.a
 module.o: module.cpp module.h
 	test $(LIBECC_PATH)
-	$(CXX) $(CXXFLAGS) -DWITH_STDLIB -I $(LIBECC_PATH)/src -fPIC -c module.cpp -o module.o
+	$(CXX) $(CXXFLAGS) -DWITH_STDLIB -I $(LIBECC_PATH)/ -fPIC -c module.cpp -o module.o
 clean:
 	rm -rf *.o module.a
