@@ -8,8 +8,8 @@
 #define TOSTRING(x) STRINGIFY(x)
 
 extern "C" {
-    #include <include/libecc/libsig.h>
-    #include <include/libecc/hash/hmac.h>
+    #include <libecc/libsig.h>
+    #include <libecc/hash/hmac.h>
 }
 
 namespace cryptofuzz {
