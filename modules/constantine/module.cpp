@@ -239,7 +239,7 @@ std::optional<component::G1> Constantine::OpBLS_G1_Mul(operation::BLS_G1_Mul& op
     uint8_t which = 0;
 
     try {
-        which = ds.Get<uint8_t>() % 6;
+        which = ds.Get<uint8_t>() % 7;
     } catch ( fuzzing::datasource::Datasource::OutOfData ) {
     }
 
@@ -267,7 +267,6 @@ std::optional<component::G1> Constantine::OpBLS_G1_Mul(operation::BLS_G1_Mul& op
 
         CF_CHECK_NE(a_bytes = Constantine_detail::LoadG1<48>(op.a), std::nullopt);
         CF_CHECK_NE(b_bytes = Constantine_detail::LoadField<48>(op.b), std::nullopt);
-
         CF_CHECK_EQ(
                 cryptofuzz_constantine_bls_g1_mul(
                     1,
@@ -508,7 +507,7 @@ std::optional<component::G2> Constantine::OpBLS_G2_Mul(operation::BLS_G2_Mul& op
     uint8_t which = 0;
 
     try {
-        which = ds.Get<uint8_t>() % 6;
+        which = ds.Get<uint8_t>() % 7;
     } catch ( fuzzing::datasource::Datasource::OutOfData ) {
     }
 

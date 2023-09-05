@@ -41,6 +41,33 @@ func loadFp(
   dst.fromBig(big)
   return true
 
+proc isPowerOfTwo(n: int): bool {.inline.} =
+  (n and (n - 1)) == 0 and (n != 0)
+
+func roundNextMultipleOf(x: int, n: static int): int {.inline.} =
+  ## Round the input to the next multiple of "n"
+  when n.isPowerOfTwo():
+    # n is a power of 2. (If compiler cannot prove that x>0 it does not make the optim)
+    result = (x + n - 1) and not(n - 1)
+  else:
+    result = x.ceilDiv_vartime(n) * n
+
+proc loadScalar_BN254_Snarks(
+       dst: var matchingOrderBigInt(BN254_Snarks),
+       src: openarray[byte]) =
+    const maxBits = 8 * roundNextMultipleOf(BN254_Snarks.getCurveOrderBitwidth(), 8)
+    var tmp{.noinit.}: BigInt[maxBits]
+    tmp.unmarshal(src, bigEndian)
+    dst.reduce(tmp, BN254_Snarks.getCurveOrder())
+
+proc loadScalar_BLS12_381(
+       dst: var matchingOrderBigInt(BLS12_381),
+       src: openarray[byte]) =
+    const maxBits = 8 * roundNextMultipleOf(BLS12_381.getCurveOrderBitwidth(), 8)
+    var tmp{.noinit.}: BigInt[maxBits]
+    tmp.unmarshal(src, bigEndian)
+    dst.reduce(tmp, BLS12_381.getCurveOrder())
+
 func loadFr(
        dst: var Fr[BN254_Snarks],
        src: openarray[byte]): bool =
@@ -343,22 +370,22 @@ func cryptofuzz_constantine_bls_g1_add(
         return cryptofuzz_constantine_bls_g1_add_impl[Fp[BLS12_381]](a_bytes, b_bytes, r_bytes)
     assert(false)
 
-proc cryptofuzz_constantine_bls_g1_mul_impl[FpType, BNType](
+proc cryptofuzz_constantine_bls_g1_mul_impl_BN254_Snarks(
         a_bytes: openarray[uint8],
         b_bytes: openarray[uint8],
         which: uint8,
         r_bytes: ptr uint8) : cint =
     var fail = false
 
-    var A{.noInit.}: ECP_ShortW_Prj[FpType, G1]
+    var A{.noInit.}: ECP_ShortW_Prj[Fp[BN254_Snarks], G1]
     if loadG1(A, a_bytes) == false:
         return -1
 
-    if validate[FpType, G1](A) == false:
+    if validate[Fp[BN254_Snarks], G1](A) == false:
         fail = true
 
-    var B{.noInit.}: BNType
-    B.unmarshal(b_bytes, bigEndian)
+    var B{.noInit.}: matchingOrderBigInt(BN254_Snarks)
+    loadScalar_BN254_Snarks(B, b_bytes)
 
     if which == 0:
         A.scalarMul(B)
@@ -371,7 +398,49 @@ proc cryptofuzz_constantine_bls_g1_mul_impl[FpType, BNType](
     elif which == 4:
         A.scalarMul_minHammingWeight_windowed_vartime(B, window = 3)
     elif which == 5:
-        A.scalarMul_minHammingWeight_windowed_vartime(B, window = 16)
+        A.scalarMulEndo_minHammingWeight_windowed_vartime(B, window = 3)
+    elif which == 6:
+        A.scalarMulEndo_minHammingWeight_windowed_vartime(B, window = 4)
+    else:
+        assert(false)
+
+    if fail == true:
+        return -1
+
+    saveG1(A, r_bytes)
+    return 0
+
+proc cryptofuzz_constantine_bls_g1_mul_impl_BLS12_381(
+        a_bytes: openarray[uint8],
+        b_bytes: openarray[uint8],
+        which: uint8,
+        r_bytes: ptr uint8) : cint =
+    var fail = false
+
+    var A{.noInit.}: ECP_ShortW_Prj[Fp[BLS12_381], G1]
+    if loadG1(A, a_bytes) == false:
+        return -1
+
+    if validate[Fp[BLS12_381], G1](A) == false:
+        fail = true
+
+    var B{.noInit.}: matchingOrderBigInt(BLS12_381)
+    loadScalar_BLS12_381(B, b_bytes)
+
+    if which == 0:
+        A.scalarMul(B)
+    elif which == 1:
+        A.scalarMulGeneric(B)
+    elif which == 2:
+        A.scalarMul_doubleAdd_vartime(B)
+    elif which == 3:
+        A.scalarMul_minHammingWeight_vartime(B)
+    elif which == 4:
+        A.scalarMul_minHammingWeight_windowed_vartime(B, window = 3)
+    elif which == 5:
+        A.scalarMulEndo_minHammingWeight_windowed_vartime(B, window = 3)
+    elif which == 6:
+        A.scalarMulEndo_minHammingWeight_windowed_vartime(B, window = 4)
     else:
         assert(false)
 
@@ -389,9 +458,9 @@ func cryptofuzz_constantine_bls_g1_mul(
         r_bytes: ptr uint8) : cint {.exportc.} =
 
     if curve == 0:
-        return cryptofuzz_constantine_bls_g1_mul_impl[Fp[BN254_Snarks], BigInt[256]](a_bytes, b_bytes, which, r_bytes)
+        return cryptofuzz_constantine_bls_g1_mul_impl_BN254_Snarks(a_bytes, b_bytes, which, r_bytes)
     elif curve == 1:
-        return cryptofuzz_constantine_bls_g1_mul_impl[Fp[BLS12_381], BigInt[384]](a_bytes, b_bytes, which, r_bytes)
+        return cryptofuzz_constantine_bls_g1_mul_impl_BLS12_381(a_bytes, b_bytes, which, r_bytes)
     assert(false)
 
 proc cryptofuzz_constantine_bls_g1_multiexp_impl[FpType](
@@ -629,7 +698,9 @@ proc cryptofuzz_constantine_bls_g2_mul_impl[Fp2Type](
     elif which == 4:
         A.scalarMul_minHammingWeight_windowed_vartime(B, window = 3)
     elif which == 5:
-        A.scalarMul_minHammingWeight_windowed_vartime(B, window = 16)
+        A.scalarMulEndo_minHammingWeight_windowed_vartime(B, window = 3)
+    elif which == 6:
+        A.scalarMulEndo_minHammingWeight_windowed_vartime(B, window = 4)
     else:
         assert(false)
 
