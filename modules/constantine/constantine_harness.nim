@@ -41,6 +41,18 @@ func loadFp(
   dst.fromBig(big)
   return true
 
+func loadFp(
+       dst: var Fp[BLS12_377],
+       src: openarray[byte]): bool =
+  var big {.noInit.}: BigInt[377]
+  big.unmarshal(src, bigEndian)
+
+#  if not bool(big < Fp[BLS12_377].fieldMod()):
+#     return false
+
+  dst.fromBig(big)
+  return true
+
 proc isPowerOfTwo(n: int): bool {.inline.} =
   (n and (n - 1)) == 0 and (n != 0)
 
@@ -67,6 +79,14 @@ proc loadScalar_BLS12_381(
     var tmp{.noinit.}: BigInt[maxBits]
     tmp.unmarshal(src, bigEndian)
     dst.reduce(tmp, BLS12_381.getCurveOrder())
+
+proc loadScalar_BLS12_377(
+       dst: var matchingOrderBigInt(BLS12_377),
+       src: openarray[byte]) =
+    const maxBits = 8 * roundNextMultipleOf(BLS12_377.getCurveOrderBitwidth(), 8)
+    var tmp{.noinit.}: BigInt[maxBits]
+    tmp.unmarshal(src, bigEndian)
+    dst.reduce(tmp, BLS12_377.getCurveOrder())
 
 func loadFr(
        dst: var Fr[BN254_Snarks],
@@ -96,6 +116,8 @@ func fpSize(t: typedesc): int =
   if t is Fp[BN254_Snarks]:
     result = 32
   elif t is Fp[BLS12_381]:
+    result = 48
+  elif t is Fp[BLS12_377]:
     result = 48
   elif t is Fp2[BN254_Snarks]:
     result = 32
@@ -368,6 +390,8 @@ func cryptofuzz_constantine_bls_g1_add(
         return cryptofuzz_constantine_bls_g1_add_impl[Fp[BN254_Snarks]](a_bytes, b_bytes, r_bytes)
     elif curve == 1:
         return cryptofuzz_constantine_bls_g1_add_impl[Fp[BLS12_381]](a_bytes, b_bytes, r_bytes)
+    elif curve == 2:
+        return cryptofuzz_constantine_bls_g1_add_impl[Fp[BLS12_377]](a_bytes, b_bytes, r_bytes)
     assert(false)
 
 proc cryptofuzz_constantine_bls_g1_mul_impl_BN254_Snarks(
@@ -450,6 +474,46 @@ proc cryptofuzz_constantine_bls_g1_mul_impl_BLS12_381(
     saveG1(A, r_bytes)
     return 0
 
+proc cryptofuzz_constantine_bls_g1_mul_impl_BLS12_377(
+        a_bytes: openarray[uint8],
+        b_bytes: openarray[uint8],
+        which: uint8,
+        r_bytes: ptr uint8) : cint =
+    var fail = false
+
+    var A{.noInit.}: ECP_ShortW_Prj[Fp[BLS12_377], G1]
+    if loadG1(A, a_bytes) == false:
+        return -1
+
+    if validate[Fp[BLS12_377], G1](A) == false:
+        fail = true
+
+    var B{.noInit.}: matchingOrderBigInt(BLS12_377)
+    loadScalar_BLS12_377(B, b_bytes)
+
+    if which == 0:
+        A.scalarMul(B)
+    elif which == 1:
+        A.scalarMulGeneric(B)
+    elif which == 2:
+        A.scalarMul_doubleAdd_vartime(B)
+    elif which == 3:
+        A.scalarMul_minHammingWeight_vartime(B)
+    elif which == 4:
+        A.scalarMul_minHammingWeight_windowed_vartime(B, window = 3)
+    elif which == 5:
+        A.scalarMulEndo_minHammingWeight_windowed_vartime(B, window = 3)
+    elif which == 6:
+        A.scalarMulEndo_minHammingWeight_windowed_vartime(B, window = 4)
+    else:
+        assert(false)
+
+    if fail == true:
+        return -1
+
+    saveG1(A, r_bytes)
+    return 0
+
 func cryptofuzz_constantine_bls_g1_mul(
         curve: uint8,
         a_bytes: openarray[uint8],
@@ -461,6 +525,8 @@ func cryptofuzz_constantine_bls_g1_mul(
         return cryptofuzz_constantine_bls_g1_mul_impl_BN254_Snarks(a_bytes, b_bytes, which, r_bytes)
     elif curve == 1:
         return cryptofuzz_constantine_bls_g1_mul_impl_BLS12_381(a_bytes, b_bytes, which, r_bytes)
+    elif curve == 2:
+        return cryptofuzz_constantine_bls_g1_mul_impl_BLS12_377(a_bytes, b_bytes, which, r_bytes)
     assert(false)
 
 proc cryptofuzz_constantine_bls_g1_multiexp_impl[FpType](

@@ -226,6 +226,20 @@ std::optional<component::G1> Constantine::OpBLS_G1_Add(operation::BLS_G1_Add& op
                     result.data()), 0);
 
         ret = Constantine_detail::SaveG1<48>(result);
+    } else if ( op.curveType.Is(CF_ECC_CURVE("BLS12_377")) ) {
+        std::optional<std::array<uint8_t, 96>> a_bytes, b_bytes;
+        std::array<uint8_t, 96> result;
+
+        CF_CHECK_NE(a_bytes = Constantine_detail::LoadG1<48>(op.a), std::nullopt);
+        CF_CHECK_NE(b_bytes = Constantine_detail::LoadG1<48>(op.b), std::nullopt);
+        CF_CHECK_EQ(
+                cryptofuzz_constantine_bls_g1_add(
+                    2,
+                    a_bytes->data(), a_bytes->size(),
+                    b_bytes->data(), b_bytes->size(),
+                    result.data()), 0);
+
+        ret = Constantine_detail::SaveG1<48>(result);
     }
 
 end:
@@ -270,6 +284,22 @@ std::optional<component::G1> Constantine::OpBLS_G1_Mul(operation::BLS_G1_Mul& op
         CF_CHECK_EQ(
                 cryptofuzz_constantine_bls_g1_mul(
                     1,
+                    a_bytes->data(), a_bytes->size(),
+                    b_bytes->data(), b_bytes->size(),
+                    which,
+                    result.data()), 0);
+
+        ret = Constantine_detail::SaveG1<48>(result);
+    } else if ( op.curveType.Is(CF_ECC_CURVE("BLS12_377")) ) {
+        std::optional<std::array<uint8_t, 96>> a_bytes;
+        std::optional<std::array<uint8_t, 48>> b_bytes;
+        std::array<uint8_t, 96> result;
+
+        CF_CHECK_NE(a_bytes = Constantine_detail::LoadG1<48>(op.a), std::nullopt);
+        CF_CHECK_NE(b_bytes = Constantine_detail::LoadField<48>(op.b), std::nullopt);
+        CF_CHECK_EQ(
+                cryptofuzz_constantine_bls_g1_mul(
+                    2,
                     a_bytes->data(), a_bytes->size(),
                     b_bytes->data(), b_bytes->size(),
                     which,
