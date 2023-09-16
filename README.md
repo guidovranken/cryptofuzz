@@ -180,7 +180,6 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Zig: [Streaming SHA3 incorrect output](https://github.com/ziglang/zig/issues/14851)
 - Zig: [Argon2 outputs uninitialized memory with keysize > 64](https://github.com/ziglang/zig/issues/14912)
 - Boost multiprecision: [Loading cpp_int by std::string branches on uninitialized memory](https://github.com/boostorg/multiprecision/issues/526)
-- mbed TLS: [AES key wrap ciphertext cannot be decrypted](https://github.com/Mbed-TLS/mbedtls/issues/7322)
 - Zig: [secp256k1 scalar multiplication panics](https://github.com/ziglang/zig/issues/15267)
 - kilic-bls12-381: [Fr FromBytes does not reduce value if value is modulus](https://github.com/kilic/bls12-381/issues/40)
 - OpenSSL, LibreSSL, BoringSSL: [BN_mod_inverse incorrect result when parameters are aliased](https://github.com/openssl/openssl/issues/21110)

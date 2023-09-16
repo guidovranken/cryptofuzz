@@ -570,7 +570,9 @@ end:
 std::optional<component::Cleartext> mbedTLS::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
     std::optional<component::Cleartext> ret = std::nullopt;
 
-    if ( op.aad != std::nullopt || op.tag != std::nullopt ) {
+    if ( op.aad != std::nullopt ||
+         op.tag != std::nullopt ||
+        repository::IsWRAP(op.cipher.cipherType.Get()) ) {
         return mbedTLS_detail::decrypt_AEAD(op);
     }
 
