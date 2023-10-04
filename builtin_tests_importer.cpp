@@ -852,6 +852,36 @@ void Builtin_tests_importer::Run(void) {
         write(CF_OPERATION("BignumCalc"), dsOut2);
     }
 
+    {
+        /* Point with invalid order */
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["curveType"] = CF_ECC_CURVE("secp112r2");
+        parameters["pub_x"] = "3442185213147111329368355265766312";
+        parameters["pub_y"] = "3035790070451486434651648738331985";
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::ECC_ValidatePubkey op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("ECC_ValidatePubkey"), dsOut2);
+    }
+
+    {
+        /* Point with invalid order */
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["curveType"] = CF_ECC_CURVE("secp128r2");
+        parameters["pub_x"] = "23803343267601279673768051194421002560";
+        parameters["pub_y"] = "182978486853283131272443761147132517897";
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::ECC_ValidatePubkey op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("ECC_ValidatePubkey"), dsOut2);
+    }
+
     ecdsa_verify_tests();
     ecc_point_add_tests();
 }
