@@ -28,6 +28,64 @@ Botan::Botan(void) :
     if ( setenv("BOTAN_MLOCK_POOL_SIZE", "0", 1) != 0 ) {
         abort();
     }
+
+    /* Add a few curves */
+
+    {
+        const ::Botan::OID secp112r1_oid("1.3.132.0.6");
+        const ::Botan::EC_Group secp112r1(
+                ::Botan::BigInt("4451685225093714772084598273548427"),
+                ::Botan::BigInt("4451685225093714772084598273548424"),
+                ::Botan::BigInt("2061118396808653202902996166388514"),
+                ::Botan::BigInt("188281465057972534892223778713752"),
+                ::Botan::BigInt("3419875491033170827167861896082688"),
+                ::Botan::BigInt("4451685225093714776491891542548933"),
+                1,
+                secp112r1_oid);
+        ::Botan::OID::register_oid(secp112r1_oid, "secp112r1");
+    }
+
+    {
+        const ::Botan::OID secp112r2_oid("1.3.132.0.7");
+        const ::Botan::EC_Group secp112r2(
+                ::Botan::BigInt("4451685225093714772084598273548427"),
+                ::Botan::BigInt("1970543761890640310119143205433388"),
+                ::Botan::BigInt("1660538572255285715897238774208265"),
+                ::Botan::BigInt("1534098225527667214992304222930499"),
+                ::Botan::BigInt("3525120595527770847583704454622871"),
+                ::Botan::BigInt("1112921306273428674967732714786891"),
+                4,
+                secp112r2_oid);
+        ::Botan::OID::register_oid(secp112r2_oid, "secp112r2");
+    }
+
+    {
+        const ::Botan::OID secp128r1_oid("1.3.132.0.28");
+        const ::Botan::EC_Group secp128r1(
+                ::Botan::BigInt("340282366762482138434845932244680310783"),
+                ::Botan::BigInt("340282366762482138434845932244680310780"),
+                ::Botan::BigInt("308990863222245658030922601041482374867"),
+                ::Botan::BigInt("29408993404948928992877151431649155974"),
+                ::Botan::BigInt("275621562871047521857442314737465260675"),
+                ::Botan::BigInt("340282366762482138443322565580356624661"),
+                1,
+                secp128r1_oid);
+        ::Botan::OID::register_oid(secp128r1_oid, "secp128r1");
+    }
+
+    {
+        const ::Botan::OID secp128r2_oid("1.3.132.0.29");
+        const ::Botan::EC_Group secp128r2(
+                ::Botan::BigInt("340282366762482138434845932244680310783"),
+                ::Botan::BigInt("284470887156368047300405921324061011681"),
+                ::Botan::BigInt("126188322377389722996253562430093625949"),
+                ::Botan::BigInt("164048790688614013222215505581242564928"),
+                ::Botan::BigInt("52787839253935625605232456597451787076"),
+                ::Botan::BigInt("85070591690620534603955721926813660579"),
+                4,
+                secp128r2_oid);
+        ::Botan::OID::register_oid(secp128r2_oid, "secp128r2");
+    }
 }
 
 #if !defined(CRYPTOFUZZ_BOTAN_IS_ORACLE)
