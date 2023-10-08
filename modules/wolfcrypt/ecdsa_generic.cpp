@@ -1164,7 +1164,7 @@ end:
 
     if ( valid ) {
         if ( !haveAllocFailure ) {
-            if ( !*is_neg ) {
+            if ( is_neg && !*is_neg ) {
                 CF_ASSERT(!failed, "Point adding failed");
             }
         }
