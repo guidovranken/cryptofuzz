@@ -1,0 +1,8 @@
+*.o
+cryptofuzz
+generate_corpus
+generate_dict
+modules/*/*.a
+repository_map.h
+repository_tbl.h
+third_party/cpu_features/build/
