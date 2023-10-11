@@ -199,3 +199,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Constantine: [Modular exponentiation crash](https://github.com/mratsim/constantine/pull/251)
 - libtommath: [mp_exptmod incorrect result](https://github.com/libtom/libtommath/issues/563)
 - Botan: [Undefined behavior in AlignmentBuffer::fill_up_with_zeros](https://github.com/randombit/botan/issues/3734)
+- Constantine: [Modular exponentiation incorrect result due to uninitialized memory](https://github.com/mratsim/constantine/pull/280)
