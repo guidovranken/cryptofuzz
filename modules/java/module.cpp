@@ -63,6 +63,15 @@ namespace Java_detail {
 
         CF_ASSERT(env != nullptr, "Cannot instantiate JVM");
 
+#if defined(CRYPTOFUZZ_ACCP)
+        // Sets ACCP as the highest priority JCE provider.
+        jclass accp = env->FindClass("com/amazon/corretto/crypto/provider/AmazonCorrettoCryptoProvider");
+        CF_ASSERT(accp != nullptr, "Cannot find ACCP class.");
+        jmethodID accp_install = env->GetStaticMethodID(accp, "install", "()V");
+        CF_ASSERT(accp_install != nullptr, "Cannot find method");
+        env->CallStaticVoidMethod(accp, accp_install);
+#endif
+
 #if defined(JAVA_OSS_FUZZ)
         jclazz = env->DefineClass(
                 "CryptofuzzJavaHarness",
