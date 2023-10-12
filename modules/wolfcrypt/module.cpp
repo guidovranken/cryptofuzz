@@ -1278,6 +1278,12 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
     Aes aes;
     bool aes_inited = false;
 
+    /* https://github.com/wolfSSL/wolfssl/issues/6862 */
+#if 0
+    AesEax eax;
+    bool aes_eax_inited = false;
+#endif
+
     switch ( op.cipher.cipherType.Get() ) {
         case CF_CIPHER("AES_128_CBC"):
         case CF_CIPHER("AES_192_CBC"):
@@ -1978,12 +1984,82 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
         }
         break;
 #endif
+
+#if defined(WOLFSSL_AES_EAX)
+        case CF_CIPHER("AES_128_EAX"):
+        {
+            CF_CHECK_NE(op.tagSize, std::nullopt);
+            CF_CHECK_NE(op.aad, std::nullopt);
+
+            out = util::malloc(op.cleartext.GetSize());
+            outTag = util::malloc(*op.tagSize);
+
+            WC_CHECK_EQ(
+                    wc_AesEaxEncryptAuth(
+                        op.cipher.key.GetPtr(&ds),
+                        op.cipher.key.GetSize(),
+                        out,
+                        op.cleartext.GetPtr(&ds),
+                        op.cleartext.GetSize(),
+                        op.cipher.iv.GetPtr(&ds),
+                        op.cipher.iv.GetSize(),
+                        outTag,
+                        *op.tagSize,
+                        op.aad->GetPtr(&ds),
+                        op.aad->GetSize()), 0);
+            /* https://github.com/wolfSSL/wolfssl/issues/6862 */
+#if 0
+            WC_CHECK_EQ(
+                    wc_AesEaxInit(
+                        &eax,
+                        op.cipher.key.GetPtr(&ds),
+                        op.cipher.key.GetSize(),
+                        op.cipher.iv.GetPtr(&ds),
+                        op.cipher.iv.GetSize(),
+                        op.aad->GetPtr(&ds),
+                        op.aad->GetSize()), 0);
+            aes_eax_inited = true;
+
+            {
+                const auto partsData = util::ToParts(ds, op.cleartext);
+                size_t pos = 0;
+                for (const auto& part : partsData) {
+                    WC_CHECK_EQ(
+                            wc_AesEaxDecryptUpdate(
+                                &eax,
+                                out + pos,
+                                part.first,
+                                part.second,
+                                op.aad->GetPtr(&ds),
+                                op.aad->GetSize()), 0);
+                    pos += part.second;
+                }
+
+                WC_CHECK_EQ(
+                        wc_AesEaxDecryptFinal(
+                            &eax,
+                            op.aad->GetPtr(&ds),
+                            op.aad->GetSize()), 0);
+            }
+#endif
+
+            ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
+        }
+        break;
+#endif
     }
 
 end:
     if ( aes_inited == true ) {
         CF_NORET(wc_AesFree(&aes));
     }
+
+    /* https://github.com/wolfSSL/wolfssl/issues/6862 */
+#if 0
+    if ( aes_eax_inited == true ) {
+        CF_ASSERT(wc_AesEaxFree(&eax) == 0, "wc_AesEaxFree failed");
+    }
+#endif
     util::free(out);
     util::free(outTag);
 
@@ -2693,6 +2769,32 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
             WC_CHECK_EQ(wc_Sm4GcmSetKey(&ctx, op.cipher.key.GetPtr(&ds), op.cipher.key.GetSize()), 0);
             WC_CHECK_EQ(wc_Sm4GcmDecrypt(
                         &ctx,
+                        out,
+                        op.ciphertext.GetPtr(&ds),
+                        op.ciphertext.GetSize(),
+                        op.cipher.iv.GetPtr(&ds),
+                        op.cipher.iv.GetSize(),
+                        op.tag->GetPtr(&ds),
+                        op.tag->GetSize(),
+                        op.aad->GetPtr(&ds),
+                        op.aad->GetSize()), 0);
+
+            ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
+        }
+        break;
+#endif
+
+#if defined(WOLFSSL_AES_EAX)
+        case CF_CIPHER("AES_128_EAX"):
+        {
+            CF_CHECK_NE(op.aad, std::nullopt);
+            CF_CHECK_NE(op.tag, std::nullopt);
+
+            out = util::malloc(op.ciphertext.GetSize());
+
+            WC_CHECK_EQ(wc_AesEaxDecryptAuth(
+                        op.cipher.key.GetPtr(&ds),
+                        op.cipher.key.GetSize(),
                         out,
                         op.ciphertext.GetPtr(&ds),
                         op.ciphertext.GetSize(),
