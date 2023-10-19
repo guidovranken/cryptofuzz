@@ -1278,11 +1278,8 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
     Aes aes;
     bool aes_inited = false;
 
-    /* https://github.com/wolfSSL/wolfssl/issues/6862 */
-#if 0
     AesEax eax;
     bool aes_eax_inited = false;
-#endif
 
     switch ( op.cipher.cipherType.Get() ) {
         case CF_CIPHER("AES_128_CBC"):
@@ -1987,6 +1984,8 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
 
 #if defined(WOLFSSL_AES_EAX)
         case CF_CIPHER("AES_128_EAX"):
+        case CF_CIPHER("AES_192_EAX"):
+        case CF_CIPHER("AES_256_EAX"):
         {
             CF_CHECK_NE(op.tagSize, std::nullopt);
             CF_CHECK_NE(op.aad, std::nullopt);
@@ -1994,54 +1993,58 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
             out = util::malloc(op.cleartext.GetSize());
             outTag = util::malloc(*op.tagSize);
 
-            WC_CHECK_EQ(
-                    wc_AesEaxEncryptAuth(
-                        op.cipher.key.GetPtr(&ds),
-                        op.cipher.key.GetSize(),
-                        out,
-                        op.cleartext.GetPtr(&ds),
-                        op.cleartext.GetSize(),
-                        op.cipher.iv.GetPtr(&ds),
-                        op.cipher.iv.GetSize(),
-                        outTag,
-                        *op.tagSize,
-                        op.aad->GetPtr(&ds),
-                        op.aad->GetSize()), 0);
-            /* https://github.com/wolfSSL/wolfssl/issues/6862 */
-#if 0
-            WC_CHECK_EQ(
-                    wc_AesEaxInit(
-                        &eax,
-                        op.cipher.key.GetPtr(&ds),
-                        op.cipher.key.GetSize(),
-                        op.cipher.iv.GetPtr(&ds),
-                        op.cipher.iv.GetSize(),
-                        op.aad->GetPtr(&ds),
-                        op.aad->GetSize()), 0);
-            aes_eax_inited = true;
+            bool oneShot = true;
+            try {
+                oneShot = ds.Get<bool>();
+            } catch ( ... ) { }
 
-            {
-                const auto partsData = util::ToParts(ds, op.cleartext);
-                size_t pos = 0;
-                for (const auto& part : partsData) {
-                    WC_CHECK_EQ(
-                            wc_AesEaxDecryptUpdate(
-                                &eax,
-                                out + pos,
-                                part.first,
-                                part.second,
-                                op.aad->GetPtr(&ds),
-                                op.aad->GetSize()), 0);
-                    pos += part.second;
-                }
-
+            if ( oneShot == true ) {
                 WC_CHECK_EQ(
-                        wc_AesEaxDecryptFinal(
-                            &eax,
+                        wc_AesEaxEncryptAuth(
+                            op.cipher.key.GetPtr(&ds),
+                            op.cipher.key.GetSize(),
+                            out,
+                            op.cleartext.GetPtr(&ds),
+                            op.cleartext.GetSize(),
+                            op.cipher.iv.GetPtr(&ds),
+                            op.cipher.iv.GetSize(),
+                            outTag,
+                            *op.tagSize,
                             op.aad->GetPtr(&ds),
                             op.aad->GetSize()), 0);
+            } else {
+                WC_CHECK_EQ(
+                        wc_AesEaxInit(
+                            &eax,
+                            op.cipher.key.GetPtr(&ds),
+                            op.cipher.key.GetSize(),
+                            op.cipher.iv.GetPtr(&ds),
+                            op.cipher.iv.GetSize(),
+                            op.aad->GetPtr(&ds),
+                            op.aad->GetSize()), 0);
+                aes_eax_inited = true;
+
+                {
+                    const auto partsData = util::ToParts(ds, op.cleartext);
+                    size_t pos = 0;
+                    for (const auto& part : partsData) {
+                        WC_CHECK_EQ(
+                                wc_AesEaxEncryptUpdate(
+                                    &eax,
+                                    out + pos,
+                                    part.first,
+                                    part.second,
+                                    nullptr, 0), 0);
+                        pos += part.second;
+                    }
+
+                    WC_CHECK_EQ(
+                            wc_AesEaxEncryptFinal(
+                                &eax,
+                                outTag,
+                                *op.tagSize), 0);
+                }
             }
-#endif
 
             ret = component::Ciphertext(Buffer(out, op.cleartext.GetSize()), Buffer(outTag, *op.tagSize));
         }
@@ -2054,12 +2057,10 @@ end:
         CF_NORET(wc_AesFree(&aes));
     }
 
-    /* https://github.com/wolfSSL/wolfssl/issues/6862 */
-#if 0
     if ( aes_eax_inited == true ) {
         CF_ASSERT(wc_AesEaxFree(&eax) == 0, "wc_AesEaxFree failed");
     }
-#endif
+
     util::free(out);
     util::free(outTag);
 
@@ -2078,6 +2079,9 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
 
     Aes aes;
     bool aes_inited = false;
+
+    AesEax eax;
+    bool aes_eax_inited = false;
 
     switch ( op.cipher.cipherType.Get() ) {
         case CF_CIPHER("AES_128_CBC"):
@@ -2786,24 +2790,65 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
 
 #if defined(WOLFSSL_AES_EAX)
         case CF_CIPHER("AES_128_EAX"):
+        case CF_CIPHER("AES_192_EAX"):
+        case CF_CIPHER("AES_256_EAX"):
         {
             CF_CHECK_NE(op.aad, std::nullopt);
             CF_CHECK_NE(op.tag, std::nullopt);
 
             out = util::malloc(op.ciphertext.GetSize());
 
-            WC_CHECK_EQ(wc_AesEaxDecryptAuth(
-                        op.cipher.key.GetPtr(&ds),
-                        op.cipher.key.GetSize(),
-                        out,
-                        op.ciphertext.GetPtr(&ds),
-                        op.ciphertext.GetSize(),
-                        op.cipher.iv.GetPtr(&ds),
-                        op.cipher.iv.GetSize(),
-                        op.tag->GetPtr(&ds),
-                        op.tag->GetSize(),
-                        op.aad->GetPtr(&ds),
-                        op.aad->GetSize()), 0);
+            bool oneShot = true;
+            try {
+                oneShot = ds.Get<bool>();
+            } catch ( ... ) { }
+
+            if ( oneShot == true ) {
+                WC_CHECK_EQ(wc_AesEaxDecryptAuth(
+                            op.cipher.key.GetPtr(&ds),
+                            op.cipher.key.GetSize(),
+                            out,
+                            op.ciphertext.GetPtr(&ds),
+                            op.ciphertext.GetSize(),
+                            op.cipher.iv.GetPtr(&ds),
+                            op.cipher.iv.GetSize(),
+                            op.tag->GetPtr(&ds),
+                            op.tag->GetSize(),
+                            op.aad->GetPtr(&ds),
+                            op.aad->GetSize()), 0);
+            } else {
+                WC_CHECK_EQ(
+                        wc_AesEaxInit(
+                            &eax,
+                            op.cipher.key.GetPtr(&ds),
+                            op.cipher.key.GetSize(),
+                            op.cipher.iv.GetPtr(&ds),
+                            op.cipher.iv.GetSize(),
+                            op.aad->GetPtr(&ds),
+                            op.aad->GetSize()), 0);
+                aes_eax_inited = true;
+
+                {
+                    const auto partsData = util::ToParts(ds, op.ciphertext);
+                    size_t pos = 0;
+                    for (const auto& part : partsData) {
+                        WC_CHECK_EQ(
+                                wc_AesEaxDecryptUpdate(
+                                    &eax,
+                                    out + pos,
+                                    part.first,
+                                    part.second,
+                                    nullptr, 0), 0);
+                        pos += part.second;
+                    }
+                }
+
+                WC_CHECK_EQ(
+                        wc_AesEaxDecryptFinal(
+                            &eax,
+                            op.tag->GetPtr(&ds),
+                            op.tag->GetSize()), 0);
+            }
 
             ret = component::Cleartext(Buffer(out, op.ciphertext.GetSize()));
         }
@@ -2815,6 +2860,11 @@ end:
     if ( aes_inited == true ) {
         CF_NORET(wc_AesFree(&aes));
     }
+
+    if ( aes_eax_inited == true ) {
+        CF_ASSERT(wc_AesEaxFree(&eax) == 0, "wc_AesEaxFree failed");
+    }
+
     util::free(in);
     util::free(out);
 
