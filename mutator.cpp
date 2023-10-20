@@ -1936,6 +1936,36 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
                     op.Serialize(dsOut2);
                 }
                 break;
+            case    CF_OPERATION("KDF_SRTP"):
+                {
+                    parameters["modifier"] = "";
+                    parameters["key"] = getBuffer(PRNG() % 64);
+                    parameters["salt"] = getBuffer(PRNG() % 20);
+                    parameters["kdr"] = PRNG() % 256;
+                    parameters["index"] = PRNG();
+                    parameters["key1Size"] = PRNG() % (1024 * 1024);
+                    parameters["key2Size"] = PRNG() % (1024 * 1024);
+                    parameters["key3Size"] = PRNG() % (1024 * 1024);
+
+                    cryptofuzz::operation::KDF_SRTP op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
+            case    CF_OPERATION("KDF_SRTCP"):
+                {
+                    parameters["modifier"] = "";
+                    parameters["key"] = getBuffer(PRNG() % 64);
+                    parameters["salt"] = getBuffer(PRNG() % 20);
+                    parameters["kdr"] = PRNG() % 256;
+                    parameters["index"] = PRNG();
+                    parameters["key1Size"] = PRNG() % (1024 * 1024);
+                    parameters["key2Size"] = PRNG() % (1024 * 1024);
+                    parameters["key3Size"] = PRNG() % (1024 * 1024);
+
+                    cryptofuzz::operation::KDF_SRTCP op(parameters);
+                    op.Serialize(dsOut2);
+                }
+                break;
             case    CF_OPERATION("DH_GenerateKeyPair"):
                 {
                     parameters["modifier"] = getBuffer(PRNG() % 1000);

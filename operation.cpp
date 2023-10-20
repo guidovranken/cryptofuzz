@@ -439,6 +439,66 @@ nlohmann::json KDF_SP_800_108::ToJSON(void) const {
     return j;
 }
 
+std::string KDF_SRTP::Name(void) const { return "KDF_SRTP"; }
+std::string KDF_SRTP::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: KDF_SRTP" << std::endl;
+    ss << "key: " << util::HexDump(key.Get()) << std::endl;
+    ss << "salt: " << util::HexDump(salt.Get()) << std::endl;
+    ss << "kdr: " << std::to_string(kdr) << std::endl;
+    ss << "index: " << std::to_string(index) << std::endl;
+    ss << "key1Size: " << std::to_string(key1Size) << std::endl;
+    ss << "key2Size: " << std::to_string(key2Size) << std::endl;
+    ss << "key3Size: " << std::to_string(key3Size) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json KDF_SRTP::ToJSON(void) const {
+    nlohmann::json j;
+    j["operation"] = "KDF_SRTP";
+    j["key"] = key.ToJSON();
+    j["salt"] = salt.ToJSON();
+    j["kdr"] = kdr;
+    j["index"] = index;
+    j["key1Size"] = key1Size;
+    j["key2Size"] = key2Size;
+    j["key3Size"] = key3Size;
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
+std::string KDF_SRTCP::Name(void) const { return "KDF_SRTCP"; }
+std::string KDF_SRTCP::ToString(void) const {
+    std::stringstream ss;
+
+    ss << "operation name: KDF_SRTCP" << std::endl;
+    ss << "key: " << util::HexDump(key.Get()) << std::endl;
+    ss << "salt: " << util::HexDump(salt.Get()) << std::endl;
+    ss << "kdr: " << std::to_string(kdr) << std::endl;
+    ss << "index: " << std::to_string(index) << std::endl;
+    ss << "key1Size: " << std::to_string(key1Size) << std::endl;
+    ss << "key2Size: " << std::to_string(key2Size) << std::endl;
+    ss << "key3Size: " << std::to_string(key3Size) << std::endl;
+
+    return ss.str();
+}
+
+nlohmann::json KDF_SRTCP::ToJSON(void) const {
+    nlohmann::json j;
+    j["operation"] = "KDF_SRTCP";
+    j["key"] = key.ToJSON();
+    j["salt"] = salt.ToJSON();
+    j["kdr"] = kdr;
+    j["index"] = index;
+    j["key1Size"] = key1Size;
+    j["key2Size"] = key2Size;
+    j["key3Size"] = key3Size;
+    j["modifier"] = modifier.ToJSON();
+    return j;
+}
+
 std::string CMAC::Name(void) const { return "CMAC"; }
 std::string CMAC::ToString(void) const {
     std::stringstream ss;

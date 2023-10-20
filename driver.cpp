@@ -33,6 +33,8 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
     static ExecutorKDF_X963 executorKDF_X963(CF_OPERATION("KDF_X963"), modules, options);
     static ExecutorKDF_BCRYPT executorKDF_BCRYPT(CF_OPERATION("KDF_BCRYPT"), modules, options);
     static ExecutorKDF_SP_800_108 executorKDF_SP_800_108(CF_OPERATION("KDF_SP_800_108"), modules, options);
+    static ExecutorKDF_SRTP executorKDF_SRTP(CF_OPERATION("KDF_SRTP"), modules, options);
+    static ExecutorKDF_SRTCP executorKDF_SRTCP(CF_OPERATION("KDF_SRTCP"), modules, options);
     static ExecutorECC_PrivateToPublic executorECC_PrivateToPublic(CF_OPERATION("ECC_PrivateToPublic"), modules, options);
     static ExecutorECC_ValidatePubkey executorECC_ValidatePubkey(CF_OPERATION("ECC_ValidatePubkey"), modules, options);
     static ExecutorECC_GenerateKeyPair executorECC_GenerateKeyPair(CF_OPERATION("ECC_GenerateKeyPair"), modules, options);
@@ -185,6 +187,12 @@ void Driver::Run(const uint8_t* data, const size_t size) const {
                 break;
             case CF_OPERATION("KDF_SP_800_108"):
                 executorKDF_SP_800_108.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("KDF_SRTP"):
+                executorKDF_SRTP.Run(ds, payload.data(), payload.size());
+                break;
+            case CF_OPERATION("KDF_SRTCP"):
+                executorKDF_SRTCP.Run(ds, payload.data(), payload.size());
                 break;
             case CF_OPERATION("ECC_PrivateToPublic"):
                 executorECC_PrivateToPublic.Run(ds, payload.data(), payload.size());

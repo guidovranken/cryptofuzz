@@ -450,6 +450,16 @@ std::string ToString(const component::DSA_Signature& val) {
     return ret;
 }
 
+std::string ToString(const component::Key3& val) {
+    std::string ret;
+
+    ret += "Key 1: " + ToString(val[0]) + "\n";
+    ret += "Key 2: " + ToString(val[1]) + "\n";
+    ret += "Key 3: " + ToString(val[2]) + "\n";
+
+    return ret;
+}
+
 nlohmann::json ToJSON(const Buffer& buffer) {
     return buffer.ToJSON();
 }
@@ -516,6 +526,14 @@ nlohmann::json ToJSON(const component::DSA_Parameters& val) {
 
 nlohmann::json ToJSON(const component::DSA_Signature& val) {
     return val.ToJSON();
+}
+
+nlohmann::json ToJSON(const component::Key3& val) {
+    return nlohmann::json{
+        val[0].ToJSON(),
+        val[1].ToJSON(),
+        val[2].ToJSON(),
+    };
 }
 
 class HaveBadPointer {

@@ -84,6 +84,14 @@ class Module {
             (void)op;
             return std::nullopt;
         }
+        virtual std::optional<component::Key3> OpKDF_SRTP(operation::KDF_SRTP& op) {
+            (void)op;
+            return std::nullopt;
+        }
+        virtual std::optional<component::Key3> OpKDF_SRTCP(operation::KDF_SRTCP& op) {
+            (void)op;
+            return std::nullopt;
+        }
         virtual std::optional<component::MAC> OpCMAC(operation::CMAC& op) {
             (void)op;
             return std::nullopt;

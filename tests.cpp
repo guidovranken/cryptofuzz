@@ -267,6 +267,16 @@ void test(const operation::KDF_SP_800_108& op, const std::optional<component::Ke
     verifyKeySize(op, result);
 }
 
+void test(const operation::KDF_SRTP& op, const std::optional<component::Key3>& result) {
+    (void)op;
+    (void)result;
+}
+
+void test(const operation::KDF_SRTCP& op, const std::optional<component::Key3>& result) {
+    (void)op;
+    (void)result;
+}
+
 static bool IsSpecialCurve(const uint64_t curveID) {
     switch ( curveID ) {
         case CF_ECC_CURVE("ed448"):

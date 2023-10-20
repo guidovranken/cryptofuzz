@@ -825,6 +825,118 @@ class KDF_SP_800_108 : public Operation {
         }
 };
 
+class KDF_SRTP : public Operation {
+    public:
+        const component::Cleartext key;
+        const component::Cleartext salt;
+        const uint8_t kdr;
+        const uint64_t index;
+        const uint64_t key1Size;
+        const uint64_t key2Size;
+        const uint64_t key3Size;
+
+        KDF_SRTP(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            key(ds),
+            salt(ds),
+            kdr(ds.Get<uint8_t>()),
+            index(ds.Get<uint64_t>()),
+            key1Size(ds.Get<uint64_t>() % (1024*1024)),
+            key2Size(ds.Get<uint64_t>() % (1024*1024)),
+            key3Size(ds.Get<uint64_t>() % (1024*1024))
+        { }
+        KDF_SRTP(nlohmann::json json) :
+            Operation(json["modifier"]),
+            key(json["key"]),
+            salt(json["salt"]),
+            kdr(json["kdr"].get<uint8_t>()),
+            index(json["index"].get<uint64_t>()),
+            key1Size(json["key1Size"].get<uint64_t>()),
+            key2Size(json["key2Size"].get<uint64_t>()),
+            key3Size(json["key3Size"].get<uint64_t>())
+        { }
+
+        static size_t MaxOperations(void) { return 20; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const KDF_SRTP& rhs) const {
+            return
+                (key == rhs.key) &&
+                (salt == rhs.salt) &&
+                (kdr == rhs.kdr) &&
+                (index == rhs.index) &&
+                (key1Size == rhs.key1Size) &&
+                (key2Size == rhs.key2Size) &&
+                (key3Size == rhs.key3Size) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            key.Serialize(ds);
+            salt.Serialize(ds);
+            ds.Put<>(kdr);
+            ds.Put<>(key1Size);
+            ds.Put<>(key2Size);
+            ds.Put<>(key3Size);
+        }
+};
+
+class KDF_SRTCP : public Operation {
+    public:
+        const component::Cleartext key;
+        const component::Cleartext salt;
+        const uint8_t kdr;
+        const uint32_t index;
+        const uint64_t key1Size;
+        const uint64_t key2Size;
+        const uint64_t key3Size;
+
+        KDF_SRTCP(Datasource& ds, component::Modifier modifier) :
+            Operation(std::move(modifier)),
+            key(ds),
+            salt(ds),
+            kdr(ds.Get<uint8_t>()),
+            index(ds.Get<uint32_t>()),
+            key1Size(ds.Get<uint64_t>() % (1024*1024)),
+            key2Size(ds.Get<uint64_t>() % (1024*1024)),
+            key3Size(ds.Get<uint64_t>() % (1024*1024))
+        { }
+        KDF_SRTCP(nlohmann::json json) :
+            Operation(json["modifier"]),
+            key(json["key"]),
+            salt(json["salt"]),
+            kdr(json["kdr"].get<uint8_t>()),
+            index(json["index"].get<uint32_t>()),
+            key1Size(json["key1Size"].get<uint64_t>()),
+            key2Size(json["key2Size"].get<uint64_t>()),
+            key3Size(json["key3Size"].get<uint64_t>())
+        { }
+
+        static size_t MaxOperations(void) { return 20; }
+        std::string Name(void) const override;
+        std::string ToString(void) const override;
+        nlohmann::json ToJSON(void) const override;
+        inline bool operator==(const KDF_SRTCP& rhs) const {
+            return
+                (key == rhs.key) &&
+                (salt == rhs.salt) &&
+                (kdr == rhs.kdr) &&
+                (index == rhs.index) &&
+                (key1Size == rhs.key1Size) &&
+                (key2Size == rhs.key2Size) &&
+                (key3Size == rhs.key3Size) &&
+                (modifier == rhs.modifier);
+        }
+        void Serialize(Datasource& ds) const {
+            key.Serialize(ds);
+            salt.Serialize(ds);
+            ds.Put<>(kdr);
+            ds.Put<>(key1Size);
+            ds.Put<>(key2Size);
+            ds.Put<>(key3Size);
+        }
+};
+
 class CMAC : public Operation {
     public:
         const component::Cleartext cleartext;

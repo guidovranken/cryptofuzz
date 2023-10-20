@@ -23,6 +23,7 @@ using SymmetricIV = Buffer;
 using SymmetricKey = Buffer;
 using AsymmetricPrivKey = Buffer;
 using Key = Buffer;
+using Key3 = std::array<Key, 3>;
 using Envelope = Buffer;
 using Signature = Buffer;
 using PrivateKeyPEM = Buffer;

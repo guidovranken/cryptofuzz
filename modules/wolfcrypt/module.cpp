@@ -3167,6 +3167,90 @@ end:
     return ret;
 }
 
+std::optional<component::Key3> wolfCrypt::OpKDF_SRTP(operation::KDF_SRTP& op) {
+#if !defined(WC_SRTP_KDF)
+    (void)op;
+    return std::nullopt;
+#else
+    std::optional<component::Key3> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    uint8_t index8[8];
+    memcpy(index8, &op.index, 8);
+    uint8_t* index = util::malloc(6);
+    memcpy(index, index8, 6);
+
+    uint8_t* key1 = util::malloc(op.key1Size);
+    uint8_t* key2 = util::malloc(op.key2Size);
+    uint8_t* key3 = util::malloc(op.key3Size);
+
+    WC_CHECK_EQ(
+            wc_SRTP_KDF(
+                op.key.GetPtr(&ds), op.key.GetSize(),
+                op.salt.GetPtr(&ds), op.salt.GetSize(),
+                op.kdr,
+                index,
+                key1, op.key1Size,
+                key2, op.key2Size,
+                key3, op.key3Size), 0);
+
+    ret = {
+        component::Key(key1, op.key1Size),
+        component::Key(key2, op.key2Size),
+        component::Key(key3, op.key3Size),
+    };
+
+end:
+    util::free(index);
+    util::free(key1);
+    util::free(key2);
+    util::free(key3);
+
+    return ret;
+#endif
+}
+
+std::optional<component::Key3> wolfCrypt::OpKDF_SRTCP(operation::KDF_SRTCP& op) {
+#if !defined(WC_SRTP_KDF)
+    (void)op;
+    return std::nullopt;
+#else
+    std::optional<component::Key3> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    uint8_t* index = util::malloc(4);
+    memcpy(index, &op.index, 4);
+
+    uint8_t* key1 = util::malloc(op.key1Size);
+    uint8_t* key2 = util::malloc(op.key2Size);
+    uint8_t* key3 = util::malloc(op.key3Size);
+
+    WC_CHECK_EQ(
+            wc_SRTCP_KDF(
+                op.key.GetPtr(&ds), op.key.GetSize(),
+                op.salt.GetPtr(&ds), op.salt.GetSize(),
+                op.kdr,
+                index,
+                key1, op.key1Size,
+                key2, op.key2Size,
+                key3, op.key3Size), 0);
+
+    ret = {
+        component::Key(key1, op.key1Size),
+        component::Key(key2, op.key2Size),
+        component::Key(key3, op.key3Size),
+    };
+
+end:
+    util::free(index);
+    util::free(key1);
+    util::free(key2);
+    util::free(key3);
+
+    return ret;
+#endif
+}
+
 namespace wolfCrypt_detail {
     std::optional<int> toCurveID(const component::CurveType& curveType) {
         static const std::map<uint64_t, int> LUT = {

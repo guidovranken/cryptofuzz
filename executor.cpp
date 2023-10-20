@@ -404,6 +404,27 @@ template<> std::optional<component::Key> ExecutorBase<component::Key, operation:
     return module->OpKDF_SP_800_108(op);
 }
 
+/* Specialization for operation::KDF_SRTP */
+template<> void ExecutorBase<component::Key3, operation::KDF_SRTP>::postprocess(std::shared_ptr<Module> module, operation::KDF_SRTP& op, const ExecutorBase<component::Key3, operation::KDF_SRTP>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::Key3> ExecutorBase<component::Key3, operation::KDF_SRTP>::callModule(std::shared_ptr<Module> module, operation::KDF_SRTP& op) const {
+    return module->OpKDF_SRTP(op);
+}
+
+/* Specialization for operation::KDF_SRTCP */
+template<> void ExecutorBase<component::Key3, operation::KDF_SRTCP>::postprocess(std::shared_ptr<Module> module, operation::KDF_SRTCP& op, const ExecutorBase<component::Key3, operation::KDF_SRTCP>::ResultPair& result) const {
+    (void)module;
+    (void)op;
+    (void)result;
+}
+
+template<> std::optional<component::Key3> ExecutorBase<component::Key3, operation::KDF_SRTCP>::callModule(std::shared_ptr<Module> module, operation::KDF_SRTCP& op) const {
+    return module->OpKDF_SRTCP(op);
+}
 
 /* Specialization for operation::ECC_PrivateToPublic */
 template<> void ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>::postprocess(std::shared_ptr<Module> module, operation::ECC_PrivateToPublic& op, const ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>::ResultPair& result) const {
@@ -2822,6 +2843,8 @@ template class ExecutorBase<component::Key, operation::KDF_SSH>;
 template class ExecutorBase<component::Key, operation::KDF_X963>;
 template class ExecutorBase<component::Key, operation::KDF_BCRYPT>;
 template class ExecutorBase<component::Key, operation::KDF_SP_800_108>;
+template class ExecutorBase<component::Key3, operation::KDF_SRTP>;
+template class ExecutorBase<component::Key3, operation::KDF_SRTCP>;
 template class ExecutorBase<component::ECC_PublicKey, operation::ECC_PrivateToPublic>;
 template class ExecutorBase<bool, operation::ECC_ValidatePubkey>;
 template class ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyPair>;
