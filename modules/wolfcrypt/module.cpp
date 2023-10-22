@@ -1278,8 +1278,10 @@ std::optional<component::Ciphertext> wolfCrypt::OpSymmetricEncrypt(operation::Sy
     Aes aes;
     bool aes_inited = false;
 
+#if defined(WOLFSSL_AES_EAX)
     AesEax eax;
     bool aes_eax_inited = false;
+#endif
 
     switch ( op.cipher.cipherType.Get() ) {
         case CF_CIPHER("AES_128_CBC"):
@@ -2057,9 +2059,11 @@ end:
         CF_NORET(wc_AesFree(&aes));
     }
 
+#if defined(WOLFSSL_AES_EAX)
     if ( aes_eax_inited == true ) {
         CF_ASSERT(wc_AesEaxFree(&eax) == 0, "wc_AesEaxFree failed");
     }
+#endif
 
     util::free(out);
     util::free(outTag);
@@ -2080,8 +2084,10 @@ std::optional<component::Cleartext> wolfCrypt::OpSymmetricDecrypt(operation::Sym
     Aes aes;
     bool aes_inited = false;
 
+#if defined(WOLFSSL_AES_EAX)
     AesEax eax;
     bool aes_eax_inited = false;
+#endif
 
     switch ( op.cipher.cipherType.Get() ) {
         case CF_CIPHER("AES_128_CBC"):
@@ -2861,9 +2867,11 @@ end:
         CF_NORET(wc_AesFree(&aes));
     }
 
+#if defined(WOLFSSL_AES_EAX)
     if ( aes_eax_inited == true ) {
         CF_ASSERT(wc_AesEaxFree(&eax) == 0, "wc_AesEaxFree failed");
     }
+#endif
 
     util::free(in);
     util::free(out);
