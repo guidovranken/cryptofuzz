@@ -19,7 +19,14 @@
 #define CF_CHECK_FALSE(expr) if ( (expr) ) { goto end; }
 #define CF_ASSERT(expr, msg) if ( !(expr) ) { printf("Cryptofuzz assertion failure: %s\n", msg); ::abort(); }
 #define CF_ASSERT_EQ(expr, res) if ( (expr) != (res) ) { printf("Cryptofuzz assertion failure\n"); ::abort(); }
-#define CF_ASSERT_EQ_COND(expr, res, cond) if ( (expr) != (res) && !(cond) ) { printf("Cryptofuzz assertion failure\n"); ::abort(); } else goto end;
+#define CF_ASSERT_EQ_COND(expr, res, cond) \
+    if ( (expr) != (res) ) { \
+        if ( (cond) ) { \
+            goto end; \
+        } else { \
+            printf("Cryptofuzz assertion failure\n"); ::abort(); \
+        } \
+    }
 #define CF_UNREACHABLE() CF_ASSERT(0, "This code is supposed to be unreachable")
 #define CF_NORET(expr) {static_assert(std::is_same<decltype(expr), void>::value, "void"); (expr);}
 

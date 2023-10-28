@@ -610,16 +610,22 @@ bool MulMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
     GET_WHICH(2);
     switch ( which ) {
         case    0:
-            CF_ASSERT_EQ_COND(
-                    BN_mod_mul(
-                        bn.GetResPtr(),
-                        bn[0].GetPtr(),
-                        bn[1].GetPtr(),
-                        bn[2].GetPtr(),
-                        ctx.GetPtr()),
-                1,
-                BN_is_zero(bn[2].GetPtr()));
-            CF_NORET(bn.CopyResult(res));
+            {
+                BIGNUM* r = bn.GetResPtr();
+                const BIGNUM* a = bn[0].GetPtr();
+                const BIGNUM* b = bn[1].GetPtr();
+                const BIGNUM* m = bn[2].GetPtr();
+                CF_ASSERT_EQ_COND(
+                        BN_mod_mul(
+                            r, a, b, m,
+                            ctx.GetPtr()),
+                        1,
+                        /* Can fail with zero modulus */
+                        BN_is_zero(m) ||
+                        /* Aliasing result and modulus is prohibited */
+                        r == m);
+                CF_NORET(bn.CopyResult(res));
+            }
             break;
 #if !defined(CRYPTOFUZZ_OPENSSL_098)
         /* Bug */
@@ -724,10 +730,16 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) co
     GET_WHICH(2);
     switch ( which ) {
         case    0:
-            fail = true;
-            CF_CHECK_NE(BN_mod_inverse(bn.GetResPtr(), bn[0].GetPtr(), bn[1].GetPtr(), ctx.GetPtr()), nullptr);
-            CF_NORET(bn.CopyResult(res));
-            fail = false;
+            {
+                BIGNUM* r = bn.GetResPtr();
+                const BIGNUM* a = bn[0].GetPtr();
+                const BIGNUM* n = bn[1].GetPtr();
+                CF_CHECK_NE(r, n);
+                fail = true;
+                CF_CHECK_NE(BN_mod_inverse(r, a, n, ctx.GetPtr()), nullptr);
+                CF_NORET(bn.CopyResult(res));
+                fail = false;
+            }
             break;
 #if defined(CRYPTOFUZZ_BORINGSSL)
         case    1:
