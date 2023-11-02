@@ -882,6 +882,23 @@ void Builtin_tests_importer::Run(void) {
         write(CF_OPERATION("ECC_ValidatePubkey"), dsOut2);
     }
 
+    {
+        /* Point with invalid order.
+         * May produce incorrect result in implementations
+         * that have an otherwise adequate order check */
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["curveType"] = CF_ECC_CURVE("secp112r2");
+        parameters["pub_x"] = "3610075134545239076002374364665933";
+        parameters["pub_y"] = "0";
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::ECC_ValidatePubkey op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("ECC_ValidatePubkey"), dsOut2);
+    }
+
     ecdsa_verify_tests();
     ecc_point_add_tests();
 }
