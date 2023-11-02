@@ -577,7 +577,9 @@ std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, co
 
         {
             const auto _ret = libecc_detail::To_Component_BignumPair(pub);
-            CF_CHECK_TRUE(_priv.IsLessThan(*cryptofuzz::repository::ECC_CurveToOrder(curveType.Get())));
+            const auto order = cryptofuzz::repository::ECC_CurveToOrder(curveType.Get());
+            CF_CHECK_NE(order, std::nullopt);
+            CF_CHECK_TRUE(_priv.IsLessThan(*order));
             ret = _ret;
         }
     }
