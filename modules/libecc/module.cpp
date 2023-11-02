@@ -257,6 +257,8 @@ libecc::libecc(void) :
     libecc_detail::AddCurve(CF_ECC_CURVE("brainpool384t1"), "BRAINPOOLP384T1");
     libecc_detail::AddCurve(CF_ECC_CURVE("brainpool512r1"), "BRAINPOOLP512R1");
     libecc_detail::AddCurve(CF_ECC_CURVE("brainpool512t1"), "BRAINPOOLP512T1");
+    libecc_detail::AddCurve(CF_ECC_CURVE("secp112r2"), "USER_DEFINED_SECP112R2");
+    libecc_detail::AddCurve(CF_ECC_CURVE("secp128r2"), "USER_DEFINED_SECP128R2");
     libecc_detail::AddCurve(CF_ECC_CURVE("secp192r1"), "SECP192R1");
     libecc_detail::AddCurve(CF_ECC_CURVE("secp192k1"), "SECP192K1");
     libecc_detail::AddCurve(CF_ECC_CURVE("secp224r1"), "SECP224R1");
@@ -408,8 +410,7 @@ end:
     return ret;
 }
 
-namespace libecc_detail {
-std::optional<bool> OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
+std::optional<bool> libecc::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
     std::optional<bool> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     libecc_detail::global_ds = &ds;
@@ -454,14 +455,13 @@ std::optional<bool> OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
         }
 
         /* Allocate a buffer for our stringified public key */
-        CF_ASSERT((coord_len % 2) == 0, "Coordinates size is not multiple of 2");
-        pub_buff = util::malloc(coord_len);
+        pub_buff = util::malloc(coord_len * 2);
 
-        if(fp_export_to_buf(&pub_buff[0], coord_len / 2, &x)){
+        if(fp_export_to_buf(&pub_buff[0], coord_len, &x)){
             ret = false;
             goto end1;
         }
-        if(fp_export_to_buf(&pub_buff[coord_len / 2], coord_len / 2, &y)){
+        if(fp_export_to_buf(&pub_buff[coord_len], coord_len, &y)){
             ret = false;
             goto end1;
         }
@@ -471,7 +471,7 @@ std::optional<bool> OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
          * NOTE: we choose randomly ECDSA as the signature algorithm type as all the signatures expect
 	 * a point on their curve anyways!
          */
-        if(ec_pub_key_import_from_aff_buf(&pub_key, &params, &pub_buff[0], coord_len, ECDSA)){
+        if(ec_pub_key_import_from_aff_buf(&pub_key, &params, &pub_buff[0], coord_len * 2, ECDSA)){
             ret = false;
             goto end1;
         }
@@ -492,6 +492,7 @@ end:
     return ret;
 }
 
+namespace libecc_detail {
 std::optional<component::ECC_PublicKey> OpECC_PrivateToPublic(Datasource& ds, const component::CurveType& curveType, const component::Bignum& _priv) {
     std::optional<component::ECC_PublicKey> ret = std::nullopt;
 
