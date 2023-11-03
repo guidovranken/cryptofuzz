@@ -883,7 +883,7 @@ void Builtin_tests_importer::Run(void) {
     }
 
     {
-        /* Point with invalid order.
+        /* secp112r2 "exceptional pair".
          * May produce incorrect result in implementations
          * that have an otherwise adequate order check */
         nlohmann::json parameters;
@@ -891,6 +891,23 @@ void Builtin_tests_importer::Run(void) {
         parameters["modifier"] = "";
         parameters["curveType"] = CF_ECC_CURVE("secp112r2");
         parameters["pub_x"] = "3610075134545239076002374364665933";
+        parameters["pub_y"] = "0";
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::ECC_ValidatePubkey op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("ECC_ValidatePubkey"), dsOut2);
+    }
+
+    {
+        /* secp128r2 "exceptional pair".
+         * May produce incorrect result in implementations
+         * that have an otherwise adequate order check */
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["curveType"] = CF_ECC_CURVE("secp128r2");
+        parameters["pub_x"] = "311198077076599516590082177721943503641";
         parameters["pub_y"] = "0";
 
         fuzzing::datasource::Datasource dsOut2(nullptr, 0);
