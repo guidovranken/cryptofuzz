@@ -11,7 +11,7 @@ There are three main steps in building Cryptofuzz to begin fuzzing:
 Run:
 
 ```sh
-python2 gen_repository.py
+./gen_repository.py
 ```
 
 to generate look-up tables required for the compilation of Cryptofuzz.
@@ -28,6 +28,16 @@ Refer to the following documentation for building your desired set of
 libraries. Note that Cryptofuzz is built around differential fuzzing;
 having multiple libraries for a given primitive is helpful in finding
 bugs.
+
+Cryptofuzz uses `libfuzzer` and the related `-fsantize=fuzzer` flags
+which are only supported by clang. If your machine's default compiler
+is not `clang` you will need to override the `CC` and `CXX` variables
+for building the cryptofuzz modules and cryptofuzz itself.
+
+```sh
+export CC=clang
+export CXX=clang++
+```
 
 When building Cryptofuzz and cryptographic libraries, the suggested
 compilation flags are:
