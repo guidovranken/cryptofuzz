@@ -20,7 +20,7 @@ namespace Java_detail {
 
     JavaVM* jvm = nullptr;
     JNIEnv* env = nullptr;
-    jclass jclass;
+    jclass jclazz;
     jmethodID method_Digest;
     jmethodID method_HMAC;
     jmethodID method_ECDSA_Verify;
@@ -63,32 +63,34 @@ namespace Java_detail {
 
         CF_ASSERT(env != nullptr, "Cannot instantiate JVM");
 
-        jclass = env->DefineClass(
+#if defined(JAVA_OSS_FUZZ)
+        jclazz = env->DefineClass(
                 "CryptofuzzJavaHarness",
                 nullptr,
                 (const jbyte*)CryptofuzzJavaHarness_class,
                 CryptofuzzJavaHarness_class_len);
-
+#else
         /* This fails:
          * https://github.com/google/oss-fuzz/issues/9255
          */
-        //jclass = env->FindClass("CryptofuzzJavaHarness");
-        CF_ASSERT(jclass != nullptr, "Cannot find class");
+        jclazz = env->FindClass("CryptofuzzJavaHarness");
+#endif
+        CF_ASSERT(jclazz != nullptr, "Cannot find class");
 
-        method_Digest = env->GetStaticMethodID(jclass, "Digest", "(Ljava/lang/String;[B[I)[B");
+        method_Digest = env->GetStaticMethodID(jclazz, "Digest", "(Ljava/lang/String;[B[I)[B");
         CF_ASSERT(method_Digest != nullptr, "Cannot find method");
 
-        method_HMAC = env->GetStaticMethodID(jclass, "HMAC", "(Ljava/lang/String;[B[B[I)[B");
+        method_HMAC = env->GetStaticMethodID(jclazz, "HMAC", "(Ljava/lang/String;[B[B[I)[B");
         CF_ASSERT(method_HMAC != nullptr, "Cannot find method");
 
-        method_ECDSA_Verify = env->GetStaticMethodID(jclass, "ECDSA_Verify", "(Ljava/lang/String;[B[B[B[I)Z");
+        method_ECDSA_Verify = env->GetStaticMethodID(jclazz, "ECDSA_Verify", "(Ljava/lang/String;[B[B[B[I)Z");
         CF_ASSERT(method_ECDSA_Verify != nullptr, "Cannot find method");
 
-        //method_PBKDF2 = env->GetStaticMethodID(jclass, "PBKDF2", "(Ljava/lang/String;[C[BII)[B");
-        method_PBKDF2 = env->GetStaticMethodID(jclass, "PBKDF2", "(Ljava/lang/String;[B[BII)[B");
+        //method_PBKDF2 = env->GetStaticMethodID(jclazz, "PBKDF2", "(Ljava/lang/String;[C[BII)[B");
+        method_PBKDF2 = env->GetStaticMethodID(jclazz, "PBKDF2", "(Ljava/lang/String;[B[BII)[B");
         CF_ASSERT(method_PBKDF2 != nullptr, "Cannot find method");
 
-        method_BignumCalc = env->GetStaticMethodID(jclass, "BignumCalc", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;");
+        method_BignumCalc = env->GetStaticMethodID(jclazz, "BignumCalc", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)Ljava/lang/String;");
         CF_ASSERT(method_BignumCalc != nullptr, "Cannot find method");
 
     }
@@ -236,7 +238,7 @@ std::optional<component::Digest> Java::OpDigest(operation::Digest& op) {
 
     rv = static_cast<jbyteArray>(
             Java_detail::env->CallStaticObjectMethod(
-                Java_detail::jclass,
+                Java_detail::jclazz,
                 Java_detail::method_Digest,
                 hash, msg, chunks));
 
@@ -328,7 +330,7 @@ std::optional<component::MAC> Java::OpHMAC(operation::HMAC& op) {
 
     rv = static_cast<jbyteArray>(
             Java_detail::env->CallStaticObjectMethod(
-                Java_detail::jclass,
+                Java_detail::jclazz,
                 Java_detail::method_HMAC,
                 hash, key, msg, chunks));
 
@@ -436,7 +438,7 @@ std::optional<bool> Java::OpECDSA_Verify(operation::ECDSA_Verify& op) {
 
     {
         const jboolean rv = Java_detail::env->CallStaticBooleanMethod(
-                Java_detail::jclass,
+                Java_detail::jclazz,
                 Java_detail::method_ECDSA_Verify,
                 hash, pub, sig, msg, chunks);
 
@@ -514,7 +516,7 @@ std::optional<component::Key> Java::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
     initialized = true;
     rv = static_cast<jbyteArray>(
             Java_detail::env->CallStaticObjectMethod(
-                Java_detail::jclass,
+                Java_detail::jclazz,
                 Java_detail::method_PBKDF2,
                 hash, password, salt, iterations, keysize * 8));
 
@@ -646,7 +648,7 @@ std::optional<component::Bignum> Java::OpBignumCalc(operation::BignumCalc& op) {
 
     rv = static_cast<jstring>(
             Java_detail::env->CallStaticObjectMethod(
-                Java_detail::jclass,
+                Java_detail::jclazz,
                 Java_detail::method_BignumCalc,
                 bn1, bn2, bn3, calcop));
 
