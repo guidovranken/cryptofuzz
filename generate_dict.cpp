@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iomanip>
 #include <vector>
+#include <optional>
 #include <stdio.h>
 #include <fuzzing/datasource/id.hpp>
 #include "repository_map.h"
