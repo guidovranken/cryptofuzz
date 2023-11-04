@@ -885,7 +885,10 @@ void Builtin_tests_importer::Run(void) {
     {
         /* secp112r2 "exceptional pair".
          * May produce incorrect result in implementations
-         * that have an otherwise adequate order check */
+         * that have an otherwise adequate order check.
+         *
+         * -sqrt((1 - a)/3) over GF(P) == 3610075134545239076002374364665933
+         */
         nlohmann::json parameters;
 
         parameters["modifier"] = "";
@@ -902,7 +905,10 @@ void Builtin_tests_importer::Run(void) {
     {
         /* secp128r2 "exceptional pair".
          * May produce incorrect result in implementations
-         * that have an otherwise adequate order check */
+         * that have an otherwise adequate order check.
+         *
+         * -sqrt((1 - a)/3) over GF(P) == 311198077076599516590082177721943503641
+         */
         nlohmann::json parameters;
 
         parameters["modifier"] = "";
