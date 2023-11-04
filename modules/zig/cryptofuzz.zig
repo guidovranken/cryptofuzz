@@ -1255,6 +1255,8 @@ export fn cryptofuzz_zig_bignumcalc(
             return 1;
         };
         res.pow(&a, power) catch unreachable;
+    } else if ( op == 16 ) {
+        res.sqrt(&a) catch unreachable;
     } else {
         return 1;
     }

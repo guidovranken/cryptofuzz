@@ -731,6 +731,14 @@ std::optional<component::Bignum> Zig::OpBignumCalc(operation::BignumCalc& op) {
         case    CF_CALCOP("Exp(A,B)"):
             operation = 15;
             break;
+    /* Enable once https://github.com/ziglang/zig/issues/17858
+     * has been fixed.
+     */
+#if 0
+        case    CF_CALCOP("Sqrt(A)"):
+            operation = 16;
+            break;
+#endif
         default:
             return std::nullopt;
     }
