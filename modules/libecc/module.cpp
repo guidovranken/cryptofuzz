@@ -441,6 +441,7 @@ std::optional<bool> libecc::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& 
         const auto ax_bin = util::DecToBin(op.pub.first.ToTrimmedString());
         const auto ay_bin = util::DecToBin(op.pub.second.ToTrimmedString());
         fp x, y;
+        bool x_inited = false, y_inited = false;
         u8 *pub_buff = NULL;
         u16 coord_len = (u16)BYTECEIL(params.ec_fp.p_bitlen);
 
@@ -448,11 +449,13 @@ std::optional<bool> libecc::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& 
             ret = false;
             goto end1;
         }
+        x_inited = true;
 
         if(fp_init_from_buf(&y, &(params.ec_fp), ay_bin->data(), ay_bin->size())){
             ret = false;
             goto end1;
         }
+        y_inited = true;
 
         /* Allocate a buffer for our stringified public key */
         pub_buff = util::malloc(coord_len * 2);
@@ -482,8 +485,12 @@ end1:
         if(pub_buff != NULL){
             util::free(pub_buff);
         }
-        fp_uninit(&x);
-        fp_uninit(&y);
+        if ( x_inited == true ) {
+            fp_uninit(&x);
+        }
+        if ( y_inited == true ) {
+            fp_uninit(&y);
+        }
     }
 
 end:
