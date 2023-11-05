@@ -1020,6 +1020,8 @@ std::optional<component::Secret> OpECDH_Derive(operation::ECDH_Derive& op) {
             CF_CHECK_TRUE(priv.SetCurve(op.curveType));
             CF_CHECK_TRUE(priv.LoadPrivateKey(op.priv));
             CF_CHECK_TRUE(priv.SetRNG());
+            WC_CHECK_EQ(
+                    wc_ecc_set_flags(priv.GetPtr(), WC_ECC_FLAG_COFACTOR), 0);
         }
 
         /* Initialize public key */
