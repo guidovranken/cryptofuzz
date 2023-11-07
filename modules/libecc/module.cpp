@@ -1211,6 +1211,7 @@ std::optional<component::ECC_Point> libecc::OpECC_Point_Mul(operation::ECC_Point
     ec_params params;
     prj_pt res, a;
     nn b;
+    bool use_blinding = false;
 
     libecc_detail::global_ds = &ds;
 
@@ -1226,8 +1227,16 @@ std::optional<component::ECC_Point> libecc::OpECC_Point_Mul(operation::ECC_Point
     /* Load scalar */
     CF_CHECK_TRUE(libecc_detail::To_nn_t(op.b, &b));
 
+    try {
+        use_blinding = ds.Get<bool>();
+    } catch ( fuzzing::datasource::Datasource::OutOfData ) { }
+
     /* Multiply point by scalar */
-    CF_CHECK_TRUE(!prj_pt_mul(&res, &b, &a));
+    if ( use_blinding == false ) {
+        CF_CHECK_TRUE(!prj_pt_mul(&res, &b, &a));
+    } else {
+        CF_CHECK_TRUE(!prj_pt_mul_blind(&res, &b, &a));
+    }
 
     /* Save result */
     ret = libecc_detail::SavePoint(res, params);
