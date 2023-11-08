@@ -201,3 +201,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Botan: [Undefined behavior in AlignmentBuffer::fill_up_with_zeros](https://github.com/randombit/botan/issues/3734)
 - Constantine: [Modular exponentiation incorrect result due to uninitialized memory](https://github.com/mratsim/constantine/pull/280)
 - Zig: [std.math.big.int sqrt panics](https://github.com/ziglang/zig/issues/17858)
+- Botan: [blinded_var_point_multiply incorrect result with curves with cofactor > 1](https://github.com/randombit/botan/issues/3800)
