@@ -45,6 +45,13 @@ int cryptofuzz_zig_argon2(
         const uint32_t memory,
         const uint8_t threads,
         const uint8_t mode);
+size_t cryptofuzz_zig_ecdsa_sign(
+        const uint32_t curve,
+        const uint8_t* priv_bytes,
+        const uint8_t* msg_bytes,
+        const uint32_t msg_size,
+        uint8_t* rsig,
+        uint8_t* rpub);
 size_t cryptofuzz_zig_ecdsa_verify(
         const uint32_t curve,
         const uint8_t* pub_bytes,
@@ -345,6 +352,64 @@ std::optional<component::Key> Zig::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
 end:
     util::free(out);
 
+    return ret;
+}
+
+std::optional<component::ECDSA_Signature> Zig::OpECDSA_Sign(operation::ECDSA_Sign& op) {
+    std::optional<component::ECDSA_Signature> ret = std::nullopt;
+    if ( op.UseRandomNonce() == false ) {
+        return ret;
+    }
+    size_t size = 0;
+    uint32_t curve = 0;
+    if ( op.curveType.Is(CF_ECC_CURVE("secp256r1")) ) {
+        if ( !op.digestType.Is(CF_DIGEST("SHA256")) ) {
+            return std::nullopt;
+        }
+        size = 32;
+        curve = 0;
+    } else if ( op.curveType.Is(CF_ECC_CURVE("secp256k1")) ) {
+        if ( !op.digestType.Is(CF_DIGEST("SHA256")) ) {
+            return std::nullopt;
+        }
+        size = 32;
+        curve = 1;
+    } else if ( op.curveType.Is(CF_ECC_CURVE("secp384r1")) ) {
+        if ( !op.digestType.Is(CF_DIGEST("SHA384")) ) {
+            return std::nullopt;
+        }
+        size = 48;
+        curve = 2;
+    } else {
+        return std::nullopt;
+    }
+
+    uint8_t* rpub = nullptr;
+    uint8_t* rsig = nullptr;
+    std::optional<std::vector<uint8_t>> priv;
+
+    CF_CHECK_NE(priv = util::DecToBin(op.priv.ToTrimmedString(), size), std::nullopt);
+
+    rsig = util::malloc(size * 2);
+    rpub = util::malloc(size * 2 + 1);
+    CF_CHECK_EQ(cryptofuzz_zig_ecdsa_sign(
+                curve,
+                priv->data(),
+                op.cleartext.GetPtr(), op.cleartext.GetSize(),
+                rsig,
+                rpub), 0);
+
+    ret = {
+        component::BignumPair{
+            util::BinToDec(std::vector<uint8_t>(rsig, rsig + size)),
+            util::BinToDec(std::vector<uint8_t>(rsig + size, rsig + size + size))
+        },
+        Zig_detail::To_Component_ECC_Point(rpub, size)
+    };
+
+end:
+    util::free(rsig);
+    util::free(rpub);
     return ret;
 }
 

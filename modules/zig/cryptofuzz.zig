@@ -1121,6 +1121,58 @@ export fn cryptofuzz_zig_ecc_point_dbl(
     return 0;
 }
 
+export fn cryptofuzz_zig_ecdsa_sign(
+        curve: u32,
+        priv_data: [*:0]const u8,
+        msg_data: [*:0]const u8,
+        msg_size: u32,
+        rsig: [*:0]u8,
+        rpub: [*:0]u8,
+        ) callconv(.C) i32 {
+    if ( curve == 0 ) {
+        var priv: [32]u8 = undefined;
+        mem.copy(u8, &priv, priv_data[0..32]);
+        const Scheme = ecdsa.EcdsaP256Sha256;
+        const kp = Scheme.KeyPair.fromSecretKey(
+                Scheme.SecretKey{ .bytes = priv }
+        ) catch return -1;
+        var sig = kp.sign(msg_data[0..msg_size], null) catch return -1;
+        var sigbytes = sig.toBytes();
+        mem.copy(u8, rsig[0..64], &sigbytes);
+        var pubbytes = kp.public_key.toUncompressedSec1();
+        mem.copy(u8, rpub[0..65], &pubbytes);
+        return 0;
+    } else if ( curve == 1 ) {
+        var priv: [32]u8 = undefined;
+        mem.copy(u8, &priv, priv_data[0..32]);
+        const Scheme = ecdsa.EcdsaSecp256k1Sha256;
+        const kp = Scheme.KeyPair.fromSecretKey(
+                Scheme.SecretKey{ .bytes = priv }
+        ) catch return -1;
+        var sig = kp.sign(msg_data[0..msg_size], null) catch return -1;
+        var sigbytes = sig.toBytes();
+        mem.copy(u8, rsig[0..64], &sigbytes);
+        var pubbytes = kp.public_key.toUncompressedSec1();
+        mem.copy(u8, rpub[0..65], &pubbytes);
+        return 0;
+    } else if ( curve == 2 ) {
+        var priv: [48]u8 = undefined;
+        mem.copy(u8, &priv, priv_data[0..48]);
+        const Scheme = ecdsa.EcdsaP384Sha384;
+        const kp = Scheme.KeyPair.fromSecretKey(
+                Scheme.SecretKey{ .bytes = priv }
+        ) catch return -1;
+        var sig = kp.sign(msg_data[0..msg_size], null) catch return -1;
+        var sigbytes = sig.toBytes();
+        mem.copy(u8, rsig[0..96], &sigbytes);
+        var pubbytes = kp.public_key.toUncompressedSec1();
+        mem.copy(u8, rpub[0..97], &pubbytes);
+        return 0;
+    }
+
+    return -1;
+}
+
 export fn cryptofuzz_zig_ecdsa_verify(
         curve: u32,
         pub_data: [*:0]const u8,
