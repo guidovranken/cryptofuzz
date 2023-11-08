@@ -24,7 +24,6 @@ void cryptofuzz_secp256k1_scalar_cmov(void *r, const void *a, int flag);
 #endif
 unsigned int cryptofuzz_secp256k1_scalar_get_bits(const void *a, unsigned int offset, unsigned int count);
 unsigned int cryptofuzz_secp256k1_scalar_get_bits_var(const void *a, unsigned int offset, unsigned int count);
-int cryptofuzz_secp256k1_scalar_shr_int(void *r, int n);
 
 size_t cryptofuzz_secp256k1_fe_size(void);
 int cryptofuzz_secp256k1_fe_set_b32_limit(void *r, const unsigned char *b32);

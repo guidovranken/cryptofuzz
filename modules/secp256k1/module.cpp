@@ -1437,17 +1437,6 @@ namespace secp256k1_detail {
                     CF_NORET(cryptofuzz_secp256k1_scalar_set_int(res, bin->data()[0]));
                 }
                 break;
-            case    CF_CALCOP("RShift(A,B)"):
-                {
-                    CF_CHECK_FALSE(mod);
-                    std::optional<std::vector<uint8_t>> bin;
-                    CF_CHECK_NE(bin = util::DecToBin(op.bn1.ToTrimmedString(), 1), std::nullopt);
-                    CF_CHECK_GT(bin->data()[0], 0);
-                    CF_CHECK_LT(bin->data()[0], 16);
-                    /* ignore ret */ cryptofuzz_secp256k1_scalar_shr_int(a, bin->data()[0]);
-                    memcpy(res, a, cryptofuzz_secp256k1_scalar_type_size());
-                }
-                break;
             default:
                 goto end;
         }

@@ -79,10 +79,6 @@ unsigned int cryptofuzz_secp256k1_scalar_get_bits_var(const void *a, unsigned in
     return secp256k1_scalar_get_bits_var(a, offset, count);
 }
 
-int cryptofuzz_secp256k1_scalar_shr_int(void *r, int n) {
-    return secp256k1_scalar_shr_int(r, n);
-}
-
 size_t cryptofuzz_secp256k1_fe_size(void) {
     return sizeof(secp256k1_fe);
 }
