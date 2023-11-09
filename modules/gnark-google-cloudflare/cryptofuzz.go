@@ -1482,6 +1482,20 @@ func Gnark_bn254_BignumCalc_bls2381_Fp2(in []byte) {
         } else {
             bn0.SetZero()
         }
+    } else if isExp(op.CalcOp) {
+        bn0.Exp(bn0, decodeBignum(op.BN1[0]))
+    } else if isIsSquare(op.CalcOp) {
+        if bn0.Legendre() == 1 {
+            bn0.SetOne()
+        } else {
+            bn0.SetZero()
+        }
+    } else if isIsOne(op.CalcOp) {
+        if bn0.IsOne() {
+            bn0.SetOne()
+        } else {
+            bn0.SetZero()
+        }
     } else {
         return
     }
