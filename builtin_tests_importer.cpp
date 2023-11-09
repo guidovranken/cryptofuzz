@@ -922,26 +922,87 @@ void Builtin_tests_importer::Run(void) {
         write(CF_OPERATION("ECC_ValidatePubkey"), dsOut2);
     }
 
+    {
+        /* https://github.com/Consensys/gnark-crypto/security/advisories/GHSA-pffg-92cg-xf5c */
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "FF";
+        parameters["calcOp"] = CF_CALCOP("Exp(A,B)");
+        for (size_t i = 0; i < 12; i++) {
+            parameters["bn2"][i] = "";
+            parameters["bn3"][i] = "";
+            parameters["bn4"][i] = "";
+        }
+
+        parameters["bn1"][0] = "2626087095966346280136331467821624713670076110047241834968556356777719820596817098542957361484700796833814656818212";
+        parameters["bn1"][1] = "2226935965816683899051549766499867769781721210859839055444218092320249432234914401718277560147546261846149731584833";
+        parameters["bn1"][2] = "539346005041174036257723625890455861233448349646800134038985099682814019019831776424444060585073010575626131979209";
+        parameters["bn1"][3] = "672937302133669310002460791420796717675669494603877895965087443227286139222277088407378521554067388375664187464749";
+        parameters["bn1"][4] = "745115694495605450154583030600159075847816911801368426005326623108850854422996317744722693764943195976395905622629";
+        parameters["bn1"][5] = "3193553919078618890647897169163215648084335859312668599095575999979721958351667443274459248029394656801777364634704";
+        parameters["bn1"][6] = "869335622719396378765621131339525816620648753103303983183872382618679101431626901481620494702997311005087184078579";
+        parameters["bn1"][7] = "3648816144715573370211138746483665498261639619750176995645272129148625186151821175281396331096036730004256785284954";
+        parameters["bn1"][8] = "3817234632364568477098935136267834171677408694388094738630566201239999711113287864886234857499013874770132511457356";
+        parameters["bn1"][9] = "1319781210985284920798582185323180740499971260321964884351147191496156702587295724628285581294021383187207075688907";
+        parameters["bn1"][10] = "1178407576865501590094907506798905838275621077557290606327022494655426258931127284947424086449226995592112218504900";
+        parameters["bn1"][11] = "3856614646892934948430841720966958962411860483604704572193098808168490071843665511871921847699871807381010444462821";
+
+        /* Exponent */
+        parameters["bn2"][0] = "169893631828481842931290008859743243489098146141979830311893424751855271950692001433356165550548410610101138388623573573742608490725625288296502860183437011025036209791574001140592327223981416956942076610555083128655330944007957223952510233203018053264066056080064687038560794652180979019775788172491868553073169893631828481842931290008859743243489098146141979830311893424751855271950692001433356165550548410610101138388623573573742608490725625288296502860183437011025036209791574001140592327223981416956942076610555083128655330944007957223952510233203018053264066056080064687038560794652180979019775788172491868553073";
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::BignumCalc_Fp12 op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("BignumCalc_Fp12"), dsOut2, true);
+    }
+
     ecdsa_verify_tests();
     ecc_point_add_tests();
 }
 
-void Builtin_tests_importer::write(const uint64_t operation, fuzzing::datasource::Datasource& dsOut2) {
+void Builtin_tests_importer::write(
+        const uint64_t operation,
+        fuzzing::datasource::Datasource& dsOut2,
+        const bool twice) {
     fuzzing::datasource::Datasource dsOut(nullptr, 0);
 
-    /* Operation ID */
-    dsOut.Put<uint64_t>(operation);
+    if ( twice == false ) {
+        /* Operation ID */
+        dsOut.Put<uint64_t>(operation);
 
-    dsOut.PutData(dsOut2.GetOut());
+        dsOut.PutData(dsOut2.GetOut());
 
-    /* Modifier */
-    dsOut.PutData(std::vector<uint8_t>(0));
+        /* Modifier */
+        dsOut.PutData(std::vector<uint8_t>(0));
 
-    /* Module ID */
-    dsOut.Put<uint64_t>(CF_MODULE("OpenSSL"));
+        /* Module ID */
+        dsOut.Put<uint64_t>(CF_MODULE("OpenSSL"));
 
-    /* Terminator */
-    dsOut.Put<bool>(false);
+        /* Terminator */
+        dsOut.Put<bool>(false);
+    } else {
+        dsOut.Put<uint64_t>(operation);
+
+        dsOut.PutData(dsOut2.GetOut());
+
+        /* Modifier */
+        dsOut.PutData(std::vector<uint8_t>(0));
+
+        /* Module ID */
+        dsOut.Put<uint64_t>(CF_MODULE("OpenSSL"));
+
+        /* Terminator */
+        dsOut.Put<bool>(true);
+
+        /* Modifier */
+        dsOut.PutData(std::vector<uint8_t>(0));
+
+        /* Module ID */
+        dsOut.Put<uint64_t>(CF_MODULE("OpenSSL"));
+
+        /* Terminator */
+        dsOut.Put<bool>(false);
+    }
 
     {
         std::string filename = outDir + std::string("/") + util::SHA1(dsOut.GetOut());
