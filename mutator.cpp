@@ -2744,23 +2744,31 @@ extern "C" size_t LLVMFuzzerCustomMutator(uint8_t* data, size_t size, size_t max
 
         dsOut.PutData(dsOut2.GetOut());
 
-        /* Modifier */
-        if ( reuseModifier == true && !modifier.empty() ) {
-            dsOut.PutData(modifier);
-        } else {
-            size_t modifierMaxSize = maxSize / 10;
-            if ( modifierMaxSize == 0 ) {
-                modifierMaxSize = 1;
+        const size_t num_modules = (PRNG() % 2) + 1;
+
+        for (size_t i = 0; i < num_modules; i++) {
+            /* Modifier */
+            if ( reuseModifier == true && !modifier.empty() ) {
+                dsOut.PutData(modifier);
+            } else {
+                size_t modifierMaxSize = maxSize / 10;
+                if ( modifierMaxSize == 0 ) {
+                    modifierMaxSize = 1;
+                }
+
+                dsOut.PutData(getBufferBin(PRNG() % modifierMaxSize));
             }
 
-            dsOut.PutData(getBufferBin(PRNG() % modifierMaxSize));
+            /* Module ID */
+            dsOut.Put<uint64_t>( ModuleLUT[ PRNG() % (sizeof(ModuleLUT) / sizeof(ModuleLUT[0])) ].id );
+
+            /* Terminator */
+            if ( i + 1 == num_modules ) {
+                dsOut.Put<bool>(false);
+            } else {
+                dsOut.Put<bool>(true);
+            }
         }
-
-        /* Module ID */
-        dsOut.Put<uint64_t>( ModuleLUT[ PRNG() % (sizeof(ModuleLUT) / sizeof(ModuleLUT[0])) ].id );
-
-        /* Terminator */
-        dsOut.Put<bool>(false);
 
         const auto insertSize = dsOut.GetOut().size();
         if ( insertSize <= maxSize ) {
