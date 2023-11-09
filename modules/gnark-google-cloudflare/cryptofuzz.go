@@ -1490,7 +1490,7 @@ func Gnark_bn254_BignumCalc_bls2381_Fp2(in []byte) {
 }
 
 //export Gnark_bn254_BignumCalc_bls12381_Fp12
-func Gnark_bn254_BignumCalc_bls12381_Fp12(in []byte) {
+func Gnark_bn254_BignumCalc_bls12381_Fp12(in []byte, alt bool) {
     resetResult()
 
     var op OpBignumCalc_Fp12
@@ -1539,6 +1539,12 @@ func Gnark_bn254_BignumCalc_bls12381_Fp12(in []byte) {
         bn0.Conjugate(&bn0)
     } else if isCyclotomicSqr(op.CalcOp) {
         bn0.CyclotomicSquare(&bn1)
+    } else if isExp(op.CalcOp) {
+        if alt == false && bn0.IsInSubGroup() {
+            bn0.ExpGLV(bn0, decodeBignum(op.BN1[0]))
+        } else {
+            bn0.Exp(bn0, decodeBignum(op.BN1[0]))
+        }
     } else {
         return
     }

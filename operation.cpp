@@ -1450,7 +1450,13 @@ std::string BignumCalc_Fp12::ToString(void) const {
 
 nlohmann::json BignumCalc_Fp12::ToJSON(void) const {
     nlohmann::json j;
-    /* TODO */
+    j["operation"] = "BignumCalc";
+    j["calcOp"] = calcOp.ToJSON();
+    j["bn0"] = bn0.ToJSON();
+    j["bn1"] = bn1.ToJSON();
+    j["bn2"] = bn2.ToJSON();
+    j["bn3"] = bn3.ToJSON();
+    j["modifier"] = modifier.ToJSON();
     return j;
 }
 

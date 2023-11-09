@@ -230,9 +230,16 @@ std::optional<component::Fp2> Gnark_bn254::OpBignumCalc_Fp2(operation::BignumCal
 }
 
 std::optional<component::Fp12> Gnark_bn254::OpBignumCalc_Fp12(operation::BignumCalc_Fp12& op) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     auto json = op.ToJSON();
     auto jsonStr = json.dump();
-    Gnark_bn254_BignumCalc_bls12381_Fp12(toGoSlice(jsonStr));
+
+    bool alt = false;
+    try {
+        alt = ds.Get<bool>();
+    } catch ( ... ) { }
+
+    Gnark_bn254_BignumCalc_bls12381_Fp12(toGoSlice(jsonStr), alt);
     return getResultAs<component::Fp12>();
 }
 
