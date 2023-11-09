@@ -1437,6 +1437,26 @@ namespace blst_detail {
             case    CF_CALCOP("One()"):
                 ret = blst_detail::To_component_Fp12(*(blst_fp12_one()));
                 break;
+            case    CF_CALCOP("IsOne(A)"):
+                CF_CHECK_TRUE(blst_detail::To_blst_fp12(op.bn0, A));
+                if ( blst_fp12_is_one(&A) ) {
+                    ret = blst_detail::To_component_Fp12(*(blst_fp12_one()));
+                } else {
+                    memset(&result, 0, sizeof(result));
+                    ret = blst_detail::To_component_Fp12(result);
+                }
+                break;
+            case    CF_CALCOP("IsEq(A,B)"):
+                CF_CHECK_TRUE(blst_detail::To_blst_fp12(op.bn0, A));
+                CF_CHECK_TRUE(blst_detail::To_blst_fp12(op.bn1, B));
+
+                if ( blst_fp12_is_equal(&A, &B) ) {
+                    ret = blst_detail::To_component_Fp12(*(blst_fp12_one()));
+                } else {
+                    memset(&result, 0, sizeof(result));
+                    ret = blst_detail::To_component_Fp12(result);
+                }
+                break;
         }
 
 end:
