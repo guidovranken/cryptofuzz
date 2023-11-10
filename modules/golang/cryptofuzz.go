@@ -153,6 +153,16 @@ type OpKDF_ARGON2 struct {
     KeySize uint32
 }
 
+type ECC_KeyPair struct {
+    Priv string `json:"priv"`
+    Pub [2]string `json:"pub"`
+}
+
+type OpECC_GenerateKeyPair struct {
+    Modifier ByteSlice
+    CurveType Type
+}
+
 type OpECC_PrivateToPublic struct {
     Modifier ByteSlice
     CurveType Type
@@ -682,6 +692,38 @@ func toCurve(curveType Type) (elliptic.Curve, error) {
         return nil, fmt.Errorf("Unsupported curve ID")
     }
 
+}
+
+//export Golang_Cryptofuzz_OpECC_GenerateKeyPair
+func Golang_Cryptofuzz_OpECC_GenerateKeyPair(in []byte) {
+    resetResult()
+
+    var op OpECC_GenerateKeyPair
+    unmarshal(in, &op)
+
+    curve, err := toCurve(op.CurveType)
+    if err != nil {
+        return
+    }
+
+    randreader := bytes.NewReader(op.Modifier)
+
+    key , err := ecdsa.GenerateKey(curve, randreader)
+    if err != nil {
+        return
+    }
+
+    var res ECC_KeyPair
+    res.Priv = key.D.String()
+    res.Pub[0] = key.PublicKey.X.String()
+    res.Pub[1] = key.PublicKey.Y.String()
+
+    r2, err := json.Marshal(&res)
+    if err != nil {
+        panic("Cannot marshal to JSON")
+    }
+
+    result = r2
 }
 
 //export Golang_Cryptofuzz_OpECC_PrivateToPublic

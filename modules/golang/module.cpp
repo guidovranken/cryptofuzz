@@ -124,6 +124,14 @@ std::optional<component::Key> Golang::OpKDF_ARGON2(operation::KDF_ARGON2& op) {
     return getResultAs<component::Key>();
 }
 
+std::optional<component::ECC_KeyPair> Golang::OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) {
+    auto json = op.ToJSON();
+    auto jsonStr = json.dump();
+    Golang_Cryptofuzz_OpECC_GenerateKeyPair(toGoSlice(jsonStr));
+
+    return getResultAs<component::ECC_KeyPair>();
+}
+
 std::optional<component::ECC_PublicKey> Golang::OpECC_PrivateToPublic(operation::ECC_PrivateToPublic& op) {
     auto json = op.ToJSON();
     auto jsonStr = json.dump();

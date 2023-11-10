@@ -83,6 +83,7 @@ class ECC_KeyPair {
 
         ECC_KeyPair(Datasource& ds);
         ECC_KeyPair(ECC_PrivateKey priv, BignumPair pub);
+        ECC_KeyPair(nlohmann::json json);
 
         bool operator==(const ECC_KeyPair& rhs) const;
         void Serialize(Datasource& ds) const;

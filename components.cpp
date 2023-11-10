@@ -492,6 +492,11 @@ ECC_KeyPair::ECC_KeyPair(ECC_PrivateKey priv, BignumPair pub) :
     pub(pub)
 { }
 
+ECC_KeyPair::ECC_KeyPair(nlohmann::json json) :
+    priv(json["priv"]),
+    pub(json["pub"])
+{ }
+
 bool ECC_KeyPair::operator==(const ECC_KeyPair& rhs) const {
     return
         (priv == rhs.priv) &&
