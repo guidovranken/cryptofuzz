@@ -883,43 +883,108 @@ void Builtin_tests_importer::Run(void) {
     }
 
     {
-        /* secp112r2 "exceptional pair".
+        /* secp112r2, secp128r2 "exceptional pair"s.
          * May produce incorrect result in implementations
          * that have an otherwise adequate order check.
          *
-         * -sqrt((1 - a)/3) over GF(P) == 3610075134545239076002374364665933
+         * X = -sqrt((1 - a)/3) over GF(P), Y = 0
          */
-        nlohmann::json parameters;
 
-        parameters["modifier"] = "";
-        parameters["curveType"] = CF_ECC_CURVE("secp112r2");
-        parameters["pub_x"] = "3610075134545239076002374364665933";
-        parameters["pub_y"] = "0";
+        static const std::vector< std::pair<uint64_t, std::string> > curve_point_x{
+                {CF_ECC_CURVE("secp112r2"), "3610075134545239076002374364665933"},
+                {CF_ECC_CURVE("secp128r2"), "311198077076599516590082177721943503641"},
+        };
 
-        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
-        cryptofuzz::operation::ECC_ValidatePubkey op(parameters);
-        op.Serialize(dsOut2);
-        write(CF_OPERATION("ECC_ValidatePubkey"), dsOut2);
-    }
+        static const std::vector<uint64_t> operations{
+            CF_OPERATION("ECC_ValidatePubkey"),
+            CF_OPERATION("ECC_Point_Add"),
+            CF_OPERATION("ECC_Point_Dbl"),
+            CF_OPERATION("ECC_Point_Mul"),
+            CF_OPERATION("ECC_Point_Neg"),
+            CF_OPERATION("ECC_Point_Cmp"),
+            CF_OPERATION("ECC_Point_Sub"),
+        };
 
-    {
-        /* secp128r2 "exceptional pair".
-         * May produce incorrect result in implementations
-         * that have an otherwise adequate order check.
-         *
-         * -sqrt((1 - a)/3) over GF(P) == 311198077076599516590082177721943503641
-         */
-        nlohmann::json parameters;
+        for (const auto& cpx : curve_point_x) {
+            for (const auto& operation : operations) {
+                fuzzing::datasource::Datasource dsOut2(nullptr, 0);
 
-        parameters["modifier"] = "";
-        parameters["curveType"] = CF_ECC_CURVE("secp128r2");
-        parameters["pub_x"] = "311198077076599516590082177721943503641";
-        parameters["pub_y"] = "0";
+                nlohmann::json parameters;
 
-        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
-        cryptofuzz::operation::ECC_ValidatePubkey op(parameters);
-        op.Serialize(dsOut2);
-        write(CF_OPERATION("ECC_ValidatePubkey"), dsOut2);
+                parameters["modifier"] = "";
+                parameters["curveType"] = cpx.first;
+
+                switch ( operation ) {
+                    case CF_OPERATION("ECC_ValidatePubkey"):
+                        {
+                            parameters["pub_x"] = cpx.second;
+                            parameters["pub_y"] = "0";
+                            cryptofuzz::operation::ECC_ValidatePubkey op(parameters);
+                            op.Serialize(dsOut2);
+                        }
+                        break;
+                    case CF_OPERATION("ECC_Point_Add"):
+                        {
+                            parameters["a_x"] = cpx.second;
+                            parameters["a_y"] = "0";
+                            parameters["b_x"] = cpx.second;
+                            parameters["b_y"] = "0";
+                            cryptofuzz::operation::ECC_Point_Add op(parameters);
+                            op.Serialize(dsOut2);
+                        }
+                        break;
+                    case CF_OPERATION("ECC_Point_Dbl"):
+                        {
+                            parameters["a_x"] = cpx.second;
+                            parameters["a_y"] = "0";
+                            cryptofuzz::operation::ECC_Point_Dbl op(parameters);
+                            op.Serialize(dsOut2);
+                        }
+                        break;
+                    case CF_OPERATION("ECC_Point_Mul"):
+                        {
+                            parameters["a_x"] = cpx.second;
+                            parameters["a_y"] = "0";
+                            parameters["b"] = "123";
+                            cryptofuzz::operation::ECC_Point_Mul op(parameters);
+                            op.Serialize(dsOut2);
+                        }
+                        break;
+                    case CF_OPERATION("ECC_Point_Neg"):
+                        {
+                            parameters["a_x"] = cpx.second;
+                            parameters["a_y"] = "0";
+                            cryptofuzz::operation::ECC_Point_Neg op(parameters);
+                            op.Serialize(dsOut2);
+                        }
+                        break;
+                    case CF_OPERATION("ECC_Point_Cmp"):
+                        {
+                            parameters["a_x"] = cpx.second;
+                            parameters["a_y"] = "0";
+                            parameters["b_x"] = cpx.second;
+                            parameters["b_y"] = "0";
+                            cryptofuzz::operation::ECC_Point_Cmp op(parameters);
+                            op.Serialize(dsOut2);
+                        }
+                        break;
+                    case CF_OPERATION("ECC_Point_Sub"):
+                        {
+                            parameters["a_x"] = cpx.second;
+                            parameters["a_y"] = "0";
+                            parameters["b_x"] = cpx.second;
+                            parameters["b_y"] = "0";
+                            cryptofuzz::operation::ECC_Point_Sub op(parameters);
+                            op.Serialize(dsOut2);
+                        }
+                        break;
+                    default:
+                        CF_UNREACHABLE();
+                }
+
+                write(operation, dsOut2);
+            }
+        }
     }
 
     {
