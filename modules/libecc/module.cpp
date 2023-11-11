@@ -410,6 +410,39 @@ end:
     return ret;
 }
 
+std::optional<component::ECC_KeyPair> libecc::OpECC_GenerateKeyPair(operation::ECC_GenerateKeyPair& op) {
+    std::optional<component::ECC_KeyPair> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    libecc_detail::global_ds = &ds;
+
+    const ec_str_params* curve_params;
+    ec_params params;
+    ec_key_pair kp;
+	bitcnt_t priv_len;
+    uint8_t* priv_bytes = nullptr;
+
+    CF_CHECK_NE(curve_params = libecc_detail::GetCurve(op.curveType), nullptr);
+    CF_ASSERT(!import_params(&params, curve_params), "import_params error " __FILE__ ":" TOSTRING(__LINE__));
+    CF_CHECK_EQ(ec_key_pair_gen(&kp, &params, ECDSA), 0);
+    CF_CHECK_EQ(nn_bitlen(&(kp.priv_key.x), &priv_len), 0);
+    priv_len = (priv_len + 7) / 8;
+    priv_bytes = util::malloc(priv_len);
+    CF_CHECK_EQ(ec_priv_key_export_to_buf(&kp.priv_key, priv_bytes, priv_len), 0);
+
+    {
+        CF_CHECK_EQ(prj_pt_unique(&kp.pub_key.y, &kp.pub_key.y), 0);
+        const auto pub = libecc_detail::To_Component_BignumPair(kp.pub_key);
+        CF_CHECK_NE(pub, std::nullopt);
+
+        ret = { util::BinToDec(priv_bytes, priv_len), *pub };
+    }
+
+end:
+    libecc_detail::global_ds = nullptr;
+    util::free(priv_bytes);
+    return ret;
+}
+
 std::optional<bool> libecc::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey& op) {
     std::optional<bool> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
