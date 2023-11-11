@@ -564,6 +564,15 @@ nlohmann::json ECC_ValidatePubkey::ToJSON(void) const {
     return j;
 }
 
+ECC_ValidatePubkey::ECC_ValidatePubkey(
+        const component::CurveType curveType,
+        const component::ECC_PublicKey& pub,
+        component::Modifier& modifier) :
+    Operation(std::move(modifier)),
+    curveType(curveType),
+    pub(pub)
+{ }
+
 std::string ECC_GenerateKeyPair::Name(void) const { return "ECC_GenerateKeyPair"; }
 std::string ECC_GenerateKeyPair::ToString(void) const {
     std::stringstream ss;

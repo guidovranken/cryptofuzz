@@ -493,6 +493,19 @@ template<> void ExecutorBase<component::ECC_KeyPair, operation::ECC_GenerateKeyP
         Pool_CurvePrivkey.Set({ curveID, privkey });
         Pool_CurveKeypair.Set({ curveID, privkey, pub_x, pub_y });
         Pool_CurveECC_Point.Set({ curveID, pub_x, pub_y });
+
+        {
+            auto opValidate = operation::ECC_ValidatePubkey(
+                    op.curveType,
+                    result.second->pub,
+                    op.modifier);
+
+            const auto validateResult = module->OpECC_ValidatePubkey(opValidate);
+            CF_ASSERT(
+                    validateResult == std::nullopt ||
+                    *validateResult == true,
+                    "Cannot validate generated public key");
+        }
     }
 }
 

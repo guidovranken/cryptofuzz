@@ -1011,6 +1011,10 @@ class ECC_ValidatePubkey : public Operation {
             curveType(ds),
             pub(ds)
         { }
+        ECC_ValidatePubkey(
+                const component::CurveType curveType,
+                const component::ECC_PublicKey& pub,
+                component::Modifier& modifier);
         ECC_ValidatePubkey(nlohmann::json json) :
             Operation(json["modifier"]),
             curveType(json["curveType"]),
