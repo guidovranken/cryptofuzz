@@ -640,6 +640,15 @@ std::optional<component::ECC_PublicKey> libecc::OpECC_PrivateToPublic(operation:
 
 
 namespace libecc_detail {
+    static bool IsValidECxDSASize(const Buffer& msg) {
+        /* libecc does not adequately handle large ECxDSA messages due to
+         * limitations of its bignum library.
+         *
+         * 64 bytes corresponds with the largest hash that could reasonably be
+         * used in a real world scenario (like SHA-512) so let's limit it to that.
+         */
+        return msg.GetSize() <= 64;
+    }
 
     typedef int (*ecxdsa_sign_raw_t)(struct ec_sign_context *ctx, const u8 *input, u8 inputlen, u8 *sig, u8 siglen, const u8 *nonce, u8 noncelen);
     typedef int (*ecxdsa_sign_update_t)(struct ec_sign_context *ctx, const u8 *chunk, u32 chunklen);
@@ -653,8 +662,7 @@ namespace libecc_detail {
             const ecxdsa_sign_update_t ecxdsa_sign_update,
             const ecxdsa_sign_finalize_t ecxdsa_sign_finalize,
             const ecxdsa_rfc6979_sign_finalize_t ecxdsa_rfc6979_sign_finalize = nullptr) {
-        static const size_t max_msg = LOCAL_MIN(255, BIT_LEN_WORDS(NN_MAX_BIT_LEN) * (WORDSIZE / 8));
-        if ( op.cleartext.GetSize() > max_msg ) {
+        if ( IsValidECxDSASize(op.cleartext) == false ) {
             return std::nullopt;
         }
 
@@ -782,8 +790,7 @@ end:
             const ecxdsa_verify_raw_t ecxdsa_verify_raw,
             const ecxdsa_verify_update_t ecxdsa_verify_update,
             const ecxdsa_verify_finalize_t ecxdsa_verify_finalize) {
-        static const size_t max_msg = LOCAL_MIN(255, BIT_LEN_WORDS(NN_MAX_BIT_LEN) * (WORDSIZE / 8));
-        if ( op.cleartext.GetSize() > max_msg ) {
+        if ( IsValidECxDSASize(op.cleartext) == false ) {
             return std::nullopt;
         }
 
