@@ -653,8 +653,8 @@ namespace libecc_detail {
             const ecxdsa_sign_update_t ecxdsa_sign_update,
             const ecxdsa_sign_finalize_t ecxdsa_sign_finalize,
             const ecxdsa_rfc6979_sign_finalize_t ecxdsa_rfc6979_sign_finalize = nullptr) {
-        /* ecdsa_sign_raw supports messages up to 255 bytes */
-        if ( op.cleartext.GetSize() > 255 ) {
+        static const size_t max_msg = LOCAL_MIN(255, BIT_LEN_WORDS(NN_MAX_BIT_LEN) * (WORDSIZE / 8));
+        if ( op.cleartext.GetSize() > max_msg ) {
             return std::nullopt;
         }
 
@@ -782,8 +782,8 @@ end:
             const ecxdsa_verify_raw_t ecxdsa_verify_raw,
             const ecxdsa_verify_update_t ecxdsa_verify_update,
             const ecxdsa_verify_finalize_t ecxdsa_verify_finalize) {
-        /* ecdsa_verify_raw supports messages up to 255 bytes */
-        if ( op.cleartext.GetSize() > 255 ) {
+        static const size_t max_msg = LOCAL_MIN(255, BIT_LEN_WORDS(NN_MAX_BIT_LEN) * (WORDSIZE / 8));
+        if ( op.cleartext.GetSize() > max_msg ) {
             return std::nullopt;
         }
 
