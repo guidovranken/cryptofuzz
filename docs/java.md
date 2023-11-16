@@ -13,6 +13,16 @@ export LINK_FLAGS="$LINK_FLAGS -L$JDK_PATH/lib/server/ -ljvm -Wl,-rpath=$JDK_PAT
 export CXXFLAGS="$CXXFLAGS -DCRYPTOFUZZ_JAVA"
 ```
 
+## Amazon Corretto Crypto Provider (ACCP)
+ACCP is an alternative JCE provider. Building the Java module with ACCP will install it as the preferred JCE provider
+and fallback to the default JCE for any unsupported operations. The latest releases can be found [here](https://github.com/corretto/amazon-corretto-crypto-provider/releases).
+
+```
+wget https://github.com/corretto/amazon-corretto-crypto-provider/releases/download/2.3.1/AmazonCorrettoCryptoProvider-2.3.1-linux-x86_64.jar
+export ACCP_JAR=$(realpath AmazonCorrettoCryptoProvider-2.3.1-linux-x86_64.jar)
+export CXXFLAGS="$CXXFLAGS -DCRYPTOFUZZ_ACCP"
+```
+
 # Running with the module
 
 If you build cryptofuzz with `-fsanitize=address` this will also enable [LeakSanitizer](https://clang.llvm.org/docs/LeakSanitizer.html). Since the JVM handles
