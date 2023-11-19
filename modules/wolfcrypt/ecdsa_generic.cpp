@@ -438,6 +438,21 @@ end:
 }
 
 std::optional<bool> OpECDSA_Verify_Generic(operation::ECDSA_Verify& op) {
+    /* These are currently not supported by wc_Hash
+     * See also ZD 16119
+     */
+    switch ( op.digestType.Get() ) {
+        case CF_DIGEST("MD2"):
+        case CF_DIGEST("MD4"):
+        case CF_DIGEST("BLAKE2B512"):
+        case CF_DIGEST("BLAKE2S256"):
+        case CF_DIGEST("SHA3-224"):
+        case CF_DIGEST("SHA3-256"):
+        case CF_DIGEST("SHA3-384"):
+        case CF_DIGEST("SHA3-512"):
+            return std::nullopt;
+    }
+
     std::optional<bool> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     wolfCrypt_detail::SetGlobalDs(&ds);
