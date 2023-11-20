@@ -1128,6 +1128,28 @@ bool RandRange::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const 
     return true;
 }
 
+bool IsSquare::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::optional<Bignum>& modulo) const {
+    (void)ds;
+
+    if ( modulo != std::nullopt ) {
+        return false;
+    }
+
+    try {
+        res = ::Botan::is_perfect_square(bn[0].Ref()) == 0 ? 0 : 1;
+    } catch ( ::Botan::Invalid_Argument& e ) {
+        /* is_perfect_square() is expected to throw in this case */
+        if ( bn[0].Ref() < 1 ) {
+            return false;
+        }
+
+        /* Rethrow */
+        throw e;
+    }
+
+    return true;
+}
+
 } /* namespace Botan_bignum */
 } /* namespace module */
 } /* namespace cryptofuzz */

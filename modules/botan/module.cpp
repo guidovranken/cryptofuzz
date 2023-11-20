@@ -1939,6 +1939,9 @@ std::optional<component::Bignum> Botan::OpBignumCalc(operation::BignumCalc& op) 
         case    CF_CALCOP("RandRange(A,B)"):
             opRunner = std::make_unique<Botan_bignum::RandRange>();
             break;
+        case    CF_CALCOP("IsSquare(A)"):
+            opRunner = std::make_unique<Botan_bignum::IsSquare>();
+            break;
     }
 
     CF_CHECK_NE(opRunner, nullptr);
