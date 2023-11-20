@@ -2051,6 +2051,20 @@ end:
 }
 
 std::optional<component::Ciphertext> OpenSSL::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
+#if defined(CRYPTOFUZZ_LIBRESSL)
+    /* LibreSSL will encrypt, but not decrypt, CHACHA20_POLY1305 with empty tag.
+     * See also https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=52890
+     */
+    if ( op.cipher.cipherType.Is(CF_CIPHER("CHACHA20_POLY1305")) ) {
+        if ( op.tagSize == std::nullopt ) {
+            return std::nullopt;
+        }
+        if ( *op.tagSize == 0 ) {
+            return std::nullopt;
+        }
+    }
+#endif
+
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
     if ( op.cipher.cipherType.Get() == CF_CIPHER("AES") ) {
