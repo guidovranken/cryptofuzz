@@ -88,11 +88,17 @@ bool Div::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::o
     (void)modulo;
     (void)ds;
 
+    /* Botan handles negative division different than
+     * other libraries.
+     */
+    CF_CHECK_TRUE(bn[0].Ref() > 0);
+    CF_CHECK_TRUE(bn[1].Ref() > 0);
+
     try {
         switch ( GET_UINT8_FOR_SWITCH() ) {
             case    0:
-                CF_CHECK_TRUE(bn[1].Ref() != 0);
-                res = ::Botan::ct_divide(bn[0].Ref(), bn[1].Ref());
+                /* / operator */
+                res = bn[0].Ref() / bn[1].Ref();
                 return true;
             case    1:
                 {
@@ -101,7 +107,6 @@ bool Div::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::o
                     /* noret */ ::Botan::vartime_divide(bn[0].Ref(), bn[1].Ref(), res.Ref(), dummy.Ref());
                 }
                 return true;
-                /* TODO */
             case    2:
                 {
                     CF_CHECK_GT(bn[1].Ref(), 0);
@@ -111,8 +116,8 @@ bool Div::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const std::o
                 }
                 return true;
             case    3:
-                /* / operator */
-                res = bn[0].Ref() / bn[1].Ref();
+                CF_CHECK_TRUE(bn[1].Ref() != 0);
+                res = ::Botan::ct_divide(bn[0].Ref(), bn[1].Ref());
                 return true;
             case    4:
                 /* /= operator */
