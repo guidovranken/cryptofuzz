@@ -404,13 +404,6 @@ bool IsPrime::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const st
     (void)modulo;
     (void)ds;
 
-    /* Remove this when this is fixed
-     * https://github.com/randombit/botan/issues/2999
-     */
-    if ( bn[0].Ref() == 2 ) {
-        return false;
-    }
-
     if ( bn[0].Ref().is_negative() ) {
         return false;
     }
