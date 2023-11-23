@@ -1298,12 +1298,12 @@ export fn cryptofuzz_zig_bignumcalc(
     } else if ( op == 13 ) {
         res.set(a.bitCountAbs()) catch unreachable;
     } else if ( op == 14 ) {
-        var count = b.to(usize) catch {
+        const count = b.to(usize) catch {
             return 1;
         };
         res.shiftRight(&a, count) catch unreachable;
     } else if ( op == 15 ) {
-        var power = b.to(u32) catch {
+        const power = b.to(u32) catch {
             return 1;
         };
         res.pow(&a, power) catch unreachable;
@@ -1313,7 +1313,7 @@ export fn cryptofuzz_zig_bignumcalc(
         return 1;
     }
 
-    var s = res.toString(allocator, 10, .lower) catch unreachable;
+    const s = res.toString(allocator, 10, .lower) catch unreachable;
     mem.copy(u8, res_data[0..res_size], s);
     allocator.free(s);
 
