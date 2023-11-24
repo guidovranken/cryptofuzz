@@ -1021,6 +1021,32 @@ void Builtin_tests_importer::Run(void) {
         write(CF_OPERATION("BignumCalc_Fp12"), dsOut2, true);
     }
 
+    {
+        /* Private key + msg such that secp256r1+SHA256+ECDSA+RFC6979 initially generates
+         * a nonce larger than the curve order, necessitating a second iteration.
+         *
+         * SHA256(msg) = E6790061637A5E15DB824D264C38B1985C5967039D75197639695C97F165A7B5
+         * 1st nonce: 115792089222723290336929034212806201679256150086579264972334144142676277236044
+         * 2nd nonce: 13371279309968744249919158834651416434798111428889265518135159131744736131709
+         * R: 951562768829913217168991902851290818048490544125739820379426260295723095827
+         * S: 6496266836069715028068417861118626967134037479105812216027316293116295558284
+         */
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        parameters["curveType"] = CF_ECC_CURVE("secp256r1");
+        parameters["priv"] = "1";
+        parameters["nonce"] = "0"; /* Unused for RFC 6979 */
+        parameters["cleartext"] = "C4BB436F";
+        parameters["nonceSource"] = 1; /* RFC 6979 */
+        parameters["digestType"] = CF_DIGEST("SHA256");
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::ECDSA_Sign op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("ECDSA_Sign"), dsOut2);
+    }
+
     ecdsa_verify_tests();
     ecc_point_add_tests();
 }
