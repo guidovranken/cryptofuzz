@@ -87,6 +87,38 @@ end:
         return ret;
     }
 #endif
+
+    bool montgomery_reduce(
+            fuzzing::datasource::Datasource& ds,
+            mp_int* res,
+            const mp_int* a,
+            const mp_digit b) {
+        bool ret = false;
+
+        /* Enable once https://github.com/wolfSSL/wolfssl/pull/6955
+         * has been merged
+         */
+#if 0
+        bool which = false;
+        try {
+            which = ds.Get<bool>();
+        } catch ( ... ) { }
+
+        if ( which == false ) {
+            MP_CHECK_EQ(mp_montgomery_reduce(res, a, b), MP_OKAY);
+        } else {
+            MP_CHECK_EQ(mp_montgomery_reduce_ct(res, a, b), MP_OKAY);
+        }
+#else
+        (void)ds;
+        MP_CHECK_EQ(mp_montgomery_reduce(res, a, b), MP_OKAY);
+#endif
+
+        ret = true;
+end:
+
+        return ret;
+    }
 }
 
 bool Add::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
@@ -472,7 +504,7 @@ bool InvMod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 MP_CHECK_EQ(mp_montgomery_calc_normalization(tmp1.GetPtr(), bn[1].GetPtr()), MP_OKAY);
                 MP_CHECK_EQ(mp_mulmod(bn[0].GetPtr(), tmp1.GetPtr(), bn[1].GetPtr(), tmp2.GetPtr()), MP_OKAY);
                 MP_CHECK_EQ(mp_invmod_mont_ct(tmp2.GetPtr(), bn[1].GetPtr(), res.GetPtr(), mp), MP_OKAY);
-                MP_CHECK_EQ(mp_montgomery_reduce(res.GetPtr(), bn[1].GetPtr(), mp), MP_OKAY);
+                CF_CHECK_TRUE(wolfCrypt_bignum_detail::montgomery_reduce(ds, res.GetPtr(), bn[1].GetPtr(), mp));
             }
             break;
 #undef HAVE_MP_INVMOD_MONT_CT
@@ -939,7 +971,7 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn) const {
                 MP_CHECK_EQ(mp_montgomery_setup(bn[1].GetPtr(), &mp), MP_OKAY);
                 MP_CHECK_EQ(mp_montgomery_calc_normalization(tmp.GetPtr(), bn[1].GetPtr()), MP_OKAY);
                 MP_CHECK_EQ(mp_mulmod(bn[0].GetPtr(), tmp.GetPtr(), bn[1].GetPtr(), res.GetPtr()), MP_OKAY);
-                MP_CHECK_EQ(mp_montgomery_reduce(res.GetPtr(), bn[1].GetPtr(), mp), MP_OKAY);
+                CF_CHECK_TRUE(wolfCrypt_bignum_detail::montgomery_reduce(ds, res.GetPtr(), bn[1].GetPtr(), mp));
             }
             break;
 #endif
