@@ -91,7 +91,7 @@ end:
     bool montgomery_reduce(
             fuzzing::datasource::Datasource& ds,
             mp_int* res,
-            const mp_int* a,
+            mp_int* a,
             const mp_digit b) {
         bool ret = false;
 
