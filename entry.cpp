@@ -468,6 +468,11 @@ static void addNumbers(void) {
     std::set<std::string> curveNumbers;
 
     for (size_t i = 0; i < (sizeof(ECC_CurveLUT) / sizeof(ECC_CurveLUT[0])); i++) {
+        if ( !cryptofuzz_options->curves.Empty() ) {
+            if ( !cryptofuzz_options->curves.Have(ECC_CurveLUT[i].id) ) {
+                continue;
+            }
+        }
         if ( ECC_CurveLUT[i].prime ) curveNumbers.insert(*ECC_CurveLUT[i].prime);
         if ( ECC_CurveLUT[i].a ) curveNumbers.insert(*ECC_CurveLUT[i].a);
         if ( ECC_CurveLUT[i].b ) curveNumbers.insert(*ECC_CurveLUT[i].b);
