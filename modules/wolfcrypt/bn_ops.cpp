@@ -95,10 +95,6 @@ end:
             const mp_digit b) {
         bool ret = false;
 
-        /* Enable once https://github.com/wolfSSL/wolfssl/pull/6955
-         * has been merged
-         */
-#if 0
         bool which = false;
         try {
             which = ds.Get<bool>();
@@ -109,10 +105,6 @@ end:
         } else {
             MP_CHECK_EQ(mp_montgomery_reduce_ct(res, a, b), MP_OKAY);
         }
-#else
-        (void)ds;
-        MP_CHECK_EQ(mp_montgomery_reduce(res, a, b), MP_OKAY);
-#endif
 
         ret = true;
 end:
