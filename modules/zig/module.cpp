@@ -100,7 +100,7 @@ size_t cryptofuzz_zig_ecc_point_dbl(
         const uint8_t* ax_bytes,
         const uint8_t* ay_bytes);
 size_t cryptofuzz_zig_bignumcalc(
-        char* res_data, const size_t res_size,
+        char* res_data,
         const char* a_data, const size_t a_size,
         const char* b_data, const size_t b_size,
         size_t operation);
@@ -809,7 +809,7 @@ std::optional<component::Bignum> Zig::OpBignumCalc(operation::BignumCalc& op) {
 
     memset(res, 0, sizeof(res));
     CF_CHECK_EQ(cryptofuzz_zig_bignumcalc(
-            res, sizeof(res),
+            res,
             bn0.c_str(), bn0.size(),
             bn1.c_str(), bn1.size(),
             operation), 0);
