@@ -1047,6 +1047,29 @@ void Builtin_tests_importer::Run(void) {
         write(CF_OPERATION("ECDSA_Sign"), dsOut2);
     }
 
+    {
+        /* DSA verification which succeeds in Botan (because P is not prime)
+         * if group parameters are not verified (group.verify_group(rng)).
+         */
+        nlohmann::json parameters;
+
+        parameters["modifier"] = "";
+        nlohmann::json parameters_;
+        parameters_["p"] = "39";
+        parameters_["q"] = "103445297639227515900306925866938644023535590568056190636363003089459430453659";
+        parameters_["g"] = "1";
+        parameters["parameters"] = parameters_;
+        parameters["signature"][0] = "1";
+        parameters["signature"][1] = "4313887950269461199253920588349192171833521845638";
+        parameters["pub"] = "3754147779781271845379928107568467997185228935021891714724352939945759369813";
+        parameters["cleartext"] = "20";
+
+        fuzzing::datasource::Datasource dsOut2(nullptr, 0);
+        cryptofuzz::operation::DSA_Verify op(parameters);
+        op.Serialize(dsOut2);
+        write(CF_OPERATION("DSA_Verify"), dsOut2);
+    }
+
     ecdsa_verify_tests();
     ecc_point_add_tests();
 }

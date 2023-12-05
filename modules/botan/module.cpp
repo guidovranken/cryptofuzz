@@ -1692,6 +1692,8 @@ std::optional<bool> Botan::OpDSA_Verify(operation::DSA_Verify& op) {
     std::optional<bool> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
+    BOTAN_FUZZER_RNG;
+
     try {
         const auto p = ::Botan::BigInt(op.parameters.p.ToString(ds));
         const auto q = ::Botan::BigInt(op.parameters.q.ToString(ds));
@@ -1703,6 +1705,7 @@ std::optional<bool> Botan::OpDSA_Verify(operation::DSA_Verify& op) {
         CF_CHECK_NE(g, 0);
 
         const ::Botan::DL_Group group(p, q, g);
+        CF_CHECK_TRUE(group.verify_group(rng));
 
         const auto y = ::Botan::BigInt(op.pub.ToString(ds));
         const auto pub = std::make_unique<::Botan::DSA_PublicKey>(group, y);
