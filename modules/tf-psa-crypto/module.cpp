@@ -8,6 +8,8 @@
 namespace cryptofuzz {
 namespace module {
 
+#define CF_CHECK_PSA(expr) CF_CHECK_EQ(expr, PSA_SUCCESS)
+
 namespace TF_PSA_Crypto_detail {
     Datasource* ds;
 
@@ -75,6 +77,74 @@ TF_PSA_Crypto::~TF_PSA_Crypto(void)
     mbedtls_psa_crypto_free();
 }
 
+namespace TF_PSA_Crypto_detail {
+
+    psa_algorithm_t to_psa_algorithm_t(const component::DigestType& digestType) {
+        using fuzzing::datasource::ID;
+
+        static const std::map<uint64_t, psa_algorithm_t> LUT = {
+            { CF_DIGEST("MD5"), PSA_ALG_MD5 },
+            { CF_DIGEST("RIPEMD160"), PSA_ALG_RIPEMD160 },
+            { CF_DIGEST("SHA1"), PSA_ALG_SHA_1 },
+            { CF_DIGEST("SHA224"), PSA_ALG_SHA_224 },
+            { CF_DIGEST("SHA256"), PSA_ALG_SHA_256 },
+            { CF_DIGEST("SHA384"), PSA_ALG_SHA_384 },
+            { CF_DIGEST("SHA512"), PSA_ALG_SHA_512 },
+            { CF_DIGEST("SHA3-224"), PSA_ALG_SHA3_224 },
+            { CF_DIGEST("SHA3-256"), PSA_ALG_SHA3_256 },
+            { CF_DIGEST("SHA3-384"), PSA_ALG_SHA3_384 },
+            { CF_DIGEST("SHA3-512"), PSA_ALG_SHA3_512 },
+        };
+
+        if ( LUT.find(digestType.Get()) == LUT.end() ) {
+            return PSA_ALG_NONE;
+        }
+
+        return LUT.at(digestType.Get());
+    }
+
+}
+
+std::optional<component::Digest> TF_PSA_Crypto::OpDigest(operation::Digest& op) {
+    std::optional<component::Digest> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    TF_PSA_Crypto_detail::SetGlobalDs(&ds);
+
+    util::Multipart parts;
+
+    psa_algorithm_t alg = PSA_ALG_NONE;
+    psa_hash_operation_t operation = PSA_HASH_OPERATION_INIT;
+
+    /* Initialize */
+    {
+        parts = util::ToParts(ds, op.cleartext);
+
+        CF_CHECK_NE(alg = TF_PSA_Crypto_detail::to_psa_algorithm_t(op.digestType), PSA_ALG_NONE);
+        CF_CHECK_PSA(psa_hash_setup(&operation, alg));
+    }
+
+    /* Process */
+    for (const auto& part : parts) {
+        CF_CHECK_PSA(psa_hash_update(&operation, part.first, part.second));
+    }
+
+    /* Finalize */
+    {
+        unsigned char md[PSA_HASH_LENGTH(alg)];
+        size_t length = 0;
+        CF_CHECK_PSA(psa_hash_finish(&operation, md, sizeof(md), &length));
+        CF_CHECK_EQ(length, PSA_HASH_LENGTH(alg));
+
+        ret = component::Digest(md, PSA_HASH_LENGTH(alg));
+    }
+
+end:
+    psa_hash_abort(&operation);
+
+    TF_PSA_Crypto_detail::UnsetGlobalDs();
+
+    return ret;
+}
 
 } /* namespace module */
 } /* namespace cryptofuzz */
