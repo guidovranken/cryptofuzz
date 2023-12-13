@@ -54,6 +54,10 @@
   #include <modules/mbedtls/module.h>
 #endif
 
+#if defined(CRYPTOFUZZ_TF_PSA_CRYPTO)
+  #include <modules/tf-psa-crypto/module.h>
+#endif
+
 #if defined(CRYPTOFUZZ_BOOST)
   #include <modules/boost/module.h>
 #endif
@@ -563,6 +567,10 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 
 #if defined(CRYPTOFUZZ_MBEDTLS)
     driver->LoadModule( std::make_shared<cryptofuzz::module::mbedTLS>() );
+#endif
+
+#if defined(CRYPTOFUZZ_TF_PSA_CRYPTO)
+    driver->LoadModule( std::make_shared<cryptofuzz::module::TF_PSA_Crypto>() );
 #endif
 
 #if defined(CRYPTOFUZZ_BOOST)
