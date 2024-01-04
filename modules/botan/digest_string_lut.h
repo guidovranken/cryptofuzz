@@ -5,12 +5,10 @@ static const std::map<uint64_t, std::string> LUT = {
     { CF_DIGEST("BLAKE2B256"), "Blake2b(256)" },
     { CF_DIGEST("BLAKE2B384"), "Blake2b(384)" },
     { CF_DIGEST("BLAKE2B512"), "Blake2b(512)" },
-#if 0
     { CF_DIGEST("BLAKE2S128"), "Blake2s(128)" },
     { CF_DIGEST("BLAKE2S160"), "Blake2s(160)" },
     { CF_DIGEST("BLAKE2S224"), "Blake2s(224)" },
     { CF_DIGEST("BLAKE2S256"), "Blake2s(256)" },
-#endif
     { CF_DIGEST("CRC32-RFC2440"), "CRC24" },
     { CF_DIGEST("CRC32"), "CRC32" },
     { CF_DIGEST("GOST-R-34.11-94"), "GOST-R-34.11-94" },
