@@ -63,13 +63,11 @@ TF_PSA_Crypto::TF_PSA_Crypto(void) :
         abort();
     }
 
-    if (psa_crypto_init() != PSA_SUCCESS) {
-        /* The most plausible error cause here is that Mbed TLS is compiled
-         * with MBEDTLS_ENTROPY_NV_SEED enabled and the entropy seed file
-         * is missing. If so, create a 64-byte file called "seedfile" in
-         * the current directory. */
-        abort();
-    }
+    /* The most plausible error cause here is that Mbed TLS is compiled
+     * with MBEDTLS_ENTROPY_NV_SEED enabled and the entropy seed file is
+     * missing. To fix that problem, create a 64-byte file called "seedfile"
+     * in the current directory. */
+    CF_ASSERT_PSA(psa_crypto_init());
 }
 
 TF_PSA_Crypto::~TF_PSA_Crypto(void)
