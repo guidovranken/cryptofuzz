@@ -1,6 +1,6 @@
 # TF-PSA-Crypto
 
-The `tf-psa-crypto` module uses the PSA Crypto API to call the Mbed TLS implementation. See the `mbedtls` module for the classic Mbed TLS crypto interface.
+The `PSA-Crypto` module (`tf-psa-crypto` directory) uses the PSA Crypto API to call the Mbed TLS implementation. See the `mbedtls` module for the classic Mbed TLS crypto interface.
 
 You can use the same build of Mbed TLS (`libmbedcrypto.a`) for both.
 

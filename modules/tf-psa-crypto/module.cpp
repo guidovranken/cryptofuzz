@@ -57,7 +57,7 @@ static void mbedTLS_custom_free(void* ptr) {
 }
 
 TF_PSA_Crypto::TF_PSA_Crypto(void) :
-    Module("PSA Crypto") {
+    Module("PSA-Crypto") {
 
     if ( mbedtls_platform_set_calloc_free(mbedTLS_custom_calloc, mbedTLS_custom_free) != 0 ) {
         abort();
