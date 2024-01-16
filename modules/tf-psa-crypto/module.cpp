@@ -133,9 +133,8 @@ std::optional<component::Digest> TF_PSA_Crypto::OpDigest(operation::Digest& op) 
         unsigned char md[PSA_HASH_LENGTH(alg)];
         size_t length = 0;
         CF_CHECK_PSA(psa_hash_finish(&operation, md, sizeof(md), &length));
-        CF_CHECK_EQ(length, PSA_HASH_LENGTH(alg));
 
-        ret = component::Digest(md, PSA_HASH_LENGTH(alg));
+        ret = component::Digest(md, length);
     }
 
 end:
