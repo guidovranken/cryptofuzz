@@ -1,7 +1,6 @@
-# Mbed TLS
+# TF-PSA-Crypto
 
-The `mbedtls` module is a crypto implementation using Mbed TLS's classic crypto interface.
-See the `tf-psa-crypto` module for the newer PSA Crypto interface.
+The `PSA-Crypto` module (`tf-psa-crypto` directory) uses the PSA Crypto API to call the Mbed TLS implementation. See the `mbedtls` module for the classic Mbed TLS crypto interface.
 
 You can use the same build of Mbed TLS (`libmbedcrypto.a`) for both.
 
@@ -17,7 +16,7 @@ cmake .. -DENABLE_PROGRAMS=0 -DENABLE_TESTING=0
 make -j$(nproc)
 export MBEDTLS_LIBMBEDCRYPTO_A_PATH=$(realpath library/libmbedcrypto.a)
 export MBEDTLS_INCLUDE_PATH=$(realpath ../include)
-export CXXFLAGS="$CXXFLAGS -DCRYPTOFUZZ_MBEDTLS"
+export CXXFLAGS="$CXXFLAGS -DCRYPTOFUZZ_TF_PSA_CRYPTO"
 ```
 
 If you want to compile without assembly language optimizations, run these commands from the ```mbedtls/``` directory as well before running cmake:
@@ -32,6 +31,6 @@ scripts/config.py unset MBEDTLS_AESCE_C
 ## Module compilation
 
 ```sh
-cd cryptofuzz/modules/mbedtls/
+cd cryptofuzz/modules/tf-psa-crypto/
 make
 ```
