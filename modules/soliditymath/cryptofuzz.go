@@ -45,9 +45,7 @@ func SolidityMath_Call(contract []byte, calldata []byte, gas uint64) {
     resetResult()
 
 	ret, _, err := runtime.Execute(contract, calldata, &runtime.Config{
-        EVMConfig: vm.Config{
-            Debug:  false,
-        },
+        EVMConfig: vm.Config{ },
 		GasLimit: gas,
 	})
 

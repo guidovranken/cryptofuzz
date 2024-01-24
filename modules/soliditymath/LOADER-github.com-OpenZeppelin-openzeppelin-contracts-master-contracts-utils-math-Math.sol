@@ -21,23 +21,23 @@ contract LOADER_github_com_OpenZeppelin_openzeppelin_contracts_master_contracts_
         uint256 b,
         uint256 denominator
     ) public pure returns (uint256 result) {
-        return Math.mulDiv(a, b, denominator, Math.Rounding.Down);
+        return Math.mulDiv(a, b, denominator, Math.Rounding.Floor);
     }
     function mulDivCeil(
         uint256 a,
         uint256 b,
         uint256 denominator
     ) public pure returns (uint256 result) {
-        return Math.mulDiv(a, b, denominator, Math.Rounding.Up);
+        return Math.mulDiv(a, b, denominator, Math.Rounding.Ceil);
     }
     function sqrt(
         uint256 a
     ) public pure returns (uint256 result) {
-        return Math.sqrt(a, Math.Rounding.Down);
+        return Math.sqrt(a, Math.Rounding.Floor);
     }
     function sqrtCeil(
         uint256 a
     ) public pure returns (uint256 result) {
-        return Math.sqrt(a, Math.Rounding.Up);
+        return Math.sqrt(a, Math.Rounding.Ceil);
     }
 }

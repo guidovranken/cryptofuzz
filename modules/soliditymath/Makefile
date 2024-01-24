@@ -40,8 +40,8 @@ LOADER-github.com-Uniswap-v3-core-main-contracts-libraries-LowGasSafeMath.json :
 
 github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.sol :
 	wget 'https://raw.githubusercontent.com/OpenZeppelin/openzeppelin-contracts/master/contracts/utils/math/Math.sol' -O github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.sol
-LOADER-github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.json : LOADER-github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.sol github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.sol solc-linux-amd64-v0.8.0+commit.c7dfd78e
-	./solc-linux-amd64-v0.8.0+commit.c7dfd78e LOADER-github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.sol --combined-json hashes,bin-runtime >LOADER-github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.json
+LOADER-github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.json : LOADER-github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.sol github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.sol solc-linux-amd64-v0.8.23+commit.f704f362
+	./solc-linux-amd64-v0.8.23+commit.f704f362 LOADER-github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.sol --combined-json hashes,bin-runtime >LOADER-github.com-OpenZeppelin-openzeppelin-contracts-master-contracts-utils-math-Math.json
 
 github.com-Uniswap-solidity-lib-blob-master-contracts-libraries-Babylonian.sol :
 	wget 'https://raw.githubusercontent.com/Uniswap/solidity-lib/master/contracts/libraries/Babylonian.sol' -O github.com-Uniswap-solidity-lib-blob-master-contracts-libraries-Babylonian.sol
@@ -57,9 +57,9 @@ Coinmonks.json : Coinmonks.sol solc-linux-amd64-v0.7.0+commit.9e61f92b
 solc-linux-amd64-v0.8.13+commit.abaa5c0e :
 	wget 'https://github.com/ethereum/solc-bin/raw/gh-pages/linux-amd64/solc-linux-amd64-v0.8.13+commit.abaa5c0e' -O solc-linux-amd64-v0.8.13+commit.abaa5c0e
 	chmod +x solc-linux-amd64-v0.8.13+commit.abaa5c0e
-solc-linux-amd64-v0.8.0+commit.c7dfd78e :
-	wget 'https://github.com/ethereum/solc-bin/raw/gh-pages/linux-amd64/solc-linux-amd64-v0.8.0+commit.c7dfd78e' -O solc-linux-amd64-v0.8.0+commit.c7dfd78e
-	chmod +x solc-linux-amd64-v0.8.0+commit.c7dfd78e
+solc-linux-amd64-v0.8.23+commit.f704f362 :
+	wget 'https://github.com/ethereum/solc-bin/raw/gh-pages/linux-amd64/solc-linux-amd64-v0.8.23+commit.f704f362' -O solc-linux-amd64-v0.8.23+commit.f704f362
+	chmod +x solc-linux-amd64-v0.8.23+commit.f704f362
 solc-linux-amd64-v0.7.6+commit.7338295f :
 	wget 'https://github.com/ethereum/solc-bin/raw/gh-pages/linux-amd64/solc-linux-amd64-v0.7.6%2Bcommit.7338295f' -O solc-linux-amd64-v0.7.6+commit.7338295f
 	chmod +x solc-linux-amd64-v0.7.6+commit.7338295f
@@ -99,7 +99,7 @@ clean:
 	rm -rf github.com-Uniswap-solidity-lib-blob-master-contracts-libraries-Babylonian.sol
 	rm -rf *.json
 	rm -rf solc-linux-amd64-v0.8.13+commit.abaa5c0e
-	rm -rf solc-linux-amd64-v0.8.0+commit.c7dfd78e
+	rm -rf solc-linux-amd64-v0.8.23+commit.f704f362
 	rm -rf solc-linux-amd64-v0.7.6+commit.7338295f
 	rm -rf solc-linux-amd64-v0.6.12+commit.27d51765
 	rm -rf *.o module.a cryptofuzz.a cryptofuzz.h contracts.h
