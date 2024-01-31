@@ -978,6 +978,52 @@ end:
     return ret;
 }
 
+std::optional<component::Key> libgcrypt::OpKDF_X963(operation::KDF_X963& op) {
+    std::optional<component::Key> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+
+    gcry_kdf_hd_t hd = {0};
+    unsigned long param[1];
+    const size_t outSize = op.keySize;
+    uint8_t* out = util::malloc(outSize);
+    bool initialized = false;
+
+    std::optional<int> digestType = std::nullopt;
+    CF_CHECK_FALSE(op.digestType.Is(CF_DIGEST("SHAKE128")));
+    CF_CHECK_FALSE(op.digestType.Is(CF_DIGEST("SHAKE256")));
+    CF_CHECK_NE(digestType = libgcrypt_detail::DigestIDToID(op.digestType.Get()), std::nullopt);
+
+    param[0] = outSize;
+
+    CF_CHECK_EQ(gcry_kdf_open(
+                &hd,
+                GCRY_KDF_X963_KDF,
+                *digestType,
+                param,
+                1,
+                op.secret.GetPtr(&ds),
+                op.secret.GetSize(),
+                nullptr, 0,
+                nullptr, 0,
+                op.info.GetPtr(&ds),
+                op.info.GetSize()), GPG_ERR_NO_ERROR);
+    initialized = true;
+
+    CF_CHECK_EQ(gcry_kdf_compute(hd, nullptr), GPG_ERR_NO_ERROR);
+    CF_CHECK_EQ(gcry_kdf_final(hd, outSize, out), GPG_ERR_NO_ERROR);
+
+    ret = component::Key(out, outSize);
+
+end:
+    util::free(out);
+
+    if ( initialized == true ) {
+        gcry_kdf_close(hd);
+    }
+
+    return ret;
+}
+
 namespace libgcrypt_detail {
     std::optional<std::string> toCurveString(const component::CurveType& curveType) {
         static const std::map<uint64_t, std::string> LUT = {
