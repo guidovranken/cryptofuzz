@@ -1696,6 +1696,8 @@ std::optional<bool> Botan::OpDSA_Verify(operation::DSA_Verify& op) {
 
     try {
         const auto p = ::Botan::BigInt(op.parameters.p.ToString(ds));
+        /* Avoid time-outs */
+        CF_CHECK_LTE(p.bytes(), 300);
         const auto q = ::Botan::BigInt(op.parameters.q.ToString(ds));
         const auto g = ::Botan::BigInt(op.parameters.g.ToString(ds));
 

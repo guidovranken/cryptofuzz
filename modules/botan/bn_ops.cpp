@@ -408,6 +408,11 @@ bool IsPrime::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, const st
         return false;
     }
 
+    /* Avoid time-outs */
+    if ( bn[0].Ref().bytes() > 300 ) {
+        return false;
+    }
+
     Botan::Modular_Reducer mod_n(bn[0].Ref());
     if ( Botan::is_bailie_psw_probable_prime(bn[0].Ref(), mod_n) ) {
         res = 1;
