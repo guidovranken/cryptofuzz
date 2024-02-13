@@ -1488,6 +1488,7 @@ std::string BLS_PrivateToPublic::ToString(void) const {
 
 nlohmann::json BLS_PrivateToPublic::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_PrivateToPublic";
     j["priv"] = priv.ToJSON();
     j["curveType"] = curveType.ToJSON();
     j["modifier"] = modifier.ToJSON();
@@ -1507,6 +1508,7 @@ std::string BLS_PrivateToPublic_G2::ToString(void) const {
 
 nlohmann::json BLS_PrivateToPublic_G2::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_PrivateToPublic_G2";
     j["priv"] = priv.ToJSON();
     j["curveType"] = curveType.ToJSON();
     j["modifier"] = modifier.ToJSON();
@@ -1537,6 +1539,7 @@ std::string BLS_Sign::ToString(void) const {
 nlohmann::json BLS_Sign::ToJSON(void) const {
     nlohmann::json j;
 
+    j["operation"] = "BLS_Sign";
     j["curveType"] = curveType.ToJSON();
 
     j["hashOrPoint"] = hashOrPoint;
@@ -1579,6 +1582,7 @@ std::string BLS_Verify::ToString(void) const {
 
 nlohmann::json BLS_Verify::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_Verify";
     j["curveType"] = curveType.ToJSON();
 
     j["cleartext"] = cleartext.ToJSON();
@@ -1662,6 +1666,7 @@ std::string BLS_Pairing::ToString(void) const {
 
 nlohmann::json BLS_Pairing::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_Pairing";
     j["curveType"] = curveType.ToJSON();
     j["modifier"] = modifier.ToJSON();
     j["g1_x"] = g1.first.ToJSON();
@@ -1720,6 +1725,7 @@ std::string BLS_FinalExp::ToString(void) const {
 
 nlohmann::json BLS_FinalExp::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_FinalExp";
     j["curveType"] = curveType.ToJSON();
     j["modifier"] = modifier.ToJSON();
     j["fp12"] = fp12.ToJSON();
@@ -1743,6 +1749,7 @@ std::string BLS_Aggregate_G1::ToString(void) const {
 
 nlohmann::json BLS_Aggregate_G1::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_Aggregate_G1";
     j["curveType"] = curveType.ToJSON();
     j["modifier"] = modifier.ToJSON();
 
@@ -1782,6 +1789,7 @@ std::string BLS_Aggregate_G2::ToString(void) const {
 
 nlohmann::json BLS_Aggregate_G2::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_Aggregate_G2";
     j["curveType"] = curveType.ToJSON();
     j["modifier"] = modifier.ToJSON();
 
@@ -1817,6 +1825,7 @@ std::string BLS_HashToG1::ToString(void) const {
 
 nlohmann::json BLS_HashToG1::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_HashToG1";
     j["curveType"] = curveType.ToJSON();
     j["cleartext"] = cleartext.ToJSON();
     j["dest"] = dest.ToJSON();
@@ -1840,6 +1849,7 @@ std::string BLS_HashToG2::ToString(void) const {
 
 nlohmann::json BLS_HashToG2::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_HashToG2";
     j["curveType"] = curveType.ToJSON();
     j["cleartext"] = cleartext.ToJSON();
     j["dest"] = dest.ToJSON();
@@ -1862,6 +1872,7 @@ std::string BLS_MapToG1::ToString(void) const {
 
 nlohmann::json BLS_MapToG1::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_MapToG1";
     j["curveType"] = curveType.ToJSON();
     j["u"] = u.ToJSON();
     j["v"] = v.ToJSON();
@@ -1886,6 +1897,7 @@ std::string BLS_MapToG2::ToString(void) const {
 nlohmann::json BLS_MapToG2::ToJSON(void) const {
     nlohmann::json j;
 
+    j["operation"] = "BLS_MapToG2";
     j["u_x"] = u.first.ToJSON();
     j["u_y"] = u.second.ToJSON();
     j["v_x"] = v.first.ToJSON();
@@ -1908,6 +1920,7 @@ std::string BLS_IsG1OnCurve::ToString(void) const {
 
 nlohmann::json BLS_IsG1OnCurve::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_IsG1OnCurve";
     j["curveType"] = curveType.ToJSON();
 
     j["g1_x"] = g1.first.ToJSON();
@@ -1933,6 +1946,7 @@ std::string BLS_IsG2OnCurve::ToString(void) const {
 
 nlohmann::json BLS_IsG2OnCurve::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_IsG2OnCurve";
     j["curveType"] = curveType.ToJSON();
 
     j["g2_v"] = g2.first.first.ToJSON();
@@ -1958,6 +1972,7 @@ std::string BLS_GenerateKeyPair::ToString(void) const {
 
 nlohmann::json BLS_GenerateKeyPair::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_GenerateKeyPair";
     j["curveType"] = curveType.ToJSON();
     j["modifier"] = modifier.ToJSON();
     j["ikm"] = ikm.ToJSON();
@@ -1978,6 +1993,7 @@ std::string BLS_Decompress_G1::ToString(void) const {
 
 nlohmann::json BLS_Decompress_G1::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_Decompress_G1";
     j["curveType"] = curveType.ToJSON();
     j["compressed"] = compressed.ToJSON();
     j["modifier"] = modifier.ToJSON();
@@ -1998,6 +2014,7 @@ std::string BLS_Compress_G1::ToString(void) const {
 
 nlohmann::json BLS_Compress_G1::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_Compress_G1";
     j["curveType"] = curveType.ToJSON();
     j["g1_x"] = uncompressed.first.ToJSON();
     j["g1_y"] = uncompressed.second.ToJSON();
@@ -2019,6 +2036,7 @@ std::string BLS_Decompress_G2::ToString(void) const {
 
 nlohmann::json BLS_Decompress_G2::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_Decompress_G2";
     j["curveType"] = curveType.ToJSON();
     j["g1_x"] = compressed.first.ToJSON();
     j["g1_y"] = compressed.second.ToJSON();
@@ -2042,6 +2060,7 @@ std::string BLS_Compress_G2::ToString(void) const {
 
 nlohmann::json BLS_Compress_G2::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_Compress_G2";
     j["curveType"] = curveType.ToJSON();
     j["g2_v"] = uncompressed.first.first.ToJSON();
     j["g2_w"] = uncompressed.first.second.ToJSON();
@@ -2125,6 +2144,7 @@ nlohmann::json BLS_G1_IsEq::ToJSON(void) const {
     nlohmann::json j;
     j["curveType"] = curveType.ToJSON();
 
+    j["operation"] = "BLS_G1_IsEq";
     j["a_x"] = a.first.ToJSON();
     j["a_y"] = a.second.ToJSON();
 
@@ -2149,6 +2169,7 @@ std::string BLS_G1_Neg::ToString(void) const {
 
 nlohmann::json BLS_G1_Neg::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_G1_Neg";
     j["curveType"] = curveType.ToJSON();
 
     j["a_x"] = a.first.ToJSON();
@@ -2178,6 +2199,7 @@ std::string BLS_G2_Add::ToString(void) const {
 
 nlohmann::json BLS_G2_Add::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_G2_Add";
     j["curveType"] = curveType.ToJSON();
 
     j["a_v"] = a.first.first.ToJSON();
@@ -2211,6 +2233,7 @@ std::string BLS_G2_Mul::ToString(void) const {
 
 nlohmann::json BLS_G2_Mul::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_G2_Mul";
     j["curveType"] = curveType.ToJSON();
 
     j["a_v"] = a.first.first.ToJSON();
@@ -2244,6 +2267,7 @@ std::string BLS_G2_IsEq::ToString(void) const {
 
 nlohmann::json BLS_G2_IsEq::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_G2_IsEq";
     j["curveType"] = curveType.ToJSON();
 
     j["a_v"] = a.first.first.ToJSON();
@@ -2276,6 +2300,7 @@ std::string BLS_G2_Neg::ToString(void) const {
 
 nlohmann::json BLS_G2_Neg::ToJSON(void) const {
     nlohmann::json j;
+    j["operation"] = "BLS_G2_Neg";
     j["curveType"] = curveType.ToJSON();
 
     j["a_v"] = a.first.first.ToJSON();
