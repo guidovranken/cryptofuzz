@@ -3594,6 +3594,16 @@ std::optional<bool> OpenSSL::OpECC_ValidatePubkey(operation::ECC_ValidatePubkey&
     }
 
     ret = EC_KEY_set_public_key(key.GetPtr(), pub->GetPtr()) == 1;
+
+    /* https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=66667 */
+    /* Curves with cofactor > 1 need additional validation */
+    if (    op.curveType.Is(CF_ECC_CURVE("secp112r2")) ||
+            op.curveType.Is(CF_ECC_CURVE("secp128r2")) ) {
+        if ( *ret ) {
+            ret = EC_KEY_check_key(key.GetPtr()) == 1;
+        }
+    }
+
 end:
     return ret;
 }
