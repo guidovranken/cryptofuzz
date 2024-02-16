@@ -4057,6 +4057,12 @@ std::optional<component::DSA_Signature> OpenSSL::OpDSA_Sign(operation::DSA_Sign&
     CF_CHECK_EQ(p.Set(op.parameters.p.ToString(ds)), true);
     CF_CHECK_EQ(q.Set(op.parameters.q.ToString(ds)), true);
     CF_CHECK_EQ(g.Set(op.parameters.g.ToString(ds)), true);
+
+    /* Prevent time-outs */
+    CF_CHECK_LTE(BN_num_bits(p.GetPtr()), 7000);
+    CF_CHECK_LTE(BN_num_bits(q.GetPtr()), 7000);
+    CF_CHECK_LTE(BN_num_bits(g.GetPtr()), 7000);
+
     CF_CHECK_TRUE(pub.New());
     CF_CHECK_EQ(priv.Set(op.priv.ToString(ds)), true);
 
