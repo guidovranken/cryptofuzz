@@ -203,3 +203,5 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - Zig: [std.math.big.int sqrt panics](https://github.com/ziglang/zig/issues/17858)
 - Botan: [blinded_var_point_multiply incorrect result with curves with cofactor > 1](https://github.com/randombit/botan/issues/3800)
 - OpenSSL: [HKDF + BLAKE2S256 outputs uninitialized memory](https://github.com/openssl/openssl/issues/22708)
+- libgmp mini-gmp: [mpz_gcdext Bézout coefficients do not match documentation](https://gmplib.org/list-archives/gmp-bugs/2024-February/005451.html)
+- relic: [`bn_gcd_ext_binar` returns different Bezout coefficients](https://github.com/relic-toolkit/relic/issues/287)
