@@ -225,6 +225,9 @@ static bool GCD_ExtGCD(Datasource& ds, Bignum& res, std::vector<Bignum>& bn, con
             }
         case    7:
             {
+                CF_CHECK_NE(bn_bits(bn[0].Get()), 0);
+                CF_CHECK_NE(bn_bits(bn[1].Get()), 0);
+
                 Bignum t1(ds), t2(ds);
 
                 RLC_TRY {
