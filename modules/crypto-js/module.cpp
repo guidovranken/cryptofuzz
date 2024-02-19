@@ -66,7 +66,13 @@ std::optional<component::MAC> crypto_js::OpHMAC(operation::HMAC& op) {
 }
 
 std::optional<component::Ciphertext> crypto_js::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
+    /* Prevent time-outs */
+    if ( op.cleartext.GetSize() > 3000 ) {
+        return std::nullopt;
+    }
+
     std::optional<Buffer> toParts = std::nullopt;
+
     if ( op.cipher.cipherType.Get() == CF_CIPHER("RC4") || op.cipher.cipherType.Get() == CF_CIPHER("RABBIT") ) {
         toParts = op.cleartext;
     }
@@ -74,6 +80,11 @@ std::optional<component::Ciphertext> crypto_js::OpSymmetricEncrypt(operation::Sy
 }
 
 std::optional<component::Cleartext> crypto_js::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
+    /* Prevent time-outs */
+    if ( op.ciphertext.GetSize() > 3000 ) {
+        return std::nullopt;
+    }
+
     std::optional<Buffer> toParts = std::nullopt;
     if ( op.cipher.cipherType.Get() == CF_CIPHER("RC4") || op.cipher.cipherType.Get() == CF_CIPHER("RABBIT") ) {
         toParts = op.ciphertext;
