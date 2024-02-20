@@ -129,42 +129,45 @@ namespace TF_PSA_Crypto_detail {
 
 }
 
+static std::optional<component::Digest> hash_compute(operation::Digest& op,
+                                                     Datasource &ds,
+                                                     psa_algorithm_t alg) {
+    std::vector<uint8_t> md(PSA_HASH_LENGTH(alg));
+    size_t length = 0;
+    bool const multipart = ds.Get<bool>();
+    if (multipart) {
+        TF_PSA_Crypto_detail::HashOperation operation;
+        /* Initialize */
+        util::Multipart parts = util::ToParts(ds, op.cleartext);
+        CF_ASSERT_PSA(operation.setup(alg));
+
+        /* Process */
+        for (const auto& part : parts) {
+            CF_ASSERT_PSA(operation.update(part.first, part.second));
+        }
+
+        /* Finalize */
+        CF_ASSERT_PSA(operation.finish(md.data(), md.size(), &length));
+    } else {
+        /* One-shot computation */
+        CF_ASSERT_PSA(psa_hash_compute(alg,
+                                       op.cleartext.GetPtr(&ds), op.cleartext.GetSize(),
+                                       md.data(), md.size(), &length));
+    }
+    return component::Digest(md.data(), length);
+}
+
 std::optional<component::Digest> TF_PSA_Crypto::OpDigest(operation::Digest& op) {
     std::optional<component::Digest> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
-    bool multipart = ds.Get<bool>();
     TF_PSA_Crypto_detail::SetGlobalDs(&ds);
 
-    {
-        psa_algorithm_t alg = PSA_ALG_NONE;
-        /* Skip unknown algorithms */
-        CF_CHECK_NE(alg = TF_PSA_Crypto_detail::to_psa_algorithm_t(op.digestType), PSA_ALG_NONE);
+    psa_algorithm_t const alg =
+        TF_PSA_Crypto_detail::to_psa_algorithm_t(op.digestType);
+    /* Skip unknown algorithms */
+    CF_CHECK_NE(alg, PSA_ALG_NONE);
 
-        unsigned char md[PSA_HASH_LENGTH(alg)];
-        size_t length = 0;
-
-        if (multipart) {
-            TF_PSA_Crypto_detail::HashOperation operation;
-            /* Initialize */
-            util::Multipart parts = util::ToParts(ds, op.cleartext);
-            CF_ASSERT_PSA(operation.setup(alg));
-
-            /* Process */
-            for (const auto& part : parts) {
-                CF_ASSERT_PSA(operation.update(part.first, part.second));
-            }
-
-            /* Finalize */
-            CF_ASSERT_PSA(operation.finish(md, sizeof(md), &length));
-        } else {
-            /* One-shot computation */
-            CF_ASSERT_PSA(psa_hash_compute(alg,
-                                           op.cleartext.GetPtr(&ds), op.cleartext.GetSize(),
-                                           md, sizeof(md), &length));
-        }
-
-        ret = component::Digest(md, length);
-    }
+    ret = hash_compute(op, ds, alg);
 
 end:
     TF_PSA_Crypto_detail::UnsetGlobalDs();
