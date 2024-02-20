@@ -157,6 +157,42 @@ static std::optional<component::Digest> hash_compute(operation::Digest& op,
     return component::Digest(md.data(), length);
 }
 
+static void hash_verify(operation::Digest& op,
+                        Datasource &ds,
+                        psa_algorithm_t alg,
+                        std::vector<uint8_t> expected_md) {
+    /* Biaise towards the expected size */
+    bool const correct_size = ds.Get<bool>();
+    std::vector<uint8_t> const verify_md =
+        correct_size ? ds.GetData(0, expected_md.size(), expected_md.size()) :
+        ds.GetData(0, 0, PSA_HASH_MAX_SIZE * 2);
+    psa_status_t const expected_verify_status =
+        verify_md == expected_md ? PSA_SUCCESS : PSA_ERROR_INVALID_SIGNATURE;
+
+    bool const multipart = ds.Get<bool>();
+    if (multipart) {
+        TF_PSA_Crypto_detail::HashOperation operation;
+        /* Initialize */
+        util::Multipart parts = util::ToParts(ds, op.cleartext);
+        CF_ASSERT_PSA(operation.setup(alg));
+
+        /* Process */
+        for (const auto& part : parts) {
+            CF_ASSERT_PSA(operation.update(part.first, part.second));
+        }//
+
+        /* Finalize */
+        CF_ASSERT_EQ(operation.verify(verify_md.data(), verify_md.size()),
+                     expected_verify_status);
+    } else {
+        /* One-shot computation */
+        CF_ASSERT_EQ(psa_hash_compare(alg,
+                                      op.cleartext.GetPtr(&ds), op.cleartext.GetSize(),
+                                      verify_md.data(), verify_md.size()),
+                     expected_verify_status);
+    }
+}
+
 std::optional<component::Digest> TF_PSA_Crypto::OpDigest(operation::Digest& op) {
     std::optional<component::Digest> ret = std::nullopt;
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
@@ -168,6 +204,7 @@ std::optional<component::Digest> TF_PSA_Crypto::OpDigest(operation::Digest& op) 
     CF_CHECK_NE(alg, PSA_ALG_NONE);
 
     ret = hash_compute(op, ds, alg);
+    hash_verify(op, ds, alg, ret->Get());
 
 end:
     TF_PSA_Crypto_detail::UnsetGlobalDs();
