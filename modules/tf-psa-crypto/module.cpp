@@ -101,6 +101,96 @@ namespace TF_PSA_Crypto_detail {
         return LUT.at(digestType.Get());
     }
 
+    class HashOperation {
+        psa_hash_operation_t operation;
+
+    public:
+        HashOperation() {
+            operation = PSA_HASH_OPERATION_INIT;
+        }
+        ~HashOperation() {
+            psa_hash_abort(&operation);
+        }
+
+        psa_status_t setup(psa_algorithm_t alg) {
+            return psa_hash_setup(&operation, alg);
+        }
+        psa_status_t update(const unsigned char *input, size_t input_length) {
+            return psa_hash_update(&operation, input, input_length);
+        }
+        psa_status_t finish(unsigned char *output, size_t output_size,
+                            size_t *output_length) {
+            return psa_hash_finish(&operation, output, output_size, output_length);
+        }
+        psa_status_t verify(const unsigned char *hash, size_t hash_length) {
+            return psa_hash_verify(&operation, hash, hash_length);
+        }
+    };
+
+}
+
+static std::optional<component::Digest> hash_compute(operation::Digest& op,
+                                                     Datasource &ds,
+                                                     psa_algorithm_t alg) {
+    std::vector<uint8_t> md(PSA_HASH_LENGTH(alg));
+    size_t length = 0;
+    bool const multipart = ds.Get<bool>();
+    if (multipart) {
+        TF_PSA_Crypto_detail::HashOperation operation;
+        /* Initialize */
+        util::Multipart parts = util::ToParts(ds, op.cleartext);
+        CF_ASSERT_PSA(operation.setup(alg));
+
+        /* Process */
+        for (const auto& part : parts) {
+            CF_ASSERT_PSA(operation.update(part.first, part.second));
+        }
+
+        /* Finalize */
+        CF_ASSERT_PSA(operation.finish(md.data(), md.size(), &length));
+    } else {
+        /* One-shot computation */
+        CF_ASSERT_PSA(psa_hash_compute(alg,
+                                       op.cleartext.GetPtr(&ds), op.cleartext.GetSize(),
+                                       md.data(), md.size(), &length));
+    }
+    return component::Digest(md.data(), length);
+}
+
+static void hash_verify(operation::Digest& op,
+                        Datasource &ds,
+                        psa_algorithm_t alg,
+                        std::vector<uint8_t> expected_md) {
+    /* Biaise towards the expected size */
+    bool const correct_size = ds.Get<bool>();
+    std::vector<uint8_t> const verify_md =
+        correct_size ? ds.GetData(0, expected_md.size(), expected_md.size()) :
+        ds.GetData(0, 0, PSA_HASH_MAX_SIZE * 2);
+    psa_status_t const expected_verify_status =
+        verify_md == expected_md ? PSA_SUCCESS : PSA_ERROR_INVALID_SIGNATURE;
+
+    bool const multipart = ds.Get<bool>();
+    if (multipart) {
+        TF_PSA_Crypto_detail::HashOperation operation;
+        /* Initialize */
+        util::Multipart parts = util::ToParts(ds, op.cleartext);
+        CF_ASSERT_PSA(operation.setup(alg));
+
+        /* Process */
+        for (const auto& part : parts) {
+            CF_ASSERT_PSA(operation.update(part.first, part.second));
+        }//
+
+        /* Finalize */
+        CF_ASSERT_EQ(operation.verify(verify_md.data(), verify_md.size()),
+                     expected_verify_status);
+    } else {
+        /* One-shot computation */
+        CF_ASSERT_EQ(psa_hash_compare(alg,
+                                      op.cleartext.GetPtr(&ds), op.cleartext.GetSize(),
+                                      verify_md.data(), verify_md.size()),
+                     expected_verify_status);
+    }
 }
 
 std::optional<component::Digest> TF_PSA_Crypto::OpDigest(operation::Digest& op) {
@@ -108,38 +198,15 @@ std::optional<component::Digest> TF_PSA_Crypto::OpDigest(operation::Digest& op) 
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     TF_PSA_Crypto_detail::SetGlobalDs(&ds);
 
-    util::Multipart parts;
+    psa_algorithm_t const alg =
+        TF_PSA_Crypto_detail::to_psa_algorithm_t(op.digestType);
+    /* Skip unknown algorithms */
+    CF_CHECK_NE(alg, PSA_ALG_NONE);
 
-    psa_algorithm_t alg = PSA_ALG_NONE;
-    psa_hash_operation_t operation = PSA_HASH_OPERATION_INIT;
-
-    /* Initialize */
-    {
-        parts = util::ToParts(ds, op.cleartext);
-
-        /* Skip unknown algorithms */
-        CF_CHECK_NE(alg = TF_PSA_Crypto_detail::to_psa_algorithm_t(op.digestType), PSA_ALG_NONE);
-
-        CF_ASSERT_PSA(psa_hash_setup(&operation, alg));
-    }
-
-    /* Process */
-    for (const auto& part : parts) {
-        CF_ASSERT_PSA(psa_hash_update(&operation, part.first, part.second));
-    }
-
-    /* Finalize */
-    {
-        unsigned char md[PSA_HASH_LENGTH(alg)];
-        size_t length = 0;
-        CF_ASSERT_PSA(psa_hash_finish(&operation, md, sizeof(md), &length));
-
-        ret = component::Digest(md, length);
-    }
+    ret = hash_compute(op, ds, alg);
+    hash_verify(op, ds, alg, ret->Get());
 
 end:
-    psa_hash_abort(&operation);
-
     TF_PSA_Crypto_detail::UnsetGlobalDs();
 
     return ret;
