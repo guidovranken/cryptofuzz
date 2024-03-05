@@ -127,6 +127,75 @@ namespace TF_PSA_Crypto_detail {
         }
     };
 
+    class MACOperation {
+        psa_mac_operation_t operation = PSA_MAC_OPERATION_INIT;
+        psa_key_type_t key_type = PSA_KEY_TYPE_NONE;
+        size_t key_bits = 0;
+        psa_key_id_t key = PSA_KEY_ID_NULL;
+        psa_algorithm_t alg = PSA_ALG_NONE;
+
+    public:
+        MACOperation() {
+        }
+        ~MACOperation() {
+            psa_mac_abort(&operation);
+            operation = PSA_MAC_OPERATION_INIT;
+            key_type = PSA_KEY_TYPE_NONE;
+            key_bits = 0;
+            psa_destroy_key(key);
+            key = PSA_KEY_ID_NULL;
+            alg = PSA_ALG_NONE;
+        }
+
+        size_t length() {
+            return PSA_MAC_LENGTH(key_type, key_bits, alg);
+        }
+
+        psa_status_t set_key(psa_key_type_t key_type_,
+                             const unsigned char *key_data, size_t key_length,
+                             psa_algorithm_t alg_) {
+            key_type = key_type_;
+            alg = alg_;
+            key_bits = PSA_BYTES_TO_BITS(key_length);
+            psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+            psa_set_key_type(&attributes, key_type);
+            psa_set_key_usage_flags(&attributes,
+                                    PSA_KEY_USAGE_SIGN_MESSAGE |
+                                    PSA_KEY_USAGE_VERIFY_MESSAGE);
+            psa_set_key_algorithm(&attributes, alg);
+            return psa_import_key(&attributes, key_data, key_length, &key);
+        }
+
+        psa_status_t sign(const unsigned char *input, size_t input_length,
+                          unsigned char *output, size_t output_size,
+                          size_t *output_length) {
+            return psa_mac_compute(key, alg, input, input_length,
+                                   output, output_size, output_length);
+        }
+        psa_status_t verify(const unsigned char *input, size_t input_length,
+                            const unsigned char *mac, size_t mac_length) {
+            return psa_mac_verify(key, alg, input, input_length,
+                                  mac, mac_length);
+        }
+
+        psa_status_t sign_start() {
+            return psa_mac_sign_setup(&operation, key, alg);
+        }
+        psa_status_t verify_start() {
+            return psa_mac_verify_setup(&operation, key, alg);
+        }
+        psa_status_t update(const unsigned char *input, size_t input_length) {
+            return psa_mac_update(&operation, input, input_length);
+        }
+        psa_status_t sign_finish(unsigned char *output, size_t output_size,
+                                 size_t *output_length) {
+            return psa_mac_sign_finish(&operation, output, output_size, output_length);
+        }
+        psa_status_t verify_finish(const unsigned char *mac, size_t mac_length) {
+            return psa_mac_verify_finish(&operation, mac, mac_length);
+        }
+    };
+
 }
 
 static std::optional<component::Digest> hash_compute(operation::Digest& op,
@@ -205,6 +274,86 @@ std::optional<component::Digest> TF_PSA_Crypto::OpDigest(operation::Digest& op) 
 
     ret = hash_compute(op, ds, alg);
     hash_verify(op, ds, alg, ret->Get());
+
+end:
+    TF_PSA_Crypto_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
+static std::optional<component::MAC> mac_compute(
+        TF_PSA_Crypto_detail::MACOperation& operation,
+        const component::Cleartext& cleartext,
+        Datasource &ds) {
+    std::vector<uint8_t> mac(operation.length());
+    size_t length = 0;
+    bool const multipart = ds.Get<bool>();
+    if (multipart) {
+        util::Multipart parts = util::ToParts(ds, cleartext);
+        CF_ASSERT_PSA(operation.sign_start());
+        for (const auto& part : parts) {
+            CF_ASSERT_PSA(operation.update(part.first, part.second));
+        }
+        CF_ASSERT_PSA(operation.sign_finish(mac.data(), mac.size(), &length));
+    } else {
+        /* One-shot computation */
+        CF_ASSERT_PSA(operation.sign(cleartext.GetPtr(&ds), cleartext.GetSize(),
+                                     mac.data(), mac.size(), &length));
+    }
+    return component::MAC(mac.data(), length);
+}
+
+static void mac_verify(
+        TF_PSA_Crypto_detail::MACOperation& operation,
+        const component::Cleartext& cleartext,
+        Datasource &ds,
+        std::vector<uint8_t> expected_mac) {
+    /* Biaise towards the expected size */
+    bool const correct_size = ds.Get<bool>();
+    std::vector<uint8_t> const verify_mac =
+        correct_size ? ds.GetData(0, expected_mac.size(), expected_mac.size()) :
+        ds.GetData(0, 0, PSA_HASH_MAX_SIZE * 2);
+    psa_status_t const expected_verify_status =
+        verify_mac == expected_mac ? PSA_SUCCESS : PSA_ERROR_INVALID_SIGNATURE;
+
+    bool const multipart = ds.Get<bool>();
+    if (multipart) {
+        util::Multipart parts = util::ToParts(ds, cleartext);
+        CF_ASSERT_PSA(operation.verify_start());
+        for (const auto& part : parts) {
+            CF_ASSERT_PSA(operation.update(part.first, part.second));
+        }
+        CF_ASSERT_EQ(operation.verify_finish(verify_mac.data(), verify_mac.size()),
+                     expected_verify_status);
+    } else {
+        CF_ASSERT_EQ(operation.verify(cleartext.GetPtr(&ds), cleartext.GetSize(),
+                                      verify_mac.data(), verify_mac.size()),
+                     expected_verify_status);
+    }
+}
+
+std::optional<component::MAC> TF_PSA_Crypto::OpHMAC(operation::HMAC& op) {
+    std::optional<component::MAC> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    TF_PSA_Crypto_detail::SetGlobalDs(&ds);
+
+    psa_algorithm_t const hash_alg =
+        TF_PSA_Crypto_detail::to_psa_algorithm_t(op.digestType);
+    /* Skip unknown algorithms */
+    CF_CHECK_NE(hash_alg, PSA_ALG_NONE);
+
+    /* PSA does not allow empty keys */
+    CF_CHECK_NE(op.cipher.key.GetSize(), 0);
+
+    {
+        TF_PSA_Crypto_detail::MACOperation operation;
+        CF_ASSERT_PSA(operation.set_key(PSA_KEY_TYPE_HMAC,
+                                        op.cipher.key.GetPtr(&ds),
+                                        op.cipher.key.GetSize(),
+                                        PSA_ALG_HMAC(hash_alg)));
+        ret = mac_compute(operation, op.cleartext, ds);
+        mac_verify(operation, op.cleartext, ds, ret->Get());
+    }
 
 end:
     TF_PSA_Crypto_detail::UnsetGlobalDs();
