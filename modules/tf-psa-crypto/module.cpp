@@ -101,6 +101,25 @@ namespace TF_PSA_Crypto_detail {
         return LUT.at(digestType.Get());
     }
 
+    psa_key_type_t to_psa_key_type_t(const component::SymmetricCipherType& cipherType) {
+        using fuzzing::datasource::ID;
+        static const std::map<uint64_t, psa_key_type_t> LUT = {
+            { CF_CIPHER("AES_128_ECB"), PSA_KEY_TYPE_AES },
+            { CF_CIPHER("AES_192_ECB"), PSA_KEY_TYPE_AES },
+            { CF_CIPHER("AES_256_ECB"), PSA_KEY_TYPE_AES },
+            { CF_CIPHER("ARIA_128_ECB"), PSA_KEY_TYPE_AES },
+            { CF_CIPHER("ARIA_192_ECB"), PSA_KEY_TYPE_ARIA },
+            { CF_CIPHER("ARIA_256_ECB"), PSA_KEY_TYPE_ARIA },
+            { CF_CIPHER("CAMELLIA_128_ECB"), PSA_KEY_TYPE_CAMELLIA },
+            { CF_CIPHER("CAMELLIA_192_ECB"), PSA_KEY_TYPE_CAMELLIA },
+            { CF_CIPHER("CAMELLIA_256_ECB"), PSA_KEY_TYPE_CAMELLIA },
+        };
+        if ( LUT.find(cipherType.Get()) == LUT.end() ) {
+            return PSA_ALG_NONE;
+        }
+        return LUT.at(cipherType.Get());
+    }
+
     class HashOperation {
         psa_hash_operation_t operation;
 
@@ -351,6 +370,32 @@ std::optional<component::MAC> TF_PSA_Crypto::OpHMAC(operation::HMAC& op) {
                                         op.cipher.key.GetPtr(&ds),
                                         op.cipher.key.GetSize(),
                                         PSA_ALG_HMAC(hash_alg)));
+        ret = mac_compute(operation, op.cleartext, ds);
+        mac_verify(operation, op.cleartext, ds, ret->Get());
+    }
+
+end:
+    TF_PSA_Crypto_detail::UnsetGlobalDs();
+
+    return ret;
+}
+
+std::optional<component::MAC> TF_PSA_Crypto::OpCMAC(operation::CMAC& op) {
+    std::optional<component::MAC> ret = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    TF_PSA_Crypto_detail::SetGlobalDs(&ds);
+
+    psa_key_type_t const key_type =
+        TF_PSA_Crypto_detail::to_psa_key_type_t(op.cipher.cipherType);
+    /* Skip unknown ciphers */
+    CF_CHECK_NE(key_type, PSA_KEY_TYPE_NONE);
+
+    {
+        TF_PSA_Crypto_detail::MACOperation operation;
+        CF_ASSERT_PSA(operation.set_key(key_type,
+                                        op.cipher.key.GetPtr(&ds),
+                                        op.cipher.key.GetSize(),
+                                        PSA_ALG_CMAC));
         ret = mac_compute(operation, op.cleartext, ds);
         mac_verify(operation, op.cleartext, ds, ret->Get());
     }

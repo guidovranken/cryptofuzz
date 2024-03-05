@@ -13,6 +13,7 @@ class TF_PSA_Crypto : public Module {
         ~TF_PSA_Crypto(void);
         std::optional<component::Digest> OpDigest(operation::Digest& op) override;
         std::optional<component::MAC> OpHMAC(operation::HMAC& op) override;
+        std::optional<component::MAC> OpCMAC(operation::CMAC& op) override;
 };
 
 } /* namespace module */
