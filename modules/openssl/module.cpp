@@ -16,7 +16,14 @@
 #if defined(CRYPTOFUZZ_BORINGSSL)
 #include <openssl/curve25519.h>
 #elif defined(CRYPTOFUZZ_LIBRESSL)
-extern "C" { void X25519_public_from_private(uint8_t out_public_value[32], const uint8_t private_key[32]); }
+extern "C" {
+    void X25519_public_from_private(uint8_t out_public_value[32], const uint8_t private_key[32]);
+    int BN_mod_exp_mont_word(BIGNUM *r, BN_ULONG a, const BIGNUM *p,
+            const BIGNUM *m, BN_CTX *ctx, BN_MONT_CTX *m_ctx);
+    int BN_mod_exp2_mont(BIGNUM *r, const BIGNUM *a1, const BIGNUM *p1,
+            const BIGNUM *a2, const BIGNUM *p2, const BIGNUM *m,
+            BN_CTX *ctx, BN_MONT_CTX *m_ctx);
+}
 #else
 /* OpenSSL */
 extern "C" { void ossl_x25519_public_from_private(uint8_t out_public_value[32], const uint8_t private_key[32]); }
@@ -185,10 +192,6 @@ const EVP_MD* OpenSSL::toEVPMD(const component::DigestType& digestType) const {
         { CF_DIGEST("RIPEMD160"), EVP_ripemd160() },
         { CF_DIGEST("WHIRLPOOL"), EVP_whirlpool() },
         { CF_DIGEST("SM3"), EVP_sm3() },
-        { CF_DIGEST("GOST-R-34.11-94"), EVP_gostr341194() },
-        { CF_DIGEST("GOST-28147-89"), EVP_gost2814789imit() },
-        { CF_DIGEST("STREEBOG-256"), EVP_streebog256() },
-        { CF_DIGEST("STREEBOG-512"), EVP_streebog512() },
         { CF_DIGEST("SHA3-224"), EVP_sha3_224() },
         { CF_DIGEST("SHA3-256"), EVP_sha3_256() },
         { CF_DIGEST("SHA3-384"), EVP_sha3_384() },
@@ -362,8 +365,6 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
             return EVP_rc4();
         case CF_CIPHER("RC4_40"):
             return EVP_rc4_40();
-        case CF_CIPHER("RC4_HMAC_MD5"):
-            return EVP_rc4_hmac_md5();
 #if 0
         case CF_CIPHER("IDEA_ECB"):
             return EVP_idea_ecb();
@@ -476,10 +477,6 @@ const EVP_CIPHER* OpenSSL::toEVPCIPHER(const component::SymmetricCipherType ciph
             return EVP_aes_256_ccm();
         case CF_CIPHER("AES_256_WRAP"):
             return EVP_aes_256_wrap();
-        case CF_CIPHER("AES_128_CBC_HMAC_SHA1"):
-            return EVP_aes_128_cbc_hmac_sha1();
-        case CF_CIPHER("AES_256_CBC_HMAC_SHA1"):
-            return EVP_aes_256_cbc_hmac_sha1();
         case CF_CIPHER("CAMELLIA_128_ECB"):
             return EVP_camellia_128_ecb();
         case CF_CIPHER("CAMELLIA_128_CBC"):
