@@ -75,6 +75,13 @@ namespace TF_PSA_Crypto_detail {
     }
 }
 
+/* Resize a vector to the desired size, to make it ready to receive data. */
+static void vector_extend(std::vector<uint8_t>& vector, size_t size) {
+    vector.reserve(size);
+    vector.resize(size);
+    vector.shrink_to_fit();
+}
+
 static void* mbedTLS_custom_calloc(size_t A, size_t B) {
     if ( TF_PSA_Crypto_detail::AllocationFailure() == true ) {
         return nullptr;
@@ -114,7 +121,7 @@ TF_PSA_Crypto::~TF_PSA_Crypto(void)
 
 namespace TF_PSA_Crypto_detail {
 
-    psa_algorithm_t to_psa_algorithm_t(const component::DigestType& digestType) {
+    psa_algorithm_t digest_to_psa_algorithm_t(const component::DigestType& digestType) {
         using fuzzing::datasource::ID;
 
         static const std::map<uint64_t, psa_algorithm_t> LUT = {
@@ -138,7 +145,7 @@ namespace TF_PSA_Crypto_detail {
         return LUT.at(digestType.Get());
     }
 
-    psa_key_type_t to_psa_key_type_t(const component::SymmetricCipherType& cipherType) {
+    psa_key_type_t cipher_to_psa_key_type_t(const component::SymmetricCipherType& cipherType) {
         const std::string name = repository::CipherToString(cipherType.Get());
         if (name.rfind("AES", 0) == 0 && name.find("_SHA") == std::string::npos) {
             return PSA_KEY_TYPE_AES;
@@ -155,7 +162,41 @@ namespace TF_PSA_Crypto_detail {
         } else {
             return PSA_KEY_TYPE_NONE;
         }
+    }
+
+    psa_algorithm_t cipher_to_psa_algorithm_t(const component::SymmetricCipherType& cipherType) {
+        uint64_t id = cipherType.Get();
+        const std::string name = repository::CipherToString(cipherType.Get());
+        if (repository::IsCBC(id)) {
+            return PSA_ALG_CBC_NO_PADDING;
+        } else if (repository::IsCCM(id)) {
+            return PSA_ALG_CCM;
+        } else if (repository::IsCFB(id) && name.rfind("DES", 0) != 0) {
+            return PSA_ALG_CFB;
+        } else if (repository::IsCTR(id)) {
+            return PSA_ALG_CTR;
+        } else if (repository::IsECB(id)) {
+            return PSA_ALG_ECB_NO_PADDING;
+        } else if (repository::IsGCM(id)) {
+            return PSA_ALG_GCM;
+        } else if (repository::IsOFB(id)) {
+            if (!repository::IsAES(id)) {
+                /* Missing support for CAMELLIA and ARIA
+                 * https://github.com/Mbed-TLS/mbedtls/issues/8902 */
+                return PSA_ALG_NONE;
+            }
+            return PSA_ALG_OFB;
+#if 0 //TODO: requires a double-length key
+        } else if (repository::IsXTS(id)) {
+            return PSA_ALG_XTS;
+#endif
+        } else if (id == CF_CIPHER("CHACHA20")) {
+            return PSA_ALG_STREAM_CIPHER;
+        } else if (id == CF_CIPHER("CHACHA20_POLY1305")) {
+            return PSA_ALG_CHACHA20_POLY1305;
+        } else {
             return PSA_ALG_NONE;
+        }
     }
 
     class HashOperation {
@@ -267,6 +308,214 @@ namespace TF_PSA_Crypto_detail {
         }
     };
 
+    class CipherOperation : public KeyOperation {
+        psa_cipher_operation_t operation = PSA_CIPHER_OPERATION_INIT;
+
+        virtual psa_key_usage_t usage_flags() const override {
+            return PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT;
+        }
+
+    public:
+        CipherOperation() {
+        }
+        ~CipherOperation() {
+            psa_cipher_abort(&operation);
+            operation = PSA_CIPHER_OPERATION_INIT;
+        }
+
+        size_t block_size() {
+            return PSA_BLOCK_CIPHER_BLOCK_LENGTH(key_type);
+        }
+        size_t decrypt_output_size(size_t input_length) {
+            return PSA_CIPHER_DECRYPT_OUTPUT_SIZE(key_type, alg, input_length);
+        }
+        size_t update_output_size(size_t input_length) {
+            return PSA_CIPHER_UPDATE_OUTPUT_SIZE(key_type, alg, input_length);
+        }
+        size_t finish_output_size() {
+            return PSA_CIPHER_FINISH_OUTPUT_SIZE(key_type, alg);
+        }
+
+        bool is_valid_iv_length(size_t iv_length) {
+            switch (alg) {
+            case PSA_ALG_STREAM_CIPHER:
+                switch (key_type) {
+                case PSA_KEY_TYPE_CHACHA20:
+                    /* Not 8: https://github.com/Mbed-TLS/mbedtls/issues/5615 */
+                    /* Not 16: https://github.com/Mbed-TLS/mbedtls/issues/5616 */
+                    return iv_length == 12;
+                default:
+                    return true;
+                }
+            case PSA_ALG_CCM_STAR_NO_TAG:
+                /* "Currently only 13-byte long IV's are supported." */
+                return iv_length == 13;
+                break;
+#if 0
+            case PSA_ALG_CTR:
+                /* As of Mbed TLS 3.6.0, only a full-block IV is supported.
+                 * https://github.com/Mbed-TLS/mbedtls/issues/8900 */
+                return iv_length >= 1 && iv_length <= block_size();
+#endif
+            default:
+                return iv_length == block_size();
+            }
+        }
+
+        /* No one-shot encryption: psa_cipher_encrypt() uses a random IV,
+         * and that's not useful for fuzzing. */
+
+        /* input = IV + ciphertext */
+        psa_status_t decrypt(const unsigned char *input, size_t input_length,
+                             unsigned char *output, size_t output_size,
+                             size_t *output_length) {
+            return psa_cipher_decrypt(key, alg, input, input_length,
+                                      output, output_size, output_length);
+        }
+
+        psa_status_t encrypt_setup() {
+            return psa_cipher_encrypt_setup(&operation, key, alg);
+        }
+        psa_status_t decrypt_setup() {
+            return psa_cipher_decrypt_setup(&operation, key, alg);
+        }
+        psa_status_t set_iv(const unsigned char *iv, size_t iv_length) {
+            return psa_cipher_set_iv(&operation, iv, iv_length);
+        }
+        psa_status_t update(const unsigned char *input, size_t input_length,
+                            unsigned char *output, size_t output_size,
+                            size_t *output_length) {
+            return psa_cipher_update(&operation, input, input_length,
+                                     output, output_size, output_length);
+        }
+        psa_status_t finish(unsigned char *output, size_t output_size,
+                            size_t *output_length) {
+            return psa_cipher_finish(&operation,
+                                     output, output_size, output_length);
+        }
+    };
+
+    class AEADOperation : public KeyOperation {
+        psa_aead_operation_t operation = PSA_AEAD_OPERATION_INIT;
+
+        virtual psa_key_usage_t usage_flags() const override {
+            return PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT;
+        }
+
+    public:
+        AEADOperation() {
+        }
+        ~AEADOperation() {
+            psa_aead_abort(&operation);
+            operation = PSA_AEAD_OPERATION_INIT;
+        }
+
+        size_t tag_length() {
+            return PSA_AEAD_TAG_LENGTH(key_type, key_bits, alg);
+        }
+        size_t update_output_size(size_t part_size) {
+            return PSA_AEAD_UPDATE_OUTPUT_SIZE(key_type, alg, part_size);
+        }
+        size_t finish_output_size() {
+            return PSA_AEAD_FINISH_OUTPUT_SIZE(key_type, alg);
+        }
+        size_t verify_output_size() {
+            return PSA_AEAD_VERIFY_OUTPUT_SIZE(key_type, alg);
+        }
+
+        bool is_valid_iv_length(size_t iv_length) {
+            switch (alg) {
+            case PSA_ALG_CCM:
+                return iv_length >= 7 && iv_length <= 13;
+            case PSA_ALG_CHACHA20_POLY1305:
+                /* Not 8: https://github.com/Mbed-TLS/mbedtls/issues/5615 */
+                return iv_length == 12;
+            case PSA_ALG_GCM:
+                return iv_length >= 1;
+            default:
+                return true; // Unexpected. Let set_nonce() crash.
+            }
+        }
+
+        psa_status_t encrypt(const std::vector<uint8_t>& iv,
+                             const std::vector<uint8_t>& aad,
+                             const std::vector<uint8_t>& cleartext,
+                             std::vector<uint8_t>& ciphertext_with_tag) {
+            vector_extend(ciphertext_with_tag,
+                          PSA_AEAD_ENCRYPT_OUTPUT_SIZE(key_type, alg,
+                                                       cleartext.size()));
+            size_t length = 0;
+            psa_status_t status = psa_aead_encrypt(
+                key, alg, iv.data(), iv.size(),
+                aad.data(), aad.size(),
+                cleartext.data(), cleartext.size(),
+                ciphertext_with_tag.data(), ciphertext_with_tag.size(),
+                &length);
+            if (status != PSA_SUCCESS) {
+                return PSA_SUCCESS;
+            }
+            ciphertext_with_tag.resize(length);
+            return PSA_SUCCESS;
+        }
+
+        psa_status_t decrypt(const std::vector<uint8_t>& iv,
+                             const std::vector<uint8_t>& aad,
+                             const std::vector<uint8_t>& ciphertext_with_tag,
+                             std::vector<uint8_t>& cleartext) {
+            vector_extend(cleartext,
+                          PSA_AEAD_DECRYPT_OUTPUT_SIZE(key_type, alg,
+                                                       ciphertext_with_tag.size()));
+            size_t length = 0;
+            psa_status_t status = psa_aead_decrypt(
+                key, alg, iv.data(), iv.size(),
+                aad.data(), aad.size(),
+                ciphertext_with_tag.data(), ciphertext_with_tag.size(),
+                cleartext.data(), cleartext.size(), &length);
+            if (status != PSA_SUCCESS) {
+                return status;
+            }
+            cleartext.resize(length);
+            return PSA_SUCCESS;
+        }
+
+        psa_status_t encrypt_setup() {
+            return psa_aead_encrypt_setup(&operation, key, alg);
+        }
+        psa_status_t decrypt_setup() {
+            return psa_aead_decrypt_setup(&operation, key, alg);
+        }
+        psa_status_t set_lengths(size_t aad_length, size_t cleartext_length) {
+            return psa_aead_set_lengths(&operation, aad_length, cleartext_length);
+        }
+        psa_status_t set_iv(const unsigned char *iv, size_t iv_length) {
+            return psa_aead_set_nonce(&operation, iv, iv_length);
+        }
+        psa_status_t update_aad(const unsigned char *input, size_t input_length) {
+            return psa_aead_update_ad(&operation, input, input_length);
+        }
+        psa_status_t update(const unsigned char *input, size_t input_length,
+                            unsigned char *output, size_t output_size,
+                            size_t *output_length) {
+            return psa_aead_update(&operation, input, input_length,
+                                   output, output_size, output_length);
+        }
+        psa_status_t finish(unsigned char *ciphertext, size_t ciphertext_size,
+                            size_t *ciphertext_length,
+                            unsigned char *tag, size_t tag_size,
+                            size_t *tag_length) {
+            return psa_aead_finish(&operation,
+                                   ciphertext, ciphertext_size, ciphertext_length,
+                                   tag, tag_size, tag_length);
+        }
+        psa_status_t verify(unsigned char *cleartext, size_t cleartext_size,
+                            size_t *cleartext_length,
+                            unsigned char *tag, size_t tag_length) {
+            return psa_aead_verify(&operation,
+                                   cleartext, cleartext_size, cleartext_length,
+                                   tag, tag_length);
+        }
+    };
+
 }
 
 static std::optional<component::Digest> hash_compute(operation::Digest& op,
@@ -339,7 +588,7 @@ std::optional<component::Digest> TF_PSA_Crypto::OpDigest(operation::Digest& op) 
     TF_PSA_Crypto_detail::SetGlobalDs(&ds);
 
     psa_algorithm_t const alg =
-        TF_PSA_Crypto_detail::to_psa_algorithm_t(op.digestType);
+        TF_PSA_Crypto_detail::digest_to_psa_algorithm_t(op.digestType);
     /* Skip unknown algorithms */
     CF_CHECK_NE(alg, PSA_ALG_NONE);
 
@@ -409,7 +658,7 @@ std::optional<component::MAC> TF_PSA_Crypto::OpHMAC(operation::HMAC& op) {
     TF_PSA_Crypto_detail::SetGlobalDs(&ds);
 
     psa_algorithm_t const hash_alg =
-        TF_PSA_Crypto_detail::to_psa_algorithm_t(op.digestType);
+        TF_PSA_Crypto_detail::digest_to_psa_algorithm_t(op.digestType);
     /* Skip unknown algorithms */
     CF_CHECK_NE(hash_alg, PSA_ALG_NONE);
 
@@ -441,7 +690,7 @@ std::optional<component::MAC> TF_PSA_Crypto::OpCMAC(operation::CMAC& op) {
 
     {
         psa_key_type_t const key_type =
-            TF_PSA_Crypto_detail::to_psa_key_type_t(op.cipher.cipherType);
+            TF_PSA_Crypto_detail::cipher_to_psa_key_type_t(op.cipher.cipherType);
         /* Skip unknown ciphers */
         CF_CHECK_NE(key_type, PSA_KEY_TYPE_NONE);
         /* op.cipher encodes a mode. Experimentally, if the mode isn't CBC,
@@ -464,6 +713,277 @@ end:
     TF_PSA_Crypto_detail::UnsetGlobalDs();
 
     return ret;
+}
+
+static void cipher_decrypt_oneshot(TF_PSA_Crypto_detail::CipherOperation operation,
+                                   const std::vector<uint8_t> &iv,
+                                   const std::vector<uint8_t>& ciphertext,
+                                   std::vector<uint8_t>& cleartext) {
+    std::vector<uint8_t> tmp(iv);
+    tmp.insert(tmp.end(), ciphertext.begin(), ciphertext.end());
+    size_t length = 0;
+    vector_extend(cleartext, operation.decrypt_output_size(tmp.size()));
+    CF_ASSERT_PSA(operation.decrypt(tmp.data(), tmp.size(),
+                                    cleartext.data(), cleartext.size(),
+                                    &length));
+    cleartext.resize(length);
+}
+
+static void aead_encrypt_oneshot(TF_PSA_Crypto_detail::AEADOperation operation,
+                                 const std::vector<uint8_t> &iv,
+                                 const std::vector<uint8_t>& aad,
+                                 const std::vector<uint8_t>& cleartext,
+                                 std::vector<uint8_t>& ciphertext,
+                                 std::vector<uint8_t>& tag) {
+    size_t tag_length = operation.tag_length();
+    std::vector<uint8_t> tmp;
+    CF_ASSERT_PSA(operation.encrypt(iv, aad, cleartext, tmp));
+    CF_ASSERT(tmp.size() >= tag_length,
+              "psa_aead_encrypt() output shorter than tag");
+    vector_extend(ciphertext, tmp.size() - tag_length);
+    std::copy(tmp.begin(), tmp.end() - tag_length, ciphertext.begin());
+    vector_extend(tag, tag_length);
+    std::copy(tmp.end() - tag_length, tmp.end(), tag.begin());
+}
+
+static void aead_decrypt_oneshot(TF_PSA_Crypto_detail::AEADOperation operation,
+                                 const std::vector<uint8_t>& iv,
+                                 const std::vector<uint8_t> &aad,
+                                 const std::vector<uint8_t>& ciphertext,
+                                 const std::vector<uint8_t>& tag,
+                                 std::vector<uint8_t> &cleartext) {
+    std::vector<uint8_t> tmp(ciphertext);
+    tmp.insert(tmp.end(), tag.begin(), tag.end());
+    CF_ASSERT_PSA(operation.decrypt(iv, aad, tmp, cleartext));
+}
+
+static void cipher_multipart(TF_PSA_Crypto_detail::CipherOperation operation,
+                             bool is_encrypt,
+                             const std::optional<std::vector<uint8_t>> iv,
+                             const util::Multipart& input_parts,
+                             std::vector<uint8_t>& output) {
+    if (is_encrypt) {
+        CF_ASSERT_PSA(operation.encrypt_setup());
+    } else {
+        CF_ASSERT_PSA(operation.decrypt_setup());
+    }
+
+    if (iv) {
+        CF_ASSERT_PSA(operation.set_iv(iv->data(), iv->size()));
+    }
+
+    output.resize(0);
+    for (const auto& part : input_parts) {
+        size_t output_cursor = output.size();
+        vector_extend(output, output_cursor + operation.update_output_size(part.second));
+        size_t length = 0;
+        CF_ASSERT_PSA(operation.update(part.first, part.second,
+                                       output.data() + output_cursor,
+                                       output.size() - output_cursor,
+                                       &length));
+        output.resize(output_cursor + length);
+    }
+
+    size_t output_cursor = output.size();
+    vector_extend(output, output_cursor + operation.finish_output_size());
+    size_t length = 0;
+    CF_ASSERT_PSA(operation.finish(output.data() + output_cursor,
+                                   output.size() - output_cursor,
+                                   &length));
+    output.resize(output_cursor + length);
+}
+
+static void aead_multipart(TF_PSA_Crypto_detail::AEADOperation operation,
+                           bool is_encrypt,
+                           const std::vector<uint8_t>& iv,
+                           const util::Multipart& aad_parts, size_t aad_length,
+                           const util::Multipart& input_parts, size_t input_length,
+                           std::vector<uint8_t>& output,
+                           std::vector<uint8_t> &tag) {
+    if (is_encrypt) {
+        CF_ASSERT_PSA(operation.encrypt_setup());
+    } else {
+        CF_ASSERT_PSA(operation.decrypt_setup());
+    }
+
+    /* Necessary for CCM. Doesn't hurt for other algorithms. */
+    CF_ASSERT_PSA(operation.set_lengths(aad_length, input_length));
+
+    CF_ASSERT_PSA(operation.set_iv(iv.data(), iv.size()));
+
+    for (const auto& part : aad_parts) {
+        CF_ASSERT_PSA(operation.update_aad(part.first, part.second));
+    }
+
+    output.resize(0);
+    for (const auto& part : input_parts) {
+        size_t output_cursor = output.size();
+        vector_extend(output, output_cursor + operation.update_output_size(part.second));
+        size_t length = 0;
+        CF_ASSERT_PSA(operation.update(part.first, part.second,
+                                       output.data() + output_cursor,
+                                       output.capacity() - output_cursor,
+                                       &length));
+        output.resize(output_cursor + length);
+    }
+
+    size_t output_cursor = output.size();
+    if (is_encrypt) {
+        vector_extend(output, output_cursor + operation.finish_output_size());
+        vector_extend(tag, operation.tag_length());
+        size_t length = 0;
+        size_t tag_length = 0;
+        CF_ASSERT_PSA(operation.finish(output.data() + output_cursor,
+                                       output.size() - output_cursor,
+                                       &length,
+                                       tag.data(), tag.size(), &tag_length));
+        output.resize(output_cursor + length);
+        tag.resize(tag_length);
+    } else {
+        vector_extend(output, output_cursor + operation.verify_output_size());
+        size_t length = 0;
+        CF_ASSERT_PSA(operation.verify(output.data() + output_cursor,
+                                       output.size() - output_cursor,
+                                       &length,
+                                       tag.data(), tag.size()));
+        output.resize(output_cursor + length);
+    }
+}
+
+static bool cipher_common(operation::Operation& op,
+                          bool is_encrypt,
+                          component::SymmetricCipher cipher,
+                          const std::optional<component::AAD>& aad,
+                          const Buffer& input,
+                          std::vector<uint8_t> &output,
+                          std::vector<uint8_t>& tag) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    TF_PSA_Crypto_detail::SetGlobalDs(&ds);
+
+    CF_CHECK_TRUE(is_cipher_consistent(cipher));
+
+    {
+        psa_key_type_t const key_type =
+            TF_PSA_Crypto_detail::cipher_to_psa_key_type_t(cipher.cipherType);
+        psa_algorithm_t alg =
+            TF_PSA_Crypto_detail::cipher_to_psa_algorithm_t(cipher.cipherType);
+        /* Skip unknown mechanisms */
+        CF_CHECK_NE(key_type, PSA_KEY_TYPE_NONE);
+        CF_CHECK_NE(alg, PSA_ALG_NONE);
+
+        bool multipart = ds.Get<bool>();
+
+        if (repository::IsAEAD(cipher.cipherType.Get()) ||
+            (repository::IsCCM(cipher.cipherType.Get()) && tag.size() != 0)) {
+            TF_PSA_Crypto_detail::AEADOperation operation;
+            CF_ASSERT_PSA(operation.set_key(key_type,
+                                            cipher.key.GetPtr(&ds),
+                                            cipher.key.GetSize(),
+                                            alg));
+
+            /* Cryptofuzz can call us with an invalid IV length! */
+            CF_CHECK_TRUE(operation.is_valid_iv_length(cipher.iv.GetSize()));
+
+            /* Cryptofuzz can call us with an invalid tag length! */
+            /* TODO: support shorter tags */
+            CF_CHECK_TRUE(tag.size() == operation.tag_length());
+
+            if (multipart) {
+                util::Multipart aad_parts = util::ToParts(ds, *aad);
+                util::Multipart input_parts = util::ToParts(ds, input);
+                aead_multipart(operation, is_encrypt,
+                               cipher.iv.GetConstVectorPtr(),
+                               aad_parts, aad->GetSize(),
+                               input_parts, input.GetSize(),
+                               output, tag);
+            } else { // One-shot
+                if (is_encrypt) {
+                    aead_encrypt_oneshot(operation,
+                                         cipher.iv.GetConstVectorPtr(),
+                                         aad->GetConstVectorPtr(),
+                                         input.GetConstVectorPtr(),
+                                         output, tag);
+                } else {
+                    aead_decrypt_oneshot(operation,
+                                         cipher.iv.GetConstVectorPtr(),
+                                         aad->GetConstVectorPtr(),
+                                         input.GetConstVectorPtr(),
+                                         tag, output);
+                }
+            }
+
+        } else {
+            TF_PSA_Crypto_detail::CipherOperation operation;
+            if (alg == PSA_ALG_CCM) {
+                alg = PSA_ALG_CCM_STAR_NO_TAG;
+            }
+            CF_ASSERT_PSA(operation.set_key(key_type,
+                                            cipher.key.GetPtr(&ds),
+                                            cipher.key.GetSize(),
+                                            alg));
+
+            /* Cryptofuzz can call us with an invalid IV length! */
+            CF_CHECK_TRUE(operation.is_valid_iv_length(cipher.iv.GetSize()));
+
+            /* Encryption is always multipart, because the PSA API
+             * only supports one-shot encryption with a random IV,
+             * which does not play nicely with fuzzing. */
+            if (is_encrypt) {
+                multipart = true;
+            }
+
+            /* Reject incomplete blocks for unpadded block ciphers */
+            if (repository::IsECB(cipher.cipherType.Get()) ||
+                repository::IsCBC(cipher.cipherType.Get())) {
+                CF_CHECK_EQ(input.GetSize() % operation.block_size(), 0);
+            }
+
+            if (multipart) {
+                /* Skip set_iv() for ECB */
+                const std::optional<std::vector<uint8_t>> iv =
+                    (repository::IsECB(cipher.cipherType.Get()) ?
+                     std::nullopt :
+                     std::optional(cipher.iv.GetConstVectorPtr()));
+                util::Multipart input_parts = util::ToParts(ds, input);
+                cipher_multipart(operation, is_encrypt, iv,
+                                 input_parts, output);
+            } else {
+                /* Ignore IV for ECB: force an empty IV */
+                const std::vector<uint8_t> iv =
+                    (repository::IsECB(cipher.cipherType.Get()) ?
+                     std::vector<uint8_t>(0) :
+                     cipher.iv.GetConstVectorPtr());
+                cipher_decrypt_oneshot(operation, iv,
+                                       input.GetConstVectorPtr(), output);
+            }
+        }
+    }
+
+    TF_PSA_Crypto_detail::UnsetGlobalDs();
+    return true;
+
+end:
+    TF_PSA_Crypto_detail::UnsetGlobalDs();
+    return false;
+}
+
+std::optional<component::Ciphertext> TF_PSA_Crypto::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
+    std::vector<uint8_t> output;
+    std::vector<uint8_t> tag(op.tagSize ? op.tagSize.value() : 0);
+    if (!cipher_common(op, true, op.cipher, op.aad, op.cleartext,
+                       output, tag)) {
+        return std::nullopt;
+    }
+    return component::Ciphertext(Buffer(output), component::Tag(tag));
+}
+
+std::optional<component::Cleartext> TF_PSA_Crypto::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
+    std::vector<uint8_t> output;
+    if (!cipher_common(op, false, op.cipher, op.aad, op.ciphertext,
+                       output, const_cast<std::vector<uint8_t>&>(op.tag->GetConstVectorPtr()))) {
+        return std::nullopt;
+    }
+    return Buffer(output);
 }
 
 } /* namespace module */
