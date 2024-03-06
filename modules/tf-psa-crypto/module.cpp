@@ -184,28 +184,24 @@ namespace TF_PSA_Crypto_detail {
         }
     };
 
-    class MACOperation {
-        psa_mac_operation_t operation = PSA_MAC_OPERATION_INIT;
+    class KeyOperation {
+    protected:
         psa_key_type_t key_type = PSA_KEY_TYPE_NONE;
         size_t key_bits = 0;
         psa_key_id_t key = PSA_KEY_ID_NULL;
         psa_algorithm_t alg = PSA_ALG_NONE;
 
+        virtual psa_key_usage_t usage_flags() const = 0;
+
     public:
-        MACOperation() {
+        KeyOperation() {
         }
-        ~MACOperation() {
-            psa_mac_abort(&operation);
-            operation = PSA_MAC_OPERATION_INIT;
+        ~KeyOperation() {
             key_type = PSA_KEY_TYPE_NONE;
             key_bits = 0;
             psa_destroy_key(key);
             key = PSA_KEY_ID_NULL;
             alg = PSA_ALG_NONE;
-        }
-
-        size_t length() {
-            return PSA_MAC_LENGTH(key_type, key_bits, alg);
         }
 
         psa_status_t set_key(psa_key_type_t key_type_,
@@ -216,11 +212,29 @@ namespace TF_PSA_Crypto_detail {
             key_bits = PSA_BYTES_TO_BITS(key_length);
             psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
             psa_set_key_type(&attributes, key_type);
-            psa_set_key_usage_flags(&attributes,
-                                    PSA_KEY_USAGE_SIGN_MESSAGE |
-                                    PSA_KEY_USAGE_VERIFY_MESSAGE);
+            psa_set_key_usage_flags(&attributes, usage_flags());
             psa_set_key_algorithm(&attributes, alg);
             return psa_import_key(&attributes, key_data, key_length, &key);
+        }
+    };
+
+    class MACOperation : public KeyOperation {
+        psa_mac_operation_t operation = PSA_MAC_OPERATION_INIT;
+
+        virtual psa_key_usage_t usage_flags() const override {
+            return PSA_KEY_USAGE_SIGN_MESSAGE | PSA_KEY_USAGE_VERIFY_MESSAGE;
+        }
+
+    public:
+        MACOperation() {
+        }
+        ~MACOperation() {
+            psa_mac_abort(&operation);
+            operation = PSA_MAC_OPERATION_INIT;
+        }
+
+        size_t length() {
+            return PSA_MAC_LENGTH(key_type, key_bits, alg);
         }
 
         psa_status_t sign(const unsigned char *input, size_t input_length,
