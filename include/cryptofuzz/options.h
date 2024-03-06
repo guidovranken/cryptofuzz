@@ -9,6 +9,17 @@
 
 namespace cryptofuzz {
 
+class EnabledNames {
+    private:
+        std::set<std::string> names;
+    public:
+        bool Have(std::string name) const;
+        bool HaveExplicit(std::string name) const;
+        void Add(std::string name);
+        std::string At(const size_t index) const;
+        bool Empty(void) const;
+};
+
 class EnabledTypes {
     private:
         std::set<uint64_t> types;
@@ -28,6 +39,7 @@ class Options {
         Options(const int argc, char** argv, const std::vector<std::string> extraArguments = {});
 
         EnabledTypes operations, ciphers, digests, curves, calcOps, disableModules;
+        EnabledNames disableOperations;
         std::optional<uint64_t> forceModule = std::nullopt;
         std::optional<FILE*> jsonDumpFP = std::nullopt;
         size_t minModules = 1;
