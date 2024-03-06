@@ -171,7 +171,10 @@ namespace TF_PSA_Crypto_detail {
             return PSA_ALG_CBC_NO_PADDING;
         } else if (repository::IsCCM(id)) {
             return PSA_ALG_CCM;
-        } else if (repository::IsCFB(id) && name.rfind("DES", 0) != 0) {
+        } else if (name.size() >= 3 && std::equal(name.end() - 3, name.end(), "CFB") &&
+                   name.rfind("DES", 0) != 0) {
+            /* Only CFB with segment size = block size is available in this API,
+             * not CFB1 or CFB8. */
             return PSA_ALG_CFB;
         } else if (repository::IsCTR(id)) {
             return PSA_ALG_CTR;
