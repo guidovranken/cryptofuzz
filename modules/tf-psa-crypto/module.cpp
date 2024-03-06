@@ -5,10 +5,47 @@
 #include <mbedtls/platform.h>
 #include <psa/crypto.h>
 
+//#pragma clang optimize off //while debugging
+
 namespace cryptofuzz {
 namespace module {
 
 #define CF_ASSERT_PSA(expr) CF_ASSERT_EQ(expr, PSA_SUCCESS)
+
+static bool is_cipher_consistent(component::SymmetricCipher cipher) {
+    /* For some reason, modules can receive a cipher type that's
+     * inconsistent with the key length, even though the module does not
+     * have an interface to report that it correctly rejected an
+     * invalid length. */
+    size_t bits = cipher.key.GetSize() * 8;
+    std::string name = repository::CipherToString(cipher.cipherType.Get());
+
+    if (name.find("128") != std::string::npos) {
+        return bits == 128;
+    }
+    if (name.find("192") != std::string::npos) {
+        return bits == 192;
+    }
+    if (name.find("256") != std::string::npos) {
+        return bits == 256;
+    }
+    if (name.rfind("CHACHA", 0) == 0) {
+        return bits == 256;
+    }
+    if (name.rfind("DES_EDE3_", 0) == 0 || name.rfind("DES3_", 0) == 0) {
+        return bits == 192;
+    }
+    if (name.rfind("DES_EDE_", 0) == 0) {
+        return bits == 128;
+    }
+    if (name.rfind("DES_", 0) == 0) {
+        return bits == 64;
+    }
+
+    // As a fallback, declare the size to be valid, and let the fuzzed library
+    // cause a fatal error if it turns out not to be.
+    return true;
+}
 
 namespace TF_PSA_Crypto_detail {
     Datasource* ds;
@@ -102,22 +139,23 @@ namespace TF_PSA_Crypto_detail {
     }
 
     psa_key_type_t to_psa_key_type_t(const component::SymmetricCipherType& cipherType) {
-        using fuzzing::datasource::ID;
-        static const std::map<uint64_t, psa_key_type_t> LUT = {
-            { CF_CIPHER("AES_128_ECB"), PSA_KEY_TYPE_AES },
-            { CF_CIPHER("AES_192_ECB"), PSA_KEY_TYPE_AES },
-            { CF_CIPHER("AES_256_ECB"), PSA_KEY_TYPE_AES },
-            { CF_CIPHER("ARIA_128_ECB"), PSA_KEY_TYPE_AES },
-            { CF_CIPHER("ARIA_192_ECB"), PSA_KEY_TYPE_ARIA },
-            { CF_CIPHER("ARIA_256_ECB"), PSA_KEY_TYPE_ARIA },
-            { CF_CIPHER("CAMELLIA_128_ECB"), PSA_KEY_TYPE_CAMELLIA },
-            { CF_CIPHER("CAMELLIA_192_ECB"), PSA_KEY_TYPE_CAMELLIA },
-            { CF_CIPHER("CAMELLIA_256_ECB"), PSA_KEY_TYPE_CAMELLIA },
-        };
-        if ( LUT.find(cipherType.Get()) == LUT.end() ) {
-            return PSA_ALG_NONE;
+        const std::string name = repository::CipherToString(cipherType.Get());
+        if (name.rfind("AES", 0) == 0 && name.find("_SHA") == std::string::npos) {
+            return PSA_KEY_TYPE_AES;
+        } else if (name.rfind("ARIA_", 0) == 0) {
+            return PSA_KEY_TYPE_ARIA;
+        } else if (name.rfind("CAMELLIA_", 0) == 0) {
+            return PSA_KEY_TYPE_CAMELLIA;
+        } else if (name.rfind("CHACHA", 0) == 0) {
+            return PSA_KEY_TYPE_CHACHA20;
+        } else if (name.rfind("DES_", 0) == 0 && name.find("_SHA") == std::string::npos) {
+            return PSA_KEY_TYPE_DES;
+        } else if (name.rfind("DES3_", 0) == 0 && name.find("_SHA") == std::string::npos) {
+            return PSA_KEY_TYPE_DES;
+        } else {
+            return PSA_KEY_TYPE_NONE;
         }
-        return LUT.at(cipherType.Get());
+            return PSA_ALG_NONE;
     }
 
     class HashOperation {
@@ -385,12 +423,20 @@ std::optional<component::MAC> TF_PSA_Crypto::OpCMAC(operation::CMAC& op) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     TF_PSA_Crypto_detail::SetGlobalDs(&ds);
 
-    psa_key_type_t const key_type =
-        TF_PSA_Crypto_detail::to_psa_key_type_t(op.cipher.cipherType);
-    /* Skip unknown ciphers */
-    CF_CHECK_NE(key_type, PSA_KEY_TYPE_NONE);
+    CF_CHECK_TRUE(is_cipher_consistent(op.cipher));
 
     {
+        psa_key_type_t const key_type =
+            TF_PSA_Crypto_detail::to_psa_key_type_t(op.cipher.cipherType);
+        /* Skip unknown ciphers */
+        CF_CHECK_NE(key_type, PSA_KEY_TYPE_NONE);
+        /* op.cipher encodes a mode. Experimentally, if the mode isn't CBC,
+         * we're expected to bail out. */
+        CF_CHECK_TRUE(repository::IsCBC(op.cipher.cipherType.Get()));
+        /* Skip ciphers that are not supported for CMAC */
+        CF_CHECK_TRUE(key_type == PSA_KEY_TYPE_AES ||
+                      (key_type == PSA_KEY_TYPE_DES && op.cipher.key.GetSize() == 192));
+
         TF_PSA_Crypto_detail::MACOperation operation;
         CF_ASSERT_PSA(operation.set_key(key_type,
                                         op.cipher.key.GetPtr(&ds),
