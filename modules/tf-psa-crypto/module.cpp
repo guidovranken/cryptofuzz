@@ -347,6 +347,9 @@ namespace TF_PSA_Crypto_detail {
         size_t finish_output_size() {
             return PSA_CIPHER_FINISH_OUTPUT_SIZE(key_type, alg);
         }
+        size_t has_padding() {
+            return alg == PSA_ALG_CBC_PKCS7;
+        }
 
         bool is_valid_iv_length(size_t iv_length) {
             switch (alg) {
@@ -371,6 +374,37 @@ namespace TF_PSA_Crypto_detail {
 #endif
             default:
                 return iv_length == block_size();
+            }
+        }
+
+        /* Return true for assumed good data.
+         * Return false for detected bad data.
+         * Abort for unexpected error codes. */
+        bool check_finish_status(bool is_encrypt, size_t input_length,
+                                 psa_status_t status) {
+            if (status == PSA_SUCCESS) {
+                return true;
+            } else if (!is_encrypt &&
+                       has_padding() && status == PSA_ERROR_INVALID_PADDING) {
+                /* Found invalid padding */
+                return false;
+            } else if (!is_encrypt &&
+                       has_padding() &&
+                       input_length < block_size() &&
+                       status == PSA_ERROR_INVALID_ARGUMENT) {
+                /* Padding was absent */
+                return false;
+            } else if ((alg == PSA_ALG_ECB_NO_PADDING ||
+                        alg == PSA_ALG_CBC_NO_PADDING ||
+                        (alg == PSA_ALG_CBC_PKCS7 && !is_encrypt)) &&
+                       input_length % block_size() != 0 &&
+                       status == PSA_ERROR_INVALID_ARGUMENT) {
+                /* Modes requiring a full block of input */
+                return false;
+            } else {
+                printf("Bad status %d from psa_cipher_finish() or psa_cipher_decrypt()\n",
+                       status);
+                ::abort();
             }
         }
 
@@ -727,7 +761,7 @@ end:
     return ret;
 }
 
-static void cipher_decrypt_oneshot(TF_PSA_Crypto_detail::CipherOperation operation,
+static bool cipher_decrypt_oneshot(TF_PSA_Crypto_detail::CipherOperation operation,
                                    const std::vector<uint8_t> &iv,
                                    const std::vector<uint8_t>& ciphertext,
                                    std::vector<uint8_t>& cleartext) {
@@ -735,10 +769,12 @@ static void cipher_decrypt_oneshot(TF_PSA_Crypto_detail::CipherOperation operati
     tmp.insert(tmp.end(), ciphertext.begin(), ciphertext.end());
     size_t length = 0;
     vector_extend(cleartext, operation.decrypt_output_size(tmp.size()));
-    CF_ASSERT_PSA(operation.decrypt(tmp.data(), tmp.size(),
-                                    cleartext.data(), cleartext.size(),
-                                    &length));
+    psa_status_t status =
+        operation.decrypt(tmp.data(), tmp.size(),
+                          cleartext.data(), cleartext.size(),
+                          &length);
     cleartext.resize(length);
+    return operation.check_finish_status(false, tmp.size(), status);
 }
 
 static void aead_encrypt_oneshot(TF_PSA_Crypto_detail::AEADOperation operation,
@@ -773,7 +809,7 @@ static bool aead_decrypt_oneshot(TF_PSA_Crypto_detail::AEADOperation operation,
     return status == PSA_SUCCESS;
 }
 
-static void cipher_multipart(TF_PSA_Crypto_detail::CipherOperation operation,
+static bool cipher_multipart(TF_PSA_Crypto_detail::CipherOperation operation,
                              bool is_encrypt,
                              const std::optional<std::vector<uint8_t>> iv,
                              const util::Multipart& input_parts,
@@ -789,10 +825,12 @@ static void cipher_multipart(TF_PSA_Crypto_detail::CipherOperation operation,
     }
 
     output.resize(0);
+    size_t input_length = 0;
     for (const auto& part : input_parts) {
         size_t output_cursor = output.size();
         vector_extend(output, output_cursor + operation.update_output_size(part.second));
         size_t length = 0;
+        input_length += part.second;
         CF_ASSERT_PSA(operation.update(part.first, part.second,
                                        output.data() + output_cursor,
                                        output.size() - output_cursor,
@@ -803,10 +841,11 @@ static void cipher_multipart(TF_PSA_Crypto_detail::CipherOperation operation,
     size_t output_cursor = output.size();
     vector_extend(output, output_cursor + operation.finish_output_size());
     size_t length = 0;
-    CF_ASSERT_PSA(operation.finish(output.data() + output_cursor,
-                                   output.size() - output_cursor,
-                                   &length));
+    psa_status_t status = operation.finish(output.data() + output_cursor,
+                                           output.size() - output_cursor,
+                                           &length);
     output.resize(output_cursor + length);
+    return operation.check_finish_status(is_encrypt, input_length, status);
 }
 
 static bool aead_multipart(TF_PSA_Crypto_detail::AEADOperation operation,
@@ -963,6 +1002,7 @@ static bool cipher_common(operation::Operation& op,
                 CF_CHECK_EQ(input.GetSize() % operation.block_size(), 0);
             }
 
+            bool decrypt_ok;
             if (multipart) {
                 /* Skip set_iv() for ECB */
                 const std::optional<std::vector<uint8_t>> iv =
@@ -970,17 +1010,19 @@ static bool cipher_common(operation::Operation& op,
                      std::nullopt :
                      std::optional(cipher.iv.GetConstVectorPtr()));
                 util::Multipart input_parts = util::ToParts(ds, input);
-                cipher_multipart(operation, is_encrypt, iv,
-                                 input_parts, output);
+                decrypt_ok = cipher_multipart(operation, is_encrypt, iv,
+                                              input_parts, output);
             } else {
                 /* Ignore IV for ECB: force an empty IV */
                 const std::vector<uint8_t> iv =
                     (repository::IsECB(cipher.cipherType.Get()) ?
                      std::vector<uint8_t>(0) :
                      cipher.iv.GetConstVectorPtr());
-                cipher_decrypt_oneshot(operation, iv,
-                                       input.GetConstVectorPtr(), output);
+                decrypt_ok = cipher_decrypt_oneshot(operation, iv,
+                                                    input.GetConstVectorPtr(),
+                                                    output);
             }
+            CF_CHECK_TRUE(decrypt_ok);
         }
     }
 
