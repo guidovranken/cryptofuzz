@@ -170,7 +170,7 @@ namespace TF_PSA_Crypto_detail {
         if (name.rfind("DES", 0) == 0) {
             /* Only a few old-school block modes are accepted with DES. */
             if (repository::IsCBC(id)) {
-                return PSA_ALG_CBC_NO_PADDING;
+                return PSA_ALG_CBC_PKCS7;
             } else if (repository::IsECB(id)) {
                 return PSA_ALG_ECB_NO_PADDING;
             } else {
@@ -178,7 +178,7 @@ namespace TF_PSA_Crypto_detail {
             }
         }
         if (repository::IsCBC(id)) {
-            return PSA_ALG_CBC_NO_PADDING;
+            return PSA_ALG_CBC_PKCS7;
         } else if (repository::IsCCM(id)) {
             return PSA_ALG_CCM;
         } else if (name.size() >= 3 && std::equal(name.end() - 3, name.end(), "CFB")) {
