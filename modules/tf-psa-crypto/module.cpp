@@ -1046,7 +1046,8 @@ std::optional<component::Ciphertext> TF_PSA_Crypto::OpSymmetricEncrypt(operation
                        output, tag)) {
         return std::nullopt;
     }
-    return component::Ciphertext(Buffer(output), component::Tag(tag));
+    auto tag_opt = op.tagSize ? std::optional(component::Tag(tag)) : std::nullopt;
+    return component::Ciphertext(Buffer(output), tag_opt);
 }
 
 std::optional<component::Cleartext> TF_PSA_Crypto::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
