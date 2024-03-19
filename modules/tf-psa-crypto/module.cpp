@@ -167,12 +167,21 @@ namespace TF_PSA_Crypto_detail {
     psa_algorithm_t cipher_to_psa_algorithm_t(const component::SymmetricCipherType& cipherType) {
         uint64_t id = cipherType.Get();
         const std::string name = repository::CipherToString(cipherType.Get());
+        if (name.rfind("DES", 0) == 0) {
+            /* Only a few old-school block modes are accepted with DES. */
+            if (repository::IsCBC(id)) {
+                return PSA_ALG_CBC_NO_PADDING;
+            } else if (repository::IsECB(id)) {
+                return PSA_ALG_ECB_NO_PADDING;
+            } else {
+                return PSA_ALG_NONE;
+            }
+        }
         if (repository::IsCBC(id)) {
             return PSA_ALG_CBC_NO_PADDING;
         } else if (repository::IsCCM(id)) {
             return PSA_ALG_CCM;
-        } else if (name.size() >= 3 && std::equal(name.end() - 3, name.end(), "CFB") &&
-                   name.rfind("DES", 0) != 0) {
+        } else if (name.size() >= 3 && std::equal(name.end() - 3, name.end(), "CFB")) {
             /* Only CFB with segment size = block size is available in this API,
              * not CFB1 or CFB8. */
             return PSA_ALG_CFB;
