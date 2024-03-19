@@ -342,7 +342,12 @@ namespace TF_PSA_Crypto_detail {
             return PSA_CIPHER_DECRYPT_OUTPUT_SIZE(key_type, alg, input_length);
         }
         size_t update_output_size(size_t input_length) {
-            return PSA_CIPHER_UPDATE_OUTPUT_SIZE(key_type, alg, input_length);
+            size_t size = PSA_CIPHER_UPDATE_OUTPUT_SIZE(key_type, alg, input_length);
+            if (alg == PSA_ALG_CBC_PKCS7 && input_length % block_size() == 0) {
+                // Compensate for https://github.com/Mbed-TLS/mbedtls/issues/8954
+                size += block_size();
+            }
+            return size;
         }
         size_t finish_output_size() {
             return PSA_CIPHER_FINISH_OUTPUT_SIZE(key_type, alg);
