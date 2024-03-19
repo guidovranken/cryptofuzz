@@ -758,7 +758,7 @@ static void aead_encrypt_oneshot(TF_PSA_Crypto_detail::AEADOperation operation,
     std::copy(tmp.end() - tag_length, tmp.end(), tag.begin());
 }
 
-static void aead_decrypt_oneshot(TF_PSA_Crypto_detail::AEADOperation operation,
+static bool aead_decrypt_oneshot(TF_PSA_Crypto_detail::AEADOperation operation,
                                  const std::vector<uint8_t>& iv,
                                  const std::vector<uint8_t> &aad,
                                  const std::vector<uint8_t>& ciphertext,
@@ -766,7 +766,11 @@ static void aead_decrypt_oneshot(TF_PSA_Crypto_detail::AEADOperation operation,
                                  std::vector<uint8_t> &cleartext) {
     std::vector<uint8_t> tmp(ciphertext);
     tmp.insert(tmp.end(), tag.begin(), tag.end());
-    CF_ASSERT_PSA(operation.decrypt(iv, aad, tmp, cleartext));
+    psa_status_t status = operation.decrypt(iv, aad, tmp, cleartext);
+    CF_ASSERT(status == PSA_SUCCESS ||
+              status == PSA_ERROR_INVALID_SIGNATURE,
+              "psa_aead_decrypt status");
+    return status == PSA_SUCCESS;
 }
 
 static void cipher_multipart(TF_PSA_Crypto_detail::CipherOperation operation,
@@ -805,7 +809,7 @@ static void cipher_multipart(TF_PSA_Crypto_detail::CipherOperation operation,
     output.resize(output_cursor + length);
 }
 
-static void aead_multipart(TF_PSA_Crypto_detail::AEADOperation operation,
+static bool aead_multipart(TF_PSA_Crypto_detail::AEADOperation operation,
                            bool is_encrypt,
                            const std::vector<uint8_t>& iv,
                            const util::Multipart& aad_parts, size_t aad_length,
@@ -851,14 +855,19 @@ static void aead_multipart(TF_PSA_Crypto_detail::AEADOperation operation,
                                        tag.data(), tag.size(), &tag_length));
         output.resize(output_cursor + length);
         tag.resize(tag_length);
+        return true;
     } else {
         vector_extend(output, output_cursor + operation.verify_output_size());
         size_t length = 0;
-        CF_ASSERT_PSA(operation.verify(output.data() + output_cursor,
-                                       output.size() - output_cursor,
-                                       &length,
-                                       tag.data(), tag.size()));
+        psa_status_t status = operation.verify(output.data() + output_cursor,
+                                               output.size() - output_cursor,
+                                               &length,
+                                               tag.data(), tag.size());
+        CF_ASSERT(status == PSA_SUCCESS ||
+                  status == PSA_ERROR_INVALID_SIGNATURE,
+                  "psa_aead_verify status");
         output.resize(output_cursor + length);
+        return status == PSA_SUCCESS;
     }
 }
 
@@ -903,11 +912,13 @@ static bool cipher_common(operation::Operation& op,
             if (multipart) {
                 util::Multipart aad_parts = util::ToParts(ds, *aad);
                 util::Multipart input_parts = util::ToParts(ds, input);
-                aead_multipart(operation, is_encrypt,
-                               cipher.iv.GetConstVectorPtr(),
-                               aad_parts, aad->GetSize(),
-                               input_parts, input.GetSize(),
-                               output, tag);
+                bool verify_ok =
+                    aead_multipart(operation, is_encrypt,
+                                   cipher.iv.GetConstVectorPtr(),
+                                   aad_parts, aad->GetSize(),
+                                   input_parts, input.GetSize(),
+                                   output, tag);
+                CF_CHECK_TRUE(verify_ok);
             } else { // One-shot
                 if (is_encrypt) {
                     aead_encrypt_oneshot(operation,
@@ -916,11 +927,13 @@ static bool cipher_common(operation::Operation& op,
                                          input.GetConstVectorPtr(),
                                          output, tag);
                 } else {
-                    aead_decrypt_oneshot(operation,
-                                         cipher.iv.GetConstVectorPtr(),
-                                         aad->GetConstVectorPtr(),
-                                         input.GetConstVectorPtr(),
-                                         tag, output);
+                    bool verify_ok =
+                        aead_decrypt_oneshot(operation,
+                                             cipher.iv.GetConstVectorPtr(),
+                                             aad->GetConstVectorPtr(),
+                                             input.GetConstVectorPtr(),
+                                             tag, output);
+                    CF_CHECK_TRUE(verify_ok);
                 }
             }
 
