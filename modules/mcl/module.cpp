@@ -609,13 +609,13 @@ std::optional<component::G1> mcl::OpBLS_G1_Mul(operation::BLS_G1_Mul& op) {
     using namespace Namespace;
 
     Namespace::Fp a_x, a_y;
-    Namespace::Fp b;
+    Namespace::Fr b;
 
     try {
         a_x = Fp(op.a.first.ToTrimmedString(), 10);
         a_y = Fp(op.a.second.ToTrimmedString(), 10);
 
-        b = Fp(op.b.ToTrimmedString(), 10);
+        b = Fr(op.b.ToTrimmedString(), 10);
     } catch ( cybozu::Exception ) {
         /* May throw exception if string represents value larger than curve order */
         return std::nullopt;
@@ -730,7 +730,7 @@ std::optional<component::G2> mcl::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
     using namespace Namespace;
 
     Namespace::Fp a_v, a_w, a_x, a_y;
-    Namespace::Fp b;
+    Namespace::Fr b;
 
     try {
         a_v = Fp(op.a.first.first.ToTrimmedString(), 10);
@@ -738,7 +738,7 @@ std::optional<component::G2> mcl::OpBLS_G2_Mul(operation::BLS_G2_Mul& op) {
         a_x = Fp(op.a.second.first.ToTrimmedString(), 10);
         a_y = Fp(op.a.second.second.ToTrimmedString(), 10);
 
-        b = Fp(op.b.ToTrimmedString(), 10);
+        b = Fr(op.b.ToTrimmedString(), 10);
     } catch ( cybozu::Exception ) {
         /* May throw exception if string represents value larger than curve order */
         return std::nullopt;
