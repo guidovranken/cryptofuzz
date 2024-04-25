@@ -205,3 +205,4 @@ For instructions on how to run Cryptofuzz, please see [`docs/running.md`](docs/r
 - OpenSSL: [HKDF + BLAKE2S256 outputs uninitialized memory](https://github.com/openssl/openssl/issues/22708)
 - libgmp mini-gmp: [mpz_gcdext Bézout coefficients do not match documentation](https://gmplib.org/list-archives/gmp-bugs/2024-February/005451.html)
 - relic: [`bn_gcd_ext_binar` returns different Bezout coefficients](https://github.com/relic-toolkit/relic/issues/287)
+- LibreSSL: [BN_bn2mpi out-of-bounds read](https://github.com/openbsd/src/commit/7c058c6a061daa2a82ab01b18d467f0b177acd49)
