@@ -22,7 +22,7 @@ void cryptofuzz_secp256k1_scalar_inverse_var(void *r, const void *x);
         !defined(SECP255K1_COMMIT_9d560f992db26612ce2630b194aef5f44d63a530)
 void cryptofuzz_secp256k1_scalar_cmov(void *r, const void *a, int flag);
 #endif
-unsigned int cryptofuzz_secp256k1_scalar_get_bits(const void *a, unsigned int offset, unsigned int count);
+unsigned int cryptofuzz_secp256k1_scalar_get_bits_limb32(const void *a, unsigned int offset, unsigned int count);
 unsigned int cryptofuzz_secp256k1_scalar_get_bits_var(const void *a, unsigned int offset, unsigned int count);
 
 size_t cryptofuzz_secp256k1_fe_size(void);
