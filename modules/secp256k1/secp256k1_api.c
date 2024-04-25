@@ -71,8 +71,8 @@ void cryptofuzz_secp256k1_scalar_cmov(secp256k1_scalar *r, const secp256k1_scala
 }
 #endif
 
-unsigned int cryptofuzz_secp256k1_scalar_get_bits(const void *a, unsigned int offset, unsigned int count) {
-    return secp256k1_scalar_get_bits(a, offset, count);
+unsigned int cryptofuzz_secp256k1_scalar_get_bits_limb32(const void *a, unsigned int offset, unsigned int count) {
+    return secp256k1_scalar_get_bits_limb32(a, offset, count);
 }
 
 unsigned int cryptofuzz_secp256k1_scalar_get_bits_var(const void *a, unsigned int offset, unsigned int count) {

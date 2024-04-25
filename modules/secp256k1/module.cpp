@@ -1422,7 +1422,7 @@ namespace secp256k1_detail {
                     if ( var == false ) {
                         CF_NORET(cryptofuzz_secp256k1_scalar_set_int(
                                     res,
-                                    cryptofuzz_secp256k1_scalar_get_bits(a, offset, 1)));
+                                    cryptofuzz_secp256k1_scalar_get_bits_limb32(a, offset, 1)));
                     } else {
                         CF_NORET(cryptofuzz_secp256k1_scalar_set_int(
                                     res,
