@@ -736,17 +736,13 @@ std::optional<bool> OpECCSI_Verify(operation::ECCSI_Verify& op) {
 
     {
         ECCPoint pvt(ds, *curveId);
-        CF_CHECK_TRUE(pvt.Set(
-                    op.signature.pvt,
-                    op.curveType.Get(),
-                    false,
-                    false));
 
         WC_CHECK_EQ(wc_InitEccsiKey_ex(&eccsi, size, *curveId, nullptr, -1), 0);
         eccsi_initialized = true;
 
         WC_CHECK_EQ(wc_ImportEccsiPublicKey(&eccsi,
                     pub.data(), pub.size(), 0), 0);
+        WC_CHECK_EQ(wc_DecodeEccsiPvtFromSig(&eccsi, sig.data(), sig.size(), pvt.GetPtr()), 0);
         WC_CHECK_EQ(wc_HashEccsiId(
                     &eccsi,
                     *hashType,
