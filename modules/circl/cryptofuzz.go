@@ -1113,9 +1113,17 @@ func circl_BLS_Decompress_G1(in []byte) {
 
     compressed := decodeBignum(op.Compressed)
 
+    var bytes [48]byte
+    compressed.SetBytes(bytes[:])
+    bytes[0] |= 1 << 7 // set flag: compressed.
+
+    if compressed.Sign() == 0 {
+        bytes[0] |= 1 << 6 // set flag: point at infinity.
+    }
+
     a := new(bls12381.G1)
 
-    err := a.SetBytes(compressed.Bytes())
+    err := a.SetBytes(bytes[:])
     if err != nil {
         return
     }
