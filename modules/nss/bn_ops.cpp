@@ -11,11 +11,14 @@ namespace cryptofuzz {
 namespace module {
 namespace NSS_bignum {
 
+#if 0
 ECGroup* nist_p256 = nullptr;
 ECGroup* nist_p384 = nullptr;
 ECGroup* nist_p521 = nullptr;
+#endif
 
 void Initialize(void) {
+#if 0
     bool ok = false;
 
     CF_CHECK_NE(nist_p256 = ECGroup_fromName(ECCurve_NIST_P256), nullptr);
@@ -29,6 +32,7 @@ end:
         printf("Cannot initialize NSS bignum submodule\n");
         abort();
     }
+#endif
 }
 
 bool Add::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
@@ -330,6 +334,7 @@ end:
     return ret;
 }
 
+#if 0
 bool Mod_NIST_256::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const {
     (void)ds;
     bool ret = false;
@@ -365,6 +370,7 @@ bool Mod_NIST_521::Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) con
 end:
     return ret;
 }
+#endif
 
 } /* namespace NSS_bignum */
 } /* namespace module */

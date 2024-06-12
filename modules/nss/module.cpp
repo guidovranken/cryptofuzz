@@ -1072,6 +1072,7 @@ std::optional<component::Bignum> NSS::OpBignumCalc(operation::BignumCalc& op) {
         case    CF_CALCOP("Exp(A,B)"):
             opRunner = std::make_unique<NSS_bignum::Exp>();
             break;
+#if 0
         case    CF_CALCOP("Mod_NIST_256(A)"):
             opRunner = std::make_unique<NSS_bignum::Mod_NIST_256>();
             break;
@@ -1081,6 +1082,7 @@ std::optional<component::Bignum> NSS::OpBignumCalc(operation::BignumCalc& op) {
         case    CF_CALCOP("Mod_NIST_521(A)"):
             opRunner = std::make_unique<NSS_bignum::Mod_NIST_521>();
             break;
+#endif
     }
 
     CF_CHECK_NE(opRunner, nullptr);

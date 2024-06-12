@@ -178,6 +178,7 @@ class Exp : public Operation {
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
 };
 
+#if 0
 class Mod_NIST_256 : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
@@ -192,6 +193,7 @@ class Mod_NIST_521 : public Operation {
     public:
         bool Run(Datasource& ds, Bignum& res, std::vector<Bignum>& bn) const override;
 };
+#endif
 
 } /* namespace NSS_bignum */
 } /* namespace module */
