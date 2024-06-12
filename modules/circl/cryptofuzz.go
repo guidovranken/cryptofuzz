@@ -1112,10 +1112,23 @@ func circl_BLS_Decompress_G1(in []byte) {
     unmarshal(in, &op)
 
     compressed := decodeBignum(op.Compressed)
+    bytes := compressed.Bytes()
+
+    /* circl will panic on certain inputs not compliant with zcash format */
+    /* This is expected, see OSS-Fuzz #69580 */
+    if len(bytes) > 0 && len(bytes) < 96 {
+        /* Infinity */
+        if int((bytes[0] >> 6) & 0x1) == 1 {
+            /* Uncompressed */
+            if int((bytes[0] >> 7) & 0x1) == 0 {
+                return
+            }
+        }
+    }
 
     a := new(bls12381.G1)
 
-    err := a.SetBytes(compressed.Bytes())
+    err := a.SetBytes(bytes)
     if err != nil {
         return
     }
