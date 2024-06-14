@@ -716,6 +716,9 @@ std::optional<component::MAC> TF_PSA_Crypto::OpHMAC(operation::HMAC& op) {
     /* PSA does not allow empty keys */
     CF_CHECK_NE(op.cipher.key.GetSize(), 0);
 
+    /* PSA does not allow unusually large keys */
+    CF_CHECK_LTE(op.cipher.key.GetSize(), PSA_MAX_KEY_BITS / 8);
+
     {
         TF_PSA_Crypto_detail::MACOperation operation;
         CF_ASSERT_PSA(operation.set_key(PSA_KEY_TYPE_HMAC,
