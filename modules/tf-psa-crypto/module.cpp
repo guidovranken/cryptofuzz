@@ -782,7 +782,7 @@ static bool cipher_decrypt_oneshot(TF_PSA_Crypto_detail::CipherOperation operati
                           cleartext.data(), cleartext.size(),
                           &length);
     cleartext.resize(length);
-    return operation.check_finish_status(false, tmp.size(), status);
+    return operation.check_finish_status(false, ciphertext.size(), status);
 }
 
 static void aead_encrypt_oneshot(TF_PSA_Crypto_detail::AEADOperation operation,
