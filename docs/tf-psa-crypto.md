@@ -7,8 +7,11 @@ You can use the same build of Mbed TLS (`libmbedcrypto.a`) for both.
 ## Library compilation
 
 ```sh
-git clone --depth 1 -b development https://github.com/Mbed-TLS/mbedtls.git
+git clone --depth 1 --recurse-submodules -b mbedtls-3.6 https://github.com/Mbed-TLS/mbedtls.git
 cd mbedtls/
+python3 -m venv venv
+source venv/bin/activate
+pip install -r scripts/basic.requirements.txt
 scripts/config.py set MBEDTLS_PLATFORM_MEMORY
 mkdir build/
 cd build/
