@@ -862,7 +862,7 @@ static bool aead_multipart(TF_PSA_Crypto_detail::AEADOperation operation,
                            const util::Multipart& aad_parts, size_t aad_length,
                            const util::Multipart& input_parts, size_t input_length,
                            std::vector<uint8_t>& output,
-                           std::vector<uint8_t> &tag) {
+                           std::vector<uint8_t> tag) {
     if (is_encrypt) {
         CF_ASSERT_PSA(operation.encrypt_setup());
     } else {
@@ -921,10 +921,10 @@ static bool aead_multipart(TF_PSA_Crypto_detail::AEADOperation operation,
 static bool cipher_common(operation::Operation& op,
                           bool is_encrypt,
                           component::SymmetricCipher cipher,
-                          const std::optional<component::AAD>& aad,
+                          const std::vector<uint8_t>& aad,
                           const Buffer& input,
                           std::vector<uint8_t> &output,
-                          std::vector<uint8_t>& tag) {
+                          std::vector<uint8_t> tag) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     TF_PSA_Crypto_detail::SetGlobalDs(&ds);
 
@@ -957,12 +957,12 @@ static bool cipher_common(operation::Operation& op,
             CF_CHECK_TRUE(tag.size() == operation.tag_length());
 
             if (multipart) {
-                util::Multipart aad_parts = util::ToParts(ds, *aad);
+                util::Multipart aad_parts = util::ToParts(ds, aad);
                 util::Multipart input_parts = util::ToParts(ds, input);
                 bool verify_ok =
                     aead_multipart(operation, is_encrypt,
                                    cipher.iv.GetConstVectorPtr(),
-                                   aad_parts, aad->GetSize(),
+                                   aad_parts, aad.size(),
                                    input_parts, input.GetSize(),
                                    output, tag);
                 CF_CHECK_TRUE(verify_ok);
@@ -970,14 +970,14 @@ static bool cipher_common(operation::Operation& op,
                 if (is_encrypt) {
                     aead_encrypt_oneshot(operation,
                                          cipher.iv.GetConstVectorPtr(),
-                                         aad->GetConstVectorPtr(),
+                                         aad,
                                          input.GetConstVectorPtr(),
                                          output, tag);
                 } else {
                     bool verify_ok =
                         aead_decrypt_oneshot(operation,
                                              cipher.iv.GetConstVectorPtr(),
-                                             aad->GetConstVectorPtr(),
+                                             aad,
                                              input.GetConstVectorPtr(),
                                              tag, output);
                     CF_CHECK_TRUE(verify_ok);
@@ -1044,8 +1044,9 @@ end:
 
 std::optional<component::Ciphertext> TF_PSA_Crypto::OpSymmetricEncrypt(operation::SymmetricEncrypt& op) {
     std::vector<uint8_t> output;
+    const std::vector<uint8_t> aad = op.aad ? op.aad->Get() : std::vector<uint8_t>{};
     std::vector<uint8_t> tag(op.tagSize ? op.tagSize.value() : 0);
-    if (!cipher_common(op, true, op.cipher, op.aad, op.cleartext,
+    if (!cipher_common(op, true, op.cipher, aad, op.cleartext,
                        output, tag)) {
         return std::nullopt;
     }
@@ -1055,8 +1056,10 @@ std::optional<component::Ciphertext> TF_PSA_Crypto::OpSymmetricEncrypt(operation
 
 std::optional<component::Cleartext> TF_PSA_Crypto::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
     std::vector<uint8_t> output;
-    if (!cipher_common(op, false, op.cipher, op.aad, op.ciphertext,
-                       output, const_cast<std::vector<uint8_t>&>(op.tag->GetConstVectorPtr()))) {
+    const std::vector<uint8_t> aad = op.aad ? op.aad->Get() : std::vector<uint8_t>{};
+    if (!cipher_common(op, false, op.cipher, aad, op.ciphertext,
+                       output,
+                       op.tag ? op.tag->Get() : std::vector<uint8_t>{})) {
         return std::nullopt;
     }
     return Buffer(output);
