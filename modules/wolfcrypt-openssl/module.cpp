@@ -6,6 +6,9 @@
 extern "C" {
 #include <wolfssl/openssl/hmac.h>
 }
+#if defined(HMAC)
+#undef HMAC
+#endif
 #include "module_internal.h"
 
 namespace cryptofuzz {
