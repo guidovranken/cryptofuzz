@@ -862,7 +862,7 @@ static bool aead_multipart(TF_PSA_Crypto_detail::AEADOperation operation,
                            const util::Multipart& aad_parts, size_t aad_length,
                            const util::Multipart& input_parts, size_t input_length,
                            std::vector<uint8_t>& output,
-                           std::vector<uint8_t> tag) {
+                           std::vector<uint8_t>& tag) {
     if (is_encrypt) {
         CF_ASSERT_PSA(operation.encrypt_setup());
     } else {
@@ -923,8 +923,8 @@ static bool cipher_common(operation::Operation& op,
                           component::SymmetricCipher cipher,
                           const std::vector<uint8_t>& aad,
                           const Buffer& input,
-                          std::vector<uint8_t> &output,
-                          std::vector<uint8_t> tag) {
+                          std::vector<uint8_t>& output,
+                          std::vector<uint8_t>& tag) {
     Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
     TF_PSA_Crypto_detail::SetGlobalDs(&ds);
 
@@ -1057,9 +1057,10 @@ std::optional<component::Ciphertext> TF_PSA_Crypto::OpSymmetricEncrypt(operation
 std::optional<component::Cleartext> TF_PSA_Crypto::OpSymmetricDecrypt(operation::SymmetricDecrypt& op) {
     std::vector<uint8_t> output;
     const std::vector<uint8_t> aad = op.aad ? op.aad->Get() : std::vector<uint8_t>{};
+    std::vector<uint8_t> tag = op.tag ? op.tag->Get() : std::vector<uint8_t>{};
     if (!cipher_common(op, false, op.cipher, aad, op.ciphertext,
                        output,
-                       op.tag ? op.tag->Get() : std::vector<uint8_t>{})) {
+                       tag)) {
         return std::nullopt;
     }
     return Buffer(output);
