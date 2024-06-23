@@ -954,7 +954,7 @@ static bool cipher_common(operation::Operation& op,
 
             /* Cryptofuzz can call us with an invalid tag length! */
             /* TODO: support shorter tags */
-            CF_CHECK_TRUE(tag.size() == operation.tag_length());
+            CF_CHECK_EQ(tag.size(), operation.tag_length());
 
             if (multipart) {
                 util::Multipart aad_parts = util::ToParts(ds, aad);
@@ -996,6 +996,10 @@ static bool cipher_common(operation::Operation& op,
 
             /* Cryptofuzz can call us with an invalid IV length! */
             CF_CHECK_TRUE(operation.is_valid_iv_length(cipher.iv.GetSize()));
+
+            /* Cryptofuzz can call us expecting a tag even for
+             * unauthenticated ciphers! */
+            CF_CHECK_EQ(tag.size(), 0);
 
             /* Encryption is always multipart, because the PSA API
              * only supports one-shot encryption with a random IV,
