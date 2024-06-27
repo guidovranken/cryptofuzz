@@ -129,6 +129,26 @@ Multipart ToEqualParts(const uint8_t* data, const size_t size, const size_t part
     return ret;
 }
 
+MultipartOutput ToParts(fuzzing::datasource::Datasource& ds, std::vector<uint8_t>& buffer, const size_t blocksize) {
+    return ToParts(ds, buffer.data(), buffer.size(), blocksize);
+}
+
+MultipartOutput ToParts(fuzzing::datasource::Datasource& ds, uint8_t* data, const size_t size, const size_t blocksize) {
+    const bool blocks = blocksize != 0;
+    const auto parts = Split(ds, !blocks ? size : size / blocksize);
+    MultipartOutput ret;
+    size_t curPos = 0;
+    for (auto& p : parts) {
+        const size_t n = !blocks ? p : blocksize * p;
+        ret.push_back({data + curPos, n});
+        curPos += n;
+    }
+    if ( curPos < size ) {
+        ret.push_back({data + curPos, size - curPos});
+    }
+    return ret;
+}
+
 std::vector<uint8_t> Pkcs7Pad(std::vector<uint8_t> in, const size_t blocksize) {
     size_t numPadBytes = blocksize - (in.size() % blocksize);
 
