@@ -643,9 +643,12 @@ namespace TF_PSA_Crypto_detail {
             return cap;
         }
 
+        psa_status_t output(uint8_t *out, size_t length) {
+            return psa_key_derivation_output_bytes(&operation, out, length);
+        }
+
         psa_status_t output(std::vector<uint8_t> &out) {
-            return psa_key_derivation_output_bytes(&operation,
-                                                   out.data(), out.size());
+            return output(out.data(), out.size());
         }
     };
 
@@ -1162,7 +1165,15 @@ static std::optional<component::Key> kdf_common(operation::Operation &op,
 
     {
         auto output = std::vector<uint8_t>(output_length);
-        CF_ASSERT_PSA(operation.output(output));
+        bool const multipart = ds.Get<bool>();
+        if (multipart) {
+            util::MultipartOutput parts = util::ToParts(ds, output);
+            for (auto& part : parts) {
+                CF_ASSERT_PSA(operation.output(part.first, part.second));
+            }
+        } else {
+            CF_ASSERT_PSA(operation.output(output));
+        }
         output_maybe = Buffer(output);
     }
 
