@@ -1216,7 +1216,13 @@ namespace Botan_detail {
                 }
             }
 
-            ret = ::Botan::PK_Verifier(*pub, "Raw").verify_message(CT.Get(), sig);
+            try {
+                ret = ::Botan::PK_Verifier(*pub, "Raw").verify_message(CT.Get(), sig);
+            } catch ( ::Botan::Decoding_Error ) {
+                /* Invalid point */
+                BOTAN_UNSET_GLOBAL_DS
+                return false;
+            }
 
 end:
             BOTAN_UNSET_GLOBAL_DS
@@ -1302,6 +1308,10 @@ std::optional<component::ECC_PublicKey> Botan::OpECDSA_Recover(operation::ECDSA_
         } catch ( ::Botan::Invalid_State& e ) {
         } catch ( ::Botan::Decoding_Error& ) {
         } catch ( ::Botan::Invalid_Argument& ) {
+        /* Remove this catch depending on whether this is a bug.
+         * https://github.com/randombit/botan/issues/4208
+         */
+        } catch ( ::Botan::Internal_Error& ) {
             //ret = {"0", "0"};
         }
 
