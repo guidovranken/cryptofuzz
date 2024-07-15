@@ -1,21 +1,21 @@
-import constantine/math/arithmetic
-import constantine/math/extension_fields
+# Low-level public API
+import constantine/lowlevel_bigints
+import constantine/lowlevel_fields
+import constantine/lowlevel_extension_fields
+import constantine/lowlevel_elliptic_curves
+import constantine/lowlevel_elliptic_curves_parallel
+import constantine/lowlevel_pairing_curves
+
+# Internals
 import constantine/math/io/io_bigints
 import constantine/math/io/io_fields
-import constantine/platforms/abstractions
-import constantine/math/ec_shortweierstrass
-import constantine/math/config/curves
-import constantine/math/pairings/[pairings_generic, miller_accumulators]
-import constantine/hash_to_curve/hash_to_curve
-import constantine/hashes
-import constantine/math/constants/zoo_subgroups
+
+# High-level protocols
 import constantine/ethereum_evm_precompiles
 import constantine/ethereum_eip2333_bls12381_key_derivation
 import constantine/ethereum_bls_signatures
-import constantine/math/elliptic/ec_multi_scalar_mul
-import constantine/threadpool/threadpool
-import constantine/math/elliptic/ec_multi_scalar_mul_parallel
-import constantine/math/elliptic/ec_scalar_mul_vartime
+import constantine/threadpool
+
 
 func loadFp(
        dst: var Fp[BN254_Snarks],
@@ -64,29 +64,30 @@ func roundNextMultipleOf(x: int, n: static int): int {.inline.} =
   else:
     result = x.ceilDiv_vartime(n) * n
 
-proc loadScalar_BN254_Snarks(
-       dst: var matchingOrderBigInt(BN254_Snarks),
-       src: openarray[byte]) =
-    const maxBits = 8 * roundNextMultipleOf(BN254_Snarks.getCurveOrderBitwidth(), 8)
-    var tmp{.noinit.}: BigInt[maxBits]
-    tmp.unmarshal(src, bigEndian)
-    dst.reduce(tmp, BN254_Snarks.getCurveOrder())
+template genLoadScalar(curve: untyped) =
+  # Workaround Nim compiler not matching types
+  # of `dst`: matchingOrderBigInt(curve) or curve.getBigInt(kScalarField)
+  # with M: curve.scalarFieldModulus
 
-proc loadScalar_BLS12_381(
-       dst: var matchingOrderBigInt(BLS12_381),
-       src: openarray[byte]) =
-    const maxBits = 8 * roundNextMultipleOf(BLS12_381.getCurveOrderBitwidth(), 8)
+  proc `loadScalar _ curve`(
+        dst: var getBigInt(curve, kScalarField),
+        src: openarray[byte]) =
+    const maxBits = 8 * roundNextMultipleOf(Fr[curve].bits(), 8)
     var tmp{.noinit.}: BigInt[maxBits]
     tmp.unmarshal(src, bigEndian)
-    dst.reduce(tmp, BLS12_381.getCurveOrder())
+    dst.reduce(tmp, curve.scalarFieldModulus())
 
-proc loadScalar_BLS12_377(
-       dst: var matchingOrderBigInt(BLS12_377),
-       src: openarray[byte]) =
-    const maxBits = 8 * roundNextMultipleOf(BLS12_377.getCurveOrderBitwidth(), 8)
-    var tmp{.noinit.}: BigInt[maxBits]
-    tmp.unmarshal(src, bigEndian)
-    dst.reduce(tmp, BLS12_377.getCurveOrder())
+genLoadScalar(BN254_Snarks)
+genLoadScalar(BLS12_381)
+genLoadScalar(BLS12_377)
+
+proc loadScalar(curve: static Algebra, dst: var auto, src: openArray[byte]) =
+  when curve == BN254_Snarks:
+    loadScalar_BN254_Snarks(dst, src)
+  elif curve == BLS12_381:
+    loadScalar_BLS12_381(dst, src)
+  elif curve == BLS12_377:
+    loadScalar_BLS12_377(dst, src)
 
 func loadFr(
        dst: var Fr[BN254_Snarks],
@@ -94,7 +95,7 @@ func loadFr(
   var big {.noInit.}: BigInt[254]
   big.unmarshal(src, bigEndian)
 
-  if not bool(big < Fr[BN254_Snarks].fieldMod()):
+  if not bool(big < BN254_Snarks.scalarFieldModulus()):
     return false
 
   dst.fromBig(big)
@@ -106,7 +107,7 @@ func loadFr(
   var big {.noInit.}: BigInt[255]
   big.unmarshal(src, bigEndian)
 
-  if not bool(big < Fr[BLS12_381].fieldMod()):
+  if not bool(big < BLS12_381.scalarFieldModulus()):
     return false
 
   dst.fromBig(big)
@@ -147,7 +148,7 @@ func saveFr[FrType](
 
 # Load G1 projective
 func loadG1[FpType](
-       dst: var ECP_ShortW_Prj[FpType, G1],
+       dst: var EC_ShortW_Prj[FpType, G1],
        g1_bytes: openarray[byte]): bool =
     var size = fpSize(FpType)
     if dst.x.loadFp(g1_bytes.toOpenArray(0, size-1)) == false:
@@ -159,9 +160,9 @@ func loadG1[FpType](
 
 # Load G1 affine
 func loadG1[FpType](
-       dst: var ECP_ShortW_Aff[FpType, G1],
+       dst: var EC_ShortW_Aff[FpType, G1],
        g1_bytes: openarray[byte]): bool =
-    var P{.noInit.}: ECP_ShortW_Prj[FpType, G1]
+    var P{.noInit.}: EC_ShortW_Prj[FpType, G1]
     if loadG1(P, g1_bytes) == false:
         return false
     dst.affine(P)
@@ -169,7 +170,7 @@ func loadG1[FpType](
 
 # Save G1 affine
 func saveG1[FpType](
-        R: ECP_ShortW_Aff[FpType, G1],
+        R: EC_ShortW_Aff[FpType, G1],
         r_bytes: ptr uint8) =
     var r: array[48 * 2, byte]
     var size = fpSize(FpType)
@@ -179,9 +180,9 @@ func saveG1[FpType](
 
 # Save G1 projective
 func saveG1[FpType](
-        R: var ECP_ShortW_Prj[FpType, G1],
+        R: var EC_ShortW_Prj[FpType, G1],
         r_bytes: ptr uint8) =
-    var R_aff{.noInit.}: ECP_ShortW_Aff[FpType, G1]
+    var R_aff{.noInit.}: EC_ShortW_Aff[FpType, G1]
     R_aff.affine(R)
 
     var r: array[48 * 2, byte]
@@ -192,9 +193,9 @@ func saveG1[FpType](
 
 # Save G1 jacobian
 func saveG1[FpType](
-        R: var ECP_ShortW_Jac[FpType, G1],
+        R: var EC_ShortW_Jac[FpType, G1],
         r_bytes: ptr uint8) =
-    var R_aff{.noInit.}: ECP_ShortW_Aff[FpType, G1]
+    var R_aff{.noInit.}: EC_ShortW_Aff[FpType, G1]
     R_aff.affine(R)
 
     var size = fpSize(FpType)
@@ -205,7 +206,7 @@ func saveG1[FpType](
 
 # Load G2 projective
 func loadG2[Fp2Type](
-       dst: var ECP_ShortW_Prj[Fp2Type, G2],
+       dst: var EC_ShortW_Prj[Fp2Type, G2],
        g2_bytes: openarray[byte]): bool =
     var size = fpSize(Fp2Type)
     if dst.x.c0.loadFp(g2_bytes.toOpenArray(0, size-1)) == false:
@@ -221,9 +222,9 @@ func loadG2[Fp2Type](
 
 # Load G2 affine
 func loadG2[Fp2Type](
-       dst: var ECP_ShortW_Aff[Fp2Type, G2],
+       dst: var EC_ShortW_Aff[Fp2Type, G2],
        g2_bytes: openarray[byte]): bool =
-    var P{.noInit.}: ECP_ShortW_Prj[Fp2Type, G2]
+    var P{.noInit.}: EC_ShortW_Prj[Fp2Type, G2]
     if loadG2(P, g2_bytes) == false:
         return false
     dst.affine(P)
@@ -231,7 +232,7 @@ func loadG2[Fp2Type](
 
 # Save G2 affine
 func saveG2[Fp2Type](
-        R: ECP_ShortW_Aff[Fp2Type, G2],
+        R: EC_ShortW_Aff[Fp2Type, G2],
         r_bytes: ptr uint8) =
     var r: array[48 * 4, byte]
     var size = fpSize(Fp2Type)
@@ -243,9 +244,9 @@ func saveG2[Fp2Type](
 
 # Save G2 projective
 func saveG2[Fp2Type](
-        R: var ECP_ShortW_Prj[Fp2Type, G2],
+        R: var EC_ShortW_Prj[Fp2Type, G2],
         r_bytes: ptr uint8) =
-    var R_aff{.noInit.}: ECP_ShortW_Aff[Fp2Type, G2]
+    var R_aff{.noInit.}: EC_ShortW_Aff[Fp2Type, G2]
     R_aff.affine(R)
 
     var r: array[48 * 4, byte]
@@ -258,9 +259,9 @@ func saveG2[Fp2Type](
 
 # Save G2 jacobian
 func saveG2[Fp2Type](
-        R: var ECP_ShortW_Jac[Fp2Type, G2],
+        R: var EC_ShortW_Jac[Fp2Type, G2],
         r_bytes: ptr uint8) =
-    var R_aff{.noInit.}: ECP_ShortW_Aff[Fp2Type, G2]
+    var R_aff{.noInit.}: EC_ShortW_Aff[Fp2Type, G2]
     R_aff.affine(R)
 
     var r: array[48*4, byte]
@@ -340,16 +341,16 @@ func saveFp12[Fp12Type](
     copyMem(r_bytes, addr r, size * 12)
 
 func validate[FpType, GType](
-        P: var ECP_ShortW_Prj[FpType, GType]): bool =
+        P: var EC_ShortW_Prj[FpType, GType]): bool =
     return bool(isOnCurve(P.x, P.y, GType)) and bool(P.isInSubgroup())
 
 func validateAff[FpType, GType](
-        P: var ECP_ShortW_Aff[FpType, GType]): bool =
+        P: var EC_ShortW_Aff[FpType, GType]): bool =
     return bool(isOnCurve(P.x, P.y, GType)) and bool(P.isInSubgroup())
 
 func cryptofuzz_constantine_bls_isg1oncurve_impl[FpType](
         a_bytes: openarray[uint8]) : cint =
-    var P{.noInit.}: ECP_ShortW_Prj[FpType, G1]
+    var P{.noInit.}: EC_ShortW_Prj[FpType, G1]
     if loadG1(P, a_bytes) == false:
         return -1
 
@@ -371,7 +372,7 @@ proc cryptofuzz_constantine_bls_g1_add_impl[FpType](
         a_bytes: openarray[uint8],
         b_bytes: openarray[uint8],
         r_bytes: ptr uint8) : cint =
-    var A{.noInit.}, B{.noInit}, R{.noInit}: ECP_ShortW_Prj[FpType, G1]
+    var A{.noInit.}, B{.noInit}, R{.noInit}: EC_ShortW_Prj[FpType, G1]
     if loadG1(A, a_bytes) == false:
         return -1
     if loadG1(B, b_bytes) == false:
@@ -394,22 +395,23 @@ func cryptofuzz_constantine_bls_g1_add(
         return cryptofuzz_constantine_bls_g1_add_impl[Fp[BLS12_377]](a_bytes, b_bytes, r_bytes)
     assert(false)
 
-proc cryptofuzz_constantine_bls_g1_mul_impl_BN254_Snarks(
+proc cryptofuzz_constantine_bls_g1_mul_impl(
+        curve: static Algebra,
         a_bytes: openarray[uint8],
         b_bytes: openarray[uint8],
         which: uint8,
         r_bytes: ptr uint8) : cint =
     var fail = false
 
-    var A{.noInit.}: ECP_ShortW_Prj[Fp[BN254_Snarks], G1]
+    var A{.noInit.}: EC_ShortW_Prj[Fp[curve], G1]
     if loadG1(A, a_bytes) == false:
         return -1
 
-    if validate[Fp[BN254_Snarks], G1](A) == false:
+    if validate[Fp[curve], G1](A) == false:
         fail = true
 
-    var B{.noInit.}: matchingOrderBigInt(BN254_Snarks)
-    loadScalar_BN254_Snarks(B, b_bytes)
+    var B{.noInit.}: Fr[curve].getBigInt()
+    loadScalar(curve, B, b_bytes)
 
     if which == 0:
         A.scalarMul(B)
@@ -418,93 +420,13 @@ proc cryptofuzz_constantine_bls_g1_mul_impl_BN254_Snarks(
     elif which == 2:
         A.scalarMul_doubleAdd_vartime(B)
     elif which == 3:
-        A.scalarMul_minHammingWeight_vartime(B)
+        A.scalarMul_jy00_vartime(B)
     elif which == 4:
-        A.scalarMul_minHammingWeight_windowed_vartime(B, window = 3)
+        A.scalarMul_wNAF_vartime(B, window = 3)
     elif which == 5:
-        A.scalarMulEndo_minHammingWeight_windowed_vartime(B, window = 3)
+        A.scalarMulEndo_wNAF_vartime(B, window = 3)
     elif which == 6:
-        A.scalarMulEndo_minHammingWeight_windowed_vartime(B, window = 4)
-    else:
-        assert(false)
-
-    if fail == true:
-        return -1
-
-    saveG1(A, r_bytes)
-    return 0
-
-proc cryptofuzz_constantine_bls_g1_mul_impl_BLS12_381(
-        a_bytes: openarray[uint8],
-        b_bytes: openarray[uint8],
-        which: uint8,
-        r_bytes: ptr uint8) : cint =
-    var fail = false
-
-    var A{.noInit.}: ECP_ShortW_Prj[Fp[BLS12_381], G1]
-    if loadG1(A, a_bytes) == false:
-        return -1
-
-    if validate[Fp[BLS12_381], G1](A) == false:
-        fail = true
-
-    var B{.noInit.}: matchingOrderBigInt(BLS12_381)
-    loadScalar_BLS12_381(B, b_bytes)
-
-    if which == 0:
-        A.scalarMul(B)
-    elif which == 1:
-        A.scalarMulGeneric(B)
-    elif which == 2:
-        A.scalarMul_doubleAdd_vartime(B)
-    elif which == 3:
-        A.scalarMul_minHammingWeight_vartime(B)
-    elif which == 4:
-        A.scalarMul_minHammingWeight_windowed_vartime(B, window = 3)
-    elif which == 5:
-        A.scalarMulEndo_minHammingWeight_windowed_vartime(B, window = 3)
-    elif which == 6:
-        A.scalarMulEndo_minHammingWeight_windowed_vartime(B, window = 4)
-    else:
-        assert(false)
-
-    if fail == true:
-        return -1
-
-    saveG1(A, r_bytes)
-    return 0
-
-proc cryptofuzz_constantine_bls_g1_mul_impl_BLS12_377(
-        a_bytes: openarray[uint8],
-        b_bytes: openarray[uint8],
-        which: uint8,
-        r_bytes: ptr uint8) : cint =
-    var fail = false
-
-    var A{.noInit.}: ECP_ShortW_Prj[Fp[BLS12_377], G1]
-    if loadG1(A, a_bytes) == false:
-        return -1
-
-    if validate[Fp[BLS12_377], G1](A) == false:
-        fail = true
-
-    var B{.noInit.}: matchingOrderBigInt(BLS12_377)
-    loadScalar_BLS12_377(B, b_bytes)
-
-    if which == 0:
-        A.scalarMul(B)
-    elif which == 1:
-        A.scalarMulGeneric(B)
-    elif which == 2:
-        A.scalarMul_doubleAdd_vartime(B)
-    elif which == 3:
-        A.scalarMul_minHammingWeight_vartime(B)
-    elif which == 4:
-        A.scalarMul_minHammingWeight_windowed_vartime(B, window = 3)
-    elif which == 5:
-        A.scalarMulEndo_minHammingWeight_windowed_vartime(B, window = 3)
-    elif which == 6:
-        A.scalarMulEndo_minHammingWeight_windowed_vartime(B, window = 4)
+        A.scalarMulEndo_wNAF_vartime(B, window = 4)
     else:
         assert(false)
 
@@ -522,11 +444,11 @@ func cryptofuzz_constantine_bls_g1_mul(
         r_bytes: ptr uint8) : cint {.exportc.} =
 
     if curve == 0:
-        return cryptofuzz_constantine_bls_g1_mul_impl_BN254_Snarks(a_bytes, b_bytes, which, r_bytes)
+        return cryptofuzz_constantine_bls_g1_mul_impl(BN254_Snarks, a_bytes, b_bytes, which, r_bytes)
     elif curve == 1:
-        return cryptofuzz_constantine_bls_g1_mul_impl_BLS12_381(a_bytes, b_bytes, which, r_bytes)
+        return cryptofuzz_constantine_bls_g1_mul_impl(BLS12_381, a_bytes, b_bytes, which, r_bytes)
     elif curve == 2:
-        return cryptofuzz_constantine_bls_g1_mul_impl_BLS12_377(a_bytes, b_bytes, which, r_bytes)
+        return cryptofuzz_constantine_bls_g1_mul_impl(BLS12_377, a_bytes, b_bytes, which, r_bytes)
     assert(false)
 
 proc cryptofuzz_constantine_bls_g1_multiexp_impl[FpType](
@@ -535,23 +457,23 @@ proc cryptofuzz_constantine_bls_g1_multiexp_impl[FpType](
         num: uint64,
         which: uint8,
         r_bytes: ptr uint8) : cint =
-    const bnbits = FpType.C.getCurveOrderBitwidth()
+    const bnbits = Fr[FpType.Name].bits()
     const bnbytes = (int)((bnbits + 7) / 8)
     var size = fpSize(FpType)
 
-    var points = newSeq[ECP_ShortW_Aff[FpType, G1]](num)
+    var points = newSeq[EC_ShortW_Aff[FpType, G1]](num)
     var scalars = newSeq[BigInt[bnbits]](num)
 
     var fail = false
 
-    var R{.noInit}: ECP_ShortW_Jac[FpType, G1]
-    var R_prj{.noInit}: ECP_ShortW_Prj[FpType, G1]
+    var R{.noInit}: EC_ShortW_Jac[FpType, G1]
+    var R_prj{.noInit}: EC_ShortW_Prj[FpType, G1]
 
     if which == 0:
-        R_prj.setInf()
+        R_prj.setNeutral()
 
     for i in countup(0, (int)num - 1):
-        var A{.noInit.}: ECP_ShortW_Prj[FpType, G1]
+        var A{.noInit.}: EC_ShortW_Prj[FpType, G1]
         if loadG1(A, a_bytes.toOpenArray(i * 2 * size, i * 2 * size + (size * 2) - 1)) == false:
             return -1
 
@@ -565,7 +487,7 @@ proc cryptofuzz_constantine_bls_g1_multiexp_impl[FpType](
             R_prj += A
         else:
             points[i].affine(A)
- 
+
     if which == 0:
         if fail == true:
             return -1
@@ -609,7 +531,7 @@ func cryptofuzz_constantine_bls_g1_multiexp(
 proc cryptofuzz_constantine_bls_g1_neg_impl[FpType](
         a_bytes: openarray[uint8],
         r_bytes: ptr uint8) : cint =
-    var A{.noInit.}, R{.noInit}: ECP_ShortW_Prj[FpType, G1]
+    var A{.noInit.}, R{.noInit}: EC_ShortW_Prj[FpType, G1]
     if loadG1(A, a_bytes) == false:
         return -1
     R.neg(A)
@@ -630,7 +552,7 @@ func cryptofuzz_constantine_bls_g1_neg(
 proc cryptofuzz_constantine_bls_g1_iseq_impl[FpType](
         a_bytes: openarray[uint8],
         b_bytes: openarray[uint8]) : cint =
-    var A{.noInit.}, B{.noInit}: ECP_ShortW_Prj[FpType, G1]
+    var A{.noInit.}, B{.noInit}: EC_ShortW_Prj[FpType, G1]
 
     if loadG1(A, a_bytes) == false:
         return -1
@@ -656,7 +578,7 @@ func cryptofuzz_constantine_bls_g1_iseq(
 proc cryptofuzz_constantine_bls_g1_dbl_impl[FpType](
         a_bytes: openarray[uint8],
         r_bytes: ptr uint8) : cint =
-    var A{.noInit.}, R{.noInit}: ECP_ShortW_Prj[FpType, G1]
+    var A{.noInit.}, R{.noInit}: EC_ShortW_Prj[FpType, G1]
     if loadG1(A, a_bytes) == false:
         return -1
     R.double(A)
@@ -677,7 +599,7 @@ func cryptofuzz_constantine_bls_g1_dbl(
 
 proc cryptofuzz_constantine_bls_isg2oncurve_impl[Fp2Type](
         a_bytes: openarray[uint8]) : cint =
-    var P{.noInit.}: ECP_ShortW_Prj[Fp2Type, G2]
+    var P{.noInit.}: EC_ShortW_Prj[Fp2Type, G2]
     if loadG2(P, a_bytes) == false:
         return -1
 
@@ -703,7 +625,7 @@ proc cryptofuzz_constantine_bls_g2_add_impl[Fp2Type](
         r_bytes: ptr uint8) : cint =
     var fail = false
 
-    var A{.noInit.}, B{.noInit}, R{.noInit}: ECP_ShortW_Prj[Fp2Type, G2]
+    var A{.noInit.}, B{.noInit}, R{.noInit}: EC_ShortW_Prj[Fp2Type, G2]
     if loadG2(A, a_bytes) == false:
         return -1
 
@@ -744,15 +666,15 @@ proc cryptofuzz_constantine_bls_g2_mul_impl[Fp2Type](
         r_bytes: ptr uint8) : cint =
     var fail = false
 
-    var A{.noInit.}: ECP_ShortW_Prj[Fp2Type, G2]
+    var A{.noInit.}: EC_ShortW_Prj[Fp2Type, G2]
     if loadG2(A, a_bytes) == false:
         return -1
 
     if validate[Fp2Type, G2](A) == false:
         fail = true
 
-    var B{.noInit.}: BigInt[256]
-    B.unmarshal(b_bytes, bigEndian)
+    var B{.noInit.}: Fr[Fp2Type.Name].getBigInt()
+    loadScalar(Fp2Type.Name, B, b_bytes)
     if which == 0:
         A.scalarMul(B)
     elif which == 1:
@@ -760,13 +682,13 @@ proc cryptofuzz_constantine_bls_g2_mul_impl[Fp2Type](
     elif which == 2:
         A.scalarMul_doubleAdd_vartime(B)
     elif which == 3:
-        A.scalarMul_minHammingWeight_vartime(B)
+        A.scalarMul_jy00_vartime(B)
     elif which == 4:
-        A.scalarMul_minHammingWeight_windowed_vartime(B, window = 3)
+        A.scalarMul_wNAF_vartime(B, window = 3)
     elif which == 5:
-        A.scalarMulEndo_minHammingWeight_windowed_vartime(B, window = 3)
+        A.scalarMulEndo_wNAF_vartime(B, window = 3)
     elif which == 6:
-        A.scalarMulEndo_minHammingWeight_windowed_vartime(B, window = 4)
+        A.scalarMulEndo_wNAF_vartime(B, window = 4)
     else:
         assert(false)
 
@@ -793,7 +715,7 @@ func cryptofuzz_constantine_bls_g2_mul(
 proc cryptofuzz_constantine_bls_g2_neg_impl[Fp2Type](
         a_bytes: openarray[uint8],
         r_bytes: ptr uint8) : cint =
-    var A{.noInit.}, R{.noInit}: ECP_ShortW_Prj[Fp2Type, G2]
+    var A{.noInit.}, R{.noInit}: EC_ShortW_Prj[Fp2Type, G2]
     if loadG2(A, a_bytes) == false:
         return -1
     R.neg(A)
@@ -815,7 +737,7 @@ func cryptofuzz_constantine_bls_g2_neg(
 proc cryptofuzz_constantine_bls_g2_iseq_impl[Fp2Type](
         a_bytes: openarray[uint8],
         b_bytes: openarray[uint8]) : cint =
-    var A{.noInit.}, B{.noInit}: ECP_ShortW_Prj[Fp2Type, G2]
+    var A{.noInit.}, B{.noInit}: EC_ShortW_Prj[Fp2Type, G2]
 
     if loadG2(A, a_bytes) == false:
         return -1
@@ -841,7 +763,7 @@ func cryptofuzz_constantine_bls_g2_iseq(
 proc cryptofuzz_constantine_bls_g2_dbl_impl[Fp2Type](
         a_bytes: openarray[uint8],
         r_bytes: ptr uint8) : cint =
-    var A{.noInit.}, R{.noInit}: ECP_ShortW_Prj[Fp2Type, G2]
+    var A{.noInit.}, R{.noInit}: EC_ShortW_Prj[Fp2Type, G2]
     if loadG2(A, a_bytes) == false:
         return -1
     R.double(A)
@@ -867,14 +789,14 @@ proc cryptofuzz_constantine_bls_pairing_impl[FpType, Fp2Type, Fp12Type](
         r_bytes: ptr uint8): cint =
     var fail = false
 
-    var A{.noInit.}: ECP_ShortW_Aff[FpType, G1]
+    var A{.noInit.}: EC_ShortW_Aff[FpType, G1]
     if loadG1(A, g1_bytes) == false:
         return -1
 
     if validateAff[FpType, G1](A) == false:
         fail = true
 
-    var B{.noInit.}: ECP_ShortW_Aff[Fp2Type, G2]
+    var B{.noInit.}: EC_ShortW_Aff[Fp2Type, G2]
     if loadG2(B, g2_bytes) == false:
         return -1
 
@@ -937,7 +859,7 @@ proc cryptofuzz_constantine_bls_hashtog1_impl[FpType](
         msg: openarray[uint8],
         dst: openarray[uint8],
         r_bytes: ptr uint8): cint =
-    var R{.noInit}: ECP_ShortW_Jac[FpType, G1]
+    var R{.noInit}: EC_ShortW_Jac[FpType, G1]
     sha256.hashToCurve(128, R, aug, msg, dst)
     saveG1(R, r_bytes)
     return 0
@@ -960,7 +882,7 @@ proc cryptofuzz_constantine_bls_hashtog2_impl[Fp2Type](
         msg: openarray[uint8],
         dst: openarray[uint8],
         r_bytes: ptr uint8): cint =
-    var R{.noInit}: ECP_ShortW_Jac[Fp2Type, G2]
+    var R{.noInit}: EC_ShortW_Jac[Fp2Type, G2]
     sha256.hashToCurve(128, R, aug, msg, dst)
     saveG2(R, r_bytes)
     return 0
@@ -994,7 +916,7 @@ func cryptofuzz_constantine_bls_generatekeypair(
     var p {.noInit.}: PublicKey
     derive_pubkey(p, s)
 
-    saveG1(cast[ECP_ShortW_Aff[Fp[BLS12_381], G1]](p), r_pub_bytes)
+    saveG1(cast[EC_ShortW_Aff[Fp[BLS12_381], G1]](p), r_pub_bytes)
 
     return 0
 
@@ -1008,14 +930,14 @@ func cryptofuzz_constantine_bls_decompress_g1(
     if deserialize_pubkey_compressed(p, c) != cttCodecEcc_Success:
         return -1
 
-    saveG1(cast[ECP_ShortW_Aff[Fp[BLS12_381], G1]](p), r_bytes)
+    saveG1(cast[EC_ShortW_Aff[Fp[BLS12_381], G1]](p), r_bytes)
 
     return 0
 
 func cryptofuzz_constantine_bls_compress_g1(
         g1_bytes: openarray[uint8],
         r_bytes: ptr uint8): cint {.exportc.} =
-    var A{.noInit.}: ECP_ShortW_Aff[Fp[BLS12_381], G1]
+    var A{.noInit.}: EC_ShortW_Aff[Fp[BLS12_381], G1]
     if loadG1(A, g1_bytes) == false:
         return -1
 
@@ -1034,14 +956,14 @@ func cryptofuzz_constantine_bls_decompress_g2(
     if deserialize_signature_compressed(p, c) != cttCodecEcc_Success:
         return -1
 
-    saveG2(cast[ECP_ShortW_Aff[Fp2[BLS12_381], G2]](p), r_bytes)
+    saveG2(cast[EC_ShortW_Aff[Fp2[BLS12_381], G2]](p), r_bytes)
 
     return 0
 
 func cryptofuzz_constantine_bls_compress_g2(
         g2_bytes: openarray[uint8],
         r_bytes: ptr uint8): cint {.exportc.} =
-    var A{.noInit.}: ECP_ShortW_Aff[Fp2[BLS12_381], G2]
+    var A{.noInit.}: EC_ShortW_Aff[Fp2[BLS12_381], G2]
     if loadG2(A, g2_bytes) == false:
         return -1
 
@@ -1468,4 +1390,3 @@ proc cryptofuzz_constantine_bignumcalc_modexp(
         return 1
     else:
         return 0
-
