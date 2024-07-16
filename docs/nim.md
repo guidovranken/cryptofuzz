@@ -1,17 +1,17 @@
 # x64
 
 ```
-wget 'https://nim-lang.org/download/nim-1.6.12-linux_x64.tar.xz'
-tar Jxf nim-1.6.12-linux_x64.tar.xz
-export NIM_PATH=$(realpath nim-1.6.12)
+wget 'https://nim-lang.org/download/nim-2.0.8-linux_x64.tar.xz'
+tar Jxf nim-2.0.8-linux_x64.tar.xz
+export NIM_PATH=$(realpath nim-2.0.8)
 ```
 
 # x32
 
 ```
-wget 'https://nim-lang.org/download/nim-1.6.12-linux_x32.tar.xz'
-tar Jxf nim-1.6.12-linux_x32.tar.xz
-export NIM_PATH=$(realpath nim-1.6.12)
+wget 'https://nim-lang.org/download/nim-2.0.8-linux_x32.tar.xz'
+tar Jxf nim-2.0.8-linux_x32.tar.xz
+export NIM_PATH=$(realpath nim-2.0.8)
 ```
 
 # ARM64
