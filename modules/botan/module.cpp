@@ -1160,74 +1160,65 @@ std::optional<component::ECGDSA_Signature> Botan::OpECGDSA_Sign(operation::ECGDS
 namespace Botan_detail {
     template <class PubkeyType, class Operation>
         std::optional<bool> ECxDSA_Verify(Operation& op) {
-            std::optional<bool> ret = std::nullopt;
-            Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+            try {
+                std::optional<bool> ret = std::nullopt;
+                Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
 
-            ::Botan::secure_vector<uint8_t> sig;
-            std::unique_ptr<::Botan::Public_Key> pub = nullptr;
-            std::unique_ptr<::Botan::EC_Group> group = nullptr;
-            Buffer CT;
+                ::Botan::secure_vector<uint8_t> sig;
+                std::unique_ptr<::Botan::Public_Key> pub = nullptr;
+                std::unique_ptr<::Botan::EC_Group> group = nullptr;
+                Buffer CT;
 
-            {
-                BOTAN_SET_GLOBAL_DS
+                {
+                    BOTAN_SET_GLOBAL_DS;
 
-                std::optional<std::string> curveString;
-                CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
-                group = std::make_unique<::Botan::EC_Group>(*curveString);
-            }
+                    std::optional<std::string> curveString;
+                    CF_CHECK_NE(curveString = Botan_detail::CurveIDToString(op.curveType.Get()), std::nullopt);
+                    group = std::make_unique<::Botan::EC_Group>(*curveString);
+                }
 
-            /* Construct signature */
-            {
-                const ::Botan::BigInt R(op.signature.signature.first.ToString(ds));
-                const ::Botan::BigInt S(op.signature.signature.second.ToString(ds));
-                try {
+                /* Construct signature */
+                {
+                    const ::Botan::BigInt R(op.signature.signature.first.ToString(ds));
+                    const ::Botan::BigInt S(op.signature.signature.second.ToString(ds));
                     sig = ::Botan::BigInt::encode_fixed_length_int_pair(R, S, group->get_order_bytes());
-                } catch ( ::Botan::Encoding_Error ) {
-                    /* Invalid signature */
-                    BOTAN_UNSET_GLOBAL_DS
-                    return false;
                 }
-            }
 
-            /* Construct pubkey */
-            try {
-                const ::Botan::BigInt pub_x(op.signature.pub.first.ToString(ds));
-                const ::Botan::BigInt pub_y(op.signature.pub.second.ToString(ds));
-                const ::Botan::PointGFp public_point = group->point(pub_x, pub_y);
-                pub = std::make_unique<PubkeyType>(PubkeyType(*group, public_point));
-            } catch ( ::Botan::Invalid_Argument ) {
-                /* Invalid point */
-                BOTAN_UNSET_GLOBAL_DS
-                return false;
-            }
-
-            /* Construct input */
-            {
-                if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
-                    CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
-                } else {
-                    std::optional<std::string> algoString;
-                    CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
-
-                    auto hash = ::Botan::HashFunction::create(*algoString);
-                    hash->update(op.cleartext.GetPtr(), op.cleartext.GetSize());
-                    const auto _CT = hash->final();
-                    CT = Buffer(_CT.data(), _CT.size()).ECDSA_RandomPad(ds, op.curveType);
+                /* Construct pubkey */
+                {
+                    const ::Botan::BigInt pub_x(op.signature.pub.first.ToString(ds));
+                    const ::Botan::BigInt pub_y(op.signature.pub.second.ToString(ds));
+                    const ::Botan::PointGFp public_point = group->point(pub_x, pub_y);
+                    pub = std::make_unique<PubkeyType>(PubkeyType(*group, public_point));
                 }
-            }
 
-            try {
+                /* Construct input */
+                {
+                    if ( op.digestType.Get() == CF_DIGEST("NULL") ) {
+                        CT = op.cleartext.ECDSA_RandomPad(ds, op.curveType);
+                    } else {
+                        std::optional<std::string> algoString;
+                        CF_CHECK_NE(algoString = Botan_detail::DigestIDToString(op.digestType.Get()), std::nullopt);
+
+                        auto hash = ::Botan::HashFunction::create(*algoString);
+                        hash->update(op.cleartext.GetPtr(), op.cleartext.GetSize());
+                        const auto _CT = hash->final();
+                        CT = Buffer(_CT.data(), _CT.size()).ECDSA_RandomPad(ds, op.curveType);
+                    }
+                }
+
                 ret = ::Botan::PK_Verifier(*pub, "Raw").verify_message(CT.Get(), sig);
-            } catch ( ::Botan::Decoding_Error ) {
-                /* Invalid point */
-                BOTAN_UNSET_GLOBAL_DS
-                return false;
-            }
 
 end:
-            BOTAN_UNSET_GLOBAL_DS
+                BOTAN_UNSET_GLOBAL_DS;
 
-            return ret;
+                return ret;
+            } catch (::Botan::Internal_Error& e) {
+                throw e;
+            } catch (::Botan::Exception& e) {
+                BOTAN_UNSET_GLOBAL_DS;
+                return false;
+            }
         }
 } /* namespace Botan_detail */
 
