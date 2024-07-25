@@ -7,7 +7,7 @@
 #if !defined(SECP255K1_COMMIT_9d560f992db26612ce2630b194aef5f44d63a530)
 #include <src/scratch_impl.h>
 #endif
-#if defined(__i386__)
+#if defined(__i386__) || defined(__arm__)
 #include <src/int128_struct.h>
 #else
 #include <src/int128_native_impl.h>
