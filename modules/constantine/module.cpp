@@ -653,6 +653,8 @@ end:
 
 std::optional<component::Fp12> Constantine::OpBLS_Pairing(operation::BLS_Pairing& op) {
     std::optional<component::Fp12> ret = std::nullopt;
+    /* Disabled until https://github.com/mratsim/constantine/issues/454 is implemented */
+    return ret;
 
     if ( op.curveType.Is(CF_ECC_CURVE("alt_bn128")) ) {
         std::optional<std::array<uint8_t, 64>> g1_bytes;
