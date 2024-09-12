@@ -190,7 +190,6 @@ const EVP_MD* OpenSSL::toEVPMD(const component::DigestType& digestType) const {
         { CF_DIGEST("MD5"), EVP_md5() },
         { CF_DIGEST("MD5_SHA1"), EVP_md5_sha1() },
         { CF_DIGEST("RIPEMD160"), EVP_ripemd160() },
-        { CF_DIGEST("WHIRLPOOL"), EVP_whirlpool() },
         { CF_DIGEST("SM3"), EVP_sm3() },
         { CF_DIGEST("SHA3-224"), EVP_sha3_224() },
         { CF_DIGEST("SHA3-256"), EVP_sha3_256() },
