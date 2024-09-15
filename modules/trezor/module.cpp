@@ -179,25 +179,26 @@ std::optional<component::Digest> trezor_firmware::OpDigest(operation::Digest& op
         util::Multipart parts;
 
         if ( op.digestType.Get() == CF_DIGEST("RIPEMD160") ) {
-            RIPEMD160_CTX ctx;
+            ripemd160_state ctx;
 
             /* Initialize */
             {
                 memset(&ctx, 0, sizeof(ctx));
                 parts = util::ToParts(ds, op.cleartext);
-                /* noret */ ripemd160_Init(&ctx);
+                /* noret */ ripemd160_init(&ctx);
 
             }
 
             /* Process */
             for (const auto& part : parts) {
-                /* noret */ ripemd160_Update(&ctx, part.first, part.second);
+                if ( part.first == nullptr ) continue;
+                /* noret */ ripemd160_process(&ctx, part.first, part.second);
             }
 
             /* Finalize */
             {
                 uint8_t out[RIPEMD160_DIGEST_LENGTH];
-                /* noret */ ripemd160_Final(&ctx, out);
+                /* noret */ ripemd160_done(&ctx, out);
 
                 ret = component::Digest(out, sizeof(out));
             }
