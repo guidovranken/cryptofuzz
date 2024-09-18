@@ -567,6 +567,91 @@ namespace TF_PSA_Crypto_detail {
         }
     };
 
+    class KDF_input {
+    protected:
+        psa_key_derivation_step_t step;
+
+    public:
+        KDF_input(psa_key_derivation_step_t step_arg) {
+            step = step_arg;
+        }
+        virtual ~KDF_input() {
+        }
+
+        virtual psa_status_t input(psa_key_derivation_operation_t *operation) = 0;
+    };
+
+    class KDF_input_bytes : public KDF_input {
+    protected:
+        std::vector<uint8_t> data;
+
+    public:
+        KDF_input_bytes(psa_key_derivation_step_t step_arg,
+                        const std::vector<uint8_t> &data_arg)
+            : KDF_input(step_arg) {
+            data = data_arg;
+        }
+        KDF_input_bytes(psa_key_derivation_step_t step_arg,
+                        const Buffer &data_arg)
+            : KDF_input(step_arg) {
+            data = data_arg.Get();
+        }
+
+        virtual psa_status_t input(psa_key_derivation_operation_t *operation) override {
+            return psa_key_derivation_input_bytes(operation, step,
+                                                  data.data(), data.size());
+        }
+    };
+
+    class KDF_input_integer : public KDF_input {
+    protected:
+        uint64_t data;
+
+    public:
+        KDF_input_integer(psa_key_derivation_step_t step_arg,
+                          uint64_t data_arg)
+            : KDF_input(step_arg) {
+            data = data_arg;
+        }
+
+        virtual psa_status_t input(psa_key_derivation_operation_t *operation) override {
+            return psa_key_derivation_input_integer(operation, step, data);
+        }
+    };
+
+    class KeyDerivationOperation {
+        psa_key_derivation_operation_t operation = PSA_KEY_DERIVATION_OPERATION_INIT;
+
+    public:
+        KeyDerivationOperation() {
+        }
+        ~KeyDerivationOperation() {
+            psa_key_derivation_abort(&operation);
+        }
+
+        psa_status_t setup(psa_algorithm_t alg) {
+            return psa_key_derivation_setup(&operation, alg);
+        }
+
+        psa_status_t input(KDF_input &inp) {
+            return inp.input(&operation);
+        }
+
+        size_t capacity() {
+            size_t cap;
+            CF_ASSERT_PSA(psa_key_derivation_get_capacity(&operation, &cap));
+            return cap;
+        }
+
+        psa_status_t output(uint8_t *out, size_t length) {
+            return psa_key_derivation_output_bytes(&operation, out, length);
+        }
+
+        psa_status_t output(std::vector<uint8_t> &out) {
+            return output(out.data(), out.size());
+        }
+    };
+
 }
 
 static std::optional<component::Digest> hash_compute(operation::Digest& op,
@@ -1064,6 +1149,131 @@ std::optional<component::Cleartext> TF_PSA_Crypto::OpSymmetricDecrypt(operation:
         return std::nullopt;
     }
     return Buffer(output);
+}
+
+static std::optional<component::Key> kdf_common(operation::Operation &op,
+                                                psa_algorithm_t alg,
+                                                const std::vector<TF_PSA_Crypto_detail::KDF_input*> &inputs,
+                                                size_t output_length) {
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    TF_PSA_Crypto_detail::SetGlobalDs(&ds);
+    std::optional<component::Key> output_maybe = std::nullopt;
+
+    TF_PSA_Crypto_detail::KeyDerivationOperation operation;
+    CF_ASSERT_PSA(operation.setup(alg));
+    for (auto inp : inputs) {
+        CF_ASSERT_PSA(operation.input(*inp));
+    }
+
+    CF_CHECK_LTE(output_length, operation.capacity());
+
+    {
+        auto output = std::vector<uint8_t>(output_length);
+        bool const multipart = ds.Get<bool>();
+        if (multipart) {
+            util::MultipartOutput parts = util::ToParts(ds, output);
+            for (auto& part : parts) {
+                CF_ASSERT_PSA(operation.output(part.first, part.second));
+            }
+        } else {
+            CF_ASSERT_PSA(operation.output(output));
+        }
+        output_maybe = Buffer(output);
+    }
+
+end:
+    TF_PSA_Crypto_detail::UnsetGlobalDs();
+    return output_maybe;
+}
+
+std::optional<component::Key> TF_PSA_Crypto::OpKDF_HKDF(operation::KDF_HKDF& op) {
+    std::optional<component::Key> result = std::nullopt;
+    Datasource ds(op.modifier.GetPtr(), op.modifier.GetSize());
+    bool const extract_then_expand = ds.Get<bool>();
+    std::vector<TF_PSA_Crypto_detail::KDF_input*> inputs = {
+        new TF_PSA_Crypto_detail::KDF_input_bytes(PSA_KEY_DERIVATION_INPUT_SALT, op.salt),
+        new TF_PSA_Crypto_detail::KDF_input_bytes(PSA_KEY_DERIVATION_INPUT_SECRET, op.password),
+        new TF_PSA_Crypto_detail::KDF_input_bytes(PSA_KEY_DERIVATION_INPUT_INFO, op.info),
+    };
+    psa_algorithm_t const hash_alg =
+        TF_PSA_Crypto_detail::digest_to_psa_algorithm_t(op.digestType);
+
+    /* Skip unknown algorithms */
+    CF_CHECK_NE(hash_alg, PSA_ALG_NONE);
+
+    if (extract_then_expand) {
+        TF_PSA_Crypto_detail::KDF_input* info = inputs[2];
+        inputs.erase(inputs.begin() + 2);
+        result = kdf_common(op, PSA_ALG_HKDF_EXTRACT(hash_alg),
+                            inputs, PSA_HASH_LENGTH(hash_alg));
+        if (!result) {
+            goto end;
+        }
+
+        delete inputs[0];
+        inputs[0] = new TF_PSA_Crypto_detail::KDF_input_bytes(
+            PSA_KEY_DERIVATION_INPUT_SECRET,
+            result->GetConstVectorPtr());
+        delete inputs[1];
+        inputs[1] = info;
+        result = kdf_common(op, PSA_ALG_HKDF_EXPAND(hash_alg), inputs, op.keySize);
+    } else {
+        result = kdf_common(op, PSA_ALG_HKDF(hash_alg), inputs, op.keySize);
+    }
+
+end:
+    for (auto inp : inputs) {
+        delete inp;
+    }
+    return result;
+}
+
+std::optional<component::Key> TF_PSA_Crypto::OpKDF_TLS1_PRF(operation::KDF_TLS1_PRF& op) {
+    std::optional<component::Key> result = std::nullopt;
+    const std::vector<TF_PSA_Crypto_detail::KDF_input*> inputs = {
+        new TF_PSA_Crypto_detail::KDF_input_bytes(PSA_KEY_DERIVATION_INPUT_SEED, op.seed),
+        new TF_PSA_Crypto_detail::KDF_input_bytes(PSA_KEY_DERIVATION_INPUT_SECRET, op.secret),
+        // OpenSSL only supports an empty label
+        new TF_PSA_Crypto_detail::KDF_input_bytes(PSA_KEY_DERIVATION_INPUT_LABEL, component::Cleartext()),
+    };
+    psa_algorithm_t const hash_alg =
+        TF_PSA_Crypto_detail::digest_to_psa_algorithm_t(op.digestType);
+
+    /* Skip unknown or rejected algorithms */
+    CF_CHECK_TRUE(hash_alg == PSA_ALG_SHA_256 || hash_alg == PSA_ALG_SHA_384);
+
+    result = kdf_common(op, PSA_ALG_TLS12_PRF(hash_alg), inputs, op.keySize);
+
+end:
+    for (auto inp : inputs) {
+        delete inp;
+    }
+    return result;
+}
+
+std::optional<component::Key> TF_PSA_Crypto::OpKDF_PBKDF2(operation::KDF_PBKDF2& op) {
+    std::optional<component::Key> result = std::nullopt;
+    const std::vector<TF_PSA_Crypto_detail::KDF_input*> inputs = {
+        new TF_PSA_Crypto_detail::KDF_input_integer(PSA_KEY_DERIVATION_INPUT_COST, op.iterations),
+        new TF_PSA_Crypto_detail::KDF_input_bytes(PSA_KEY_DERIVATION_INPUT_SALT, op.salt),
+        new TF_PSA_Crypto_detail::KDF_input_bytes(PSA_KEY_DERIVATION_INPUT_PASSWORD, op.password),
+    };
+    psa_algorithm_t const hash_alg =
+        TF_PSA_Crypto_detail::digest_to_psa_algorithm_t(op.digestType);
+
+    /* Skip unknown algorithms */
+    CF_CHECK_NE(hash_alg, PSA_ALG_NONE);
+
+    CF_CHECK_NE(op.iterations, 0);
+    CF_CHECK_LTE(op.iterations, PSA_VENDOR_PBKDF2_MAX_ITERATIONS);
+
+    result = kdf_common(op, PSA_ALG_PBKDF2_HMAC(hash_alg), inputs, op.keySize);
+
+end:
+    for (auto inp : inputs) {
+        delete inp;
+    }
+    return result;
 }
 
 } /* namespace module */

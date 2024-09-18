@@ -60,6 +60,11 @@ Multipart ToParts(fuzzing::datasource::Datasource& ds, const Buffer& buffer, con
 Multipart ToParts(fuzzing::datasource::Datasource& ds, const uint8_t* data, const size_t size, const size_t blocksize = 0);
 Multipart ToEqualParts(const Buffer& buffer, const size_t partSize);
 Multipart ToEqualParts(const uint8_t* data, const size_t size, const size_t partSize);
+
+using MultipartOutput = std::vector< std::pair<uint8_t*, size_t> >;
+MultipartOutput ToParts(fuzzing::datasource::Datasource& ds, std::vector<uint8_t>& buffer, const size_t blocksize = 0);
+MultipartOutput ToParts(fuzzing::datasource::Datasource& ds, uint8_t* data, const size_t size, const size_t blocksize = 0);
+
 std::vector<uint8_t> Pkcs7Pad(std::vector<uint8_t> in, const size_t blocksize);
 std::optional<std::vector<uint8_t>> Pkcs7Unpad(std::vector<uint8_t> in, const size_t blocksize);
 std::string ToString(const Buffer& buffer);
