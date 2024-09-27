@@ -15,6 +15,31 @@
 
 namespace cryptofuzz {
 
+bool EnabledNames::Have(std::string name) const {
+    return names.empty() || HaveExplicit(name);
+}
+
+bool EnabledNames::HaveExplicit(std::string name) const {
+    return names.find(name) != names.end();
+}
+
+void EnabledNames::Add(std::string name) {
+    names.insert(name);
+}
+
+std::string EnabledNames::At(const size_t index) const {
+    CF_ASSERT(!Empty(), "Calling At on empty container");
+
+    std::set<std::string>::const_iterator it = names.begin();
+    std::advance(it, index % names.size());
+
+    return *it;
+}
+
+bool EnabledNames::Empty(void) const {
+    return names.empty();
+}
+
 bool EnabledTypes::Have(const uint64_t id) const {
     return types.empty() || HaveExplicit(id);
 }
@@ -78,6 +103,30 @@ Options::Options(const int argc, char** argv, const std::vector<std::string> ext
                 for (size_t i = 0; i < (sizeof(repository::OperationLUT) / sizeof(repository::OperationLUT[0])); i++) {
                     if ( boost::iequals(curOpStr, std::string(repository::OperationLUT[i].name)) ) {
                         this->operations.Add(repository::OperationLUT[i].id);
+                        found = true;
+                        break;
+                    }
+                }
+
+                if ( found == false ) {
+                    std::cout << "Undefined operation: " << curOpStr << std::endl;
+                    exit(1);
+                }
+            }
+        } else if ( !parts.empty() && parts[0] == "--disable-operations" ) {
+            if ( parts.size() != 2 ) {
+                std::cout << "Expected argument after --disable-operations=" << std::endl;
+                exit(1);
+            }
+
+            std::vector<std::string> operationStrings;
+            boost::split(operationStrings, parts[1], boost::is_any_of(","));
+
+            for (const auto& curOpStr : operationStrings) {
+                bool found = false;
+                for (size_t i = 0; i < (sizeof(repository::OperationLUT) / sizeof(repository::OperationLUT[0])); i++) {
+                    if ( boost::iequals(curOpStr, std::string(repository::OperationLUT[i].name)) ) {
+                        this->disableOperations.Add(repository::OperationLUT[i].name);
                         found = true;
                         break;
                     }

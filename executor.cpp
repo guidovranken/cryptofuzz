@@ -2723,6 +2723,10 @@ void ExecutorBase<ResultType, OperationType>::Run(Datasource& parentDs, const ui
 
     do {
         auto op = getOp(&parentDs, data, size);
+        auto operationName = op.Name();
+        if(options.disableOperations.HaveExplicit(operationName)){
+            continue;
+        }
         auto module = getModule(parentDs);
         if ( module == nullptr ) {
             continue;
