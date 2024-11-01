@@ -4,7 +4,6 @@
 #include <botan/numthry.h>
 #include <botan/reducer.h>
 #include <botan/internal/divide.h>
-#include <botan/internal/curve_nistp.h>
 #include <botan/internal/primality.h>
 #include <botan/system_rng.h>
 
