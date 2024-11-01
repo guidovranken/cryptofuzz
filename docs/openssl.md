@@ -42,7 +42,7 @@ cd ../
 export CXXFLAGS="$CXXFLAGS -DCRYPTOFUZZ_LIBRESSL"
 export OPENSSL_INCLUDE_PATH=`realpath include/`
 export OPENSSL_LIBCRYPTO_A_PATH=`realpath build/crypto/libcrypto.a`
-export CXXFLAGS="$CXXFLAGS -I $OPENSSL_INCLUDE_PATH"
+export CXXFLAGS="$CXXFLAGS -I $OPENSSL_INCLUDE_PATH -I $(realpath build/include/)"
 ```
 
 ### BoringSSL
