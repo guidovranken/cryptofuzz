@@ -258,7 +258,14 @@ bool Mod::Run(Datasource& ds, Bignum& res, BignumCluster& bn, BN_CTX& ctx) const
             break;
     }
 
-    ret = true;
+    /* OpenSSL and derivatives deal with negative inputs
+     * to Mod differently than some other libraries.
+     * Compute the result but don't return it.
+     */
+    if (    !BN_is_negative(bn[0].GetPtr()) &&
+            !BN_is_negative(bn[1].GetPtr()) ) {
+        ret = true;
+    }
 
 end:
     return ret;
